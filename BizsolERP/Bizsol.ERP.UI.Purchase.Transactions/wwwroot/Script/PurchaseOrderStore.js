@@ -1,6 +1,7 @@
-﻿import { PurchaseOrderStoreService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseOrderStoreServices.js';
+import { PurchaseOrderStoreService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseOrderStoreServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
@@ -602,6 +603,15 @@ $(document).ready(function () {
         badge.textContent = String(count);
         badge.style.display = count > 0 ? 'inline-flex' : 'none';
     };
+
+    /** Reload PO list grid after attachment save/delete so HasAttach / clip styling updates without full page refresh. */
+    document.addEventListener('bizsol:attachmentcontrol:changed', function (ev) {
+        const d = ev.detail;
+        if (!d || d.tempMode) return;
+        if (d.masterTableName !== 'PurchaseOrderMaster') return;
+        if (typeof window.ShowPOListGrid !== 'function' || !document.getElementById('tblPOListBody')) return;
+        window.ShowPOListGrid();
+    });
 
     // Watch sidebar class changes (collapse/expand) and sync float bar
     const sidebarEl = document.getElementById('modern-sidebar');
@@ -1292,7 +1302,7 @@ function RenumberRows() {
     });
 }
 
-// ─── TOLERANCE HELPERS (temporarily disabled) ───────────────────────────────
+// ─── TOLERANCE HELPERS (temporarily disabled — desktop CalcRowValue/SavePO + mobile modal) ─
 
 /* TOLERANCE DISABLED
 function GetRowToleranceInfo(rowId) {
@@ -1363,7 +1373,6 @@ window.OnItemChange = function (rowId) {
 };
 
 window.CalcRowValue = function (rowId) {
-    const againstProject = $('#frmChkAgainstProject').is(':checked');
     let qty  = parseFloat($(`#frmTxtQty_${rowId}`).val())  || 0;
     let rate = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
 
@@ -1917,6 +1926,12 @@ window.ConfirmDeletePO = function () {
 
         PurchaseOrderStoreService.DeletePurchaseOrderStore(code, GetUserCode(), reason).then(function (res) {
             if (res && res.Status === 'Y') {
+                const delPk = parseInt(String(code), 10) || 0;
+                if (delPk > 0) {
+                    AttachmentControlService.DeleteAllAttachment('PurchaseOrderMaster', delPk, '', 0).catch(function (e) {
+                        console.warn('Delete all attachments after PO delete', e);
+                    });
+                }
                 toastr.success(res.Msg || 'PO deleted successfully.');
                 $('#modalDeletePO').modal('hide');
                 ShowPOListGrid();
@@ -2036,7 +2051,7 @@ function MobileItemModalConfirm() {
     if (!itemCode) { toastr.warning('Please select an item.'); return; }
     if (qty <= 0) { toastr.warning('Qty must be greater than 0.'); return; }
 
-    // ── Tolerance validation (only applicable when Against Project is checked) ─
+    /* TOLERANCE DISABLED (temporary) — mobile add/edit: qty & rate vs project BOM caps
     if ($('#frmChkAgainstProject').is(':checked')) {
         const mobileItem = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
         if (mobileItem) {
@@ -2061,6 +2076,7 @@ function MobileItemModalConfirm() {
             }
         }
     }
+    TOLERANCE DISABLED */
 
     const uomCode = $('#mobileItemDdlUOM').val();
     const gst = parseFloat($('#mobileItemTxtGST').val()) || 0;
@@ -2093,8 +2109,9 @@ function MobileItemModalConfirm() {
             </td>
         </tr>`;
         $('#tblPOItemsBody').append(row);
-        const newTolItem = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
-        ApplyToleranceToRow(rowId, newTolItem || null);
+        // TOLERANCE DISABLED
+        // const newTolItem = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
+        // ApplyToleranceToRow(rowId, newTolItem || null);
         RenumberRows();
     } else {
         // Update existing row in the hidden table

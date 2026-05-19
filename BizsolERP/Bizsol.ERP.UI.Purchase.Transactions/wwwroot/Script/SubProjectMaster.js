@@ -425,6 +425,97 @@ function loadPOLevelList() {
         });
 }
 
+/* ── PO level applicable / ApprovalType (P = project assignment, U = user — locked) ─ */
+function normalizePOApprovalType(val) {
+    const v = String(val ?? '').trim();
+    if (!v) return '';
+    const u = v.toUpperCase();
+    if (u === 'U' || u === 'USER') return 'U';
+    if (u === 'P' || u === 'PROJECT') return 'P';
+    return u.charAt(0);
+}
+
+function pickApprovalTypeFromRow(row) {
+    if (!row || typeof row !== 'object') return null;
+    const keys = ['ApprovalType', 'approvalType', 'Approval_Type', 'approval_type', 'Approvaltype', 'approvaltype'];
+    for (let i = 0; i < keys.length; i++) {
+        const v = row[keys[i]];
+        if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+    }
+    return null;
+}
+
+function mergedApprovalTypeFromLevelAndExisting(level, existingDetailRow) {
+    const fromLevel = pickApprovalTypeFromRow(level);
+    if (fromLevel != null) return fromLevel;
+    if (existingDetailRow) {
+        const e = pickApprovalTypeFromRow(existingDetailRow);
+        if (e != null) return e;
+    }
+    return '';
+}
+
+function poLevelRuleContext(level, existingDetailRow) {
+    const norm = normalizePOApprovalType(mergedApprovalTypeFromLevelAndExisting(level, existingDetailRow));
+    return { isUser: norm === 'U' };
+}
+
+/** P (project) ends of the chain: first/last level index where master ApprovalType is P (or blank legacy). U rows are skipped. */
+function isPLikeApprovalNorm(norm) {
+    return norm === 'P' || norm === '';
+}
+
+function getFirstLastPLikeAnchorIndices() {
+    const list = G_POLevelList || [];
+    let first = -1;
+    let last = -1;
+    list.forEach(function (level, idx) {
+        const n = normalizePOApprovalType(pickApprovalTypeFromRow(level) || '');
+        if (n === 'U') return;
+        if (!isPLikeApprovalNorm(n)) return;
+        if (first < 0) first = idx;
+        last = idx;
+    });
+    return { first: first, last: last };
+}
+
+function isPLikeAnchorLockedRow(idx, anchors) {
+    const a = anchors || getFirstLastPLikeAnchorIndices();
+    return a.first >= 0 && (idx === a.first || idx === a.last);
+}
+
+function isYnYes(val) {
+    const s = String(val ?? '').trim().toUpperCase();
+    return s === 'Y' || s === '1' || s === 'TRUE';
+}
+
+function computeInitialIsLevelApplicable(ctx, idx, totalLevels, existingDetailRow, anchors) {
+    anchors = anchors || getFirstLastPLikeAnchorIndices();
+    if (ctx.isUser) return false;
+    if (isPLikeAnchorLockedRow(idx, anchors)) return true;
+    if (existingDetailRow) {
+        const raw = existingDetailRow.IsLevelApplicable != null ? existingDetailRow.IsLevelApplicable : existingDetailRow.isLevelApplicable;
+        if (raw !== undefined && raw !== null && String(raw).trim() !== '') {
+            return isYnYes(raw);
+        }
+    }
+    return true;
+}
+
+function isLevelApplicableCheckboxLocked(ctx, idx, totalLevels, anchors) {
+    anchors = anchors || getFirstLastPLikeAnchorIndices();
+    if (ctx.isUser) return true;
+    if (isPLikeAnchorLockedRow(idx, anchors)) return true;
+    return false;
+}
+
+function resolveIsLevelApplicableForSave(ctx, idx, totalLevels, $chk, anchors) {
+    anchors = anchors || getFirstLastPLikeAnchorIndices();
+    if (ctx.isUser) return 'N';
+    if (isPLikeAnchorLockedRow(idx, anchors)) return 'Y';
+    return ($chk && $chk.length && $chk.is(':checked')) ? 'Y' : 'N';
+}
+
 /* ── Render PO levels user-assignment in form modal ──────── */
 function renderPOLevelsFormTable(existingDetails) {
     $('#tblPOLevelsBody').find('select').each(function () {
@@ -436,19 +527,27 @@ function renderPOLevelsFormTable(existingDetails) {
 
     if (!G_POLevelList || G_POLevelList.length === 0) {
         $('#dvPOLevelsTableWrap').show();
-        $('#tblPOLevelsBody').append('<tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">No PO approval levels configured.</td></tr>');
+        $('#tblPOLevelsBody').append('<tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">No PO approval levels configured.</td></tr>');
         return;
     }
 
+    const anchors = getFirstLastPLikeAnchorIndices();
+
     if (G_POLevelList.length === 1) {
-        // Single level — show a plain labelled dropdown, no table needed
+        // Single level — labelled dropdown + applicable checkbox (same rules as grid)
         const level     = G_POLevelList[0];
         const levelCode = level.Code || level.PurchaseOrderApprovalConfiguration_Code || 0;
         const levelDesp = level.LevelDesp || '';
         const existing  = (existingDetails || []).find(function (d) {
             return String(d.PurchaseOrderApprovalConfiguration_Code) === String(levelCode);
         });
-        const preSelected = existing
+        const ctx            = poLevelRuleContext(level, existing);
+        const totalLevels    = 1;
+        const applicableOn   = computeInitialIsLevelApplicable(ctx, 0, totalLevels, existing, anchors);
+        const chkLocked      = isLevelApplicableCheckboxLocked(ctx, 0, totalLevels, anchors);
+        const usersLocked    = ctx.isUser;
+        const chkLockCls     = ctx.isUser ? ' chk-lock-user' : (isPLikeAnchorLockedRow(0, anchors) ? ' chk-lock-p-anchor' : '');
+        const preSelected    = existing
             ? String(existing.UserMaster_Codes_RightToVerifyPO || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
             : [];
 
@@ -462,8 +561,19 @@ function renderPOLevelsFormTable(existingDetails) {
         });
 
         $('#dvSingleLevelSelect').html(
+            '<div class="pm-fg" style="margin-bottom:10px;">' +
+                '<label class="form-check-label d-flex align-items-center gap-2 mb-0" ' +
+                'style="font-size:12.5px;font-weight:600;color:var(--text-primary);cursor:' + (chkLocked ? 'default' : 'pointer') + ';">' +
+                '<input type="checkbox" class="form-check-input chk-po-level-applicable flex-shrink-0' + chkLockCls + '" id="chkSingleLevelApplicable" ' +
+                'data-level-code="' + levelCode + '" ' +
+                (applicableOn ? 'checked ' : '') +
+                (chkLocked ? 'disabled ' : '') +
+                'style="margin-top:0;" />' +
+                '<span>Applicable for this sub-project</span>' +
+                '</label>' +
+            '</div>' +
             `<label style="font-size:12.5px;font-weight:700;color:var(--text-primary);margin-bottom:6px;display:block;">Users \u2014 ${escHtml(levelDesp)}</label>` +
-            `<select id="ddlSingleLevelUsers" data-level-code="${levelCode}" multiple="multiple" style="width:100%;">${opts}</select>`
+            `<select id="ddlSingleLevelUsers" data-level-code="${levelCode}" multiple="multiple" style="width:100%;"${usersLocked ? ' disabled' : ''}>${opts}</select>`
         ).show();
         $('#dvPOLevelsTableWrap').hide();
 
@@ -474,23 +584,33 @@ function renderPOLevelsFormTable(existingDetails) {
                 width        : '100%',
                 dropdownParent: $('#dvSubProjectModal')
             });
+            if (usersLocked) {
+                $('#ddlSingleLevelUsers').prop('disabled', true).trigger('change');
+            }
         } catch (e) {}
         return;
     }
 
     // Multiple levels — table grid
     $('#dvPOLevelsTableWrap').show();
+    const totalLevels = G_POLevelList.length;
     G_POLevelList.forEach(function (level, idx) {
         const levelCode = level.Code || level.PurchaseOrderApprovalConfiguration_Code || 0;
         const levelDesp = level.LevelDesp || '';
         const existing  = (existingDetails || []).find(function (d) {
             return String(d.PurchaseOrderApprovalConfiguration_Code) === String(levelCode);
         });
-        const preSelected = existing
+        const ctx          = poLevelRuleContext(level, existing);
+        const applicableOn = computeInitialIsLevelApplicable(ctx, idx, totalLevels, existing, anchors);
+        const chkLocked    = isLevelApplicableCheckboxLocked(ctx, idx, totalLevels, anchors);
+        const usersLocked  = ctx.isUser;
+        const chkLockCls   = ctx.isUser ? ' chk-lock-user' : (isPLikeAnchorLockedRow(idx, anchors) ? ' chk-lock-p-anchor' : '');
+        const preSelected  = existing
             ? String(existing.UserMaster_Codes_RightToVerifyPO || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
             : [];
 
         const selectId = 'ddlLevelUsers_' + levelCode;
+        const chkId    = 'chkLevelApplicable_' + levelCode;
         let opts = '';
         (G_UserList || []).forEach(function (u) {
             const val  = pickUserRowCode(u);
@@ -504,7 +624,11 @@ function renderPOLevelsFormTable(existingDetails) {
             <tr data-level-code="${levelCode}">
                 <td class="center" style="width:44px;"><span class="pm-sno">${idx + 1}</span></td>
                 <td style="white-space:nowrap; font-weight:600;">${escHtml(levelDesp)}</td>
-                <td><select id="${selectId}" multiple="multiple" style="width:100%;">${opts}</select></td>
+                <td class="center" style="vertical-align:middle;width:100px;">
+                    <input type="checkbox" class="form-check-input chk-po-level-applicable${chkLockCls}" id="${chkId}"
+                        ${applicableOn ? 'checked ' : ''}${chkLocked ? 'disabled ' : ''} style="margin:0;cursor:${chkLocked ? 'not-allowed' : 'pointer'};" />
+                </td>
+                <td><select id="${selectId}" multiple="multiple" style="width:100%;"${usersLocked ? ' disabled' : ''}>${opts}</select></td>
             </tr>
         `);
 
@@ -515,6 +639,9 @@ function renderPOLevelsFormTable(existingDetails) {
                 width        : '100%',
                 dropdownParent: $('#dvSubProjectModal')
             });
+            if (usersLocked) {
+                $('#' + selectId).prop('disabled', true).trigger('change');
+            }
         } catch (e) {}
     });
 }
@@ -523,24 +650,29 @@ function renderPOLevelsFormTable(existingDetails) {
 function collectPOLevelDetails() {
     const details        = [];
     const subProjectCode = parseInt($('#hfSubProjectCode').val() || '0', 10) || 0;
+    const anchors        = getFirstLastPLikeAnchorIndices();
 
     if (G_POLevelList.length === 1) {
         const level     = G_POLevelList[0];
         const levelCode = level.Code || level.PurchaseOrderApprovalConfiguration_Code || 0;
         const levelDesp = level.LevelDesp || '';
         const userCodes = ($('#ddlSingleLevelUsers').val() || []).join(',');
+        const ctx       = poLevelRuleContext(level, null);
+        const $chk      = $('#chkSingleLevelApplicable');
         if (levelCode > 0) {
             details.push({
                 PurchaseOrderApprovalConfiguration_Code: levelCode,
                 LevelDesp                              : levelDesp,
                 UserMaster_Codes_RightToVerifyPO       : userCodes,
-                SubProjectMaster_Code                  : subProjectCode
+                SubProjectMaster_Code                  : subProjectCode,
+                IsLevelApplicable                      : resolveIsLevelApplicableForSave(ctx, 0, 1, $chk, anchors)
             });
         }
         return details;
     }
 
-    $('#tblPOLevelsBody tr[data-level-code]').each(function () {
+    const totalLevels = G_POLevelList.length;
+    $('#tblPOLevelsBody tr[data-level-code]').each(function (i) {
         const $row      = $(this);
         const levelCode = parseInt($row.data('level-code'), 10) || 0;
         if (levelCode <= 0) return;
@@ -549,11 +681,14 @@ function collectPOLevelDetails() {
         });
         const levelDesp = levelObj ? (levelObj.LevelDesp || '') : '';
         const userCodes = ($('#ddlLevelUsers_' + levelCode).val() || []).join(',');
+        const ctx       = poLevelRuleContext(levelObj, null);
+        const $chk      = $row.find('.chk-po-level-applicable');
         details.push({
             PurchaseOrderApprovalConfiguration_Code: levelCode,
             LevelDesp                              : levelDesp,
             UserMaster_Codes_RightToVerifyPO       : userCodes,
-            SubProjectMaster_Code                  : subProjectCode
+            SubProjectMaster_Code                  : subProjectCode,
+            IsLevelApplicable                      : resolveIsLevelApplicableForSave(ctx, i, totalLevels, $chk, anchors)
         });
     });
     return details;
@@ -761,6 +896,7 @@ function viewSubProject(code) {
                 var tbl = '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
                 tbl += '<thead><tr>' +
                        '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Level</th>' +
+                       '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;text-align:center;">Applicable</th>' +
                        '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Users</th>' +
                        '</tr></thead><tbody>';
                 levelDetails.forEach(function (d) {
@@ -769,8 +905,14 @@ function viewSubProject(code) {
                         var u = (G_UserList || []).find(function (x) { return pickUserRowCode(x) === c; });
                         return u ? pickUserDisplayName(u, c) : c;
                     }).filter(Boolean);
+                    var ilev = d.IsLevelApplicable != null ? d.IsLevelApplicable : d.isLevelApplicable;
+                    var appTxt = '—';
+                    if (ilev !== undefined && ilev !== null && String(ilev).trim() !== '') {
+                        appTxt = isYnYes(ilev) ? 'Yes' : 'No';
+                    }
                     tbl += '<tr>' +
                            '<td style="padding:5px 10px;border:1px solid #e2e8f0;font-weight:600;white-space:nowrap;">' + escHtml(d.LevelDesp || '') + '</td>' +
+                           '<td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:center;">' + escHtml(appTxt) + '</td>' +
                            '<td style="padding:5px 10px;border:1px solid #e2e8f0;">' + escHtml(names.join(', ') || '—') + '</td>' +
                            '</tr>';
                 });

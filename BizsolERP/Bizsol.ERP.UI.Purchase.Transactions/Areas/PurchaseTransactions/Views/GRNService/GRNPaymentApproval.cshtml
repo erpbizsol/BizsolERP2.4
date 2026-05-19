@@ -3,6 +3,8 @@
 }
 
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentApproval.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentEntry.js"></script>
+
 
 <style>
     /* ── PAGE HEADER (aligned with PO Level Approval) ─────────── */
@@ -242,10 +244,33 @@
     .gpa-pay-card-footer {
         padding: 8px 16px 12px;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
         gap: 8px;
         flex-wrap: wrap;
     }
+    .gpa-pay-card-print-btns {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .btn-gpa-print-icon {
+        width: 36px; height: 32px;
+        border: none; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 0.85rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-gpa-print-prev {
+        background: #64748b; color: #fff;
+        box-shadow: 0 2px 8px rgba(100,116,139,0.35);
+    }
+    .btn-gpa-print-go {
+        background: #1e293b; color: #fff;
+        box-shadow: 0 2px 8px rgba(30,41,59,0.35);
+    }
+    .btn-gpa-print-icon:hover { transform: translateY(-1px); color: #fff; }
     .btn-gpa-card-approve {
         display: inline-flex; align-items: center; gap: 5px;
         background: linear-gradient(135deg,#10b981,#059669);
@@ -408,6 +433,36 @@
         transition:all 0.2s; cursor:pointer;
     }
     .btn-gpa-close:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(245,158,11,0.5); color:#fff; }
+    .btn-gpa-modal-preview {
+        display:inline-flex; align-items:center; gap:5px;
+        background:#64748b; border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(100,116,139,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-modal-preview:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(100,116,139,0.45); }
+    .btn-gpa-modal-print {
+        display:inline-flex; align-items:center; gap:5px;
+        background:#1e293b; border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(30,41,59,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-modal-print:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(30,41,59,0.45); }
+    .btn-gpa-modal-attach {
+        display:inline-flex; align-items:center; gap:5px;
+        border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(14,165,233,0.35);
+        transition:all 0.2s; cursor:pointer;
+        background:linear-gradient(135deg,#0ea5e9,#0284c7);
+    }
+    .btn-gpa-modal-attach:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(2,132,199,0.45); }
+    .btn-gpa-modal-attach.gpa-attach-has-files {
+        background:linear-gradient(135deg,#16a34a,#15803d);
+        box-shadow:0 3px 10px rgba(22,163,74,0.35);
+    }
+    .btn-gpa-modal-attach.gpa-attach-has-files:hover { box-shadow:0 5px 14px rgba(22,163,74,0.45); }
 
     .btn-gpa-confirm-approve {
         display:inline-flex; align-items:center; gap:4px;
@@ -455,10 +510,12 @@
             width: 100%; justify-content: space-between;
         }
         .gpa-info-grid { grid-template-columns: repeat(2, 1fr); }
-        .gpa-pay-card-footer { justify-content: stretch; }
+        .gpa-pay-card-footer { justify-content: stretch; flex-direction: column; align-items: stretch; }
+        .gpa-pay-card-footer .gpa-pay-card-print-btns { width: 100%; justify-content: flex-start; }
         .gpa-pay-card-footer .btn-gpa-card-approve,
         .gpa-pay-card-footer .btn-gpa-card-view { width: 100%; justify-content: center; }
-        .btn-gpa-approve, .btn-gpa-reject, .btn-gpa-close { padding: 9px 14px; font-size: 0.8rem; }
+        .btn-gpa-approve, .btn-gpa-reject, .btn-gpa-close,
+        .btn-gpa-modal-preview, .btn-gpa-modal-print, .btn-gpa-modal-attach { padding: 9px 14px; font-size: 0.8rem; }
     }
     @@media (max-width: 576px) {
         .gpa-info-grid  { grid-template-columns: 1fr 1fr; }
@@ -573,6 +630,8 @@
                                 <tr>
                                     <th style="width:40px;">#</th>
                                     <th>Bill No</th>
+                                    <th style="width:90px;">PO No</th>
+                                    <th style="width:100px;">Category</th>
                                     <th style="width:100px;">Bill Date</th>
                                     <th style="width:120px;">Total bill</th>
                                     <th style="width:120px;">Net payable</th>
@@ -583,7 +642,7 @@
                             </thead>
                             <tbody id="gpaModalItemsBody">
                                 <tr>
-                                    <td colspan="8" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                    <td colspan="10" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
                                         <i class="fa fa-spinner fa-spin me-1"></i>Loading…
                                     </td>
                                 </tr>
@@ -592,16 +651,7 @@
                     </div>
                 </div>
 
-                <div class="gpa-attach-wrap" style="margin-bottom:14px;">
-                    <div class="gpa-items-title" style="margin-bottom:8px;">
-                        <i class="fa fa-paperclip me-1"></i>Attachments
-                    </div>
-                    <div id="gpaModalAttachList">
-                        <span style="font-size:0.78rem;color:#94a3b8;">
-                            <i class="fa fa-spinner fa-spin me-1"></i>Loading attachments&hellip;
-                        </span>
-                    </div>
-                </div>
+                <div id="gpaModalAttachList" style="display:none;"></div>
 
                 <div class="gpa-remarks-wrap">
                     <label class="gpa-remarks-lbl">
@@ -614,9 +664,21 @@
             </div>
 
             <div class="modal-footer"
-                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;">
+                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
                 <input type="hidden" id="hfGpaPaymentCode" value="0" />
                 <input type="hidden" id="hfGpaLevelCode" value="0" />
+                <button type="button" class="btn-gpa-modal-preview"
+                        onclick="PrintGPAFromDetail('preview')" title="Print Preview">
+                    <i class="fa fa-search-plus"></i>Preview
+                </button>
+                <button type="button" class="btn-gpa-modal-print"
+                        onclick="PrintGPAFromDetail('print')" title="Print">
+                    <i class="fa fa-print"></i>Print
+                </button>
+                <button type="button" id="gpaBtnModalAttachment" class="btn-gpa-modal-attach"
+                        onclick="OpenGRNPaymentApprovalAttachmentFromModal()" title="Attachments">
+                    <i class="fa fa-paperclip"></i>Attachment
+                </button>
                 <button type="button" id="gpaBtnRejectAction" class="btn-gpa-reject"
                         onclick="SubmitApproval('Reject')" style="display:none;">
                     <i class="fa fa-times"></i>Reject
@@ -653,3 +715,5 @@
         </div>
     </div>
 </div>
+
+<div id="GRNPaymentApproval_AttachmentControlmodal"></div>

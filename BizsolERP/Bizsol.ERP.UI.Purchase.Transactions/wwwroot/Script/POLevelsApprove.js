@@ -9,6 +9,7 @@ const DUMMY_PO_LIST = [
         Code: 1001, 'PO No': 'PO/2025/0112', 'Party Name': 'Tata Steel Limited',
         'PO Date': '2025-07-01', 'Total Bill Amount': 485250.00,
         IsPOAgainstProject: 'Y', ProjectName: 'Solar Plant Phase I', SubProjectName: 'Site A – Bangalore',
+        ProjectBudget: 8000000, SubProjectBudget: 2500000,
         ApprovalStatus: 'Pending', CurrentLevelNo: 2, TotalLevels: 3,
         CurrentLevelDesc: 'Finance Manager', LevelCode: 202,
         PaymentTerms: '30 Days Net',
@@ -149,6 +150,15 @@ $(document).ready(async function () {
             $b.removeClass('pla-attach-has-files');
         }
     };
+
+    /** PO Approval cards: refresh after attachments change on a saved PO (green clip / HasAttach). */
+    document.addEventListener('bizsol:attachmentcontrol:changed', function (ev) {
+        const d = ev.detail;
+        if (!d || d.tempMode) return;
+        if (d.masterTableName !== 'PurchaseOrderMaster') return;
+        if (!document.getElementById('poPendingList')) return;
+        LoadPOList();
+    });
 });
 
 function InitDates() {
@@ -251,6 +261,32 @@ function PlaSubProjectName(po) {
     const n = po.SubProjectName != null && String(po.SubProjectName).trim() !== '' ? po.SubProjectName
         : po['Sub Project Name'] || po.SubProject || '';
     return String(n || '').trim();
+}
+
+/** Budget amounts from PO list row only (same payload as GetPendingPOList — no SubProject API). */
+function PlaNumericFromPoField(po, keys) {
+    if (!po) return null;
+    for (let i = 0; i < keys.length; i++) {
+        const raw = keys[i] !== undefined ? po[keys[i]] : undefined;
+        if (raw == null || raw === '') continue;
+        const n = parseFloat(String(raw).replace(/,/g, ''));
+        if (!isNaN(n)) return n;
+    }
+    return null;
+}
+
+/** Master project budget on the PO list row */
+function PlaProjectBudgetAmt(po) {
+    return PlaNumericFromPoField(po, [
+        'ProjectBudget', 'projectBudget', 'Project Budget'
+    ]);
+}
+
+/** Sub-project budget on the PO list row */
+function PlaSubProjectBudgetAmt(po) {
+    return PlaNumericFromPoField(po, [
+        'SubProjectBudget', 'subProjectBudget', 'Sub Project Budget'
+    ]);
 }
 
 /** Escape for use inside single-quoted JavaScript string in an HTML onclick="..." attribute. */
@@ -409,13 +445,28 @@ function BuildPOCard(po) {
         dataSearchKey += ' ' + PlaProjectName(po).toLowerCase() + ' ' + PlaSubProjectName(po).toLowerCase();
     }
 
+    const projBudAmt = PlaProjectBudgetAmt(po);
+    const subBudAmt  = PlaSubProjectBudgetAmt(po);
+    if (projBudAmt != null) dataSearchKey += ' ' + String(projBudAmt);
+    if (subBudAmt != null) dataSearchKey += ' ' + String(subBudAmt);
+
+    let projBudgetLine = '';
+    if (PlaIsPOAgainstProject(po) && (projBudAmt != null || subBudAmt != null)) {
+        const pb = projBudAmt != null ? FmtCurrency(projBudAmt) : '—';
+        const sb = subBudAmt != null ? FmtCurrency(subBudAmt) : '—';
+        projBudgetLine =
+            '<div class="pla-po-card-proj-bud" style="font-size:0.66rem;color:#64748b;margin-top:3px;line-height:1.3;font-weight:600;">' +
+            '<span>Proj budget: ' + pb + '</span> <span style="color:#cbd5e1;">·</span> ' +
+            '<span>Sub budget: ' + sb + '</span></div>';
+    }
+
     const projLine = PlaIsPOAgainstProject(po)
         ? ('<div class="pla-po-card-proj" style="font-size:0.7rem;color:#64748b;margin-top:4px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;" title="' +
             EscHtml((PlaProjectName(po) || '—') + (PlaSubProjectName(po) ? ' / ' + PlaSubProjectName(po) : '')) + '">' +
             '<i class="fa fa-diagram-project me-1" style="color:#667eea;font-size:0.68rem;"></i>' +
             EscHtml(PlaProjectName(po) || '—') +
             (PlaSubProjectName(po) ? ' <span style="color:#94a3b8;">·</span> ' + EscHtml(PlaSubProjectName(po)) : '') +
-            '</div>')
+            '</div>' + projBudgetLine)
         : '';
 
     return `
@@ -535,6 +586,12 @@ function OpenDetailModal(poCode) {
                 const subp = PlaSubProjectName(G_CurrentPO);
                 headerHtml += BuildInfoItem('Project', proj ? EscHtml(proj) : '—', 'fa-diagram-project');
                 headerHtml += BuildInfoItem('Sub Project', subp ? EscHtml(subp) : '—', 'fa-map-location-dot');
+                const mb = PlaProjectBudgetAmt(G_CurrentPO);
+                const sb = PlaSubProjectBudgetAmt(G_CurrentPO);
+                if (mb != null || sb != null) {
+                    headerHtml += BuildInfoItem('Project budget', mb != null ? EscHtml(FmtCurrency(mb)) : '—', 'fa-sack-dollar');
+                    headerHtml += BuildInfoItem('Sub-project budget', sb != null ? EscHtml(FmtCurrency(sb)) : '—', 'fa-coins');
+                }
             }
             headerHtml += BuildInfoItem('Total Amount', amount, 'fa-rupee-sign', '#667eea') +
                 BuildInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +

@@ -9,6 +9,7 @@ function blockNonNumeric(e) {
     if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
 }
 // Strip any remaining non-numeric characters (paste, autofill, etc.)
+
 function stripNonNumeric(el) {
     const val = el.value;
     const cleaned = val.replace(/[^0-9.]/g, '')   // keep digits and one dot
@@ -520,22 +521,78 @@ function applyGrnVerifiedListFilter(rows) {
     });
 }
 
+function grnGetSessionUserCode() {
+    try { var a = JSON.parse(sessionStorage.getItem("authKey")); return parseInt(a && a.UserMaster_Code, 10) || 0; } catch (e) { return 0; }
+}
+function grnGetSessionGroupCode() {
+    try {
+        var d = JSON.parse(sessionStorage.getItem("UserDetails"));
+        if (Array.isArray(d) && d[0] != null) return parseInt(d[0].GroupMaster_Code, 10) || 0;
+    } catch (e) { /* ignore */ }
+    return 0;
+}
+function grnTruthyFlag(v) {
+    if (v === true || v === 1) return true;
+    var s = (v != null ? String(v) : "").trim().toLowerCase();
+    return s === "y" || s === "1" || s === "true";
+}
+function grnPickFirstPositiveInt(obj, keys) {
+    if (!obj || typeof obj !== "object") return 0;
+    for (var i = 0; i < keys.length; i++) {
+        var v = obj[keys[i]];
+        if (v == null || v === "") continue;
+        var n = parseInt(v, 10);
+        if (isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+function rowIsPendingOnMeGrn(item) {
+    if (!item || typeof item !== "object") return false;
+    // If backend explicitly flags the row
+    if (grnTruthyFlag(item.IsPendingForMe) || grnTruthyFlag(item.PendingForMe) ||
+        grnTruthyFlag(item.CanApproveNow) || grnTruthyFlag(item.IsMyApproval) ||
+        grnTruthyFlag(item.PendingOnMe)) {
+        return true;
+    }
+    var me = grnGetSessionUserCode();
+    var myG = grnGetSessionGroupCode();
+    var approverU = grnPickFirstPositiveInt(item, [
+        "CurrentApproverUserMaster_Code", "ApproverUserMaster_Code",
+        "NextApproverUserMaster_Code", "PendingApproverUserMaster_Code"
+    ]);
+    var approverG = grnPickFirstPositiveInt(item, [
+        "CurrentApproverGroupMaster_Code", "ApproverGroupMaster_Code",
+        "NextApproverGroupMaster_Code", "PendingApproverGroupMaster_Code"
+    ]);
+    if (me > 0 && approverU > 0 && approverU === me) return true;
+    if (myG > 0 && approverG > 0 && approverG === myG) return true;
+    // No assignee info in list data — count as pending on me
+    if ((approverU + approverG) === 0) return true;
+    return false;
+}
+
 function updateGrnVerifyFilterTabCounts() {
     var rows = grnMasterSourceRows || [];
     var pending = 0;
     var verified = 0;
     var rejected = 0;
+    var pendingOnMe = 0;
     for (var i = 0; i < rows.length; i++) {
         if (rowIsVerifiedGrn(rows[i])) verified++;
         else if (rowIsRejectedGrn(rows[i])) rejected++;
-        else pending++;
+        else {
+            pending++;
+            if (rowIsPendingOnMeGrn(rows[i])) pendingOnMe++;
+        }
     }
     var elP = document.getElementById("grnVerifyFilterCountPending");
     var elV = document.getElementById("grnVerifyFilterCountVerified");
     var elR = document.getElementById("grnVerifyFilterCountReject");
+    var elOM = document.getElementById("grnVerifyFilterCountPendingOnMe");
     if (elP) elP.textContent = String(pending);
     if (elV) elV.textContent = String(verified);
     if (elR) elR.textContent = String(rejected);
+    if (elOM) elOM.textContent = rows.length === 0 ? "—" : String(pendingOnMe);
 }
 
 function syncGrnVerifyFilterTabButtons() {
@@ -573,7 +630,8 @@ function navigateToMRNMasterApprovalPendingOnMe() {
     } catch (e) {
         /* ignore */
     }
-    navigateToMRNMasterApproval();
+    /* Show inline approval view instead of navigating to a separate page */
+    showApprovalView();
 }
 
 function navigateToGRNServiceApprovalConfiguration() {
@@ -662,6 +720,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         syncGrnFooterAttachmentButtonState(count);
     };
 
+    document.addEventListener('bizsol:attachmentcontrol:changed', function (ev) {
+        const d = ev.detail;
+        if (!d || d.tempMode) return;
+        if (d.masterTableName !== 'MRNMaster') return;
+        if (typeof window.loadGRNList === 'function') window.loadGRNList();
+    });
+
     await Promise.all([
         loadVendorList(),
         loadBankList(),
@@ -716,19 +781,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 // VIEW TOGGLE
 // ══════════════════════════════════════════════════════════════════════════════
 function showListView() {
+    const approvalEl = document.getElementById('divGRNApprovalView');
+    if (approvalEl) approvalEl.style.display = 'none';
     document.getElementById('divGRNList').style.display = 'block';
     document.getElementById('divGRNForm').style.display = 'none';
     document.getElementById('floatBar').style.display   = 'none';
 }
 
 function showFormView() {
+    const approvalEl = document.getElementById('divGRNApprovalView');
+    if (approvalEl) approvalEl.style.display = 'none';
     document.getElementById('divGRNList').style.display = 'none';
     document.getElementById('divGRNForm').style.display = 'block';
     document.getElementById('floatBar').style.display   = 'flex';
     syncFloatBarMargin();
-    // Fill Grid: only in New mode, always hidden in Edit
     showFillGridCheckbox(!editMode);
     syncGrnFooterAttachmentButtonState();
+}
+
+function showApprovalView() {
+    document.getElementById('divGRNList').style.display = 'none';
+    document.getElementById('divGRNForm').style.display = 'none';
+    document.getElementById('floatBar').style.display   = 'none';
+    const approvalEl = document.getElementById('divGRNApprovalView');
+    if (approvalEl) approvalEl.style.display = 'block';
+    if (typeof window.LoadPaymentList === 'function') {
+        window.LoadPaymentList();
+       
+    }
 }
 
 function syncFloatBarMargin() {
@@ -2270,6 +2350,13 @@ async function doDeleteGRN(code) {
 
                     showToast(result.Msg ?? result.msg ?? 'GRN deleted successfully.', 'success');
 
+                    const delPk = parseInt(String(code), 10) || 0;
+                    if (delPk > 0) {
+                        AttachmentControlService.DeleteAllAttachment('MRNMaster', delPk, '', 0).catch(function (e) {
+                            console.warn('Delete all attachments after GRN delete', e);
+                        });
+                    }
+
                     // Reset state and go back to list
                     editMode = false;
                     editCode = 0;
@@ -2363,6 +2450,9 @@ function validateGRN() {
             valid = false;
         } else if (rate <= 0) {
             showToast(`Row ${i + 1}: Rate must be greater than 0.`, 'warning');
+            valid = false;
+        } else if (acceptQty <= 0 && rejectQty <= 0) {
+            showToast(`Row ${i + 1}: Accept Qty or Reject Qty must be greater than 0.`, 'warning');
             valid = false;
         } else if (acceptQty > billQty || rejectQty > billQty || (acceptQty + rejectQty) > billQty) {
             showToast(`Row ${i + 1}: Accept Qty and Reject Qty cannot be greater than Bill Qty. Shortage = Bill Qty - (Accept Qty + Reject Qty).`, 'warning');
@@ -2706,6 +2796,7 @@ function getFinancialYear() {
     if (month < 3) year = year - 1;
     return year + "-" + (year + 1);
 }
+window.showApprovalView     = showApprovalView;
 window.newGRN               = newGRN;
 window.editGRN              = editGRN;
 window.confirmDeleteGRN     = confirmDeleteGRN;
