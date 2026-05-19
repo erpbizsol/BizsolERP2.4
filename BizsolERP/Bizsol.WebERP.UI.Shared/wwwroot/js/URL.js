@@ -111,6 +111,7 @@ let UrlService = {
     API_ENDPOINT_ProspectiveCustomer: `${environment.BASE_URL}/ProspectiveCustomer`,
     API_DOCUMENT_DispatchAdvicePlan: `${environment.BASE_URL}/VerifyDispatchAdvice`,
     API_DOCUMENT_StockAgeingReport: `${environment.BASE_URL}/StockAgeingReport`,
+    API_ENDPOINT_BillWiseOutStandingReport: `${environment.BASE_URL}/BillWiseOutStandingReport`,
     API_ENDPOINT_BalancePOCancellation: `${environment.BASE_URL}/BalancePOCancellation`,
     API_ENDPOINT_CRM_SALESRETURN: `${environment.BASE_URL}/CRMSalesReturn`,
     API_ENDPOINT_SalesanalysisAST: `${environment.BASE_URL}/SalesanalysisAST`,
@@ -155,6 +156,8 @@ let UrlService = {
     API_ENDPOINT_SendMail: `${environment.BASE_URL}/SendMail`,
     API_ENDPOINT_ExpensesLedgerReport: `${environment.BASE_URL}/ExpensesLedgerReport`,
     API_ENDPOINT_AREA_ExpensesLedgerReport: `${environment.BASE_URL}/ExpensesLedgerReport`,
+    API_ENDPOINT_MillWiseProductionReport: `${environment.BASE_URL}/MillWiseProductionReport`,
+    API_DOCUMENT_StockAgeingYieldConfiguration: `${environment.BASE_URL}/StockAgeingYieldConfiguration`,
 }
 
 export { UrlService  }
