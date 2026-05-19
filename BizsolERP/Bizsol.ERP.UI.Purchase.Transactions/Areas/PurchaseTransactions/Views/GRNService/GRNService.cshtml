@@ -4,7 +4,7 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNService.js"></script>
-
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/MRNMasterApproval.js"></script>
 
 <style>
     /* ── PO LIST ──────────────────────────────────── */
@@ -1263,6 +1263,256 @@
             margin-left: 0;
         }
     }
+
+    /* ══════════════════════════════════════════════════════════════
+       GRN APPROVAL VIEW  (embedded MRN Master Approval cards)
+    ══════════════════════════════════════════════════════════════ */
+    .gpa-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px; padding: 18px 22px;
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+        box-shadow: 0 4px 18px rgba(102,126,234,0.28);
+    }
+    .gpa-header h5  { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .gpa-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; margin-top: 3px; }
+    .gpa-header .gpa-stat-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .gpa-stat-chip {
+        box-sizing: border-box; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 4px;
+        min-height: 52px; min-width: 88px; max-width: 140px;
+        padding: 8px 14px; text-align: center; border-radius: 12px;
+        background: rgba(255,255,255,0.14); border: 1.5px solid rgba(255,255,255,0.32);
+        transition: background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+    }
+    .gpa-stat-chip .val { font-size: 1.15rem; font-weight: 800; line-height: 1.1; color: #fff; }
+    .gpa-stat-chip .lbl { font-size: 0.62rem; font-weight: 700; color: rgba(255,255,255,0.95); text-transform: uppercase; letter-spacing: 0.07em; line-height: 1.2; }
+    .gpa-stat-chip--pending { border-color: rgba(251,191,36,0.75); }
+    .gpa-stat-chip--pending .val { color: #fde047; }
+    .gpa-stat-chip--approved { border-color: rgba(52,211,153,0.75); }
+    .gpa-stat-chip--approved .val { color: #6ee7b7; }
+    .gpa-stat-chip--onme { border-color: rgba(167,139,250,0.7); cursor: pointer; }
+    .gpa-stat-chip--onme .val { color: #c4b5fd; }
+    .gpa-stat-chip--onme-active { background: rgba(167,139,250,0.22); border-color: #a78bfa; box-shadow: 0 0 0 2px rgba(167,139,250,0.45); }
+    .gpa-stat-chip--onme-active .val { color: #fff; }
+    .gpa-stat-chip--onme-active .lbl { color: #fff; }
+
+    .gpa-filter-bar {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+        padding: 14px 18px 10px; margin-bottom: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .gpa-filter-bar .form-label { font-size: 0.77rem; font-weight: 600; color: #475569; margin-bottom: 4px; display: block; }
+    .btn-gpa-search {
+        background: linear-gradient(135deg,#667eea,#764ba2); border: none; color: #fff;
+        border-radius: 8px; padding: 7px 18px; font-size: 0.82rem; font-weight: 700;
+        box-shadow: 0 3px 10px rgba(102,126,234,0.35); transition: all 0.2s; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 5px;
+    }
+    .btn-gpa-search:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(102,126,234,0.45); color: #fff; }
+
+    /* GRN Approval Cards */
+    .gpa-pay-card {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; overflow: hidden;
+        transition: box-shadow 0.2s ease, transform 0.15s ease; border-left: 4px solid #667eea;
+    }
+    .gpa-pay-card:hover { box-shadow: 0 6px 22px rgba(102,126,234,0.16); transform: translateY(-1px); }
+    .gpa-pay-card-header { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px 10px; }
+    .gpa-entry-badge {
+        flex-shrink: 0; background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
+        border-radius: 10px; padding: 8px 12px; min-width: 68px; text-align: center;
+        display: flex; flex-direction: column; gap: 2px; box-shadow: 0 3px 10px rgba(102,126,234,0.35);
+    }
+    .gpa-entry-badge-no { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; line-height: 1.2; }
+    .gpa-entry-badge-lbl { font-size: 0.6rem; opacity: 0.82; text-transform: uppercase; letter-spacing: 0.06em; }
+    .gpa-pay-card-vendor { flex: 1; min-width: 0; }
+    .gpa-pay-vendor-name { font-size: 0.88rem; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .gpa-pay-card-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 0.74rem; color: #64748b; }
+    .gpa-pay-level-chip {
+        background: rgba(102,126,234,0.08); border: 1px solid rgba(102,126,234,0.18);
+        border-radius: 6px; padding: 1px 7px; color: #667eea; font-weight: 600;
+    }
+    .gpa-creator-chip {
+        background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.25);
+        border-radius: 6px; padding: 1px 7px; color: #0284c7; font-weight: 600; font-size: 0.72rem;
+    }
+    .gpa-pay-card-right { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+    .gpa-pay-amount { font-size: 0.92rem; font-weight: 800; color: #667eea; }
+    .gpa-pay-status-badge { font-size: 0.68rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase; display: inline-block; }
+
+    /* Approval stepper in list cards */
+    .gpa-pay-card-levels { padding: 8px 16px 10px; border-top: 1px solid #f0f4ff; background: #fafbff; }
+    .gpa-pay-level-label { font-size: 0.73rem; color: #64748b; margin-bottom: 8px; font-weight: 600; }
+    .gpa-stepper { display: flex; align-items: center; overflow-x: auto; gap: 0; padding-bottom: 2px; }
+    .gpa-step-item { display: flex; flex-direction: column; align-items: center; gap: 3px; flex-shrink: 0; }
+    .gpa-step-circle {
+        width: 28px; height: 28px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.72rem; font-weight: 800; border: 2px solid transparent; transition: all 0.2s;
+    }
+    .gpa-step-done     { background: linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 2px 8px rgba(16,185,129,0.35); }
+    .gpa-step-active   { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 2px 8px rgba(102,126,234,0.4); animation: pulseStepGpa 1.6s infinite; }
+    .gpa-step-rejected { background: linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 2px 8px rgba(220,38,38,0.35); }
+    .gpa-step-pending  { background: #f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
+    @@keyframes pulseStepGpa {
+        0%,100% { box-shadow: 0 2px 8px rgba(102,126,234,0.4); }
+        50%     { box-shadow: 0 2px 18px rgba(102,126,234,0.75); }
+    }
+    .gpa-step-lbl { font-size: 0.63rem; color: #94a3b8; font-weight: 600; }
+    .gpa-step-connector { flex: 1; height: 3px; min-width: 18px; max-width: 56px; border-radius: 2px; margin-bottom: 12px; }
+    .gpa-step-line-done    { background: linear-gradient(90deg,#10b981,#059669); }
+    .gpa-step-line-pending { background: #e2e8f0; }
+
+    /* Card footer (icon buttons) */
+    .gpa-pay-card-footer { padding: 8px 16px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .gpa-pay-card-print-btns { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .btn-gpa-print-icon {
+        width: 36px; height: 32px; border: none; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 0.85rem; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-gpa-print-attach { background: linear-gradient(135deg,#0ea5e9,#0284c7); color: #fff; box-shadow: 0 2px 8px rgba(14,165,233,0.35); }
+    .btn-gpa-print-icon:hover { transform: translateY(-1px); color: #fff; }
+    .btn-gpa-card-approve {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg,#10b981,#059669); border: none; color: #fff;
+        border-radius: 8px; padding: 7px 18px; font-size: 0.8rem; font-weight: 700;
+        box-shadow: 0 3px 10px rgba(16,185,129,0.35); transition: all 0.2s; cursor: pointer;
+    }
+    .btn-gpa-card-approve:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(16,185,129,0.45); color: #fff; }
+    .btn-gpa-card-view {
+        display: inline-flex; align-items: center; gap: 5px; background: #eff6ff;
+        border: 1.5px solid #bfdbfe; color: #2563eb; border-radius: 8px; padding: 7px 18px;
+        font-size: 0.8rem; font-weight: 700; transition: all 0.2s; cursor: pointer;
+    }
+    .btn-gpa-card-view:hover { background: #2563eb; color: #fff; border-color: #2563eb; transform: translateY(-1px); }
+
+    /* Empty / loading */
+    .gpa-empty-state { text-align: center; padding: 52px 16px; color: #94a3b8; background: #fff; border-radius: 14px; border: 1px dashed #e2e8f0; margin-bottom: 14px; }
+    .gpa-empty-state i { font-size: 2.8rem; margin-bottom: 12px; display: block; color: #c4b5fd; }
+    .gpa-empty-state div { font-size: 0.88rem; font-weight: 600; margin-bottom: 4px; }
+    .gpa-empty-state small { font-size: 0.78rem; }
+    .gpa-loading-state { text-align: center; padding: 52px 16px; color: #667eea; margin-bottom: 14px; }
+    .gpa-loading-state div { font-size: 0.85rem; margin-top: 10px; font-weight: 600; }
+
+    /* Detail modal info grid */
+    .gpa-info-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+    .gpa-info-item { background: #fafbff; border: 1px solid #eef0f8; border-radius: 10px; padding: 8px 12px; }
+    .gpa-info-lbl { font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 3px; }
+    .gpa-info-val { font-size: 0.84rem; font-weight: 700; color: #1e293b; }
+
+    /* Detail modal stepper */
+    .gpa-level-stepper-wrap { background: #fafbff; border: 1px solid #eef0f8; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+    .gpa-level-stepper-title { font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .gpa-detail-stepper { display: flex; align-items: flex-start; overflow-x: auto; gap: 0; padding-bottom: 4px; }
+    .gpa-dstep-item { display: flex; flex-direction: column; align-items: center; text-align: center; flex-shrink: 0; min-width: 100px; }
+    .gpa-dstep-circle { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; margin-bottom: 7px; flex-shrink: 0; border: 2px solid transparent; }
+    .gpa-dstep-done     .gpa-dstep-circle { background:linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 2px 10px rgba(16,185,129,0.35); }
+    .gpa-dstep-active   .gpa-dstep-circle { background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 2px 10px rgba(102,126,234,0.4); animation:pulseStepGpa 1.6s infinite; }
+    .gpa-dstep-rejected .gpa-dstep-circle { background:linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 2px 10px rgba(220,38,38,0.35); }
+    .gpa-dstep-pending  .gpa-dstep-circle { background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
+    .gpa-dstep-body { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .gpa-dstep-title { font-size:0.75rem; font-weight:700; color:#1e293b; margin-bottom:2px; }
+    .gpa-dstep-sub   { font-size:0.68rem; color:#64748b; }
+    .gpa-dstep-remarks { font-size:0.67rem; color:#667eea; font-style:italic; max-width:120px; word-break:break-word; margin-top:2px; text-align:center; }
+    .gpa-dstep-badge { font-size: 0.64rem; font-weight: 700; padding: 2px 9px; border-radius: 20px; margin-top: 5px; display: inline-block; }
+    .gpa-dstep-badge-done     { background:#d1fae5; color:#059669; }
+    .gpa-dstep-badge-active   { background:#ede9fe; color:#667eea; }
+    .gpa-dstep-badge-rejected { background:#fee2e2; color:#dc2626; }
+    .gpa-dstep-badge-pending  { background:#f1f5f9; color:#94a3b8; }
+    .gpa-dstep-line { flex-shrink: 0; width: 28px; height: 3px; align-self: flex-start; margin-top: 17px; border-radius: 2px; }
+    .gpa-dstep-line-done    { background:linear-gradient(90deg,#10b981,#059669); }
+    .gpa-dstep-line-pending { background:#e2e8f0; }
+
+    /* Detail modal items table */
+    .gpa-items-wrap  { margin-bottom: 14px; }
+    .gpa-items-title { font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .gpa-items-table { width: 100%; border-collapse: collapse; }
+    .gpa-items-table thead tr th { background: #4f46e5; color: #fff; font-size: 0.72rem; font-weight: 600; text-align: center; vertical-align: middle; padding: 8px 10px; white-space: nowrap; border: none; }
+    .gpa-items-table thead tr th:first-child { border-radius: 8px 0 0 0; }
+    .gpa-items-table thead tr th:last-child  { border-radius: 0 8px 0 0; }
+    .gpa-items-table tbody tr { transition: background 0.15s; }
+    .gpa-items-table tbody tr:hover { background: #f5f3ff; }
+    .gpa-items-table tbody tr td { padding: 7px 10px; vertical-align: middle; border: 1px solid #ede9fe; font-size: 0.8rem; color: #374151; }
+
+    /* Remarks & action buttons */
+    .gpa-remarks-wrap  { margin-bottom: 14px; }
+    .gpa-remarks-lbl { font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 5px; display: block; }
+    .gpa-remarks-wrap textarea { font-size: 0.82rem; resize: vertical; }
+    .btn-gpa-approve {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#10b981,#059669); border:none; color:#fff;
+        border-radius:9px; padding:9px 22px; font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(16,185,129,0.35); transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-approve:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(16,185,129,0.5); color:#fff; }
+    .btn-gpa-reject {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#dc2626,#ef4444); border:none; color:#fff;
+        border-radius:9px; padding:9px 22px; font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(220,38,38,0.35); transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-reject:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(220,38,38,0.5); color:#fff; }
+    .btn-gpa-modal-attach {
+        display:inline-flex; align-items:center; gap:5px; border:none; color:#fff;
+        border-radius:9px; padding:9px 16px; font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(14,165,233,0.35); transition:all 0.2s; cursor:pointer;
+        background:linear-gradient(135deg,#0ea5e9,#0284c7);
+    }
+    .btn-gpa-modal-attach:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(2,132,199,0.45); }
+    .btn-gpa-modal-attach.gpa-attach-has-files { background:linear-gradient(135deg,#16a34a,#15803d); box-shadow:0 3px 10px rgba(22,163,74,0.35); }
+    .btn-gpa-modal-attach.gpa-attach-has-files:hover { box-shadow:0 5px 14px rgba(22,163,74,0.45); }
+    /* Attachment control modal must appear above the GRN approval modal (z-index 1055) */
+    #AttachmentControlmodal { z-index: 1080 !important; }
+    .btn-gpa-close {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#f59e0b,#d97706); border:none; color:#fff;
+        border-radius:9px; padding:9px 20px; font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(245,158,11,0.35); transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-close:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(245,158,11,0.5); color:#fff; }
+    .btn-gpa-confirm-approve {
+        display:inline-flex; align-items:center; gap:4px;
+        background:linear-gradient(135deg,#10b981,#059669); border:none; color:#fff;
+        border-radius:8px; padding:8px 18px; font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;
+    }
+    .btn-gpa-confirm-approve:hover { transform:translateY(-1px); color:#fff; }
+    .btn-gpa-confirm-reject {
+        display:inline-flex; align-items:center; gap:4px;
+        background:linear-gradient(135deg,#dc2626,#ef4444); border:none; color:#fff;
+        border-radius:8px; padding:8px 18px; font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;
+    }
+    .btn-gpa-confirm-reject:hover { transform:translateY(-1px); color:#fff; }
+    .btn-gpa-reject-sm { background:#f1f5f9; border:1px solid #e2e8f0; color:#475569; border-radius:8px; padding:8px 16px; font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .btn-gpa-reject-sm:hover { background:#e2e8f0; }
+    .btn-gpa-back {
+        display: inline-flex; align-items: center; gap: 6px; background: #fff;
+        border: 2px solid rgba(255,255,255,0.6); color: #667eea; border-radius: 10px;
+        padding: 7px 16px; font-weight: 800; font-size: 0.84rem;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.18); white-space: nowrap;
+        cursor: pointer; flex-shrink: 0; transition: all 0.2s; line-height: 1; text-decoration: none;
+    }
+    .btn-gpa-back:hover { background: #f0f4ff; border-color: #667eea; color: #667eea; }
+    @@media (max-width: 480px) { .gpa-back-label { display: none; } .btn-gpa-back { padding: 7px 10px; } }
+    @@media (max-width: 768px) {
+        .gpa-header { border-radius: 10px; padding: 14px 16px; }
+        .gpa-pay-card-header { flex-wrap: wrap; }
+        .gpa-pay-card-right { flex-direction: row; align-items: center; width: 100%; justify-content: space-between; }
+        .gpa-info-grid { grid-template-columns: repeat(2,1fr); }
+        .gpa-pay-card-footer { justify-content: stretch; flex-direction: column; align-items: stretch; }
+        .gpa-pay-card-footer .btn-gpa-card-approve,
+        .gpa-pay-card-footer .btn-gpa-card-view { width: 100%; justify-content: center; }
+        .btn-gpa-approve, .btn-gpa-reject, .btn-gpa-close { padding: 9px 14px; font-size: 0.8rem; }
+    }
+    @@media (max-width: 576px) {
+        .gpa-info-grid { grid-template-columns: 1fr 1fr; }
+        .gpa-dstep-item { min-width: 72px; }
+        #modalGpaDetail .modal-dialog { margin: 8px; }
+        #modalGpaConfirm  .modal-dialog { margin: auto 12px; }
+        .gpa-items-table thead tr th { font-size: 0.65rem; padding: 6px 4px; }
+        .gpa-items-table tbody tr td { font-size: 0.72rem; padding: 6px 4px; }
+    }
 </style>
 
 <div id="divGRNList" class="container-fluid mt-3">
@@ -1584,6 +1834,200 @@
 
 <div id="GRNService_AttachmentControlmodal"></div>
 
+<!-- ══════════════════════════════════════════════════
+     GRN APPROVAL VIEW  (embedded MRN Master Approval)
+     Hidden by default; shown when user clicks "Pending on me"
+═══════════════════════════════════════════════════ -->
+<div id="divGRNApprovalView" class="container-fluid mt-3" style="display:none;">
+
+    <!-- Header -->
+    <div class="gpa-header section-entry-animation">
+        <div>
+            <h5><i class="fa fa-dolly me-2"></i>GRN Approval</h5>
+            <small>Review and approve GRN Service entries by approval level</small>
+        </div>
+        <div class="gpa-stat-chips flex-shrink-0">
+            <div class="gpa-stat-chip gpa-stat-chip--pending" title="Pending entries">
+                <div class="val" id="gpaStatPending">—</div>
+                <div class="lbl">Pending</div>
+            </div>
+            <div class="gpa-stat-chip gpa-stat-chip--onme" id="gpaStatChipPendingOnMe"
+                 onclick="ToggleGpaPendingOnMeFilter()" title="Pending on me — click to filter">
+                <div class="val" id="gpaStatPendingOnMe">—</div>
+                <div class="lbl">Pending on Me</div>
+            </div>
+            <div class="gpa-stat-chip gpa-stat-chip--approved" title="Approved entries">
+                <div class="val" id="gpaStatProcessed">—</div>
+                <div class="lbl">Approved</div>
+            </div>
+            <button type="button" class="btn-gpa-back" onclick="showGRNListFromApproval()" title="Back to GRN list">
+                <i class="fa fa-arrow-left"></i>
+                <span class="gpa-back-label">Back to List</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="gpa-filter-bar section-entry-animation">
+        <div class="row align-items-end g-2">
+            <div class="col-6 col-md-2">
+                <label class="form-label">From Date</label>
+                <input type="date" id="gpaFromDate" class="form-control form-control-sm" />
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label">To Date</label>
+                <input type="date" id="gpaToDate" class="form-control form-control-sm" />
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label">Search MRN / Party</label>
+                <input type="text" id="gpaLstSearch" class="form-control form-control-sm"
+                       placeholder="MRN no. or party…" autocomplete="off" />
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label">Status</label>
+                <select id="gpaDdlStatus" class="form-control form-control-sm form-select">
+                    <option value="A">-- All Status --</option>
+                    <option value="P">Pending</option>
+                    <option value="Y">Approved</option>
+                    <option value="R">Rejected</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2 d-flex align-items-end mb-2">
+                <button type="button" onclick="LoadPaymentList()" class="btn-gpa-search w-100">
+                    <i class="fa fa-search"></i> Search
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval cards list -->
+    <div id="gpaPendingList" class="section-entry-animation"></div>
+
+    <div id="gpaPendingEmpty" style="display:none;" class="gpa-empty-state section-entry-animation">
+        <i class="fa fa-inbox"></i>
+        <div>No GRN Service (MRN) records match your filters</div>
+        <small>Change dates or status and search again.</small>
+    </div>
+
+    <div id="gpaPendingLoading" style="display:none;" class="gpa-loading-state">
+        <i class="fa fa-spinner fa-spin fa-2x" style="color:#667eea;"></i>
+        <div>Loading GRN Service approvals…</div>
+    </div>
+
+</div>
+
+<!-- ── GRN Approval Detail Modal ───────────────────── -->
+<div class="modal fade" id="modalGpaDetail" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+
+            <div class="modal-header"
+                 style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 20px;border:none;">
+                <div>
+                    <h5 class="modal-title mb-0" style="font-size:0.95rem;font-weight:700;">
+                        <i class="fa fa-dolly me-2"></i><span id="gpaModalEntryTitle"></span>
+                    </h5>
+                    <small id="gpaModalParty" style="font-size:0.75rem;opacity:0.82;display:block;margin-top:2px;"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto"
+                        onclick="CloseDetailModal()" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body" style="padding:16px;max-height:72vh;overflow-y:auto;">
+
+                <div id="gpaModalHeader"></div>
+
+                <div class="gpa-level-stepper-wrap">
+                    <div class="gpa-level-stepper-title">
+                        <i class="fa fa-layer-group me-1"></i>Approval Progress
+                    </div>
+                    <div id="gpaModalApprovalStepper"></div>
+                </div>
+
+                <div class="gpa-items-wrap">
+                    <div class="gpa-items-title">
+                        <i class="fa fa-list me-1"></i>Service Line Items
+                    </div>
+                    <div class="table-responsive">
+                        <table class="gpa-items-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;">#</th>
+                                    <th>Item / Bill</th>
+                                    <th style="width:100px;">PO No.</th>
+                                    <th style="width:80px;">Qty</th>
+                                    <th style="width:110px;">Rate</th>
+                                    <th style="width:120px;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gpaModalItemsBody">
+                                <tr>
+                                    <td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                        <i class="fa fa-spinner fa-spin me-1"></i>Loading…
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="gpa-remarks-wrap">
+                    <label class="gpa-remarks-lbl">
+                        <i class="fa fa-comment me-1"></i>Remarks
+                        <small style="font-weight:400;color:#94a3b8;">(required for rejection)</small>
+                    </label>
+                    <textarea id="gpaFrmRemarks" class="form-control form-control-sm" rows="2"
+                              placeholder="Enter approval or rejection remarks…"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer"
+                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
+                <input type="hidden" id="hfGpaPaymentCode" value="0" />
+                <input type="hidden" id="hfGpaLevelCode" value="0" />
+                <button type="button" id="btnGpaModalAttach" class="btn-gpa-modal-attach"
+                        onclick="openGRNApprovalAttachment()" title="Attachments">
+                    <i class="fa fa-paperclip"></i> Attachment
+                </button>
+                <button type="button" id="gpaBtnRejectAction" class="btn-gpa-reject"
+                        onclick="SubmitApproval('Reject')" style="display:none;">
+                    <i class="fa fa-times"></i> Reject
+                </button>
+                <button type="button" id="gpaBtnApproveAction" class="btn-gpa-approve"
+                        onclick="SubmitApproval('Approve')" style="display:none;">
+                    <i class="fa fa-check"></i> Approve
+                </button>
+                <button type="button" class="btn-gpa-close ms-auto" onclick="CloseDetailModal()">
+                    <i class="fa fa-times-circle"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── GRN Approval Confirm Modal ──────────────────── -->
+<div class="modal fade" id="modalGpaConfirm" tabindex="-1" role="dialog"
+     aria-hidden="true" style="z-index:1060;">
+    <div class="modal-dialog modal-sm" style="margin-top:140px;">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header" id="gpaConfirmModalHeader"
+                 style="padding:12px 16px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+                <h5 class="modal-title mb-0" style="font-size:0.9rem;font-weight:700;" id="gpaConfirmTitle"></h5>
+            </div>
+            <div class="modal-body" style="padding:14px 16px;font-size:0.85rem;color:#475569;">
+                <span id="gpaConfirmMessage"></span>
+            </div>
+            <div class="modal-footer" style="padding:10px 16px;gap:8px;border-top:1px solid #eef0f8;">
+                <button type="button" class="btn-gpa-reject-sm" onclick="CloseConfirmModal()">Cancel</button>
+                <button type="button" id="gpaBtnConfirmAction"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attachment control host for GRN Approval -->
+<div id="GRNApproval_AttachmentControlmodal"></div>
+
 <!-- ── ADD ITEM MODAL (fields same as main grid) ─────── -->
 <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
@@ -1732,4 +2176,81 @@
         /* Re-evaluate on resize (mobile ↔ desktop switch) */
         window.addEventListener('resize', syncMargin);
     })();
+</script>
+
+<script>
+    /* ── GRN Approval view helpers ────────────────────────────── */
+
+    /** Show the inline approval card view instead of navigating to a separate page */
+    window.showGRNApprovalView = function () {
+        var listEl = document.getElementById('divGRNList');
+        var formEl = document.getElementById('divGRNForm');
+        var floatBar = document.getElementById('floatBar');
+        var approvalEl = document.getElementById('divGRNApprovalView');
+        if (listEl) listEl.style.display = 'none';
+        if (formEl) formEl.style.display = 'none';
+        if (floatBar) floatBar.style.display = 'none';
+        if (approvalEl) approvalEl.style.display = 'block';
+        /* Reload approval list so data is fresh */
+        if (typeof window.LoadPaymentList === 'function') {
+            window.LoadPaymentList();
+        }
+    };
+
+    /** Return from approval view back to the GRN list */
+    window.showGRNListFromApproval = function () {
+        var listEl = document.getElementById('divGRNList');
+        var approvalEl = document.getElementById('divGRNApprovalView');
+        if (approvalEl) approvalEl.style.display = 'none';
+        if (listEl) listEl.style.display = 'block';
+    };
+
+    /**
+     * Override NavigateToGRNService (defined in MRNMasterApproval.js) so that
+     * the Back button in the approval header returns to the list view instead
+     * of navigating to a different URL.
+     */
+    document.addEventListener('DOMContentLoaded', function () {
+        /* Wait a tick so the module script has time to set window.NavigateToGRNService */
+        setTimeout(function () {
+            window.NavigateToGRNService = window.showGRNListFromApproval;
+        }, 0);
+    });
+
+    /** Open attachment control from within the Approval modal */
+    window.openGRNApprovalAttachment = function () {
+        var code = parseInt(document.getElementById('hfGpaPaymentCode')?.value || '0', 10) || 0;
+        if (!code) { return; }
+        if (typeof window.InitAttachmentControl === 'function') {
+            window.InitAttachmentControl('MRNMaster', code, '', 0, 0, '', 'all', '');
+            /* When the attachment modal shows, push its backdrop above the approval modal */
+            document.addEventListener('shown.bs.modal', function _bumpAttach(e) {
+                if (e && e.target && e.target.id === 'AttachmentControlmodal') {
+                    var backdrops = document.querySelectorAll('.modal-backdrop');
+                    if (backdrops.length) {
+                        backdrops[backdrops.length - 1].style.zIndex = '1075';
+                    }
+                    document.removeEventListener('shown.bs.modal', _bumpAttach);
+                }
+            });
+        }
+    };
+
+    /** Card-level Attachment (called from card paperclip icon button) */
+    window.openGRNApprovalCardAttachment = function (code) {
+        var c = parseInt(code, 10) || 0;
+        if (!c) return;
+        if (typeof window.InitAttachmentControl === 'function') {
+            window.InitAttachmentControl('MRNMaster', c, '', 0, 0, '', 'all', '');
+            document.addEventListener('shown.bs.modal', function _bumpAttachCard(e) {
+                if (e && e.target && e.target.id === 'AttachmentControlmodal') {
+                    var backdrops = document.querySelectorAll('.modal-backdrop');
+                    if (backdrops.length) {
+                        backdrops[backdrops.length - 1].style.zIndex = '1075';
+                    }
+                    document.removeEventListener('shown.bs.modal', _bumpAttachCard);
+                }
+            });
+        }
+    };
 </script>

@@ -630,7 +630,8 @@ function navigateToMRNMasterApprovalPendingOnMe() {
     } catch (e) {
         /* ignore */
     }
-    navigateToMRNMasterApproval();
+    /* Show inline approval view instead of navigating to a separate page */
+    showApprovalView();
 }
 
 function navigateToGRNServiceApprovalConfiguration() {
@@ -773,19 +774,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 // VIEW TOGGLE
 // ══════════════════════════════════════════════════════════════════════════════
 function showListView() {
+    const approvalEl = document.getElementById('divGRNApprovalView');
+    if (approvalEl) approvalEl.style.display = 'none';
     document.getElementById('divGRNList').style.display = 'block';
     document.getElementById('divGRNForm').style.display = 'none';
     document.getElementById('floatBar').style.display   = 'none';
 }
 
 function showFormView() {
+    const approvalEl = document.getElementById('divGRNApprovalView');
+    if (approvalEl) approvalEl.style.display = 'none';
     document.getElementById('divGRNList').style.display = 'none';
     document.getElementById('divGRNForm').style.display = 'block';
     document.getElementById('floatBar').style.display   = 'flex';
     syncFloatBarMargin();
-    // Fill Grid: only in New mode, always hidden in Edit
     showFillGridCheckbox(!editMode);
     syncGrnFooterAttachmentButtonState();
+}
+
+function showApprovalView() {
+    document.getElementById('divGRNList').style.display = 'none';
+    document.getElementById('divGRNForm').style.display = 'none';
+    document.getElementById('floatBar').style.display   = 'none';
+    const approvalEl = document.getElementById('divGRNApprovalView');
+    if (approvalEl) approvalEl.style.display = 'block';
+    if (typeof window.LoadPaymentList === 'function') {
+        window.LoadPaymentList();
+       
+    }
 }
 
 function syncFloatBarMargin() {
@@ -2421,6 +2437,9 @@ function validateGRN() {
         } else if (rate <= 0) {
             showToast(`Row ${i + 1}: Rate must be greater than 0.`, 'warning');
             valid = false;
+        } else if (acceptQty <= 0 && rejectQty <= 0) {
+            showToast(`Row ${i + 1}: Accept Qty or Reject Qty must be greater than 0.`, 'warning');
+            valid = false;
         } else if (acceptQty > billQty || rejectQty > billQty || (acceptQty + rejectQty) > billQty) {
             showToast(`Row ${i + 1}: Accept Qty and Reject Qty cannot be greater than Bill Qty. Shortage = Bill Qty - (Accept Qty + Reject Qty).`, 'warning');
             valid = false;
@@ -2763,6 +2782,7 @@ function getFinancialYear() {
     if (month < 3) year = year - 1;
     return year + "-" + (year + 1);
 }
+window.showApprovalView     = showApprovalView;
 window.newGRN               = newGRN;
 window.editGRN              = editGRN;
 window.confirmDeleteGRN     = confirmDeleteGRN;
