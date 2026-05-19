@@ -44,6 +44,10 @@ const EXPENSE_LEDGER_DDL_MODE = {
     SUB_PROJECT: 'DDL_SUBPROJECTMASTER',
 };
 
+const EXPENSE_LEDGER_MODE = {
+    CLOSING_BALANCE: 'CLOSING_BALANCE',
+};
+
 function ddlUrlWithMode(actionSegment, mode) {
     const root = getExpenseLedgerDdLApiBase();
     if (!root) {
@@ -102,6 +106,27 @@ const ExpensesLedgerReportService = {
 
     GetSubProjectMasterList: function GetSubProjectMasterList() {
         const url = ddlUrlWithMode('GetSubProjectMasterList', EXPENSE_LEDGER_DDL_MODE.SUB_PROJECT);
+        return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
+            return value;
+        });
+    },
+
+    /** Closing balance for Expense Entry (Mode=CLOSING_BALANCE). */
+    GetClosingBalance: function GetClosingBalance(
+        fromDate,
+        toDate,
+        employeeMaster_Code,
+        projectMaster_Code,
+        subProjectMaster_Code
+    ) {
+        let qs =
+            `?FromDate=${encodeURIComponent(fromDate)}` +
+            `&ToDate=${encodeURIComponent(toDate)}` +
+            `&Mode=${encodeURIComponent(EXPENSE_LEDGER_MODE.CLOSING_BALANCE)}` +
+            `&EmployeeMaster_Code=${encodeURIComponent(employeeMaster_Code)}` +
+            `&ProjectMaster_Code=${encodeURIComponent(projectMaster_Code)}` +
+            `&SubProjectMaster_Code=${encodeURIComponent(subProjectMaster_Code)}`;
+        const url = expenseLedgerReportUrl(qs);
         return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
             return value;
         });
