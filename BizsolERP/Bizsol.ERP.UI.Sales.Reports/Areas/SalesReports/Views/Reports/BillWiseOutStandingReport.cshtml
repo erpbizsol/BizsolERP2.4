@@ -1,0 +1,377 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Sales.Reports/Script/BillWiseOutStandingReport.js"></script>
+<style>
+    /* ── table ── */
+    .fixed-width-table th,
+    .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
+        font-size: 0.8125rem;
+    }
+
+    /* ── filter card ── */
+    .filter-card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 12px 14px;
+        margin-bottom: 8px;
+    }
+
+    /* ── Debtors / Creditors radio toggle ── */
+    .bwo-drcr-toggle {
+        display: flex;
+        width: 100%;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        overflow: hidden;
+        height: 30px;
+    }
+
+    .bwo-drcr-toggle input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+
+    .bwo-drcr-toggle label {
+        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #495057;
+        background: #fff;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.13s, color 0.13s;
+        border-right: 1px solid #ced4da;
+        margin: 0;
+        line-height: 1;
+        white-space: nowrap;
+        min-height: 27px;
+    }
+
+    .bwo-drcr-toggle label:last-of-type { border-right: none; }
+
+    .bwo-drcr-toggle input[type="radio"]:checked + label {
+        background: #0d6efd;
+        color: #fff;
+        border-right-color: #0d6efd;
+    }
+
+    .bwo-drcr-toggle label:hover { background: #e9ecef; }
+    .bwo-drcr-toggle input[type="radio"]:checked + label:hover { background: #0b5ed7; color: #fff; }
+
+    /* ── filter action row ── */
+    .bwo-filter-actions {
+        display: flex;
+        align-items: flex-end;
+        gap: 6px;
+    }
+
+    .bwo-filter-actions .btn {
+        flex: 1;
+        min-height: 36px;
+    }
+
+    /* ── dashboard ── */
+    #billWiseDashboardSection {
+        background: #f4f7fe;
+        border-bottom: 1px solid #dde4f5;
+    }
+
+    .bwo-section-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #3d5cce;
+        padding-bottom: 0.35rem;
+        border-bottom: 2px solid #dde4f5;
+        margin-bottom: 0.65rem;
+    }
+
+    /* ── KPI cards ── */
+    .bwo-kpi-row {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+        margin-bottom: 0.75rem;
+    }
+
+    .bwo-kpi-row::-webkit-scrollbar { display: none; }
+
+    .bwo-kpi-item {
+        flex: 0 0 calc(33.333% - 8px);
+        min-width: 130px;
+    }
+
+    .bwo-kpi-card {
+        border-radius: 0.5rem;
+        padding: 0.75rem 0.9rem 0.75rem 1rem;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        border: none;
+    }
+
+    .bwo-kpi-card::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 4px;
+        border-radius: 4px 0 0 4px;
+    }
+
+    .bwo-kpi-card.kpi-blue   { background: #eef3ff; } .bwo-kpi-card.kpi-blue::before   { background: #3d5cce; }
+    .bwo-kpi-card.kpi-amber  { background: #fffbeb; } .bwo-kpi-card.kpi-amber::before  { background: #f59e0b; }
+    .bwo-kpi-card.kpi-red    { background: #fff1f2; } .bwo-kpi-card.kpi-red::before    { background: #ef4444; }
+    .bwo-kpi-card.kpi-green  { background: #f0fdf4; } .bwo-kpi-card.kpi-green::before  { background: #22c55e; }
+    .bwo-kpi-card.kpi-teal   { background: #f0fdfa; } .bwo-kpi-card.kpi-teal::before   { background: #14b8a6; }
+    .bwo-kpi-card.kpi-violet { background: #f5f3ff; } .bwo-kpi-card.kpi-violet::before { background: #7c3aed; }
+    .bwo-kpi-card.kpi-orange { background: #fff7ed; } .bwo-kpi-card.kpi-orange::before { background: #ea580c; }
+
+    .bwo-kpi-label {
+        font-size: 0.62rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .bwo-kpi-value {
+        font-size: 1.05rem;
+        font-weight: 800;
+        line-height: 1.25;
+        word-break: break-word;
+        color: #1e293b;
+    }
+
+    /* ── chart cards ── */
+    .bwo-chart-card {
+        background: #fff;
+        border-radius: 0.5rem;
+        border: 1px solid #dde4f5;
+        padding: 0.85rem 0.85rem 0.75rem;
+        height: 100%;
+    }
+
+    .bwo-chart-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #3d5cce;
+        margin-bottom: 0.65rem;
+    }
+
+    .bwo-chart-wrap {
+        position: relative;
+        min-height: 250px;
+        overflow: hidden;
+    }
+
+    /* ── table scroll wrapper ── */
+    .bwo-table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* ── mobile overrides ── */
+    @@media (max-width: 575.98px) {
+        .filter-card { padding: 10px; border-radius: 6px; }
+
+        .bwo-drcr-toggle { height: 30px; border-radius: 6px; }
+        .bwo-drcr-toggle label { font-size: 0.78rem; min-height: 30px; }
+
+        .bwo-kpi-row { gap: 8px; }
+        .bwo-kpi-item { flex: 0 0 calc(50% - 5px); min-width: 130px; }
+        .bwo-kpi-card { padding: 0.6rem 0.7rem 0.6rem 0.85rem; }
+        .bwo-kpi-label { font-size: 0.58rem; }
+        .bwo-kpi-value { font-size: 0.88rem; }
+
+        .bwo-chart-card { padding: 0.55rem 0.55rem 0.5rem; }
+        .bwo-chart-title { font-size: 0.63rem; margin-bottom: 0.4rem; }
+
+        .bwo-chart-wrap { min-height: 200px; }
+        .bwo-chart-wrap.bwo-chart-wrap--bar10 { min-height: 310px; }
+
+        #billWiseDashboardSection { padding: 8px !important; }
+        .bwo-section-title { font-size: 0.62rem; margin-bottom: 0.45rem; padding-bottom: 0.3rem; }
+
+        .fixed-width-table th,
+        .fixed-width-table td { font-size: 0.72rem; padding: 4px 6px; }
+    }
+
+    @@media (min-width: 576px) and (max-width: 767.98px) {
+        .bwo-kpi-item { flex: 0 0 calc(33.333% - 8px); }
+        .bwo-chart-wrap { min-height: 230px; }
+        .bwo-chart-wrap.bwo-chart-wrap--bar10 { min-height: 280px; }
+    }
+</style>
+
+<div id="bill-wise-outstanding-report">
+
+    <!-- Filter Card -->
+    <div class="filter-card">
+        <div class="row g-2">
+
+            <!-- Debtors / Creditors toggle — dynamically populated from GroupTypeMaster API -->
+            <div class="col-6 col-sm-4 col-md-2">
+                <label class="form-label filter-label" id="lblGroupTypeToggle">Loading…</label>
+                <div class="bwo-drcr-toggle" id="bwoGroupTypeToggle">
+                    <!-- Options rendered by JS after GetGroupTypeMaster API call -->
+                </div>
+            </div>
+
+            <!-- As on Date next to toggle on mobile -->
+            <div class="col-6 col-sm-4 col-md-2 col-lg-2">
+                <label for="txtAsOnDate" class="form-label filter-label">As on Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtAsOnDate" name="txtAsOnDate"
+                       class="form-control form-control-sm box_border" autocomplete="off" required />
+            </div>
+
+            <!-- Sales Person — full row on mobile -->
+            <div class="col-12 col-sm-4 col-md-3">
+                <label for="ddlBillWiseMarketingMan" class="form-label filter-label">Sales Person</label>
+                <select id="ddlBillWiseMarketingMan" name="ddlBillWiseMarketingMan"
+                        class="form-control box_border" multiple style="width:100%;"></select>
+            </div>
+
+            <!-- Party / Account — full row on mobile -->
+            <div class="col-12 col-sm-8 col-md-3">
+                <label for="ddlBillWiseAccount" class="form-label filter-label">Party / Account</label>
+                <select id="ddlBillWiseAccount" name="ddlBillWiseAccount"
+                        class="form-control box_border" multiple style="width:100%;"></select>
+            </div>
+
+            <!-- Action buttons — full row on mobile -->
+            <div class="col-12 col-sm-4 col-md-2" style="margin-top:33px;">
+                <button type="button" id="btnShow" class="btn btn-success btn-height">
+                    <i class="fas fa-search"></i><span class="d-none d-sm-inline"> Show</span><span class="d-inline d-sm-none"> Show</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Dashboard / Charts Section -->
+    <div class="p-2 p-sm-3 d-none" id="billWiseDashboardSection">
+
+        <!-- KPI strip — horizontal scroll on mobile, 3-column on desktop -->
+        <div class="bwo-section-title">&#9632; Outstanding Summary</div>
+        <div class="bwo-kpi-row">
+            <div class="bwo-kpi-item">
+                <div class="bwo-kpi-card kpi-blue">
+                    <div class="bwo-kpi-label">Total Outstanding</div>
+                    <div class="bwo-kpi-value" id="kpiTotalOutstanding">—</div>
+                </div>
+            </div>
+            <div class="bwo-kpi-item">
+                <div class="bwo-kpi-card kpi-amber">
+                    <div class="bwo-kpi-label">Avg. Delay Days</div>
+                    <div class="bwo-kpi-value" id="kpiAvgDelay">—</div>
+                </div>
+            </div>
+            <div class="bwo-kpi-item">
+                <div class="bwo-kpi-card kpi-red">
+                    <div class="bwo-kpi-label">Overdue Amount</div>
+                    <div class="bwo-kpi-value" id="kpiOverdueOutstanding">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ageing & Party -->
+        <div class="bwo-section-title">&#9632; Ageing &amp; Party Analysis</div>
+        <div class="row g-2 g-sm-3 mb-2 mb-sm-3">
+            <div class="col-12 col-xl-7">
+                <div class="bwo-chart-card">
+                    <div class="bwo-chart-title">Outstanding by Delay-Days Bucket</div>
+                    <div class="bwo-chart-wrap"><canvas id="chartBillWiseDelayBuckets"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-5">
+                <div class="bwo-chart-card">
+                    <div class="bwo-chart-title">Top 10 Parties by Outstanding</div>
+                    <div class="bwo-chart-wrap bwo-chart-wrap--bar10"><canvas id="chartBillWiseTopParties"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Person -->
+        <div class="bwo-section-title">&#9632; Sales Person Breakdown</div>
+        <div class="row g-2 g-sm-3 mb-2 mb-sm-3">
+            <div class="col-12">
+                <div class="bwo-chart-card">
+                    <div class="bwo-chart-title">Top 10 Sales Persons by Outstanding</div>
+                    <div class="bwo-chart-wrap bwo-chart-wrap--bar10"><canvas id="chartBillWiseSalesPerson"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Trend -->
+        <div class="bwo-section-title">&#9632; Monthly Trend</div>
+        <div class="row g-2 g-sm-3 mb-2 mb-sm-3">
+            <div class="col-12">
+                <div class="bwo-chart-card">
+                    <div class="bwo-chart-title">Month-wise Outstanding Trend (by Bill Date)</div>
+                    <div class="bwo-chart-wrap" style="min-height:220px;"><canvas id="chartBillWiseMonthlyTrend"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collection & Credit -->
+        <div class="bwo-section-title">&#9632; Collection &amp; Credit Analysis</div>
+        <div class="row g-2 g-sm-3 mb-1">
+            <div class="col-12 col-xl-7">
+                <div class="bwo-chart-card">
+                    <div class="bwo-chart-title">Top 10 Parties — Billed vs Collected</div>
+                    <div class="bwo-chart-wrap bwo-chart-wrap--bar10"><canvas id="chartBillWiseCollectionEff"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-5">
+                <div class="bwo-chart-card">
+                    <div class="bwo-chart-title">Top 10 Parties — Delay beyond Credit Days</div>
+                    <div class="bwo-chart-wrap bwo-chart-wrap--bar10"><canvas id="chartBillWiseCreditBreach"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Data Table -->
+    <div class="card p-1 mt-1">
+        <div class="d-flex justify-content-end mb-1">
+            <button type="button" id="btnDownload" class="btn btn-primary btn-height d-none">
+                <i class="fas fa-download"></i> Download
+            </button>
+        </div>
+        <div class="bwo-table-scroll">
+            <table id="tblReport" class="fixed-width-table table">
+                <thead id="table-header"></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblReport"></div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

@@ -9,5 +9,10 @@ namespace Bizsol.WebERP.UI.Production.Transactions.Areas.ProductionTransactions.
         {
             return View();
         }
+
+        public IActionResult YieldConfiguration()
+        {
+            return View();
+        }
     }
 }

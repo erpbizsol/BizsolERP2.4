@@ -343,9 +343,12 @@ function GetExpenseEntryList(opts){
                 "Entry Date": "center",
                 "From Date": "center",
                 "To Date": "center",
-                "Approved On": "center"
+                "Approved On": "center",
+                "Expended Amount": "right",
+                "Approved Amount": "right",
+                "Deduction": "right"
             };
-
+            const totalApprovedAmount=["Approved Amount","Deduction","Expended Amount"];
             const updatedResponse = filtered.map(item => {
                 let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.Status !== 'Unverified' ? 'disabled' : ''} onclick="EditData(${item.Code},this)"><i class="fa fa-pencil"></i></button>
                 <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.VerifyStatus === 'Y' ? 'disabled' : ''} onclick="DeleteData('${item.Code}',this)"><i class="fa fa-times"></i></button>
@@ -368,7 +371,7 @@ function GetExpenseEntryList(opts){
                 };
             });
 
-            BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryList-header", "ExpenseEntryList-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryList-header", "ExpenseEntryList-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, true, totalApprovedAmount);
             $("#paginator-ExpenseEntryList").show();
         } else {
             ShowExpenseEntryListEmptyState({

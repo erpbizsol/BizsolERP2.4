@@ -1424,6 +1424,46 @@
     padding-top: 4px;
 }
 
+/* Reconcile choice — wide step when pending GRN list is shown */
+#bsReconcileChoiceInner.bs-reconcile-choice-modal--wide {
+    max-width: min(96vw, 56rem) !important;
+    width: 100%;
+}
+
+/* BizsolCustomFilterGrid in modal (same as GRN Payment Entry list): keep filter menus above scroll */
+#bsReconcileChoiceInner #tblBsPendingGrnList thead th {
+    position: relative;
+}
+
+#bsReconcileChoiceInner #tblBsPendingGrnList .filter-dropdown,
+#bsReconcileChoiceInner #tblBsPendingGrnList .filter-dropdown-double,
+#bsReconcileChoiceInner #tblBsPendingGrnList .filter-division {
+    z-index: 30;
+}
+
+#paginator-tblBsPendingGrnList {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+#tblBsPendingGrnList .btn-bs-grn-reconcile {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--accent-primary, #6366f1);
+    background: rgba(99, 102, 241, 0.12);
+    color: #4338ca;
+    cursor: pointer;
+}
+
+#tblBsPendingGrnList .btn-bs-grn-reconcile:hover {
+    background: rgba(99, 102, 241, 0.2);
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════════════════════════════════════════ */

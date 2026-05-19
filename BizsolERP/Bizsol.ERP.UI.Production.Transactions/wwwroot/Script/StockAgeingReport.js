@@ -7,6 +7,8 @@ import { initializeAgeingParameterControl } from '../../Bizsol.WebERP.UI.Shared/
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 let G_ItemSizeMaster_Codes = '';
 let G_AgeingParameter = null;   // { Desp, Rows, AgeingParameters, … }
+/** Raw rows from GetReportOptionList (includes DefaultFilterValues). */
+let G_ReportOptionList = [];
 
 // Stock With Chart state
 let SWC_USE_DUMMY_DATA = false; // set false to use real API
@@ -497,22 +499,150 @@ function GetWarehouseList() {
     });
 }
 
+function parseDefaultFilterValues(defaultFilterValues) {
+    var result = {};
+    if (!defaultFilterValues || typeof defaultFilterValues !== 'string') {
+        return result;
+    }
+    defaultFilterValues.split('#').forEach(function (segment) {
+        segment = segment.trim();
+        if (!segment) return;
+        var eq = segment.indexOf('=');
+        if (eq <= 0) return;
+        var key = segment.slice(0, eq).trim().toLowerCase().replace(/^#+/, '');
+        var value = segment.slice(eq + 1).trim();
+        if (!key || !value) return;
+        result[key] = value;
+    });
+    return result;
+}
+
+function splitFilterValueList(valueChunk) {
+    return valueChunk.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+}
+
+/** True when this field means "ALL" only: every token is All (e.g. Warehouse=All or All,ALL). */
+function defaultFilterChunkIsAllOnly(valueChunk) {
+    if (!valueChunk || typeof valueChunk !== 'string') {
+        return false;
+    }
+    var tokens = splitFilterValueList(valueChunk);
+    if (!tokens.length) {
+        return false;
+    }
+    return tokens.every(function (token) {
+        return token.toLowerCase() === 'all';
+    });
+}
+
+function filterValuesExistingInDropdown($ddl, values) {
+    var allowed = {};
+    $ddl.find('option').each(function () {
+        var v = $(this).val();
+        if (v !== undefined && v !== null && v !== '') {
+            allowed[v] = true;
+        }
+    });
+    return values.filter(function (x) {
+        return Object.prototype.hasOwnProperty.call(allowed, x);
+    });
+}
+
+function setMultiSelectValuesWithoutChange($ddl, csvValue) {
+    if (!$ddl.length || !csvValue) {
+        return false;
+    }
+    var wanted = splitFilterValueList(csvValue);
+    var use = filterValuesExistingInDropdown($ddl, wanted);
+    if (!use.length) {
+        return false;
+    }
+    $ddl.val(use);
+    return true;
+}
+
+/** Sets one multi-select from DefaultFilterValues: All-only → ['All'], else specific option values. */
+function setMultiSelectFromDefaultFilterCsv($ddl, csvValue) {
+    if (!$ddl.length || !csvValue) {
+        return false;
+    }
+    if (defaultFilterChunkIsAllOnly(csvValue)) {
+        $ddl.val(['All']);
+        return true;
+    }
+    return setMultiSelectValuesWithoutChange($ddl, csvValue);
+}
+
+/** Category / Item Type / Warehouse → ALL (same defaults as initial page load). */
+function resetStockAgeingFiltersToAll() {
+    $('#ddlCategory').val(['All']);
+    $('#ddlItemName').val(['All']);
+    $('#ddlWarehouse').val(['All']);
+    $('#ddlCategory').trigger('change');
+    $('#ddlItemName').trigger('change');
+    $('#ddlWarehouse').trigger('change');
+}
+
+/** Applies Category / Item Type / Warehouse from the selected row's DefaultFilterValues. */
+function applyDefaultFiltersForSelectedReportOption() {
+    var desp = $('#ddlReportOption').val();
+    if (!desp || typeof desp !== 'string') {
+        return;
+    }
+    var opt = G_ReportOptionList.find(function (row) {
+        var label = row.DisplayName || row.OptionName;
+        return label === desp;
+    });
+    if (!opt) {
+        return;
+    }
+
+    var dfs = opt.DefaultFilterValues;
+    if (dfs === undefined || dfs === null || String(dfs).trim() === '') {
+        resetStockAgeingFiltersToAll();
+        return;
+    }
+
+    var keys = parseDefaultFilterValues(dfs);
+
+    var itemTypeCsv = keys.itemtype !== undefined ? keys.itemtype : keys.item_type;
+
+    var didCat = keys.category ? setMultiSelectFromDefaultFilterCsv($('#ddlCategory'), keys.category) : false;
+    var didItem = itemTypeCsv ? setMultiSelectFromDefaultFilterCsv($('#ddlItemName'), itemTypeCsv) : false;
+    var didWh = keys.warehouse ? setMultiSelectFromDefaultFilterCsv($('#ddlWarehouse'), keys.warehouse) : false;
+
+    if (didCat) {
+        $('#ddlCategory').trigger('change');
+    }
+    if (didItem) {
+        $('#ddlItemName').trigger('change');
+    }
+    if (didWh) {
+        $('#ddlWarehouse').trigger('change');
+    }
+}
+
 function GetReportOptionList() {
     StockAgeingReportService.GetReportOptionList().then(function (response) {
         if (response && response.length > 0) {
-            BindSelectList2($('#ddlReportOption')[0], response.map((item) => ({ Code: item.Code, Desp: item.DisplayName })));
+            G_ReportOptionList = response;
+            BindSelectList2($('#ddlReportOption')[0], response.map((item) => ({
+                Code: item.Code,
+                Desp: item.DisplayName || item.OptionName || ''
+            })));
             $('#ddlReportOption').select2({ width: '-webkit-fill-available' });
 
             // Show/Hide Item Parameter (Size Parameter Filter) based on report option
             toggleItemParameterField();
-            $('#ddlReportOption').on('change', function () {
+            $('#ddlReportOption').off('change.stockAgeReportOption').on('change.stockAgeReportOption', function () {
                 toggleItemParameterField();
+                applyDefaultFiltersForSelectedReportOption();
             });
         } else {
             toastr.error('No data received or empty response');
         }
     }).catch(function (error) {
-        toastr.error(error.Msg || 'Error fetching warehouse list');
+        toastr.error(error.Msg || 'Error fetching report option list');
     });
 }
 

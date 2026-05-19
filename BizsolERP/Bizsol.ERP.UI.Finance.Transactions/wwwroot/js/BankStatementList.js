@@ -9,6 +9,9 @@ var reconPendingGrnMasterCode = 0;
 /** Second modal: delete linked GRN then clear bank row link */
 var grnDeletePendingBankCode = 0;
 var grnDeletePendingGrnCode = 0;
+/** Reconcile choice (No): pick list vs new payment form */
+var pendingBsGrnChoiceCode = 0;
+var pendingBsGrnEmbedCtx = null;
 
 // ── Date helpers (same pattern as ProjectMaster) ──────────────────────────────
 function formatDate(date) {
@@ -44,6 +47,26 @@ var _MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep
 function cleanAmount(v) {
     if (v == null || v === '') return NaN;
     return parseFloat(String(v).replace(/,/g, '').trim());
+}
+
+/** Two-decimal rupee amount (matches bank paise; avoids float drift in running balance). */
+function roundMoney(n) {
+    if (n == null || n === '') return NaN;
+    var x = typeof n === 'number' ? n : parseFloat(String(n).replace(/,/g, '').trim());
+    if (!isFinite(x) || isNaN(x)) return NaN;
+    return Math.round(x * 100) / 100;
+}
+
+/** Whole paise for Σ(amounts); avoids binary float drift on many rows (e.g. 1.98 + 1.98 → 396, not 3.959999…). */
+function moneyToPaisa(m) {
+    var r = roundMoney(m);
+    if (!isFinite(r) || isNaN(r)) return 0;
+    return Math.round(r * 100);
+}
+
+function paisaToMoney(p) {
+    var n = Math.round(p);
+    return n / 100;
 }
 
 /** Parse display/API date string → ISO (same rules as BankStatementImport). */
@@ -275,22 +298,27 @@ function BindEvents() {
             var grn = parseInt($b.attr('data-grn-master') || '0', 10) || 0;
             openReconConfirmModal(code, false, grn);
         } else {
-            /* No → Payment Entry iframe; row context in sessionStorage for prefill */
-            try {
-                var wRaw = $b.attr('data-bs-withdraw');
-                var wNum = parseFloat(String(wRaw || '').replace(/,/g, ''));
-                if (!Number.isFinite(wNum)) wNum = 0;
-                var narrEnc = $b.attr('data-bs-narr-enc') || '';
-                var refEnc = $b.attr('data-bs-ref-enc') || '';
-                var txnEnc = $b.attr('data-bs-txn-enc') || '';
-                sessionStorage.setItem('BizsolBankStmtGrnEmbed', JSON.stringify({
-                    withdrawal: wNum,
-                    narration: narrEnc ? decodeURIComponent(narrEnc) : '',
-                    chequeRef: refEnc ? decodeURIComponent(refEnc) : '',
-                    txnDate: txnEnc ? decodeURIComponent(txnEnc) : ''
-                }));
-            } catch (se) { /* ignore */ }
-            openGrnPaymentEmbedModal(code);
+            /* No → choose: existing payment list vs new payment (prefill from row) */
+            var wRaw = $b.attr('data-bs-withdraw');
+            var wNum = parseFloat(String(wRaw || '').replace(/,/g, ''));
+            if (!Number.isFinite(wNum)) wNum = 0;
+            var narrEnc = $b.attr('data-bs-narr-enc') || '';
+            var refEnc = $b.attr('data-bs-ref-enc') || '';
+            var txnEnc = $b.attr('data-bs-txn-enc') || '';
+            var bankMc = parseInt(String($b.attr('data-bs-bank-master') || '0'), 10) || 0;
+            var bankNameEnc = $b.attr('data-bs-bank-name-enc') || '';
+            var acctEnc = $b.attr('data-bs-acct-enc') || '';
+            pendingBsGrnEmbedCtx = {
+                withdrawal: wNum,
+                narration: narrEnc ? decodeURIComponent(narrEnc) : '',
+                chequeRef: refEnc ? decodeURIComponent(refEnc) : '',
+                txnDate: txnEnc ? decodeURIComponent(txnEnc) : '',
+                bankMaster_Code: bankMc,
+                bankName: bankNameEnc ? decodeURIComponent(bankNameEnc) : '',
+                accountNo: acctEnc ? decodeURIComponent(acctEnc) : ''
+            };
+            pendingBsGrnChoiceCode = code;
+            openBankStmtReconcileChoiceModal();
         }
     });
 
@@ -326,8 +354,59 @@ function BindEvents() {
         if (e.target === this) closeGrnPaymentEmbedModal();
     });
 
+    $('#btnBsReconcileChoiceCancel').off('click.bsReconCh').on('click.bsReconCh', function () {
+        closeBankStmtReconcileChoiceModal();
+    });
+    $('#btnBsReconcileChoiceExisting').off('click.bsReconCh').on('click.bsReconCh', function () {
+        try {
+            sessionStorage.removeItem('BizsolBankStmtGrnEmbed');
+        } catch (e) { /* ignore */ }
+        loadBsPendingGrnListInModal();
+    });
+    $('#btnBsReconcileExistingBack').off('click.bsReconCh').on('click.bsReconCh', function () {
+        backBsReconcileChoiceFromList();
+    });
+    $('#btnBsReconcileChoiceCancelFromList').off('click.bsReconCh').on('click.bsReconCh', function () {
+        closeBankStmtReconcileChoiceModal();
+    });
+    $('#bsReconcileChoiceBackdrop').off('click.bsGrnRecon', '.btn-bs-grn-reconcile').on('click.bsGrnRecon', '.btn-bs-grn-reconcile', function (ev) {
+        ev.preventDefault();
+        var $t = $(this);
+        var grn = parseInt(String($t.attr('data-grn-code') || '0'), 10) || 0;
+        var bc = parseInt(String($t.attr('data-bank-stmt-code') || '0'), 10) || pendingBsGrnChoiceCode || 0;
+        if (!grn || !bc) {
+            toastr && toastr.warning('Invalid selection.');
+            return;
+        }
+        linkBankStatementLineToGrnAndRefresh(bc, grn, { closeGrnEmbed: false, closeReconcileChoice: true });
+    });
+    $('#btnBsReconcileChoiceNew').off('click.bsReconCh').on('click.bsReconCh', function () {
+        var c = pendingBsGrnChoiceCode;
+        var ctxSnapshot = pendingBsGrnEmbedCtx ? $.extend({}, pendingBsGrnEmbedCtx) : null;
+        if (pendingBsGrnEmbedCtx) {
+            try {
+                sessionStorage.setItem('BizsolBankStmtGrnEmbed', JSON.stringify(pendingBsGrnEmbedCtx));
+            } catch (se) { /* ignore */ }
+        }
+        pendingBsGrnEmbedCtx = null;
+        closeBankStmtReconcileChoiceModal();
+        if (c) openGrnPaymentEmbedModal(c, { wantNewForm: true, embedCtx: ctxSnapshot });
+    });
+    $('#bsReconcileChoiceBackdrop').off('click.bsReconCh').on('click.bsReconCh', function (e) {
+        if (e.target === this) closeBankStmtReconcileChoiceModal();
+    });
+
     $(document).off('keydown.bsReconConfirm').on('keydown.bsReconConfirm', function (e) {
         if (e.key !== 'Escape') return;
+        if ($('#bsReconcileChoiceBackdrop').hasClass('active')) {
+            e.preventDefault();
+            if ($('#bsReconcileChoiceBackdrop').attr('data-bs-recon-step') === 'list') {
+                backBsReconcileChoiceFromList();
+            } else {
+                closeBankStmtReconcileChoiceModal();
+            }
+            return;
+        }
         if ($('#bsGrnPaymentEmbedBackdrop').hasClass('active')) {
             e.preventDefault();
             closeGrnPaymentEmbedModal();
@@ -350,12 +429,49 @@ function BindEvents() {
     });
 }
 
-/** Payment Entry form in iframe (GRNPaymentApproval area + GRNPaymentEntry.js; openNew=1 shows form, not approval list). */
-function openGrnPaymentEmbedModal(bankStatementCode) {
+function openBankStmtReconcileChoiceModal() {
+    resetBsReconcileChoiceModalUi();
+    $('#bsReconcileChoiceBackdrop').addClass('active').attr('aria-hidden', 'false');
+}
+
+function closeBankStmtReconcileChoiceModal() {
+    $('#bsReconcileChoiceBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    resetBsReconcileChoiceModalUi();
+    pendingBsGrnChoiceCode = 0;
+    pendingBsGrnEmbedCtx = null;
+}
+
+/**
+ * GRN Payment Entry in iframe. wantNewForm true → new payment (openNew=1) + sessionStorage prefill;
+ * false → pending payment list (second screen in flow).
+ * embedCtx: bank / amount copied onto query string so the iframe always receives them (sessionStorage can differ by frame).
+ */
+function openGrnPaymentEmbedModal(bankStatementCode, opts) {
+    opts = opts || {};
+    var wantNew = opts.wantNewForm === true;
+    var ctx = opts.embedCtx || null;
     var root = (baseUrl || '').replace(/\/$/, '');
     var url = root + '/PurchaseTransactions/GRNPaymentApproval/GRNPaymentApproval'
         + '?bankStatementCode=' + encodeURIComponent(String(bankStatementCode || 0))
-        + '&embedded=1&openNew=1';
+        + '&embedded=1'
+        + (wantNew ? '&openNew=1' : '');
+    if (wantNew && ctx) {
+        var bmc = parseInt(String(ctx.bankMaster_Code != null ? ctx.bankMaster_Code : (ctx.BankMaster_Code != null ? ctx.BankMaster_Code : 0)), 10) || 0;
+        if (bmc > 0) {
+            url += '&embedBankMasterCode=' + encodeURIComponent(String(bmc));
+        }
+        var bn = String(ctx.bankName != null ? ctx.bankName : (ctx.BankName != null ? ctx.BankName : '')).trim();
+        if (bn) {
+            url += '&embedBankName=' + encodeURIComponent(bn);
+        }
+        var wv = ctx.withdrawal != null ? ctx.withdrawal : ctx.withdrawalAmt;
+        if (wv != null && String(wv).trim() !== '') {
+            var wStr = String(wv).replace(/,/g, '');
+            if (!isNaN(parseFloat(wStr)) && parseFloat(wStr) > 0) {
+                url += '&embedWithdrawal=' + encodeURIComponent(wStr);
+            }
+        }
+    }
     $('#iframeBankStmtGrnEmbed').attr('src', url);
     $('#bsGrnPaymentEmbedBackdrop').addClass('active').attr('aria-hidden', 'false');
 }
@@ -368,20 +484,30 @@ function closeGrnPaymentEmbedModal() {
     } catch (e) { /* ignore */ }
 }
 
-/** Iframe Payment Entry saved — link GRN code on bank row, mark reconciled, close embed. */
-function onBankStmtGrnEmbedChildMessage(ev) {
-    var d = ev && ev.data;
-    if (!d || d.type !== 'bizsol:bankStmtGrnSaved') return;
-    if (ev.origin && window.location.origin && ev.origin !== window.location.origin) return;
-    var bc = parseInt(String(d.bankStatementCode || '0'), 10) || 0;
-    if (!bc) return;
-    var grn = parseInt(String(d.grnPaymentMasterCode || d.grnPaymentMaster_Code || '0'), 10) || 0;
+/**
+ * Link bank statement line to GRN payment master and mark reconciled (same chain as post-iframe save).
+ * opts.closeGrnEmbed (default true): close payment iframe when done.
+ * opts.closeReconcileChoice: close reconcile choice modal when done (in-modal pending list flow).
+ */
+function linkBankStatementLineToGrnAndRefresh(bankStmtCode, grnPaymentMasterCode, opts) {
+    opts = opts || {};
+    var closeEmb = opts.closeGrnEmbed !== false;
+    var closeChoice = opts.closeReconcileChoice === true;
+
+    var bc = parseInt(String(bankStmtCode || '0'), 10) || 0;
+    var grn = parseInt(String(grnPaymentMasterCode || '0'), 10) || 0;
+    if (!bc) {
+        toastr && toastr.warning('Missing bank statement record.');
+        return;
+    }
+
     Showloader && Showloader();
 
     function finishOk(msg) {
         HideLoader && HideLoader();
         toastr && toastr.success(msg || 'Bank line marked reconciled.');
-        closeGrnPaymentEmbedModal();
+        if (closeEmb) closeGrnPaymentEmbedModal();
+        if (closeChoice) closeBankStmtReconcileChoiceModal();
         LoadStatements();
     }
 
@@ -398,32 +524,24 @@ function onBankStmtGrnEmbedChildMessage(ev) {
         .then(function (r) {
             if (isApiResultOk(r)) {
                 finishOk((r && (r.Msg || r.msg)) || '');
-                return null;
+                return;
             }
-            return BankStatementService.ReconcileBankStatement(bc);
-        })
-        .catch(function () {
-            return BankStatementService.ReconcileBankStatement(bc);
-        })
-        .then(function (r2) {
-            if (r2 == null) return;
-            if (isApiResultOk(r2)) {
-                finishOk((r2 && (r2.Msg || r2.msg)) || '');
-                return null;
-            }
-            return BankStatementService.SetBankStatementReconciliation(bc, true);
-        })
-        .then(function (r3) {
-            if (r3 == null) return;
-            if (isApiResultOk(r3)) {
-                finishOk((r3 && (r3.Msg || r3.msg)) || '');
-            } else {
-                finishErr((r3 && (r3.Msg || r3.message)) || '');
-            }
+            finishErr((r && (r.Msg || r.msg || r.message)) || 'Could not reconcile: validation failed or server rejected the link.');
         })
         .catch(function () {
             finishErr('Reconcile request failed.');
         });
+}
+
+/** Iframe Payment Entry saved — link GRN code on bank row, mark reconciled, close embed. */
+function onBankStmtGrnEmbedChildMessage(ev) {
+    var d = ev && ev.data;
+    if (!d || d.type !== 'bizsol:bankStmtGrnSaved') return;
+    if (ev.origin && window.location.origin && ev.origin !== window.location.origin) return;
+    var bc = parseInt(String(d.bankStatementCode || '0'), 10) || 0;
+    if (!bc) return;
+    var grn = parseInt(String(d.grnPaymentMasterCode || d.grnPaymentMaster_Code || '0'), 10) || 0;
+    linkBankStatementLineToGrnAndRefresh(bc, grn, { closeGrnEmbed: true, closeReconcileChoice: false });
 }
 
 function openGrnAutoMatchConfirmModal() {
@@ -460,6 +578,247 @@ function peelGrnRootForBs(res) {
     if (r.data != null) r = r.data;
     if (r.Data != null) r = r.Data;
     return r;
+}
+
+/** Same row unwrapping as GRNPaymentEntry.normalizeApiRows (GET GetGRNPaymentApprovalList). */
+function bsNormalizeGrnListApiRows(result) {
+    if (Array.isArray(result)) return result;
+    if (!result || typeof result !== 'object') return [];
+    var datum = result.Data != null ? result.Data : result.data;
+    if (datum != null && typeof datum === 'object' && !Array.isArray(datum)) {
+        var inner = bsNormalizeGrnListApiRows(datum);
+        if (inner.length) return inner;
+    }
+    if (Array.isArray(result.SubProjectList)) return result.SubProjectList;
+    if (Array.isArray(result.subProjectList)) return result.subProjectList;
+    if (Array.isArray(result.ProjectList)) return result.ProjectList;
+    if (Array.isArray(result.projectList)) return result.projectList;
+    if (Array.isArray(result.Table)) return result.Table;
+    if (Array.isArray(result.table)) return result.table;
+    if (Array.isArray(result.data)) return result.data;
+    if (Array.isArray(result.Data)) return result.Data;
+    if (Array.isArray(result.Result)) return result.Result;
+    if (Array.isArray(result.result)) return result.result;
+    if (Array.isArray(result.value)) return result.value;
+    if (Array.isArray(result.Value)) return result.Value;
+    if (Array.isArray(result.List)) return result.List;
+    if (Array.isArray(result.list)) return result.list;
+    var nested = result.Items != null ? result.Items : (result.items != null ? result.items
+        : (result.Details != null ? result.Details : (result.details != null ? result.details
+            : (result.Lines != null ? result.Lines : result.lines))));
+    if (Array.isArray(nested)) return nested;
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+        var billish = result.BillNo != null || result.billNo != null || result.BillAmount != null || result.billAmount != null;
+        var payLine =
+            result.PaymentAmount != null || result.paymentAmount != null
+            || result.MRNMaster_Code != null || result.mRNMaster_Code != null || result.mrnMaster_Code != null
+            || result.GRNPaymentMaster_Code != null || result.gRNPaymentMaster_Code != null
+            || result.GRNPaymentDetail_Code != null || result.GRNPaymentDetails_Code != null
+            || result.DetailCode != null || result.detailCode != null
+            || (result.Code !== undefined && result.Code !== null && (result.GRNPaymentMaster_Code != null || result.gRNPaymentMaster_Code != null)
+                && (result.MRNMaster_Code != null || result.mRNMaster_Code != null || result.mrnMaster_Code != null));
+        var ddlBillNoListRow =
+            (result.Code !== undefined && result.Code !== null)
+            && (result.BillDate != null || result.billDate != null
+                || result.TotalBillAmountManual != null || result.totalBillAmountManual != null
+                || result.NetPayable != null || result.netPayable != null
+                || result.Name != null || result.name != null);
+        if (billish || payLine || ddlBillNoListRow) return [result];
+    }
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+        var keys = Object.keys(result);
+        for (var ki = 0; ki < keys.length; ki++) {
+            var arr = result[keys[ki]];
+            if (!Array.isArray(arr) || !arr.length) continue;
+            var first = arr[0];
+            if (!first || typeof first !== 'object') continue;
+            if (first.BillNo != null || first.billNo != null || first.BillAmount != null || first.billAmount != null) continue;
+            if (
+                ('Code' in first) || ('code' in first)
+                || ('ProjectMaster_Code' in first) || ('projectMaster_Code' in first)
+                || ('SubProjectMaster_Code' in first) || ('subProjectMaster_Code' in first)
+                || ('SubProjectDesp' in first) || ('subProjectDesp' in first)
+                || ('ProjectDesp' in first) || ('projectDesp' in first)
+                || ('VendorMaster_Code' in first) || ('vendorMaster_Code' in first)
+            ) {
+                return arr;
+            }
+        }
+    }
+    return [];
+}
+
+function bsFormatGpaListDate(val) {
+    if (val === undefined || val === null || val === '') return '';
+    var s = String(val);
+    if (s.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(s)) {
+        var d = new Date(s.substring(0, 10) + 'T12:00:00');
+        if (!Number.isNaN(d.getTime())) {
+            return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+    }
+    var d2 = new Date(s);
+    if (!Number.isNaN(d2.getTime())) {
+        return d2.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    return s;
+}
+
+function clearBsPendingGrnBizsolGridState() {
+    if (typeof ClearFilter === 'function' && window.filteredDataTemp_tblBsPendingGrnList != null) {
+        try {
+            ClearFilter('tblBsPendingGrnTbody-body');
+        } catch (e) { /* ignore */ }
+    }
+    $('#paginator-tblBsPendingGrnList').empty().hide();
+    $('#tblBsPendingGrnTable-hader').empty();
+    $('#tblBsPendingGrnTbody-body').empty();
+}
+
+function resetBsReconcileChoiceModalUi() {
+    $('#bsReconcileChoiceBackdrop').attr('data-bs-recon-step', 'pick');
+    $('#bsReconcileChoiceStepList').hide();
+    $('#bsReconcileChoiceStepPick').show();
+    $('#bsReconcileChoiceInner').removeClass('bs-reconcile-choice-modal--wide');
+    clearBsPendingGrnBizsolGridState();
+    $('#tblBsPendingGrnLoad').hide();
+    $('#tblBsPendingGrnEmpty').hide();
+    $('#tblBsPendingGrnScroll').hide();
+    $('#tblBsPendingGrnEmpty').text('No pending payment entries found.');
+}
+
+function showBsReconcileChoiceListStep() {
+    $('#bsReconcileChoiceBackdrop').attr('data-bs-recon-step', 'list');
+    $('#bsReconcileChoiceStepPick').hide();
+    $('#bsReconcileChoiceStepList').show();
+    $('#bsReconcileChoiceInner').addClass('bs-reconcile-choice-modal--wide');
+}
+
+function backBsReconcileChoiceFromList() {
+    $('#bsReconcileChoiceStepList').hide();
+    $('#bsReconcileChoiceStepPick').show();
+    $('#bsReconcileChoiceInner').removeClass('bs-reconcile-choice-modal--wide');
+    $('#bsReconcileChoiceBackdrop').attr('data-bs-recon-step', 'pick');
+    clearBsPendingGrnBizsolGridState();
+    $('#tblBsPendingGrnLoad').hide();
+    $('#tblBsPendingGrnEmpty').text('No pending payment entries found.').hide();
+    $('#tblBsPendingGrnScroll').hide();
+}
+
+/** Row shape from USP_WebAPI_BankStatement @Mode = ExistingReconciled → modal table columns. */
+function bsMapExistingReconciledSpRow(item) {
+    if (!item || typeof item !== 'object') {
+        return { code: 0, entryNo: '', entryDateStr: '', party: '', employee: '', amountNum: NaN, ref: '' };
+    }
+    var code = parseInt(String(item.Code != null ? item.Code : (item.code != null ? item.code : 0)), 10) || 0;
+    var entryNo = item.EntryNo != null ? item.EntryNo : (item.entryNo != null ? item.entryNo : '');
+    var ed = item.EntryDate != null ? item.EntryDate : item.entryDate;
+    var party = item.PartyName != null ? item.PartyName : (item.partyName != null ? item.partyName : '');
+    var empRaw = item.Employee != null ? item.Employee : item.employee;
+    var employee = empRaw !== undefined && empRaw !== null ? String(empRaw).trim() : '';
+    var rawAmt = item.Amount != null ? item.Amount : item.amount;
+    var amtNum = rawAmt !== undefined && rawAmt !== null && rawAmt !== '' ? Number(rawAmt) : NaN;
+    var ref = item.RefNo != null ? item.RefNo : (item.refNo != null ? item.refNo : '');
+    return {
+        code: code,
+        entryNo: entryNo,
+        entryDateStr: bsFormatGpaListDate(ed),
+        party: party,
+        employee: employee,
+        amountNum: amtNum,
+        ref: ref,
+    };
+}
+
+/** Same BizsolCustomFilterGrid column model as GRN Payment Entry list (GRNPaymentEntry.js → renderGpaListGridForActiveTab). */
+function mapBsPendingGrnRowForCustomFilterGrid(r, bankStmt) {
+    var amt = r.amountNum;
+    var amtVal = (typeof amt === 'number' && !isNaN(amt) && isFinite(amt)) ? amt : '';
+    var entryNo = r.entryNo !== '' && r.entryNo != null ? r.entryNo : r.code;
+    return {
+        'Entry No': entryNo,
+        'Entry Date': r.entryDateStr || '',
+        'Party Name': String(r.party || ''),
+        'Employee': String(r.employee || ''),
+        'Amount': amtVal,
+        'Ref No': String(r.ref || ''),
+        'Action': '<button type="button" class="btn-bs-grn-reconcile" data-grn-code="' + r.code + '" data-bank-stmt-code="' + bankStmt + '">Reconcile</button>',
+        'Code': r.code,
+        _bsPendingRaw: r,
+    };
+}
+
+function renderBsPendingGrnBizsolFilterGrid(items) {
+    var bankStmt = pendingBsGrnChoiceCode || 0;
+    var gridRows = [];
+    for (var i = 0; i < items.length; i++) {
+        if (items[i].code) gridRows.push(mapBsPendingGrnRowForCustomFilterGrid(items[i], bankStmt));
+    }
+    if (!gridRows.length) return;
+    if (typeof BizsolCustomFilterGrid === 'undefined' || typeof BizsolCustomFilterGrid.CreateDataTable !== 'function') {
+        toastr && toastr.error('Filter grid script is not loaded.');
+        return;
+    }
+    var StringFilterColumn = ['Party Name', 'Employee', 'Ref No'];
+    var NumericFilterColumn = ['Entry No', 'Amount'];
+    var DateFilterColumn = [];
+    var StringdoubleFilterColumn = [];
+    var hiddenColumns = ['Code', '_bsPendingRaw'];
+    var ColumnAlignment = { Action: 'center;min-width:7rem;', Amount: 'right' };
+    BizsolCustomFilterGrid.CreateDataTable(
+        'tblBsPendingGrnTable-hader',
+        'tblBsPendingGrnTbody-body',
+        gridRows,
+        false,
+        [],
+        StringFilterColumn,
+        NumericFilterColumn,
+        DateFilterColumn,
+        StringdoubleFilterColumn,
+        hiddenColumns,
+        ColumnAlignment,
+        true,
+        null,
+        { Amount: 2 },
+        ['Amount']
+    );
+    $('#paginator-tblBsPendingGrnList').show();
+}
+
+function loadBsPendingGrnListInModal() {
+    var bankStmt = pendingBsGrnChoiceCode || 0;
+    if (!bankStmt) {
+        toastr && toastr.warning('Missing bank statement row.');
+        return;
+    }
+    clearBsPendingGrnBizsolGridState();
+    showBsReconcileChoiceListStep();
+    $('#tblBsPendingGrnEmpty').text('No pending payment entries found.');
+    $('#tblBsPendingGrnLoad').show();
+    $('#tblBsPendingGrnEmpty').hide();
+    $('#tblBsPendingGrnScroll').hide();
+
+    BankStatementService.GetExistingReconciledPendingGrnList(bankStmt)
+        .then(function (response) {
+            $('#tblBsPendingGrnLoad').hide();
+            var raw = bsNormalizeGrnListApiRows(response);
+            var pending = [];
+            for (var i = 0; i < raw.length; i++) {
+                var row = bsMapExistingReconciledSpRow(raw[i]);
+                if (row.code > 0) pending.push(row);
+            }
+            if (!pending.length) {
+                $('#tblBsPendingGrnEmpty').show();
+                return;
+            }
+            renderBsPendingGrnBizsolFilterGrid(pending);
+            $('#tblBsPendingGrnScroll').show();
+        })
+        .catch(function () {
+            $('#tblBsPendingGrnLoad').hide();
+            toastr && toastr.error('Failed to load payment list.');
+            $('#tblBsPendingGrnEmpty').text('Could not load the list.').show();
+        });
 }
 
 function bsFirstGrnMasterFromApi(root) {
@@ -724,8 +1083,8 @@ function computeBalances(sortedItems, seedClosingByAcct) {
             lastAcctKey = acctKey;
         }
 
-        var dep = cleanAmount(row.DepositAmt);
-        var w = cleanAmount(row.WithdrawalAmt);
+        var dep = roundMoney(cleanAmount(row.DepositAmt));
+        var w = roundMoney(cleanAmount(row.WithdrawalAmt));
         if (isNaN(dep) || !isFinite(dep)) dep = 0;
         if (isNaN(w) || !isFinite(w)) w = 0;
         var op;
@@ -735,23 +1094,23 @@ function computeBalances(sortedItems, seedClosingByAcct) {
             if (seedClosingByAcct && Object.prototype.hasOwnProperty.call(seedClosingByAcct, acctKey)) {
                 var sd = seedClosingByAcct[acctKey];
                 if (typeof sd === 'number' && isFinite(sd) && !isNaN(sd)) {
-                    op = sd;
+                    op = roundMoney(sd);
                     usedSeed = true;
                 }
             }
             if (!usedSeed) {
                 var st = cleanAmount(row.ServiceTaxNo);
-                op = st;
+                op = roundMoney(st);
                 if (isNaN(op) || !isFinite(op)) {
                     var cl0 = cleanAmount(row.ClosingBalance);
-                    op = !isNaN(cl0) && isFinite(cl0) ? cl0 - dep + w : 0;
+                    op = !isNaN(cl0) && isFinite(cl0) ? roundMoney(cl0 - dep + w) : 0;
                 }
             }
         } else {
-            op = lastClosing;
+            op = roundMoney(lastClosing);
         }
 
-        var balanceAfter = op + dep - w;
+        var balanceAfter = roundMoney(op + dep - w);
         lastClosing = balanceAfter;
         out.push({
             row: row,
@@ -783,8 +1142,8 @@ function isApiResultOk(r) {
 }
 
 /**
- * Mark reconciled: existing ReconcileBankStatement, optional SetBankStatementReconciliation.
- * Mark not reconciled: needs POST /BankStatement/SetBankStatementReconciliation { Code, IsReconciled: "N" }.
+ * Mark reconciled: ReconcileBankStatement (withdrawals require GRN link on server; credits without debit pass).
+ * Mark not reconciled: UnreconcileWithdrawalWithGrn then SetBankStatementReconciliation if needed.
  */
 function saveReconciliationState(code, toYes) {
     if (!code) {
@@ -795,12 +1154,8 @@ function saveReconciliationState(code, toYes) {
         return BankStatementService.ReconcileBankStatement(code)
             .then(function (r) {
                 if (isApiResultOk(r)) return r;
-                return BankStatementService.SetBankStatementReconciliation(code, true)
-                    .then(function (r2) {
-                        if (isApiResultOk(r2)) return r2;
-                        toastr && toastr.error('Could not mark as reconciled.');
-                        return Promise.reject(new Error('reconcile'));
-                    });
+                toastr && toastr.error((r && (r.Msg || r.msg || r.message)) || 'Could not mark as reconciled.');
+                return Promise.reject(new Error('reconcile'));
             });
     }
     return BankStatementService.UnreconcileWithdrawalWithGrn(code)
@@ -887,7 +1242,9 @@ function LoadStatements() {
             var computed = computeBalances(sorted, seedMap);
             $('.js-bs-list-opening').text(FormatAmount(computed[0] && computed[0].opening));
 
-            var totalWith = 0, totalDep = 0;
+            var totalWithPaisa = 0;
+            var totalDepPaisa = 0;
+            var lastDisplayCloseNum = null;
 
             $.each(computed, function (i, item) {
                 var row = item.row;
@@ -895,18 +1252,28 @@ function LoadStatements() {
                 var reconY = ir === 'Y' || ir === true || ir === 1
                     || (ir != null && String(ir).toUpperCase() === 'Y');
                 var storedClose = cleanAmount(row.ClosingBalance);
-                var after = item.balanceAfter;
-                var mismatch = !isNaN(storedClose) && isFinite(after) && Math.abs(storedClose - after) > 0.01;
+                var storedR = roundMoney(storedClose);
+                var after = roundMoney(item.balanceAfter);
+                var displayClose = !isNaN(storedR) && isFinite(storedR) ? storedR : after;
+                var mismatch = !isNaN(storedR) && isFinite(after) && Math.abs(storedR - after) > 0.02;
                 var closeCls = mismatch ? ' text-end text-warning' : ' text-end';
                 var closeTitle = mismatch
                     ? 'Computed: ' + after + ' | Saved on import: ' + row.ClosingBalance
-                    : 'Opening + Deposit − Withdrawal = line closing (running balance)';
+                    : (!isNaN(storedR) && isFinite(storedR)
+                        ? 'Closing balance from statement (import)'
+                        : 'Opening + Deposit − Withdrawal = line closing (running balance)');
 
-                var wAmt = cleanAmount(row.WithdrawalAmt);
-                var dAmt = cleanAmount(row.DepositAmt);
+                var wAmt = roundMoney(cleanAmount(row.WithdrawalAmt));
+                var dAmt = roundMoney(cleanAmount(row.DepositAmt));
                 if (isNaN(wAmt) || !isFinite(wAmt)) wAmt = 0;
                 if (isNaN(dAmt) || !isFinite(dAmt)) dAmt = 0;
                 var grnMaster = parseInt(String(row.GRNPaymentMaster_Code != null ? row.GRNPaymentMaster_Code : (row.gRNPaymentMaster_Code != null ? row.gRNPaymentMaster_Code : 0)), 10) || 0;
+                var stmtBankCode = parseInt(String(
+                    row.BankMaster_Code != null && row.BankMaster_Code !== ''
+                        ? row.BankMaster_Code
+                        : (row.bankMaster_Code != null && row.bankMaster_Code !== '' ? row.bankMaster_Code : 0)
+                ), 10) || 0;
+                var stmtBankName = row.BankName != null ? row.BankName : (row.bankName != null ? row.bankName : '');
 
                 var reconCell;
                 var depositBlocksUnreconcile = dAmt > 0;
@@ -925,10 +1292,14 @@ function LoadStatements() {
                             + (Number.isFinite(wAmt) ? String(wAmt) : '0') + '" data-bs-narr-enc="'
                             + encodeURIComponent(String(row.Narration == null ? '' : row.Narration)) + '" data-bs-ref-enc="'
                             + encodeURIComponent(String(row.ChequeRefNo == null ? '' : row.ChequeRefNo)) + '" data-bs-txn-enc="'
-                            + encodeURIComponent(String(row.TxnDate == null ? '' : row.TxnDate)) + '" title="Open payment entry to reconcile this line">No</button>';
+                            + encodeURIComponent(String(row.TxnDate == null ? '' : row.TxnDate)) + '" data-bs-bank-master="'
+                            + String(stmtBankCode) + '" data-bs-bank-name-enc="'
+                            + encodeURIComponent(String(stmtBankName == null ? '' : stmtBankName)) + '" data-bs-acct-enc="'
+                            + encodeURIComponent(String(row.AccountNo == null ? '' : row.AccountNo)) + '" title="Open payment entry to reconcile this line">No</button>';
                 }
-                totalWith += wAmt;
-                totalDep  += dAmt;
+                totalWithPaisa += moneyToPaisa(wAmt);
+                totalDepPaisa += moneyToPaisa(dAmt);
+                lastDisplayCloseNum = displayClose;
 
                 var rowReconClass = reconY ? 'bs-row-recon-yes' : 'bs-row-recon-no';
 
@@ -941,19 +1312,31 @@ function LoadStatements() {
                         <td>${escHtml(row.ChequeRefNo || '—')}</td>
                         <td class="text-end">${FormatAmount(wAmt)}</td>
                         <td class="text-end bs-stmt-col-deposit">${FormatAmount(dAmt)}</td>
-                        <td class="bs-closing-balance bs-stmt-col-closing${closeCls}" title="${escHtml(closeTitle)}">${FormatAmount(item.balanceAfter)}</td>
+                        <td class="bs-closing-balance bs-stmt-col-closing${closeCls}" title="${escHtml(closeTitle)}">${FormatAmount(displayClose)}</td>
                         <td class="bs-col-hidden bs-col-drcr">${escHtml(row.BalanceType || '—')}</td>
                         <td class="bs-col-hidden bs-col-batch"><span class="fw-semibold text-primary small">${escHtml(row.ImportBatchNo)}</span></td>
                         <td class="text-center bs-recon-cell">${reconCell}</td>
                     </tr>`);
             });
 
+            var totalWith = paisaToMoney(totalWithPaisa);
+            var totalDep = paisaToMoney(totalDepPaisa);
             $('#tdTotalWithdrawal').text(FormatAmount(totalWith));
             $('#tdTotalDeposit').text(FormatAmount(totalDep));
-            /* Footer closing = opening (same as first row / footer opening cell) + Σ deposit − Σ withdrawal — not Σ(line closings). */
+            /*
+             * Footer closing: prefer last row’s displayed closing (bank-reported / stored when shown),
+             * so it matches the final line (e.g. .97) instead of a rounded recomputation (.00).
+             * Fallback: opening + Σ deposit − Σ withdrawal using paise-safe totals.
+             */
             var firstOpen = computed[0] && computed[0].opening;
-            var openNum = typeof firstOpen === 'number' && isFinite(firstOpen) && !isNaN(firstOpen) ? firstOpen : 0;
-            var footerClose = openNum + totalDep - totalWith;
+            var openNum = typeof firstOpen === 'number' && isFinite(firstOpen) && !isNaN(firstOpen) ? roundMoney(firstOpen) : 0;
+            var footerFromLedgerPaisa = moneyToPaisa(openNum) + totalDepPaisa - totalWithPaisa;
+            var footerFromLedger = paisaToMoney(footerFromLedgerPaisa);
+            var footerClose = roundMoney(footerFromLedger);
+            if (lastDisplayCloseNum !== null && typeof lastDisplayCloseNum === 'number'
+                && isFinite(lastDisplayCloseNum) && !isNaN(lastDisplayCloseNum)) {
+                footerClose = roundMoney(lastDisplayCloseNum);
+            }
             $('#tdTotalClosingBalance').text(formatNumericTotal(footerClose));
             $('#lblRecordCount').text('(' + computed.length + ' records)');
             syncBankStatementColumnVisibility();
@@ -973,13 +1356,16 @@ window.refreshBankStatementList = LoadStatements;
 
 /** Footer totals: show 0.00 for zero (unlike FormatAmount which uses — for 0). */
 function formatNumericTotal(n) {
-    if (typeof n !== 'number' || isNaN(n) || !isFinite(n)) return '—';
-    return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var r = roundMoney(n);
+    if (typeof r !== 'number' || isNaN(r) || !isFinite(r)) return '—';
+    return r.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function FormatAmount(val) {
     var n = typeof val === 'number' && !isNaN(val) ? val : cleanAmount(val);
-    if (isNaN(n) || n === 0) return '—';
+    if (isNaN(n) || !isFinite(n)) return '—';
+    n = roundMoney(n);
+    if (n === 0) return '—';
     return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 

@@ -1,0 +1,82 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockYieldConfiguration.js"></script>
+
+<style>
+    #tblYieldConfiguration thead th {
+        background: linear-gradient(180deg, #5c95ce 0%, #4e86bf 100%);
+        color: #fff;
+        font-weight: 600;
+        font-size: .85rem;
+        vertical-align: middle;
+        border-color: #4a7caf !important;
+    }
+
+    #btnYieldCfgBack:hover, #btnYieldCfgBack:focus {
+        background: #6c757d;
+        color: #fff;
+    }
+
+    #btnAddYieldRow {
+        background: linear-gradient(135deg, #198754 0%, #157347 100%);
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: .3px;
+    }
+
+    #btnAddYieldRow:hover, #btnAddYieldRow:focus {
+        background: linear-gradient(135deg, #157347 0%, #146c43 100%);
+        color: #fff;
+        box-shadow: 0 3px 10px rgba(25, 135, 84, .35);
+    }
+
+    .yc-colour-wrap input[type="color"] {
+        width: 38px;
+        height: 30px;
+        padding: 0;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        cursor: pointer;
+        vertical-align: middle;
+    }
+
+    .yc-actions .btn {
+        padding: .15rem .4rem;
+        font-size: .75rem;
+    }
+</style>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row align-items-end">
+            <div class="col-md-8">
+                <h5 class="mb-1 fw-semibold" id="ERPHeading">Yield configuration</h5>
+            </div>
+            <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                <button type="button" id="btnAddYieldRow" class="btn btn-success btn-sm btn-height ms-1">Add row</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body pt-2">
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0" id="tblYieldConfiguration">
+                <thead>
+                    <tr>
+                        <th style="width:130px;text-align:center;">Range from (%)</th>
+                        <th style="width:130px;text-align:center;">Range to (%)</th>
+                        <th style="min-width:220px;">Colour</th>
+                        <th style="width:200px;text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tblYieldConfigurationBody"></tbody>
+            </table>
+        </div>
+        <p class="small text-muted mt-2 mb-0" id="ycApiHint"></p>
+    </div>
+</div>

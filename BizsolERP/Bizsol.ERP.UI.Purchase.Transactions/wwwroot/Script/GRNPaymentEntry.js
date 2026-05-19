@@ -1,5 +1,6 @@
 
 import { GRNPaymentApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GRNPaymentEntryService.js';
+import { BankStatementService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BankStatementService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
@@ -61,9 +62,46 @@ let gpaListOnlyPendingOnMe = false;
 
 const BS_EMBED_STORAGE_KEY = 'BizsolBankStmtGrnEmbed';
 
+/** When opening Payment Entry from bank statement embed, bank + amount are fixed for save/reconcile. */
+let gpaBsEmbedLockedBankCode = 0;
+let gpaBsEmbedLockedBankName = '';
+let gpaBsEmbedLockedAmount = null;
+
+function gpaClearBizsolBankStmtEmbedLocks() {
+    gpaBsEmbedLockedBankCode = 0;
+    gpaBsEmbedLockedBankName = '';
+    gpaBsEmbedLockedAmount = null;
+    const ddlB = document.getElementById('ddlBankName');
+    if (ddlB) {
+        ddlB.disabled = false;
+        ddlB.classList.remove('gpa-bs-embed-locked');
+        ddlB.removeAttribute('title');
+    }
+    const ha = document.getElementById('txtHeaderAmount');
+    if (ha) {
+        ha.readOnly = false;
+        ha.disabled = false;
+        ha.classList.remove('gpa-bs-embed-locked');
+        ha.removeAttribute('title');
+    }
+}
+
+function gpaEnsureBankDdlHasOption(ddl, bankCode, bankName) {
+    const c = String(bankCode || '').trim();
+    if (!ddl || !c || c === '0') return false;
+    const has = [...ddl.options].some(o => o.value === c);
+    if (!has) {
+        const label = String(bankName || '').trim() || ('Bank #' + c);
+        ddl.add(new Option(label, c));
+    }
+    ddl.value = c;
+    return true;
+}
+
 function gpaIsBankStatementEmbed() {
     try {
-        return new URLSearchParams(window.location.search).get('embedded') === '1';
+        const v = String(new URLSearchParams(window.location.search).get('embedded') || '').trim().toLowerCase();
+        return v === '1' || v === 'true' || v === 'yes';
     } catch (e) {
         return false;
     }
@@ -71,11 +109,51 @@ function gpaIsBankStatementEmbed() {
 
 function gpaGetEmbedBankStatementCode() {
     try {
-        const n = parseInt(String(new URLSearchParams(window.location.search).get('bankStatementCode') || '').trim(), 10);
-        return Number.isFinite(n) && n > 0 ? n : 0;
+        const qs = new URLSearchParams(window.location.search);
+        const keys = ['bankStatementCode', 'BankStatementCode', 'statementCode', 'StatementCode', 'bsCode', 'BsCode'];
+        for (let i = 0; i < keys.length; i++) {
+            const raw = qs.get(keys[i]);
+            if (raw == null || String(raw).trim() === '') continue;
+            const n = parseInt(String(raw).trim(), 10);
+            if (Number.isFinite(n) && n > 0) return n;
+        }
+        return 0;
     } catch (e) {
         return 0;
     }
+}
+
+/** Normalize GetBankStatementByCode (or similar) payload to one row object. */
+function gpaFirstBankStatementRowFromApi(data) {
+    if (data == null) return null;
+    if (Array.isArray(data)) return data.length ? data[0] : null;
+    if (typeof data !== 'object') return null;
+    const datum = data.Data ?? data.data ?? data.Result ?? data.result;
+    if (datum != null && typeof datum === 'object' && !Array.isArray(datum)) {
+        const inner = datum.BankStatement ?? datum.bankStatement ?? datum;
+        if (inner && typeof inner === 'object' && !Array.isArray(inner)) {
+            if (inner.Code != null || inner.code != null || inner.BankMaster_Code != null || inner.bankMaster_Code != null
+                || inner.WithdrawalAmt != null || inner.withdrawalAmt != null) {
+                return inner;
+            }
+        }
+        if (datum.Code != null || datum.code != null || datum.BankMaster_Code != null || datum.bankMaster_Code != null
+            || datum.WithdrawalAmt != null || datum.withdrawalAmt != null) {
+            return datum;
+        }
+    }
+    const inner = data.Table ?? data.table ?? data.Value ?? data.value ?? data.Item ?? data.item;
+    if (Array.isArray(inner)) return inner.length ? inner[0] : null;
+    if (inner && typeof inner === 'object' && !Array.isArray(inner)) {
+        if (inner.Code != null || inner.code != null || inner.BankMaster_Code != null || inner.bankMaster_Code != null
+            || inner.WithdrawalAmt != null || inner.withdrawalAmt != null) {
+            return inner;
+        }
+    }
+    if (data.Code != null || data.code != null || data.BankMaster_Code != null || data.bankMaster_Code != null) {
+        return data;
+    }
+    return null;
 }
 
 function gpaParseStmtTxnDateToInputValue(txn) {
@@ -113,34 +191,116 @@ function gpaSelectPartyFromBankNarration(narration) {
     return false;
 }
 
+function gpaGetEmbedBankParamsFromQuery() {
+    let bankMasterCode = 0;
+    let bankName = '';
+    let withdrawal = 0;
+    try {
+        const qs = new URLSearchParams(window.location.search);
+        bankMasterCode = parseInt(String(qs.get('embedBankMasterCode') || '').trim(), 10) || 0;
+        const enc = qs.get('embedBankName');
+        if (enc) {
+            try {
+                bankName = decodeURIComponent(enc.replace(/\+/g, '%20'));
+            } catch (eD) {
+                bankName = enc;
+            }
+        }
+        const wRaw = String(qs.get('embedWithdrawal') || '').replace(/,/g, '');
+        const w = parseFloat(wRaw);
+        withdrawal = Number.isFinite(w) && w > 0 ? w : 0;
+    } catch (e) { /* ignore */ }
+    return { bankMasterCode, bankName, withdrawal };
+}
+
 /**
  * Bank Statement list stores JSON in sessionStorage before opening iframe.
  * Prefills Amount, Ref, Date, Narration; matches Party from narration text.
+ * Also reads embedBankMasterCode / embedBankName / embedWithdrawal from URL (parent passes these for iframe reliability).
+ * If the grid row had no BankMaster_Code, loads SHOWDATA for bankStatementCode to resolve bank + withdrawal.
  */
 async function tryApplyBankStatementEmbedPrefill(openedNewForm) {
-    if (!gpaIsBankStatementEmbed() || !openedNewForm || !gpaGetEmbedBankStatementCode()) return;
+    if (!gpaIsBankStatementEmbed() || !openedNewForm) return;
+
+    const q = gpaGetEmbedBankParamsFromQuery();
+    const bsCode = gpaGetEmbedBankStatementCode();
+
     let raw = null;
     try {
         raw = sessionStorage.getItem(BS_EMBED_STORAGE_KEY);
     } catch (e) { /* ignore */ }
-    if (!raw) return;
-    let ctx;
-    try {
-        ctx = JSON.parse(raw);
-    } catch (e) {
-        return;
-    }
-    try {
-        sessionStorage.removeItem(BS_EMBED_STORAGE_KEY);
-    } catch (e2) { /* ignore */ }
 
-    const w = parseFloat(String(ctx.withdrawal ?? ctx.withdrawalAmt ?? '0').replace(/,/g, ''));
+    if (!raw && !(q.bankMasterCode > 0) && !(q.withdrawal > 0) && !(bsCode > 0)) return;
+
+    let ctx = {};
+    if (raw) {
+        try {
+            ctx = JSON.parse(raw);
+        } catch (e) {
+            ctx = {};
+        }
+        try {
+            sessionStorage.removeItem(BS_EMBED_STORAGE_KEY);
+        } catch (e2) { /* ignore */ }
+    }
+
+    let wFromCtx = parseFloat(String(ctx.withdrawal ?? ctx.withdrawalAmt ?? '0').replace(/,/g, ''));
+    let w = (Number.isFinite(wFromCtx) && wFromCtx > 0) ? wFromCtx : q.withdrawal;
+
     const narration = String(ctx.narration ?? '');
     const ref = String(ctx.chequeRef ?? ctx.chequeRefNo ?? '').trim();
     const txn = String(ctx.txnDate ?? ctx.txn ?? '').trim();
 
+    let bankFromCtx = parseInt(String(ctx.bankMaster_Code ?? ctx.BankMaster_Code ?? '0'), 10) || 0;
+    let bankMc = bankFromCtx > 0 ? bankFromCtx : q.bankMasterCode;
+    let bankNameFromCtx = String(ctx.bankName ?? ctx.BankName ?? '').trim();
+    let bankName = bankNameFromCtx || String(q.bankName || '').trim();
+
+    if (bsCode > 0 && (bankMc <= 0 || !(w > 0) || !narration.trim())) {
+        try {
+            const res = await BankStatementService.GetBankStatementByCode(bsCode);
+            const row = gpaFirstBankStatementRowFromApi(res);
+            if (row) {
+                if (bankMc <= 0) {
+                    const bc = parseInt(String(row.BankMaster_Code ?? row.bankMaster_Code ?? 0), 10) || 0;
+                    if (bc > 0) {
+                        bankMc = bc;
+                        if (!bankName) bankName = String(row.BankName ?? row.bankName ?? '').trim();
+                    }
+                }
+                if (!(w > 0)) {
+                    const wa = parseFloat(String(row.WithdrawalAmt ?? row.withdrawalAmt ?? '0').replace(/,/g, ''));
+                    if (Number.isFinite(wa) && wa > 0) w = wa;
+                }
+                if (!narration.trim()) {
+                    const n = String(row.Narration ?? row.narration ?? '').trim();
+                    if (n) ctx = { ...ctx, narration: n };
+                }
+            }
+        } catch (eFetch) { /* ignore — keep ctx/url values */ }
+    }
+
+    const narrationFinal = String(ctx.narration ?? narration ?? '');
+
     const ha = document.getElementById('txtHeaderAmount');
-    if (ha && Number.isFinite(w) && w > 0) ha.value = w.toFixed(2);
+    if (ha && Number.isFinite(w) && w > 0) {
+        ha.value = w.toFixed(2);
+        gpaBsEmbedLockedAmount = w;
+        ha.readOnly = true;
+        ha.disabled = true;
+        ha.classList.add('gpa-bs-embed-locked');
+        ha.title = 'Amount from bank statement — cannot change here.';
+    }
+
+    const ddlB = document.getElementById('ddlBankName');
+    if (ddlB && bankMc > 0) {
+        gpaBsEmbedLockedBankCode = bankMc;
+        gpaBsEmbedLockedBankName = bankName;
+        gpaEnsureBankDdlHasOption(ddlB, bankMc, bankName);
+        ddlB.disabled = true;
+        ddlB.classList.add('gpa-bs-embed-locked');
+        ddlB.title = 'Bank from bank statement — cannot change here.';
+    }
 
     const refEl = document.getElementById('txtRefNo');
     if (refEl && ref) refEl.value = ref;
@@ -150,9 +310,9 @@ async function tryApplyBankStatementEmbedPrefill(openedNewForm) {
     if (dtEl && iso) dtEl.value = iso;
 
     const nar = document.getElementById('txtNarration');
-    if (nar && narration) nar.value = narration;
+    if (nar && narrationFinal) nar.value = narrationFinal;
 
-    gpaSelectPartyFromBankNarration(narration);
+    gpaSelectPartyFromBankNarration(narrationFinal);
 
     const chk = document.getElementById('chkGpaFillGrid');
     if (chk && chk.checked) {
@@ -3187,7 +3347,16 @@ function collectPayload() {
     const entryDateStr = document.getElementById('dtPaymentDate')?.value ?? '';
     const bankType = parseInt(document.getElementById('ddlPaymentMode')?.value ?? '0', 10) || 0;
 
-    const bankMasterCode = parseInt(document.getElementById('ddlBankName')?.value ?? '0', 10) || 0;
+    const bankMasterCode = gpaBsEmbedLockedBankCode > 0
+        ? gpaBsEmbedLockedBankCode
+        : (parseInt(document.getElementById('ddlBankName')?.value ?? '0', 10) || 0);
+    let headerAmountNum = gpaNumOrZero(parseNum(document.getElementById('txtHeaderAmount')));
+    if (gpaBsEmbedLockedAmount != null && gpaBsEmbedLockedAmount > 0) {
+        headerAmountNum = gpaNumOrZero(gpaBsEmbedLockedAmount);
+    }
+    const bankNameForSave = (gpaBsEmbedLockedBankCode > 0 && gpaBsEmbedLockedBankName)
+        ? gpaBsEmbedLockedBankName.trim()
+        : gpaGetSelectedBankNameForSave();
     /* TY_GRNPaymentMaster — must match API (no VendorMaster / F_Marketing / string MarketingMan / master Project). */
     const GRNPaymentMaster = [{
         Code: masterCode,
@@ -3197,8 +3366,8 @@ function collectPayload() {
         AccountMaster_Code: gpaNumOrZero(gpaTyGrnPaymentMasterAccountMasterCode()),
         F_BankPaymentTypeMaster_Code: gpaNumOrZero(bankType),
         BankMaster_Code: gpaNumOrZero(bankMasterCode),
-        BankName: gpaGetSelectedBankNameForSave(),
-        Amount: gpaNumOrZero(parseNum(document.getElementById('txtHeaderAmount'))),
+        BankName: bankNameForSave,
+        Amount: headerAmountNum,
         AdvanceAmount: gpaNumOrZero(parseNum(document.getElementById('txtFooterAdvance'))),
         Narration: document.getElementById('txtNarration')?.value?.trim() ?? '',
         MarketingManMaster_Code: gpaNumOrZero(gpaTyGrnPaymentMasterMarketingManMasterCode()),
@@ -3283,6 +3452,7 @@ async function loadGRNPaymentApprovalByCode(Code) {
     const codeNum = parseInt(Code, 10);
     if (!Number.isFinite(codeNum) || codeNum <= 0) return;
     try {
+        gpaClearBizsolBankStmtEmbedLocks();
         await loadVendorList();
         await loadEmployeeList();
         await loadBankPaymentList();
@@ -3688,6 +3858,7 @@ function saveGRNPaymentApproval() {
 // RESET
 // ══════════════════════════════════════════════════════════════════════════════
 function resetGRNPaymentApprovalForm() {
+    gpaClearBizsolBankStmtEmbedLocks();
     const h = document.getElementById('hdnGRNPaymentMasterCode');
     if (h) h.value = '0';
     editMode = false;
