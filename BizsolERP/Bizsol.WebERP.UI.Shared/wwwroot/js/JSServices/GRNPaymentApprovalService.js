@@ -55,6 +55,12 @@ const GRNPaymentApprovalService = {
             `&Remarks=${encodeURIComponent(remarks || '')}`;
         return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
     },
+
+    GetFirstPendingEntryDate: function GetFirstPendingEntryDate() {
+        const url = UrlService.API_ENDPOINT_GRNPaymentLevelsApproval + '/GetFirstPendingEntryDate';
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
 };
 
 export { GRNPaymentApprovalService };

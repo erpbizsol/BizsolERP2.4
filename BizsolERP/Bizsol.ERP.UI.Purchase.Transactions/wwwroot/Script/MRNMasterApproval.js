@@ -17,8 +17,35 @@ function InitDates() {
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const fromEl = document.getElementById('gpaFromDate');
     const toEl = document.getElementById('gpaToDate');
-    if (fromEl && !fromEl.value) fromEl.value = FmtDateInput(firstDay);
     if (toEl && !toEl.value) toEl.value = FmtDateInput(today);
+
+    if (!fromEl || fromEl.value) {
+        return Promise.resolve();
+    }
+
+    return MRNMasterApprovalService.GetFirstPendingBillDate()
+        .then(function (result) {
+            let dateVal = null;
+            if (Array.isArray(result) && result.length > 0) {
+                const row = result[0];
+                dateVal = row.FirstPendingBillDate ?? row.firstPendingBillDate ?? row.Data ?? row.data ?? null;
+            } else if (result && result.FirstPendingBillDate) dateVal = result.FirstPendingBillDate;
+            else if (result && result.Data) dateVal = result.Data;
+            else if (result && result.data) dateVal = result.data;
+            else if (typeof result === 'string' || result instanceof Date) dateVal = result;
+
+            if (dateVal) {
+                const parsed = new Date(dateVal);
+                if (!isNaN(parsed.getTime())) {
+                    fromEl.value = FmtDateInput(parsed);
+                    return;
+                }
+            }
+            fromEl.value = FmtDateInput(firstDay);
+        })
+        .catch(function () {
+            fromEl.value = FmtDateInput(firstDay);
+        });
 }
 
 function FmtDateInput(d) {
@@ -345,7 +372,7 @@ function NormalizePaymentList(list) {
 function LoadPaymentList() {
     const fromDate = document.getElementById('gpaFromDate')?.value || '';
     const toDate = document.getElementById('gpaToDate')?.value || '';
-    const status = document.getElementById('gpaDdlStatus')?.value || 'A';
+    const statusVal = document.getElementById('gpaDdlStatus')?.value || 'A';
 
     G_OnlyPendingOnMe = false;
     syncGpaPendingOnMeChipActive();
@@ -355,10 +382,26 @@ function LoadPaymentList() {
     const container = document.getElementById('gpaPendingList');
     if (container) container.innerHTML = '';
 
-    MRNMasterApprovalService.GetPendingMRNMasterList(status, fromDate, toDate)
+    // Always fetch ALL records from the API (Status='A') and apply status filtering
+    // entirely on the client side using getApprovalStatus(). This avoids any
+    // mismatch between the dropdown labels ('P'=Pending, 'Y'=Approved) and the
+    // underlying DB values ('P'=Approved/Posted, 'N'/'R'=Rejected, ''=Pending).
+    MRNMasterApprovalService.GetPendingMRNMasterList('A', fromDate, toDate)
         .then(function (data) {
             ShowGpaLoading(false);
-            G_PaymentList = NormalizePaymentList(normalizeListResponse(data));
+            let list = NormalizePaymentList(normalizeListResponse(data));
+
+            // Client-side status filter based on selected dropdown value
+            if (statusVal === 'P') {
+                list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'pending'; });
+            } else if (statusVal === 'Y') {
+                list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'approved'; });
+            } else if (statusVal === 'R') {
+                list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'rejected'; });
+            }
+            // 'A' (All Status) — no filter, keep full list
+
+            G_PaymentList = list;
             UpdateGpaStatChips();
             RenderPaymentCards();
             const searchEl = document.getElementById('gpaLstSearch');
@@ -458,13 +501,33 @@ function BuildPaymentCard(p) {
                <i class="fa fa-eye me-1"></i>View Details
            </button>`;
 
+    /* Project / sub-project info from API (if present) */
+    const project = EscHtml(String(p.SubProjectName ?? p.ProjectName ?? p.Project ?? '').trim());
+    const creatorName = EscHtml(String(p.CreatedByName ?? p.CreatedBy ?? p.Creator ?? '').trim());
+    const projectLine = project
+        ? `<span style="font-size:0.72rem;color:#475569;"><i class="fa fa-project-diagram me-1" style="color:#0284c7;"></i>${project} · L${curLvlNo}</span>`
+        : '';
+    const creatorBadge = creatorName
+        ? `<span class="gpa-creator-chip"><i class="fa fa-user me-1"></i>${creatorName}</span>`
+        : `<span class="gpa-creator-chip"><i class="fa fa-user me-1"></i>Creator</span>`;
+
     const searchKey = (vendorPlain + ' ' + entryPlain).toLowerCase();
+
+    /* Icon buttons: Attachment only */
+    const iconBtns = `
+        <div class="gpa-pay-card-print-btns">
+            <button type="button" class="btn-gpa-print-icon btn-gpa-print-attach"
+                    title="Attachments"
+                    onclick="if(typeof openGRNApprovalCardAttachment==='function')openGRNApprovalCardAttachment(${code})">
+                <i class="fa fa-paperclip"></i>
+            </button>
+        </div>`;
 
     return `
     <div class="gpa-pay-card section-entry-animation" data-code="${code}" data-search="${EscHtml(searchKey)}">
         <div class="gpa-pay-card-header">
             <div class="gpa-entry-badge">
-                <span style="font-size:0.6rem;font-weight:600;opacity:0.82;line-height:1;">MRN</span>
+                <span style="font-size:0.6rem;font-weight:600;opacity:0.82;line-height:1;">GRN#</span>
                 <span style="font-weight:800;font-size:0.82rem;line-height:1.2;">${entryNo}</span>
             </div>
             <div class="gpa-pay-card-vendor">
@@ -473,6 +536,8 @@ function BuildPaymentCard(p) {
                 </div>
                 <div class="gpa-pay-card-meta">
                     <span><i class="fa fa-calendar-alt me-1"></i>${entryDate || '—'}</span>
+                    ${creatorBadge}
+                    ${projectLine}
                     <span class="gpa-pay-level-chip">
                         <i class="fa fa-layer-group me-1"></i>${levelChip}
                     </span>
@@ -491,6 +556,7 @@ function BuildPaymentCard(p) {
             ${stepperHtml}
         </div>
         <div class="gpa-pay-card-footer">
+            ${iconBtns}
             ${actionBtn}
         </div>
     </div>`;
@@ -644,8 +710,6 @@ function OpenDetailModal(paymentCode) {
 
     $('#modalGpaDetail').modal({ backdrop: 'static' });
     $('#modalGpaDetail').modal('show');
-
-    LoadMrnAttachmentsInline(code);
 
     MRNMasterApprovalService.GetMRNMasterDetail(code)
         .then(function (res) {
@@ -1047,8 +1111,14 @@ function NavigateToGRNServiceApprovalConfiguration() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    InitDates();
-    LoadPaymentList();
+    InitDates()
+        .then(function () {
+            LoadPaymentList();
+        })
+        .catch(function (err) {
+            console.error('InitDates failed', err);
+            LoadPaymentList();
+        });
 
     const searchEl = document.getElementById('gpaLstSearch');
     if (searchEl) {

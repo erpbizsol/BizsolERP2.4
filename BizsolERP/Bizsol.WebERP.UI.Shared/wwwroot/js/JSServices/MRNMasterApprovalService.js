@@ -55,6 +55,11 @@ const MRNMasterApprovalService = {
             `&Remarks=${encodeURIComponent(remarks || '')}`;
         return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
     },
+
+    GetFirstPendingBillDate: function GetFirstPendingBillDate() {
+        const url = UrlService.API_ENDPOINT_MRNMasterLevelsApproval + '/GetFirstPendingBillDate';
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
 };
 
 export { MRNMasterApprovalService };
