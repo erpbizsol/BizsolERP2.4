@@ -1,6 +1,7 @@
 import { VendorMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VendorMasterService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
 var G_UserMasterCode = authKeyData.UserMaster_Code;
@@ -752,6 +753,14 @@ $(document).ready(function () {
             vmSyncVendorFormAttachBarState(count);
         }
     };
+
+    document.addEventListener("bizsol:attachmentcontrol:changed", function (ev) {
+        var d = ev.detail;
+        if (!d || d.tempMode) return;
+        if (d.masterTableName !== VM_ATTACHMENT_MASTER_TABLE) return;
+        if (!document.getElementById("VendorMaster-body")) return;
+        if (typeof GetVendorMasterList === "function") GetVendorMasterList();
+    });
 
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     syncVendorModuleContextFromHeading();
@@ -1776,6 +1785,12 @@ function DoVendorDelete() {
             VendorMasterService.DeleteSolarVendorMaster(G_EditCode, reason).then(function (res) {
                 $("#vmDeleteConfirmBackdrop").removeClass("show");
                 if (res && res.Status === 'Y') {
+                    var delPk = parseInt(String(G_EditCode || 0), 10) || 0;
+                    if (delPk > 0) {
+                        AttachmentControlService.DeleteAllAttachment(VM_ATTACHMENT_MASTER_TABLE, delPk, "", 0).catch(function (e) {
+                            console.warn("Delete all attachments after vendor delete", e);
+                        });
+                    }
                     GetVendorMasterList();
                     ShowVendorSuccessModal(
                         "Deleted Successfully!",

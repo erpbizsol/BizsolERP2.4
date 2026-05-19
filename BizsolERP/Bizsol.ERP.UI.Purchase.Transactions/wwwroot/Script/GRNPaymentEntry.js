@@ -15,6 +15,15 @@ $(document).ready(async function () {
         }
         syncGpaFooterAttachmentButtonState(count);
     };
+
+    document.addEventListener('bizsol:attachmentcontrol:changed', function (ev) {
+        const d = ev.detail;
+        if (!d || d.tempMode) return;
+        if (d.masterTableName !== 'GRNPaymentMaster') return;
+        if (document.getElementById('divGPAList') && typeof loadGRNPaymentApprovalList === 'function') {
+            loadGRNPaymentApprovalList();
+        }
+    });
 });
 
 
@@ -939,6 +948,12 @@ async function doDeleteGRNPaymentApproval(code) {
                     bootstrap.Modal.getInstance(modalEl)?.hide();
                 }
                 showToast(result.Msg ?? result.msg ?? 'Deleted successfully.', 'success');
+                const delPk = parseInt(String(code), 10) || 0;
+                if (delPk > 0) {
+                    AttachmentControlService.DeleteAllAttachment('GRNPaymentMaster', delPk, '', 0).catch(function (e) {
+                        console.warn('Delete all attachments after payment entry delete', e);
+                    });
+                }
                 editMode = false;
                 await loadGRNPaymentApprovalList();
                 showListView();
