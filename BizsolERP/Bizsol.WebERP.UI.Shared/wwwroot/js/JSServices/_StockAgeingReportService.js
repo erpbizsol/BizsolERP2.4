@@ -72,6 +72,28 @@ const StockAgeingReportService = {
         );
     },
 
+    GetYieldConfigurationList: function GetYieldConfigurationList() {
+        var URL = UrlService.API_DOCUMENT_StockAgeingYieldConfiguration + '/GetYieldConfigurationList';
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+    SaveYieldConfigurationRow: function SaveYieldConfigurationRow(payload) {
+        var URL = UrlService.API_DOCUMENT_StockAgeingYieldConfiguration + '/SaveYieldConfigurationRow';
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload)).then(function (value) {
+            return value;
+        });
+    },
+
+    DeleteYieldConfigurationRow: function DeleteYieldConfigurationRow(code) {
+        var URL =
+            UrlService.API_DOCUMENT_StockAgeingYieldConfiguration +
+            '/DeleteYieldConfigurationRow?Code=' +
+            encodeURIComponent(code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
 }
 
 export { StockAgeingReportService }

@@ -155,6 +155,10 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-3">
+                <label for="ddlReportOption" class="form-label filter-label">Report Option <span class="text-danger">*</span></label>
+                <select id="ddlReportOption" name="ddlReportOption" class="form-control form-control-sm box_border" placeholder="Select.." autocomplete="off" required></select>
+            </div>
+            <div class="col-md-3">
                 <label for="ddlCategory" class="form-label filter-label">Category <span class="text-danger">*</span></label>
                 <select id="ddlCategory" name="ddlCategory" class="form-control form-control-sm box_border" placeholder="Select.." multiple style="width: 300px;" autocomplete="off" required onchange="Bind_ddlItemMaster();"></select>
             </div>
@@ -174,10 +178,7 @@
                 <label for="ddlItemNameFilter" class="form-label filter-label">Item Name <span class="text-danger">*</span></label>
                 <select id="ddlItemNameFilter" name="ddlItemNameFilter" class="form-control form-control-sm box_border" placeholder="Select.." autocomplete="off" required></select>
             </div>
-            <div class="col-md-3">
-                <label for="ddlReportOption" class="form-label filter-label">Report Option <span class="text-danger">*</span></label>
-                <select id="ddlReportOption" name="ddlReportOption" class="form-control form-control-sm box_border" placeholder="Select.." autocomplete="off" required></select>
-            </div>
+            
             <div class="col-md-3">
                 <label for="ddlSizeParameter" class="form-label filter-label">Size Parameter <span class="text-danger">*</span></label>
                 <select id="ddlSizeParameter" name="ddlSizeParameter" class="form-control form-control-sm box_border" multiple style="width: 300px;" placeholder="Select.." autocomplete="off" required></select>
