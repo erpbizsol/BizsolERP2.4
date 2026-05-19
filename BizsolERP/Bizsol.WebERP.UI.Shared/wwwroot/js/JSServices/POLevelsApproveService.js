@@ -23,6 +23,12 @@ const POLevelsApproveService = {
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
+    // ── Get first pending PO date to use as default FromDate ────────────────
+    GetFirstPendingPODate: function GetFirstPendingPODate() {
+        let url = UrlService.API_ENDPOINT_POLevelsApprove + `/GetFirstPendingPODate`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
     // ── Approve a PO at the current level ─────────────────────────────────────
     ApprovePO: function ApprovePO(poCode, levelCode, remarks) {
         let userCode = 0, groupCode = 0;

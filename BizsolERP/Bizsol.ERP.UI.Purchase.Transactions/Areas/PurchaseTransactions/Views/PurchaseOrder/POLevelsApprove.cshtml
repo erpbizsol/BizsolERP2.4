@@ -1,7 +1,8 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/PurchaseOrderStore.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/POLevelsApprove.js"></script>
 
 <style>
@@ -203,9 +204,42 @@
     .pla-po-card-footer {
         padding: 8px 16px 12px;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
         gap: 8px;
         flex-wrap: wrap;
+    }
+    .pla-po-card-print-btns {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .btn-pla-print-icon {
+        width: 36px;
+        height: 32px;
+        border: none;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-pla-print-prev {
+        background: #64748b;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(100, 116, 139, 0.35);
+    }
+    .btn-pla-print-go {
+        background: #1e293b;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(30, 41, 59, 0.35);
+    }
+    .btn-pla-print-icon:hover {
+        transform: translateY(-1px);
+        color: #fff;
     }
     .btn-pla-card-approve {
         display: inline-flex; align-items: center; gap: 5px;
@@ -367,6 +401,38 @@
         transition:all 0.2s; cursor:pointer;
     }
     .btn-pla-reject:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(220,38,38,0.5); color:#fff; }
+    .btn-pla-modal-preview {
+        display:inline-flex; align-items:center; gap:5px;
+        background:#64748b; border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(100,116,139,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-modal-preview:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(100,116,139,0.45); }
+    .btn-pla-modal-print {
+        display:inline-flex; align-items:center; gap:5px;
+        background:#1e293b; border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(30,41,59,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-modal-print:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(30,41,59,0.45); }
+    .btn-pla-modal-attach {
+        display:inline-flex; align-items:center; gap:5px;
+        border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(14,165,233,0.35);
+        transition:all 0.2s; cursor:pointer;
+        background:linear-gradient(135deg,#0ea5e9,#0284c7);
+    }
+    .btn-pla-modal-attach:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(2,132,199,0.45); }
+    .btn-pla-modal-attach.pla-attach-has-files {
+        background:linear-gradient(135deg,#16a34a,#15803d);
+        box-shadow:0 3px 10px rgba(22,163,74,0.35);
+    }
+    .btn-pla-modal-attach.pla-attach-has-files:hover {
+        box-shadow:0 5px 14px rgba(22,163,74,0.45);
+    }
     .btn-pla-close {
         display:inline-flex; align-items:center; gap:5px;
         background:linear-gradient(135deg,#f59e0b,#d97706);
@@ -427,7 +493,8 @@
             width: 100%; justify-content: space-between;
         }
         .pla-info-grid { grid-template-columns: repeat(2, 1fr); }
-        .pla-po-card-footer { justify-content: stretch; }
+        .pla-po-card-footer { justify-content: stretch; flex-direction: column; align-items: stretch; }
+        .pla-po-card-footer .pla-po-card-print-btns { width: 100%; justify-content: flex-start; }
         .pla-po-card-footer .btn-pla-card-approve,
         .pla-po-card-footer .btn-pla-card-view { width: 100%; justify-content: center; }
         .btn-pla-approve, .btn-pla-reject, .btn-pla-close { padding: 9px 14px; font-size: 0.8rem; }
@@ -587,9 +654,23 @@
             </div>
 
             <div class="modal-footer"
-                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;">
+                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
                 <input type="hidden" id="hfPOCode" value="0" />
                 <input type="hidden" id="hfLevelCode" value="0" />
+                <input type="hidden" id="hfAttachPONo" value="" />
+                <input type="hidden" id="hfAttachPODate" value="" />
+                <button type="button" class="btn-pla-modal-preview"
+                        onclick="PrintPOFromDetail('preview')" title="Print preview (same as PO Store)">
+                    <i class="fa fa-search-plus"></i>Preview
+                </button>
+                <button type="button" class="btn-pla-modal-print"
+                        onclick="PrintPOFromDetail('print')" title="Print PO">
+                    <i class="fa fa-print"></i>Print
+                </button>
+                <button type="button" id="btnModalAttachment" class="btn-pla-modal-attach"
+                        onclick="OpenPOApprovalAttachmentFromModal()" title="Attachments (same as PO Store)">
+                    <i class="fa fa-paperclip"></i>Attachment
+                </button>
                 <button type="button" id="btnRejectAction" class="btn-pla-reject"
                         onclick="SubmitApproval('Reject')" style="display:none;">
                     <i class="fa fa-times"></i>Reject
@@ -605,6 +686,48 @@
         </div>
     </div>
 </div>
+
+<!-- Print options (shared behaviour with Purchase Order Store) -->
+<div class="modal fade" id="modalPrintOptions" tabindex="-1" aria-labelledby="modalPrintOptionsLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false" style="z-index:1080;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;width:calc(100% - 24px);margin:auto;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#1a2a6c,#4f46e5);color:#fff;border:none;padding:14px 20px;">
+                <h5 class="modal-title mb-0" id="modalPrintOptionsLabel" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-print me-2"></i>Print Options
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding:20px 22px;">
+                <div class="form-check" style="margin-bottom:10px;">
+                    <input class="form-check-input" type="checkbox" id="chkIncludeGeneralTerms" checked
+                           style="width:1.1em;height:1.1em;margin-top:3px;cursor:pointer;" />
+                    <label class="form-check-label" for="chkIncludeGeneralTerms"
+                           style="font-size:0.85rem;font-weight:600;color:#1e293b;cursor:pointer;padding-left:4px;">
+                        Include General Terms &amp; Conditions
+                    </label>
+                    <div style="font-size:0.75rem;color:#64748b;margin-top:3px;padding-left:26px;">
+                        <i class="fa fa-info-circle me-1 text-primary"></i>
+                        Terms follow Work Type (Goods vs Service/Work), same as PO Store.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:10px 20px 16px;background:#fafafa;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <a class="btn btn-secondary btn-sm" data-bs-dismiss="modal"
+                   style="border:none;color:#fff;border-radius:8px;padding:7px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;">
+                    <i class="fa fa-times me-1"></i>Cancel
+                </a>
+                <a onclick="ConfirmPrintPO()"
+                   style="background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;color:#fff;border-radius:8px;padding:7px 18px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(2,132,199,0.3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;">
+                    <i class="fa fa-search-plus me-1"></i>Preview / Print
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PO Store attachment control host (shared with PurchaseOrderStore.js) -->
+<div id="PurchaseOrderStore_AttachmentControlmodal"></div>
 
 <!-- ══════════════════════════════════════════════════
      CONFIRM MODAL

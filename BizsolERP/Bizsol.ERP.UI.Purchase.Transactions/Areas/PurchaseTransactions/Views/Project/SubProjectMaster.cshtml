@@ -759,6 +759,55 @@
         color: #fff;
     }
 
+    /* Applicable checkbox: keep strong contrast when disabled (default Bootstrap fade is too light, esp. unchecked) */
+    .pm-levels-table .chk-po-level-applicable,
+    #dvSingleLevelSelect .chk-po-level-applicable {
+        width: 1.1rem;
+        height: 1.1rem;
+        margin: 0;
+        flex-shrink: 0;
+        border-radius: 0.25rem;
+        vertical-align: middle;
+    }
+    .pm-levels-table .chk-po-level-applicable:disabled,
+    #dvSingleLevelSelect .chk-po-level-applicable:disabled {
+        opacity: 1 !important;
+        cursor: not-allowed !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .pm-levels-table .chk-po-level-applicable:disabled:checked,
+    #dvSingleLevelSelect .chk-po-level-applicable:disabled:checked {
+        accent-color: #4f46e5;
+        background-color: #6366f1;
+        border-color: #4338ca;
+    }
+    .pm-levels-table .chk-po-level-applicable:disabled:not(:checked),
+    #dvSingleLevelSelect .chk-po-level-applicable:disabled:not(:checked) {
+        accent-color: #64748b;
+        background-color: #f1f5f9;
+        border: 2px solid #64748b;
+    }
+    /* P anchor ends (first/last P): stronger outline so they read as “fixed” vs editable middle rows */
+    .pm-levels-table .chk-po-level-applicable.chk-lock-p-anchor:disabled:checked,
+    #dvSingleLevelSelect .chk-po-level-applicable.chk-lock-p-anchor:disabled:checked {
+        box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.45);
+        border-color: #312e81;
+    }
+    .pm-levels-table .chk-po-level-applicable.chk-lock-user:disabled:not(:checked),
+    #dvSingleLevelSelect .chk-po-level-applicable.chk-lock-user:disabled:not(:checked) {
+        background-color: #e2e8f0;
+        border-color: #475569;
+    }
+    .pm-levels-table .select2-container.select2-container--disabled .select2-selection--multiple,
+    #dvSingleLevelSelect .select2-container.select2-container--disabled .select2-selection--multiple {
+        background: #e8ecf4 !important;
+        border-color: #94a3b8 !important;
+        cursor: not-allowed !important;
+        opacity: 1 !important;
+        box-shadow: none !important;
+    }
+
     /* ── Responsive ────────────────────────────────────────────── */
     @@media (max-width: 880px) {
         .pm-stats { gap: 10px; }
@@ -977,11 +1026,12 @@
                                     <tr>
                                         <th style="width:44px; text-align:center;">#</th>
                                         <th style="min-width:160px;">Level</th>
+                                        <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
                                         <th style="min-width:220px;">Users to Verify PO</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tblPOLevelsBody">
-                                    <tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                    <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
                                 </tbody>
                             </table>
                         </div>

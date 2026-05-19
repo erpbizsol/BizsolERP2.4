@@ -21,7 +21,8 @@
     #hidetexbox { display: none; }
     .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
     #ExpenseEntryDetails .ee-ddl-project,
-    #ExpenseEntryDetails .ee-ddl-subproject {
+    #ExpenseEntryDetails .ee-ddl-subproject,
+    #ExpenseEntryDetails .ee-ddl-expensehead {
         min-width: 9rem;
         max-width: 14rem;
         font-size: 0.82rem;
@@ -77,7 +78,11 @@
     <div class="expense-entry-actions">
         <button type="button" name="btnSubmit" id="btnSubmit" class="btn btn-primary btn-height">Save</button>
         <button type="button" name="btnVerify" id="btnVerify" class="btn btn-success btn-height">Verify</button>
+        <button type="button" name="btnNewRow" id="btnNewRow" class="btn btn-info btn-height">New Row</button>
         <button type="button" name="btnBack" id="btnBack" class="btn btn-secondary btn-height">Back</button>
+        <button type="button" id="btnExpenseEntryMasterAttach" class="btn btn-success btn-height ee-btn-master-attach" title="Entry-level attachments (Expense Entry Master)">
+            <i class="fa fa-paperclip" aria-hidden="true"></i> Attachment
+        </button>
     </div>
 </div>
 </div>
