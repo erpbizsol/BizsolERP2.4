@@ -1,4 +1,5 @@
-import { PurchaseOrderStoreService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseOrderStoreServices.js';
+﻿import { PurchaseOrderStoreService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseOrderStoreServices.js';
+import { POLevelsApproveService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/POLevelsApproveService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
@@ -548,6 +549,8 @@ let G_ItemWithoutProjectList = [];
 let G_CompanyInfoList = [];
 
 const DEFAULT_SERVICE_SCOPE_OF_WORK = '';
+/** When true, default From Date is first day of month (no API). Mirrors POLevelsApprove.js. */
+const USE_DUMMY = false;
 
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
@@ -578,16 +581,17 @@ function NavigateToPOApproval() {
     window.location.href = appBase + 'PurchaseTransactions/PurchaseOrder/POLevelsApprove?ModuleDesp=PO%20Approval';
 }
 
-$(document).ready(function () {
+$(document).ready(async function () {
     if (!document.getElementById('tblPOListBody')) {
         window._poPrintMastersReady = InitPOPrintMasterDataOnly();
         return;
     }
 
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    $('#lstTxtFromDate').val(FormatDateInput(firstDay));
-    $('#lstTxtToDate').val(FormatDateInput(today));
+    try {
+        await InitDates();
+    } catch (e) {
+        console.error('InitDates failed', e);
+    }
     InitDropdowns();
     LoadPOStatCounts();
     window.ShowPOListGrid();
@@ -642,6 +646,39 @@ function FormatDateInput(d) {
     const mo = String(d.getMonth() + 1).padStart(2, '0');
     const dy = String(d.getDate()).padStart(2, '0');
     return `${yr}-${mo}-${dy}`;
+}
+
+/** Default list filters: To = today; From = API first pending PO date or first of month (same as POLevelsApprove.js). */
+function InitDates() {
+    const today = new Date();
+    $('#lstTxtToDate').val(FormatDateInput(today));
+    if (USE_DUMMY) {
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        $('#lstTxtFromDate').val(FormatDateInput(firstDay));
+        return Promise.resolve();
+    }
+
+    return POLevelsApproveService.GetFirstPendingPODate()
+        .then(function (resp) {
+            let dateStr = '';
+            if (!resp) dateStr = '';
+            else if (typeof resp === 'string') dateStr = resp;
+            else if (resp[0] && resp[0].FirstPendingPODate) dateStr = resp[0].FirstPendingPODate;
+
+            let d = null;
+            if (dateStr) {
+                const parsed = new Date(dateStr);
+                if (!isNaN(parsed)) d = parsed;
+            }
+            if (!d) {
+                d = new Date(today.getFullYear(), today.getMonth(), 1);
+            }
+            $('#lstTxtFromDate').val(FormatDateInput(d));
+        })
+        .catch(function () {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            $('#lstTxtFromDate').val(FormatDateInput(firstDay));
+        });
 }
 
 function FormatDateDisplay(d) {
@@ -2480,6 +2517,22 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
 
+        function _dispCreatedByField(v) {
+            const s = v == null ? '' : String(v).trim();
+            return s ? _esc(s) : '-';
+        }
+
+        // Same block layout as Site Representative (info-row / info-label / inline spans)
+        let createdBySection = '';
+        const cbHave = ((header.CreatedByName || '').trim() || (header.CreatedByMobileNo || '').trim() || (header.CreatedByEmail || '').trim());
+        if (cbHave) {
+            const createdByInner = ''
+                + '<span style="margin-right:14px;"><b>Name : </b>' + _dispCreatedByField(header.CreatedByName) + '</span>'
+                + '<span style="margin-right:14px;"><b>Mobile : </b>' + _dispCreatedByField(header.CreatedByMobileNo) + '</span>'
+                + '<span><b>Email : </b>' + _dispCreatedByField(header.CreatedByEmail) + '</span>';
+            createdBySection = '<div class="info-row"><div class="info-cell full"><div class="info-label">Created By :</div><div class="info-field" style="padding-top:2px;">' + createdByInner + '</div></div></div>';
+        }
+
         let generalTermsHtml = '';
         if (termsOnly) {
             if (includeGeneralTerms) {
@@ -2571,6 +2624,12 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             + '.sig-stamp{width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 4px;opacity:0.88;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
             + '.sig-approved-name{font-size:7pt;font-weight:700;color:#1a7a45;text-align:center;padding:0 4px 1px;}'
             + '.sig-approved-date{font-size:6.5pt;color:#555;text-align:center;padding:0 4px 3px;font-weight:600;}'
+            + '.inv-text-box{border:1px solid #555;padding:7px 10px 9px;margin:8px 0 6px;font-size:8.5pt;color:#000;font-weight:600;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+            + '.inv-text-box .inv-note{font-style:italic;margin-bottom:4px;}'
+            + '.inv-text-box .inv-title{font-weight:800;text-decoration:underline;margin-bottom:5px;font-size:9pt;}'
+            + '.inv-text-box .inv-list{margin:0;padding:0;list-style:none;}'
+            + '.inv-text-box .inv-list li{padding:1px 0 1px 28px;text-indent:-28px;}'
+            + '.inv-text-box .inv-sub-heading{font-weight:800;margin:6px 0 3px;}'
             + '.page-wrap{width:100%;border-collapse:collapse;border-spacing:0;}'
             + '.page-footer-cell{padding:0;}'
             + '.page-body-cell{padding:0;vertical-align:top;}'
@@ -2606,6 +2665,7 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             + '</div>'
             + shipToSection
             + siteRepSection
+            + createdBySection
             + '<div class="sec-band">' + sectionBand + '</div>'
             + '<table class="items"><thead><tr>'
             + '<th style="width:28px;">S.No</th>'
@@ -2622,10 +2682,34 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             + (termsHtml || scopeHtml
                 ? '<div style="margin:5px 0;">' + (termsHtml ? '<div>' + termsHtml + '</div>' : '') + (scopeHtml ? '<div>' + scopeHtml + '</div>' : '') + '</div>'
                 : '')
+            + '<div class="inv-text-box">'
+            +   '<div class="inv-title">General Terms & Conditions shall follow invoice text</div>'
+            //+   '<div class="inv-note">(Please refer Clause No. 2 and 4 of General Terms and Conditions enclosed herewith)</div>'
+            +   '<div class="inv-title">NOTE: The following details are essential to process your invoice for payment purpose.</div>'
+            +   '<ul class="inv-list">'
+            +     '<li>i)&nbsp;&nbsp;&nbsp;&nbsp;Contractor code.</li>'
+            +     '<li>ii)&nbsp;&nbsp;&nbsp;Order no.</li>'
+            +     '<li>iii)&nbsp;&nbsp;Item no.</li>'
+            +     '<li>iv)&nbsp;&nbsp;&nbsp;Description.</li>'
+            +     '<li>v)&nbsp;&nbsp;&nbsp;&nbsp;Quantity.</li>'
+            +     '<li>vi)&nbsp;&nbsp;&nbsp;Tax Invoice cum delivery challan should be sent along with the Consignment, if applicable.</li>'
+            +   '</ul>'
+            +   '<div class="inv-sub-heading">Registered Contractor also undertakes the following conditions:</div>'
+            +   '<ul class="inv-list">'
+            +     '<li>vii)&nbsp;&nbsp;&nbsp;GSTIN to be mentioned in Invoice.</li>'
+            +     '<li>viii)&nbsp;&nbsp;HSN Code, if applicable.</li>'
+            +     '<li>ix)&nbsp;&nbsp;&nbsp;&nbsp;Tax Invoice with prescribe details under the GST Invoice Rules, 2017 are pre-condition for payment.</li>'
+            +     '<li>x)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Contractor declares that the Contractor is registered under the GST Act, 2017.</li>'
+            +     '<li>xi)&nbsp;&nbsp;&nbsp;&nbsp;Unless the GST levied on invoices by Contractor does not appear on the GSTN portal, Employer will not make the payment of any.</li>'
+            +     '<li>xii)&nbsp;&nbsp;&nbsp;Contractor undertake and confirm that the Contractor will deposit all taxes payable on the Deliverables, such as IGST, CGST, SGST/UGST as the case may be within the prescribed time limit under the Act(s).</li>'
+            +     '<li>xiii)&nbsp;&nbsp;Contractor agrees to upload the details of such Deliverables in GSTN system within such dates (including reconciliation of the mismatch, if any, and file valid return(s); failure to do so, for whatsoever reason, authorise the recipient to deduct the amount of taxes, penalty and interest payable for such failure, from the amount payable to the Deliverables or to recover the same from the Deliverables.</li>'
+            +     (isGoods ? '' : '<li>xiv)&nbsp;&nbsp;TDS will be deducted/Applicable as per government law.</li>')
+            +   '</ul>'
+            + '</div>'
             + '<div class="sig-row">'
-            + '<div class="sig-box">' + BuildSigBox('Approved By HOD',     stampUrlHOD)     + '</div>'
-            + '<div class="sig-box">' + BuildSigBox('Approved By COO',     stampUrlCEO)     + '</div>'
             + '<div class="sig-box">' + BuildSigBox('Approved By Finance', stampUrlFinance) + '</div>'
+            + '<div class="sig-box">' + BuildSigBox('Approved By COO', stampUrlHOD )     + '</div>'
+            + '<div class="sig-box">' + BuildSigBox('Approved By CEO', stampUrlCEO )     + '</div>'
             + '</div>';
 
         const coreInner = termsOnly ? generalTermsHtml : (mainBlock + generalTermsHtml);
