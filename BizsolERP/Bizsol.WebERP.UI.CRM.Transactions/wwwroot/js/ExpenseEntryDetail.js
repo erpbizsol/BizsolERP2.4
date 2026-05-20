@@ -1,4 +1,5 @@
 import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
+import { ExpensesLedgerReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpensesLedgerReportService.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
@@ -89,6 +90,49 @@ function buildExpenseHeadOptionsFromDetailList(rawList) {
     });
 }
 
+/** Recompute footer totals from current inputs (Filter.js totals use stored HTML, not live typing). */
+function refreshExpenseEntryDetailTotals() {
+    var bodyId = 'ExpenseEntryDetails-body';
+    var $tbody = $('#' + bodyId);
+    var $totalRow = $tbody.find('tr.total-row');
+    if (!$totalRow.length) return;
+
+    var sumAllowed = 0;
+    var sumExp = 0;
+    var sumAppr = 0;
+    $tbody.find('tr').not('.total-row').not('.grand-total-row').each(function () {
+        var $tr = $(this);
+        if ($tr.hasClass('expense-entry-empty-row')) return;
+        if (!$tr.find('.hdnExpenseHeadMasterCode').length) return;
+        var a = parseFloat($tr.find('.txtAllowedAmount').val());
+        var e = parseFloat($tr.find('.txtExpendedAmount').val());
+        var p = parseFloat($tr.find('.txtApprovedAmount').val());
+        if (!isNaN(a) && isFinite(a)) sumAllowed += a;
+        if (!isNaN(e) && isFinite(e)) sumExp += e;
+        if (!isNaN(p) && isFinite(p)) sumAppr += p;
+    });
+
+    var fixedCfg = window['fixedDecimalvalue_' + bodyId];
+    var commaCols = window['commaColumns_' + bodyId] || [];
+
+    function formatTotalCell(columnKey, sum) {
+        var decimalPlaces = 3;
+        if (fixedCfg && typeof fixedCfg === 'object' && Object.prototype.hasOwnProperty.call(fixedCfg, columnKey)) {
+            decimalPlaces = fixedCfg[columnKey];
+        } else if (typeof fixedCfg === 'number') {
+            decimalPlaces = fixedCfg;
+        }
+        var valStr = (commaCols.indexOf(columnKey) >= 0 && typeof window.formatIndianNumber === 'function')
+            ? window.formatIndianNumber(sum, decimalPlaces)
+            : sum.toFixed(decimalPlaces);
+        return '<strong>' + valStr + '</strong>';
+    }
+
+    $totalRow.find('td').eq(Indx_Tbl.AllowedAmount).html(formatTotalCell('Allowed Amount', sumAllowed));
+    $totalRow.find('td').eq(Indx_Tbl.ExpenseAmount).html(formatTotalCell('Expense Amount', sumExp));
+    $totalRow.find('td').eq(Indx_Tbl.ApprovedAmount).html(formatTotalCell('Approved Amount', sumAppr));
+}
+
 /** Grid loads with Paginator=false; New Row must not call renderTableWithPagination without page controls. */
 function renderExpenseEntryDetailGrid() {
     var tableId = 'ExpenseEntryDetails';
@@ -99,6 +143,7 @@ function renderExpenseEntryDetailGrid() {
     } else {
         renderTable(data, bodyId, false);
     }
+    refreshExpenseEntryDetailTotals();
 }
 
 function initializeExpenseEntryDetailGridShell() {
@@ -340,6 +385,7 @@ function getDetailRowSubProjectCodeFromItem(item) {
 }
 
 function validateDuplicateSubProjectExpenseHead() {
+    if (G_ProjectApplicable !== 'Y') return true;
     var tableId = 'ExpenseEntryDetails';
     var fd = window['filteredData_' + tableId];
     if (!fd || !fd.length) return true;
@@ -356,6 +402,28 @@ function validateDuplicateSubProjectExpenseHead() {
         seen[key] = true;
     }
     return true;
+}
+
+/** When API config ProjectApplicable is Y, each line with an expense head needs Project + Sub Project. */
+function validateExpenseDetailProjectSubProject() {
+    if (G_ProjectApplicable !== 'Y') return true;
+    var ok = true;
+    $('#ExpenseEntryDetails-body tr').not('.total-row').not('.grand-total-row').each(function () {
+        var $r = $(this);
+        if ($r.hasClass('expense-entry-empty-row')) return;
+        var $head = $r.find('.ee-ddl-expensehead');
+        if (!$head.length || (parseInt($head.val(), 10) || 0) <= 0) return;
+        var pm = parseInt($r.find('.ee-ddl-project').val(), 10) || 0;
+        var sp = parseInt($r.find('.ee-ddl-subproject').val(), 10) || 0;
+        if (pm <= 0 || sp <= 0) {
+            ok = false;
+            return false;
+        }
+    });
+    if (!ok) {
+        toastr.warning('Please select Project and Sub Project on every line when project is applicable.');
+    }
+    return ok;
 }
 
 function parseAllowedAmountFromDetailItem(item) {
@@ -408,6 +476,7 @@ function applyImmediateFieldsForExpenseHeadSelection($row, headCode) {
     if (!headCode || headCode <= 0) {
         $row.find('.txtAllowedAmount').val('0');
         $row.find('.txtPerDay').val('0');
+        refreshExpenseEntryDetailTotals();
         return;
     }
     var meta = G_ExpenseHeadOptions.find(function (h) {
@@ -421,6 +490,7 @@ function applyImmediateFieldsForExpenseHeadSelection($row, headCode) {
     var perDay = meta.templatePerDayLimit != null && !isNaN(Number(meta.templatePerDayLimit)) ? Number(meta.templatePerDayLimit) : 0;
     $row.find('.txtAllowedAmount').val(allowed);
     $row.find('.txtPerDay').val(perDay);
+    refreshExpenseEntryDetailTotals();
 }
 
 function refreshAllowedAmountForSingleRow($row) {
@@ -430,10 +500,12 @@ function refreshAllowedAmountForSingleRow($row) {
     if (rowCode <= 0) {
         $row.find('.txtAllowedAmount').val('0');
         syncExpenseDetailRowToFilteredData($row);
+        refreshExpenseEntryDetailTotals();
         return;
     }
     function finish() {
         syncExpenseDetailRowToFilteredData($row);
+        refreshExpenseEntryDetailTotals();
     }
     if (!fromDate || !toDate || !MarketingManMaster_Code) {
         applyAllowedAmountFallbackForRow($row, rowCode);
@@ -498,6 +570,80 @@ function appendNewExpenseEntryRow() {
 
 var MarketingPersonName = param_MarketingMan_Name;
 var MarketingManMaster_Code = 0;
+var G_EeClosingBalanceRequestId = 0;
+
+function applyClosingBalanceFieldVisibility() {
+    if (G_ProjectApplicable === 'Y') {
+        $('#eeClosingBalWrap').show();
+    } else {
+        $('#eeClosingBalWrap').hide();
+        $('#txtClosingBalance').val('');
+    }
+}
+
+function formatClosingBalanceDisplay(row) {
+    if (!row) return '';
+    var err = row.Error || row.error || row.Message || row.message;
+    if (err) return '';
+    var amt = row.ClosingBalance != null ? row.ClosingBalance : (row.Balance != null ? Math.abs(Number(row.Balance)) : null);
+    if (amt === null || amt === undefined || amt === '') return '';
+    var n = Number(amt);
+    if (isNaN(n)) return '';
+    var drCr = (row.DrCr != null ? String(row.DrCr) : '').trim();
+    var displayAmt = Math.abs(n);
+    return drCr ? displayAmt.toFixed(3) + ' ' + drCr : displayAmt.toFixed(3);
+}
+
+/** Closing balance = payments − expenses for sales person + project + sub project (From/To dates). */
+function refreshClosingBalance(projectMasterCode, subProjectMasterCode) {
+    if (G_ProjectApplicable !== 'Y') {
+        $('#txtClosingBalance').val('');
+        return;
+    }
+    var pm = parseInt(projectMasterCode, 10) || 0;
+    var sp = parseInt(subProjectMasterCode, 10) || 0;
+    if (pm <= 0 || sp <= 0) {
+        $('#txtClosingBalance').val('');
+        return;
+    }
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate || !MarketingManMaster_Code) {
+        $('#txtClosingBalance').val('');
+        return;
+    }
+    var reqId = ++G_EeClosingBalanceRequestId;
+    ExpensesLedgerReportService.GetClosingBalance(
+        convertDateFormat1(fromDate),
+        convertDateFormat1(toDate),
+        MarketingManMaster_Code,
+        pm,
+        sp
+    ).then(function (response) {
+        if (reqId !== G_EeClosingBalanceRequestId) return;
+        var rows = Array.isArray(response) ? response : (response && Array.isArray(response.Data) ? response.Data : []);
+        if (!rows.length) {
+            $('#txtClosingBalance').val('');
+            return;
+        }
+        var err0 = rows[0].Error || rows[0].error;
+        if (err0) {
+            $('#txtClosingBalance').val('');
+            return;
+        }
+        $('#txtClosingBalance').val(formatClosingBalanceDisplay(rows[0]));
+    }).catch(function () {
+        if (reqId !== G_EeClosingBalanceRequestId) return;
+        $('#txtClosingBalance').val('');
+    });
+}
+
+function refreshClosingBalanceFromRow($row) {
+    if (!$row || !$row.length) return;
+    var pm = parseInt($row.find('.ee-ddl-project').val(), 10) || 0;
+    var sp = parseInt($row.find('.ee-ddl-subproject').val(), 10) || 0;
+    refreshClosingBalance(pm, sp);
+}
 
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Entry Details");
@@ -548,10 +694,17 @@ $(document).ready(function () {
         var html = buildSubProjectSelectHtml(proj, 0, idxForHtml);
         $row.find('td').eq(Indx_Tbl.SubProject).html(html);
         syncExpenseDetailRowToFilteredData($row);
+        $('#txtClosingBalance').val('');
     });
 
     $('#ExpenseEntryDetails').on('change', '.ee-ddl-subproject', function () {
-        syncExpenseDetailRowToFilteredData($(this).closest('tr'));
+        var $row = $(this).closest('tr');
+        syncExpenseDetailRowToFilteredData($row);
+        refreshClosingBalanceFromRow($row);
+    });
+
+    $('#ExpenseEntryDetails').on('input', '.txtAllowedAmount, .txtExpendedAmount, .txtApprovedAmount', function () {
+        refreshExpenseEntryDetailTotals();
     });
 
     $('#ExpenseEntryDetails').on('change', '.ee-ddl-expensehead', function () {
@@ -583,12 +736,19 @@ $(document).ready(function () {
         openExpenseEntryMasterAttachmentControl();
     });
 
+    ExpenseEntryService.GetMarketingManMasterByName(param_MarketingMan_Name).then(function (mm) {
+        if (mm && mm.Code) {
+            MarketingManMaster_Code = parseInt(mm.Code, 10) || 0;
+        }
+    });
+
     ExpenseEntryService.GetConfigExpenseEntryParameter()
         .then(function (cfg) {
             var row = Array.isArray(cfg) && cfg.length > 0 ? cfg[0] : (cfg || {});
             G_ProjectApplicable      = ((row.ProjectApplicable      || 'N') + '').trim().toUpperCase();
             G_LevelVerifyApplicable  = ((row.LevelVerifyApplicable  || 'N') + '').trim().toUpperCase();
             refreshApprovedAmountInputDisabledAttr();
+            applyClosingBalanceFieldVisibility();
             PopulateExpenseHeadDetails(param_ExpenseEntryMaster_Code);
         })
         .catch(function () {
@@ -721,6 +881,14 @@ function PopulateExpenseHeadDetails(Code) {
                 const totalAmount = ['Allowed Amount', 'Approved Amount', 'Expense Amount'];
                 BizsolCustomFilterGrid.CreateDataTable('ExpenseEntryDetails-header', 'ExpenseEntryDetails-body', detailData, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false, totalAmount);
                 $('#paginator-ExpenseEntryDetails').show();
+                refreshExpenseEntryDetailTotals();
+                applyClosingBalanceFieldVisibility();
+                var $firstWithSub = $('#ExpenseEntryDetails-body tr').not('.total-row').not('.grand-total-row').filter(function () {
+                    return (parseInt($(this).find('.ee-ddl-subproject').val(), 10) || 0) > 0;
+                }).first();
+                if ($firstWithSub.length) {
+                    refreshClosingBalanceFromRow($firstWithSub);
+                }
             } else {
                 loadExpenseHeadOptionsFromTemplate(MarketingPersonName).then(function () {
                     if (G_ExpenseHeadOptions.length > 0) {
@@ -781,7 +949,7 @@ function ViewAttachment(x) {
         return;
     }
     var entryNo = parseInt($('#txtEntryNo').val(), 10) || 0;
-    var entryDate = ($('#txtEntryDate').val() || '').trim();
+    var entryDate = entryDateParamForAttachmentControl();
     InitAttachmentControl('ExpenseEntryMaster', masterCode, 'ExpenseEntryDetail', detailCode, entryNo, entryDate, getAttachmentControlMode());
 }
 
@@ -789,7 +957,7 @@ function ViewAttachment(x) {
 function openExpenseEntryMasterAttachmentControl() {
     var masterCode = getExpenseEntryMasterCode();
     var entryNo = parseInt($('#txtEntryNo').val(), 10) || 0;
-    var entryDate = ($('#txtEntryDate').val() || '').trim();
+    var entryDate = entryDateParamForAttachmentControl();
     InitAttachmentControl('ExpenseEntryMaster', masterCode, '', 0, entryNo, entryDate, getAttachmentControlMode());
 }
 
@@ -819,9 +987,11 @@ function CalculateApprovedAmount(x) {
         G_AmountExceedRow = ObjCurrRow;
         G_AmountExceedRow.data('allowedAmount', AllowedAmount);
         $('#eeConfirmBackdrop').addClass('show');
+        refreshExpenseEntryDetailTotals();
         return;
     }
     ObjCurrRow.find('.txtApprovedAmount').val(ApprovedAmount);
+    refreshExpenseEntryDetailTotals();
 }
 
 function ApplyAmountExceedResponse(proceed) {
@@ -831,6 +1001,7 @@ function ApplyAmountExceedResponse(proceed) {
         G_AmountExceedRow = null;
     }
     $('#eeConfirmBackdrop').removeClass('show');
+    refreshExpenseEntryDetailTotals();
 }
 
 function ShowExpenseEntryDetailSuccessModal(title, text, iconClass) {
@@ -852,6 +1023,7 @@ function ApprovedAmountIncrease(x) {
         ObjCurrRow.find('.txtApprovedAmount').val(expendedAmountIncrease);
         toastr.warning("Approved amount should be Less than Expended amount.");
     }
+    refreshExpenseEntryDetailTotals();
 }
 
 
@@ -952,7 +1124,15 @@ function DatePicker() {
         autoclose: true,
     }).on('change', function () {
         CalculateTotalDays(MarketingManMaster_Code);
-
+        var $active = $('#ExpenseEntryDetails-body tr').not('.total-row').not('.grand-total-row').has('.ee-ddl-subproject:focus').first();
+        if (!$active.length) {
+            $active = $('#ExpenseEntryDetails-body tr').not('.total-row').not('.grand-total-row').filter(function () {
+                return (parseInt($(this).find('.ee-ddl-subproject').val(), 10) || 0) > 0;
+            }).first();
+        }
+        if ($active.length) {
+            refreshClosingBalanceFromRow($active);
+        }
     });
 
 }
@@ -971,6 +1151,13 @@ function parseDate(dateStr) {
     if (d.getFullYear() !== year || d.getMonth() !== month || d.getDate() !== day) return null;
     return d;
 }
+
+/** Attachment control uses `new Date(hfEntryDate)` → pass ISO here (display field stays dd-mm-yyyy). */
+function entryDateParamForAttachmentControl() {
+    var d = parseDate(($('#txtEntryDate').val() || '').trim());
+    return d ? d.toISOString() : '';
+}
+
 function CalculateTotalDays(MarketingManMaster_Code) {
     var fromDate = $('#txtFromDate').val();
     var toDate = $('#txtToDate').val();
@@ -1017,6 +1204,7 @@ function CalculateTotalDays(MarketingManMaster_Code) {
                             $row.find('.txtAllowedAmount').val("0");
                         }
                     });
+                    refreshExpenseEntryDetailTotals();
                 } else {
                     console.warn('No allowed amounts found from API');
                 }
@@ -1251,6 +1439,10 @@ function ValidateData() {
     });
     if (headMissing) {
         toastr.warning('Please select an Expense Head on every added row.');
+        return false;
+    }
+
+    if (!validateExpenseDetailProjectSubProject()) {
         return false;
     }
 
