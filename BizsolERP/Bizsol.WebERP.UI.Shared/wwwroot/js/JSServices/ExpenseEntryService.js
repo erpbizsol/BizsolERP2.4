@@ -124,6 +124,7 @@ const ExpenseEntryService = {
                 return value;
             }
         );
-    },
     }
-    export { ExpenseEntryService }
+};
+
+export { ExpenseEntryService }
