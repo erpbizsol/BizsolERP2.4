@@ -2475,7 +2475,15 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
 
             const lines = rawText.split('\n');
             let out = '<div class="gtc-section">'
-                    + '<div class="gtc-main-title">GENERAL TERMS &amp; CONDITIONS</div>';
+                    + '<div class="gtc-main-title pdf-gtc-block">GENERAL TERMS &amp; CONDITIONS</div>';
+            let sectionOpen = false;
+
+            function closeSection() {
+                if (sectionOpen) {
+                    out += '</div>';
+                    sectionOpen = false;
+                }
+            }
 
             lines.forEach(function (raw) {
                 const line = raw.trim();
@@ -2483,32 +2491,37 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
 
                 // ── Annexure title line ───────────────────────────────────────
                 if (annexureRe.test(line)) {
-                    out += '<div class="gtc-annexure-title">' + _esc(line) + '</div>';
+                    closeSection();
+                    out += '<div class="gtc-annexure-title pdf-gtc-block">' + _esc(line) + '</div>';
                     return;
                 }
 
                 // ── Numbered section headings (e.g. "1. Scope:") ─────────────
                 if (/^\d+[a-z]?\.\s+[A-Z]/.test(line) && line.length < 80) {
+                    closeSection();
+                    out += '<div class="pdf-gtc-block pdf-gtc-section">';
+                    sectionOpen = true;
                     out += '<div class="gtc-heading">' + _esc(line) + '</div>';
                     return;
                 }
 
                 // ── Sub-list items deeply indented (raw leading spaces ≥ 8) ──
                 if (raw.length > raw.trimStart().length + 7) {
-                    out += '<div class="gtc-sublist">' + _esc(line) + '</div>';
+                    out += '<div class="gtc-sublist pdf-gtc-block">' + _esc(line) + '</div>';
                     return;
                 }
 
                 // ── List-style items (moderate indent or list marker) ─────────
                 if ((raw.length > raw.trimStart().length + 3) || listRe.test(line)) {
-                    out += '<div class="gtc-list">' + _esc(line) + '</div>';
+                    out += '<div class="gtc-list pdf-gtc-block">' + _esc(line) + '</div>';
                     return;
                 }
 
                 // ── Normal paragraph ──────────────────────────────────────────
-                out += '<div class="gtc-para">' + _esc(line) + '</div>';
+                out += '<div class="gtc-para pdf-gtc-block">' + _esc(line) + '</div>';
             });
 
+            closeSection();
             out += '</div>';
             return out;
         }
@@ -2639,7 +2652,7 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             + '.hdr-logo{width:65px;height:65px;object-fit:contain;margin-right:14px;flex-shrink:0;}'
             + '.hdr-left{display:flex;align-items:center;flex:1;}'
             + (showLogo ? '.wm-logo{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background:url(' + logoUrl + ') no-repeat center;background-size:contain;opacity:0.07;pointer-events:none;z-index:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' : '')
-            + (forPdfExport ? '.pdf-export-body{background:#fff;margin:0;padding:4px 8px;}.po-pdf-root{max-width:794px;margin:0 auto;}' : '')
+            + (forPdfExport ? '.pdf-export-body{background:#fff;margin:0;padding:4px 8px;overflow:hidden;}.po-pdf-root{max-width:794px;margin:0 auto;}.pdf-export-body .inv-text-box{margin:6px 0 4px;padding:6px 8px;font-size:8pt;line-height:1.5;}.pdf-export-body .sig-row{margin-top:8px;}.pdf-export-body .sig-box{min-height:120px;}.pdf-export-body .sig-stamp{width:82px;height:82px;}.pdf-export-body .gtc-para,.pdf-export-body .gtc-list,.pdf-export-body .gtc-sublist{line-height:1.5;margin-bottom:3px;}.pdf-export-body .gtc-heading{margin:7px 0 2px;}.pdf-export-body .gtc-section{padding:4px 2px;}' : '')
             + gtcCssOverride
 
         const mainBlock = ''
@@ -2682,6 +2695,7 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             + (termsHtml || scopeHtml
                 ? '<div style="margin:5px 0;">' + (termsHtml ? '<div>' + termsHtml + '</div>' : '') + (scopeHtml ? '<div>' + scopeHtml + '</div>' : '') + '</div>'
                 : '')
+            + '<div class="pdf-keep-together pdf-footer-block">'
             + '<div class="inv-text-box">'
             +   '<div class="inv-title">General Terms & Conditions shall follow invoice text</div>'
             //+   '<div class="inv-note">(Please refer Clause No. 2 and 4 of General Terms and Conditions enclosed herewith)</div>'
@@ -2710,6 +2724,7 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             + '<div class="sig-box">' + BuildSigBox('Approved By Finance', stampUrlFinance) + '</div>'
             + '<div class="sig-box">' + BuildSigBox('Approved By COO', stampUrlHOD )     + '</div>'
             + '<div class="sig-box">' + BuildSigBox('Approved By CEO', stampUrlCEO )     + '</div>'
+            + '</div>'
             + '</div>';
 
         const coreInner = termsOnly ? generalTermsHtml : (mainBlock + generalTermsHtml);
@@ -2718,7 +2733,6 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
         let html;
         if (forPdfExport) {
             html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + docPageTitle + '</title><style>' + css + '</style></head><body class="pdf-export-body">'
-                + (showLogo && !termsOnly ? '<div class="wm-logo"></div>' : '')
                 + '<div class="po-pdf-root' + (termsOnly ? ' po-pdf-root-gtc' : '') + '">' + coreInner + '</div>'
                 + '</body></html>';
         } else {
@@ -2843,6 +2857,55 @@ function _poCompanyFooterText(res) {
     return '';
 }
 
+function _poPdfLogoUrl() {
+    return ((sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/') + 'assets/images/pppllog.jpeg');
+}
+
+function _poPdfShouldShowWatermark(res) {
+    try {
+        const ud = res[3] || [];
+        const companyName = ud[0] ? (ud[0].CompanyName || ud[0].CompanyNameForShow || '') : '';
+        return companyName.trim().toUpperCase() === 'PURSHOTAM PROFILES PVT.LTD.';
+    } catch (e) {
+        return false;
+    }
+}
+
+let _poPdfLogoCache = null;
+
+function _poPdfLoadLogo(url) {
+    if (!url) {
+        return Promise.resolve(null);
+    }
+    if (_poPdfLogoCache && _poPdfLogoCache._url === url) {
+        return Promise.resolve(_poPdfLogoCache);
+    }
+    return new Promise(function (resolve) {
+        const img = new Image();
+        img.onload = function () {
+            img._url = url;
+            _poPdfLogoCache = img;
+            resolve(img);
+        };
+        img.onerror = function () { resolve(null); };
+        img.src = url;
+    });
+}
+
+/** Centered faint logo on each PDF page slice (matches print watermark). */
+function _poPdfDrawWatermarkOnSlice(ctx, sliceW, sliceH, logoImg) {
+    if (!logoImg || !sliceW || !sliceH) {
+        return;
+    }
+    const wmSize = Math.round(sliceW * (320 / 794));
+    const x = (sliceW - wmSize) / 2;
+    const y = (sliceH - wmSize) / 2;
+    ctx.save();
+    ctx.globalAlpha = 0.07;
+    ctx.drawImage(logoImg, x, y, wmSize, wmSize);
+    ctx.restore();
+}
+
 function _waitForImagesInDoc(doc) {
     const imgs = Array.from(doc.getElementsByTagName('img'));
     const pending = imgs.filter(function (img) { return !img.complete; });
@@ -2880,13 +2943,63 @@ function _drawPOPdfFooter(pdf, footerText) {
 }
 
 /**
+ * Returns canvas Y bounds for an element inside the PDF capture root.
+ */
+function _poPdfElCanvasBounds(el, root, canvasHeight, contentHeight) {
+    const rootRect = root.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const topDom = elRect.top - rootRect.top;
+    const scaleY = canvasHeight / contentHeight;
+    return {
+        top: topDom * scaleY,
+        bottom: (topDom + elRect.height) * scaleY
+    };
+}
+
+/**
+ * Avoid slicing through keep-together blocks (footer, GTC sections/paragraphs).
+ */
+function _poPdfAdjustSlicePx(offsetPx, sliceHeightPx, canvas, root, contentH, usableHMm, imgWidthMm) {
+    const blocks = root.querySelectorAll('.pdf-keep-together, .pdf-gtc-block');
+    if (!blocks.length) {
+        return sliceHeightPx;
+    }
+
+    let adjusted = sliceHeightPx;
+    const pageEndPx = offsetPx + sliceHeightPx;
+
+    blocks.forEach(function (el) {
+        const b = _poPdfElCanvasBounds(el, root, canvas.height, contentH);
+        const blockHeightPx = b.bottom - b.top;
+        const blockHeightMm = (blockHeightPx * imgWidthMm) / canvas.width;
+
+        // Skip blocks already above or fully below this slice.
+        if (b.bottom <= offsetPx + 4 || b.top >= pageEndPx - 4) {
+            return;
+        }
+
+        // Block would be cut — end page before it starts (when it fits on one page).
+        if (b.top > offsetPx + 4 && b.bottom > pageEndPx + 4) {
+            const breakBeforePx = b.top - offsetPx;
+            if (breakBeforePx > 8 && blockHeightMm <= usableHMm * 0.98) {
+                adjusted = Math.min(adjusted, breakBeforePx);
+            }
+        }
+    });
+
+    return Math.max(8, adjusted);
+}
+
+/**
  * Renders one HTML document into the pdf as one or more A4 pages, drawing the footer on each page.
  * @param addPageBefore - if true, starts this chunk on a new page (used for General T&amp;C after PO body)
+ * @param watermarkUrl - optional logo URL drawn on each page (PPPL watermark)
  */
-async function _appendPoHtmlToPdf(pdf, htmlString, footerText, addPageBefore) {
+async function _appendPoHtmlToPdf(pdf, htmlString, footerText, addPageBefore, watermarkUrl) {
+    const logoImg = watermarkUrl ? await _poPdfLoadLogo(watermarkUrl) : null;
     const iframe = document.createElement('iframe');
     iframe.setAttribute('aria-hidden', 'true');
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:806px;height:1200px;border:none;visibility:hidden;pointer-events:none;';
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:806px;height:600px;border:none;visibility:hidden;pointer-events:none;';
     document.body.appendChild(iframe);
     try {
         const idoc = iframe.contentDocument;
@@ -2896,13 +3009,30 @@ async function _appendPoHtmlToPdf(pdf, htmlString, footerText, addPageBefore) {
         await _waitForImagesInDoc(idoc);
         await new Promise(function (r) { setTimeout(r, 280); });
         const body = idoc.body;
+        const root = body.querySelector('.po-pdf-root') || body;
+        const contentH = Math.max(root.scrollHeight, root.offsetHeight, 1);
+        idoc.documentElement.style.height = contentH + 'px';
+        body.style.height = contentH + 'px';
+        body.style.overflow = 'hidden';
+        iframe.style.height = (contentH + 16) + 'px';
+
+        if (contentH < 8) {
+            return;
+        }
+
         const scale = 2;
+        const captureW = 794;
         const canvas = await html2canvas(body, {
             scale: scale,
             useCORS: true,
             allowTaint: true,
             logging: false,
-            windowWidth: 794
+            width: captureW,
+            height: contentH,
+            windowWidth: captureW,
+            windowHeight: contentH,
+            scrollX: 0,
+            scrollY: 0
         });
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
@@ -2912,6 +3042,7 @@ async function _appendPoHtmlToPdf(pdf, htmlString, footerText, addPageBefore) {
         const usableW = pageW - margin * 2;
         const imgWidthMm = usableW;
         const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
+        const minSliceMm = 8;
 
         if (addPageBefore && pdf.internal.getNumberOfPages() > 0) {
             pdf.addPage();
@@ -2919,20 +3050,31 @@ async function _appendPoHtmlToPdf(pdf, htmlString, footerText, addPageBefore) {
 
         let offsetMm = 0;
         let isFirstSlice = true;
-        while (offsetMm < imgHeightMm - 0.15) {
+        while (offsetMm < imgHeightMm - 0.5) {
+            const remainingMm = imgHeightMm - offsetMm;
+            if (!isFirstSlice && remainingMm < minSliceMm) {
+                break;
+            }
+
             if (!isFirstSlice) {
                 pdf.addPage();
             }
             isFirstSlice = false;
-            const sliceHeightMm = Math.min(usableH, imgHeightMm - offsetMm);
-            const sliceHeightPx = (sliceHeightMm * canvas.width) / imgWidthMm;
+
+            let sliceHeightMm = Math.min(usableH, remainingMm);
+            let sliceHeightPx = (sliceHeightMm * canvas.width) / imgWidthMm;
             const offsetPx = (offsetMm * canvas.width) / imgWidthMm;
+            sliceHeightPx = _poPdfAdjustSlicePx(offsetPx, sliceHeightPx, canvas, root, contentH, usableH, imgWidthMm);
+            sliceHeightMm = (sliceHeightPx * imgWidthMm) / canvas.width;
 
             const sliceCanvas = document.createElement('canvas');
             sliceCanvas.width = canvas.width;
             sliceCanvas.height = Math.max(1, Math.ceil(sliceHeightPx));
             const ctx = sliceCanvas.getContext('2d');
             ctx.drawImage(canvas, 0, offsetPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+            if (logoImg) {
+                _poPdfDrawWatermarkOnSlice(ctx, sliceCanvas.width, sliceCanvas.height, logoImg);
+            }
 
             const imgData = sliceCanvas.toDataURL('image/jpeg', 0.92);
             pdf.addImage(imgData, 'JPEG', margin, margin, imgWidthMm, sliceHeightMm, undefined, 'FAST');
@@ -2951,12 +3093,13 @@ async function _BuildPOPdfBase64Async(res, includeGeneralTerms) {
         throw new Error('jsPDF or html2canvas is not loaded');
     }
     const footerText = _poCompanyFooterText(res);
+    const watermarkUrl = _poPdfShouldShowWatermark(res) ? _poPdfLogoUrl() : '';
     const pdf = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     const htmlMain = _BuildPOPrintHTML(res, includeGeneralTerms, { forPdfExport: true, mainOnly: true });
-    await _appendPoHtmlToPdf(pdf, htmlMain, footerText, false);
+    await _appendPoHtmlToPdf(pdf, htmlMain, footerText, false, watermarkUrl);
     if (includeGeneralTerms) {
         const htmlGtc = _BuildPOPrintHTML(res, true, { forPdfExport: true, termsOnly: true });
-        await _appendPoHtmlToPdf(pdf, htmlGtc, footerText, true);
+        await _appendPoHtmlToPdf(pdf, htmlGtc, footerText, true, watermarkUrl);
     }
     const dataUri = pdf.output('datauristring');
     const c = dataUri.indexOf(',');
