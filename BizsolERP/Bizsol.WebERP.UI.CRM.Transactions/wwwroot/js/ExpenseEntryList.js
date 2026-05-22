@@ -10,6 +10,8 @@ function CheckRight(optionName) {
     return MenuService.CheckModuleOptionRight(ModuleName, optionName, 'Y', FinYear);
 }
 var G_EEL_LevelVerifyApplicable = 'N';
+/** Cached list rows keyed by Code — used by approval-flow modal (avoids wrong DOM column reads). */
+var G_EE_ListRowCache = {};
 
 const Indx_Tbl = {
     Code: 0,
@@ -153,6 +155,11 @@ function applyEEListConfigVisibility() {
         refreshPendingOnMeCount();
     } else {
         $('#eeStatCardPendingOnMe').hide();
+    }
+
+    // Re-render list so approval-flow action button reflects config
+    if ($('#ExpenseEntryList-body tr').length > 0 && !$('#ExpenseEntryList-body tr.expense-entry-empty-row').length) {
+        triggerShowIfValid();
     }
 }
 
@@ -349,10 +356,17 @@ function GetExpenseEntryList(opts){
                 "Deduction": "right"
             };
             const totalApprovedAmount=["Approved Amount","Deduction","Expended Amount"];
+            G_EE_ListRowCache = {};
             const updatedResponse = filtered.map(item => {
+                G_EE_ListRowCache[item.Code] = { ...item };
+                let approvalFlowBtn = '';
+                if (G_EEL_LevelVerifyApplicable === 'Y') {
+                    approvalFlowBtn = `<button class="btn icon-height mb-1 ee-btn-view-approval" title="View Approval Flow" onclick="ViewApprovalFlowData(${item.Code},this)"><i class="fa fa-eye"></i></button>`;
+                }
                 let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.Status !== 'Unverified' ? 'disabled' : ''} onclick="EditData(${item.Code},this)"><i class="fa fa-pencil"></i></button>
                 <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.VerifyStatus === 'Y' ? 'disabled' : ''} onclick="DeleteData('${item.Code}',this)"><i class="fa fa-times"></i></button>
-                <button class="btn btn-info icon-height mb-1" title="View" onclick="ViewData(${item.Code},this)"><i class="fa fa-eye"></i></button>`;
+                <button class="btn btn-info icon-height mb-1" title="View" onclick="ViewData(${item.Code},this)"><i class="fa fa-eye"></i></button>
+                ${approvalFlowBtn}`;
 
                 var td_StatusBtn = '';
                 if (item.Status == 'Unverified') {
@@ -632,6 +646,599 @@ function closeApprovedEntriesModal() {
     $('#eeApprovedModal').removeClass('show');
 }
 
+function eeListFmtDateDisplay(d) {
+    if (!d) return '';
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return String(d);
+    return String(dt.getDate()).padStart(2, '0') + '/' +
+        String(dt.getMonth() + 1).padStart(2, '0') + '/' +
+        dt.getFullYear();
+}
+
+function eeListFmtCurrency(val) {
+    const n = parseFloat(val);
+    if (isNaN(n)) return '—';
+    return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function eeListEscHtml(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function eeListGetApprovalStatus(p) {
+    const raw = (p.ApprovalStatus ?? p.Status ?? p.Approval_Status ?? 'Pending').toString().trim();
+    if (raw === 'N' || raw.toLowerCase() === 'pending') return 'Pending';
+    if (raw === 'Y' || raw.toLowerCase() === 'approved' || raw.toLowerCase() === 'verified') return 'Approved';
+    if (raw === 'R' || raw.toLowerCase() === 'rejected') return 'Rejected';
+    return raw || 'Pending';
+}
+
+function eeListParseLevelDetails(v) {
+    if (Array.isArray(v)) return v;
+    if (v == null) return [];
+    if (typeof v === 'string') {
+        const t = v.trim();
+        if (!t) return [];
+        try {
+            const j = JSON.parse(t);
+            if (Array.isArray(j)) return j;
+            if (j && Array.isArray(j.Data)) return j.Data;
+            if (j && Array.isArray(j.data)) return j.data;
+            if (j && Array.isArray(j.Levels)) return j.Levels;
+            if (j && Array.isArray(j.levels)) return j.levels;
+            return [];
+        } catch (e) { return []; }
+    }
+    if (typeof v === 'object' && Array.isArray(v.LevelDetails)) return v.LevelDetails;
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+        if (Array.isArray(v.Data)) return v.Data;
+        if (Array.isArray(v.data)) return v.data;
+        if (Array.isArray(v.Levels)) return v.Levels;
+        if (Array.isArray(v.levels)) return v.levels;
+    }
+    return [];
+}
+
+function eeListNormalizeListResponse(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.Data)) return data.Data;
+    if (data && Array.isArray(data.data)) return data.data;
+    return [];
+}
+
+function eeListGetExpenseMasterCode(p) {
+    const c = p.Code ?? p.ExpenseEntryMaster_Code ?? p.code;
+    const n = parseInt(c, 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function eeListIsLevelDetailRow(row) {
+    if (!row || typeof row !== 'object') return false;
+    return !!(row.LevelDesc || row.LevelDesp || row.Description || row.LevelName
+        || row.LevelNo || row.Level || row.ApproverName || row.UserName);
+}
+
+function eeListExtractLevelDetailsFromApi(root, master) {
+    const candidates = [];
+    if (Array.isArray(root)) {
+        root.forEach(function (part) {
+            if (Array.isArray(part) && part.length > 0 && eeListIsLevelDetailRow(part[0])) {
+                candidates.push(part);
+            }
+        });
+    }
+    const data = root?.Data ?? root?.data ?? root;
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+        ['LevelDetails', 'ExpenseEntryApprovalLevels', 'ApprovalLevels', 'Levels', 'WorkFlow', 'ApprovalWorkFlow']
+            .forEach(function (key) {
+                if (data[key] != null) candidates.push(data[key]);
+            });
+    }
+    if (master && typeof master === 'object') {
+        ['LevelDetails', 'ExpenseEntryApprovalLevels', 'ApprovalLevels', 'Levels']
+            .forEach(function (key) {
+                if (master[key] != null) candidates.push(master[key]);
+            });
+    }
+    for (let i = 0; i < candidates.length; i++) {
+        const parsed = eeListParseLevelDetails(candidates[i]);
+        if (parsed.length > 0) return parsed;
+    }
+    return [];
+}
+
+function eeListMergeLevelDetailsLists(fromList, fromApi) {
+    const a = Array.isArray(fromList) ? fromList : [];
+    const b = Array.isArray(fromApi) ? fromApi : [];
+    if (!b.length) return a.slice();
+    if (!a.length) return b.slice();
+
+    const map = new Map();
+    a.forEach(function (row, idx) {
+        let n = eeListLevelNoFromRow(row);
+        if (n < 1) n = idx + 1;
+        map.set(n, { ...row });
+    });
+    b.forEach(function (row, idx) {
+        let n = eeListLevelNoFromRow(row);
+        if (n < 1) n = idx + 1;
+        const prev = map.get(n) || {};
+        const next = { ...prev, ...row };
+        next.LevelDesc = eeListPickLevelTitle(row, n) || eeListPickLevelTitle(prev, n)
+            || row.LevelDesc || prev.LevelDesc || row.LevelName || prev.LevelName || '';
+        next.Remarks = eeListGetLevelRemarks(row) || eeListGetLevelRemarks(prev) || '';
+
+        const hasApprover = function (x) { return x && String(x.ApproverName ?? x.UserName ?? '').trim() !== ''; };
+        if (!hasApprover(row) && hasApprover(prev)) {
+            next.ApproverName = prev.ApproverName;
+            next.UserName = prev.UserName;
+        }
+        const hasDate = function (x) { return x && String(x.ApprovedOn ?? '').trim() !== ''; };
+        if (!hasDate(row) && hasDate(prev)) {
+            next.ApprovedOn = prev.ApprovedOn;
+        }
+        map.set(n, next);
+    });
+    return [...map.keys()].sort(function (x, y) { return x - y; }).map(function (k) { return map.get(k); });
+}
+
+function eeListNormalizeApprovalEntry(row) {
+    if (!row || typeof row !== 'object') return null;
+    const p = { ...row };
+    p.LevelDetails = eeListParseLevelDetails(p.LevelDetails);
+    if (!p.TotalLevels && p.LevelDetails.length > 0) {
+        p.TotalLevels = p.LevelDetails.length;
+    }
+    return p;
+}
+
+function eeListFindApprovalEntryInList(data, code) {
+    const list = eeListNormalizeListResponse(data);
+    return list.find(function (row) {
+        return eeListGetExpenseMasterCode(row) === code;
+    }) || null;
+}
+
+/** Same LevelDetails source as ExpenseEntryLevelsApproval list cards. */
+function eeListFetchApprovalMetaEntry(code) {
+    const fd = listDateToIso($('#txtFromDate').val());
+    const td = listDateToIso($('#txtToDate').val());
+    const tryFetch = function (status) {
+        return ExpenseEntryLevelsApprovalService.GetPendingExpenseEntryList(fd, td, status)
+            .then(function (data) { return eeListFindApprovalEntryInList(data, code); });
+    };
+    return tryFetch('A')
+        .then(function (hit) {
+            if (hit) return eeListNormalizeApprovalEntry(hit);
+            return tryFetch('Y').then(function (hitY) {
+                if (hitY) return eeListNormalizeApprovalEntry(hitY);
+                return tryFetch('P').then(function (hitP) {
+                    return hitP ? eeListNormalizeApprovalEntry(hitP) : null;
+                });
+            });
+        })
+        .catch(function () { return null; });
+}
+
+function eeListLevelNoFromRow(r) {
+    if (!r || typeof r !== 'object') return 0;
+    const keys = ['LevelNo', 'Level', 'LevelOrder', 'ApprovalLevelNo', 'Level_No', 'LevelIndex',
+        'SrNo', 'SNo', 'Sequence', 'OrderNo', 'RowNo', 'LineNo'];
+    for (let i = 0; i < keys.length; i++) {
+        const v = r[keys[i]];
+        if (v == null || v === '') continue;
+        const n = parseInt(v, 10);
+        if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+
+function eeListGetLevelRowByStep(levels, stepIndex) {
+    const arr = Array.isArray(levels) ? levels : [];
+    const hit = arr.find(function (l) { return eeListLevelNoFromRow(l) === stepIndex; });
+    if (hit) return hit;
+    if (stepIndex >= 1 && stepIndex <= arr.length) return arr[stepIndex - 1];
+    return null;
+}
+
+function eeListPickLevelTitle(lvlInfo, levelNo) {
+    if (!lvlInfo || typeof lvlInfo !== 'object') return 'Level ' + levelNo;
+    const t = lvlInfo.Description ?? lvlInfo.LevelDesc ?? lvlInfo.LevelDesp
+        ?? lvlInfo.LevelName ?? lvlInfo.LevelDescription;
+    const s = t != null ? String(t).trim() : '';
+    return s || ('Level ' + levelNo);
+}
+
+function eeListGetLevelRemarks(lvlInfo) {
+    if (!lvlInfo || typeof lvlInfo !== 'object') return '';
+    const r = lvlInfo.Remarks ?? lvlInfo.Remark ?? lvlInfo.ApprovalRemarks
+        ?? lvlInfo.LevelRemarks ?? lvlInfo.Comments ?? lvlInfo.RejectionRemarks;
+    return r != null ? String(r).trim() : '';
+}
+
+function eeListNumFromRow(row, keys) {
+    const arr = Array.isArray(keys) ? keys : [keys];
+    for (let i = 0; i < arr.length; i++) {
+        const v = row[arr[i]];
+        if (v != null && v !== '') {
+            const n = parseFloat(String(v).replace(/,/g, ''));
+            if (!isNaN(n)) return n;
+        }
+    }
+    return 0;
+}
+
+function eeListSumDetailLines(lines, keys) {
+    return (lines || []).reduce(function (sum, row) {
+        return sum + eeListNumFromRow(row, keys);
+    }, 0);
+}
+
+function eeListGetExpendedAmount(entry, lines) {
+    const keys = ['Expended Amount', 'ExpendedAmount', 'Total Expended Amount', 'Total Amount', 'TotalAmount'];
+    for (let i = 0; i < keys.length; i++) {
+        const n = eeListNumFromRow(entry, keys[i]);
+        if (n !== 0) return n;
+    }
+    return eeListSumDetailLines(lines, ['Expense Amount', 'ExpendedAmount', 'Expended Amount']);
+}
+
+function eeListGetApprovedAmount(entry, lines) {
+    const keys = ['Approved Amount', 'ApprovedAmount', 'Total Approved Amount'];
+    for (let i = 0; i < keys.length; i++) {
+        const n = eeListNumFromRow(entry, keys[i]);
+        if (n !== 0) return n;
+    }
+    return eeListSumDetailLines(lines, ['Approved Amount', 'Approved', 'ApprovedAmount']);
+}
+
+function eeListGetDeduction(entry, lines) {
+    const n = eeListNumFromRow(entry, ['Deduction', 'Total Deduction', 'DeductionAmount']);
+    if (n !== 0) return n;
+    const exp = eeListGetExpendedAmount(entry, lines);
+    const appr = eeListGetApprovedAmount(entry, lines);
+    if (exp > 0 && appr >= 0 && exp > appr) return exp - appr;
+    return 0;
+}
+
+function eeListGetListStatus(entry) {
+    const s = (entry._listStatus ?? entry.Status ?? '').toString().trim();
+    if (s && s.indexOf('<') === -1) return s;
+    return eeListGetApprovalStatus(entry);
+}
+
+function eeListDisplayApprovedBy(raw) {
+    if (raw == null || raw === '' || raw === '—') return '—';
+    const s = String(raw).trim();
+    if (/^\d+$/.test(s)) return '—';
+    return s;
+}
+
+function eeListDisplayDate(raw) {
+    if (raw == null || raw === '' || raw === '—') return '—';
+    const s = String(raw).trim();
+    if (/^\d+$/.test(s)) return '—';
+    if (/^\d{2}-\d{2}-\d{4}$/.test(s)) {
+        const p = s.split('-');
+        return p[0] + '/' + p[1] + '/' + p[2];
+    }
+    const formatted = eeListFmtDateDisplay(s);
+    return formatted || s;
+}
+
+function eeListRestoreListFields(p, listSnapshot) {
+    if (!listSnapshot || typeof listSnapshot !== 'object') return p;
+    const textFields = ['Person Name', 'Entry No', 'Entry Date', 'From Date', 'To Date', 'Approved By', 'Approved On'];
+    textFields.forEach(function (key) {
+        const listVal = listSnapshot[key];
+        const apiVal = p[key];
+        if (listVal != null && String(listVal).trim() !== '' &&
+            (apiVal == null || String(apiVal).trim() === '' || (key === 'Approved By' && /^\d+$/.test(String(apiVal).trim())))) {
+            p[key] = listVal;
+        }
+    });
+    const amountFields = ['Expended Amount', 'Approved Amount', 'Deduction'];
+    amountFields.forEach(function (key) {
+        const listNum = eeListNumFromRow(listSnapshot, key);
+        const apiNum = eeListNumFromRow(p, key);
+        if (listNum !== 0 && apiNum === 0) p[key] = listSnapshot[key];
+    });
+    if (listSnapshot._listStatus) p._listStatus = listSnapshot._listStatus;
+    const listLevels = eeListParseLevelDetails(listSnapshot.LevelDetails);
+    const apiLevels = eeListParseLevelDetails(p.LevelDetails);
+    if (listLevels.length > 0) {
+        p.LevelDetails = eeListMergeLevelDetailsLists(listLevels, apiLevels);
+        if (!p.TotalLevels) p.TotalLevels = listLevels.length;
+    }
+    ['CurrentLevelNo', 'CurrentLevel', 'TotalLevels', 'MaxLevel', 'CurrentLevelDesc', 'ApprovalStatus']
+        .forEach(function (key) {
+            const listVal = listSnapshot[key];
+            const apiVal = p[key];
+            if (listVal != null && listVal !== '' && (apiVal == null || apiVal === '' || apiVal === 0)) {
+                p[key] = listVal;
+            }
+        });
+    return p;
+}
+
+function eeListMergeDetailIntoEntry(root, baseEntry) {
+    const listSnapshot = { ...baseEntry };
+    const p = { ...baseEntry };
+    const fromList = eeListParseLevelDetails(baseEntry.LevelDetails);
+
+    if (Array.isArray(root)) {
+        p._detailLines = root;
+        p.LevelDetails = fromList.length ? fromList.slice() : [];
+        return eeListRestoreListFields(p, listSnapshot);
+    }
+    const data = root?.Data ?? root?.data ?? root;
+    if (!data || typeof data !== 'object') {
+        p.LevelDetails = fromList.length ? fromList.slice() : eeListParseLevelDetails(p.LevelDetails);
+        return eeListRestoreListFields(p, listSnapshot);
+    }
+    if (Array.isArray(data)) {
+        p._detailLines = data;
+        p.LevelDetails = fromList.length ? fromList.slice() : [];
+        return eeListRestoreListFields(p, listSnapshot);
+    }
+
+    const master = data.ExpenseEntryMaster?.[0] ?? data.ExpenseEntryMaster ?? data.Master ?? data;
+    if (master && typeof master === 'object') Object.assign(p, master);
+
+    const fromApi = eeListExtractLevelDetailsFromApi(root, master);
+    p.LevelDetails = eeListMergeLevelDetailsLists(fromList, fromApi.length ? fromApi : eeListParseLevelDetails(p.LevelDetails));
+
+    const lines = data.ExpenseEntryDetails ?? data.ExpenseEntryDetail ?? data.Details ?? data.Items ?? data.Lines;
+    if (Array.isArray(lines)) p._detailLines = lines;
+
+    if (!p.TotalLevels && p.LevelDetails.length > 0) p.TotalLevels = p.LevelDetails.length;
+    return eeListRestoreListFields(p, listSnapshot);
+}
+
+function eeListExtractDetailLines(root) {
+    let lines = [];
+    if (Array.isArray(root)) {
+        lines = root;
+    } else {
+        const data = root?.Data ?? root?.data ?? root;
+        if (!data) return [];
+        if (Array.isArray(data)) lines = data;
+        else if (typeof data === 'object') {
+            const raw = data.ExpenseEntryDetails ?? data.ExpenseEntryDetail ?? data.Details ?? data.Items ?? data.Lines;
+            lines = Array.isArray(raw) ? raw : [];
+        }
+    }
+    return lines.filter(function (row) {
+        if (!row || typeof row !== 'object') return false;
+        const hasHead = !!(row['Expense Head'] ?? row.ExpenseHead ?? row.ExpenseDesp);
+        const exp = row['Expense Amount'] ?? row.ExpendedAmount ?? row['Expended Amount'];
+        return hasHead || (exp != null && exp !== '' && parseFloat(exp) > 0);
+    });
+}
+
+function eeListGetFlowStatus(entry) {
+    const listSt = (entry._listStatus || '').toString().trim().toLowerCase();
+    if (listSt === 'verified' || listSt === 'approved') return 'approved';
+    if (listSt === 'rejected') return 'rejected';
+    if (listSt === 'pending') return 'pending';
+    return eeListGetApprovalStatus(entry).toLowerCase();
+}
+
+function BuildEeListApprovalStepper(entry) {
+    const levels = eeListParseLevelDetails(entry.LevelDetails);
+    const totalLvl = Math.max(
+        parseInt(entry.TotalLevels ?? entry.MaxLevel ?? 0, 10) || 0,
+        levels.length
+    );
+    if (totalLvl === 0) {
+        return '<div class="gpa-level-stepper-wrap">' +
+            '<div class="gpa-level-stepper-title"><i class="fa fa-layer-group me-1"></i>Approval Flow</div>' +
+            '<div class="text-center py-3 text-muted" style="font-size:0.85rem;">No approval flow configured for this entry.</div>' +
+            '</div>';
+    }
+
+    const curLvlNo = parseInt(entry.CurrentLevelNo ?? entry.CurrentLevel ?? 1, 10) || 1;
+    const st = eeListGetFlowStatus(entry);
+
+    let html = '<div class="gpa-level-stepper-wrap">' +
+        '<div class="gpa-level-stepper-title"><i class="fa fa-layer-group me-1"></i>Approval Flow</div>' +
+        '<div class="gpa-detail-stepper">';
+
+    for (let i = 1; i <= totalLvl; i++) {
+        const lvlInfo = eeListGetLevelRowByStep(levels, i) || {};
+        let stepState;
+        if (st === 'approved' || i < curLvlNo) stepState = 'done';
+        else if (i === curLvlNo) stepState = st === 'rejected' ? 'rejected' : 'active';
+        else stepState = 'pending';
+
+        let lvlNameRaw = eeListPickLevelTitle(lvlInfo, i);
+        if (!lvlNameRaw && i === curLvlNo) {
+            lvlNameRaw = String(entry.CurrentLevelDesc ?? '').trim();
+        }
+        if (!lvlNameRaw) {
+            lvlNameRaw = i === curLvlNo
+                ? (String(entry.CurrentLevelDesc ?? '').trim() || ('Level ' + i))
+                : ('Level ' + i);
+        }
+
+        const approver = eeListEscHtml(lvlInfo.ApproverName ?? lvlInfo.UserName ?? '');
+        const approvedOn = lvlInfo.ApprovedOn ? eeListFmtDateDisplay(lvlInfo.ApprovedOn) : '';
+        const lvlRemarksRaw = eeListGetLevelRemarks(lvlInfo);
+        let remarksHtml = '';
+        if (lvlRemarksRaw && (stepState === 'done' || stepState === 'rejected')) {
+            remarksHtml = '<div class="gpa-dstep-remarks"><i class="fa fa-comment me-1"></i>' + eeListEscHtml(lvlRemarksRaw) + '</div>';
+        }
+
+        const iconHtml = stepState === 'done' ? '<i class="fa fa-check"></i>'
+            : stepState === 'rejected' ? '<i class="fa fa-times"></i>'
+                : stepState === 'active' ? '<i class="fa fa-hourglass-half"></i>'
+                    : i;
+
+        const badgeLabel = stepState === 'done' ? 'Approved'
+            : stepState === 'rejected' ? 'Rejected'
+                : stepState === 'active' ? 'Pending'
+                    : 'Waiting';
+
+        const approverHtml = approver
+            ? '<div class="gpa-dstep-sub"><i class="fa fa-user me-1"></i>' + approver +
+            (approvedOn ? ' &mdash; ' + approvedOn : '') + '</div>'
+            : '';
+
+        const lineClass = stepState === 'done' ? 'gpa-dstep-line-done' : 'gpa-dstep-line-pending';
+
+        html += '<div class="gpa-dstep-item gpa-dstep-' + stepState + '">' +
+            '<div class="gpa-dstep-circle">' + iconHtml + '</div>' +
+            '<div class="gpa-dstep-body">' +
+            '<div class="gpa-dstep-title">' + eeListEscHtml(lvlNameRaw) + '</div>' +
+            approverHtml +
+            remarksHtml +
+            '<div class="gpa-dstep-badge gpa-dstep-badge-' + stepState + '">' + badgeLabel + '</div>' +
+            '</div>' +
+            '</div>';
+
+        if (i < totalLvl) {
+            html += '<div class="gpa-dstep-line ' + lineClass + '"></div>';
+        }
+    }
+
+    html += '</div></div>';
+    return html;
+}
+
+function eeListBuildDetailRowsHtml(items) {
+    if (!items || items.length === 0) {
+        return '<tr><td colspan="6" class="text-center py-3 text-muted">No expense lines found.</td></tr>';
+    }
+    let rows = '';
+    items.forEach(function (row, idx) {
+        const head = eeListEscHtml(row['Expense Head'] ?? row.ExpenseHead ?? row.ExpenseDesp ?? '—');
+        const allowAmt = eeListFmtCurrency(row['Allow Amount'] ?? row['Allowed Amount'] ?? row.AllowAmount ?? 0);
+        const expAmt = eeListFmtCurrency(row['Expense Amount'] ?? row.ExpendedAmount ?? row['Expended Amount'] ?? 0);
+        const apprAmt = eeListFmtCurrency(row['Approved Amount'] ?? row.Approved ?? row.ApprovedAmount ?? 0);
+        const rem = eeListEscHtml(row.Remarks ?? row['Remarks'] ?? row.Description ?? '');
+        rows += '<tr>' +
+            '<td class="text-center">' + (idx + 1) + '</td>' +
+            '<td>' + head + '</td>' +
+            '<td class="text-end">' + allowAmt + '</td>' +
+            '<td class="text-end">' + expAmt + '</td>' +
+            '<td class="text-end">' + apprAmt + '</td>' +
+            '<td>' + rem + '</td>' +
+            '</tr>';
+    });
+    return rows;
+}
+
+function renderExpenseEntryApprovalFlowModal(entry, detailLines) {
+    const person = eeListEscHtml(entry['Person Name'] ?? entry.PersonName ?? '—');
+    const entryNo = eeListEscHtml(entry['Entry No'] ?? entry.EntryNo ?? '—');
+    const entryDate = eeListEscHtml(eeListDisplayDate(entry['Entry Date'] ?? entry.EntryDate));
+    const fromDate = eeListEscHtml(eeListDisplayDate(entry['From Date'] ?? entry.FromDate));
+    const toDate = eeListEscHtml(eeListDisplayDate(entry['To Date'] ?? entry.ToDate));
+    const expendedAmt = eeListFmtCurrency(eeListGetExpendedAmount(entry, detailLines));
+    const approvedAmt = eeListFmtCurrency(eeListGetApprovedAmount(entry, detailLines));
+    const deduction = eeListFmtCurrency(eeListGetDeduction(entry, detailLines));
+    const status = eeListEscHtml(eeListGetListStatus(entry));
+    const approvedBy = eeListEscHtml(eeListDisplayApprovedBy(entry['Approved By'] ?? entry.ApprovedBy));
+    const approvedOn = eeListEscHtml(eeListDisplayDate(entry['Approved On'] ?? entry.ApprovedOn));
+
+    $('#eeApprovalFlowModalBody').html(
+        '<div class="row g-2 mb-3">' +
+            '<div class="col-md-6">' +
+                '<table class="table table-sm table-borderless">' +
+                    '<tr><td class="fw-bold" style="width:45%">Entry Number</td><td>' + entryNo + '</td></tr>' +
+                    '<tr><td class="fw-bold">Person Name</td><td>' + person + '</td></tr>' +
+                    '<tr><td class="fw-bold">Entry Date</td><td>' + entryDate + '</td></tr>' +
+                    '<tr><td class="fw-bold">From Date</td><td>' + fromDate + '</td></tr>' +
+                    '<tr><td class="fw-bold">To Date</td><td>' + toDate + '</td></tr>' +
+                '</table>' +
+            '</div>' +
+            '<div class="col-md-6">' +
+                '<table class="table table-sm table-borderless">' +
+                    '<tr><td class="fw-bold" style="width:45%">Expended Amount</td><td class="text-end">' + expendedAmt + '</td></tr>' +
+                    '<tr><td class="fw-bold">Approved Amount</td><td class="text-end">' + approvedAmt + '</td></tr>' +
+                    '<tr><td class="fw-bold">Deduction</td><td class="text-end">' + deduction + '</td></tr>' +
+                    '<tr><td class="fw-bold">Status</td><td>' + status + '</td></tr>' +
+                    '<tr><td class="fw-bold">Approved By</td><td>' + approvedBy + '</td></tr>' +
+                    '<tr><td class="fw-bold">Approved On</td><td>' + approvedOn + '</td></tr>' +
+                '</table>' +
+            '</div>' +
+        '</div>' +
+        BuildEeListApprovalStepper(entry) +
+        '<div class="table-responsive">' +
+            '<table class="table table-sm table-bordered">' +
+                '<thead style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">' +
+                    '<tr>' +
+                        '<th class="text-center">#</th>' +
+                        '<th>Expense Head</th>' +
+                        '<th class="text-end">Allow Amount</th>' +
+                        '<th class="text-end">Expended</th>' +
+                        '<th class="text-end">Approved</th>' +
+                        '<th>Remarks</th>' +
+                    '</tr>' +
+                '</thead>' +
+                '<tbody>' + eeListBuildDetailRowsHtml(detailLines) + '</tbody>' +
+            '</table>' +
+        '</div>'
+    );
+}
+
+function ViewApprovalFlowData(Code, x) {
+    CheckRight('View').then(function (respCheck) {
+        if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+            toastr.error(respCheck.Msg);
+            return;
+        }
+        const code = parseInt(Code, 10);
+        if (!Number.isFinite(code) || code <= 0) return;
+
+        const cached = G_EE_ListRowCache[code] || {};
+        const baseEntry = {
+            ...cached,
+            Code: code,
+            _listStatus: cached.Status || ''
+        };
+
+        $('#eeApprovalFlowModalTitle').html('<i class="fa fa-file-invoice-dollar me-2"></i>Expense Entry Details');
+        $('#eeApprovalFlowModalBody').html(
+            '<div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading approval flow…</div>'
+        );
+        $('#eeApprovalFlowModal').modal({ backdrop: 'static' });
+        $('#eeApprovalFlowModal').modal('show');
+
+        ExpenseEntryLevelsApprovalService.GetExpenseEntryApprovalDetail(code)
+            .then(function (res) {
+                return eeListFetchApprovalMetaEntry(code).then(function (approvalMeta) {
+                    const metaEntry = approvalMeta || {};
+                    const baseWithMeta = {
+                        ...baseEntry,
+                        ...metaEntry,
+                        Code: code,
+                        _listStatus: baseEntry._listStatus || metaEntry.Status || metaEntry.ApprovalStatus || ''
+                    };
+                    if (metaEntry.LevelDetails && metaEntry.LevelDetails.length) {
+                        baseWithMeta.LevelDetails = metaEntry.LevelDetails;
+                    }
+                    const entry = eeListMergeDetailIntoEntry(res, baseWithMeta);
+                    const detailLines = eeListExtractDetailLines(res);
+                    renderExpenseEntryApprovalFlowModal(entry, detailLines);
+                });
+            })
+            .catch(function () {
+                $('#eeApprovalFlowModalBody').html(
+                    '<div class="text-center py-4 text-danger"><i class="fa fa-exclamation-triangle me-2"></i>Failed to load approval flow.</div>'
+                );
+            });
+    });
+}
+
+function closeExpenseEntryApprovalFlowModal() {
+    $('#eeApprovalFlowModal').modal('hide');
+}
+
 window.GetExpenseEntryList = GetExpenseEntryList;
 window.EditData = EditData;
 window.ViewData = ViewData;
@@ -639,3 +1246,5 @@ window.DeleteData = DeleteData;
 window.DoExpenseEntryDelete = DoExpenseEntryDelete;
 window.CloseExpenseEntrySuccessModal = CloseExpenseEntrySuccessModal;
 window.closeApprovedEntriesModal = closeApprovedEntriesModal;
+window.ViewApprovalFlowData = ViewApprovalFlowData;
+window.closeExpenseEntryApprovalFlowModal = closeExpenseEntryApprovalFlowModal;

@@ -38,6 +38,13 @@ const ExpenseEntryLevelsApprovalService = {
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
+    GetExpenseEntryApprovalHistory: function GetExpenseEntryApprovalHistory(expenseEntryDetailCode) {
+        const code = encodeURIComponent(expenseEntryDetailCode);
+        const url = UrlService.API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL +
+            `/GetExpenseEntryApprovalHistory?ExpenseEntryDetail_Code=${code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
     ApproveExpenseEntry: function ApproveExpenseEntry(expenseEntryMasterCode, levelCode, remarks, approvalHistory) {
         const { userCode, groupCode } = getSessionUserAndGroup();
         const url = UrlService.API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL +

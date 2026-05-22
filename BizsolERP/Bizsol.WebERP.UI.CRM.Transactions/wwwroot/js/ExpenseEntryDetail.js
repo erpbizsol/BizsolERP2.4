@@ -384,6 +384,29 @@ function getDetailRowSubProjectCodeFromItem(item) {
     return 0;
 }
 
+/** Expense amount from a visible grid row. */
+function getExpenseDetailRowExpenseAmount($r) {
+    if (!$r || !$r.length) return 0;
+    var $inp = $r.find('.txtExpendedAmount');
+    if (!$inp.length) return 0;
+    var v = parseFloat($inp.val());
+    return isNaN(v) || !isFinite(v) ? 0 : v;
+}
+
+function getDetailRowExpenseAmountFromItem(item) {
+    if (!item) return 0;
+    var cell = item['Expense Amount'];
+    if (cell === undefined || cell === null) return 0;
+    if (typeof cell === 'number' && !isNaN(cell)) return cell;
+    var $d = $('<div>').html(String(cell));
+    var $inp = $d.find('input.txtExpendedAmount');
+    if (!$inp.length) return 0;
+    var raw = $inp.attr('value');
+    if (raw === undefined || raw === null) raw = $inp.val();
+    var v = parseFloat(raw);
+    return isNaN(v) || !isFinite(v) ? 0 : v;
+}
+
 function validateDuplicateSubProjectExpenseHead() {
     if (G_ProjectApplicable !== 'Y') return true;
     var tableId = 'ExpenseEntryDetails';
@@ -391,6 +414,7 @@ function validateDuplicateSubProjectExpenseHead() {
     if (!fd || !fd.length) return true;
     var seen = {};
     for (var i = 0; i < fd.length; i++) {
+        if (getDetailRowExpenseAmountFromItem(fd[i]) <= 0) continue;
         var head = getDetailRowExpenseHeadCodeFromItem(fd[i]);
         if (head <= 0) continue;
         var sub = getDetailRowSubProjectCodeFromItem(fd[i]);
@@ -404,15 +428,15 @@ function validateDuplicateSubProjectExpenseHead() {
     return true;
 }
 
-/** When API config ProjectApplicable is Y, each line with an expense head needs Project + Sub Project. */
+/** When ProjectApplicable=Y, Project + Sub Project required only on rows with expense amount > 0. */
 function validateExpenseDetailProjectSubProject() {
     if (G_ProjectApplicable !== 'Y') return true;
     var ok = true;
     $('#ExpenseEntryDetails-body tr').not('.total-row').not('.grand-total-row').each(function () {
         var $r = $(this);
         if ($r.hasClass('expense-entry-empty-row')) return;
-        var $head = $r.find('.ee-ddl-expensehead');
-        if (!$head.length || (parseInt($head.val(), 10) || 0) <= 0) return;
+        if (!$r.find('.hdnExpenseHeadMasterCode').length) return;
+        if (getExpenseDetailRowExpenseAmount($r) <= 0) return;
         var pm = parseInt($r.find('.ee-ddl-project').val(), 10) || 0;
         var sp = parseInt($r.find('.ee-ddl-subproject').val(), 10) || 0;
         if (pm <= 0 || sp <= 0) {
@@ -421,7 +445,7 @@ function validateExpenseDetailProjectSubProject() {
         }
     });
     if (!ok) {
-        toastr.warning('Please select Project and Sub Project on every line when project is applicable.');
+        toastr.warning('Please select Project and Sub Project for each line that has an expense amount.');
     }
     return ok;
 }
@@ -1470,11 +1494,6 @@ function ValidateData() {
         toastr.error('From Date cannot be after To Date.');
         return false;
     }
-    /* Claim date must be on/after the expense period (not string compare — dd-mm-yyyy sorts wrong). */
-    if (entryDt < fromDt || entryDt < toDt) {
-        toastr.warning('Entry Date must be on or after both From Date and To Date.');
-        return false;
-    }
 
     if (TotalDays < 0) {
         toastr.error("Please select a valid range of dates.");
@@ -1486,13 +1505,15 @@ function ValidateData() {
         if ($(this).hasClass('total-row') || $(this).hasClass('grand-total-row')) return;
         var $amtCell = $(this).find('td:eq(' + Indx_Tbl.AllowedAmount + ')');
         if (!$amtCell.length || !$amtCell[0].getElementsByTagName('input').length) return;
-        var AllowedAmount = $amtCell[0].getElementsByTagName('input')[0].value;
-        var ExpenseAmount = $(this).find('td:eq(' + Indx_Tbl.ExpenseAmount + ')')[0].getElementsByTagName('input')[0].value;
-        var ApprovedAmount = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0].value;
+        var AllowedAmount = parseFloat($amtCell[0].getElementsByTagName('input')[0].value) || 0;
+        var ExpenseAmount = parseFloat($(this).find('td:eq(' + Indx_Tbl.ExpenseAmount + ')')[0].getElementsByTagName('input')[0].value) || 0;
+        var ApprovedAmount = parseFloat($(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0].value) || 0;
 
-        TotalAllowed += parseFloat(AllowedAmount);
-        TotalExp += parseFloat(ExpenseAmount);
-        TotalApproved += parseFloat(ApprovedAmount);
+        TotalAllowed += AllowedAmount;
+        TotalExp += ExpenseAmount;
+        if (!(AllowedAmount === 0 && ApprovedAmount === 0)) {
+            TotalApproved += ApprovedAmount;
+        }
 
     });
     if (TotalAllowed < 0) {
@@ -1515,16 +1536,24 @@ function ValidateVerifyData() {
         return false;
     }
     var TotalApprovedAmount = 0;
+    var hasApprovedValidationRow = false;
     $("#ExpenseEntryDetails tbody tr").each(function (index, row) {
         if ($(this).hasClass('expense-entry-empty-row')) return;
         if ($(this).hasClass('total-row') || $(this).hasClass('grand-total-row')) return;
+        var $allowedCell = $(this).find('td:eq(' + Indx_Tbl.AllowedAmount + ')');
         var $ap = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')');
+        if (!$allowedCell.length || !$allowedCell[0].getElementsByTagName('input').length) return;
         if (!$ap.length || !$ap[0].getElementsByTagName('input').length) return;
-        var ApprovedAmount = $ap[0].getElementsByTagName('input')[0].value;
-        TotalApprovedAmount += parseFloat(ApprovedAmount);
+        var AllowedAmount = parseFloat($allowedCell[0].getElementsByTagName('input')[0].value) || 0;
+        var ApprovedAmount = parseFloat($ap[0].getElementsByTagName('input')[0].value) || 0;
+        if (AllowedAmount === 0 && ApprovedAmount === 0) {
+            return;
+        }
+        hasApprovedValidationRow = true;
+        TotalApprovedAmount += ApprovedAmount;
     });
 
-    if (TotalApprovedAmount <= 0) {
+    if (hasApprovedValidationRow && TotalApprovedAmount <= 0) {
         toastr.error("Invalid Approved Amount.");
         return false;
     }

@@ -11,19 +11,57 @@ function CheckRight(optionName) {
 
 let G_EntryList = [];
 let G_CurrentEntry = null;
+/** First list load only — set From Date from earliest entry (PO Approval pattern). */
+let G_EeaAutoSetFromDate = true;
 
-/** Detail row keys seen from approval / SHOWDATA APIs for AllowAmount column. */
+/** Detail row keys for Approved column (editable on pending approval). */
 const EEA_APPROVED_AMOUNT_KEYS = ['Approved', 'Approved Amount', 'AllowAmount', 'ApprovedAmount'];
+
+/** Detail row keys for Allow Amount column (read-only limit from API). */
+const EEA_ALLOW_AMOUNT_KEYS = ['Allow Amount', 'Allowed Amount', 'AllowLimit', 'AllowAmount'];
 
 BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
 
+function eeaFinancialYearStartDate() {
+    const today = new Date();
+    let startYear = today.getFullYear();
+    if (today.getMonth() < 3) startYear -= 1;
+    return new Date(startYear, 3, 1);
+}
+
 function InitDates() {
     const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const fromEl = document.getElementById('eeaFromDate');
     const toEl = document.getElementById('eeaToDate');
-    if (fromEl && !fromEl.value) fromEl.value = FmtDateInput(firstDay);
     if (toEl && !toEl.value) toEl.value = FmtDateInput(today);
+    // API requires FromDate — use FY start for the first call; refined to earliest list date after load.
+    if (fromEl && !fromEl.value) fromEl.value = FmtDateInput(eeaFinancialYearStartDate());
+    return Promise.resolve();
+}
+
+function eeaParseEntryDate(d) {
+    if (d == null || d === '') return null;
+    const s = String(d).trim();
+    if (!s) return null;
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const dt = new Date(s.substring(0, 10) + 'T12:00:00');
+        return isNaN(dt.getTime()) ? null : dt;
+    }
+    const dt = new Date(d);
+    return isNaN(dt.getTime()) ? null : dt;
+}
+
+/** Set filter From Date to the earliest Entry Date in the loaded list (From Date only). */
+function SetEeaFromDateFromList(list) {
+    if (!Array.isArray(list) || list.length === 0) return;
+    let minDate = null;
+    list.forEach(function (p) {
+        const dt = eeaParseEntryDate(getEntryDate(p));
+        if (dt && (!minDate || dt < minDate)) minDate = dt;
+    });
+    if (!minDate) return;
+    const fromEl = document.getElementById('eeaFromDate');
+    if (fromEl) fromEl.value = FmtDateInput(minDate);
 }
 
 function FmtDateInput(d) {
@@ -280,18 +318,102 @@ function eeaGetAttachmentControlMode() {
     return 'all';
 }
 
-/** Normalize API result so attachment grid never receives null / non-array (page-scoped patch). */
+function eeaNormalizeAttachmentApiResponse(response) {
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
+
+function eeaClearAttachmentAggregateMode() {
+    window._eeaAttachmentAggregateMasterCode = 0;
+    window._eeaAttachmentDetailCodes = null;
+}
+
+/** Unique ExpenseEntryDetail_Code values for attachment API (DetailTableName = ExpenseEntryDetail). */
+function eeaCollectDetailCodesFromEntry(entry, masterCode) {
+    const codes = new Set();
+    const lines = entry && Array.isArray(entry._detailLines) ? entry._detailLines : [];
+    lines.forEach(function (row) {
+        const dc = eeaDetailLineCodeFromRow(row, masterCode);
+        if (dc > 0) codes.add(dc);
+    });
+    return [...codes];
+}
+
+function eeaEnsureDetailCodesForAttachments(entry, masterCode) {
+    const fromEntry = eeaCollectDetailCodesFromEntry(entry, masterCode);
+    if (fromEntry.length) return Promise.resolve(fromEntry);
+
+    const person = entry ? getPersonName(entry) : '';
+    if (!person || person === '—') return Promise.resolve([]);
+
+    return ExpenseEntryService.GetExpenseEntryDetails(person, masterCode).then(function (resp) {
+        const apiLines = (resp && resp.ExpenseEntryDetail) ? resp.ExpenseEntryDetail : [];
+        const seen = new Set();
+        const out = [];
+        apiLines.forEach(function (row) {
+            const dc = eeaDetailLineCodeFromRow(row, masterCode);
+            if (dc > 0 && !seen.has(dc)) {
+                seen.add(dc);
+                out.push(dc);
+            }
+        });
+        return out;
+    }).catch(function () {
+        return [];
+    });
+}
+
+/** Master + every detail line — same storage as Expense Entry Detail (ExpenseEntryMaster / ExpenseEntryDetail). */
+function eeaFetchMergedExpenseEntryAttachments(masterCode, detailCodes, origGet) {
+    const mc = parseInt(masterCode, 10) || 0;
+    const tasks = [
+        origGet.call(AttachmentControlService, 'ExpenseEntryMaster', mc, '', 0)
+    ];
+    const lineSeen = new Set();
+    (detailCodes || []).forEach(function (dc) {
+        const code = parseInt(dc, 10) || 0;
+        if (code <= 0 || lineSeen.has(code)) return;
+        lineSeen.add(code);
+        tasks.push(origGet.call(AttachmentControlService, 'ExpenseEntryMaster', mc, 'ExpenseEntryDetail', code));
+    });
+
+    return Promise.all(tasks).then(function (results) {
+        const merged = [];
+        const docSeen = new Set();
+        results.forEach(function (resp) {
+            eeaNormalizeAttachmentApiResponse(resp).forEach(function (item) {
+                if (!item || typeof item !== 'object') return;
+                const docCode = parseInt(item.Code ?? item.code, 10) || 0;
+                if (docCode > 0) {
+                    if (docSeen.has(docCode)) return;
+                    docSeen.add(docCode);
+                }
+                merged.push(item);
+            });
+        });
+        return merged;
+    });
+}
+
+/** Normalize API result; on this page list merges master + all detail-line attachments. */
 function eeaPatchAttachmentServiceForPage() {
     if (AttachmentControlService._eeaGetFilesPatched) return;
     const origGet = AttachmentControlService.GetAttachmentUploadFiles;
     AttachmentControlService.GetAttachmentUploadFiles = function (masterTableName, masterTableCode, detailTableName, detailTableCode) {
+        const mc = parseInt(masterTableCode, 10) || 0;
+        const aggMc = parseInt(window._eeaAttachmentAggregateMasterCode || '0', 10);
+        const dName = detailTableName == null || detailTableName === undefined ? '' : String(detailTableName).trim();
+        const dCode = parseInt(detailTableCode, 10) || 0;
+
+        if (masterTableName === 'ExpenseEntryMaster' && aggMc > 0 && mc === aggMc && !dName && dCode === 0) {
+            const detailCodes = window._eeaAttachmentDetailCodes || [];
+            return eeaFetchMergedExpenseEntryAttachments(mc, detailCodes, origGet);
+        }
+
         return Promise.resolve(origGet.call(AttachmentControlService, masterTableName, masterTableCode, detailTableName, detailTableCode))
-            .then(function (response) {
-                if (Array.isArray(response)) return response;
-                if (response && Array.isArray(response.Data)) return response.Data;
-                if (response && Array.isArray(response.data)) return response.data;
-                return [];
-            });
+            .then(eeaNormalizeAttachmentApiResponse);
     };
     AttachmentControlService._eeaGetFilesPatched = true;
 }
@@ -307,6 +429,11 @@ function InitEeaAttachmentControl(masterCode, entryNo, entryDate, mode) {
         EntryNo: parseInt(entryNo, 10) || 0,
         EntryDate: entryDate || '',
         Mode: mode || 'all'
+    }, function () {
+        $(document).off('hidden.bs.modal.eeaAttachAgg', '#AttachmentControlmodal')
+            .on('hidden.bs.modal.eeaAttachAgg', '#AttachmentControlmodal', function () {
+                eeaClearAttachmentAggregateMode();
+            });
     });
 }
 
@@ -322,7 +449,12 @@ function OpenEeaApprovalAttachment(code, entryNo, entryDate) {
     const ed = entryDate != null && String(entryDate) !== ''
         ? entryDate
         : (entry ? eeaEntryDateParamForAttachmentControl(entry) : '');
-    InitEeaAttachmentControl(masterCode, en, ed, eeaGetAttachmentControlMode());
+
+    eeaEnsureDetailCodesForAttachments(entry, masterCode).then(function (detailCodes) {
+        window._eeaAttachmentAggregateMasterCode = masterCode;
+        window._eeaAttachmentDetailCodes = detailCodes;
+        InitEeaAttachmentControl(masterCode, en, ed, eeaGetAttachmentControlMode());
+    });
 }
 
 function OpenEeaApprovalAttachmentFromModal() {
@@ -510,6 +642,12 @@ function LoadEntryList() {
         .then(function (data) {
             ShowEeaLoading(false);
             G_EntryList = NormalizeEntryList(normalizeListResponse(data));
+            if (G_EeaAutoSetFromDate) {
+                if (G_EntryList.length > 0) {
+                    SetEeaFromDateFromList(G_EntryList);
+                }
+                G_EeaAutoSetFromDate = false;
+            }
             UpdateEeaStatChips();
             RenderEntryCards(G_EntryList);
         })
@@ -846,7 +984,7 @@ function OpenDetailModal(entryCode) {
     paintModalFromEntry(G_CurrentEntry);
 
     $('#eeaModalItemsBody').html(
-        '<tr><td colspan="7" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<tr><td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
         '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
     );
 
@@ -875,7 +1013,7 @@ function OpenDetailModal(entryCode) {
         .catch(function (err) {
             console.error('GetExpenseEntryApprovalDetail', err);
             $('#eeaModalItemsBody').html(
-                '<tr><td colspan="7" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<tr><td colspan="9" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
                 '<i class="fa fa-exclamation-triangle me-1"></i>Error loading expense lines.</td></tr>'
             );
         });
@@ -904,7 +1042,7 @@ function paintModalFromEntry(entry) {
     );
 
     $('#eeaModalApprovalStepper').html(BuildEeaDetailStepper(entry));
-    syncEeaRemarksToActiveStep();
+    syncEeaModalLevelChip();
 }
 
 /**
@@ -929,41 +1067,34 @@ function getEeaListCardLevelChipEl() {
     return null;
 }
 
-/**
- * Active Pending step: bubble = bottom textarea only (no other level / API fill).
- * List + modal chips: typed || getEeaCardLevelChipLabel (chip logic unchanged — prior remark still on chip only).
- */
-function syncEeaRemarksToActiveStep() {
-    const typed = ($('#eeaFrmRemarks').val() || '').trim();
+/** Modal header chip: current level title only — not tied to the bottom remarks textarea. */
+function getEeaModalLevelChipLabel(p) {
+    if (!p) return '';
+    const status = getApprovalStatus(p);
+    const st = status.toLowerCase();
+    if (st === 'approved') return 'Approved';
+    if (st === 'rejected') return 'Rejected';
 
-    const el = document.getElementById('eeaActiveStepComposeRemarks');
-    if (el) {
-        if (typed) {
-            el.style.display = '';
-            el.innerHTML = '<i class="fa fa-comment me-1"></i>' + EscHtml(typed);
-        } else {
-            el.style.display = 'none';
-            el.innerHTML = '';
-        }
-    }
+    const masterDesc = String(p.CurrentLevelDesc ?? '').trim();
+    if (masterDesc) return masterDesc;
 
+    const row = getCurrentLevelRowForEea(p);
+    const rowDesc = row ? pickLevelRowTitleText(row) : '';
+    if (rowDesc) return rowDesc;
+
+    const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
+    return 'L' + cur;
+}
+
+function syncEeaModalLevelChip() {
     if (!G_CurrentEntry) return;
 
-    const pend = getApprovalStatus(G_CurrentEntry).toLowerCase() === 'pending';
-    const base = getEeaCardLevelChipLabel(G_CurrentEntry);
-    const headerListLabel = pend ? (typed || base) : base;
-
+    const label = getEeaModalLevelChipLabel(G_CurrentEntry);
     const chipWrap = document.getElementById('eeaModalLevelChip');
     const chipTxt = document.getElementById('eeaModalLevelChipText');
     if (chipWrap && chipTxt) {
-        chipTxt.textContent = headerListLabel;
-        chipWrap.style.display = headerListLabel ? 'inline-flex' : 'none';
-    }
-
-    if (!pend) return;
-    const listChip = getEeaListCardLevelChipEl();
-    if (listChip) {
-        listChip.textContent = headerListLabel;
+        chipTxt.textContent = label;
+        chipWrap.style.display = label ? 'inline-flex' : 'none';
     }
 }
 
@@ -1003,10 +1134,7 @@ function BuildEeaDetailStepper(entry) {
         const approvedOn = lvlInfo.ApprovedOn ? FmtDateDisplay(lvlInfo.ApprovedOn) : '';
         const lvlRemarksRaw = getLevelRowRemarks(lvlInfo);
         let remarksHtml = '';
-        let composeRemarksSlot = '';
-        if (stepState === 'active' && st === 'pending') {
-            composeRemarksSlot = '<div class="gpa-dstep-remarks" id="eeaActiveStepComposeRemarks" style="display:none;"></div>';
-        } else if (lvlRemarksRaw && (stepState === 'done' || stepState === 'rejected')) {
+        if (lvlRemarksRaw && (stepState === 'done' || stepState === 'rejected')) {
             remarksHtml = '<div class="gpa-dstep-remarks"><i class="fa fa-comment me-1"></i>' + EscHtml(lvlRemarksRaw) + '</div>';
         }
 
@@ -1033,7 +1161,6 @@ function BuildEeaDetailStepper(entry) {
             lvlTitleHtml +
             approverHtml +
             remarksHtml +
-            composeRemarksSlot +
             '<div class="gpa-dstep-badge gpa-dstep-badge-' + stepState + '">' + badgeLabel + '</div>' +
             '</div>' +
             '</div>';
@@ -1050,7 +1177,7 @@ function RenderEeaModalItems(items) {
     const $body = $('#eeaModalItemsBody');
     if (!items || items.length === 0) {
         $body.html(
-            '<tr><td colspan="7" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No expense lines found.</td></tr>'
+            '<tr><td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No expense lines found.</td></tr>'
         );
         return;
     }
@@ -1059,12 +1186,18 @@ function RenderEeaModalItems(items) {
     const masterCode = getExpenseMasterCode(G_CurrentEntry);
     items.forEach(function (row, idx) {
         const head = EscHtml(row['Expense Head'] ?? row.ExpenseHead ?? row.ExpenseDesp ?? '—');
+        const allowAmt = FmtCurrency(eeaNumFromRow(row, EEA_ALLOW_AMOUNT_KEYS));
         const expAmt = FmtCurrency(row['Expense Amount'] ?? row.ExpendedAmount ?? row['Expended Amount'] ?? 0);
         const apprRaw = eeaNumFromRow(row, EEA_APPROVED_AMOUNT_KEYS);
         const rem = EscHtml(row.Remarks ?? row['Remarks'] ?? row.Description ?? row.LineDescription ?? row.LineDesp ?? '');
         const proj = EscHtml(row['Project Name'] ?? row.ProjectName ?? row.ProjectDesp ?? '');
         const subp = EscHtml(row['Sub Project Name'] ?? row.SubProjectName ?? row.SubProjectDesp ?? '');
         const detailCode = eeaDetailLineCodeFromRow(row, masterCode);
+        const histBtn = detailCode > 0
+            ? '<button type="button" class="btn-eea-line-history" title="View approval amount history" ' +
+              'onclick="OpenEeaLineHistory(' + detailCode + ')"><i class="fa fa-history"></i></button>'
+            : '<button type="button" class="btn-eea-line-history" disabled title="Line must be saved before history is available">' +
+              '<i class="fa fa-history"></i></button>';
         let apprCell;
         if (editableApproved) {
             const v = Number.isFinite(apprRaw) ? apprRaw : 0;
@@ -1079,9 +1212,11 @@ function RenderEeaModalItems(items) {
             '<td style="font-weight:600;">' + head + '</td>' +
             '<td>' + proj + '</td>' +
             '<td>' + subp + '</td>' +
+            '<td class="text-end" style="font-weight:600;color:#059669;">' + allowAmt + '</td>' +
             '<td class="text-end">' + expAmt + '</td>' +
             '<td class="text-end">' + apprCell + '</td>' +
             '<td style="max-width:180px;">' + rem + '</td>' +
+            '<td class="text-center">' + histBtn + '</td>' +
             '</tr>';
     });
     $body.html(html);
@@ -1095,6 +1230,100 @@ function RenderEeaModalItems(items) {
 }
 
 /** Refresh header Allowed Amount from editable line inputs. */
+function normalizeEeaHistoryList(data) {
+    if (Array.isArray(data)) return data;
+    if (!data || typeof data !== 'object') return [];
+    if (Array.isArray(data.Data)) return data.Data;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.ExpenseEntryApprovalHistory)) return data.ExpenseEntryApprovalHistory;
+    if (Array.isArray(data.Result)) return data.Result;
+    return [];
+}
+
+function eeaHistoryTextFromRow(row, keys) {
+    const arr = Array.isArray(keys) ? keys : [keys];
+    for (let i = 0; i < arr.length; i++) {
+        const v = row[arr[i]];
+        if (v != null && String(v).trim() !== '') return String(v).trim();
+    }
+    return '';
+}
+
+function RenderEeaHistoryModalBody(rows) {
+    const $body = $('#eeaHistoryModalBody');
+    if (!rows || rows.length === 0) {
+        $body.html(
+            '<tr><td colspan="4" class="text-center py-4" style="color:#0e7499;font-size:0.82rem;">' +
+            '<i class="fa fa-inbox me-1"></i>No approval history for this line.</td></tr>'
+        );
+        return;
+    }
+    let html = '';
+    rows.forEach(function (row, idx) {
+        const level = EscHtml(eeaHistoryTextFromRow(row, ['Level', 'LevelDesc', 'LevelDesp', 'Level Name', 'Level Description'])
+            || ('L' + (row.ExpenseEntryApprovalConfiguration_Code || row.LevelCode || '')));
+        const oldAmt = FmtCurrency(eeaNumFromRow(row, ['Old Approved Amount', 'OldApprovedAmount', 'Old Approved', 'OldApproved']));
+        const newAmt = FmtCurrency(eeaNumFromRow(row, ['New Approved Amount', 'NewApprovedAmount', 'New Approved', 'NewApproved']));
+        html += '<tr>' +
+            '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
+            '<td style="font-weight:600;">' + (level || '—') + '</td>' +
+            '<td class="text-end">' + oldAmt + '</td>' +
+            '<td class="text-end" style="font-weight:700;color:#0891b2;">' + newAmt + '</td>' +
+            '</tr>';
+    });
+    $body.html(html);
+}
+
+function OpenEeaLineHistory(detailCode) {
+    const dc = parseInt(detailCode, 10) || 0;
+    if (dc <= 0) {
+        if (typeof toastr !== 'undefined') toastr.warning('This line has no detail code; history is not available.');
+        return;
+    }
+
+    let lineLabel = '';
+    if (G_CurrentEntry && Array.isArray(G_CurrentEntry._detailLines)) {
+        const masterCode = getExpenseMasterCode(G_CurrentEntry);
+        const hit = G_CurrentEntry._detailLines.find(function (r) {
+            return eeaDetailLineCodeFromRow(r, masterCode) === dc;
+        });
+        if (hit) {
+            lineLabel = String(hit['Expense Head'] ?? hit.ExpenseHead ?? hit.ExpenseDesp ?? '').trim();
+        }
+    }
+
+    $('#eeaHistoryModalTitle').text('Approval history');
+    $('#eeaHistoryModalSub').text(
+        'ExpenseEntryDetail_Code: ' + dc + (lineLabel ? ' · ' + lineLabel : '')
+    );
+    $('#eeaHistoryModalBody').html(
+        '<tr><td colspan="4" class="text-center py-3" style="color:#0e7499;font-size:0.82rem;">' +
+        '<i class="fa fa-spinner fa-spin me-1"></i>Loading…</td></tr>'
+    );
+
+    $('#modalEeaLineHistory').modal({ backdrop: 'static' });
+    $('#modalEeaLineHistory').modal('show');
+
+    ExpenseEntryLevelsApprovalService.GetExpenseEntryApprovalHistory(dc)
+        .then(function (res) {
+            RenderEeaHistoryModalBody(normalizeEeaHistoryList(res));
+        })
+        .catch(function (err) {
+            console.error('GetExpenseEntryApprovalHistory', err);
+            $('#eeaHistoryModalBody').html(
+                '<tr><td colspan="4" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<i class="fa fa-exclamation-triangle me-1"></i>Unable to load history.</td></tr>'
+            );
+            if (typeof toastr !== 'undefined') {
+                toastr.error('Error loading approval history for this line.');
+            }
+        });
+}
+
+function CloseEeaLineHistoryModal() {
+    $('#modalEeaLineHistory').modal('hide');
+}
+
 function syncEeaModalApprovedTotalsFromLines() {
     if (!isEeaApprovedAmountEditable()) return;
     let total = 0;
@@ -1250,19 +1479,20 @@ function NavigateToExpenseEntryList() {
 
 document.addEventListener('DOMContentLoaded', function () {
     eeaPatchAttachmentServiceForPage();
-    InitDates();
-    LoadEntryList();
+    InitDates()
+        .then(function () {
+            LoadEntryList();
+        })
+        .catch(function (err) {
+            console.error('InitDates failed', err);
+            LoadEntryList();
+        });
 
     const searchEl = document.getElementById('eeaLstSearch');
     if (searchEl) {
         searchEl.addEventListener('input', function () {
             FilterEeaCards(this.value);
         });
-    }
-
-    const remarksEl = document.getElementById('eeaFrmRemarks');
-    if (remarksEl) {
-        remarksEl.addEventListener('input', syncEeaRemarksToActiveStep);
     }
 
     window.AttachmentControl_onQueueChange = function (count) {
@@ -1284,3 +1514,5 @@ window.CloseConfirmModal = CloseConfirmModal;
 window.NavigateToExpenseEntryList = NavigateToExpenseEntryList;
 window.OpenEeaApprovalAttachment = OpenEeaApprovalAttachment;
 window.OpenEeaApprovalAttachmentFromModal = OpenEeaApprovalAttachmentFromModal;
+window.OpenEeaLineHistory = OpenEeaLineHistory;
+window.CloseEeaLineHistoryModal = CloseEeaLineHistoryModal;
