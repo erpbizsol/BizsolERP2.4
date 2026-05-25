@@ -305,12 +305,13 @@
                             <th style="width:68px;">Level</th>
                             <th style="min-width:160px;">Level Description</th>
                             <th style="min-width:180px;">Group</th>
+                            <th style="width:88px;">Applicable</th>
                             <th style="width:88px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="tblLevelsBody">
                         <tr>
-                            <td colspan="5" class="empty-levels">
+                            <td colspan="6" class="empty-levels">
                                 <i class="fa fa-layer-group"></i>
                                 No approval levels configured yet.<br>
                                 Click <strong>Add Level</strong> to get started.
@@ -361,6 +362,17 @@
                         <div class="pac-field-ctrl">
                             <select id="frmGroup" class="form-control form-control-sm">
                             </select>
+                        </div>
+                    </div>
+                    <div class="pac-field-row">
+                        <span class="pac-field-lbl">Applicable</span>
+                        <div class="pac-field-ctrl">
+                            <label class="form-check-label d-flex align-items-center gap-2 mb-0"
+                                   style="font-size:0.8rem;font-weight:600;color:#475569;cursor:pointer;">
+                                <input type="checkbox" id="frmApplicable" class="form-check-input flex-shrink-0"
+                                       style="margin-top:0;" checked />
+                                <span>Include this level in approval flow</span>
+                            </label>
                         </div>
                     </div>
                 </div>
