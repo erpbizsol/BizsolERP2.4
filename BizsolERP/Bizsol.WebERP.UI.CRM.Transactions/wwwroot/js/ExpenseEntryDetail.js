@@ -597,12 +597,7 @@ var MarketingManMaster_Code = 0;
 var G_EeClosingBalanceRequestId = 0;
 
 function applyClosingBalanceFieldVisibility() {
-    if (G_ProjectApplicable === 'Y') {
-        $('#eeClosingBalWrap').show();
-    } else {
-        $('#eeClosingBalWrap').hide();
-        $('#txtClosingBalance').val('');
-    }
+    $('#eeClosingBalWrap').show();
 }
 
 function formatClosingBalanceDisplay(row) {
@@ -618,31 +613,17 @@ function formatClosingBalanceDisplay(row) {
     return drCr ? displayAmt.toFixed(3) + ' ' + drCr : displayAmt.toFixed(3);
 }
 
-/** Closing balance = payments − expenses for sales person + project + sub project (From/To dates). */
-function refreshClosingBalance(projectMasterCode, subProjectMasterCode) {
-    if (G_ProjectApplicable !== 'Y') {
-        $('#txtClosingBalance').val('');
-        return;
-    }
-    var pm = parseInt(projectMasterCode, 10) || 0;
-    var sp = parseInt(subProjectMasterCode, 10) || 0;
-    if (pm <= 0 || sp <= 0) {
-        $('#txtClosingBalance').val('');
-        return;
-    }
-    var fromDate = $('#txtFromDate').val();
-    var toDate = $('#txtToDate').val();
-    if (!fromDate || !toDate || !MarketingManMaster_Code) {
+/** Closing balance = payments − verified expenses for sales person as on Entry Date. */
+function refreshClosingBalance() {
+    var entryDate = ($('#txtEntryDate').val() || '').trim();
+    if (!entryDate || !MarketingManMaster_Code) {
         $('#txtClosingBalance').val('');
         return;
     }
     var reqId = ++G_EeClosingBalanceRequestId;
     ExpensesLedgerReportService.GetClosingBalance(
-        convertDateFormat1(fromDate),
-        convertDateFormat1(toDate),
-        MarketingManMaster_Code,
-        pm,
-        sp
+        convertDateFormat1(entryDate),
+        MarketingManMaster_Code
     ).then(function (response) {
         if (reqId !== G_EeClosingBalanceRequestId) return;
         var rows = Array.isArray(response) ? response : (response && Array.isArray(response.Data) ? response.Data : []);
@@ -660,13 +641,6 @@ function refreshClosingBalance(projectMasterCode, subProjectMasterCode) {
         if (reqId !== G_EeClosingBalanceRequestId) return;
         $('#txtClosingBalance').val('');
     });
-}
-
-function refreshClosingBalanceFromRow($row) {
-    if (!$row || !$row.length) return;
-    var pm = parseInt($row.find('.ee-ddl-project').val(), 10) || 0;
-    var sp = parseInt($row.find('.ee-ddl-subproject').val(), 10) || 0;
-    refreshClosingBalance(pm, sp);
 }
 
 $(document).ready(function () {
@@ -718,13 +692,11 @@ $(document).ready(function () {
         var html = buildSubProjectSelectHtml(proj, 0, idxForHtml);
         $row.find('td').eq(Indx_Tbl.SubProject).html(html);
         syncExpenseDetailRowToFilteredData($row);
-        $('#txtClosingBalance').val('');
     });
 
     $('#ExpenseEntryDetails').on('change', '.ee-ddl-subproject', function () {
         var $row = $(this).closest('tr');
         syncExpenseDetailRowToFilteredData($row);
-        refreshClosingBalanceFromRow($row);
     });
 
     $('#ExpenseEntryDetails').on('input', '.txtAllowedAmount, .txtExpendedAmount, .txtApprovedAmount', function () {
@@ -763,6 +735,7 @@ $(document).ready(function () {
     ExpenseEntryService.GetMarketingManMasterByName(param_MarketingMan_Name).then(function (mm) {
         if (mm && mm.Code) {
             MarketingManMaster_Code = parseInt(mm.Code, 10) || 0;
+            refreshClosingBalance();
         }
     });
 
@@ -867,6 +840,7 @@ function PopulateExpenseHeadDetails(Code) {
                 $('#txtToDate').val(response.ExpenseEntryMaster[0].ToDate);
                 MarketingManMaster_Code = (response.ExpenseEntryMaster[0].MarketingManMaster_Code);
                 CalculateTotalDays(MarketingManMaster_Code);
+                refreshClosingBalance();
             } else {
                 toastr.error('No Data Found');
             }
@@ -907,12 +881,7 @@ function PopulateExpenseHeadDetails(Code) {
                 $('#paginator-ExpenseEntryDetails').show();
                 refreshExpenseEntryDetailTotals();
                 applyClosingBalanceFieldVisibility();
-                var $firstWithSub = $('#ExpenseEntryDetails-body tr').not('.total-row').not('.grand-total-row').filter(function () {
-                    return (parseInt($(this).find('.ee-ddl-subproject').val(), 10) || 0) > 0;
-                }).first();
-                if ($firstWithSub.length) {
-                    refreshClosingBalanceFromRow($firstWithSub);
-                }
+                refreshClosingBalance();
             } else {
                 loadExpenseHeadOptionsFromTemplate(MarketingPersonName).then(function () {
                     if (G_ExpenseHeadOptions.length > 0) {
@@ -1148,15 +1117,10 @@ function DatePicker() {
         autoclose: true,
     }).on('change', function () {
         CalculateTotalDays(MarketingManMaster_Code);
-        var $active = $('#ExpenseEntryDetails-body tr').not('.total-row').not('.grand-total-row').has('.ee-ddl-subproject:focus').first();
-        if (!$active.length) {
-            $active = $('#ExpenseEntryDetails-body tr').not('.total-row').not('.grand-total-row').filter(function () {
-                return (parseInt($(this).find('.ee-ddl-subproject').val(), 10) || 0) > 0;
-            }).first();
-        }
-        if ($active.length) {
-            refreshClosingBalanceFromRow($active);
-        }
+    });
+
+    $('#txtEntryDate').on('change', function () {
+        refreshClosingBalance();
     });
 
 }

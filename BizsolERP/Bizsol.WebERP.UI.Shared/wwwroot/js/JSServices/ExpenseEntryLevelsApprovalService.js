@@ -26,8 +26,10 @@ function getSessionUserAndGroup() {
 const ExpenseEntryLevelsApprovalService = {
 
     GetPendingExpenseEntryList: function GetPendingExpenseEntryList(FromDate, ToDate, Status) {
+        const { userCode, groupCode } = getSessionUserAndGroup();
         const url = UrlService.API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL +
-            `/GetPendingExpenseEntryList?FromDate=${encodeURIComponent(FromDate || '')}&ToDate=${encodeURIComponent(ToDate || '')}&Status=${encodeURIComponent(Status || '')}`;
+            `/GetPendingExpenseEntryList?FromDate=${encodeURIComponent(FromDate || '')}&ToDate=${encodeURIComponent(ToDate || '')}&Status=${encodeURIComponent(Status || '')}` +
+            `&GroupMaster_Code=${encodeURIComponent(groupCode)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 

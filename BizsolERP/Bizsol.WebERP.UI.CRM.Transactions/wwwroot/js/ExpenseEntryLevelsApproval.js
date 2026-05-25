@@ -17,8 +17,8 @@ let G_EeaAutoSetFromDate = true;
 /** Detail row keys for Approved column (editable on pending approval). */
 const EEA_APPROVED_AMOUNT_KEYS = ['Approved', 'Approved Amount', 'AllowAmount', 'ApprovedAmount'];
 
-/** Detail row keys for Allow Amount column (read-only limit from API). */
-const EEA_ALLOW_AMOUNT_KEYS = ['Allow Amount', 'Allowed Amount', 'AllowLimit', 'AllowAmount'];
+/** Detail row keys for Allow Amount column (calculated allowed limit, same as Expense Entry Detail page). */
+const EEA_ALLOW_AMOUNT_KEYS = ['Allowed Amount', 'Allow Amount'];
 
 BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
 
@@ -154,48 +154,87 @@ function eeaMatchDetailLineForEnrich(line, apiLine) {
     const spA = parseInt(line.SubProjectMaster_Code, 10) || 0;
     const spB = parseInt(apiLine.SubProjectMaster_Code, 10) || 0;
     if (spA && spB && spA !== spB) return false;
+    const subNameA = String(line['Sub Project Name'] ?? line.SubProjectName ?? line.SubProjectDesp ?? '').trim().toLowerCase();
+    const subNameB = String(apiLine['Sub Project Name'] ?? apiLine.SubProjectName ?? '').trim().toLowerCase();
+    if (subNameA && subNameB && subNameA !== subNameB) return false;
     const expA = eeaNumFromRow(line, ['Expense Amount', 'ExpendedAmount', 'Expended Amount']);
     const expB = eeaNumFromRow(apiLine, ['Expense Amount', 'ExpendedAmount', 'Expended Amount']);
     if (expA > 0 && expB > 0 && Math.abs(expA - expB) > 0.01) return false;
     return true;
 }
 
-/** Fill ExpenseEntryDetail_Code from GetExpenseEntryDetails when approval API omits line codes. */
-function ensureEeaDetailLinesWithCodes(masterCode, lines) {
-    let normalized = normalizeEeaDetailLines(lines, masterCode);
-    const allHaveCode = normalized.length > 0 && normalized.every(function (l) {
-        return eeaDetailLineCodeFromRow(l, masterCode) > 0;
-    });
-    if (allHaveCode) return Promise.resolve(normalized);
+function eeaMergeShowDataOntoLine(line, showLine, masterCode) {
+    const r = Object.assign({}, line);
+    if (!showLine) return r;
+    const dc = eeaDetailLineCodeFromRow(showLine, masterCode);
+    if (dc > 0) {
+        r.ExpenseEntryDetail_Code = dc;
+        r.Code = dc;
+    }
+    if (showLine.ExpenseHeadMaster_Code != null) {
+        r.ExpenseHeadMaster_Code = showLine.ExpenseHeadMaster_Code;
+    }
+    if (showLine['Per Day Limit'] != null) {
+        r['Per Day Limit'] = showLine['Per Day Limit'];
+        r.AllowLimit = showLine['Per Day Limit'];
+    }
+    if (showLine.ProjectMaster_Code != null) {
+        r.ProjectMaster_Code = showLine.ProjectMaster_Code;
+    }
+    if (showLine.SubProjectMaster_Code != null) {
+        r.SubProjectMaster_Code = showLine.SubProjectMaster_Code;
+    }
+    return r;
+}
 
-    const person = G_CurrentEntry ? getPersonName(G_CurrentEntry) : '';
-    if (!person || person === '—') return Promise.resolve(normalized);
+/** Same source as Expense Entry Detail page — master dates, marketing man, head codes, per-day limits. */
+function eeaEnrichEntryAndLinesFromShowData(entry, masterCode, lines) {
+    let normalized = normalizeEeaDetailLines(lines, masterCode);
+    const person = getPersonName(entry);
+    if (!person || person === '—' || !masterCode) {
+        return Promise.resolve({ entry: entry, lines: normalized });
+    }
 
     return ExpenseEntryService.GetExpenseEntryDetails(person, masterCode).then(function (resp) {
-        const apiLines = (resp && resp.ExpenseEntryDetail) ? resp.ExpenseEntryDetail : [];
-        if (!apiLines.length) return normalized;
+        const enrichedEntry = Object.assign({}, entry);
+        const master = resp && resp.ExpenseEntryMaster && resp.ExpenseEntryMaster[0];
+        if (master) {
+            enrichedEntry['From Date'] = master.FromDate || enrichedEntry['From Date'];
+            enrichedEntry['To Date'] = master.ToDate || enrichedEntry['To Date'];
+            enrichedEntry.FromDate = master.FromDate || enrichedEntry.FromDate;
+            enrichedEntry.ToDate = master.ToDate || enrichedEntry.ToDate;
+            enrichedEntry.MarketingManMaster_Code = master.MarketingManMaster_Code || enrichedEntry.MarketingManMaster_Code;
+            enrichedEntry['MarketingManMaster_Code'] = enrichedEntry.MarketingManMaster_Code;
+        }
+
+        const showLines = (resp && resp.ExpenseEntryDetail) ? resp.ExpenseEntryDetail : [];
+        if (!showLines.length) {
+            return { entry: enrichedEntry, lines: normalized };
+        }
 
         const used = new Set();
-        return normalized.map(function (line) {
-            if (eeaDetailLineCodeFromRow(line, masterCode) > 0) return line;
+        const enrichedLines = normalized.map(function (line) {
             let matchIdx = -1;
-            for (let i = 0; i < apiLines.length; i++) {
+            for (let i = 0; i < showLines.length; i++) {
                 if (used.has(i)) continue;
-                if (!eeaMatchDetailLineForEnrich(line, apiLines[i])) continue;
-                if (eeaDetailLineCodeFromRow(apiLines[i], masterCode) <= 0) continue;
+                if (!eeaMatchDetailLineForEnrich(line, showLines[i])) continue;
                 matchIdx = i;
                 break;
             }
-            if (matchIdx < 0) return line;
+            if (matchIdx < 0) return Object.assign({}, line);
             used.add(matchIdx);
-            const dc = eeaDetailLineCodeFromRow(apiLines[matchIdx], masterCode);
-            const r = Object.assign({}, line);
-            r.ExpenseEntryDetail_Code = dc;
-            r.Code = dc;
-            return r;
+            return eeaMergeShowDataOntoLine(line, showLines[matchIdx], masterCode);
         });
+        return { entry: enrichedEntry, lines: enrichedLines };
     }).catch(function () {
-        return normalized;
+        return { entry: entry, lines: normalized };
+    });
+}
+
+/** @deprecated use eeaEnrichEntryAndLinesFromShowData */
+function ensureEeaDetailLinesWithCodes(masterCode, lines) {
+    return eeaEnrichEntryAndLinesFromShowData(G_CurrentEntry || {}, masterCode, lines).then(function (pack) {
+        return pack.lines;
     });
 }
 
@@ -476,7 +515,117 @@ function getTotalAmount(p) {
     return v;
 }
 
+function eeaExpenseHeadCodeFromRow(row) {
+    if (!row || typeof row !== 'object') return 0;
+    const n = parseInt(row.ExpenseHeadMaster_Code ?? row['Expense Head Master Code'] ?? 0, 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function eeaParseUiDate(raw) {
+    if (raw == null || raw === '') return null;
+    const s = String(raw).trim();
+    if (/^\d{2}-\d{2}-\d{4}$/.test(s)) {
+        const p = s.split('-');
+        return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+    }
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+        const p = s.split('/');
+        return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+    }
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const dt = new Date(s.substring(0, 10) + 'T12:00:00');
+        return isNaN(dt.getTime()) ? null : dt;
+    }
+    return null;
+}
+
+function eeaDateToCalcApiFormat(raw) {
+    const dt = eeaParseUiDate(raw);
+    if (!dt) return '';
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return dt.getDate() + '-' + monthNames[dt.getMonth()] + '-' + dt.getFullYear();
+}
+
+function eeaCalcTotalDaysFromEntry(entry) {
+    const fromDt = eeaParseUiDate(entry['From Date'] ?? entry.FromDate);
+    const toDt = eeaParseUiDate(entry['To Date'] ?? entry.ToDate);
+    if (!fromDt || !toDt) return 0;
+    const totalDays = Math.round((toDt - fromDt) / (1000 * 3600 * 24)) + 1;
+    return totalDays >= 1 ? totalDays : 0;
+}
+
+function eeaResolveMarketingManMasterCode(entry) {
+    const fromEntry = parseInt(entry.MarketingManMaster_Code ?? entry['MarketingManMaster_Code'] ?? 0, 10);
+    if (fromEntry > 0) return Promise.resolve(fromEntry);
+    const person = getPersonName(entry);
+    if (!person || person === '—') return Promise.resolve(0);
+    return ExpenseEntryService.GetMarketingManMasterByName(person).then(function (resp) {
+        return resp && resp.Code ? parseInt(resp.Code, 10) : 0;
+    }).catch(function () { return 0; });
+}
+
+function eeaNormalizeApiArray(response) {
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
+
+/** Match Expense Entry Detail: TotalExpense from CalculateAllowedAmount (per-day limit × days). */
+function eeaApplyCalculatedAllowedAmounts(entry, lines) {
+    const rows = Array.isArray(lines) ? lines.slice() : [];
+    if (!rows.length) return Promise.resolve(rows);
+
+    const totalDays = eeaCalcTotalDaysFromEntry(entry);
+    const applyFallback = function () {
+        return rows.map(function (row) {
+            const r = Object.assign({}, row);
+            const perDay = eeaNumFromRow(r, ['Per Day Limit', 'AllowLimit', 'Allow Limit']);
+            const amt = perDay > 0 && totalDays > 0 ? perDay * totalDays : 0;
+            r['Allowed Amount'] = amt;
+            r['Allow Amount'] = amt;
+            return r;
+        });
+    };
+
+    const fromApi = eeaDateToCalcApiFormat(entry['From Date'] ?? entry.FromDate);
+    const toApi = eeaDateToCalcApiFormat(entry['To Date'] ?? entry.ToDate);
+    if (!fromApi || !toApi) return Promise.resolve(applyFallback());
+
+    return eeaResolveMarketingManMasterCode(entry).then(function (mmCode) {
+        if (!mmCode) return applyFallback();
+        return ExpenseEntryService.CalculateAllowedAmount(mmCode, fromApi, toApi).then(function (response) {
+            const list = eeaNormalizeApiArray(response);
+            const byHead = {};
+            list.forEach(function (item) {
+                if (item && item.ExpenseHeadMaster_Code != null) {
+                    byHead[parseInt(item.ExpenseHeadMaster_Code, 10)] = parseFloat(item.TotalExpense) || 0;
+                }
+            });
+            return rows.map(function (row) {
+                const r = Object.assign({}, row);
+                const headCode = eeaExpenseHeadCodeFromRow(r);
+                let amt = headCode > 0 && byHead[headCode] != null ? byHead[headCode] : null;
+                if (amt == null) {
+                    const perDay = eeaNumFromRow(r, ['Per Day Limit', 'AllowLimit', 'Allow Limit']);
+                    amt = perDay > 0 && totalDays > 0 ? perDay * totalDays : 0;
+                }
+                r['Allowed Amount'] = amt;
+                r['Allow Amount'] = amt;
+                return r;
+            });
+        }).catch(function () {
+            return applyFallback();
+        });
+    });
+}
+
 function getTotalAllowedAmount(p) {
+    if (p && Array.isArray(p._detailLines) && p._detailLines.length) {
+        return p._detailLines.reduce(function (sum, row) {
+            return sum + eeaNumFromRow(row, EEA_ALLOW_AMOUNT_KEYS);
+        }, 0);
+    }
     const v = p['Total Allowed Amount'] ?? p.TotalAllowedAmount ?? p.AllowedAmount ?? 0;
     return v;
 }
@@ -631,7 +780,7 @@ function NormalizeEntryList(list) {
 function LoadEntryList() {
     const fromDate = document.getElementById('eeaFromDate')?.value || '';
     const toDate = document.getElementById('eeaToDate')?.value || '';
-    const status = document.getElementById('eeaDdlStatus')?.value || 'A';
+    const status = document.getElementById('eeaDdlStatus')?.value || 'P';
 
     ShowEeaLoading(true);
     ShowEeaEmpty(false);
@@ -999,15 +1148,18 @@ function OpenDetailModal(entryCode) {
             G_CurrentEntry = mergeDetailIntoEntry(res, G_CurrentEntry);
             $('#hfEeaLevelCode').val(String(getLevelCode(G_CurrentEntry)));
             syncEeaModalAttachmentButton(G_CurrentEntry);
-            paintModalFromEntry(G_CurrentEntry);
             const rawLines = extractDetailLines(res);
-            return ensureEeaDetailLinesWithCodes(code, rawLines).then(function (lines) {
-                G_CurrentEntry._detailLines = lines;
-                RenderEeaModalItems(lines);
-                const st = getApprovalStatus(G_CurrentEntry);
-                const pend = st.toLowerCase() === 'pending';
-                $('#eeaBtnApproveAction').toggle(pend);
-                $('#eeaBtnRejectAction').toggle(pend);
+            return eeaEnrichEntryAndLinesFromShowData(G_CurrentEntry, code, rawLines).then(function (pack) {
+                G_CurrentEntry = pack.entry;
+                return eeaApplyCalculatedAllowedAmounts(G_CurrentEntry, pack.lines).then(function (enriched) {
+                    G_CurrentEntry._detailLines = enriched;
+                    paintModalFromEntry(G_CurrentEntry);
+                    RenderEeaModalItems(enriched);
+                    const st = getApprovalStatus(G_CurrentEntry);
+                    const pend = st.toLowerCase() === 'pending';
+                    $('#eeaBtnApproveAction').toggle(pend);
+                    $('#eeaBtnRejectAction').toggle(pend);
+                });
             });
         })
         .catch(function (err) {
@@ -1326,17 +1478,7 @@ function CloseEeaLineHistoryModal() {
 
 function syncEeaModalApprovedTotalsFromLines() {
     if (!isEeaApprovedAmountEditable()) return;
-    let total = 0;
-    $('#eeaModalItemsBody .eea-line-approved').each(function () {
-        const v = parseFloat(String($(this).val()).replace(/,/g, ''));
-        if (!isNaN(v)) total += v;
-    });
-    $('#eeaModalHeader .gpa-info-item').each(function () {
-        const $lbl = $(this).find('.gpa-info-lbl');
-        if ($lbl.length && ($lbl.text().indexOf('Allowed Amount') >= 0)) {
-            $(this).find('.gpa-info-val').html(FmtCurrency(total));
-        }
-    });
+    /* Approved line edits are saved on Approve; do not overwrite header Allowed Amount. */
 }
 
 function SubmitApproval(action) {
@@ -1479,6 +1621,8 @@ function NavigateToExpenseEntryList() {
 
 document.addEventListener('DOMContentLoaded', function () {
     eeaPatchAttachmentServiceForPage();
+    const statusDdl = document.getElementById('eeaDdlStatus');
+    if (statusDdl) statusDdl.value = 'P';
     InitDates()
         .then(function () {
             LoadEntryList();

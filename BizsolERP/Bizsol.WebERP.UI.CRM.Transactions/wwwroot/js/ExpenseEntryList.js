@@ -1109,6 +1109,181 @@ function BuildEeListApprovalStepper(entry) {
     return html;
 }
 
+function eeListExpenseHeadCodeFromRow(row) {
+    if (!row || typeof row !== 'object') return 0;
+    const n = parseInt(row.ExpenseHeadMaster_Code ?? row['Expense Head Master Code'] ?? 0, 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function eeListParseUiDate(raw) {
+    if (raw == null || raw === '') return null;
+    const s = String(raw).trim();
+    if (/^\d{2}-\d{2}-\d{4}$/.test(s)) {
+        const p = s.split('-');
+        return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+    }
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+        const p = s.split('/');
+        return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+    }
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const dt = new Date(s.substring(0, 10) + 'T12:00:00');
+        return isNaN(dt.getTime()) ? null : dt;
+    }
+    return null;
+}
+
+function eeListDateToCalcApiFormat(raw) {
+    const dt = eeListParseUiDate(raw);
+    if (!dt) return '';
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return dt.getDate() + '-' + monthNames[dt.getMonth()] + '-' + dt.getFullYear();
+}
+
+function eeListCalcTotalDaysFromEntry(entry) {
+    const fromDt = eeListParseUiDate(entry['From Date'] ?? entry.FromDate);
+    const toDt = eeListParseUiDate(entry['To Date'] ?? entry.ToDate);
+    if (!fromDt || !toDt) return 0;
+    const totalDays = Math.round((toDt - fromDt) / (1000 * 3600 * 24)) + 1;
+    return totalDays >= 1 ? totalDays : 0;
+}
+
+function eeListResolveMarketingManMasterCode(entry) {
+    const fromEntry = parseInt(entry.MarketingManMaster_Code ?? entry['MarketingManMaster_Code'] ?? 0, 10);
+    if (fromEntry > 0) return Promise.resolve(fromEntry);
+    const person = entry['Person Name'] ?? entry.PersonName ?? '';
+    if (!person || person === '—') return Promise.resolve(0);
+    return ExpenseEntryService.GetMarketingManMasterByName(person).then(function (resp) {
+        return resp && resp.Code ? parseInt(resp.Code, 10) : 0;
+    }).catch(function () { return 0; });
+}
+
+function eeListMatchDetailLineForEnrich(line, apiLine) {
+    const headA = String(line['Expense Head'] ?? line.ExpenseHead ?? line.ExpenseDesp ?? '').trim().toLowerCase();
+    const headB = String(apiLine['Expense Head'] ?? apiLine.ExpenseDesp ?? '').trim().toLowerCase();
+    if (headA && headB && headA !== headB) return false;
+    const pmA = parseInt(line.ProjectMaster_Code, 10) || 0;
+    const pmB = parseInt(apiLine.ProjectMaster_Code, 10) || 0;
+    if (pmA && pmB && pmA !== pmB) return false;
+    const spA = parseInt(line.SubProjectMaster_Code, 10) || 0;
+    const spB = parseInt(apiLine.SubProjectMaster_Code, 10) || 0;
+    if (spA && spB && spA !== spB) return false;
+    const subNameA = String(line['Sub Project Name'] ?? line.SubProjectName ?? '').trim().toLowerCase();
+    const subNameB = String(apiLine['Sub Project Name'] ?? apiLine.SubProjectName ?? '').trim().toLowerCase();
+    if (subNameA && subNameB && subNameA !== subNameB) return false;
+    const expA = eeListNumFromRow(line, ['Expense Amount', 'ExpendedAmount', 'Expended Amount']);
+    const expB = eeListNumFromRow(apiLine, ['Expense Amount', 'ExpendedAmount', 'Expended Amount']);
+    if (expA > 0 && expB > 0 && Math.abs(expA - expB) > 0.01) return false;
+    return true;
+}
+
+function eeListMergeShowDataOntoLine(line, showLine) {
+    const r = Object.assign({}, line);
+    if (!showLine) return r;
+    if (showLine.ExpenseHeadMaster_Code != null) r.ExpenseHeadMaster_Code = showLine.ExpenseHeadMaster_Code;
+    if (showLine['Per Day Limit'] != null) {
+        r['Per Day Limit'] = showLine['Per Day Limit'];
+        r.AllowLimit = showLine['Per Day Limit'];
+    }
+    if (showLine.ProjectMaster_Code != null) r.ProjectMaster_Code = showLine.ProjectMaster_Code;
+    if (showLine.SubProjectMaster_Code != null) r.SubProjectMaster_Code = showLine.SubProjectMaster_Code;
+    return r;
+}
+
+function eeListEnrichEntryAndLinesFromShowData(entry, masterCode, lines) {
+    const person = entry['Person Name'] ?? entry.PersonName ?? '';
+    const normalized = Array.isArray(lines) ? lines.slice() : [];
+    if (!person || person === '—' || !masterCode) {
+        return Promise.resolve({ entry: entry, lines: normalized });
+    }
+    return ExpenseEntryService.GetExpenseEntryDetails(person, masterCode).then(function (resp) {
+        const enrichedEntry = Object.assign({}, entry);
+        const master = resp && resp.ExpenseEntryMaster && resp.ExpenseEntryMaster[0];
+        if (master) {
+            enrichedEntry['From Date'] = master.FromDate || enrichedEntry['From Date'];
+            enrichedEntry['To Date'] = master.ToDate || enrichedEntry['To Date'];
+            enrichedEntry.FromDate = master.FromDate || enrichedEntry.FromDate;
+            enrichedEntry.ToDate = master.ToDate || enrichedEntry.ToDate;
+            enrichedEntry.MarketingManMaster_Code = master.MarketingManMaster_Code || enrichedEntry.MarketingManMaster_Code;
+            enrichedEntry['MarketingManMaster_Code'] = enrichedEntry.MarketingManMaster_Code;
+        }
+        const showLines = (resp && resp.ExpenseEntryDetail) ? resp.ExpenseEntryDetail : [];
+        if (!showLines.length) return { entry: enrichedEntry, lines: normalized };
+        const used = new Set();
+        const enrichedLines = normalized.map(function (line) {
+            let matchIdx = -1;
+            for (let i = 0; i < showLines.length; i++) {
+                if (used.has(i)) continue;
+                if (!eeListMatchDetailLineForEnrich(line, showLines[i])) continue;
+                matchIdx = i;
+                break;
+            }
+            if (matchIdx < 0) return Object.assign({}, line);
+            used.add(matchIdx);
+            return eeListMergeShowDataOntoLine(line, showLines[matchIdx]);
+        });
+        return { entry: enrichedEntry, lines: enrichedLines };
+    }).catch(function () {
+        return { entry: entry, lines: normalized };
+    });
+}
+
+function eeListNormalizeApiArray(response) {
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
+
+/** Match Expense Entry Detail page: calculated allowed amount (per-day limit × days). */
+function eeListApplyCalculatedAllowedAmounts(entry, lines) {
+    const rows = Array.isArray(lines) ? lines.slice() : [];
+    if (!rows.length) return Promise.resolve(rows);
+
+    const totalDays = eeListCalcTotalDaysFromEntry(entry);
+    const applyFallback = function () {
+        return rows.map(function (row) {
+            const r = Object.assign({}, row);
+            const perDay = eeListNumFromRow(r, ['Per Day Limit', 'AllowLimit', 'Allow Limit']);
+            const amt = perDay > 0 && totalDays > 0 ? perDay * totalDays : 0;
+            r['Allowed Amount'] = amt;
+            r['Allow Amount'] = amt;
+            return r;
+        });
+    };
+
+    const fromApi = eeListDateToCalcApiFormat(entry['From Date'] ?? entry.FromDate);
+    const toApi = eeListDateToCalcApiFormat(entry['To Date'] ?? entry.ToDate);
+    if (!fromApi || !toApi) return Promise.resolve(applyFallback());
+
+    return eeListResolveMarketingManMasterCode(entry).then(function (mmCode) {
+        if (!mmCode) return applyFallback();
+        return ExpenseEntryService.CalculateAllowedAmount(mmCode, fromApi, toApi).then(function (response) {
+            const list = eeListNormalizeApiArray(response);
+            const byHead = {};
+            list.forEach(function (item) {
+                if (item && item.ExpenseHeadMaster_Code != null) {
+                    byHead[parseInt(item.ExpenseHeadMaster_Code, 10)] = parseFloat(item.TotalExpense) || 0;
+                }
+            });
+            return rows.map(function (row) {
+                const r = Object.assign({}, row);
+                const headCode = eeListExpenseHeadCodeFromRow(r);
+                let amt = headCode > 0 && byHead[headCode] != null ? byHead[headCode] : null;
+                if (amt == null) {
+                    const perDay = eeListNumFromRow(r, ['Per Day Limit', 'AllowLimit', 'Allow Limit']);
+                    amt = perDay > 0 && totalDays > 0 ? perDay * totalDays : 0;
+                }
+                r['Allowed Amount'] = amt;
+                r['Allow Amount'] = amt;
+                return r;
+            });
+        }).catch(function () {
+            return applyFallback();
+        });
+    });
+}
+
 function eeListBuildDetailRowsHtml(items) {
     if (!items || items.length === 0) {
         return '<tr><td colspan="6" class="text-center py-3 text-muted">No expense lines found.</td></tr>';
@@ -1116,7 +1291,7 @@ function eeListBuildDetailRowsHtml(items) {
     let rows = '';
     items.forEach(function (row, idx) {
         const head = eeListEscHtml(row['Expense Head'] ?? row.ExpenseHead ?? row.ExpenseDesp ?? '—');
-        const allowAmt = eeListFmtCurrency(row['Allow Amount'] ?? row['Allowed Amount'] ?? row.AllowAmount ?? 0);
+        const allowAmt = eeListFmtCurrency(row['Allowed Amount'] ?? row['Allow Amount'] ?? 0);
         const expAmt = eeListFmtCurrency(row['Expense Amount'] ?? row.ExpendedAmount ?? row['Expended Amount'] ?? 0);
         const apprAmt = eeListFmtCurrency(row['Approved Amount'] ?? row.Approved ?? row.ApprovedAmount ?? 0);
         const rem = eeListEscHtml(row.Remarks ?? row['Remarks'] ?? row.Description ?? '');
@@ -1224,7 +1399,12 @@ function ViewApprovalFlowData(Code, x) {
                     }
                     const entry = eeListMergeDetailIntoEntry(res, baseWithMeta);
                     const detailLines = eeListExtractDetailLines(res);
-                    renderExpenseEntryApprovalFlowModal(entry, detailLines);
+                    return eeListEnrichEntryAndLinesFromShowData(entry, code, detailLines).then(function (pack) {
+                        return eeListApplyCalculatedAllowedAmounts(pack.entry, pack.lines).then(function (enriched) {
+                            pack.entry._detailLines = enriched;
+                            renderExpenseEntryApprovalFlowModal(pack.entry, enriched);
+                        });
+                    });
                 });
             })
             .catch(function () {
