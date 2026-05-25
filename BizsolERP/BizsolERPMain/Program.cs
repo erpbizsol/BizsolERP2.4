@@ -22,10 +22,12 @@ namespace BizsolERPMain
                     {
                         NoStore = true
                     }))
-                // Explicitly register Finance.Transactions assembly so its controllers
-                // are always discovered even though the RCL was previously an empty stub.
+                // Explicitly register Finance RCL assemblies so their controllers
+                // are always discovered even when the RCL was previously an empty stub.
                 .AddApplicationPart(
-                    typeof(Bizsol.ERP.UI.Finance.Transactions.Program).Assembly);
+                    typeof(Bizsol.ERP.UI.Finance.Transactions.Program).Assembly)
+                .AddApplicationPart(
+                    typeof(Bizsol.ERP.UI.Finance.Masters.Program).Assembly);
 
             var app = builder.Build();
 
@@ -99,6 +101,11 @@ namespace BizsolERPMain
                name: "FinanceTransactions",
                areaName: "FinanceTransactions",
                pattern: "FinanceTransactions/{controller=BankStatement}/{action=BankStatementList}/{id?}");
+
+            app.MapAreaControllerRoute(
+               name: "FinanceMasters",
+               areaName: "FinanceMasters",
+               pattern: "FinanceMasters/{controller=BankMaster}/{action=BankMaster}/{id?}");
 
             app.Run();
         }
