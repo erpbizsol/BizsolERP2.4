@@ -1,0 +1,732 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Finance.Masters/js/BankMaster.js"></script>
+
+<style>
+    #BankMasterPage {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 4px 12px 0;
+        height: calc(100vh - 174px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bank-po-list-header {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        margin-bottom: 0;
+    }
+
+    .bank-po-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .bank-po-list-header .bank-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+    }
+
+    .bank-po-list-header .bank-hero-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .bank-po-list-header .bank-hero-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .bank-po-list-header .bank-hero-sub {
+        font-size: 0.78rem;
+        color: rgba(255, 255, 255, 0.78);
+        margin-top: 4px;
+        font-weight: 500;
+    }
+
+    .bank-po-create-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #0369a1;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+        line-height: 1;
+        font-size: 0.85rem;
+    }
+
+    .bank-po-create-btn:hover {
+        background: #e0f2fe;
+        border-color: #0369a1;
+        color: #0369a1;
+    }
+
+    .bank-po-create-btn .pm-plus {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: rgba(3, 105, 161, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    #bankListPanel {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bank-list-grid-wrap {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        box-shadow: 0 2px 12px rgba(14, 165, 233, 0.07);
+        overflow: hidden;
+        margin-bottom: 0;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bank-list-grid-wrap .pm-card-toolbar {
+        flex-shrink: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 18px 22px 16px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .bank-list-grid-wrap .pm-table-wrap {
+        flex: 1;
+        min-height: 0;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+
+    .bank-list-grid-wrap .paginator {
+        flex-shrink: 0;
+        padding: 10px 16px 14px;
+        border-top: 1px solid #e0f2fe;
+        background: #f0f9ff;
+    }
+
+    .pm-search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+        max-width: 340px;
+    }
+
+    .pm-search-wrap i {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 13px;
+        pointer-events: none;
+    }
+
+    #bankSearch {
+        width: 100%;
+        padding: 9px 14px 9px 38px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        background: var(--light-bg);
+        color: var(--text-dark);
+        box-sizing: border-box;
+    }
+
+    .pm-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        min-width: 900px;
+    }
+
+    .pm-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #0284c7, #0ea5e9) !important;
+    }
+
+    .pm-table thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 13px 16px;
+        text-align: left;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 12px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .pm-table tbody tr:nth-child(even) { background: #f0f9ff !important; }
+    .pm-table tbody tr:nth-child(odd) { background: #fff !important; }
+    .pm-table tbody tr:hover { background: rgba(14, 165, 233, .08) !important; }
+
+    .pm-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        vertical-align: middle;
+    }
+
+    .pm-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pm-icon-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: transform .14s, box-shadow .14s;
+    }
+
+    .pm-icon-btn.view { background: rgba(6, 182, 212, .12); color: #0891b2; border: 1px solid rgba(6, 182, 212, .25); }
+    .pm-icon-btn.edit { background: rgba(14, 165, 233, .12); color: #0284c7; border: 1px solid rgba(14, 165, 233, .25); }
+    .pm-icon-btn.del { background: rgba(239, 68, 68, .1); color: #ef4444; border: 1px solid rgba(239, 68, 68, .2); }
+
+    #bankDetailPanel {
+        flex: 1;
+        min-height: 0;
+        max-width: 100%;
+        margin: 0;
+        overflow-y: auto;
+    }
+
+    #bankDetailPanel .bank-ci-po-list-header {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+    }
+
+    #bankDetailPanel .bank-ci-po-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    #bankDetailPanel .bank-ci-entry-title {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    #bankDetailPanel .bank-ci-entry-sub {
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 0.78rem;
+        display: block;
+        margin-top: 4px;
+    }
+
+    #bankDetailPanel .bank-ci-po-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #0369a1;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+
+    #bankDetailPanel .bank-ci-po-footer-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    #bankDetailPanel .bank-ci-po-step-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 14px;
+    }
+
+    #bankDetailPanel .bank-ci-po-step-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 18px;
+        background: #f0f9ff;
+        border-bottom: 1px solid #e0f2fe;
+        border-left: 4px solid #0ea5e9;
+    }
+
+    #bankDetailPanel .bank-ci-po-step-num {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #0ea5e9;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.72rem;
+        flex-shrink: 0;
+    }
+
+    #bankDetailPanel .bank-ci-po-step-title {
+        font-weight: 700;
+        font-size: 0.84rem;
+        color: #1e293b;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        flex: 1;
+    }
+
+    #bankDetailPanel .bank-ci-po-step-body {
+        padding: 20px 22px 24px;
+        background: #f8fcff;
+    }
+
+    .bank-detail-form {
+        --bs-gutter-x: 1.25rem;
+        --bs-gutter-y: 1rem;
+    }
+
+    .bank-fg {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .bank-fg label {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .bank-fg input[type="text"],
+    .bank-fg input[type="email"],
+    .bank-fg select {
+        padding: 10px 13px;
+        border-radius: 8px;
+        border: 1px solid #b6d4ea;
+        font-size: 13.5px;
+        outline: none;
+        background: #dceefb;
+        color: #1e293b;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .bank-fg input:focus,
+    .bank-fg select:focus {
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 3px rgba(14, 165, 233, .15);
+        background: #e8f4fc;
+    }
+
+    .bank-check-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 8px;
+        padding-top: 12px;
+        border-top: 1px dashed #b6d4ea;
+    }
+
+    .bank-check-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .bank-check-item input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #0ea5e9;
+    }
+
+    #bankDetailPanel .select2-container { width: 100% !important; }
+
+    #bankDetailPanel .select2-container--default .select2-selection--single {
+        min-height: 42px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        border: 1px solid #b6d4ea !important;
+        background: #dceefb !important;
+    }
+
+    .btn-bank-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+        border: none;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 28px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #bankDetailPanel.bank-readonly .bank-fg input,
+    #bankDetailPanel.bank-readonly .bank-fg select {
+        background: #eef6fb;
+        cursor: default;
+    }
+
+    .bank-fg input.bank-input-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+    }
+
+    .bank-field-error {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 7px;
+        color: #dc2626;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 3px;
+    }
+
+    .pm-modal .modal-content { border-radius: 20px; overflow: hidden; }
+    .pm-modal .modal-header {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: #fff;
+        border-bottom: none;
+        padding: 18px 22px;
+    }
+
+    .pm-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        min-height: 40px;
+    }
+
+    .pm-btn.secondary { background: var(--light-bg); color: var(--text-muted); border: 1.5px solid var(--border-color); }
+    .pm-btn.danger { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff !important; }
+</style>
+
+<div id="BankMasterPage">
+
+    <div id="bankListPanel">
+        <div class="bank-po-list-header">
+            <div class="bank-po-header-top">
+                <div class="bank-hero-left">
+                    <div class="bank-hero-icon"><i class="fas fa-building-columns"></i></div>
+                    <div>
+                        <div class="bank-hero-title">Bank Master</div>
+                        <div class="bank-hero-sub">Maintain bank accounts, IFSC, address and e-CMS settings</div>
+                    </div>
+                </div>
+                <button type="button" class="bank-po-create-btn" id="btnCreateBank">
+                    <span class="pm-plus">+</span>
+                    <span>Create New</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="bank-list-grid-wrap">
+            <div class="pm-card-toolbar">
+                <div class="pm-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="bankSearch" placeholder="Search by bank name, account, IFSC, city…" autocomplete="off" />
+                </div>
+            </div>
+            <div class="pm-table-wrap table-wrapper">
+                <table class="pm-table" id="BankMaster">
+                    <thead id="table-header-BankMaster"></thead>
+                    <tbody id="table-body-BankMaster"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-BankMaster"></div>
+        </div>
+    </div>
+
+    <div id="bankDetailPanel" style="display:none;">
+        <input type="hidden" id="hfBankMaster_Code" value="0" />
+
+        <div class="bank-ci-po-list-header">
+            <div class="bank-ci-po-header-top">
+                <div>
+                    <h5 class="bank-ci-entry-title">Bank Master</h5>
+                    <small class="bank-ci-entry-sub">Enter bank details, account information and contact data</small>
+                </div>
+                <div class="bank-ci-po-footer-right">
+                    <button type="button" class="bank-ci-po-back-btn" id="btnBackToBankList"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="bank-ci-po-back-btn" id="btnClearBank"><i class="fas fa-eraser"></i> Clear</button>
+                    <button type="button" class="btn-bank-save" id="btnSaveBank"><i class="fas fa-check"></i> Save</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bank-ci-po-step-card">
+            <div class="bank-ci-po-step-header">
+                <span class="bank-ci-po-step-num">1</span>
+                <span class="bank-ci-po-step-title">Bank Details</span>
+                <i class="fas fa-building-columns"></i>
+            </div>
+            <div class="bank-ci-po-step-body">
+                <div class="row g-3 bank-detail-form">
+                    <div class="col-12">
+                        <div class="bank-fg">
+                            <label for="txtBankName">Bank Name <span class="text-danger">*</span></label>
+                            <input type="text" id="txtBankName" maxlength="100" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="bank-fg">
+                            <label for="txtAliasName">Alias Name</label>
+                            <input type="text" id="txtAliasName" maxlength="100" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="txtAccountNo">Account No</label>
+                            <input type="text" id="txtAccountNo" maxlength="30" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="ddlCurrency">Currency</label>
+                            <select id="ddlCurrency"></select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="txtIFSCCode">IFSC Code</label>
+                            <input type="text" id="txtIFSCCode" maxlength="20" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="txtSwiftCode">Swift Code</label>
+                            <input type="text" id="txtSwiftCode" maxlength="20" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="bank-fg">
+                            <label for="txtAddress">Address</label>
+                            <input type="text" id="txtAddress" maxlength="200" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="ddlCity">City</label>
+                            <select id="ddlCity"></select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="txtPin">Pin</label>
+                            <input type="text" id="txtPin" maxlength="6" inputmode="numeric" autocomplete="postal-code" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="ddlState">State</label>
+                            <select id="ddlState"></select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="ddlNation">Nation</label>
+                            <select id="ddlNation"></select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="txtPhoneNo">Phone No.</label>
+                            <input type="text" id="txtPhoneNo" maxlength="20" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="txtFaxNo">Fax No.</label>
+                            <input type="text" id="txtFaxNo" maxlength="20" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="txtServiceTaxNo">Service Tax No</label>
+                            <input type="text" id="txtServiceTaxNo" maxlength="30" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="txtPANNo">PAN No</label>
+                            <input type="text" id="txtPANNo" maxlength="15" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="bank-fg">
+                            <label for="txtEMail">E-Mail</label>
+                            <input type="email" id="txtEMail" maxlength="100" autocomplete="email" />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="bank-check-row">
+                            <label class="bank-check-item"><input type="checkbox" id="chkIsDefault" /> Default</label>
+                            <label class="bank-check-item"><input type="checkbox" id="chkECMSApplicable" /> e-CMS Applicable</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bank-ci-po-step-card" id="bankECMSPanel" style="display:none;">
+            <div class="bank-ci-po-step-header">
+                <span class="bank-ci-po-step-num">2</span>
+                <span class="bank-ci-po-step-title">e-CMS Settings</span>
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <div class="bank-ci-po-step-body">
+                <div class="row g-3 bank-detail-form">
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="ddlECMSBank">e-CMS Bank</label>
+                            <select id="ddlECMSBank"></select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bank-fg">
+                            <label for="ddlECMSDebitAccount">e-CMS Debit Account</label>
+                            <select id="ddlECMSDebitAccount"></select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="bank-fg">
+                            <label for="txtVartualAccountPrefix">Virtual Account Prefix</label>
+                            <input type="text" id="txtVartualAccountPrefix" maxlength="20" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="bank-fg">
+                            <label for="txtVartualAccountLength">Virtual Account Length</label>
+                            <input type="text" id="txtVartualAccountLength" maxlength="5" inputmode="numeric" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="bank-fg">
+                            <label for="txtMICRCode">MICR Code</label>
+                            <input type="text" id="txtMICRCode" maxlength="15" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="bank-check-item"><input type="checkbox" id="chkVartualAccountAutoGenerate" /> Virtual Account Auto Generate</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade pm-modal" id="dvBankDeleteModal" tabindex="-1" role="dialog" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="background:#fff; padding:22px 24px 18px;">
+                <p class="mb-3" style="color:var(--text-dark); font-size:14px;">Delete this bank record?</p>
+                <label for="bankReasonForDelete" class="form-label" style="font-size:12.5px;font-weight:700;">
+                    Reason for deletion <span class="text-danger">*</span>
+                </label>
+                <input type="text" id="bankReasonForDelete" class="form-control" autocomplete="off" placeholder="Enter reason" />
+                <input type="hidden" id="hfBankDeleteCode" value="0" />
+            </div>
+            <div class="modal-footer" style="border-top:1px solid var(--border-color);">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal"><i class="fas fa-ban"></i> Cancel</button>
+                <button type="button" class="pm-btn danger" id="btnBankConfirmDelete"><i class="fas fa-trash-alt me-1"></i> Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
