@@ -985,6 +985,121 @@ input[type="number"] {
     letter-spacing: 0.03em;
 }
 
+/* ── View Approval Flow action button (distinct from teal View) ─────── */
+.ee-btn-view-approval {
+    background: linear-gradient(135deg, #667eea, #764ba2) !important;
+    border: none !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+}
+.ee-btn-view-approval:hover,
+.ee-btn-view-approval:focus {
+    background: linear-gradient(135deg, #5a6fd6, #6a4190) !important;
+    color: #fff !important;
+    box-shadow: 0 3px 12px rgba(102, 126, 234, 0.45);
+}
+
+/* ── Approval Flow View Modal (Expense Entry List) ───────────────────── */
+.ee-approval-flow-modal {
+    border-radius: 16px;
+    overflow: hidden;
+    border: none;
+}
+.ee-approval-flow-modal-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    border: none;
+    padding: 16px 22px;
+}
+.ee-approval-flow-modal-header .modal-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+.ee-approval-flow-modal-body {
+    padding: 20px;
+    max-height: 72vh;
+    overflow-y: auto;
+}
+.ee-approval-flow-modal-footer {
+    border-top: 1px solid #eef2ff;
+    padding: 10px 20px;
+}
+
+/* Approval flow stepper (same as ExpenseEntryLevelsApproval) */
+.gpa-level-stepper-wrap {
+    background: #fafbff;
+    border: 1px solid #eef0f8;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+}
+.gpa-level-stepper-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.gpa-detail-stepper {
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    gap: 0;
+    padding-bottom: 4px;
+}
+.gpa-dstep-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex-shrink: 0;
+    min-width: 100px;
+}
+.gpa-dstep-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    margin-bottom: 7px;
+    flex-shrink: 0;
+    border: 2px solid transparent;
+}
+.gpa-dstep-done .gpa-dstep-circle { background: linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 2px 10px rgba(16,185,129,0.35); }
+.gpa-dstep-active .gpa-dstep-circle { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 2px 10px rgba(102,126,234,0.4); }
+.gpa-dstep-rejected .gpa-dstep-circle { background: linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 2px 10px rgba(220,38,38,0.35); }
+.gpa-dstep-pending .gpa-dstep-circle { background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
+.gpa-dstep-body { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.gpa-dstep-title { font-size:0.75rem; font-weight:700; color:#1e293b; margin-bottom:2px; }
+.gpa-dstep-sub { font-size:0.68rem; color:#64748b; max-width:120px; }
+.gpa-dstep-remarks { font-size:0.68rem; color:#64748b; font-style:italic; max-width:120px; }
+.gpa-dstep-badge {
+    font-size: 0.64rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
+    margin-top: 5px;
+    display: inline-block;
+}
+.gpa-dstep-badge-done { background:#d1fae5; color:#059669; }
+.gpa-dstep-badge-active { background:#ede9fe; color:#667eea; }
+.gpa-dstep-badge-rejected { background:#fee2e2; color:#dc2626; }
+.gpa-dstep-badge-pending { background:#f1f5f9; color:#94a3b8; }
+.gpa-dstep-line {
+    flex-shrink: 0;
+    width: 28px;
+    height: 3px;
+    align-self: flex-start;
+    margin-top: 17px;
+    border-radius: 2px;
+}
+.gpa-dstep-line-done { background: linear-gradient(90deg,#10b981,#059669); }
+.gpa-dstep-line-pending { background:#e2e8f0; }
+
 /* ── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 991px) {
     .expense-entry-card {

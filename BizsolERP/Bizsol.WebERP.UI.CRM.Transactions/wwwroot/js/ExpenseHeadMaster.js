@@ -203,7 +203,7 @@ function submit_ExpenseHeadMaster() {
     let ExpenseDescription = $('#txtExpenseDescription').val();
     let designationCode = $('#txtDesignation').val();
     let G_Date = $('#txtEffectiveDate').val();
-    let PerDayLimit = $('#txtPerDayLimit').val();
+    let PerDayLimit = parseFloat($('#txtPerDayLimit').val()) || 0;
 
     if (G_Date == '') {
         toastr.warning('Please Fill The Expense EffectiveDate.');
@@ -213,17 +213,13 @@ function submit_ExpenseHeadMaster() {
         toastr.warning('Please Fill The Expense Description.');
         return;
     }
-    if (!PerDayLimit) {
-        toastr.warning('Please Fill The PerDayLimit.');
-        return;
-    }
 
     let objExpenseHeadLimitDetails = [];
-    if (designationCode && parseInt(designationCode) !== 0 && G_Date && G_Date.trim() !== '' && PerDayLimit && parseFloat(PerDayLimit) !== 0) {
+    if (designationCode && parseInt(designationCode) !== 0 && G_Date && G_Date.trim() !== '') {
         objExpenseHeadLimitDetails.push({
             marketingManExpenseEntryCategory_Code: parseInt(designationCode),
             effectiveFrom: G_Date,
-            perDayLimit: parseFloat(PerDayLimit)
+            perDayLimit: PerDayLimit
         })
         
     }

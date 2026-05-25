@@ -111,21 +111,15 @@ const ExpensesLedgerReportService = {
         });
     },
 
-    /** Closing balance for Expense Entry (Mode=CLOSING_BALANCE). */
-    GetClosingBalance: function GetClosingBalance(
-        fromDate,
-        toDate,
-        employeeMaster_Code,
-        projectMaster_Code,
-        subProjectMaster_Code
-    ) {
+    /** Closing balance for Expense Entry (Mode=CLOSING_BALANCE) — Entry Date + Marketing Man only. */
+    GetClosingBalance: function GetClosingBalance(entryDate, employeeMaster_Code) {
         let qs =
-            `?FromDate=${encodeURIComponent(fromDate)}` +
-            `&ToDate=${encodeURIComponent(toDate)}` +
+            `?FromDate=${encodeURIComponent(entryDate || '')}` +
+            `&ToDate=${encodeURIComponent(entryDate || '')}` +
             `&Mode=${encodeURIComponent(EXPENSE_LEDGER_MODE.CLOSING_BALANCE)}` +
-            `&EmployeeMaster_Code=${encodeURIComponent(employeeMaster_Code)}` +
-            `&ProjectMaster_Code=${encodeURIComponent(projectMaster_Code)}` +
-            `&SubProjectMaster_Code=${encodeURIComponent(subProjectMaster_Code)}`;
+            `&EmployeeMaster_Code=${encodeURIComponent(employeeMaster_Code || 0)}` +
+            `&ProjectMaster_Code=0` +
+            `&SubProjectMaster_Code=0`;
         const url = expenseLedgerReportUrl(qs);
         return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
             return value;

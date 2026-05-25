@@ -515,6 +515,130 @@
         .gpa-items-table thead tr th { font-size: 0.65rem; padding: 6px 4px; }
         .gpa-items-table tbody tr td { font-size: 0.72rem; padding: 6px 4px; }
     }
+
+    .btn-eea-line-history {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 28px;
+        padding: 0;
+        border-radius: 8px;
+        border: 1.5px solid #67e8f9;
+        background: #ecfeff;
+        color: #0891b2;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn-eea-line-history:hover:not(:disabled) {
+        background: #0891b2;
+        color: #fff;
+        border-color: #0891b2;
+    }
+    .btn-eea-line-history:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    /* History modal — teal theme (distinct from purple detail modal) */
+    #modalEeaLineHistory .modal-content {
+        border: none;
+        box-shadow: 0 14px 42px rgba(8, 145, 178, 0.28);
+    }
+    #modalEeaLineHistory .eea-history-modal-header {
+        background: linear-gradient(135deg, #0891b2 0%, #0e7499 50%, #155e75 100%);
+        color: #fff;
+        padding: 14px 20px;
+        border: none;
+    }
+    #modalEeaLineHistory .eea-history-modal-header .modal-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    #modalEeaLineHistory .eea-history-modal-header .btn-close {
+        filter: brightness(0) invert(1);
+        opacity: 0.9;
+    }
+    #modalEeaLineHistory .eea-history-modal-body {
+        padding: 16px 18px;
+        max-height: 65vh;
+        overflow-y: auto;
+        background: linear-gradient(180deg, #f0fdfa 0%, #ecfeff 100%);
+    }
+    #modalEeaLineHistory .eea-history-modal-sub {
+        font-size: 0.78rem;
+        color: #0e7499;
+        background: rgba(8, 145, 178, 0.08);
+        border: 1px solid rgba(8, 145, 178, 0.2);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+    #modalEeaLineHistory .eea-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(8, 145, 178, 0.1);
+    }
+    #modalEeaLineHistory .eea-history-table thead tr th {
+        background: linear-gradient(135deg, #0891b2, #0e7499);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        padding: 9px 10px;
+        border: none;
+    }
+    #modalEeaLineHistory .eea-history-table thead tr th:first-child {
+        border-radius: 10px 0 0 0;
+    }
+    #modalEeaLineHistory .eea-history-table thead tr th:last-child {
+        border-radius: 0 10px 0 0;
+    }
+    #modalEeaLineHistory .eea-history-table tbody tr {
+        transition: background 0.15s;
+    }
+    #modalEeaLineHistory .eea-history-table tbody tr:hover {
+        background: #ecfeff;
+    }
+    #modalEeaLineHistory .eea-history-table tbody tr td {
+        padding: 8px 10px;
+        vertical-align: middle;
+        border: 1px solid #cffafe;
+        font-size: 0.8rem;
+        color: #334155;
+    }
+    #modalEeaLineHistory .eea-history-modal-footer {
+        padding: 10px 16px;
+        background: #f0fdfa;
+        border-top: 1px solid #a5f3fc;
+        gap: 8px;
+    }
+    #modalEeaLineHistory .btn-eea-history-close {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: linear-gradient(135deg, #0891b2, #0e7499);
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        padding: 9px 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        box-shadow: 0 3px 12px rgba(8, 145, 178, 0.35);
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    #modalEeaLineHistory .btn-eea-history-close:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 16px rgba(8, 145, 178, 0.45);
+        color: #fff;
+    }
 </style>
 
 <div class="gpa-header section-entry-animation">
@@ -557,7 +681,7 @@
             <label class="form-label">Status</label>
             <select id="eeaDdlStatus" class="form-control form-control-sm form-select">
                 <option value="A">-- All Status --</option>
-                <option value="P">Pending</option>
+                <option value="P" selected="selected">Pending</option>
                 <option value="Y">Approved</option>
                 <option value="R">Rejected</option>
             </select>
@@ -628,14 +752,16 @@
                                     <th>Expense head</th>
                                     <th style="width:120px;">Project</th>
                                     <th style="width:120px;">Sub project</th>
+                                    <th style="width:110px;">Allow Amount</th>
                                     <th style="width:110px;">Expended</th>
                                     <th style="width:110px;">Approved</th>
                                     <th>Remarks</th>
+                                    <th>History</th>
                                 </tr>
                             </thead>
                             <tbody id="eeaModalItemsBody">
                                 <tr>
-                                    <td colspan="7" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                    <td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
                                         <i class="fa fa-spinner fa-spin me-1"></i>Loading…
                                     </td>
                                 </tr>
@@ -681,6 +807,46 @@
 </div>
 
 <div id="ExpenseEntryLevelsApproval_AttachmentControlmodal"></div>
+
+<div class="modal fade" id="modalEeaLineHistory" tabindex="-1" role="dialog" aria-hidden="true" style="z-index:1070;">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header eea-history-modal-header">
+                <h5 class="modal-title mb-0">
+                    <i class="fa fa-history me-2"></i><span id="eeaHistoryModalTitle">Approval history</span>
+                </h5>
+                <button type="button" class="btn-close" onclick="CloseEeaLineHistoryModal()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body eea-history-modal-body">
+                <p id="eeaHistoryModalSub" class="eea-history-modal-sub mb-0"></p>
+                <div class="table-responsive">
+                    <table class="eea-history-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th>Level</th>
+                                <th style="width:120px;">Old approved</th>
+                                <th style="width:120px;">New approved</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eeaHistoryModalBody">
+                            <tr>
+                                <td colspan="4" class="text-center py-3" style="color:#0e7499;font-size:0.82rem;">
+                                    <i class="fa fa-spinner fa-spin me-1"></i>Loading…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer eea-history-modal-footer">
+                <button type="button" class="btn-eea-history-close" onclick="CloseEeaLineHistoryModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="modal fade" id="modalEeaConfirm" tabindex="-1" role="dialog"
      aria-hidden="true" style="z-index:1060;">
