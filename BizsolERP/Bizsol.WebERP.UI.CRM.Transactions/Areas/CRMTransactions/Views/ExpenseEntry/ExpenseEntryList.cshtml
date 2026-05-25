@@ -157,6 +157,25 @@
     </div>
 </div>
 
+<!-- Expense Entry Approval Flow modal (PO Store view pattern) -->
+<div class="modal fade" id="eeApprovalFlowModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content ee-approval-flow-modal">
+            <div class="modal-header ee-approval-flow-modal-header">
+                <h5 class="modal-title" id="eeApprovalFlowModalTitle">
+                    <i class="fa fa-file-invoice-dollar me-2"></i>Expense Entry Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body ee-approval-flow-modal-body" id="eeApprovalFlowModalBody"></div>
+            <div class="modal-footer ee-approval-flow-modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" onclick="closeExpenseEntryApprovalFlowModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Success modal -->
 <div id="eeSuccessBackdrop" class="ee-backdrop">
     <div class="ee-success-modal">
