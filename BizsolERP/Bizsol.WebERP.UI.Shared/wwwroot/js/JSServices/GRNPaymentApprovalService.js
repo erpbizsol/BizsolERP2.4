@@ -26,8 +26,9 @@ function getSessionUserAndGroup() {
 const GRNPaymentApprovalService = {
 
     GetPendingGRNPaymentList: function GetPendingGRNPaymentList(FromDate, ToDate, Status) {
+        const { userCode, groupCode } = getSessionUserAndGroup();
         const url = UrlService.API_ENDPOINT_GRNPaymentLevelsApproval +
-            `/GetPendingGRNPaymentList?FromDate=${encodeURIComponent(FromDate || '')}&ToDate=${encodeURIComponent(ToDate || '')}&Status=${encodeURIComponent(Status || '')}`;
+            `/GetPendingGRNPaymentList?FromDate=${encodeURIComponent(FromDate || '')}&ToDate=${encodeURIComponent(ToDate || '')}&Status=${encodeURIComponent(Status || '')}&GroupMaster_Code=${encodeURIComponent(groupCode)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
