@@ -126,14 +126,26 @@ function isRowReconciled(row) {
         || (ir != null && String(ir).toUpperCase() === 'Y');
 }
 
-/** When Un reconciled or Reconciled is selected: hide deposit & closing columns + opening/deposit/closing summaries. */
+/** IsManualReconciled = Y from API (manual reconcile via No -> existing / new payment on this screen). */
+function isManualReconciledRow(row) {
+    var mr = row && (row.IsManualReconciled != null ? row.IsManualReconciled : row.isManualReconciled);
+    return mr === 'Y' || mr === true || mr === 1
+        || (mr != null && String(mr).toUpperCase() === 'Y');
+}
+
+/** Manual reconcile from Bank Statement list (uses IsManualReconciled from DB, not Auto Match GRN). */
+function isManualReconciledImportRow(row) {
+    return isManualReconciledRow(row);
+}
+
+/** When focused reconciliation filters are selected: hide deposit & closing summaries. */
 function syncBankStatementColumnVisibility() {
     var mode = String($('#ddlFilterStatement').val() || 'All').trim();
-    var hideFin = mode === 'Unreconciled' || mode === 'BankStatement';
+    var hideFin = mode === 'Unreconciled' || mode === 'BankStatement' || mode === 'ImportReconciled';
     $('#cardList').toggleClass('bs-stmt-hide-fin-summary', !!hideFin);
 }
 
-/** Statement filter: All | Unreconciled | BankStatement (reconciled lines). */
+/** Statement filter: All | Unreconciled | BankStatement | ImportReconciled (IsManualReconciled = Y). */
 function applyStatementFilter(list) {
     var mode = String($('#ddlFilterStatement').val() || 'All').trim();
     if (!list || !list.length) return list || [];
@@ -142,6 +154,9 @@ function applyStatementFilter(list) {
     }
     if (mode === 'BankStatement') {
         return list.filter(function (row) { return isRowReconciled(row); });
+    }
+    if (mode === 'ImportReconciled') {
+        return list.filter(function (row) { return isManualReconciledImportRow(row); });
     }
     return list;
 }

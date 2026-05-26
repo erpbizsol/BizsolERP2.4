@@ -110,6 +110,7 @@ const BankStatementService = {
 
     /**
      * RECONCILE — optional grnPaymentMasterCode on query string maps to @GRNPaymentMaster_Code on SP RECONCILE.
+     * When GRN code is sent, SP sets IsManualReconciled = Y (manual reconcile from bank statement UI).
      */
     ReconcileBankStatement: function ReconcileBankStatement(code, grnPaymentMasterCode) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
@@ -180,8 +181,8 @@ const BankStatementService = {
     },
 
     /**
-     * Y/N reconciliation save. options.clearGrnLink: send GRNPaymentMaster_Code = 0 (bank line unlink + Not reconciled).
-     * WebAPI must persist both fields on BankStatement (see SP UNLINKBANKSTATEMENTGRN / CLEARGRNLINK).
+     * Y/N reconciliation save. options.clearGrnLink: send GRNPaymentMaster_Code = 0.
+     * WebAPI SETBANKSTATEMENTRECONCILIATION must set IsManualReconciled = N when clearing.
      */
     SetBankStatementReconciliation: function SetBankStatementReconciliation(code, isY, options) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
