@@ -39,6 +39,12 @@ const SubProjectMasterService = {
             return value;
         });
     },
+    GetApprovalLevelList: function GetApprovalLevelList(mode) {
+        let url = UrlService.API_ENDPOINT_SubProjectMaster + '/GetApprovalLevelList?Mode=' + encodeURIComponent(mode || '');
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
+            return value;
+        });
+    },
 };
 
 export { SubProjectMasterService }
