@@ -4764,8 +4764,8 @@ function gpaPrintAssetBaseUrl() {
 function gpaPrintFixedStampUrls() {
     const base = gpaPrintAssetBaseUrl();
     return {
-        madeBy: base + 'assets/images/260500110152_03.jpeg',
-        approvedBy: base + 'assets/images/260500110152_02.jpeg',
+        madeBy: base + 'assets/images/PPPL_Stamp_Finance.jpeg',
+        approvedBy: base + 'assets/images/PPPL_Stamp_HOD.jpeg',
         madeByFallback: base + 'assets/images/PPPL_Stamp_Finance.jpeg',
         approvedByFallback: base + 'assets/images/PPPL_Stamp_HOD.jpeg',
     };
