@@ -4760,14 +4760,15 @@ function gpaPrintAssetBaseUrl() {
     return (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
 }
 
+
 /** Fixed PPPL stamps — 260500110152_03 (Made By), 260500110152_02 (Approved By); Completed only. */
 function gpaPrintFixedStampUrls() {
     const base = gpaPrintAssetBaseUrl();
     return {
-        madeBy: base + 'assets/images/PPPL_Stamp_Finance.jpeg',
-        approvedBy: base + 'assets/images/PPPL_Stamp_HOD.jpeg',
-        madeByFallback: base + 'assets/images/PPPL_Stamp_Finance.jpeg',
-        approvedByFallback: base + 'assets/images/PPPL_Stamp_HOD.jpeg',
+        madeBy: base + 'assets/images/PPPL1_Stamp_Finance.jpeg',
+        approvedBy: base + 'assets/images/PPPL1_Stamp_HOD.jpeg',
+        madeByFallback: base + 'assets/images/PPPL1_Stamp_Finance.jpeg',
+        approvedByFallback: base + 'assets/images/PPPL1_Stamp_HOD.jpeg',
     };
 }
 
