@@ -4760,6 +4760,7 @@ function gpaPrintAssetBaseUrl() {
     return (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
 }
 
+
 /** Fixed PPPL stamps — 260500110152_03 (Made By), 260500110152_02 (Approved By); Completed only. */
 function gpaPrintFixedStampUrls() {
     const base = gpaPrintAssetBaseUrl();
