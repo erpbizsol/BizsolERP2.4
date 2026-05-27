@@ -296,17 +296,164 @@ function normalizeEntryDetailLinesFromApi(entryRes) {
     return extractDetailLines(entryRes);
 }
 
-/** Merge approval + entry lines; entry fields (PONo, Category, Project) win when both exist. */
+/** Merge approval + entry lines; match by detail Code / MRN; entry text fields win. */
 function mergeModalDetailLines(approvalLines, entryLines) {
     const a = approvalLines || [];
     const e = entryLines || [];
-    const n = Math.max(a.length, e.length);
-    if (!n) return [];
+    if (!a.length && !e.length) return [];
+    if (!a.length) return e.slice();
+    if (!e.length) return a.slice();
+
+    const usedEntry = new Set();
     const out = [];
-    for (let i = 0; i < n; i++) {
-        out.push(Object.assign({}, a[i] || {}, e[i] || {}));
+
+    function detailCode(r) {
+        const c = parseInt(r?.Code ?? r?.code ?? r?.GRNPaymentDetail_Code ?? r?.GRNPaymentDetails_Code ?? 0, 10);
+        return Number.isFinite(c) && c > 0 ? c : 0;
+    }
+
+    function mergePair(al, el) {
+        const merged = Object.assign({}, al || {}, el || {});
+        const pay = gpaRowPaymentAmount(al) ?? gpaRowPaymentAmount(el);
+        if (pay != null) merged.PaymentAmount = pay;
+        return merged;
+    }
+
+    for (let i = 0; i < a.length; i++) {
+        const al = a[i];
+        const aCode = detailCode(al);
+        const aMrn = gpaMrnFromDetailRow(al);
+        let matchIdx = -1;
+        for (let j = 0; j < e.length; j++) {
+            if (usedEntry.has(j)) continue;
+            const el = e[j];
+            const eCode = detailCode(el);
+            const eMrn = gpaMrnFromDetailRow(el);
+            if (aCode > 0 && aCode === eCode) { matchIdx = j; break; }
+            if (aMrn > 0 && aMrn === eMrn) { matchIdx = j; break; }
+        }
+        if (matchIdx < 0 && i < e.length && !usedEntry.has(i)) matchIdx = i;
+        if (matchIdx >= 0) {
+            usedEntry.add(matchIdx);
+            out.push(mergePair(al, e[matchIdx]));
+        } else {
+            out.push(Object.assign({}, al));
+        }
+    }
+    for (let j = 0; j < e.length; j++) {
+        if (!usedEntry.has(j)) out.push(Object.assign({}, e[j]));
     }
     return out;
+}
+
+function normalizeGpaModalApiRows(result) {
+    if (Array.isArray(result)) return result;
+    const datum = result?.Data ?? result?.data;
+    if (Array.isArray(datum)) return datum;
+    if (datum && typeof datum === 'object') {
+        const inner = normalizeGpaModalApiRows(datum);
+        if (inner.length) return inner;
+    }
+    if (Array.isArray(result?.Table)) return result.Table;
+    if (Array.isArray(result?.List)) return result.List;
+    if (Array.isArray(result?.value)) return result.value;
+    return [];
+}
+
+function gpaMrnFromDetailRow(r) {
+    const v = r?.MRNMaster_Code ?? r?.mRNMaster_Code ?? r?.mrnMaster_Code ?? r?.MRN_Code ?? r?.mrn_Code;
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function gpaCounterpartyCodeFromPayment(payment) {
+    if (!payment || typeof payment !== 'object') return '';
+    const emp = payment.MarketingManMaster_Code ?? payment.marketingManMaster_Code
+        ?? payment.F_MarketingManMaster_Code ?? payment.f_MarketingManMaster_Code;
+    if (emp != null && `${emp}`.trim() !== '' && `${emp}` !== '0') return String(emp).trim();
+    const acc = payment.AccountMaster_Code ?? payment.accountMaster_Code;
+    if (acc != null && `${acc}`.trim() !== '' && `${acc}` !== '0') return String(acc).trim();
+    const vend = payment.VendorMaster_Code ?? payment.vendorMaster_Code;
+    if (vend != null && `${vend}`.trim() !== '' && `${vend}` !== '0') return String(vend).trim();
+    return '';
+}
+
+function gpaModalMergeDetailWithBillLookup(d, billRows) {
+    if (!d || typeof d !== 'object') return d;
+    const mrn = gpaMrnFromDetailRow(d);
+    if (!mrn || !billRows?.length) return d;
+    const br = billRows.find(function (row) { return gpaMrnFromDetailRow(row) === mrn; });
+    if (!br) return d;
+    return Object.assign({}, br, d, {
+        BillNo: d.BillNo ?? d.billNo ?? br.BillNo ?? br.billNo,
+        BillDate: d.BillDate ?? d.billDate ?? br.BillDate ?? br.billDate,
+        BillAmount: d.BillAmount ?? d.billAmount ?? br.BillAmount ?? br.billAmount,
+        Dedution: d.Dedution ?? d.dedution ?? d.Deduction ?? d.deduction ?? br.Dedution ?? br.dedution ?? br.Deduction ?? br.deduction,
+        PayableAmount: d.PayableAmount ?? d.payableAmount ?? d.NetPayable ?? d.netPayable
+            ?? br.PayableAmount ?? br.payableAmount ?? br.NetPayable ?? br.netPayable,
+        PONo: gpaPoNoFromRecord(d) || gpaPoNoFromRecord(br),
+        CategoryName: gpaCategoryNameFromRecord(d) || gpaCategoryNameFromRecord(br),
+    });
+}
+
+function gpaModalProjectLabelFromCode(code, projectCache) {
+    const cs = code !== undefined && code !== null ? String(code).trim() : '';
+    if (!cs) return '';
+    const list = projectCache || [];
+    for (let i = 0; i < list.length; i++) {
+        const p = list[i];
+        const pc = String(p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code ?? '').trim();
+        if (pc === cs) {
+            return String(p.ProjectName ?? p.projectName ?? p.ProjectDesp ?? p.projectDesp ?? p.Name ?? p.name ?? '').trim();
+        }
+    }
+    return '';
+}
+
+function gpaModalEnrichLineProjectLabels(row, projectCache) {
+    if (!row || typeof row !== 'object') return row;
+    const out = Object.assign({}, row);
+    let proj = gpaProjectLabelFromRow(out);
+    if (!proj) {
+        const pc = out.ProjectMaster_Code ?? out.projectMaster_Code ?? out.Project_Code ?? out.project_Code;
+        proj = gpaModalProjectLabelFromCode(pc, projectCache);
+        if (proj) out.ProjectName = proj;
+    }
+    let sub = gpaSubProjectLabelFromRow(out);
+    if (!sub) {
+        const sc = out.SubProjectMaster_Code ?? out.subProjectMaster_Code ?? out.SubProject_Code ?? out.subProject_Code;
+        if (sc != null && `${sc}`.trim() !== '' && !/^\d+$/.test(String(sc).trim())) {
+            sub = String(sc).trim();
+        }
+    }
+    if (sub) out.SubProjectName = sub;
+    return out;
+}
+
+async function gpaModalEnrichBillLines(lines, payment, projectCache) {
+    let rows = (lines || []).slice();
+    const partyCode = gpaCounterpartyCodeFromPayment(payment);
+    let billRows = [];
+    if (partyCode) {
+        try {
+            const br = await GRNPaymentEntryDataService.GetBillDetails(partyCode);
+            billRows = normalizeGpaModalApiRows(br);
+        } catch (e) {
+            console.warn('gpaModalEnrichBillLines GetBillDetails', e);
+        }
+    }
+    if (typeof window.gpaLoadPoListForPartyCode === 'function' && partyCode) {
+        try { await window.gpaLoadPoListForPartyCode(partyCode); } catch (e) { /* optional */ }
+    }
+    rows = rows.map(function (row) {
+        let r = gpaModalMergeDetailWithBillLookup(row, billRows);
+        if (typeof window.gpaEnrichDetailRowPoCategory === 'function') {
+            r = window.gpaEnrichDetailRowPoCategory(r);
+        }
+        r = gpaModalEnrichLineProjectLabels(r, projectCache);
+        return r;
+    });
+    return rows;
 }
 
 function resolveModalBillLines(approvalRes, entryRes, payment) {
@@ -968,6 +1115,22 @@ function getFinancialYear() {
     if (month < 3) year = year - 1;
     return year + "-" + (year + 1);
 }
+function isGpaPaymentEntryListPage() {
+    return !!document.getElementById('divGPAList');
+}
+
+function applyGpaModalActionButtons(showApproveReject) {
+    if (isGpaPaymentEntryListPage()) {
+        $('#gpaBtnApproveAction').hide();
+        $('#gpaBtnRejectAction').hide();
+        $('.gpa-remarks-wrap').hide();
+        return;
+    }
+    $('.gpa-remarks-wrap').show();
+    $('#gpaBtnApproveAction').toggle(!!showApproveReject);
+    $('#gpaBtnRejectAction').toggle(!!showApproveReject);
+}
+
 function OpenDetailModal(paymentCode) {
     //var ModuleName = 'Payment Entry',
     //    OptionName = 'Verify',
@@ -983,6 +1146,10 @@ function OpenDetailModal(paymentCode) {
             if (!Number.isFinite(code) || code <= 0) return;
 
             G_CurrentPayment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === code; }) || null;
+            if (!G_CurrentPayment && typeof window.gpaGetListRowRawByCode === 'function') {
+                const raw = window.gpaGetListRowRawByCode(code);
+                if (raw) G_CurrentPayment = Object.assign({}, raw);
+            }
             if (!G_CurrentPayment) {
                 G_CurrentPayment = { Code: code, GRNPaymentMaster_Code: code };
             }
@@ -1000,43 +1167,46 @@ function OpenDetailModal(paymentCode) {
             paintModalFromPayment(G_CurrentPayment);
 
             $('#gpaModalItemsBody').html(
-                '<tr><td colspan="10" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+                '<tr><td colspan="11" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
                 '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
             );
 
-            $('#gpaBtnApproveAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
-            $('#gpaBtnRejectAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
+            applyGpaModalActionButtons(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
 
             $('#modalGpaDetail').modal({ backdrop: 'static' });
             $('#modalGpaDetail').modal('show');
 
             LoadGpaAttachmentsInline(code);
 
-            Promise.all([
-                GRNPaymentApprovalService.GetGRNPaymentDetail(code),
-                GRNPaymentEntryDataService.GetGRNPaymentApprovalByCode(code).catch(function () { return null; }),
-            ]).then(function (results) {
+            (async function loadGpaModalData() {
+                try {
+                    const results = await Promise.all([
+                        GRNPaymentApprovalService.GetGRNPaymentDetail(code),
+                        GRNPaymentEntryDataService.GetGRNPaymentApprovalByCode(code).catch(function () { return null; }),
+                        GRNPaymentEntryDataService.GetProjectMasterList().catch(function () { return null; }),
+                    ]);
                     const res = results[0];
                     const entryRes = results[1];
+                    const projectCache = normalizeGpaModalApiRows(results[2]);
+
                     G_CurrentPayment = mergeDetailIntoPayment(res, G_CurrentPayment);
                     G_CurrentPayment = mergeEntryPaymentIntoApproval(G_CurrentPayment, entryRes);
-                    const lines = resolveModalBillLines(res, entryRes, G_CurrentPayment);
+                    let lines = resolveModalBillLines(res, entryRes, G_CurrentPayment);
+                    lines = await gpaModalEnrichBillLines(lines, G_CurrentPayment, projectCache);
+                    G_CurrentPayment._modalBillLines = lines;
                     G_CurrentPayment = enrichPaymentHeaderFromBillLines(G_CurrentPayment, lines);
                     $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
                     paintModalFromPayment(G_CurrentPayment);
                     RenderGpaModalItems(lines);
-                    const st = getApprovalStatus(G_CurrentPayment);
-                    const pend = st.toLowerCase() === 'pending';
-                    $('#gpaBtnApproveAction').toggle(pend);
-                    $('#gpaBtnRejectAction').toggle(pend);
-                })
-                .catch(function (err) {
+                    applyGpaModalActionButtons(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
+                } catch (err) {
                     console.error('GetGRNPaymentDetail', err);
                     $('#gpaModalItemsBody').html(
-                        '<tr><td colspan="10" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                        '<tr><td colspan="11" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
                         '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
                     );
-                });
+                }
+            })();
     //    }
     //});
    
@@ -1189,32 +1359,39 @@ function RenderGpaModalItems(items) {
     const $body = $('#gpaModalItemsBody');
     if (!items || items.length === 0) {
         $body.html(
-            '<tr><td colspan="10" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No bill lines found.</td></tr>'
+            '<tr><td colspan="11" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No bill lines found.</td></tr>'
         );
         return;
     }
     let html = '';
     items.forEach(function (row, idx) {
-        const billNoRaw = row.BillNo ?? row.billNo ?? row.MRNNo ?? row.Name ?? row.name ?? '';
+        const enriched = typeof window.gpaEnrichDetailRowPoCategory === 'function'
+            ? window.gpaEnrichDetailRowPoCategory(row)
+            : row;
+        const billNoRaw = enriched.BillNo ?? enriched.billNo ?? enriched.MRNNo ?? enriched.Name ?? enriched.name ?? '';
         const billNo = EscHtml(billNoRaw !== null && `${billNoRaw}`.trim() !== '' ? billNoRaw : '—');
-        const poNoRaw = gpaPoNoFromRecord(row);
+        const poNoRaw = typeof window.gpaResolvePoNoTextFromRow === 'function'
+            ? window.gpaResolvePoNoTextFromRow(enriched)
+            : gpaPoNoFromRecord(enriched);
         const poNo = EscHtml(poNoRaw !== '' ? poNoRaw : '—');
-        const catRaw = gpaCategoryNameFromRecord(row);
+        const catRaw = gpaCategoryNameFromRecord(enriched);
         const category = EscHtml(catRaw !== '' ? catRaw : '—');
-        const bdt = FmtDateDisplay(row.BillDate ?? row['Bill Date'] ?? row.billDate ?? row.ReceiveDate ?? row.receiveDate ?? '');
+        const bdt = FmtDateDisplay(enriched.BillDate ?? enriched['Bill Date'] ?? enriched.billDate ?? enriched.ReceiveDate ?? enriched.receiveDate ?? '');
         const totalBill = FmtCurrency(
-            row.BillAmount ?? row.billAmount ?? row.TotalBillAmountManual ?? row.totalBillAmountManual ?? row.Amount ?? 0
+            enriched.BillAmount ?? enriched.billAmount ?? enriched.TotalBillAmountManual ?? enriched.totalBillAmountManual ?? enriched.Amount ?? 0
         );
+        const dedRaw = enriched.Dedution ?? enriched.dedution ?? enriched.Deduction ?? enriched.deduction;
+        const deduction = EscHtml(dedRaw !== undefined && dedRaw !== null && `${dedRaw}`.trim() !== '' ? String(dedRaw) : '—');
         const netNum = parseFloat(
-            row.NetPayable ?? row.netPayable ?? row.PayableAmount ?? row.payableAmount
-            ?? row.BillAmount ?? row.billAmount ?? row.TotalBillAmountManual ?? 0
+            enriched.NetPayable ?? enriched.netPayable ?? enriched.PayableAmount ?? enriched.payableAmount
+            ?? enriched.BillAmount ?? enriched.billAmount ?? enriched.TotalBillAmountManual ?? 0
         );
-        const payRaw = gpaRowPaymentAmount(row);
+        const payRaw = gpaRowPaymentAmount(enriched);
         const payNum = payRaw != null ? parseFloat(payRaw) : (isNaN(netNum) ? 0 : netNum);
         const netPay = FmtCurrency(isNaN(netNum) ? 0 : netNum);
         const payAmt = FmtCurrency(isNaN(payNum) ? 0 : payNum);
-        const projRaw = gpaProjectLabelFromRow(row);
-        const subRaw = gpaSubProjectLabelFromRow(row);
+        const projRaw = gpaProjectLabelFromRow(enriched);
+        const subRaw = gpaSubProjectLabelFromRow(enriched);
         const proj = EscHtml(projRaw !== '' ? projRaw : '—');
         const subProj = EscHtml(subRaw !== '' ? subRaw : '—');
         html += '<tr>' +
@@ -1222,12 +1399,13 @@ function RenderGpaModalItems(items) {
             '<td style="font-weight:600;">' + billNo + '</td>' +
             '<td>' + poNo + '</td>' +
             '<td>' + category + '</td>' +
-            '<td class="text-center">' + EscHtml(bdt || '—') + '</td>' +
-            '<td class="text-end">' + totalBill + '</td>' +
-            '<td class="text-end">' + netPay + '</td>' +
-            '<td class="text-end" style="font-weight:700;color:#667eea;">' + payAmt + '</td>' +
             '<td>' + proj + '</td>' +
             '<td>' + subProj + '</td>' +
+            '<td class="text-center">' + EscHtml(bdt || '—') + '</td>' +
+            '<td class="text-end">' + totalBill + '</td>' +
+            '<td class="text-end">' + deduction + '</td>' +
+            '<td class="text-end">' + netPay + '</td>' +
+            '<td class="text-end" style="font-weight:700;color:#667eea;">' + payAmt + '</td>' +
             '</tr>';
     });
     $body.html(html);
@@ -1713,6 +1891,9 @@ document.addEventListener('DOMContentLoaded', function () {
             console.warn('gpaPreloadEmployeeListForPrint', e);
         });
     }
+    const isApprovalListPage = !!document.getElementById('gpaFromDate');
+    if (!isApprovalListPage) return;
+
     InitDates()
         .then(function () {
             LoadPaymentList();
