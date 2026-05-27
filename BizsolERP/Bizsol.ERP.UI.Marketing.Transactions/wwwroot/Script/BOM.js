@@ -12,6 +12,8 @@ let G_ItemCacheByWorkType = {};
 let G_BOMRows             = [];
 let G_BOMList             = [];
 let G_BOMHeader           = {};
+/** Last Copy From source — shown in modal until Save All. */
+let G_CopyFromSource        = { active: false, projectCode: 0, subProjectCode: 0, projectName: '', subProjectDesp: '' };
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
@@ -21,6 +23,8 @@ $(document).ready(function () {
     loadCategoryAndWorkTypeMaster();
 
     $('#btnCreateBOM').on('click', function () { openNewBOM(); });
+    $('#btnCopyFromBom').on('click', function () { openCopyFromModal(); });
+    $('#btnCopyFromFill').on('click', function () { fillBomFromCopy(); });
     $('#btnAddBomRow').on('click', function () { addNewBomRow(); });
     $('#btnSaveAllBomRows').on('click', function () { saveAllRows(); });
     $('#btnVerifyAllBomRows').on('click', function () { verifyAllRows(); });
@@ -493,12 +497,81 @@ function openNewBOM() {
         .then(function ()  { HideLoader && HideLoader(); addNewBomRow(); })
         .catch(function () { HideLoader && HideLoader(); addNewBomRow(); });
 }
-/** GETBYCODE response may be a bare array or wrapped in Data/data. */
+/** GETBYCODE / COPYFROM response may be a bare array or wrapped in Data/data. */
 function normalizeBOMDetailResponse(response) {
     if (Array.isArray(response)) return response;
     if (response && Array.isArray(response.Data)) return response.Data;
     if (response && Array.isArray(response.data)) return response.data;
     return [];
+}
+
+/** When API returns { Status, Msg, Data }, surface validation errors from SP. */
+function getBomApiFailureMessage(response, fallback) {
+    if (!response || typeof response !== 'object' || Array.isArray(response)) return '';
+    if (response.Status === 'Y') return '';
+    return (response.Msg || response.Message || fallback || '').toString().trim();
+}
+
+/**
+ * Bind main form Project / Sub Project from BOM detail rows (GETBYCODE / COPYFROM).
+ */
+function bindBomHeaderFromDetailRows(detailRows, options) {
+    options = options || {};
+    if (!detailRows || !detailRows.length) return;
+
+    const first  = detailRows[0];
+    const pCode  = parseInt(options.projectCode || first.ProjectMaster_Code || 0, 10) || 0;
+    const spCode = parseInt(options.subProjectCode || first.SubProjectMaster_Code || first.ProjectSubCategory_Code || 0, 10) || 0;
+    const spDesp = (options.subProjectDesp || first.SubProjectDesp || first.SubProjectName || '').trim();
+    const pName  = (options.projectName || first.ProjectName || first.ProjectDesp || '').trim();
+
+    if (!G_ProjectList.length) {
+        bindProjectDropdown();
+    } else if ($('#ddlProject option').length <= 1) {
+        bindProjectDropdown();
+    }
+
+    if (pCode) {
+        $('#ddlProject').val(String(pCode));
+    }
+    if (!$('#ddlProject').val() && pName) {
+        const needle = pName.toLowerCase();
+        $('#ddlProject option').each(function () {
+            if ($(this).text().trim().toLowerCase() === needle) {
+                $('#ddlProject').val($(this).val());
+                return false;
+            }
+        });
+    }
+
+    bindSubProjectDropdown();
+
+    var spBound = false;
+    if (spCode) {
+        $('#ddlSubProject').val(String(spCode));
+        if ($('#ddlSubProject').val()) spBound = true;
+    }
+    if (!spBound && spDesp) {
+        const needle = spDesp.toLowerCase();
+        $('#ddlSubProject option').each(function () {
+            if ($(this).text().trim().toLowerCase() === needle) {
+                $('#ddlSubProject').val($(this).val());
+                spBound = true;
+                return false;
+            }
+        });
+    }
+
+    G_BOMHeader = {
+        ProjectMaster_Code: parseInt($('#ddlProject').val() || pCode, 10) || pCode,
+        SubProjectMaster_Code: parseInt($('#ddlSubProject').val() || spCode, 10) || spCode
+    };
+
+    if (options.lockDropdowns) {
+        $('#ddlProject, #ddlSubProject').prop('disabled', true);
+    } else if (options.enableDropdowns !== false) {
+        $('#ddlProject, #ddlSubProject').prop('disabled', false);
+    }
 }
 
 /**
@@ -602,66 +675,15 @@ function openBOMFromList(id, mode, subProjectCode) {
             const response = results[2];
             var detailRows = normalizeBOMDetailResponse(response);
 
-            // ── Bind header controls ──────────────────────────────────────
             if (detailRows.length > 0) {
-                const first  = detailRows[0];
-                const pCode  = parseInt(first.ProjectMaster_Code     || 0, 10) || projectCode;
-                const spCode = parseInt(first.ProjectSubCategory_Code || 0, 10) || 0;
-                // SubProjectDesp stored on save — use as primary text match key
-                const spDesp = (first.SubProjectDesp || '').trim();
-
-                // ── Project Name ──
-                // If G_ProjectList is loaded but options haven't been rendered yet, force rebuild
-                if (G_ProjectList.length && $('#ddlProject option').length <= 1) {
-                    bindProjectDropdown();
-                }
-                // Bind by ProjectMaster_Code (option value = project Code)
-                $('#ddlProject').val(String(pCode));
-                // Fallback: text match using ProjectName returned by GETBYCODE (PM.ProjectDesp AS ProjectName)
-                if (!$('#ddlProject').val()) {
-                    const pName = (first.ProjectName || first.ProjectDesp || '').trim().toLowerCase();
-                    if (pName) {
-                        $('#ddlProject option').each(function () {
-                            if ($(this).text().trim().toLowerCase() === pName) {
-                                $('#ddlProject').val($(this).val());
-                                return false;
-                            }
-                        });
-                    }
-                }
-
-                // Rebuild sub-project list filtered to the now-selected project
-                // GetSubProjectList fields: Code, ProjectMaster_Code, SubProjectDesp
-                bindSubProjectDropdown();
-
-                // ── Sub Project Name ──
-                // Primary: match by SubProjectDesp text (stored on save, matches option text)
-                var spBound = false;
-                if (spDesp) {
-                    const needle = spDesp.toLowerCase();
-                    $('#ddlSubProject option').each(function () {
-                        if ($(this).text().trim().toLowerCase() === needle) {
-                            $('#ddlSubProject').val($(this).val());
-                            spBound = true;
-                            return false;
-                        }
-                    });
-                }
-                // Fallback: match by ProjectSubCategory_Code (= sub project Code)
-                if (!spBound && spCode) {
-                    $('#ddlSubProject').val(String(spCode));
-                }
-
-                G_BOMHeader = { ProjectMaster_Code: pCode, ProjectSubCategory_Code: spCode };
+                bindBomHeaderFromDetailRows(detailRows);
             }
 
-            // ── Build detail rows ─────────────────────────────────────────
             applyBomDetailRows(detailRows);
 
             if (mode === 'view') {
                 disableEntryForm();
             } else {
-                // Lock project/sub-project dropdowns — project is fixed for an existing BOM
                 $('#ddlProject, #ddlSubProject').prop('disabled', true);
                 $('#btnSaveAllBomRows').prop('disabled', false);
                 $('#btnVerifyAllBomRows').prop('disabled', false);
@@ -677,6 +699,7 @@ function openBOMFromList(id, mode, subProjectCode) {
 function disableEntryForm() {
     $('#tblBOM .bom-input, #tblBOM .bom-select').prop('disabled', true).prop('readonly', true);
     $('#ddlProject, #ddlSubProject').prop('disabled', true);
+    $('#btnCopyFromBom, #btnAddBomRow, #btnSaveAllBomRows').prop('disabled', true);
 }
 function enableEntryFormHeader() {
     $('#ddlProject, #ddlSubProject').prop('disabled', false);
@@ -780,6 +803,237 @@ function bindSubProjectDropdown() {
             $ddl.append(`<option value="${code}" data-name="${escHtml(name)}">${escHtml(name)}</option>`);
         });
 }
+
+function bindCopyFromProjectDropdown() {
+    const $ddl = $('#ddlCopyFromProject');
+    $ddl.empty().append('<option value="">-- Select Project --</option>');
+    (G_ProjectList || []).forEach(function (p) {
+        const code = p.Code || 0;
+        const name = (p.ProjectDesp || p.ProjectName || '').trim() || ('Project ' + code);
+        $ddl.append(`<option value="${code}">${escHtml(name)}</option>`);
+    });
+    $ddl.off('change.copyfrom').on('change.copyfrom', function () {
+        bindCopyFromSubProjectDropdown();
+    });
+}
+
+function bindCopyFromSubProjectDropdown() {
+    const $ddl = $('#ddlCopyFromSubProject');
+    const selectedProject = $('#ddlCopyFromProject').val();
+
+    $ddl.empty();
+
+    if (!G_SubProjectList.length) {
+        $ddl.append('<option value="">No sub-projects found</option>');
+        return;
+    }
+    if (!selectedProject) {
+        $ddl.append('<option value="">Select project first</option>');
+        return;
+    }
+
+    $ddl.append('<option value="">-- Select Sub Project --</option>');
+
+    G_SubProjectList
+        .filter(function (row) {
+            return String(row.ProjectMaster_Code || row.MasterProjectCode || 0) === String(selectedProject);
+        })
+        .forEach(function (sp) {
+            const code = sp.Code || 0;
+            const name = (sp.SubProjectDesp || sp.SubProjectName || '').trim() || ('Sub Project ' + code);
+            $ddl.append(`<option value="${code}" data-name="${escHtml(name)}">${escHtml(name)}</option>`);
+        });
+}
+
+function clearCopyFromSession() {
+    G_CopyFromSource = { active: false, projectCode: 0, subProjectCode: 0, projectName: '', subProjectDesp: '' };
+    $('#copyFromSessionInfo').hide().text('').attr('title', '');
+    $('#copyFromModalFilledInfo').hide().text('');
+}
+
+function rememberCopyFromSource(projectCode, subProjectCode, projectName, subProjectDesp) {
+    G_CopyFromSource = {
+        active: true,
+        projectCode: parseInt(projectCode || '0', 10) || 0,
+        subProjectCode: parseInt(subProjectCode || '0', 10) || 0,
+        projectName: (projectName || '').trim(),
+        subProjectDesp: (subProjectDesp || '').trim()
+    };
+    updateCopyFromDisplay();
+}
+
+function updateCopyFromDisplay() {
+    if (!G_CopyFromSource.active) {
+        clearCopyFromSession();
+        return;
+    }
+    const label = 'Filled from: ' + G_CopyFromSource.projectName
+        + (G_CopyFromSource.subProjectDesp ? ' / ' + G_CopyFromSource.subProjectDesp : '');
+    $('#copyFromSessionInfo').text(label).attr('title', label).show();
+    $('#copyFromModalFilledInfo')
+        .html('<i class="fas fa-info-circle"></i> Table loaded from <strong>'
+            + escHtml(G_CopyFromSource.projectName)
+            + (G_CopyFromSource.subProjectDesp ? ' / ' + escHtml(G_CopyFromSource.subProjectDesp) : '')
+            + '</strong>. Save to clear.')
+        .show();
+}
+
+function restoreCopyFromModalSelections() {
+    if (!G_CopyFromSource.active) return;
+    bindCopyFromProjectDropdown();
+    if (G_CopyFromSource.projectCode) {
+        $('#ddlCopyFromProject').val(String(G_CopyFromSource.projectCode));
+        bindCopyFromSubProjectDropdown();
+    }
+    if (G_CopyFromSource.subProjectCode) {
+        $('#ddlCopyFromSubProject').val(String(G_CopyFromSource.subProjectCode));
+    }
+    updateCopyFromDisplay();
+}
+
+function openCopyFromModal() {
+    if (!$('#dvBOMEntry').is(':visible')) {
+        toastr.warning('Please open BOM entry before using Copy From.');
+        return;
+    }
+
+    const ensureMasters = (!G_ProjectList.length || !G_SubProjectList.length)
+        ? loadProjectsAndSubProjects()
+        : Promise.resolve();
+
+    Showloader && Showloader();
+    ensureMasters
+        .then(function () {
+            HideLoader && HideLoader();
+            if (G_CopyFromSource.active) {
+                restoreCopyFromModalSelections();
+            } else {
+                bindCopyFromProjectDropdown();
+                bindCopyFromSubProjectDropdown();
+                $('#ddlCopyFromProject').val('');
+                $('#ddlCopyFromSubProject').empty().append('<option value="">Select project first</option>');
+                $('#copyFromModalFilledInfo').hide().text('');
+            }
+            showModal('dvBOMCopyFromModal');
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            toastr.error('Error loading project list for Copy From.');
+        });
+}
+
+function prepareCopyFromDetailRows(detailRows) {
+    return (detailRows || []).map(function (d) {
+        return Object.assign({}, d, {
+            Code     : 0,
+            Verify   : 'N',
+            VerifyON : null,
+            VerifyBy : null
+        });
+    });
+}
+
+function clearBomTableAndSummary() {
+    $('#tblBOM tbody').empty();
+    $('#tblBOMSummary tbody').empty();
+    $('#bomSummaryTotalsLine').empty();
+    $('#sumQtyRequired').text('—');
+    $('#sumAmount').text('—');
+    $('#dvBOMSummary').hide();
+    G_BOMRows = [];
+}
+
+function applyCopyFromResponse(detailRows) {
+    clearBomTableAndSummary();
+    /* Do not change main form Project / Sub Project — target stays as user selected externally. */
+    const copyRows = prepareCopyFromDetailRows(detailRows);
+    applyBomDetailRows(copyRows);
+    enableBomEntryRows();
+}
+
+function enableBomEntryRows() {
+    $('#tblBOM tbody tr').each(function () {
+        $(this).attr('data-state', 'edit');
+        $(this).find('.bom-input:not(.bom-uom):not(.bom-amount)').prop('readonly', false);
+        $(this).find('.bom-select').prop('disabled', false);
+        $(this).find('.bom-uom, .bom-amount').prop('readonly', true);
+    });
+}
+
+function fillBomFromCopy() {
+    const targetProjectCode = parseInt($('#ddlProject').val() || '0', 10) || 0;
+    const targetSubCode     = parseInt($('#ddlSubProject').val() || '0', 10) || 0;
+    const sourceProjectCode = parseInt($('#ddlCopyFromProject').val() || '0', 10) || 0;
+    const sourceSubCode     = parseInt($('#ddlCopyFromSubProject').val() || '0', 10) || 0;
+
+    if (!sourceProjectCode) {
+        toastr.warning('Please select source project in Copy From.');
+        $('#ddlCopyFromProject').focus();
+        return;
+    }
+    if (!sourceSubCode) {
+        toastr.warning('Please select source sub-project in Copy From.');
+        $('#ddlCopyFromSubProject').focus();
+        return;
+    }
+    if (targetProjectCode && targetSubCode
+        && String(targetProjectCode) === String(sourceProjectCode)
+        && String(targetSubCode) === String(sourceSubCode)) {
+        toastr.warning('Source and target project/sub-project cannot be the same.');
+        return;
+    }
+
+    if (!BOMService || typeof BOMService.GetBOMCopyFrom !== 'function') {
+        toastr.error('Copy From service is not available.');
+        return;
+    }
+
+    Showloader && Showloader();
+    BOMService.GetBOMCopyFrom(sourceProjectCode, sourceSubCode)
+        .then(function (response) {
+            const failMsg = getBomApiFailureMessage(response, 'Could not copy BOM.');
+            if (failMsg) {
+                HideLoader && HideLoader();
+                toastr.warning(failMsg);
+                return;
+            }
+
+            const detailRows = normalizeBOMDetailResponse(response);
+            if (!detailRows.length) {
+                HideLoader && HideLoader();
+                toastr.warning('No BOM lines found for the selected project and sub-project.');
+                return;
+            }
+
+            const loadPromises = [];
+            if (!G_ProjectList.length || !G_SubProjectList.length) {
+                loadPromises.push(loadProjectsAndSubProjects());
+            }
+            if (!G_CategoryList.length || !G_WorkTypeList.length) {
+                loadPromises.push(loadCategoryAndWorkTypeMaster());
+            }
+            const masterPromise = loadPromises.length ? Promise.all(loadPromises) : Promise.resolve();
+
+            return masterPromise.then(function () {
+                const $srcSub = $('#ddlCopyFromSubProject option:selected');
+                const $srcPrj = $('#ddlCopyFromProject option:selected');
+                const srcProjectName = ($srcPrj.text() || '').trim();
+                const srcSubDesp = ($srcSub.data('name') || $srcSub.text() || '').trim();
+
+                applyCopyFromResponse(detailRows);
+                rememberCopyFromSource(sourceProjectCode, sourceSubCode, srcProjectName, srcSubDesp);
+
+                hideModal('dvBOMCopyFromModal');
+                HideLoader && HideLoader();
+                toastr.success('Copied ' + detailRows.length + ' line(s). Target project/sub-project unchanged.');
+            });
+        })
+        .catch(function (error) {
+            HideLoader && HideLoader();
+            toastr.warning((error && error.Msg) || 'Error while copying BOM.');
+        });
+}
+
 function loadCategoryAndWorkTypeMaster() {
     if (!BOMService) return Promise.resolve();
 
@@ -806,6 +1060,7 @@ function loadCategoryAndWorkTypeMaster() {
 function resetBomForm() {
     G_BOMRows   = [];
     G_BOMHeader = {};
+    clearCopyFromSession();
 
     $('#hfBOMCode').val(0);
     $('#ddlProject').val('').prop('disabled', false);
@@ -818,6 +1073,7 @@ function resetBomForm() {
     $('#dvBOMSummary').hide();
     $('#btnVerifyAllBomRows').hide().prop('disabled', false);
     $('#btnSaveAllBomRows').prop('disabled', false);
+    $('#btnCopyFromBom, #btnAddBomRow').prop('disabled', false);
 }
 function addNewBomRow() {
     const $tbody    = $('#tblBOM tbody');
@@ -1217,6 +1473,7 @@ function saveAllRows() {
             }
             lockAllRowsAfterSave();
             $('#btnVerifyAllBomRows').show();
+            clearCopyFromSession();
             toastr.success(saveSuccessMsg || 'BOM saved successfully.');
             loadBOMList();
         })

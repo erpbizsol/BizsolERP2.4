@@ -17,6 +17,15 @@ const BOMService = {
         });
     },
 
+    /** Copy From — USP_WebAPI_BOM Mode = COPYFROM (source project + sub-project). */
+    GetBOMCopyFrom: function GetBOMCopyFrom(code, subProjectMaster_Code) {
+        const URL = UrlService.API_ENDPOINT_BOM + "/GetBOMCopyFrom?Code=" + (code || 0)
+                  + "&SubProjectMaster_Code=" + (subProjectMaster_Code || 0);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) {
+            return value;
+        });
+    },
+
     GetCategoryList: function GetCategoryList() {
         const URL = UrlService.API_ENDPOINT_BOM + "/GetCategoryList";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) {

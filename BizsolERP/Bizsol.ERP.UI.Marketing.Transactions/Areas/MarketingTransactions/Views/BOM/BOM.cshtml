@@ -3,7 +3,7 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=6"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=14"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 
 <style>
@@ -371,6 +371,12 @@
         background: var(--primary-gradient);
         color: #fff;
         box-shadow: var(--shadow-primary);
+    }
+
+    .bom-btn.copyfrom {
+        background: linear-gradient(135deg, #6366f1, #818cf8);
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(99,102,241,.35);
     }
 
     .bom-btn.verify {
@@ -818,6 +824,10 @@
         </div>
 
         <div style="margin-left:auto; display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;">
+            <span id="copyFromSessionInfo" class="bom-pill" style="display:none; align-self:center; max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title=""></span>
+            <button type="button" class="bom-btn copyfrom" id="btnCopyFromBom">
+                <i class="fas fa-copy"></i> Copy From
+            </button>
             <button type="button" class="bom-btn add" id="btnAddBomRow">
                 <i class="fas fa-plus-circle"></i> Add New Row
             </button>
@@ -883,6 +893,53 @@
             </table>
         </div>
         <div id="bomSummaryTotalsLine" class="bom-summary-footer" aria-live="polite"></div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     COPY FROM BOM MODAL
+════════════════════════════════════════════════════════ -->
+<div class="modal fade pm-modal" id="dvBOMCopyFromModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg,#6366f1,#818cf8);">
+                <div class="pm-modal-hdr-icon">
+                    <i class="fas fa-copy"></i>
+                </div>
+                <h5 class="modal-title">Copy From</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="pm-form-section">
+                    <div class="pm-form-section-title">
+                        <i class="fas fa-filter"></i> Select Source BOM
+                    </div>
+                    <div id="copyFromModalFilledInfo" class="bom-pill" style="display:none; margin-bottom:12px; width:100%; box-sizing:border-box; white-space:normal; line-height:1.45;"></div>
+                    <div class="bom-fg" style="min-width:100%; margin-bottom:14px;">
+                        <label for="ddlCopyFromProject">Project Name</label>
+                        <select id="ddlCopyFromProject">
+                            <option value="">-- Select Project --</option>
+                        </select>
+                    </div>
+                    <div class="bom-fg" style="min-width:100%;">
+                        <label for="ddlCopyFromSubProject">Sub Project Name</label>
+                        <select id="ddlCopyFromSubProject">
+                            <option value="">Select project first</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="pm-btn" id="btnCopyFromFill" style="background:var(--primary-gradient); color:#fff;">
+                    <i class="fas fa-fill-drip"></i> Fill
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
