@@ -17,8 +17,44 @@ var G_BANK_CurrencyRows = [];
 var G_BANK_ECMSRows = [];
 var G_BANK_AccountRows = [];
 var G_BANK_SavedDatabaseLocationCode = 0;
+/** When true, skip auto-fill of State / Nation / Pin from City (e.g. edit load). */
+var G_BANK_SuppressCityAddressFill = false;
 
 var G_BANK_ModuleName = 'Bank';
+
+/** tblBankMaster column lengths (varchar char max / int bounds). */
+var BANK_FIELD_MAX = {
+    BankName: 50,
+    AliasName: 250,
+    Address: 80,
+    City: 30,
+    PinCode: 6,
+    State: 20,
+    Nation: 20,
+    EMail: 40,
+    PhoneNo: 15,
+    FaxNo: 15,
+    ServiceTaxNo: 50,
+    PANNo: 50,
+    AccountNo: 25,
+    IFSC_Code: 25,
+    SwiftCode: 15,
+    MICRCode: 50,
+    VartualAccountPrefix: 10,
+    VartualAccountLengthMax: 2147483647,
+};
+
+function bankTrimField(val, maxLen) {
+    if (val == null || maxLen == null) return '';
+    return String(val).trim().slice(0, maxLen);
+}
+function bankClampInt(val, min, max) {
+    var n = parseInt(String(val).replace(/\D/g, ''), 10);
+    if (isNaN(n)) return min;
+    if (n < min) return min;
+    if (n > max) return max;
+    return n;
+}
 
 function getFinancialYear() {
     return BizSolHelperFunction.getFinancialYear();
@@ -52,6 +88,98 @@ function dropdownText(item, fieldName) {
     if (item.Text != null) return String(item.Text).trim();
     if (item.text != null) return String(item.text).trim();
     return '';
+}
+function bankPickFirst(obj, keys) {
+    if (!obj) return undefined;
+    for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k];
+    }
+    return undefined;
+}
+function bankNormalizeCityApiResponse(res) {
+    if (!res) return null;
+    if (Array.isArray(res)) return res.length ? res[0] : null;
+    return firstRecord(res);
+}
+function bankFindCityRowByName(cityName) {
+    var name = (cityName || '').toString().trim().toLowerCase();
+    if (!name) return null;
+    for (var i = 0; i < G_BANK_CityRows.length; i++) {
+        var r = G_BANK_CityRows[i];
+        if (dropdownText(r, 'CityName').toLowerCase() === name) return r;
+    }
+    return null;
+}
+function bankEnsureSelectOption($sel, text) {
+    if (!$sel.length || text == null) return;
+    var t = String(text).trim();
+    if (!t) return;
+    if ($sel.find('option').filter(function () { return $(this).val() === t; }).length) return;
+    $sel.append(new Option(t, t));
+}
+/** City response: no pin / empty / 0 → "0"; otherwise digits from API (max 6). */
+function bankNormalizePinFromCity(pin) {
+    if (pin === undefined || pin === null) return '0';
+    var raw = String(pin).trim();
+    if (raw === '' || raw === '0') return '0';
+    var digits = raw.replace(/\D/g, '').slice(0, 6);
+    if (!digits || /^0+$/.test(digits)) return '0';
+    return digits;
+}
+function bankSetStateNationPin(stateName, nationName, pin) {
+    if (stateName) {
+        var st = String(stateName).trim();
+        bankEnsureSelectOption($('#ddlState'), st);
+        $('#ddlState').val(st).trigger('change');
+    }
+    if (nationName) {
+        var nat = String(nationName).trim();
+        bankEnsureSelectOption($('#ddlNation'), nat);
+        $('#ddlNation').val(nat).trigger('change');
+    }
+    $('#txtPin').val(bankNormalizePinFromCity(pin));
+    try {
+        $('#ddlState, #ddlNation').each(function () {
+            if ($(this).data('select2')) $(this).trigger('change.select2');
+        });
+    } catch (e) {}
+}
+function bankApplyAddressFromCity(cityName) {
+    if (G_BANK_SuppressCityAddressFill) return;
+    var name = (cityName || '').toString().trim();
+    if (!name) return;
+
+    var row = bankFindCityRowByName(name);
+    var stateName = row ? bankPickFirst(row, ['StateName', 'stateName']) : undefined;
+    var nationName = row ? bankPickFirst(row, ['CountryName', 'countryName', 'NationName', 'Nation']) : undefined;
+    var pin = row ? bankPickFirst(row, ['Pin', 'pin', 'PinCode', 'Pincode']) : undefined;
+
+    function applyAll() {
+        bankSetStateNationPin(stateName, nationName, pin);
+    }
+
+    if (row && stateName && nationName) {
+        applyAll();
+        return;
+    }
+
+    CityMasterService.GetCityMasterByName(name, 'CityMasterByName')
+        .then(function (res) {
+            if (G_BANK_SuppressCityAddressFill) return;
+            var apiRow = bankNormalizeCityApiResponse(res);
+            if (apiRow) {
+                if (!stateName) stateName = bankPickFirst(apiRow, ['StateName', 'stateName']);
+                if (!nationName) nationName = bankPickFirst(apiRow, ['CountryName', 'countryName', 'NationName', 'Nation']);
+                if (pin === undefined || pin === null) {
+                    pin = bankPickFirst(apiRow, ['Pin', 'pin', 'PinCode', 'Pincode']);
+                }
+            }
+            applyAll();
+        })
+        .catch(function () {
+            applyAll();
+        });
 }
 function showModal(id) {
     try {
@@ -363,20 +491,24 @@ function populateForm(rec) {
     G_BANK_SavedDatabaseLocationCode =
         rec.DatabaseLocation_Code != null ? parseInt(String(rec.DatabaseLocation_Code), 10) || 0 : 0;
     $('#hfBankMaster_Code').val(rec.Code != null ? rec.Code : 0);
-    $('#txtBankName').val(rec.BankName != null ? String(rec.BankName).trim() : '');
-    $('#txtAliasName').val(rec.AliasName != null ? String(rec.AliasName).trim() : '');
-    $('#txtAccountNo').val(rec.AccountNo != null ? String(rec.AccountNo).trim() : '');
-    $('#txtIFSCCode').val(rec.IFSC_Code != null ? String(rec.IFSC_Code).trim() : '');
-    $('#txtSwiftCode').val(rec.SwiftCode != null ? String(rec.SwiftCode).trim() : '');
-    $('#txtAddress').val(rec.Address != null ? String(rec.Address).trim() : '');
-    $('#txtPin').val(rec.PinCode != null && rec.PinCode !== 0 ? String(rec.PinCode).trim() : '');
-    $('#txtPhoneNo').val(rec.PhoneNo != null ? String(rec.PhoneNo).trim() : '');
-    $('#txtFaxNo').val(rec.FaxNo != null ? String(rec.FaxNo).trim() : '');
-    $('#txtServiceTaxNo').val(rec.ServiceTaxNo != null ? String(rec.ServiceTaxNo).trim() : '');
-    $('#txtPANNo').val(rec.PANNo != null ? String(rec.PANNo).trim() : '');
-    $('#txtEMail').val(rec.EMail != null ? String(rec.EMail).trim() : '');
-    $('#txtMICRCode').val(rec.MICRCode != null ? String(rec.MICRCode).trim() : '');
-    $('#txtVartualAccountPrefix').val(rec.VartualAccountPrefix != null ? String(rec.VartualAccountPrefix).trim() : '');
+    $('#txtBankName').val(bankTrimField(rec.BankName, BANK_FIELD_MAX.BankName));
+    $('#txtAliasName').val(bankTrimField(rec.AliasName, BANK_FIELD_MAX.AliasName));
+    $('#txtAccountNo').val(bankTrimField(rec.AccountNo, BANK_FIELD_MAX.AccountNo));
+    $('#txtIFSCCode').val(bankTrimField(rec.IFSC_Code, BANK_FIELD_MAX.IFSC_Code));
+    $('#txtSwiftCode').val(bankTrimField(rec.SwiftCode, BANK_FIELD_MAX.SwiftCode));
+    $('#txtAddress').val(bankTrimField(rec.Address, BANK_FIELD_MAX.Address));
+    $('#txtPin').val(
+        rec.PinCode != null && String(rec.PinCode).trim() !== ''
+            ? bankTrimField(String(rec.PinCode).trim(), BANK_FIELD_MAX.PinCode)
+            : ''
+    );
+    $('#txtPhoneNo').val(bankTrimField(rec.PhoneNo, BANK_FIELD_MAX.PhoneNo));
+    $('#txtFaxNo').val(bankTrimField(rec.FaxNo, BANK_FIELD_MAX.FaxNo));
+    $('#txtServiceTaxNo').val(bankTrimField(rec.ServiceTaxNo, BANK_FIELD_MAX.ServiceTaxNo));
+    $('#txtPANNo').val(bankTrimField(rec.PANNo, BANK_FIELD_MAX.PANNo));
+    $('#txtEMail').val(bankTrimField(rec.EMail, BANK_FIELD_MAX.EMail));
+    $('#txtMICRCode').val(bankTrimField(rec.MICRCode, BANK_FIELD_MAX.MICRCode));
+    $('#txtVartualAccountPrefix').val(bankTrimField(rec.VartualAccountPrefix, BANK_FIELD_MAX.VartualAccountPrefix));
     $('#txtVartualAccountLength').val(
         rec.VartualAccountLength != null && rec.VartualAccountLength !== 0 ? String(rec.VartualAccountLength).trim() : ''
     );
@@ -391,9 +523,9 @@ function populateForm(rec) {
     toggleECMSPanel(hasECMS);
 
     var currency = rec.CurrencyName != null ? String(rec.CurrencyName).trim() : '';
-    var city = rec.City != null ? String(rec.City).trim() : '';
-    var state = rec.State != null ? String(rec.State).trim() : '';
-    var nation = rec.Nation != null ? String(rec.Nation).trim() : '';
+    var city = bankTrimField(rec.City, BANK_FIELD_MAX.City);
+    var state = bankTrimField(rec.State, BANK_FIELD_MAX.State);
+    var nation = bankTrimField(rec.Nation, BANK_FIELD_MAX.Nation);
     var ecmsBank = rec.ECMSBank != null ? String(rec.ECMSBank).trim() : rec.eCMSBank != null ? String(rec.eCMSBank).trim() : '';
     var debitAccount =
         rec.eCMSDebitAccountName != null
@@ -402,6 +534,7 @@ function populateForm(rec) {
               ? String(rec.eCMSDebitAccount).trim()
               : '';
 
+    G_BANK_SuppressCityAddressFill = true;
     $('#ddlCurrency').val(currency).trigger('change');
     $('#ddlCity').val(city).trigger('change');
     $('#ddlState').val(state).trigger('change');
@@ -413,6 +546,7 @@ function populateForm(rec) {
             if ($(this).data('select2')) $(this).trigger('change.select2');
         });
     } catch (e) {}
+    G_BANK_SuppressCityAddressFill = false;
 }
 function loadEditRecord(code, mode) {
     return BankMasterService.GetBankMasterByCode(code)
@@ -438,34 +572,33 @@ function ynFromCheckbox($el) {
 /** Single row — matches BizSol.WebERP.Models.Common.Models.tblBankMaster */
 function buildBankMasterRow(code) {
     var pinRaw = ($('#txtPin').val() || '').trim();
-    var pinStr = pinRaw !== '' ? pinRaw.replace(/\D/g, '').slice(0, 6) : '';
+    var pinStr = pinRaw !== '' ? bankTrimField(pinRaw.replace(/\D/g, ''), BANK_FIELD_MAX.PinCode) : '';
     var vaLenRaw = ($('#txtVartualAccountLength').val() || '').trim();
-    var vaLen = vaLenRaw !== '' ? parseInt(vaLenRaw, 10) : 0;
-    if (isNaN(vaLen)) vaLen = 0;
+    var vaLen = vaLenRaw !== '' ? bankClampInt(vaLenRaw, 0, BANK_FIELD_MAX.VartualAccountLengthMax) : 0;
     var ecmsOn = $('#chkECMSApplicable').prop('checked');
     return {
         Code: code,
-        BankName: ($('#txtBankName').val() || '').trim(),
-        Address: ($('#txtAddress').val() || '').trim(),
-        City: ($('#ddlCity').val() || '').toString().trim(),
+        BankName: bankTrimField($('#txtBankName').val(), BANK_FIELD_MAX.BankName),
+        Address: bankTrimField($('#txtAddress').val(), BANK_FIELD_MAX.Address),
+        City: bankTrimField($('#ddlCity').val(), BANK_FIELD_MAX.City),
         PinCode: pinStr,
-        State: ($('#ddlState').val() || '').toString().trim(),
-        Nation: ($('#ddlNation').val() || '').toString().trim(),
-        EMail: ($('#txtEMail').val() || '').trim(),
-        PhoneNo: ($('#txtPhoneNo').val() || '').trim(),
-        FaxNo: ($('#txtFaxNo').val() || '').trim(),
-        ServiceTaxNo: ($('#txtServiceTaxNo').val() || '').trim(),
-        PANNo: ($('#txtPANNo').val() || '').trim(),
+        State: bankTrimField($('#ddlState').val(), BANK_FIELD_MAX.State),
+        Nation: bankTrimField($('#ddlNation').val(), BANK_FIELD_MAX.Nation),
+        EMail: bankTrimField($('#txtEMail').val(), BANK_FIELD_MAX.EMail),
+        PhoneNo: bankTrimField($('#txtPhoneNo').val(), BANK_FIELD_MAX.PhoneNo),
+        FaxNo: bankTrimField($('#txtFaxNo').val(), BANK_FIELD_MAX.FaxNo),
+        ServiceTaxNo: bankTrimField($('#txtServiceTaxNo').val(), BANK_FIELD_MAX.ServiceTaxNo),
+        PANNo: bankTrimField($('#txtPANNo').val(), BANK_FIELD_MAX.PANNo),
         DatabaseLocation_Code: G_BANK_SavedDatabaseLocationCode || 0,
-        AccountNo: ($('#txtAccountNo').val() || '').trim(),
-        IFSC_Code: ($('#txtIFSCCode').val() || '').trim(),
+        AccountNo: bankTrimField($('#txtAccountNo').val(), BANK_FIELD_MAX.AccountNo),
+        IFSC_Code: bankTrimField($('#txtIFSCCode').val(), BANK_FIELD_MAX.IFSC_Code),
         IsDefault: ynFromCheckbox($('#chkIsDefault')),
-        MICRCode: ($('#txtMICRCode').val() || '').trim(),
-        AliasName: ($('#txtAliasName').val() || '').trim(),
-        SwiftCode: ($('#txtSwiftCode').val() || '').trim(),
+        MICRCode: bankTrimField($('#txtMICRCode').val(), BANK_FIELD_MAX.MICRCode),
+        AliasName: bankTrimField($('#txtAliasName').val(), BANK_FIELD_MAX.AliasName),
+        SwiftCode: bankTrimField($('#txtSwiftCode').val(), BANK_FIELD_MAX.SwiftCode),
         CurrencyName: ($('#ddlCurrency').val() || '').toString().trim(),
         ECMSBank: ecmsOn ? ($('#ddlECMSBank').val() || '').toString().trim() : '',
-        VartualAccountPrefix: ecmsOn ? ($('#txtVartualAccountPrefix').val() || '').trim() : '',
+        VartualAccountPrefix: ecmsOn ? bankTrimField($('#txtVartualAccountPrefix').val(), BANK_FIELD_MAX.VartualAccountPrefix) : '',
         VartualAccountLength: ecmsOn ? vaLen : 0,
         VartualAccountAutoGenerate: ecmsOn ? ynFromCheckbox($('#chkVartualAccountAutoGenerate')) : 'N',
         eCMSDebitAccountName: ecmsOn ? ($('#ddlECMSDebitAccount').val() || '').toString().trim() : '',
@@ -610,6 +743,10 @@ $(document).ready(function () {
 
     $('#chkECMSApplicable').on('change', function () {
         toggleECMSPanel($(this).prop('checked'));
+    });
+
+    $('#ddlCity').on('change', function () {
+        bankApplyAddressFromCity($(this).val());
     });
 
     $('#txtBankName').on('blur', function () {

@@ -1218,6 +1218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     initBillGrid();
+    initGpaVendorModalCloseHandler();
 
     if (gpaIsBankStatementEmbed() && gpaOpenNew) {
         await tryApplyBankStatementEmbedPrefill(true);
@@ -5091,11 +5092,37 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
     });
 }
 
+// ── Vendor Master Modal (Payment Entry — Party Name + button) ───────────────
+function OpenVendorModal() {
+    const baseUrl = sessionStorage.getItem('AppBaseURL') || '';
+    const iframe = document.getElementById('iframeGpaVendorMaster');
+    const modalEl = document.getElementById('modalGpaAddVendor');
+    if (!iframe || !modalEl) return;
+    iframe.src = baseUrl + '/MarketingMasters/VendorMaster/VendorMaster?embedded=1&ModuleDesp=Vendor%20Master';
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl, {
+        backdrop: 'static',
+        keyboard: false
+    });
+    modal.show();
+}
+
+function initGpaVendorModalCloseHandler() {
+    const modalEl = document.getElementById('modalGpaAddVendor');
+    if (!modalEl || modalEl.dataset.gpaVendorCloseBound === '1') return;
+    modalEl.dataset.gpaVendorCloseBound = '1';
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        const iframe = document.getElementById('iframeGpaVendorMaster');
+        if (iframe) iframe.src = '';
+        loadVendorList();
+    });
+}
+
 window.viewGRNPaymentEntry = viewGRNPaymentEntry;
 window.gpaGetListRowRawByCode = gpaGetListRowRawByCode;
 window.InitAttachmentControl = InitAttachmentControl;
 window.openGpaAttachmentControl = openGpaAttachmentControl;
 window.openGpaListAttachmentControl = openGpaListAttachmentControl;
+window.OpenVendorModal = OpenVendorModal;
 window.blockNonNumeric = blockNonNumeric;
 window.stripNonNumeric = stripNonNumeric;
 window.markFooterAdvanceManual = markFooterAdvanceManual;
