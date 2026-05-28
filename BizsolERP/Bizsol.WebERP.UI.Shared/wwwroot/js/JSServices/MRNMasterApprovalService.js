@@ -25,9 +25,11 @@ function getSessionUserAndGroup() {
 const MRNMasterApprovalService = {
 
     GetPendingMRNMasterList: function GetPendingMRNMasterList(status, fromDate, toDate) {
+        const { groupCode } = getSessionUserAndGroup();
         const url = UrlService.API_ENDPOINT_MRNMasterLevelsApproval +
             `/GetPendingMRNMasterList?Status=${encodeURIComponent(status || '')}` +
-            `&FromDate=${encodeURIComponent(fromDate || '')}&ToDate=${encodeURIComponent(toDate || '')}`;
+            `&FromDate=${encodeURIComponent(fromDate || '')}&ToDate=${encodeURIComponent(toDate || '')}` +
+            `&GroupMaster_Code=${encodeURIComponent(groupCode)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 

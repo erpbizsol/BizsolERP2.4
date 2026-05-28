@@ -4765,10 +4765,10 @@ function gpaPrintAssetBaseUrl() {
 function gpaPrintFixedStampUrls() {
     const base = gpaPrintAssetBaseUrl();
     return {
-        madeBy: base + 'assets/images/PPPL1_Stamp_Finance.jpeg',
-        approvedBy: base + 'assets/images/PPPL1_Stamp_HOD.jpeg',
-        madeByFallback: base + 'assets/images/PPPL1_Stamp_Finance.jpeg',
-        approvedByFallback: base + 'assets/images/PPPL1_Stamp_HOD.jpeg',
+        madeBy: base + 'assets/images/PPPL_Stamp_Finance.jpeg',
+        approvedBy: base + 'assets/images/PPPL_Stamp_HODA.jpeg',
+        madeByFallback: base + 'assets/images/PPPL_Stamp_Finance.jpeg',
+        approvedByFallback: base + 'assets/images/PPPL_Stamp_HODA.jpeg',
     };
 }
 
