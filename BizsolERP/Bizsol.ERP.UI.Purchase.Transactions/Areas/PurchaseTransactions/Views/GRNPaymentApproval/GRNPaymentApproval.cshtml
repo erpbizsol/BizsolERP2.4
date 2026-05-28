@@ -4,6 +4,7 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentEntry.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentApproval.js"></script>
 
 
 
@@ -516,6 +517,13 @@
         font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-right: 4px;
     }
     .im-btn-edit:hover { background: #2563eb; color: #fff; border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
+    .im-btn-view {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 32px; height: 28px; padding: 0 10px;
+        background: #0ea5e9; color: #fff; border: 1.5px solid #0284c7; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-right: 4px;
+    }
+    .im-btn-view:hover { background: #0284c7; color: #fff; border-color: #0369a1; box-shadow: 0 2px 8px rgba(2,132,199,0.35); }
     .im-btn-delete {
         display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
         background: #fee2e2; color: #dc2626; border: 1.5px solid #fca5a5; border-radius: 7px;
@@ -575,6 +583,37 @@
         font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
     }
     .im-btn-print:hover { background: #0f172a; box-shadow: 0 2px 8px rgba(15,23,42,0.35); color: #fff; }
+    /* View detail modal */
+    .gpa-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .gpa-info-item { background: #fafbff; border: 1px solid #eef0f8; border-radius: 10px; padding: 8px 12px; }
+    .gpa-info-lbl { font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 3px; }
+    .gpa-info-val { font-size: 0.84rem; font-weight: 700; color: #1e293b; }
+    .gpa-level-stepper-wrap { background: #fafbff; border: 1px solid #eef0f8; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+    .gpa-level-stepper-title { font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .gpa-detail-stepper { display: flex; align-items: flex-start; overflow-x: auto; gap: 0; padding-bottom: 4px; }
+    .gpa-dstep-item { display: flex; flex-direction: column; align-items: center; text-align: center; flex-shrink: 0; min-width: 100px; }
+    .gpa-dstep-circle { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; margin-bottom: 7px; border: 2px solid transparent; }
+    .gpa-dstep-done .gpa-dstep-circle { background: linear-gradient(135deg,#10b981,#059669); color: #fff; }
+    .gpa-dstep-active .gpa-dstep-circle { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; }
+    .gpa-dstep-rejected .gpa-dstep-circle { background: linear-gradient(135deg,#dc2626,#ef4444); color: #fff; }
+    .gpa-dstep-pending .gpa-dstep-circle { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+    .gpa-dstep-line { flex-shrink: 0; width: 28px; height: 3px; align-self: flex-start; margin-top: 17px; border-radius: 2px; }
+    .gpa-dstep-line-done { background: linear-gradient(90deg,#10b981,#059669); }
+    .gpa-dstep-line-pending { background: #e2e8f0; }
+    .gpa-items-wrap { margin-bottom: 14px; }
+    .gpa-items-title { font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .gpa-items-table { width: 100%; border-collapse: collapse; }
+    .gpa-items-table thead tr th { background: #4f46e5; color: #fff; font-size: 0.72rem; font-weight: 600; text-align: center; padding: 8px 10px; white-space: nowrap; border: none; }
+    .gpa-items-table tbody tr td { padding: 7px 10px; vertical-align: middle; border: 1px solid #ede9fe; font-size: 0.8rem; color: #374151; }
+    .btn-gpa-modal-preview, .btn-gpa-modal-print, .btn-gpa-modal-attach, .btn-gpa-close {
+        display: inline-flex; align-items: center; gap: 5px; border: none; color: #fff; border-radius: 9px;
+        padding: 9px 16px; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-gpa-modal-preview { background: #64748b; }
+    .btn-gpa-modal-print { background: #1e293b; }
+    .btn-gpa-modal-attach { background: linear-gradient(135deg,#0ea5e9,#0284c7); }
+    .btn-gpa-close { background: linear-gradient(135deg,#f59e0b,#d97706); }
+    @@media (max-width: 768px) { .gpa-info-grid { grid-template-columns: repeat(2, 1fr); } }
     /* ── Attachment badge on float bar button ── */
     .gpa-attach-btn-wrap { position: relative; display: inline-flex; }
     .gpa-temp-badge {
@@ -874,7 +913,7 @@
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <label class="po-field-lbl d-block mb-1">Bank name</label>
+                    <label class="po-field-lbl d-block mb-1">Bank name <span class="req">*</span></label>
                     <select id="ddlBankName" class="form-control form-control-sm" autocomplete="off" title="GetBankList (API)">
                         <option value="">-- Select Bank --</option>
                     </select>
@@ -972,7 +1011,7 @@
 
 <!-- ── ADD BILL MODAL (same flow as GRNService Add Item) ── -->
 <div class="modal fade" id="gpaAddBillModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 560px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 640px;">
         <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.18);">
             <div class="modal-header" style="background: linear-gradient(135deg,#10b981,#059669); color: #fff; border: none;">
                 <h6 class="modal-title mb-0"><i class="fa fa-file-invoice-dollar me-2"></i>Add bill</h6>
@@ -994,6 +1033,20 @@
                         <label class="form-label mb-1 po-field-lbl">Bill no</label>
                         <input type="text" id="gpaAddBillModalBillNo" class="form-control form-control-sm" maxlength="64" autocomplete="off" placeholder="Bill no"
                                oninput="window.gpaOnAddBillModalBillNoInput()">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">PO no</label>
+                            <select id="gpaAddBillModalPo" class="form-control form-control-sm">
+                                <option value="">-- PO No --</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Category</label>
+                            <select id="gpaAddBillModalCategory" class="form-control form-control-sm">
+                                <option value="">-- Category --</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
@@ -1020,15 +1073,21 @@
                                    onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this); window.onGpaAddBillModalBillAmtInput();">
                         </div>
                         <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Deduction</label>
+                            <input type="text" id="gpaAddBillModalDeduction" class="form-control form-control-sm" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Payable amount</label>
                             <input type="number" id="gpaAddBillModalPayable" class="form-control form-control-sm" min="0" step="0.01" placeholder="0" readonly style="background: #ede9fe; border-color: #c4b5fd;"
                                    onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this);">
                         </div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label mb-1 po-field-lbl">Payment amount <span class="req">*</span></label>
-                        <input type="number" id="gpaAddBillModalPayment" class="form-control form-control-sm" min="0" step="0.01" placeholder="0"
-                               onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this);">
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Payment amount <span class="req">*</span></label>
+                            <input type="number" id="gpaAddBillModalPayment" class="form-control form-control-sm" min="0" step="0.01" placeholder="0"
+                                   onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this);">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1128,6 +1187,85 @@
 
 <!-- ── ATTACHMENT CONTROL PLACEHOLDER ── -->
 <div id="GRNPaymentEntry_AttachmentControlmodal"></div>
+
+<!-- View detail modal (Payment Entry list — eye icon) -->
+<div class="modal fade" id="modalGpaDetail" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 20px;border:none;">
+                <div>
+                    <h5 class="modal-title mb-0" style="font-size:0.95rem;font-weight:700;">
+                        <i class="fa fa-file-invoice-dollar me-2"></i><span id="gpaModalEntryTitle"></span>
+                    </h5>
+                    <small id="gpaModalParty" style="font-size:0.75rem;opacity:0.82;display:block;margin-top:2px;"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" onclick="CloseDetailModal()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding:16px;max-height:72vh;overflow-y:auto;">
+                <div id="gpaModalHeader"></div>
+                <div class="gpa-level-stepper-wrap">
+                    <div class="gpa-level-stepper-title"><i class="fa fa-layer-group me-1"></i>Approval Flow</div>
+                    <div id="gpaModalApprovalStepper"></div>
+                </div>
+                <div class="gpa-items-wrap">
+                    <div class="gpa-items-title"><i class="fa fa-receipt me-1"></i>Bill / payment lines (MRN)</div>
+                    <div class="table-responsive">
+                        <table class="gpa-items-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;">#</th>
+                                    <th>Bill no</th>
+                                    <th>PO no</th>
+                                    <th>Category</th>
+                                    <th>Project</th>
+                                    <th>Sub project</th>
+                                    <th>Bill date</th>
+                                    <th>Bill amount</th>
+                                    <th>Deduction</th>
+                                    <th>Payable amount</th>
+                                    <th>Payment amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gpaModalItemsBody">
+                                <tr><td colspan="11" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;"><i class="fa fa-spinner fa-spin me-1"></i>Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="gpaModalAttachList" style="display:none;"></div>
+                <div class="gpa-remarks-wrap">
+                    <label class="gpa-remarks-lbl"><i class="fa fa-comment me-1"></i>Remarks</label>
+                    <textarea id="gpaFrmRemarks" class="form-control form-control-sm" rows="2" placeholder="Enter approval or rejection remarks…"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
+                <input type="hidden" id="hfGpaPaymentCode" value="0" />
+                <input type="hidden" id="hfGpaLevelCode" value="0" />
+                <button type="button" class="btn-gpa-modal-preview" onclick="PrintGPAFromDetail('preview')" title="Print Preview"><i class="fa fa-search-plus"></i>Preview</button>
+                <button type="button" class="btn-gpa-modal-print" onclick="PrintGPAFromDetail('print')" title="Print"><i class="fa fa-print"></i>Print</button>
+                <button type="button" id="gpaBtnModalAttachment" class="btn-gpa-modal-attach" onclick="OpenGRNPaymentApprovalAttachmentFromModal()" title="Attachments"><i class="fa fa-paperclip"></i>Attachment</button>
+                <button type="button" id="gpaBtnRejectAction" class="btn-gpa-reject" onclick="SubmitApproval('Reject')" style="display:none;"><i class="fa fa-times"></i>Reject</button>
+                <button type="button" id="gpaBtnApproveAction" class="btn-gpa-approve" onclick="SubmitApproval('Approve')" style="display:none;"><i class="fa fa-check"></i>Approve</button>
+                <button type="button" class="btn-gpa-close ms-auto" onclick="CloseDetailModal()"><i class="fa fa-times-circle"></i>Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalGpaConfirm" tabindex="-1" role="dialog" aria-hidden="true" style="z-index:1060;">
+    <div class="modal-dialog modal-sm" style="margin-top:140px;">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header" id="gpaConfirmModalHeader" style="padding:12px 16px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+                <h5 class="modal-title mb-0" style="font-size:0.9rem;font-weight:700;" id="gpaConfirmTitle"></h5>
+            </div>
+            <div class="modal-body" style="padding:14px 16px;font-size:0.85rem;color:#475569;"><span id="gpaConfirmMessage"></span></div>
+            <div class="modal-footer" style="padding:10px 16px;gap:8px;border-top:1px solid #eef0f8;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="CloseConfirmModal()">Cancel</button>
+                <button type="button" id="gpaBtnConfirmAction"></button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="GRNPaymentApproval_AttachmentControlmodal"></div>
 
 <script>
     (function () {

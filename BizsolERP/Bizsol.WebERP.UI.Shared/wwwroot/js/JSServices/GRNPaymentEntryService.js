@@ -136,8 +136,9 @@ const GRNPaymentApprovalService = {
                 return value;
             });
     },
-    GetPOList: function GetPOList() {
-        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetPOList`;
+    GetPOList: function GetPOList(Code) {
+        const code = Code !== undefined && Code !== null ? String(Code).trim() : '';
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetPOList?Code=${encodeURIComponent(code || '0')}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
