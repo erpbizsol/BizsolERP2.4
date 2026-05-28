@@ -704,6 +704,17 @@
         color: #667eea;
         font-weight: 600;
     }
+    /* ── Party (vendor) add button — same green style as BOM item-add-btn ── */
+    .gpa-party-add-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 26px; height: 26px; border-radius: 7px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none; color: #fff; cursor: pointer; flex-shrink: 0;
+        font-size: 0.78rem; box-shadow: 0 2px 7px rgba(16,185,129,0.35);
+        transition: all 0.18s; vertical-align: middle;
+    }
+    .gpa-party-add-btn:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(16,185,129,0.5); }
+
     .gpa-pay-card-right {
         flex-shrink: 0;
         text-align: right;
@@ -883,9 +894,16 @@
                     </div>
                     <div id="wrapGpaPartyName">
                         <label class="po-field-lbl d-block mb-1">Party Name <span class="req">*</span></label>
-                        <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="window.onPartyChange()">
-                            <option value="">-- Select Party --</option>
-                        </select>
+                        <div class="d-flex align-items-center gap-1">
+                            <div style="flex:1;min-width:0;">
+                                <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="window.onPartyChange()">
+                                    <option value="">-- Select Party --</option>
+                                </select>
+                            </div>
+                            <button type="button" class="gpa-party-add-btn" id="btnGpaAddVendor" onclick="window.OpenVendorModal()" title="Add New Vendor">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                        </div>
                     </div>
                     <div id="wrapGpaEmployeeName" style="display:none;">
                         <label class="po-field-lbl d-block mb-1">Employee <span class="req">*</span></label>
@@ -1140,6 +1158,28 @@
                         style="border-radius:8px;padding:6px 18px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;">
                     <i class="fa fa-trash me-1"></i> Yes, Delete
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── ADD VENDOR MODAL (iframe — same as Purchase Order) ── -->
+<div class="modal fade" id="modalGpaAddVendor" tabindex="-1" aria-labelledby="modalGpaAddVendorLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:96vw;width:96vw;">
+        <div class="modal-content" style="height:90vh;border-radius:16px;overflow:hidden;border:none;display:flex;flex-direction:column;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:12px 18px;flex-shrink:0;">
+                <h5 class="modal-title mb-0" id="modalGpaAddVendorLabel" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-user-tie me-2"></i>Add New Vendor
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="flex:1;overflow:hidden;">
+                <iframe id="iframeGpaVendorMaster"
+                        src=""
+                        style="width:100%;height:100%;border:none;display:block;"
+                        title="Vendor Master">
+                </iframe>
             </div>
         </div>
     </div>
