@@ -43,6 +43,17 @@
         font-size: 0.825rem; font-weight: 600; height: 34px;
         padding: 0 1.25rem; border-radius: 0.375rem;
     }
+
+        #pr-filter-bar .btn-pr-yeild {
+            background: #2bb9c0;
+            border-color: #2bb9c0;
+            color: #fff;
+            font-size: 0.825rem;
+            font-weight: 600;
+            height: 34px;
+            padding: 0 1.25rem;
+            border-radius: 0.375rem;
+        }
     #pr-filter-bar .btn-pr-show:hover { background: #157347; }
 
     #pr-filter-bar .btn-pr-dl {
@@ -102,10 +113,7 @@
         font-variant-numeric: tabular-nums;
     }
 
-    /* yield colour coding */
-    #tblProductionReport td.yield-green  { background: #bbf7d0 !important; color: #14532d; font-weight: 600; }
-    #tblProductionReport td.yield-amber  { background: #fef08a !important; color: #713f12; font-weight: 600; }
-    #tblProductionReport td.yield-red    { background: #fecaca !important; color: #7f1d1d; font-weight: 600; }
+    /* yield colours: injected at runtime from StockAgeingYieldConfiguration/GetYieldConfigurationList */
 
     /* placeholder */
     #pr-placeholder {
@@ -140,7 +148,6 @@
         border-bottom: 2px solid #dde4f5;
     }
 
-    /* ── Summary section (avg yield + red yield tables) ── */
     #pr-summary-section {
         border-top: 2px solid #dde4f5;
         padding: 0.75rem 1rem 1rem;
@@ -165,14 +172,14 @@
     }
 
     .sum-table-wrap {
-        border: 2px solid #c0392b;
+        border: 2px solid #eddfde;
         border-radius: 4px;
         overflow: hidden;
         min-width: 220px;
     }
 
     .sum-table-title {
-        background: #c0392b;
+        background: #2bb9c0;
         color: #fff;
         font-weight: 700;
         font-size: 0.7rem;
@@ -215,9 +222,6 @@
         min-width: 56px;
     }
 
-    .tbl-sum td.yield-green { background: #bbf7d0 !important; color: #14532d; font-weight: 600; }
-    .tbl-sum td.yield-amber { background: #fef08a !important; color: #713f12; font-weight: 600; }
-    .tbl-sum td.yield-red   { background: #fecaca !important; color: #7f1d1d; font-weight: 600; }
 </style>
 
 
@@ -236,8 +240,9 @@
             <div style="flex:0 0 auto; margin-left:auto;">
                 <div class="pr-field-label" style="visibility:hidden">.</div>
                 <div class="d-flex gap-2">
-                    <button type="button" id="btnPrShow" class="btn btn-pr-show">&#9654; Show</button>
-                    <button type="button" id="btnPrDownload" class="btn btn-pr-dl d-none">&#8595; Download</button>
+                <button type="button" id="btnYeild" class="btn btn-pr-yeild" onclick="OpenYieldModal()">Yeild</button>
+                    <button type="button" id="btnPrShow" class="btn btn-pr-show"> Show</button>
+                    <button type="button" id="btnPrDownload" class="btn btn-pr-dl d-none"> Download</button>
                 </div>
             </div>
         </div>
@@ -260,4 +265,18 @@
             <div id="red-yield-container" class="sum-row"></div>
         </div>
     </div>
+
+<div class="modal fade" id="modalAddVendor" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="height:90vh;">
+            <div class="modal-header" style="background:#1f6fb2;color:#fff;padding:8px 12px;">
+                <h5 class="modal-title" style="font-size:13px;font-weight:600;">Yield configuration</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="flex:1;overflow:hidden;">
+                <iframe id="iframeVendorMaster" src="" style="width:100%;height:100%;border:none;" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+</div>
 
