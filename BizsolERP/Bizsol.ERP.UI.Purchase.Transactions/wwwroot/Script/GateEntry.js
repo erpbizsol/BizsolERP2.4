@@ -1422,6 +1422,12 @@ function geMergeGateEntryPrintData(detailsRow, gridRow) {
     if (!gePickField(merged, ['DocNo', 'Doc No'], '')) {
         merged.DocNo = gridRow['Doc No'] || gridRow.DocNo;
     }
+    if (!gePickField(merged, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], '')) {
+        merged.PurchaseOrderMaster_Code = gridRow.PurchaseOrderMaster_Code || gridRow.purchaseOrderMaster_Code;
+    }
+    if (!gePickField(merged, ['PONo', 'PO No'], '')) {
+        merged.PONo = gridRow['PO No'] || gridRow.PONo || gridRow.PONumber;
+    }
     return merged;
 }
 
@@ -1440,6 +1446,46 @@ function geGetGateEntryOutNo(data) {
     ], '');
 }
 
+function geResolveGateEntryPONo(data, poItems, pendingPoList) {
+    let poNo = gePickField(data, ['PONo', 'PO No', 'PONumber', 'PurchaseOrderNo', 'poNo'], '');
+    if (poNo) {
+        return poNo;
+    }
+
+    if (Array.isArray(poItems) && poItems.length > 0) {
+        poNo = gePickField(poItems[0], ['PONo', 'PO No', 'PONumber', 'Purchase Order No'], '');
+        if (poNo) {
+            return poNo;
+        }
+    }
+
+    const poCode = parseInt(gePickField(data, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], 0), 10);
+    if (poCode > 0) {
+        const poList = Array.isArray(pendingPoList) && pendingPoList.length > 0
+            ? pendingPoList
+            : (Array.isArray(G_PendingPONOList) ? G_PendingPONOList : []);
+        const found = poList.find(function (item) {
+            return parseInt(item.PurchaseOrderMaster_Code, 10) === poCode;
+        });
+        if (found && found.PONo) {
+            return found.PONo;
+        }
+    }
+
+    return '';
+}
+
+function geIsGateEntryWithPO(data, poItems) {
+    const poCode = parseInt(gePickField(data, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], 0), 10);
+    if (poCode > 0) {
+        return true;
+    }
+    if (geResolveGateEntryPONo(data, poItems)) {
+        return true;
+    }
+    return Array.isArray(poItems) && poItems.length > 0;
+}
+
 function geBuildGateEntryItemRows(data, poItems) {
     const transactionType = String(gePickField(data, ['TransactionType', 'transactionType'], 'LIN')).toUpperCase();
     const rows = [];
@@ -1449,7 +1495,10 @@ function geBuildGateEntryItemRows(data, poItems) {
             rows.push({
                 itemName: gePickField(item, ['Item Name', 'ItemName', 'Product', 'GoodDescription', 'Good Desp'], ''),
                 specification: gePickField(item, ['Specification', 'ItemSpecificationDesp', 'Size Description'], ''),
-                billQty: gePickField(item, ['BILLED QTY', 'BiLLED QTY', 'Bill Qty', 'Bill QTY', 'Qty', 'Billed Qty'], ''),
+                billQty: gePickField(item, [
+                    'BILLED QTY', 'BiLLED QTY', 'Bill Qty', 'Bill QTY', 'BILL QTY',
+                    'Qty', 'Billed Qty', 'Recv Qty', 'RECV QTY', 'Received Qty'
+                ], ''),
                 uom: gePickField(item, ['UOM', 'Uom', 'Unit'], '')
             });
         });
@@ -1477,7 +1526,7 @@ function geBuildGateEntryItemRows(data, poItems) {
     return rows;
 }
 
-function geBuildGateEntryPrintHtml(data, poItems, photos) {
+function geBuildGateEntryPrintHtml(data, poItems, photos, pendingPoList) {
     const company = geGetGateEntryCompanyInfo(data);
     const transactionType = String(gePickField(data, ['TransactionType', 'transactionType'], '')).toUpperCase();
     const typeInDesp = String(gePickField(data, ['Type In', 'TypeIn'], '')).replace(/\s/g, '').toLowerCase();
@@ -1486,7 +1535,8 @@ function geBuildGateEntryPrintHtml(data, poItems, photos) {
     const inPhotoLabel = isLoadedIn ? 'Loaded In photos' : 'Empty In photos';
     const outPhotoLabel = isLoadedIn ? 'Empty Out Photos' : 'Loaded Out Photos';
 
-    const withPO = parseInt(gePickField(data, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], 0), 10) > 0;
+    const withPO = geIsGateEntryWithPO(data, poItems);
+    const poNo = geResolveGateEntryPONo(data, poItems, pendingPoList);
     const withoutExistingItem =
         gePickField(data, ['EntryWithOutExistingItem', 'entryWithOutExistingItem'], '') === 'Y' ||
         gePickField(data, ['EntryWithOutExistingItem', 'entryWithOutExistingItem'], '') === true ||
@@ -1516,6 +1566,11 @@ function geBuildGateEntryPrintHtml(data, poItems, photos) {
         : `<tr>
                     <td colspan="4" style="border:1px solid #000;padding:6px 10px;"><strong>Vehicle No.</strong><br>${geEscapeHtml(gePickField(data, ['VehicleNo', 'Vehicle No'], ''))}</td>
                 </tr>`;
+    const poNoRowHtml = isLoadedIn && withPO
+        ? `<tr>
+                    <td colspan="4" style="border:1px solid #000;padding:6px 10px;"><strong>PO No.</strong><br>${geEscapeHtml(poNo)}</td>
+                </tr>`
+        : '';
     const itemTableHtml = `<tr>
                     <td colspan="4" style="border:1px solid #000;padding:0;">
                         <table class="ge-item-table" style="width:100%;border-collapse:collapse;">
@@ -1596,6 +1651,7 @@ function geBuildGateEntryPrintHtml(data, poItems, photos) {
                     <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Document No.</strong><br>${geEscapeHtml(gePickField(data, ['DocNo', 'Doc No'], ''))}</td>
                 </tr>
                 ${vehicleRowHtml}
+                ${poNoRowHtml}
                 ${itemTableHtml}
                 <tr>
                     <td colspan="2" style="border:1px solid #000;padding:8px;text-align:center;vertical-align:top;">
@@ -1701,15 +1757,23 @@ function GateEnty_PrintGateEntry(Code) {
         const isLoadedInEntry =
             String(gePickField(data, ['TransactionType', 'transactionType'], '')).toUpperCase() === 'LIN' ||
             String(gePickField(data, ['Type In', 'TypeIn'], '')).replace(/\s/g, '').toLowerCase() === 'loadedin';
-        const poPromise = isLoadedInEntry && parseInt(gePickField(data, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], 0), 10) > 0
+        const poDetailPromise = isLoadedInEntry
             ? GateEntryService.getPODetailByGateEntryCode(Code).catch(function () { return []; })
             : Promise.resolve([]);
+        const pendingPoPromise = isLoadedInEntry
+            ? GateEntryService.GetPendingPONO().catch(function () { return G_PendingPONOList || []; })
+            : Promise.resolve(G_PendingPONOList || []);
 
-        return Promise.all([poPromise, geFetchGateEntryPhotoSources(Code, data)]).then(function (results) {
-            const poItems = Array.isArray(results[0]) ? results[0] : [];
+        return Promise.all([poDetailPromise, geFetchGateEntryPhotoSources(Code, data), pendingPoPromise]).then(function (results) {
+            const poItemsRaw = results[0];
+            const poItems = Array.isArray(poItemsRaw) ? poItemsRaw : (poItemsRaw && Array.isArray(poItemsRaw.data) ? poItemsRaw.data : []);
+            if (poItems.length > 0 && !gePickField(data, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], '')) {
+                data.PurchaseOrderMaster_Code = gePickField(poItems[0], ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], '');
+            }
             const photos = results[1] || { inSrc: '', outSrc: '' };
+            const pendingPoList = Array.isArray(results[2]) ? results[2] : [];
             const entryNo = gePickField(data, ['GateEntryNo', 'Entry No IN', 'Entry No'], Code);
-            const html = geBuildGateEntryPrintHtml(data, poItems, photos);
+            const html = geBuildGateEntryPrintHtml(data, poItems, photos, pendingPoList);
             geOpenGateEntryPrintWindow(html, `Gate Entry - ${entryNo}`);
         });
     }).catch(function (error) {
