@@ -8,6 +8,8 @@ let YC_ROWS = [];
 let YC_NEXT_CLIENT_KEY = 1;
 
 const DEFAULT_HEX = '#5c95ce';
+/** First band (lowest Range from %, typically 0) is always red and not editable. */
+const YC_FIRST_ROW_COLOUR = '#FF0000';
 
 /** Next "Range from" after a band ends at `prevTo` (e.g. 73 → 73.01). */
 const YC_RANGE_NEXT_STEP = 0.01;
@@ -110,6 +112,27 @@ function ycSortRows() {
     });
 }
 
+function ycGetFirstBandRow() {
+    let first = null;
+    for (let i = 0; i < YC_ROWS.length; i++) {
+        const r = YC_ROWS[i];
+        if (!Number.isFinite(r.FromRange)) continue;
+        if (!first || r.FromRange < first.FromRange) first = r;
+    }
+    return first;
+}
+
+function ycIsFirstBandRow(row) {
+    if (!row || !Number.isFinite(row.FromRange)) return false;
+    const first = ycGetFirstBandRow();
+    return first != null && first.clientKey === row.clientKey;
+}
+
+function ycApplyFirstRowFixedColour() {
+    const first = ycGetFirstBandRow();
+    if (first) first.Colour = YC_FIRST_ROW_COLOUR;
+}
+
 function ycNormalizeListResponse(raw) {
     let inner = raw;
     if (raw && typeof raw === 'object') {
@@ -163,6 +186,7 @@ function ycSanitizeRangeToInput(raw) {
 
 function ycRenderRowInner(row, edit) {
     const open = ycUpperIsOpen(row.FromTo);
+    const isFirstBand = ycIsFirstBandRow(row);
     const fromVal =
         edit && Number.isFinite(row.FromRange)
             ? row.FromRange
@@ -177,8 +201,16 @@ function ycRenderRowInner(row, edit) {
         toShow = !open && Number.isFinite(row.FromTo) ? row.FromTo : '';
     }
 
-    const displayColour = /^#([0-9a-f]{6}|[0-9a-f]{8})$/i.test(row.Colour || '') ? row.Colour : row.Colour;
-    const pickerHex = /^#([0-9a-f]{6}|[0-9a-f]{8})$/i.test(row.Colour || '') ? row.Colour.slice(0, 7) : DEFAULT_HEX;
+    const displayColour = isFirstBand
+        ? YC_FIRST_ROW_COLOUR
+        : /^#([0-9a-f]{6}|[0-9a-f]{8})$/i.test(row.Colour || '')
+          ? row.Colour
+          : row.Colour;
+    const pickerHex = isFirstBand
+        ? YC_FIRST_ROW_COLOUR
+        : /^#([0-9a-f]{6}|[0-9a-f]{8})$/i.test(row.Colour || '')
+          ? row.Colour.slice(0, 7)
+          : DEFAULT_HEX;
 
     let cells = '';
 
@@ -193,10 +225,18 @@ function ycRenderRowInner(row, edit) {
                    inputmode="decimal" autocomplete="off" placeholder="Required"
                    value="${toShow === '' ? '' : ycEscapeAttr(toShow)}" />
         </td>`;
-        cells += `<td style="vertical-align:middle;" class="yc-colour-wrap">
-            <input type="color" class="yc-picker" value="${ycEscapeAttr(pickerHex)}" />
-            <input type="hidden" class="yc-hex-input" value="${ycEscapeAttr(displayColour)}" />
-        </td>`;
+        if (isFirstBand) {
+            cells += `<td style="vertical-align:middle;" class="yc-colour-wrap">
+                <span style="display:inline-block;width:22px;height:22px;border-radius:4px;border:1px solid #ccc;background:${YC_FIRST_ROW_COLOUR};vertical-align:middle;"></span>
+                <input type="hidden" class="yc-hex-input" value="${YC_FIRST_ROW_COLOUR}" />
+                <span class="small text-muted ms-1">Fixed red</span>
+            </td>`;
+        } else {
+            cells += `<td style="vertical-align:middle;" class="yc-colour-wrap">
+                <input type="color" class="yc-picker" value="${ycEscapeAttr(pickerHex)}" />
+                <input type="hidden" class="yc-hex-input" value="${ycEscapeAttr(displayColour)}" />
+            </td>`;
+        }
         cells += `<td class="yc-actions text-center" style="vertical-align:middle;white-space:nowrap;">
             <button type="button" class="btn btn-primary yc-save" data-client="${ycEscapeAttr(row.clientKey)}">Save</button>
             <button type="button" class="btn btn-secondary ms-1 yc-cancel" data-client="${ycEscapeAttr(row.clientKey)}">Cancel</button>
@@ -204,7 +244,11 @@ function ycRenderRowInner(row, edit) {
     } else {
         cells += `<td style="text-align:center;">${Number.isFinite(row.FromRange) ? row.FromRange : '—'}</td>`;
         cells += `<td style="text-align:center;">${ycFormatToDisplay(row)}</td>`;
-        const bg = /^#([0-9a-f]{6}|[0-9a-f]{8})$/i.test(row.Colour || '') ? row.Colour : '#eeeeee';
+        const bg = isFirstBand
+            ? YC_FIRST_ROW_COLOUR
+            : /^#([0-9a-f]{6}|[0-9a-f]{8})$/i.test(row.Colour || '')
+              ? row.Colour
+              : '#eeeeee';
         cells += `<td class="yc-colour-wrap">
             <span style="display:inline-block;width:22px;height:22px;border-radius:4px;border:1px solid #ccc;background:${ycEscapeAttr(
                 bg
@@ -242,6 +286,7 @@ function ycFindValTrForClient(clientKey) {
 }
 
 function ycRender() {
+    ycApplyFirstRowFixedColour();
     const tb = $('#tblYieldConfigurationBody');
     tb.empty();
 
@@ -370,13 +415,18 @@ function ycReadEditorRow(clientKey) {
     }
 
     let colour = '';
-    const normalizedHexAttempt = ycNormalizeHex(colourTxt);
-    if (colourTxt === '') {
-        colour = ycNormalizeHex(tr.find('.yc-picker').val()) || DEFAULT_HEX;
-    } else if (normalizedHexAttempt) {
-        colour = normalizedHexAttempt;
+    const row = ycFindRow(clientKey);
+    if (row && ycIsFirstBandRow(row)) {
+        colour = YC_FIRST_ROW_COLOUR;
     } else {
-        colour = colourTxt;
+        const normalizedHexAttempt = ycNormalizeHex(colourTxt);
+        if (colourTxt === '') {
+            colour = ycNormalizeHex(tr.find('.yc-picker').val()) || DEFAULT_HEX;
+        } else if (normalizedHexAttempt) {
+            colour = normalizedHexAttempt;
+        } else {
+            colour = colourTxt;
+        }
     }
 
     return {
@@ -539,6 +589,7 @@ function ycLoadGrid() {
                 return r;
             });
             ycSortRows();
+            ycApplyFirstRowFixedColour();
             ycRender();
         })
         .catch(function () {
@@ -557,12 +608,15 @@ function ycAddRowLocal() {
         toastr.warning('The last range has no upper limit. Close that band with a "Range to" value, or delete it, before adding another row.');
         return;
     }
+    const isFirstBand = YC_ROWS.filter(function (r) {
+        return Number.isFinite(r.FromRange);
+    }).length === 0;
     YC_ROWS.push({
         clientKey: 'new_' + String(YC_NEXT_CLIENT_KEY++),
         Code: null,
-        FromRange: sug.from != null ? sug.from : null,
+        FromRange: isFirstBand ? 0 : sug.from != null ? sug.from : null,
         FromTo: OPEN_TO_SENTINEL,
-        Colour: DEFAULT_HEX,
+        Colour: isFirstBand ? YC_FIRST_ROW_COLOUR : DEFAULT_HEX,
         _mode: 'edit',
         _snapshot: null,
     });
