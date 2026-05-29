@@ -309,7 +309,7 @@ function formatAmount(v) {
     if (v === null || v === undefined || v === '') return '';
     const n = Number(v);
     if (Number.isNaN(n)) return v;
-    return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function parseAmountForSum(v) {
@@ -394,7 +394,7 @@ function updateLedgerPaginatorUi() {
     G_LedgerCurrentPage = page;
     const start = total === 0 ? 0 : (page - 1) * sz + 1;
     const end = Math.min(page * sz, total);
-    $('#elrPageInfo').text(`${start} – ${end} of ${total}`);
+    $('#elrPageInfo').text(total === 0 ? '0 of 0' : `${start} to ${end} of ${total}`);
     const atFirst = page <= 1;
     const atLast = page >= totalPg;
     $('#elrBtnFirst').prop('disabled', atFirst);
@@ -542,7 +542,11 @@ function populateExportTable(data) {
     headers.forEach((h) => $h.append($('<th/>').text(h)));
     data.forEach(function (item) {
         const tr = $('<tr/>');
-        headers.forEach((h) => tr.append($('<td/>').text(item[h] != null ? item[h] : '')));
+        headers.forEach(function (h) {
+            let cellVal = item[h] != null ? item[h] : '';
+            if (h === 'Payment' || h === 'Expenses' || h === 'Balance') cellVal = formatAmount(cellVal);
+            tr.append($('<td/>').text(cellVal));
+        });
         $b.append(tr);
     });
 }

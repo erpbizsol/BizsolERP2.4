@@ -15,6 +15,30 @@ function FmtDateInput(d) {
         String(d.getDate()).padStart(2, '0');
 }
 
+function SetKpiText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
+function FormatUnReconciled(val) {
+    const n = Number(val);
+    if (!n) return '0';
+    if (Math.abs(n) >= 1e5) {
+        const l = n / 1e5;
+        return (Number.isInteger(l) ? l : parseFloat(l.toFixed(2))) + 'L';
+    }
+    return String(n);
+}
+
+function FirstRow(data) {
+    if (!data) return null;
+    if (Array.isArray(data)) return data[0] || null;
+    if (Array.isArray(data.Data)) return data.Data[0] || null;
+    if (Array.isArray(data.data)) return data.data[0] || null;
+    if (typeof data === 'object') return data;
+    return null;
+}
+
 function FmtLakh(val) {
     const n = parseFloat(val);
     if (isNaN(n) || n === 0) return '₹0';
@@ -39,11 +63,44 @@ function NowNote() {
         ', ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 }
 
+function AppBase() {
+    let base = sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/');
+    if (base && !base.endsWith('/')) base += '/';
+    return base;
+}
+
+function NavToPage(path) {
+    window.location.href = AppBase() + String(path || '').replace(/^\//, '');
+}
+
+function BindKpiNavigation() {
+    const routes = {
+        kpiCardPO:         'PurchaseTransactions/PurchaseOrder/POLevelsApprove?ModuleDesp=PO%20Approval',
+        kpiCardPayment:    'PurchaseTransactions/GRNService/GRNPaymentApproval',
+        kpiCardExpense:    'CRMTransactions/ExpenseEntry/ExpenseEntryLevelsApproval',
+        kpiCardReconciled: 'FinanceTransactions/BankStatement/BankStatementImport?ModuleDesp=Bank%20Statement%20Import',
+    };
+
+    Object.keys(routes).forEach(function (id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const path = routes[id];
+        el.addEventListener('click', function () { NavToPage(path); });
+        el.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                NavToPage(path);
+            }
+        });
+    });
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 $(document).ready(function () {
     InitDefaultDates();
     LoadProjectDropdown();
     BindProjectChange();
+    BindKpiNavigation();
 
     // Auto-load dashboard if company name contains 'solar'
     var isSolarCompany = (function () {
@@ -189,7 +246,7 @@ function ResetDashboard() {
 }
 
 function ClearAllWidgets() {
-    ['kpiPOCount','kpiPaymentAmt','kpiExpenseAmt','kpiTotalProjects',
+    ['kpiPOCount','kpiPaymentAmt','kpiExpenseAmt','kpiTotalProjects','kpiIsReconciled',
      'legPOApproved','legPOPending','legPORejected','legPOTotal',
      'projSummaryTotal','legProjActive','legProjPending','legProjCompleted','legProjOnHold',
      'bvaBudget','bvaSpent','bvaPct',
@@ -211,12 +268,13 @@ function ClearAllWidgets() {
 
 // ── Render KPI cards ─────────────────────────────────────────────────────────
 function RenderKPI(data) {
-    if (!data || !data.length) return;
-    const d = data[0];
-    document.getElementById('kpiPOCount').textContent      = d.PendingPOCount      ?? '0';
-    document.getElementById('kpiPaymentAmt').textContent   = FmtLakh(d.PendingPaymentAmount  ?? 0);
-    document.getElementById('kpiExpenseAmt').textContent   = FmtLakh(d.PendingExpenseAmount  ?? 0);
-    document.getElementById('kpiTotalProjects').textContent = d.TotalProjects       ?? '0';
+    const d = FirstRow(data);
+    if (!d) return;
+    SetKpiText('kpiPOCount',       d.PendingPOCount      ?? '0');
+    SetKpiText('kpiPaymentAmt',    FmtLakh(d.PendingPaymentAmount  ?? 0));
+    SetKpiText('kpiExpenseAmt',    FmtLakh(d.PendingExpenseAmount  ?? 0));
+    SetKpiText('kpiTotalProjects', d.TotalProjects       ?? '0');
+    SetKpiText('kpiIsReconciled',  FormatUnReconciled(d.IsReconciled ?? d.isReconciled ?? 0));
 }
 
 // ── Render PO Status donut ────────────────────────────────────────────────────
