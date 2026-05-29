@@ -25,9 +25,11 @@ function getSessionUserAndGroup() {
 const MRNMasterApprovalService = {
 
     GetPendingMRNMasterList: function GetPendingMRNMasterList(status, fromDate, toDate) {
+        const { groupCode } = getSessionUserAndGroup();
         const url = UrlService.API_ENDPOINT_MRNMasterLevelsApproval +
             `/GetPendingMRNMasterList?Status=${encodeURIComponent(status || '')}` +
-            `&FromDate=${encodeURIComponent(fromDate || '')}&ToDate=${encodeURIComponent(toDate || '')}`;
+            `&FromDate=${encodeURIComponent(fromDate || '')}&ToDate=${encodeURIComponent(toDate || '')}` +
+            `&GroupMaster_Code=${encodeURIComponent(groupCode)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
@@ -54,6 +56,11 @@ const MRNMasterApprovalService = {
             `&UserMaster_Code=${encodeURIComponent(userCode)}&GroupMaster_Code=${encodeURIComponent(groupCode)}` +
             `&Remarks=${encodeURIComponent(remarks || '')}`;
         return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
+    },
+
+    GetFirstPendingBillDate: function GetFirstPendingBillDate() {
+        const url = UrlService.API_ENDPOINT_MRNMasterLevelsApproval + '/GetFirstPendingBillDate';
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 };
 

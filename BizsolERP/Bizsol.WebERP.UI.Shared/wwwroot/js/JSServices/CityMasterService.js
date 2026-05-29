@@ -28,6 +28,14 @@ const CityMasterService = {
             return value;
         });
     },
+    GetCityMasterByName: function GetCityMasterByName(CityName, Mode) {
+        const URL =
+            UrlService.API_ENDPOINT_CITY +
+            `/GetCityMasterByName?CityName=${encodeURIComponent(CityName || '')}&Mode=${encodeURIComponent(Mode || 'CityMasterByName')}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
     /** Same route style as UOM: GET {base}/City/{code} — avoids /City/GetCityMasterByCode being parsed as {Code}=GetCityMasterByCode. */
     GetCityMasterByCode: function GetCityMasterByCode(code) {
         const URL = UrlService.API_ENDPOINT_CITY + '/' + encodeURIComponent(code);

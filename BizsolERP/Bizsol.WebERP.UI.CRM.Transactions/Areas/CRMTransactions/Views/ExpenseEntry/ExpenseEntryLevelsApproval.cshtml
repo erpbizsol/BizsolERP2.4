@@ -3,7 +3,30 @@
 }
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <link href="~/_content/Bizsol.WebERP.UI.CRM.Transactions/css/ExpenseEntry.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script>
+    /* Attachment control: avoid CreateDataTable crash when there are no files (this page only). */
+    (function () {
+        if (typeof BizsolCustomFilterGrid === 'undefined' || BizsolCustomFilterGrid._eeaAttachmentEmptyPatch) return;
+        var orig = BizsolCustomFilterGrid.CreateDataTable;
+        BizsolCustomFilterGrid.CreateDataTable = function (headerId, bodyId, data) {
+            if (!data || !Array.isArray(data) || data.length === 0 || data[0] == null) {
+                var hdr = document.getElementById(headerId);
+                var body = document.getElementById(bodyId);
+                if (hdr) hdr.innerHTML = '';
+                if (body) {
+                    body.innerHTML = '<tr><td colspan="4" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+                        '<i class="fa fa-inbox me-1"></i>No attachments found.</td></tr>';
+                }
+                return;
+            }
+            return orig.apply(this, arguments);
+        };
+        BizsolCustomFilterGrid._eeaAttachmentEmptyPatch = true;
+    })();
+</script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ExpenseEntryLevelsApproval.js"></script>
 
 <style>
@@ -225,9 +248,60 @@
     .gpa-pay-card-footer {
         padding: 8px 16px 12px;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
         gap: 8px;
         flex-wrap: wrap;
+    }
+    .eea-card-attach-btns {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .btn-eea-attach-icon {
+        width: 36px;
+        height: 32px;
+        border: none;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+        color: #fff;
+    }
+    .btn-eea-attach-icon:hover {
+        transform: translateY(-1px);
+        color: #fff;
+    }
+    .btn-eea-modal-attach {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        padding: 9px 16px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        box-shadow: 0 3px 10px rgba(14, 165, 233, 0.35);
+        transition: all 0.2s;
+        cursor: pointer;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    }
+    .btn-eea-modal-attach:hover {
+        transform: translateY(-1px);
+        color: #fff;
+        box-shadow: 0 5px 14px rgba(2, 132, 199, 0.45);
+    }
+    .btn-eea-modal-attach.eea-attach-has-files {
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        box-shadow: 0 3px 10px rgba(22, 163, 74, 0.35);
+    }
+    .btn-eea-modal-attach.eea-attach-has-files:hover {
+        box-shadow: 0 5px 14px rgba(22, 163, 74, 0.45);
     }
     .btn-gpa-card-approve {
         display: inline-flex; align-items: center; gap: 5px;
@@ -428,6 +502,7 @@
         }
         .gpa-info-grid { grid-template-columns: repeat(2, 1fr); }
         .gpa-pay-card-footer { justify-content: stretch; }
+        .gpa-pay-card-footer .eea-card-attach-btns { width: 100%; justify-content: flex-start; }
         .gpa-pay-card-footer .btn-gpa-card-approve,
         .gpa-pay-card-footer .btn-gpa-card-view { width: 100%; justify-content: center; }
         .btn-gpa-approve, .btn-gpa-reject, .btn-gpa-close { padding: 9px 14px; font-size: 0.8rem; }
@@ -439,6 +514,130 @@
         #modalEeaConfirm  .modal-dialog { margin: auto 12px; }
         .gpa-items-table thead tr th { font-size: 0.65rem; padding: 6px 4px; }
         .gpa-items-table tbody tr td { font-size: 0.72rem; padding: 6px 4px; }
+    }
+
+    .btn-eea-line-history {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 28px;
+        padding: 0;
+        border-radius: 8px;
+        border: 1.5px solid #67e8f9;
+        background: #ecfeff;
+        color: #0891b2;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn-eea-line-history:hover:not(:disabled) {
+        background: #0891b2;
+        color: #fff;
+        border-color: #0891b2;
+    }
+    .btn-eea-line-history:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    /* History modal — teal theme (distinct from purple detail modal) */
+    #modalEeaLineHistory .modal-content {
+        border: none;
+        box-shadow: 0 14px 42px rgba(8, 145, 178, 0.28);
+    }
+    #modalEeaLineHistory .eea-history-modal-header {
+        background: linear-gradient(135deg, #0891b2 0%, #0e7499 50%, #155e75 100%);
+        color: #fff;
+        padding: 14px 20px;
+        border: none;
+    }
+    #modalEeaLineHistory .eea-history-modal-header .modal-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    #modalEeaLineHistory .eea-history-modal-header .btn-close {
+        filter: brightness(0) invert(1);
+        opacity: 0.9;
+    }
+    #modalEeaLineHistory .eea-history-modal-body {
+        padding: 16px 18px;
+        max-height: 65vh;
+        overflow-y: auto;
+        background: linear-gradient(180deg, #f0fdfa 0%, #ecfeff 100%);
+    }
+    #modalEeaLineHistory .eea-history-modal-sub {
+        font-size: 0.78rem;
+        color: #0e7499;
+        background: rgba(8, 145, 178, 0.08);
+        border: 1px solid rgba(8, 145, 178, 0.2);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+    #modalEeaLineHistory .eea-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(8, 145, 178, 0.1);
+    }
+    #modalEeaLineHistory .eea-history-table thead tr th {
+        background: linear-gradient(135deg, #0891b2, #0e7499);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        padding: 9px 10px;
+        border: none;
+    }
+    #modalEeaLineHistory .eea-history-table thead tr th:first-child {
+        border-radius: 10px 0 0 0;
+    }
+    #modalEeaLineHistory .eea-history-table thead tr th:last-child {
+        border-radius: 0 10px 0 0;
+    }
+    #modalEeaLineHistory .eea-history-table tbody tr {
+        transition: background 0.15s;
+    }
+    #modalEeaLineHistory .eea-history-table tbody tr:hover {
+        background: #ecfeff;
+    }
+    #modalEeaLineHistory .eea-history-table tbody tr td {
+        padding: 8px 10px;
+        vertical-align: middle;
+        border: 1px solid #cffafe;
+        font-size: 0.8rem;
+        color: #334155;
+    }
+    #modalEeaLineHistory .eea-history-modal-footer {
+        padding: 10px 16px;
+        background: #f0fdfa;
+        border-top: 1px solid #a5f3fc;
+        gap: 8px;
+    }
+    #modalEeaLineHistory .btn-eea-history-close {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: linear-gradient(135deg, #0891b2, #0e7499);
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        padding: 9px 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        box-shadow: 0 3px 12px rgba(8, 145, 178, 0.35);
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    #modalEeaLineHistory .btn-eea-history-close:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 16px rgba(8, 145, 178, 0.45);
+        color: #fff;
     }
 </style>
 
@@ -482,7 +681,7 @@
             <label class="form-label">Status</label>
             <select id="eeaDdlStatus" class="form-control form-control-sm form-select">
                 <option value="A">-- All Status --</option>
-                <option value="P">Pending</option>
+                <option value="P" selected="selected">Pending</option>
                 <option value="Y">Approved</option>
                 <option value="R">Rejected</option>
             </select>
@@ -551,16 +750,18 @@
                                 <tr>
                                     <th style="width:40px;">#</th>
                                     <th>Expense head</th>
-                                    <th style="width:110px;">Expended</th>
-                                    <th style="width:110px;">Approved</th>
                                     <th style="width:120px;">Project</th>
                                     <th style="width:120px;">Sub project</th>
+                                    <th style="width:110px;">Allow Amount</th>
+                                    <th style="width:110px;">Expended</th>
+                                    <th style="width:110px;">Approved</th>
                                     <th>Remarks</th>
+                                    <th>History</th>
                                 </tr>
                             </thead>
                             <tbody id="eeaModalItemsBody">
                                 <tr>
-                                    <td colspan="7" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                    <td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
                                         <i class="fa fa-spinner fa-spin me-1"></i>Loading…
                                     </td>
                                 </tr>
@@ -580,9 +781,15 @@
             </div>
 
             <div class="modal-footer"
-                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;">
+                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
                 <input type="hidden" id="hfEeaEntryCode" value="0" />
                 <input type="hidden" id="hfEeaLevelCode" value="0" />
+                <input type="hidden" id="hfEeaAttachEntryNo" value="" />
+                <input type="hidden" id="hfEeaAttachEntryDate" value="" />
+                <button type="button" id="btnEeaModalAttachment" class="btn-eea-modal-attach"
+                        onclick="OpenEeaApprovalAttachmentFromModal()" title="Expense entry attachments">
+                    <i class="fa fa-paperclip"></i>Attachment
+                </button>
                 <button type="button" id="eeaBtnRejectAction" class="btn-gpa-reject"
                         onclick="SubmitApproval('Reject')" style="display:none;">
                     <i class="fa fa-times"></i>Reject
@@ -592,6 +799,48 @@
                     <i class="fa fa-check"></i>Approve
                 </button>
                 <button type="button" class="btn-gpa-close ms-auto" onclick="CloseDetailModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="ExpenseEntryLevelsApproval_AttachmentControlmodal"></div>
+
+<div class="modal fade" id="modalEeaLineHistory" tabindex="-1" role="dialog" aria-hidden="true" style="z-index:1070;">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header eea-history-modal-header">
+                <h5 class="modal-title mb-0">
+                    <i class="fa fa-history me-2"></i><span id="eeaHistoryModalTitle">Approval history</span>
+                </h5>
+                <button type="button" class="btn-close" onclick="CloseEeaLineHistoryModal()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body eea-history-modal-body">
+                <p id="eeaHistoryModalSub" class="eea-history-modal-sub mb-0"></p>
+                <div class="table-responsive">
+                    <table class="eea-history-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th>Level</th>
+                                <th style="width:120px;">Old approved</th>
+                                <th style="width:120px;">New approved</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eeaHistoryModalBody">
+                            <tr>
+                                <td colspan="4" class="text-center py-3" style="color:#0e7499;font-size:0.82rem;">
+                                    <i class="fa fa-spinner fa-spin me-1"></i>Loading…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer eea-history-modal-footer">
+                <button type="button" class="btn-eea-history-close" onclick="CloseEeaLineHistoryModal()">
                     <i class="fa fa-times-circle"></i>Close
                 </button>
             </div>

@@ -1,4 +1,4 @@
-﻿import { AttachmentControlService } from '../../JSServices/_AttachmentControlService.js'
+import { AttachmentControlService } from '../../JSServices/_AttachmentControlService.js'
 
 // ── Temp queue: persists in module memory for masterCode=0 (new/unsaved) entries ──
 let _acTempQueue = []; // [{ file: File, particulars: string }]
@@ -32,14 +32,95 @@ function _acNotifyQueueChange() {
     }
 }
 
+function _acClearAttachmentTable() {
+    const thead = document.getElementById('table-header-tbAttachmentControl');
+    const tbody = document.getElementById('table-body-tbAttachmentControl');
+    const pag = document.getElementById('paginator-tbAttachmentControl');
+    if (thead) thead.innerHTML = '';
+    if (tbody) tbody.innerHTML = '';
+    if (pag) pag.innerHTML = '';
+}
+
+/**
+ * Current control context from hidden fields (master/detail/entry).
+ * Host pages should listen for `bizsol:attachmentcontrol:changed` on **document** (or window, after bubble),
+ * or use jQuery: `$(document).on('bizsol:attachmentcontrol:changed', function (_e, d) { ... })`.
+ */
+function _acReadContextFromDom() {
+    return {
+        masterTableName: String($('#hfMasterTableName').val() ?? '').trim(),
+        masterTableCode: parseInt($('#hfMasterTableCode').val() ?? '0', 10) || 0,
+        detailTableName: String($('#hfDetailTableName').val() ?? '').trim(),
+        detailTableCode: parseInt($('#hfDetailTableCode').val() ?? '0', 10) || 0,
+        entryNo: String($('#hfEntryNo').val() ?? '').trim(),
+        entryDate: String($('#hfEntryDate').val() ?? '').trim(),
+        mode: String($('#hfMode').val() ?? '').trim(),
+    };
+}
+
+/**
+ * Notify host shell after server-backed attachment mutations so outer grids can reload (e.g. HasAttach / green clip).
+ * @param {'save'|'delete'|'flush'} reason
+ * @param {Record<string, *>} [extra] e.g. { attachmentCount, masterTableCode } from API or flush
+ */
+function _acNotifyHostDataMutated(reason, extra) {
+    const base = _acReadContextFromDom();
+    const detail = Object.assign(
+        {
+            reason,
+            attachmentCount: 0,
+            hasServerAttachments: false,
+        },
+        base,
+        extra || {},
+        { reason }
+    );
+    const mc = parseInt(String(detail.masterTableCode ?? 0), 10) || 0;
+    detail.tempMode = mc <= 0;
+    if (typeof detail.attachmentCount === 'number' && detail.attachmentCount > 0) {
+        detail.hasServerAttachments = true;
+    }
+    try {
+        const payload = Object.assign({}, detail);
+        // Must target document with bubbles: true — window.dispatch + default bubbles:false
+        // does not invoke document.addEventListener handlers.
+        const evt = new CustomEvent('bizsol:attachmentcontrol:changed', {
+            detail: payload,
+            bubbles: true,
+            cancelable: false,
+        });
+        document.dispatchEvent(evt);
+    } catch (e) {
+        console.warn('AttachmentControl: bizsol:attachmentcontrol:changed', e);
+    }
+    if (typeof window.AttachmentControl_onDataChanged === 'function') {
+        try {
+            window.AttachmentControl_onDataChanged(Object.assign({}, detail));
+        } catch (e) {
+            console.warn('AttachmentControl_onDataChanged', e);
+        }
+    }
+    if (typeof window.jQuery !== 'undefined') {
+        try {
+            window.jQuery(document).trigger('bizsol:attachmentcontrol:changed', [Object.assign({}, detail)]);
+        } catch (e) { /* ignore */ }
+    }
+}
+
+/** Show/hide the existing/queued attachments block (header + table + download footer). */
+function _acSetExistingAttachmentsBlockVisible(visible) {
+    const el = document.getElementById('acExistingAttachmentsBlock');
+    if (!el) return;
+    el.style.display = visible ? '' : 'none';
+}
+
 function _acRenderTempQueueGrid() {
     if (_acTempQueue.length === 0) {
-        document.getElementById('table-header-tbAttachmentControl').innerHTML = '';
-        document.getElementById('table-body-tbAttachmentControl').innerHTML =
-            '<tr><td colspan="3" style="text-align:center;padding:18px;color:#94a3b8;font-size:0.82rem;">' +
-            '<i class="bx bx-inbox me-1"></i>No files queued yet. Browse or drag files above.</td></tr>';
+        _acSetExistingAttachmentsBlockVisible(false);
+        _acClearAttachmentTable();
         return;
     }
+    _acSetExistingAttachmentsBlockVisible(true);
     const rows = _acTempQueue.map(function (item, i) {
         return {
             'Document Particulars': _acEscHtml(item.particulars || '—'),
@@ -63,15 +144,30 @@ function GatAllAttachment() {
         if (footerEl) footerEl.style.display = 'none';
         _acRenderTempQueueGrid();
         _acNotifyQueueChange();
-        return;
+        const n = _acTempQueue.length;
+        return Promise.resolve({
+            tempMode: true,
+            attachmentCount: n,
+            hasServerAttachments: false,
+        });
     }
+
+    _acSetExistingAttachmentsBlockVisible(false);
 
     var DetailTableName = $('#hfDetailTableName').val() == undefined || $('#hfDetailTableName').val() == "" ? "" : $('#hfDetailTableName').val();
     var DetailTableCode = $('#hfDetailTableCode').val() == undefined || $('#hfDetailTableCode').val() == "" ? 0 : $('#hfDetailTableCode').val();
-    AttachmentControlService.GetAttachmentUploadFiles($('#hfMasterTableName').val(), $('#hfMasterTableCode').val(), DetailTableName, DetailTableCode).then(function (response) {
+    return AttachmentControlService.GetAttachmentUploadFiles($('#hfMasterTableName').val(), $('#hfMasterTableCode').val(), DetailTableName, DetailTableCode).then(function (response) {
         console.log(response);
-        response = $('#hfMode').val().toLowerCase() == "view" ? response.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>' }))
-                    : response.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>', Action: '<a class="btn btn-danger icon-height" onclick="Delete_AttachmentControl(' + item.Code + ')"> <i class="fa fa-trash"></i></a>' }));
+        const raw = Array.isArray(response) ? response : [];
+        const mapped = $('#hfMode').val().toLowerCase() == "view"
+            ? raw.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>' }))
+            : raw.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>', Action: '<a class="btn btn-danger icon-height" onclick="Delete_AttachmentControl(' + item.Code + ')"> <i class="fa fa-trash"></i></a>' }));
+        if (mapped.length === 0) {
+            _acSetExistingAttachmentsBlockVisible(false);
+            _acClearAttachmentTable();
+            return { tempMode: false, attachmentCount: 0, hasServerAttachments: false };
+        }
+        _acSetExistingAttachmentsBlockVisible(true);
         const StringFilterColumn = ["DocumentName", "DocumentParticulars"];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
@@ -80,8 +176,12 @@ function GatAllAttachment() {
         const StringdoubleFilterColumn = [];
         const hiddenColumns = ["Code"];
         const ColumnAlignment = {};
-        BizsolCustomFilterGrid.CreateDataTable("table-header-tbAttachmentControl", "table-body-tbAttachmentControl", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-    })
+        BizsolCustomFilterGrid.CreateDataTable("table-header-tbAttachmentControl", "table-body-tbAttachmentControl", mapped, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        return { tempMode: false, attachmentCount: mapped.length, hasServerAttachments: true };
+    }).catch(function (err) {
+        console.warn('GatAllAttachment', err);
+        return { tempMode: false, attachmentCount: 0, hasServerAttachments: false, error: err };
+    });
 }
 function Download_AttachmentControl(Code,fileName,IsDownload) {
     //  alert('downloadlol' + Code);
@@ -155,7 +255,11 @@ function Delete_AttachmentControl(Code) {
             function (response) {
                 if (response.Status === 'Y') {
                     alert('Attachment deleted!');
-                    GatAllAttachment();
+                    GatAllAttachment().then(function (info) {
+                        _acNotifyHostDataMutated('delete', info);
+                    }).catch(function (err) {
+                        console.warn('GatAllAttachment after delete', err);
+                    });
                 } else {
                     alert(response.Msg);
                 }
@@ -386,7 +490,11 @@ function Save_AttachmentControl() {
                         filesProcessed++
                         if (filesProcessed == fileListArry.length) {
                             alert('Upload save..');
-                            GatAllAttachment();
+                            GatAllAttachment().then(function (info) {
+                                _acNotifyHostDataMutated('save', info);
+                            }).catch(function (err) {
+                                console.warn('GatAllAttachment after save', err);
+                            });
                             fileList.innerHTML = '';
                             fileListArry = [];
                         }
@@ -463,6 +571,18 @@ async function FlushPendingAttachments(masterCode, masterTableName, entryNo, ent
     }
     _acTempQueue = [];
     _acNotifyQueueChange();
+    if (uploaded > 0) {
+        _acNotifyHostDataMutated('flush', {
+            masterTableName: tableName,
+            masterTableCode: mc,
+            detailTableName: detail,
+            detailTableCode: detailCode,
+            attachmentCount: uploaded,
+            hasServerAttachments: true,
+            uploaded,
+            failed,
+        });
+    }
     return { uploaded, failed };
 }
 
@@ -473,6 +593,28 @@ function ClearPendingAttachments_AttachmentControl() {
 
 function GetPendingAttachmentCount_AttachmentControl() {
     return _acTempQueue.length;
+}
+
+/**
+ * Delete all attachments for a master row after the host successfully deletes that entry (e.g. grid delete).
+ * Uses API POST DocumentAttachment/DeleteAllAttachment.
+ * Fire-and-forget from hosts: .catch(() => {}) if you do not need the result.
+ *
+ * @param {string} masterTableName
+ * @param {number|string} masterTableCode
+ * @param {string} [detailTableName] default ''
+ * @param {number|string} [detailTableCode] default 0
+ * @returns {Promise<*>}
+ */
+function DeleteAllAttachmentsForMaster_AttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode) {
+    const mtn = String(masterTableName ?? '').trim();
+    const mtc = parseInt(String(masterTableCode ?? 0), 10) || 0;
+    const dtn = detailTableName != null && detailTableName !== undefined ? String(detailTableName) : '';
+    const dtc = parseInt(String(detailTableCode ?? 0), 10) || 0;
+    if (!mtn || mtc <= 0) {
+        return Promise.resolve(null);
+    }
+    return AttachmentControlService.DeleteAllAttachment(mtn, mtc, dtn, dtc);
 }
 
 window.Download_AttachmentControl = Download_AttachmentControl;
@@ -486,6 +628,7 @@ window.RemoveTempQueue_AttachmentControl = RemoveTempQueue_AttachmentControl;
 window.FlushPendingAttachments = FlushPendingAttachments;
 window.ClearPendingAttachments_AttachmentControl = ClearPendingAttachments_AttachmentControl;
 window.GetPendingAttachmentCount_AttachmentControl = GetPendingAttachmentCount_AttachmentControl;
+window.DeleteAllAttachmentsForMaster_AttachmentControl = DeleteAllAttachmentsForMaster_AttachmentControl;
 //window.loadatta = loadatta;
 //GatAllAttachment();
 //loadatta();

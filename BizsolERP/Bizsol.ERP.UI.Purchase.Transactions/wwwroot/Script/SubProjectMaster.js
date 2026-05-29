@@ -5,21 +5,52 @@ import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSService
 import { BOMService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BOMService.js';
 import { UserMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_UserMasterService.js';
 import { PurchaseOrderStoreService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseOrderStoreServices.js';
+import { API_ENDPOINT_GRNPaymentApprovalConfig } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNPaymentService.js';
+import { ExpenseEntryApprovalConfigurationService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryApprovalConfigurationService.js';
 
 let G_SubProjectList    = [];
 let G_ProjectList       = [];
 let G_UserList          = [];
-let G_POLevelList       = [];
+let G_ApprovalLevelLists = { PO: [], Payment: [], Expense: [] };
+let G_ApprovalLevelListsLoadPromise = null;
+/** Level details waiting to bind after approval level API lists finish loading. */
+let G_PendingApprovalLevelDetails = [];
 let G_SiteRepList       = [];
 let G_ActiveStatusFilter = 'all'; // 'all' | 'running' | 'pending'
 /** GRN Check codes to apply after modal is visible (Select2 multi in hidden modal often keeps only one if set earlier). */
 let G_SubProjectModalGRNPendingCodes = null;
 
+const APPROVAL_LEVEL_TAB_KEYS = ['PO', 'Payment', 'Expense'];
+
+const APPROVAL_LEVEL_TAB_CONFIG = {
+    PO: {
+        forValue      : 'PurchaseOrder',
+        apiMode       : 'GETPOAPPROVELLEVELS',
+        showUserRight : true,
+        userColLabel  : 'Users to Verify PO',
+        emptyLabel    : 'No PO approval levels configured.'
+    },
+    Payment: {
+        forValue      : 'GRNPayment',
+        apiMode       : 'GET_GRNPaymentAPPROVELLEVELS',
+        showUserRight : false,
+        userColLabel  : 'Users to Verify Payment',
+        emptyLabel    : 'No Payment approval levels configured.'
+    },
+    Expense: {
+        forValue      : 'ExpenseEntry',
+        apiMode       : 'GET_ExpenseEntryAPPROVELLEVELS',
+        showUserRight : false,
+        userColLabel  : 'Users to Verify Expense',
+        emptyLabel    : 'No Expense approval levels configured.'
+    }
+};
+
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
     loadUserDropdown();
-    loadPOLevelList();
+    loadAllApprovalLevelLists();
     loadSiteRepDropdown(null);
     // Chain: load master projects first, then sub-projects (avoids race where grid binds before G_ProjectList is ready)
     loadProjectDropdown().finally(function () {
@@ -32,6 +63,11 @@ $(document).ready(function () {
 
     $('#btnSaveSubProject').on('click', function () {
         saveSubProject();
+    });
+
+    $('#approvalLevelTabs .nav-link').on('click', function (e) {
+        e.preventDefault();
+        switchApprovalLevelTab($(this).data('approval-tab'));
     });
 
     $('#btnConfirmDelete').on('click', function () {
@@ -83,6 +119,7 @@ $(document).ready(function () {
                 .then(finishGrnCheckAfterModalVisible)
                 .catch(function () {});
         }
+        setTimeout(initActiveApprovalTabSelect2, 0);
     });
 });
 
@@ -170,10 +207,55 @@ function pickUserDisplayName(u, val) {
         || val;
 }
 
+/** Destroy Select2 only when initialized (avoids console error on re-render). */
+function safeDestroySelect2($el) {
+    if (!$el || !$el.length || typeof $.fn.select2 !== 'function') return;
+    $el.each(function () {
+        const $one = $(this);
+        if ($one.data('select2')) {
+            try { $one.select2('destroy'); } catch (e) { /* ignore */ }
+        }
+    });
+}
+
+function initLevelUserSelect2($select) {
+    if (!$select || !$select.length || typeof $.fn.select2 !== 'function') return;
+    const isDisabled = $select.prop('disabled');
+    safeDestroySelect2($select);
+    if (isDisabled) $select.prop('disabled', false);
+    $select.select2({
+        placeholder    : 'Select users\u2026',
+        allowClear     : true,
+        width          : '100%',
+        dropdownParent : $('#dvSubProjectModal')
+    });
+    if (isDisabled) $select.prop('disabled', true).trigger('change');
+}
+
+/** Init user dropdowns only when tab is visible (Select2 breaks in display:none panes). */
+function initTabLevelSelect2(tabKey) {
+    if (!APPROVAL_LEVEL_TAB_CONFIG[tabKey]) return;
+    const ids = tabDomIds(tabKey);
+    const $pane = $('#approvalTabPane' + tabKey);
+    if (!$pane.hasClass('active')) return;
+
+    $(ids.tableBody).find('select.pm-level-user-select').each(function () {
+        initLevelUserSelect2($(this));
+    });
+    $(ids.singleWrap).find('select.pm-level-user-select').each(function () {
+        initLevelUserSelect2($(this));
+    });
+}
+
+function initActiveApprovalTabSelect2() {
+    const tabKey = $('#approvalLevelTabs .nav-link.active').data('approval-tab') || 'PO';
+    initTabLevelSelect2(tabKey);
+}
+
 function bindGRNCheckUserSelect() {
     const $sel = $('#ddlGRNCheckUsers');
     if (!$sel.length) return;
-    try { $sel.select2('destroy'); } catch (e) {}
+    safeDestroySelect2($sel);
     let opts = '';
     (G_UserList || []).forEach(function (u) {
         const val  = pickUserRowCode(u);
@@ -339,7 +421,7 @@ function populateSiteRepDropdown(selectedCode) {
     G_SiteRepList.forEach(function (r) {
         opts += '<option value="' + r.Code + '">' + escHtml(r.Name) + '</option>';
     });
-    if ($('#frmDdlSiteRepSPM').data('select2')) $('#frmDdlSiteRepSPM').select2('destroy');
+    if ($('#frmDdlSiteRepSPM').data('select2')) safeDestroySelect2($('#frmDdlSiteRepSPM'));
     $('#frmDdlSiteRepSPM').html(opts);
     if ($.fn.select2) {
         $('#frmDdlSiteRepSPM').select2({
@@ -414,15 +496,260 @@ window.SaveSiteRepresentativeSPM = function () {
     });
 };
 
-/* ── Load PO approval levels list ────────────────────────── */
-function loadPOLevelList() {
-    SubProjectMasterService.GetLevelList()
+/* ── Load approval levels list (PO / Payment / Expense) ─── */
+function unwrapApprovalLevelList(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+        if (raw.length > 0 && Array.isArray(raw[0])) return raw[0];
+        return raw;
+    }
+    if (Array.isArray(raw.Data)) return raw.Data;
+    if (Array.isArray(raw.data)) return raw.data;
+    if (Array.isArray(raw.Table)) return raw.Table;
+    if (Array.isArray(raw.table)) return raw.table;
+    if (Array.isArray(raw.Result)) return raw.Result;
+    if (Array.isArray(raw.result)) return raw.result;
+    return [];
+}
+
+function loadApprovalLevelListForTab(tabKey) {
+    const cfg = APPROVAL_LEVEL_TAB_CONFIG[tabKey];
+
+    function assignList(list) {
+        G_ApprovalLevelLists[tabKey] = list;
+    }
+
+    function tryFallback() {
+        if (tabKey === 'PO') {
+            return SubProjectMasterService.GetLevelList()
+                .then(function (legacy) { assignList(unwrapApprovalLevelList(legacy)); });
+        }
+        if (tabKey === 'Payment') {
+            return API_ENDPOINT_GRNPaymentApprovalConfig.GetLevelList()
+                .then(function (legacy) { assignList(unwrapApprovalLevelList(legacy)); });
+        }
+        if (tabKey === 'Expense') {
+            return ExpenseEntryApprovalConfigurationService.GetLevelList()
+                .then(function (legacy) { assignList(unwrapApprovalLevelList(legacy)); });
+        }
+        assignList([]);
+        return Promise.resolve();
+    }
+
+    return SubProjectMasterService.GetApprovalLevelList(cfg.apiMode)
         .then(function (response) {
-            G_POLevelList = Array.isArray(response) ? response : [];
+            const list = unwrapApprovalLevelList(response);
+            if (list.length > 0) {
+                assignList(list);
+                return;
+            }
+            return tryFallback();
         })
         .catch(function () {
-            toastr.error('Error loading PO approval levels.');
+            return tryFallback().catch(function () {
+                assignList([]);
+                toastr.error('Error loading ' + tabKey + ' approval levels.');
+            });
         });
+}
+
+function loadAllApprovalLevelLists() {
+    if (G_ApprovalLevelListsLoadPromise) return G_ApprovalLevelListsLoadPromise;
+
+    G_ApprovalLevelListsLoadPromise = Promise.all(
+        APPROVAL_LEVEL_TAB_KEYS.map(function (tabKey) {
+            return loadApprovalLevelListForTab(tabKey);
+        })
+    ).then(function () {
+        if ($('#dvSubProjectModal').hasClass('show') || $('#dvSubProjectModal').is(':visible')) {
+            renderAllApprovalLevelTabs(G_PendingApprovalLevelDetails || []);
+            setTimeout(initActiveApprovalTabSelect2, 0);
+        }
+    });
+
+    return G_ApprovalLevelListsLoadPromise;
+}
+
+function ensureApprovalLevelListsLoaded(forceReload) {
+    if (forceReload) G_ApprovalLevelListsLoadPromise = null;
+    return loadAllApprovalLevelLists();
+}
+
+function switchApprovalLevelTab(tabKey) {
+    if (!APPROVAL_LEVEL_TAB_CONFIG[tabKey]) return;
+    $('#approvalLevelTabs .nav-link').removeClass('active');
+    $('#approvalLevelTabs .nav-link[data-approval-tab="' + tabKey + '"]').addClass('active');
+    $('.pm-approval-tab-pane').removeClass('active');
+    $('#approvalTabPane' + tabKey).addClass('active');
+    setTimeout(function () { initTabLevelSelect2(tabKey); }, 0);
+}
+
+function pickLevelConfigCode(level, tabKey) {
+    if (!level) return 0;
+    const candidates = [];
+    if (tabKey === 'PO') {
+        candidates.push(
+            level.PurchaseOrderApprovalConfiguration_Code,
+            level.POApprovalConfiguration_Code
+        );
+    } else if (tabKey === 'Payment') {
+        candidates.push(
+            level.GRNPaymentApprovalConfiguration_Code,
+            level.GRNPaymentLevel_Code,
+            level.GRNPaymentApprovalLevel_Code
+        );
+    } else {
+        candidates.push(
+            level.ExpenseEntryApprovalConfiguration_Code,
+            level.ExpenseEntryApprovalLevel_Code
+        );
+    }
+    candidates.push(
+        level.Code,
+        level.code,
+        level.ApprovalConfiguration_Code,
+        level.ConfigLevel_Code,
+        level.LevelCode,
+        level.Level_Code,
+        level.PurchaseOrderApprovalConfiguration_Code
+    );
+    for (let i = 0; i < candidates.length; i++) {
+        const n = parseInt(candidates[i], 10);
+        if (!isNaN(n) && n > 0) return n;
+    }
+    return 0;
+}
+
+function pickDetailConfigCode(detail, tabKey) {
+    if (!detail) return 0;
+    const saved = parseInt(detail.PurchaseOrderApprovalConfiguration_Code, 10);
+    if (!isNaN(saved) && saved > 0) return saved;
+    return pickLevelConfigCode(detail, tabKey)
+        || parseInt(detail.GRNPaymentApprovalConfiguration_Code, 10)
+        || parseInt(detail.ExpenseEntryApprovalConfiguration_Code, 10)
+        || parseInt(detail.ApprovalConfiguration_Code, 10)
+        || parseInt(detail.Code, 10)
+        || 0;
+}
+
+function inferForFromDetail(detail) {
+    if (!detail) return 'PurchaseOrder';
+    const f = String(detail.For || detail.for || '').trim();
+    if (f) return f;
+    if (parseInt(detail.GRNPaymentApprovalConfiguration_Code, 10) > 0) return 'GRNPayment';
+    if (parseInt(detail.ExpenseEntryApprovalConfiguration_Code, 10) > 0) return 'ExpenseEntry';
+    return 'PurchaseOrder';
+}
+
+/** Normalize API/edit row: set For + map mode-specific code → PurchaseOrderApprovalConfiguration_Code for grid bind. */
+function normalizeLoadedLevelDetail(detail, defaultFor) {
+    if (!detail || typeof detail !== 'object') return null;
+    const d = Object.assign({}, detail);
+    d.For = inferForFromDetail(d);
+    if (!String(detail.For || detail.for || '').trim() && defaultFor) {
+        d.For = defaultFor;
+    }
+    let poCode = parseInt(d.PurchaseOrderApprovalConfiguration_Code, 10);
+    if (isNaN(poCode) || poCode <= 0) {
+        let src = 0;
+        if (d.For === 'GRNPayment') {
+            src = parseInt(d.GRNPaymentApprovalConfiguration_Code, 10);
+        } else if (d.For === 'ExpenseEntry') {
+            src = parseInt(d.ExpenseEntryApprovalConfiguration_Code, 10);
+        } else {
+            src = parseInt(d.PurchaseOrderApprovalConfiguration_Code, 10) || parseInt(d.Code, 10);
+        }
+        if (!isNaN(src) && src > 0) d.PurchaseOrderApprovalConfiguration_Code = src;
+    }
+    return d;
+}
+
+function appendNormalizedLevelDetails(target, arr, defaultFor) {
+    if (!Array.isArray(arr)) return;
+    arr.forEach(function (d) {
+        const n = normalizeLoadedLevelDetail(d, defaultFor);
+        if (n) target.push(n);
+    });
+}
+
+/** GetSubProjectByCode array shape: [0]=master, [1]=PO levels, [2]=GRN users, [3]=Payment, [4]=Expense */
+function mergeLevelDetailsFromArrayResponse(response) {
+    const merged = [];
+    if (!Array.isArray(response)) return merged;
+    appendNormalizedLevelDetails(merged, response[1], 'PurchaseOrder');
+    appendNormalizedLevelDetails(merged, response[3], 'GRNPayment');
+    appendNormalizedLevelDetails(merged, response[4], 'ExpenseEntry');
+    return merged;
+}
+
+function splitLevelDetailsByFor(allDetails) {
+    const result = { PO: [], Payment: [], Expense: [] };
+    (allDetails || []).forEach(function (d) {
+        const forVal = inferForFromDetail(d);
+        if (forVal === 'GRNPayment') {
+            result.Payment.push(d);
+        } else if (forVal === 'ExpenseEntry') {
+            result.Expense.push(d);
+        } else {
+            result.PO.push(d);
+        }
+    });
+    return result;
+}
+
+function mergeLevelDetailsFromResponse(response, row) {
+    const merged = [];
+    if (!response && !row) return merged;
+
+    const singleArrays = [
+        response && response.polevelDetails,
+        response && response.PolevelDetails,
+        response && response.POLevelDetails,
+        row && row.polevelDetails,
+        row && row.PolevelDetails
+    ];
+    for (let i = 0; i < singleArrays.length; i++) {
+        if (Array.isArray(singleArrays[i]) && singleArrays[i].length > 0) {
+            singleArrays[i].forEach(function (d) {
+                appendNormalizedLevelDetails(merged, [d], null);
+            });
+            if (merged.length) return merged;
+        }
+    }
+
+    appendNormalizedLevelDetails(merged, response && response.PurchaseOrderLevelsApprovalProjectUserDetails, 'PurchaseOrder');
+    appendNormalizedLevelDetails(merged, row && row.PurchaseOrderLevelsApprovalProjectUserDetails, 'PurchaseOrder');
+    appendNormalizedLevelDetails(merged, response && response.GRNPaymentLevelsApprovalProjectUserDetails, 'GRNPayment');
+    appendNormalizedLevelDetails(merged, response && response.GRNPaymentLevelsApprovalProjectUserDetails, 'GRNPayment');
+    appendNormalizedLevelDetails(merged, response && response.ExpenseEntryLevelsApprovalProjectUserDetails, 'ExpenseEntry');
+    appendNormalizedLevelDetails(merged, row && row.ExpenseEntryLevelsApprovalProjectUserDetails, 'ExpenseEntry');
+    appendNormalizedLevelDetails(merged, response && response.PaymentLevelsApprovalProjectUserDetails, 'GRNPayment');
+    appendNormalizedLevelDetails(merged, response && response.ExpenseLevelsApprovalProjectUserDetails, 'ExpenseEntry');
+
+    if (Array.isArray(response)) {
+        return mergeLevelDetailsFromArrayResponse(response);
+    }
+    return merged;
+}
+
+function getLevelListForTab(tabKey) {
+    return G_ApprovalLevelLists[tabKey] || [];
+}
+
+function tabDomIds(tabKey) {
+    return {
+        singleWrap : '#dvSingleLevelSelect_' + tabKey,
+        tableWrap  : '#dvLevelsTableWrap_' + tabKey,
+        tableBody  : '#tblLevelsBody_' + tabKey,
+        table      : '#tblLevels_' + tabKey
+    };
+}
+
+/** Show/hide Users column header per tab (Payment & Expense: hidden). */
+function syncApprovalTabUserColumnVisibility(tabKey) {
+    const cfg = APPROVAL_LEVEL_TAB_CONFIG[tabKey];
+    const show = !!(cfg && cfg.showUserRight);
+    $(tabDomIds(tabKey).table + ' thead .col-level-user-right').toggle(show);
 }
 
 /* ── PO level applicable / ApprovalType (P = project assignment, U = user — locked) ─ */
@@ -465,8 +792,8 @@ function isPLikeApprovalNorm(norm) {
     return norm === 'P' || norm === '';
 }
 
-function getFirstLastPLikeAnchorIndices() {
-    const list = G_POLevelList || [];
+function getFirstLastPLikeAnchorIndices(levelList) {
+    const list = levelList || [];
     let first = -1;
     let last = -1;
     list.forEach(function (level, idx) {
@@ -516,182 +843,210 @@ function resolveIsLevelApplicableForSave(ctx, idx, totalLevels, $chk, anchors) {
     return ($chk && $chk.length && $chk.is(':checked')) ? 'Y' : 'N';
 }
 
-/* ── Render PO levels user-assignment in form modal ──────── */
-function renderPOLevelsFormTable(existingDetails) {
-    $('#tblPOLevelsBody').find('select').each(function () {
-        try { $(this).select2('destroy'); } catch (e) {}
+/* ── Render approval levels grid in form modal ───────────── */
+function renderAllApprovalLevelTabs(allDetails) {
+    G_PendingApprovalLevelDetails = allDetails || [];
+    const byFor = splitLevelDetailsByFor(G_PendingApprovalLevelDetails);
+    APPROVAL_LEVEL_TAB_KEYS.forEach(function (tabKey) {
+        renderLevelsFormTable(tabKey, byFor[tabKey] || []);
     });
-    try { $('#ddlSingleLevelUsers').select2('destroy'); } catch (e) {}
-    $('#tblPOLevelsBody').empty();
-    $('#dvSingleLevelSelect').empty().hide();
+    switchApprovalLevelTab('PO');
+    setTimeout(initActiveApprovalTabSelect2, 0);
+}
 
-    if (!G_POLevelList || G_POLevelList.length === 0) {
-        $('#dvPOLevelsTableWrap').show();
-        $('#tblPOLevelsBody').append('<tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">No PO approval levels configured.</td></tr>');
+function destroyTabSelect2(tabKey) {
+    const ids = tabDomIds(tabKey);
+    safeDestroySelect2($(ids.tableBody).find('select'));
+    safeDestroySelect2($(ids.singleWrap).find('select'));
+}
+
+function renderLevelsFormTable(tabKey, existingDetails) {
+    const cfg       = APPROVAL_LEVEL_TAB_CONFIG[tabKey];
+    const levelList = getLevelListForTab(tabKey);
+    const ids       = tabDomIds(tabKey);
+    const showUsers = cfg.showUserRight;
+    const emptyCols = showUsers ? 4 : 3;
+
+    syncApprovalTabUserColumnVisibility(tabKey);
+    destroyTabSelect2(tabKey);
+    $(ids.tableBody).empty();
+    $(ids.singleWrap).empty().hide();
+
+    if (!levelList || levelList.length === 0) {
+        $(ids.tableWrap).show();
+        $(ids.tableBody).append(
+            '<tr><td colspan="' + emptyCols + '" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">' +
+            escHtml(cfg.emptyLabel) + '</td></tr>'
+        );
         return;
     }
 
-    const anchors = getFirstLastPLikeAnchorIndices();
+    const anchors = getFirstLastPLikeAnchorIndices(levelList);
 
-    if (G_POLevelList.length === 1) {
-        // Single level — labelled dropdown + applicable checkbox (same rules as grid)
-        const level     = G_POLevelList[0];
-        const levelCode = level.Code || level.PurchaseOrderApprovalConfiguration_Code || 0;
+    if (levelList.length === 1) {
+        const level     = levelList[0];
+        const levelCode = pickLevelConfigCode(level, tabKey);
         const levelDesp = level.LevelDesp || '';
         const existing  = (existingDetails || []).find(function (d) {
-            return String(d.PurchaseOrderApprovalConfiguration_Code) === String(levelCode);
+            return String(pickDetailConfigCode(d, tabKey)) === String(levelCode);
         });
         const ctx            = poLevelRuleContext(level, existing);
         const totalLevels    = 1;
         const applicableOn   = computeInitialIsLevelApplicable(ctx, 0, totalLevels, existing, anchors);
         const chkLocked      = isLevelApplicableCheckboxLocked(ctx, 0, totalLevels, anchors);
-        const usersLocked    = ctx.isUser;
+        const usersLocked    = ctx.isUser || !showUsers;
         const chkLockCls     = ctx.isUser ? ' chk-lock-user' : (isPLikeAnchorLockedRow(0, anchors) ? ' chk-lock-p-anchor' : '');
         const preSelected    = existing
-            ? String(existing.UserMaster_Codes_RightToVerifyPO || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
+            ? String(existing.UserMaster_Codes_RightToVerifyPO || existing.UserRight || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
             : [];
 
-        let opts = '';
-        (G_UserList || []).forEach(function (u) {
-            const val  = pickUserRowCode(u);
-            if (!val) return;
-            const text = pickUserDisplayName(u, val);
-            const sel  = preSelected.includes(val) ? ' selected' : '';
-            opts += `<option value="${val}"${sel}>${escHtml(text)}</option>`;
-        });
+        let userBlock = '';
+        if (showUsers) {
+            let opts = '';
+            (G_UserList || []).forEach(function (u) {
+                const val  = pickUserRowCode(u);
+                if (!val) return;
+                const text = pickUserDisplayName(u, val);
+                const sel  = preSelected.includes(val) ? ' selected' : '';
+                opts += '<option value="' + val + '"' + sel + '>' + escHtml(text) + '</option>';
+            });
+            userBlock =
+                '<label style="font-size:12.5px;font-weight:700;color:var(--text-primary);margin-bottom:6px;display:block;">Users \u2014 ' +
+                escHtml(levelDesp) + '</label>' +
+                '<select class="pm-level-user-select" id="ddlSingleLevelUsers_' + tabKey + '" data-tab-key="' + tabKey + '" data-level-code="' + levelCode + '" multiple="multiple" style="width:100%;"' +
+                (usersLocked ? ' disabled' : '') + '>' + opts + '</select>';
+        }
 
-        $('#dvSingleLevelSelect').html(
+        $(ids.singleWrap).html(
             '<div class="pm-fg" style="margin-bottom:10px;">' +
                 '<label class="form-check-label d-flex align-items-center gap-2 mb-0" ' +
                 'style="font-size:12.5px;font-weight:600;color:var(--text-primary);cursor:' + (chkLocked ? 'default' : 'pointer') + ';">' +
-                '<input type="checkbox" class="form-check-input chk-po-level-applicable flex-shrink-0' + chkLockCls + '" id="chkSingleLevelApplicable" ' +
-                'data-level-code="' + levelCode + '" ' +
+                '<input type="checkbox" class="form-check-input chk-po-level-applicable flex-shrink-0' + chkLockCls + '" id="chkSingleLevelApplicable_' + tabKey + '" ' +
+                'data-tab-key="' + tabKey + '" data-level-code="' + levelCode + '" ' +
                 (applicableOn ? 'checked ' : '') +
                 (chkLocked ? 'disabled ' : '') +
                 'style="margin-top:0;" />' +
                 '<span>Applicable for this sub-project</span>' +
                 '</label>' +
             '</div>' +
-            `<label style="font-size:12.5px;font-weight:700;color:var(--text-primary);margin-bottom:6px;display:block;">Users \u2014 ${escHtml(levelDesp)}</label>` +
-            `<select id="ddlSingleLevelUsers" data-level-code="${levelCode}" multiple="multiple" style="width:100%;"${usersLocked ? ' disabled' : ''}>${opts}</select>`
+            userBlock
         ).show();
-        $('#dvPOLevelsTableWrap').hide();
-
-        try {
-            $('#ddlSingleLevelUsers').select2({
-                placeholder  : 'Select users\u2026',
-                allowClear   : true,
-                width        : '100%',
-                dropdownParent: $('#dvSubProjectModal')
-            });
-            if (usersLocked) {
-                $('#ddlSingleLevelUsers').prop('disabled', true).trigger('change');
-            }
-        } catch (e) {}
+        $(ids.tableWrap).hide();
         return;
     }
 
-    // Multiple levels — table grid
-    $('#dvPOLevelsTableWrap').show();
-    const totalLevels = G_POLevelList.length;
-    G_POLevelList.forEach(function (level, idx) {
-        const levelCode = level.Code || level.PurchaseOrderApprovalConfiguration_Code || 0;
+    $(ids.tableWrap).show();
+    const totalLevels = levelList.length;
+    levelList.forEach(function (level, idx) {
+        const levelCode = pickLevelConfigCode(level, tabKey);
         const levelDesp = level.LevelDesp || '';
         const existing  = (existingDetails || []).find(function (d) {
-            return String(d.PurchaseOrderApprovalConfiguration_Code) === String(levelCode);
+            return String(pickDetailConfigCode(d, tabKey)) === String(levelCode);
         });
         const ctx          = poLevelRuleContext(level, existing);
         const applicableOn = computeInitialIsLevelApplicable(ctx, idx, totalLevels, existing, anchors);
         const chkLocked    = isLevelApplicableCheckboxLocked(ctx, idx, totalLevels, anchors);
-        const usersLocked  = ctx.isUser;
+        const usersLocked  = ctx.isUser || !showUsers;
         const chkLockCls   = ctx.isUser ? ' chk-lock-user' : (isPLikeAnchorLockedRow(idx, anchors) ? ' chk-lock-p-anchor' : '');
         const preSelected  = existing
-            ? String(existing.UserMaster_Codes_RightToVerifyPO || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
+            ? String(existing.UserMaster_Codes_RightToVerifyPO || existing.UserRight || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean)
             : [];
 
-        const selectId = 'ddlLevelUsers_' + levelCode;
-        const chkId    = 'chkLevelApplicable_' + levelCode;
-        let opts = '';
-        (G_UserList || []).forEach(function (u) {
-            const val  = pickUserRowCode(u);
-            if (!val) return;
-            const text = pickUserDisplayName(u, val);
-            const sel  = preSelected.includes(val) ? ' selected' : '';
-            opts += `<option value="${val}"${sel}>${escHtml(text)}</option>`;
-        });
-
-        $('#tblPOLevelsBody').append(`
-            <tr data-level-code="${levelCode}">
-                <td class="center" style="width:44px;"><span class="pm-sno">${idx + 1}</span></td>
-                <td style="white-space:nowrap; font-weight:600;">${escHtml(levelDesp)}</td>
-                <td class="center" style="vertical-align:middle;width:100px;">
-                    <input type="checkbox" class="form-check-input chk-po-level-applicable${chkLockCls}" id="${chkId}"
-                        ${applicableOn ? 'checked ' : ''}${chkLocked ? 'disabled ' : ''} style="margin:0;cursor:${chkLocked ? 'not-allowed' : 'pointer'};" />
-                </td>
-                <td><select id="${selectId}" multiple="multiple" style="width:100%;"${usersLocked ? ' disabled' : ''}>${opts}</select></td>
-            </tr>
-        `);
-
-        try {
-            $('#' + selectId).select2({
-                placeholder  : 'Select users\u2026',
-                allowClear   : true,
-                width        : '100%',
-                dropdownParent: $('#dvSubProjectModal')
+        const selectId = 'ddlLevelUsers_' + tabKey + '_' + idx;
+        const chkId    = 'chkLevelApplicable_' + tabKey + '_' + levelCode;
+        let userCell = '';
+        if (showUsers) {
+            let opts = '';
+            (G_UserList || []).forEach(function (u) {
+                const val  = pickUserRowCode(u);
+                if (!val) return;
+                const text = pickUserDisplayName(u, val);
+                const sel  = preSelected.includes(val) ? ' selected' : '';
+                opts += '<option value="' + val + '"' + sel + '>' + escHtml(text) + '</option>';
             });
-            if (usersLocked) {
-                $('#' + selectId).prop('disabled', true).trigger('change');
-            }
-        } catch (e) {}
+            userCell = '<td class="col-level-user-right"><select class="pm-level-user-select" id="' + selectId + '" data-tab-key="' + tabKey + '" data-level-code="' + levelCode + '" multiple="multiple" style="width:100%;"' +
+                (usersLocked ? ' disabled' : '') + '>' + opts + '</select></td>';
+        }
+
+        $(ids.tableBody).append(
+            '<tr data-tab-key="' + tabKey + '" data-row-idx="' + idx + '" data-level-code="' + levelCode + '">' +
+                '<td class="center" style="width:44px;"><span class="pm-sno">' + (idx + 1) + '</span></td>' +
+                '<td style="white-space:nowrap; font-weight:600;">' + escHtml(levelDesp) + '</td>' +
+                '<td class="center" style="vertical-align:middle;width:100px;">' +
+                    '<input type="checkbox" class="form-check-input chk-po-level-applicable' + chkLockCls + '" id="' + chkId + '" ' +
+                    (applicableOn ? 'checked ' : '') + (chkLocked ? 'disabled ' : '') +
+                    'style="margin:0;cursor:' + (chkLocked ? 'not-allowed' : 'pointer') + ';" />' +
+                '</td>' +
+                userCell +
+            '</tr>'
+        );
     });
 }
 
-/* ── Collect PO level-user details for save payload ─────── */
-function collectPOLevelDetails() {
+/* ── Collect level details for save payload (polevelDetails) ─ */
+function collectAllLevelDetails() {
+    const details = [];
+    APPROVAL_LEVEL_TAB_KEYS.forEach(function (tabKey) {
+        details.push.apply(details, collectLevelDetailsForTab(tabKey));
+    });
+    return details;
+}
+
+function collectLevelDetailsForTab(tabKey) {
+    const cfg            = APPROVAL_LEVEL_TAB_CONFIG[tabKey];
+    const levelList      = getLevelListForTab(tabKey);
+    const showUsers      = cfg.showUserRight;
     const details        = [];
     const subProjectCode = parseInt($('#hfSubProjectCode').val() || '0', 10) || 0;
-    const anchors        = getFirstLastPLikeAnchorIndices();
+    const anchors        = getFirstLastPLikeAnchorIndices(levelList);
+    const ids            = tabDomIds(tabKey);
 
-    if (G_POLevelList.length === 1) {
-        const level     = G_POLevelList[0];
-        const levelCode = level.Code || level.PurchaseOrderApprovalConfiguration_Code || 0;
-        const levelDesp = level.LevelDesp || '';
-        const userCodes = ($('#ddlSingleLevelUsers').val() || []).join(',');
-        const ctx       = poLevelRuleContext(level, null);
-        const $chk      = $('#chkSingleLevelApplicable');
+    const $singleSelect = $(ids.singleWrap).find('select.pm-level-user-select');
+    if ($singleSelect.length) {
+        const levelObj  = levelList[0] || {};
+        let levelCode   = parseInt($singleSelect.attr('data-level-code'), 10) || pickLevelConfigCode(levelObj, tabKey);
+        const levelDesp = levelObj.LevelDesp || '';
+        const userCodes = showUsers ? (($singleSelect.val() || []).join(',')) : '';
+        const ctx       = poLevelRuleContext(levelObj, null);
+        const $chk      = $('#chkSingleLevelApplicable_' + tabKey);
         if (levelCode > 0) {
-            details.push({
-                PurchaseOrderApprovalConfiguration_Code: levelCode,
-                LevelDesp                              : levelDesp,
-                UserMaster_Codes_RightToVerifyPO       : userCodes,
-                SubProjectMaster_Code                  : subProjectCode,
-                IsLevelApplicable                      : resolveIsLevelApplicableForSave(ctx, 0, 1, $chk, anchors)
-            });
+            details.push(buildLevelDetailRow(tabKey, levelCode, levelDesp, userCodes, ctx, 0, 1, $chk, anchors, subProjectCode));
         }
         return details;
     }
 
-    const totalLevels = G_POLevelList.length;
-    $('#tblPOLevelsBody tr[data-level-code]').each(function (i) {
+    const $rows = $(ids.tableBody + ' tr[data-tab-key="' + tabKey + '"]');
+    if (!$rows.length) return details;
+
+    const totalLevels = $rows.length;
+    $rows.each(function (i) {
         const $row      = $(this);
-        const levelCode = parseInt($row.data('level-code'), 10) || 0;
+        const rowIdx    = parseInt($row.attr('data-row-idx'), 10);
+        const idx       = !isNaN(rowIdx) ? rowIdx : i;
+        const levelObj  = (levelList && levelList[idx]) || null;
+        let levelCode   = parseInt($row.attr('data-level-code'), 10) || 0;
+        if (levelCode <= 0 && levelObj) levelCode = pickLevelConfigCode(levelObj, tabKey);
         if (levelCode <= 0) return;
-        const levelObj  = (G_POLevelList || []).find(function (l) {
-            return (l.Code || l.PurchaseOrderApprovalConfiguration_Code || 0) === levelCode;
-        });
-        const levelDesp = levelObj ? (levelObj.LevelDesp || '') : '';
-        const userCodes = ($('#ddlLevelUsers_' + levelCode).val() || []).join(',');
+
+        const levelDesp = (levelObj && levelObj.LevelDesp) || $.trim($row.find('td').eq(1).text()) || '';
+        const userCodes = showUsers ? (($row.find('select.pm-level-user-select').val() || []).join(',')) : '';
         const ctx       = poLevelRuleContext(levelObj, null);
         const $chk      = $row.find('.chk-po-level-applicable');
-        details.push({
-            PurchaseOrderApprovalConfiguration_Code: levelCode,
-            LevelDesp                              : levelDesp,
-            UserMaster_Codes_RightToVerifyPO       : userCodes,
-            SubProjectMaster_Code                  : subProjectCode,
-            IsLevelApplicable                      : resolveIsLevelApplicableForSave(ctx, i, totalLevels, $chk, anchors)
-        });
+        details.push(buildLevelDetailRow(tabKey, levelCode, levelDesp, userCodes, ctx, idx, totalLevels, $chk, anchors, subProjectCode));
     });
     return details;
+}
+
+function buildLevelDetailRow(tabKey, levelCode, levelDesp, userCodes, ctx, idx, totalLevels, $chk, anchors, subProjectCode) {
+    const cfg = APPROVAL_LEVEL_TAB_CONFIG[tabKey];
+    return {
+        For                                      : cfg.forValue,
+        PurchaseOrderApprovalConfiguration_Code  : levelCode,
+        LevelDesp                                : levelDesp,
+        UserMaster_Codes_RightToVerifyPO         : userCodes,
+        SubProjectMaster_Code                    : subProjectCode,
+        IsLevelApplicable                        : resolveIsLevelApplicableForSave(ctx, idx, totalLevels, $chk, anchors)
+    };
 }
 
 /* ── New ─────────────────────────────────────────────────── */
@@ -714,9 +1069,8 @@ function OpenNew_SubProjectMaster() {
 }
 
 /* ── Parse GetSubProjectByCode response ──────────────────── */
-/*  Handles two common shapes returned by the API:
-    1. { SubProjectMasterData:[{...}], PurchaseOrderLevelsApprovalProjectUserDetails:[...] }
-    2. A single main-row object with PurchaseOrderLevelsApprovalProjectUserDetails embedded     */
+/*  Array shape: [0]=master, [1]=PO levels, [2]=GRN users, [3]=Payment levels, [4]=Expense levels
+    Object shape: polevelDetails[] or separate *LevelsApprovalProjectUserDetails arrays              */
 function parseSubProjectByCodeResponse(response) {
     var row          = null;
     var levelDetails = [];
@@ -732,7 +1086,7 @@ function parseSubProjectByCodeResponse(response) {
     } else if (Array.isArray(response) && response.length > 0) {
         if (Array.isArray(response[0])) {
             row          = (response[0] || [])[0] || null;
-            levelDetails = Array.isArray(response[1]) ? response[1] : [];
+            levelDetails = mergeLevelDetailsFromArrayResponse(response);
             var grnList  = Array.isArray(response[2]) ? response[2] : [];
             if (row && grnList.length) {
                 row.UserMasterForGRNDetails = grnList;
@@ -744,11 +1098,7 @@ function parseSubProjectByCodeResponse(response) {
         row = response;
     }
 
-    if (Array.isArray(response.PurchaseOrderLevelsApprovalProjectUserDetails)) {
-        levelDetails = response.PurchaseOrderLevelsApprovalProjectUserDetails;
-    } else if (row && Array.isArray(row.PurchaseOrderLevelsApprovalProjectUserDetails)) {
-        levelDetails = row.PurchaseOrderLevelsApprovalProjectUserDetails;
-    }
+    levelDetails = mergeLevelDetailsFromResponse(response, row);
 
     if (row) {
         if (Array.isArray(response.UserMasterForGRNDetails)) {
@@ -759,6 +1109,8 @@ function parseSubProjectByCodeResponse(response) {
             /* already on row */
         } else if (Array.isArray(row.userMasterForGRNDetails)) {
             row.UserMasterForGRNDetails = row.userMasterForGRNDetails;
+        } else if (Array.isArray(response) && Array.isArray(response[2]) && response[2].length) {
+            row.UserMasterForGRNDetails = response[2];
         }
     }
 
@@ -830,7 +1182,10 @@ function SubProjectMaster_EditData(code) {
                             loadSiteRepDropdown(siteRepCode);
                         }
 
-                        renderPOLevelsFormTable(levelDetails);
+                        G_PendingApprovalLevelDetails = levelDetails;
+                        ensureApprovalLevelListsLoaded().then(function () {
+                            renderAllApprovalLevelTabs(levelDetails);
+                        });
                         $('#spm-modal-title').text('Edit Sub Project');
                         showModal('dvSubProjectModal');
                     })
@@ -844,6 +1199,50 @@ function SubProjectMaster_EditData(code) {
                 toastr.error('Error loading sub project for editing.');
             });
     });
+}
+
+/* ── View approval levels summary ─────────────────────────── */
+function buildApprovalLevelsViewHtml(allDetails) {
+    const byFor = splitLevelDetailsByFor(allDetails || []);
+    const sections = [];
+    APPROVAL_LEVEL_TAB_KEYS.forEach(function (tabKey) {
+        const rows = byFor[tabKey] || [];
+        if (!rows.length) return;
+        const cfg = APPROVAL_LEVEL_TAB_CONFIG[tabKey];
+        const showUsers = cfg.showUserRight;
+        let tbl = '<div style="margin-bottom:10px;"><div style="font-weight:700;color:#4338ca;font-size:12px;margin-bottom:4px;">' +
+            escHtml(tabKey) + '</div>';
+        tbl += '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
+        tbl += '<thead><tr>' +
+            '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Level</th>' +
+            '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;text-align:center;">Applicable</th>';
+        if (showUsers) {
+            tbl += '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Users</th>';
+        }
+        tbl += '</tr></thead><tbody>';
+        rows.forEach(function (d) {
+            const ilev = d.IsLevelApplicable != null ? d.IsLevelApplicable : d.isLevelApplicable;
+            let appTxt = '—';
+            if (ilev !== undefined && ilev !== null && String(ilev).trim() !== '') {
+                appTxt = isYnYes(ilev) ? 'Yes' : 'No';
+            }
+            tbl += '<tr>' +
+                '<td style="padding:5px 10px;border:1px solid #e2e8f0;font-weight:600;white-space:nowrap;">' + escHtml(d.LevelDesp || '') + '</td>' +
+                '<td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:center;">' + escHtml(appTxt) + '</td>';
+            if (showUsers) {
+                const codes = String(d.UserMaster_Codes_RightToVerifyPO || d.UserRight || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+                const names = codes.map(function (c) {
+                    const u = (G_UserList || []).find(function (x) { return pickUserRowCode(x) === c; });
+                    return u ? pickUserDisplayName(u, c) : c;
+                }).filter(Boolean);
+                tbl += '<td style="padding:5px 10px;border:1px solid #e2e8f0;">' + escHtml(names.join(', ') || '—') + '</td>';
+            }
+            tbl += '</tr>';
+        });
+        tbl += '</tbody></table></div>';
+        sections.push(tbl);
+    });
+    return sections.length ? sections.join('') : '—';
 }
 
 /* ── View ────────────────────────────────────────────────── */
@@ -892,35 +1291,7 @@ function viewSubProject(code) {
             $('#viewSiteRepresentative').text(siteRepObj ? siteRepObj.Name : '—');
             $('#viewGRNCheckUsers').text(userCodesCsvToDisplayNames(grnCheckCodesFromRow(row)));
 
-            if (levelDetails.length > 0) {
-                var tbl = '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
-                tbl += '<thead><tr>' +
-                       '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Level</th>' +
-                       '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;text-align:center;">Applicable</th>' +
-                       '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Users</th>' +
-                       '</tr></thead><tbody>';
-                levelDetails.forEach(function (d) {
-                    var codes = String(d.UserMaster_Codes_RightToVerifyPO || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
-                    var names = codes.map(function (c) {
-                        var u = (G_UserList || []).find(function (x) { return pickUserRowCode(x) === c; });
-                        return u ? pickUserDisplayName(u, c) : c;
-                    }).filter(Boolean);
-                    var ilev = d.IsLevelApplicable != null ? d.IsLevelApplicable : d.isLevelApplicable;
-                    var appTxt = '—';
-                    if (ilev !== undefined && ilev !== null && String(ilev).trim() !== '') {
-                        appTxt = isYnYes(ilev) ? 'Yes' : 'No';
-                    }
-                    tbl += '<tr>' +
-                           '<td style="padding:5px 10px;border:1px solid #e2e8f0;font-weight:600;white-space:nowrap;">' + escHtml(d.LevelDesp || '') + '</td>' +
-                           '<td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:center;">' + escHtml(appTxt) + '</td>' +
-                           '<td style="padding:5px 10px;border:1px solid #e2e8f0;">' + escHtml(names.join(', ') || '—') + '</td>' +
-                           '</tr>';
-                });
-                tbl += '</tbody></table>';
-                $('#viewVerifyPOUsers').html(tbl);
-            } else {
-                $('#viewVerifyPOUsers').html('—');
-            }
+            $('#viewApprovalLevels').html(buildApprovalLevelsViewHtml(levelDetails));
 
             showModal('dvSubProjectViewModal');
         })
@@ -991,7 +1362,11 @@ function resetSubProjectForm() {
         else $('#frmDdlSiteRepSPM').val('');
     } catch (e) {}
     $('#divSiteRepDetailsSPM').hide();
-    renderPOLevelsFormTable([]);
+    G_PendingApprovalLevelDetails = [];
+    ensureApprovalLevelListsLoaded().then(function () {
+        renderAllApprovalLevelTabs([]);
+        switchApprovalLevelTab('PO');
+    });
 }
 
 /* ── Validate ────────────────────────────────────────────── */
@@ -1110,6 +1485,12 @@ function sumBomAmountFromRows(rows) {
 }
 
 function callSaveSubProjectApi() {
+    ensureApprovalLevelListsLoaded().then(function () {
+        callSaveSubProjectApiCore();
+    });
+}
+
+function callSaveSubProjectApiCore() {
     const code         = parseInt($('#hfSubProjectCode').val() || '0', 10) || 0;
     const startDateRaw = ($('#txtStartDate').val() || '').trim();
     const projectMaster_Code = parseInt($('#ddlMasterProject').val() || '0', 10) || 0;
@@ -1129,7 +1510,7 @@ function callSaveSubProjectApi() {
                                      : 0,
         SiteRepresentativeMaster_Code: parseInt($('#frmDdlSiteRepSPM').val()) || 0,
         UserMasterForGRNDetails: buildUserMasterForGRNPayload(),
-        PurchaseOrderLevelsApprovalProjectUserDetails: collectPOLevelDetails()
+        PurchaseOrderLevelsApprovalProjectUserDetails: collectAllLevelDetails()
     };
 
     function postSaveSubProject() {

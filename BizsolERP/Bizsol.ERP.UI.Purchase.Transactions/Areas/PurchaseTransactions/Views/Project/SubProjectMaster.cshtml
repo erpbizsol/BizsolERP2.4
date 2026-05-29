@@ -722,6 +722,21 @@
 
     .pm-levels-table .select2-container { width: 100% !important; }
 
+    /* Collapse native multi-select until Select2 enhances it (hidden tabs). */
+    .pm-levels-table select.pm-level-user-select[multiple]:not(.select2-hidden-accessible) {
+        height: 36px !important;
+        min-height: 36px !important;
+        max-height: 36px !important;
+        overflow: hidden !important;
+    }
+
+    .pm-single-level-select select.pm-level-user-select[multiple]:not(.select2-hidden-accessible) {
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        overflow: hidden !important;
+    }
+
     .pm-levels-table .select2-container--default .select2-selection--multiple {
         border: 1.5px solid var(--border-color);
         border-radius: 8px;
@@ -800,12 +815,59 @@
         border-color: #475569;
     }
     .pm-levels-table .select2-container.select2-container--disabled .select2-selection--multiple,
-    #dvSingleLevelSelect .select2-container.select2-container--disabled .select2-selection--multiple {
+    #dvSingleLevelSelect .select2-container.select2-container--disabled .select2-selection--multiple,
+    .pm-single-level-select .select2-container.select2-container--disabled .select2-selection--multiple {
         background: #e8ecf4 !important;
         border-color: #94a3b8 !important;
         cursor: not-allowed !important;
         opacity: 1 !important;
         box-shadow: none !important;
+    }
+
+    /* ── Approval level tabs (PO / Payment / Expense) ───────────── */
+    .pm-approval-level-tabs {
+        display: flex;
+        gap: 6px;
+        margin: 0 0 12px;
+        padding: 0;
+        list-style: none;
+        border-bottom: 2px solid var(--border-light);
+    }
+
+    .pm-approval-level-tabs .nav-link {
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 12.5px;
+        font-weight: 700;
+        padding: 8px 16px;
+        border-radius: 8px 8px 0 0;
+        cursor: pointer;
+        transition: color .15s, background .15s;
+        letter-spacing: .02em;
+    }
+
+    .pm-approval-level-tabs .nav-link:hover {
+        color: var(--accent-primary);
+        background: rgba(102,126,234,.06);
+    }
+
+    .pm-approval-level-tabs .nav-link.active {
+        color: #fff;
+        background: linear-gradient(135deg, #4f46e5, #667eea);
+        box-shadow: 0 2px 8px rgba(79,70,229,.25);
+    }
+
+    .pm-approval-tab-pane { display: none; }
+    .pm-approval-tab-pane.active { display: block; }
+
+    .pm-single-level-select .chk-po-level-applicable {
+        width: 1.1rem;
+        height: 1.1rem;
+        margin: 0;
+        flex-shrink: 0;
+        border-radius: 0.25rem;
+        vertical-align: middle;
     }
 
     /* ── Responsive ────────────────────────────────────────────── */
@@ -1017,23 +1079,74 @@
                         </div>
                         </div>
                         <div class="pm-form-section-title" style="margin-top:4px;">
-                            <i class="fas fa-shield-alt"></i> PO Approval Levels — User Assignment
+                            <i class="fas fa-shield-alt"></i> Approval Levels — Configuration
                         </div>
-                        <div id="dvSingleLevelSelect" class="pm-fg" style="display:none;"></div>
-                        <div id="dvPOLevelsTableWrap" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
-                            <table class="pm-levels-table" id="tblPOLevels">
-                                <thead>
-                                    <tr>
-                                        <th style="width:44px; text-align:center;">#</th>
-                                        <th style="min-width:160px;">Level</th>
-                                        <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
-                                        <th style="min-width:220px;">Users to Verify PO</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tblPOLevelsBody">
-                                    <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
-                                </tbody>
-                            </table>
+                        <ul class="nav pm-approval-level-tabs" id="approvalLevelTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link active" data-approval-tab="PO" role="tab">PO</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link" data-approval-tab="Payment" role="tab">Payment</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link" data-approval-tab="Expense" role="tab">Expense</button>
+                            </li>
+                        </ul>
+                        <div id="approvalLevelTabContent">
+                            <div class="pm-approval-tab-pane active" id="approvalTabPanePO" data-approval-tab="PO">
+                                <div id="dvSingleLevelSelect_PO" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_PO" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_PO">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;">Users to Verify PO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_PO">
+                                            <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="pm-approval-tab-pane" id="approvalTabPanePayment" data-approval-tab="Payment">
+                                <div id="dvSingleLevelSelect_Payment" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_Payment" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_Payment">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;display:none;">Users to Verify Payment</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_Payment">
+                                            <tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="pm-approval-tab-pane" id="approvalTabPaneExpense" data-approval-tab="Expense">
+                                <div id="dvSingleLevelSelect_Expense" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_Expense" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_Expense">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;display:none;">Users to Verify Expense</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_Expense">
+                                            <tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                         <input type="hidden" id="hfSubProjectCode" value="0" />
                 </div>
@@ -1115,8 +1228,8 @@
                     </div>
                     <div class="pm-view-divider"></div>
                     <div class="pm-view-row" style="align-items:flex-start;">
-                        <span class="pm-view-lbl">Verify PO Levels</span>
-                        <div class="pm-view-val" id="viewVerifyPOUsers" style="white-space:normal; overflow-x:auto;">—</div>
+                        <span class="pm-view-lbl">Approval Levels</span>
+                        <div class="pm-view-val" id="viewApprovalLevels" style="white-space:normal; overflow-x:auto;">—</div>
                     </div>
                 </div>
             </div>

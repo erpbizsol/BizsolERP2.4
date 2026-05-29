@@ -1,4 +1,5 @@
 import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
+import { ExpensesLedgerReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpensesLedgerReportService.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
@@ -89,6 +90,49 @@ function buildExpenseHeadOptionsFromDetailList(rawList) {
     });
 }
 
+/** Recompute footer totals from current inputs (Filter.js totals use stored HTML, not live typing). */
+function refreshExpenseEntryDetailTotals() {
+    var bodyId = 'ExpenseEntryDetails-body';
+    var $tbody = $('#' + bodyId);
+    var $totalRow = $tbody.find('tr.total-row');
+    if (!$totalRow.length) return;
+
+    var sumAllowed = 0;
+    var sumExp = 0;
+    var sumAppr = 0;
+    $tbody.find('tr').not('.total-row').not('.grand-total-row').each(function () {
+        var $tr = $(this);
+        if ($tr.hasClass('expense-entry-empty-row')) return;
+        if (!$tr.find('.hdnExpenseHeadMasterCode').length) return;
+        var a = parseFloat($tr.find('.txtAllowedAmount').val());
+        var e = parseFloat($tr.find('.txtExpendedAmount').val());
+        var p = parseFloat($tr.find('.txtApprovedAmount').val());
+        if (!isNaN(a) && isFinite(a)) sumAllowed += a;
+        if (!isNaN(e) && isFinite(e)) sumExp += e;
+        if (!isNaN(p) && isFinite(p)) sumAppr += p;
+    });
+
+    var fixedCfg = window['fixedDecimalvalue_' + bodyId];
+    var commaCols = window['commaColumns_' + bodyId] || [];
+
+    function formatTotalCell(columnKey, sum) {
+        var decimalPlaces = 3;
+        if (fixedCfg && typeof fixedCfg === 'object' && Object.prototype.hasOwnProperty.call(fixedCfg, columnKey)) {
+            decimalPlaces = fixedCfg[columnKey];
+        } else if (typeof fixedCfg === 'number') {
+            decimalPlaces = fixedCfg;
+        }
+        var valStr = (commaCols.indexOf(columnKey) >= 0 && typeof window.formatIndianNumber === 'function')
+            ? window.formatIndianNumber(sum, decimalPlaces)
+            : sum.toFixed(decimalPlaces);
+        return '<strong>' + valStr + '</strong>';
+    }
+
+    $totalRow.find('td').eq(Indx_Tbl.AllowedAmount).html(formatTotalCell('Allowed Amount', sumAllowed));
+    $totalRow.find('td').eq(Indx_Tbl.ExpenseAmount).html(formatTotalCell('Expense Amount', sumExp));
+    $totalRow.find('td').eq(Indx_Tbl.ApprovedAmount).html(formatTotalCell('Approved Amount', sumAppr));
+}
+
 /** Grid loads with Paginator=false; New Row must not call renderTableWithPagination without page controls. */
 function renderExpenseEntryDetailGrid() {
     var tableId = 'ExpenseEntryDetails';
@@ -99,6 +143,7 @@ function renderExpenseEntryDetailGrid() {
     } else {
         renderTable(data, bodyId, false);
     }
+    refreshExpenseEntryDetailTotals();
 }
 
 function initializeExpenseEntryDetailGridShell() {
@@ -339,12 +384,37 @@ function getDetailRowSubProjectCodeFromItem(item) {
     return 0;
 }
 
+/** Expense amount from a visible grid row. */
+function getExpenseDetailRowExpenseAmount($r) {
+    if (!$r || !$r.length) return 0;
+    var $inp = $r.find('.txtExpendedAmount');
+    if (!$inp.length) return 0;
+    var v = parseFloat($inp.val());
+    return isNaN(v) || !isFinite(v) ? 0 : v;
+}
+
+function getDetailRowExpenseAmountFromItem(item) {
+    if (!item) return 0;
+    var cell = item['Expense Amount'];
+    if (cell === undefined || cell === null) return 0;
+    if (typeof cell === 'number' && !isNaN(cell)) return cell;
+    var $d = $('<div>').html(String(cell));
+    var $inp = $d.find('input.txtExpendedAmount');
+    if (!$inp.length) return 0;
+    var raw = $inp.attr('value');
+    if (raw === undefined || raw === null) raw = $inp.val();
+    var v = parseFloat(raw);
+    return isNaN(v) || !isFinite(v) ? 0 : v;
+}
+
 function validateDuplicateSubProjectExpenseHead() {
+    if (G_ProjectApplicable !== 'Y') return true;
     var tableId = 'ExpenseEntryDetails';
     var fd = window['filteredData_' + tableId];
     if (!fd || !fd.length) return true;
     var seen = {};
     for (var i = 0; i < fd.length; i++) {
+        if (getDetailRowExpenseAmountFromItem(fd[i]) <= 0) continue;
         var head = getDetailRowExpenseHeadCodeFromItem(fd[i]);
         if (head <= 0) continue;
         var sub = getDetailRowSubProjectCodeFromItem(fd[i]);
@@ -356,6 +426,28 @@ function validateDuplicateSubProjectExpenseHead() {
         seen[key] = true;
     }
     return true;
+}
+
+/** When ProjectApplicable=Y, Project + Sub Project required only on rows with expense amount > 0. */
+function validateExpenseDetailProjectSubProject() {
+    if (G_ProjectApplicable !== 'Y') return true;
+    var ok = true;
+    $('#ExpenseEntryDetails-body tr').not('.total-row').not('.grand-total-row').each(function () {
+        var $r = $(this);
+        if ($r.hasClass('expense-entry-empty-row')) return;
+        if (!$r.find('.hdnExpenseHeadMasterCode').length) return;
+        if (getExpenseDetailRowExpenseAmount($r) <= 0) return;
+        var pm = parseInt($r.find('.ee-ddl-project').val(), 10) || 0;
+        var sp = parseInt($r.find('.ee-ddl-subproject').val(), 10) || 0;
+        if (pm <= 0 || sp <= 0) {
+            ok = false;
+            return false;
+        }
+    });
+    if (!ok) {
+        toastr.warning('Please select Project and Sub Project for each line that has an expense amount.');
+    }
+    return ok;
 }
 
 function parseAllowedAmountFromDetailItem(item) {
@@ -408,6 +500,7 @@ function applyImmediateFieldsForExpenseHeadSelection($row, headCode) {
     if (!headCode || headCode <= 0) {
         $row.find('.txtAllowedAmount').val('0');
         $row.find('.txtPerDay').val('0');
+        refreshExpenseEntryDetailTotals();
         return;
     }
     var meta = G_ExpenseHeadOptions.find(function (h) {
@@ -421,6 +514,7 @@ function applyImmediateFieldsForExpenseHeadSelection($row, headCode) {
     var perDay = meta.templatePerDayLimit != null && !isNaN(Number(meta.templatePerDayLimit)) ? Number(meta.templatePerDayLimit) : 0;
     $row.find('.txtAllowedAmount').val(allowed);
     $row.find('.txtPerDay').val(perDay);
+    refreshExpenseEntryDetailTotals();
 }
 
 function refreshAllowedAmountForSingleRow($row) {
@@ -430,10 +524,12 @@ function refreshAllowedAmountForSingleRow($row) {
     if (rowCode <= 0) {
         $row.find('.txtAllowedAmount').val('0');
         syncExpenseDetailRowToFilteredData($row);
+        refreshExpenseEntryDetailTotals();
         return;
     }
     function finish() {
         syncExpenseDetailRowToFilteredData($row);
+        refreshExpenseEntryDetailTotals();
     }
     if (!fromDate || !toDate || !MarketingManMaster_Code) {
         applyAllowedAmountFallbackForRow($row, rowCode);
@@ -498,6 +594,54 @@ function appendNewExpenseEntryRow() {
 
 var MarketingPersonName = param_MarketingMan_Name;
 var MarketingManMaster_Code = 0;
+var G_EeClosingBalanceRequestId = 0;
+
+function applyClosingBalanceFieldVisibility() {
+    $('#eeClosingBalWrap').show();
+}
+
+function formatClosingBalanceDisplay(row) {
+    if (!row) return '';
+    var err = row.Error || row.error || row.Message || row.message;
+    if (err) return '';
+    var amt = row.ClosingBalance != null ? row.ClosingBalance : (row.Balance != null ? Math.abs(Number(row.Balance)) : null);
+    if (amt === null || amt === undefined || amt === '') return '';
+    var n = Number(amt);
+    if (isNaN(n)) return '';
+    var drCr = (row.DrCr != null ? String(row.DrCr) : '').trim();
+    var displayAmt = Math.abs(n);
+    return drCr ? displayAmt.toFixed(3) + ' ' + drCr : displayAmt.toFixed(3);
+}
+
+/** Closing balance = payments − verified expenses for sales person as on Entry Date. */
+function refreshClosingBalance() {
+    var entryDate = ($('#txtEntryDate').val() || '').trim();
+    if (!entryDate || !MarketingManMaster_Code) {
+        $('#txtClosingBalance').val('');
+        return;
+    }
+    var reqId = ++G_EeClosingBalanceRequestId;
+    ExpensesLedgerReportService.GetClosingBalance(
+        convertDateFormat1(entryDate),
+        MarketingManMaster_Code
+    ).then(function (response) {
+        if (reqId !== G_EeClosingBalanceRequestId) return;
+        var rows = Array.isArray(response) ? response : (response && Array.isArray(response.Data) ? response.Data : []);
+        if (!rows.length) {
+            $('#txtClosingBalance').val('');
+            return;
+        }
+        var err0 = rows[0].Error || rows[0].error;
+        if (err0) {
+            $('#txtClosingBalance').val('');
+            return;
+        }
+        $('#txtClosingBalance').val(formatClosingBalanceDisplay(rows[0]));
+    }).catch(function () {
+        if (reqId !== G_EeClosingBalanceRequestId) return;
+        $('#txtClosingBalance').val('');
+    });
+}
 
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Entry Details");
@@ -551,7 +695,12 @@ $(document).ready(function () {
     });
 
     $('#ExpenseEntryDetails').on('change', '.ee-ddl-subproject', function () {
-        syncExpenseDetailRowToFilteredData($(this).closest('tr'));
+        var $row = $(this).closest('tr');
+        syncExpenseDetailRowToFilteredData($row);
+    });
+
+    $('#ExpenseEntryDetails').on('input', '.txtAllowedAmount, .txtExpendedAmount, .txtApprovedAmount', function () {
+        refreshExpenseEntryDetailTotals();
     });
 
     $('#ExpenseEntryDetails').on('change', '.ee-ddl-expensehead', function () {
@@ -583,12 +732,20 @@ $(document).ready(function () {
         openExpenseEntryMasterAttachmentControl();
     });
 
+    ExpenseEntryService.GetMarketingManMasterByName(param_MarketingMan_Name).then(function (mm) {
+        if (mm && mm.Code) {
+            MarketingManMaster_Code = parseInt(mm.Code, 10) || 0;
+            refreshClosingBalance();
+        }
+    });
+
     ExpenseEntryService.GetConfigExpenseEntryParameter()
         .then(function (cfg) {
             var row = Array.isArray(cfg) && cfg.length > 0 ? cfg[0] : (cfg || {});
             G_ProjectApplicable      = ((row.ProjectApplicable      || 'N') + '').trim().toUpperCase();
             G_LevelVerifyApplicable  = ((row.LevelVerifyApplicable  || 'N') + '').trim().toUpperCase();
             refreshApprovedAmountInputDisabledAttr();
+            applyClosingBalanceFieldVisibility();
             PopulateExpenseHeadDetails(param_ExpenseEntryMaster_Code);
         })
         .catch(function () {
@@ -683,6 +840,7 @@ function PopulateExpenseHeadDetails(Code) {
                 $('#txtToDate').val(response.ExpenseEntryMaster[0].ToDate);
                 MarketingManMaster_Code = (response.ExpenseEntryMaster[0].MarketingManMaster_Code);
                 CalculateTotalDays(MarketingManMaster_Code);
+                refreshClosingBalance();
             } else {
                 toastr.error('No Data Found');
             }
@@ -721,6 +879,9 @@ function PopulateExpenseHeadDetails(Code) {
                 const totalAmount = ['Allowed Amount', 'Approved Amount', 'Expense Amount'];
                 BizsolCustomFilterGrid.CreateDataTable('ExpenseEntryDetails-header', 'ExpenseEntryDetails-body', detailData, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false, totalAmount);
                 $('#paginator-ExpenseEntryDetails').show();
+                refreshExpenseEntryDetailTotals();
+                applyClosingBalanceFieldVisibility();
+                refreshClosingBalance();
             } else {
                 loadExpenseHeadOptionsFromTemplate(MarketingPersonName).then(function () {
                     if (G_ExpenseHeadOptions.length > 0) {
@@ -781,7 +942,7 @@ function ViewAttachment(x) {
         return;
     }
     var entryNo = parseInt($('#txtEntryNo').val(), 10) || 0;
-    var entryDate = ($('#txtEntryDate').val() || '').trim();
+    var entryDate = entryDateParamForAttachmentControl();
     InitAttachmentControl('ExpenseEntryMaster', masterCode, 'ExpenseEntryDetail', detailCode, entryNo, entryDate, getAttachmentControlMode());
 }
 
@@ -789,7 +950,7 @@ function ViewAttachment(x) {
 function openExpenseEntryMasterAttachmentControl() {
     var masterCode = getExpenseEntryMasterCode();
     var entryNo = parseInt($('#txtEntryNo').val(), 10) || 0;
-    var entryDate = ($('#txtEntryDate').val() || '').trim();
+    var entryDate = entryDateParamForAttachmentControl();
     InitAttachmentControl('ExpenseEntryMaster', masterCode, '', 0, entryNo, entryDate, getAttachmentControlMode());
 }
 
@@ -819,9 +980,11 @@ function CalculateApprovedAmount(x) {
         G_AmountExceedRow = ObjCurrRow;
         G_AmountExceedRow.data('allowedAmount', AllowedAmount);
         $('#eeConfirmBackdrop').addClass('show');
+        refreshExpenseEntryDetailTotals();
         return;
     }
     ObjCurrRow.find('.txtApprovedAmount').val(ApprovedAmount);
+    refreshExpenseEntryDetailTotals();
 }
 
 function ApplyAmountExceedResponse(proceed) {
@@ -831,6 +994,7 @@ function ApplyAmountExceedResponse(proceed) {
         G_AmountExceedRow = null;
     }
     $('#eeConfirmBackdrop').removeClass('show');
+    refreshExpenseEntryDetailTotals();
 }
 
 function ShowExpenseEntryDetailSuccessModal(title, text, iconClass) {
@@ -852,6 +1016,7 @@ function ApprovedAmountIncrease(x) {
         ObjCurrRow.find('.txtApprovedAmount').val(expendedAmountIncrease);
         toastr.warning("Approved amount should be Less than Expended amount.");
     }
+    refreshExpenseEntryDetailTotals();
 }
 
 
@@ -952,7 +1117,10 @@ function DatePicker() {
         autoclose: true,
     }).on('change', function () {
         CalculateTotalDays(MarketingManMaster_Code);
+    });
 
+    $('#txtEntryDate').on('change', function () {
+        refreshClosingBalance();
     });
 
 }
@@ -971,6 +1139,13 @@ function parseDate(dateStr) {
     if (d.getFullYear() !== year || d.getMonth() !== month || d.getDate() !== day) return null;
     return d;
 }
+
+/** Attachment control uses `new Date(hfEntryDate)` → pass ISO here (display field stays dd-mm-yyyy). */
+function entryDateParamForAttachmentControl() {
+    var d = parseDate(($('#txtEntryDate').val() || '').trim());
+    return d ? d.toISOString() : '';
+}
+
 function CalculateTotalDays(MarketingManMaster_Code) {
     var fromDate = $('#txtFromDate').val();
     var toDate = $('#txtToDate').val();
@@ -1017,6 +1192,7 @@ function CalculateTotalDays(MarketingManMaster_Code) {
                             $row.find('.txtAllowedAmount').val("0");
                         }
                     });
+                    refreshExpenseEntryDetailTotals();
                 } else {
                     console.warn('No allowed amounts found from API');
                 }
@@ -1254,6 +1430,10 @@ function ValidateData() {
         return false;
     }
 
+    if (!validateExpenseDetailProjectSubProject()) {
+        return false;
+    }
+
     if (!validateDuplicateSubProjectExpenseHead()) {
         return false;
     }
@@ -1278,11 +1458,6 @@ function ValidateData() {
         toastr.error('From Date cannot be after To Date.');
         return false;
     }
-    /* Claim date must be on/after the expense period (not string compare — dd-mm-yyyy sorts wrong). */
-    if (entryDt < fromDt || entryDt < toDt) {
-        toastr.warning('Entry Date must be on or after both From Date and To Date.');
-        return false;
-    }
 
     if (TotalDays < 0) {
         toastr.error("Please select a valid range of dates.");
@@ -1294,13 +1469,15 @@ function ValidateData() {
         if ($(this).hasClass('total-row') || $(this).hasClass('grand-total-row')) return;
         var $amtCell = $(this).find('td:eq(' + Indx_Tbl.AllowedAmount + ')');
         if (!$amtCell.length || !$amtCell[0].getElementsByTagName('input').length) return;
-        var AllowedAmount = $amtCell[0].getElementsByTagName('input')[0].value;
-        var ExpenseAmount = $(this).find('td:eq(' + Indx_Tbl.ExpenseAmount + ')')[0].getElementsByTagName('input')[0].value;
-        var ApprovedAmount = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0].value;
+        var AllowedAmount = parseFloat($amtCell[0].getElementsByTagName('input')[0].value) || 0;
+        var ExpenseAmount = parseFloat($(this).find('td:eq(' + Indx_Tbl.ExpenseAmount + ')')[0].getElementsByTagName('input')[0].value) || 0;
+        var ApprovedAmount = parseFloat($(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0].value) || 0;
 
-        TotalAllowed += parseFloat(AllowedAmount);
-        TotalExp += parseFloat(ExpenseAmount);
-        TotalApproved += parseFloat(ApprovedAmount);
+        TotalAllowed += AllowedAmount;
+        TotalExp += ExpenseAmount;
+        if (!(AllowedAmount === 0 && ApprovedAmount === 0)) {
+            TotalApproved += ApprovedAmount;
+        }
 
     });
     if (TotalAllowed < 0) {
@@ -1323,16 +1500,24 @@ function ValidateVerifyData() {
         return false;
     }
     var TotalApprovedAmount = 0;
+    var hasApprovedValidationRow = false;
     $("#ExpenseEntryDetails tbody tr").each(function (index, row) {
         if ($(this).hasClass('expense-entry-empty-row')) return;
         if ($(this).hasClass('total-row') || $(this).hasClass('grand-total-row')) return;
+        var $allowedCell = $(this).find('td:eq(' + Indx_Tbl.AllowedAmount + ')');
         var $ap = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')');
+        if (!$allowedCell.length || !$allowedCell[0].getElementsByTagName('input').length) return;
         if (!$ap.length || !$ap[0].getElementsByTagName('input').length) return;
-        var ApprovedAmount = $ap[0].getElementsByTagName('input')[0].value;
-        TotalApprovedAmount += parseFloat(ApprovedAmount);
+        var AllowedAmount = parseFloat($allowedCell[0].getElementsByTagName('input')[0].value) || 0;
+        var ApprovedAmount = parseFloat($ap[0].getElementsByTagName('input')[0].value) || 0;
+        if (AllowedAmount === 0 && ApprovedAmount === 0) {
+            return;
+        }
+        hasApprovedValidationRow = true;
+        TotalApprovedAmount += ApprovedAmount;
     });
 
-    if (TotalApprovedAmount <= 0) {
+    if (hasApprovedValidationRow && TotalApprovedAmount <= 0) {
         toastr.error("Invalid Approved Amount.");
         return false;
     }

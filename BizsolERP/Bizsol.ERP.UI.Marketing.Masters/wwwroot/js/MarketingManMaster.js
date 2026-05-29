@@ -279,6 +279,16 @@ function toggleSeniorJuniorUi() {
     }
 }
 
+/** User ID is mandatory unless Show All Party is checked. */
+function toggleUserIdRequiredUi() {
+    var userIdRequired = !$('#chkShowAllParty').is(':checked');
+    $('#lblUserIdRequired').toggle(userIdRequired);
+    $('#ddlUserId').prop('required', userIdRequired);
+    if (!userIdRequired) {
+        clearFieldError('ddlUserId');
+    }
+}
+
 /**
  * @param {number} excludeMmCode Current MarketingManMaster Code when editing (0 for new).
  */
@@ -389,6 +399,7 @@ function clearForm() {
     $('input[name="radStatus"][value="Y"]').prop('checked', true);
     $('#chkShowAllParty').prop('checked', false);
     syncPersonNameFieldState();
+    toggleUserIdRequiredUi();
 }
 
 function setDetailFormMode(mode) {
@@ -636,6 +647,7 @@ function mapRecordToForm(rec) {
         G_MMM_ClientCodesLoaded = false;
     }
     toggleSeniorJuniorUi();
+    toggleUserIdRequiredUi();
     syncPersonNameFieldState();
     } finally {
         G_MMM_SkipApplyUserToPerson = false;
@@ -705,6 +717,24 @@ function saveMarketingMan() {
             }
             return;
         }
+        // ── Mandatory: User ID (unless Show All Party is checked) ───────
+        if (!$('#chkShowAllParty').is(':checked')) {
+            var userId = $('#ddlUserId').val();
+            if (!userId || String(userId) === '0') {
+                showFieldError('ddlUserId', 'User ID is required.');
+                try {
+                    if ($('#ddlUserId').data('select2')) {
+                        $('#ddlUserId').select2('open');
+                    } else {
+                        $('#ddlUserId').focus();
+                    }
+                } catch (e) {
+                    $('#ddlUserId').focus();
+                }
+                return;
+            }
+        }
+
         // ── Mandatory: Person Name ───────────────────────────────────────
         var personName = ($('#txtPersonName').val() || '').trim();
         if (!personName) {
@@ -898,9 +928,13 @@ $(document).ready(function () {
     $('#ddlUserId').on('change', function () {
         applyUserSelectionToPersonName();
         syncPersonNameFieldState();
+        if ($(this).val() && String($(this).val()) !== '0') {
+            clearFieldError('ddlUserId');
+        }
     });
 
     $('#chkShowAllParty').on('change', function () {
+        toggleUserIdRequiredUi();
         refreshClientTable();
     });
 
