@@ -181,6 +181,24 @@ const PackingListFGService = {
             }
         );
     },
+    GetPackingListValidationDetails: function GetPackingListValidationDetails(PackingListMaster_Code) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/GetPackingListValidationDetails?PackingListMaster_Code=" + PackingListMaster_Code;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    UpdatePackingListValidationDetails: function UpdatePackingListValidationDetails(PackingListMaster_Code, ScanText) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/UpdatePackingListValidationDetails?PackingListMaster_Code=" + PackingListMaster_Code + "&ScanText=" + encodeURIComponent(ScanText);
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 
