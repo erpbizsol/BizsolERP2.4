@@ -183,11 +183,12 @@
     /* ── KPI CARDS ──────────────────────────────────────────────── */
     .pdd-kpi-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 16px;
         margin-bottom: 20px;
     }
-    @@media (max-width: 1100px) { .pdd-kpi-grid { grid-template-columns: repeat(2,1fr); } }
+    @@media (max-width: 1400px) { .pdd-kpi-grid { grid-template-columns: repeat(3,1fr); } }
+    @@media (max-width: 900px)  { .pdd-kpi-grid { grid-template-columns: repeat(2,1fr); } }
     @@media (max-width: 600px)  { .pdd-kpi-grid { grid-template-columns: 1fr; } }
 
     .pdd-kpi-card {
@@ -200,6 +201,13 @@
         position: relative;
         overflow: hidden;
         cursor: default;
+    }
+    .pdd-kpi-card.pdd-kpi-click {
+        cursor: pointer;
+    }
+    .pdd-kpi-card.pdd-kpi-click:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
     }
     .pdd-kpi-card::after {
         content: '';
@@ -226,6 +234,10 @@
     .pdd-kpi-card.kpi-green {
         background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);
         box-shadow: 0 8px 24px rgba(0,184,148,0.3);
+    }
+    .pdd-kpi-card.kpi-blue {
+        background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        box-shadow: 0 8px 24px rgba(9,132,227,0.3);
     }
 
     .pdd-kpi-icon {
@@ -544,7 +556,7 @@
 
             <!-- ── KPI CARDS ────────────────────────────────────────── -->
             <div class="pdd-kpi-grid" id="pddKpiGrid">
-                <div class="pdd-kpi-card kpi-red">
+                <div class="pdd-kpi-card kpi-red pdd-kpi-click" id="kpiCardPO" title="Open PO Approval" role="button" tabindex="0">
                     <div class="pdd-kpi-icon"><i class="fa-solid fa-cart-shopping"></i></div>
                     <div class="pdd-kpi-body">
                         <div class="pdd-kpi-value" id="kpiPOCount">—</div>
@@ -552,7 +564,7 @@
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-triangle-exclamation fa-xs"></i> High Priority</span>
                     </div>
                 </div>
-                <div class="pdd-kpi-card kpi-amber">
+                <div class="pdd-kpi-card kpi-amber pdd-kpi-click" id="kpiCardPayment" title="Open GRN Payment Approval" role="button" tabindex="0">
                     <div class="pdd-kpi-icon"><i class="fa-solid fa-credit-card"></i></div>
                     <div class="pdd-kpi-body">
                         <div class="pdd-kpi-value" id="kpiPaymentAmt">—</div>
@@ -560,7 +572,7 @@
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-bell fa-xs"></i> Attention</span>
                     </div>
                 </div>
-                <div class="pdd-kpi-card kpi-purple">
+                <div class="pdd-kpi-card kpi-purple pdd-kpi-click" id="kpiCardExpense" title="Open Expense Entry Approval" role="button" tabindex="0">
                     <div class="pdd-kpi-icon"><i class="fa-solid fa-file-invoice"></i></div>
                     <div class="pdd-kpi-body">
                         <div class="pdd-kpi-value" id="kpiExpenseAmt">—</div>
@@ -574,6 +586,14 @@
                         <div class="pdd-kpi-value" id="kpiTotalProjects">—</div>
                         <div class="pdd-kpi-label">Total Projects</div>
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-circle-check fa-xs"></i> Active</span>
+                    </div>
+                </div>
+                <div class="pdd-kpi-card kpi-blue pdd-kpi-click" id="kpiCardReconciled" title="Open Bank Statement Import" role="button" tabindex="0">
+                    <div class="pdd-kpi-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+                    <div class="pdd-kpi-body">
+                        <div class="pdd-kpi-value" id="kpiIsReconciled">—</div>
+                        <div class="pdd-kpi-label">Un Reconciled</div>
+                        <span class="pdd-kpi-badge"><i class="fa-solid fa-link-slash fa-xs"></i> Un Reconciled</span>
                     </div>
                 </div>
             </div>
