@@ -11,20 +11,20 @@
         overflow: hidden !important;
         height: 100% !important;
     }
-    
+
     body {
         overflow: hidden !important;
         height: 100vh !important;
         margin: 0 !important;
         padding: 0 !important;
     }
-    
+
     /* Ensure main content area fits viewport without scrolling */
     .row {
         margin: 0 !important;
         height: 100% !important;
     }
-    
+
     .col-sm-12 {
         height: 100% !important;
         display: flex !important;
@@ -53,7 +53,7 @@
     .btn-height {
         height: 30px;
     }
-    
+
     /* Fix for filter dropdown positioning */
     .table-wrapper {
         position: relative;
@@ -63,12 +63,12 @@
         width: 100%;
         /* Table wrapper takes remaining space and scrolls internally */
     }
-    
+
     .column-filter-dropdown {
         position: fixed !important;
         z-index: 10000 !important;
     }
-    
+
     /* Ensure table header cells with filters have proper positioning context */
     #tblMillWiseProduction thead th {
         position: relative;
@@ -82,15 +82,15 @@
         background-color: #fff;
     }
 
-    #tblMillWiseProduction thead th {
-        background-color: #558bc0 !important;
-        color: #fff !important;
-        position: sticky;
-        top: 0;
-        z-index: 11;
-        border-bottom: 2px solid #dee2e6;
-        padding-right: 15px !important;
-    }
+        #tblMillWiseProduction thead th {
+            background-color: #558bc0 !important;
+            color: #fff !important;
+            position: sticky;
+            top: 0;
+            z-index: 11;
+            border-bottom: 2px solid #dee2e6;
+            padding-right: 15px !important;
+        }
 
     /* Ensure table takes full width and height of wrapper */
     #tblMillWiseProduction {
@@ -108,13 +108,13 @@
         height: auto;
     }
 
-    /* Ensure flex layout when element is shown (override inline display:none) */
-    #dvTableMillWiseProduction[style*="display: flex"],
-    #dvTableMillWiseProduction[style*="display:block"],
-    #dvTableMillWiseProduction:not([style*="display: none"]) {
-        display: flex !important;
-        flex-direction: column !important;
-    }
+        /* Ensure flex layout when element is shown (override inline display:none) */
+        #dvTableMillWiseProduction[style*="display: flex"],
+        #dvTableMillWiseProduction[style*="display:block"],
+        #dvTableMillWiseProduction:not([style*="display: none"]) {
+            display: flex !important;
+            flex-direction: column !important;
+        }
 
     /* Dynamic height will be set by JavaScript based on actual screen height */
     .table-wrapper {
@@ -167,11 +167,6 @@
                 <div class="col-md-3">
                     <label for="ddlMachineNo" class="form-label filter-label">Machine No</label>
                     <select id="ddlMachineNo" class="form-control form-control-sm box_border" multiple style="width: 300px;">
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="ddlParty" class="form-label filter-label">Party</label>
-                    <select id="ddlParty" class="form-control form-control-sm box_border" style="width: 300px;">
                     </select>
                 </div>
                 <div class="col-md-1" style="margin-top: 1.6rem;">

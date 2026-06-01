@@ -1,4 +1,5 @@
 import { GateEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GateEntryService.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
@@ -115,7 +116,7 @@ function GateEntryGirdByDates() {
             //    item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'editFull_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Out</a>'
             //});
             response.forEach(item => {
-                item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'editFull_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '_' + item.GodownMaster_Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '_' + item.GodownMaster_Code + '\')" >Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '_' + item.GodownMaster_Code + '\')" >Out</a>'
+                item.Action = GateEntry_BuildGridActionButtons(item);
             });
         }
         else {
@@ -231,9 +232,8 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
 
     }
     else if (EntryType.includes('print') == true) {
-        ChangeMode(Mode);
         GateEntryMaster_Code = EntryType.split('_')[1];
-        PrintGateEntry(GateEntryMaster_Code);
+        GateEnty_PrintGateEntry(GateEntryMaster_Code);
     }
     else if (EntryType.includes('edit') == true) {
         
@@ -1069,16 +1069,659 @@ function WithPO() {
         $('#RowfrmLoadedInPoItemGrid').hide();
     }
 }
-function PrintGateEntry(GateEntyMaster_Code) {
-    GateEntryService.Print(GateEntyMaster_Code).then(function (response) {
-        let url = response.Url;
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.target = '_blank';
-        a.href = url;
-        document.body.appendChild(a);
-        a.click();
+function GateEntry_BuildGridActionButtons(item) {
+    const typeIn = item['Type In'].replace(' ', '');
+    const code = item.Code;
+    const godown = item.GodownMaster_Code;
+    const attachName = `${item['Type In']} ${item['Entry No']} ${item['Vehicle No']} ${String(item['Date In Time'] || '').replace(/[:/]/g, '')} ${String(item['Date Out Time'] || '').replace(/[:/]/g, '')}`;
+    const printBtn = `<a class="btn btn-info icon-height" onclick="GateEnty_PrintGateEntry(${code})" title="Print"> <i class="fa fa-print"></i></a>&nbsp;`;
+    const attachBtn = `<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(${code},'${attachName.replace(/'/g, '\\\'')}')"> <i class="fa fa-paperclip"></i></a>&nbsp;`;
+
+    if (item['Date Out Time'] !== '') {
+        return printBtn + attachBtn
+            + `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}editFull_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`
+            + `<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}view_${code}_${godown}')" ><i class="fa fa-eye"></i></a>`;
+    }
+    if (typeIn.toLowerCase() === 'loadedin') {
+        return printBtn + attachBtn
+            + `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}edit_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`
+            + `<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}emptyout_${code}_${godown}')" >Out</a>`;
+    }
+    return printBtn + attachBtn
+        + `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}edit_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`
+        + `<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}loadedout_${code}_${godown}')" >Out</a>`;
+}
+
+function geEscapeHtml(value) {
+    if (value == null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function gePickField(obj, keys, defaultValue) {
+    if (!obj) return defaultValue || '';
+    for (let i = 0; i < keys.length; i++) {
+        const val = obj[keys[i]];
+        if (val !== undefined && val !== null && String(val).trim() !== '') {
+            return val;
+        }
+    }
+    return defaultValue || '';
+}
+
+function geFormatGateEntryDate(value) {
+    if (!value) return '';
+    try {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleDateString('en-IN');
+        }
+    } catch (ex) { /* ignore */ }
+    return String(value).slice(0, 10);
+}
+
+function geFormatGateEntryDateTime(dateValue, timeValue) {
+    const datePart = geFormatGateEntryDate(dateValue);
+    const timePart = timeValue ? String(timeValue).trim() : '';
+    if (datePart && timePart) return `${datePart} ${timePart}`;
+    return datePart || timePart || '';
+}
+
+function geGetCompanyLogoFileName(companyName) {
+    const name = String(companyName || '').trim();
+    if (!name) {
+        return '';
+    }
+
+    const normalized = name.toLowerCase();
+    if (normalized.includes('allianz')) {
+        return 'allianzlog.jpeg';
+    }
+    if (normalized.includes('purshotam')) {
+        return 'pppllog.jpeg';
+    }
+
+    const firstWord = name.replace(/[^a-zA-Z0-9\s]/g, ' ').trim().split(/\s+/)[0] || '';
+    if (firstWord) {
+        return `${firstWord.toLowerCase()}log.jpeg`;
+    }
+
+    return '';
+}
+
+function geGetGateEntryCompanyInfo(data) {
+    let companyName = gePickField(data, ['CompanyName', 'companyName'], '');
+    let companyAddress = gePickField(data, ['CompanyAddress', 'companyAddress'], '');
+    try {
+        const userDetails = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        if (userDetails && userDetails[0]) {
+            if (!companyName) {
+                companyName = userDetails[0].CompanyName || userDetails[0].CompanyNameForShow || '';
+            }
+            if (!companyAddress) {
+                companyAddress = userDetails[0].CompanyAddress || '';
+            }
+        }
+    } catch (ex) { /* ignore */ }
+    const logoFileName = geGetCompanyLogoFileName(companyName);
+    const logoUrl = `${(sessionStorage.getItem('AppBaseURL') || '/').replace(/\/?$/, '/')}assets/images/${logoFileName}`;
+    return { companyName, companyAddress, logoUrl };
+}
+
+function geGetGateEntryCreatedBy(data) {
+    const fromApi = gePickField(data, ['CreatedBy', 'CreatedByName', 'UserName', 'UserID', 'createdBy'], '');
+    if (fromApi) return fromApi;
+    try {
+        const userDetails = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        if (userDetails && userDetails[0]) {
+            return userDetails[0].UserID || userDetails[0].UserName || '';
+        }
+    } catch (ex) { /* ignore */ }
+    return '';
+}
+
+function geIsImageFileName(fileName) {
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(String(fileName || ''));
+}
+
+function geBlobToDataUrl(blob) {
+    return new Promise(function (resolve) {
+        const reader = new FileReader();
+        reader.onloadend = function () { resolve(reader.result || ''); };
+        reader.onerror = function () { resolve(''); };
+        reader.readAsDataURL(blob);
     });
+}
+
+function geBytesToDataUrl(bytes) {
+    if (!bytes || !bytes.length) return '';
+    try {
+        const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        let binary = '';
+        for (let i = 0; i < arr.length; i++) {
+            binary += String.fromCharCode(arr[i]);
+        }
+        return 'data:image/jpeg;base64,' + btoa(binary);
+    } catch (ex) {
+        return '';
+    }
+}
+
+function geLoadAttachmentDataUrl(documentMasterCode) {
+    return AttachmentControlService.DownloadAttachment(documentMasterCode)
+        .then(function (blob) { return geBlobToDataUrl(blob); })
+        .catch(function () { return ''; });
+}
+
+function geExtractImageFromGateEntryDetails(data) {
+    const imageDetail = data.gateEntryImageDetail || data.GateEntryImageDetail;
+    if (!Array.isArray(imageDetail) || imageDetail.length === 0) {
+        return { inSrc: '', outSrc: '' };
+    }
+
+    let inSrc = '';
+    let outSrc = '';
+    imageDetail.forEach(function (imgRow, index) {
+        const vehicleSrc = geBytesToDataUrl(imgRow.imgVehicle || imgRow.ImgVehicle || []);
+        const materialSrc = geBytesToDataUrl(imgRow.imgMaterial || imgRow.ImgMaterial || []);
+        const src = materialSrc || vehicleSrc;
+        if (!src) return;
+        if (index === 0 && !inSrc) {
+            inSrc = src;
+        } else if (!outSrc) {
+            outSrc = src;
+        } else if (!inSrc) {
+            inSrc = src;
+        }
+    });
+    return { inSrc, outSrc };
+}
+
+function geFetchGateEntryPhotoSources(code, data) {
+    const fromDetails = geExtractImageFromGateEntryDetails(data);
+    return AttachmentControlService.GetAttachmentUploadFiles('GateEntryMaster', code, '', 0)
+        .then(function (response) {
+            const list = Array.isArray(response) ? response.filter(function (item) {
+                return geIsImageFileName(item.DocumentName);
+            }) : [];
+
+            let inAtt = null;
+            let outAtt = null;
+            list.forEach(function (att) {
+                const text = `${att.DocumentParticulars || ''} ${att.DocumentName || ''}`.toLowerCase();
+                if (!outAtt && (text.includes('out') || text.includes('loadedout') || text.includes('emptyout'))) {
+                    outAtt = att;
+                } else if (!inAtt && (text.includes('in') || text.includes('vehicle') || text.includes('goods') || text.includes('material'))) {
+                    inAtt = att;
+                }
+            });
+
+            if (!inAtt && list.length > 0) inAtt = list[0];
+            if (!outAtt && list.length > 1) outAtt = list[1];
+
+            const tasks = [];
+            if (!fromDetails.inSrc && inAtt) {
+                tasks.push(geLoadAttachmentDataUrl(inAtt.Code).then(function (src) { fromDetails.inSrc = src; }));
+            }
+            if (!fromDetails.outSrc && outAtt) {
+                tasks.push(geLoadAttachmentDataUrl(outAtt.Code).then(function (src) { fromDetails.outSrc = src; }));
+            }
+            return Promise.all(tasks).then(function () { return fromDetails; });
+        })
+        .catch(function () { return fromDetails; });
+}
+
+function geIsBlankOutPrintValue(value) {
+    if (value == null || value === undefined) {
+        return true;
+    }
+    const text = String(value).trim();
+    return text === '' || text === '0' || text === '00:00' || text.toLowerCase() === 'null';
+}
+
+function geIsGateEntryOutCompleted(data) {
+    const dateOutTime = gePickField(data, ['Date Out Time'], '');
+    const outNo = gePickField(data, ['Entry No OUT', 'GateEntryOutNo', 'gateEntryOutNo', 'OutEntryNo'], '');
+    if (!geIsBlankOutPrintValue(dateOutTime) || !geIsBlankOutPrintValue(outNo)) {
+        return true;
+    }
+
+    const outDate = gePickField(data, ['GateEntryOutDate'], '');
+    const vehicleOutTime = gePickField(data, ['VehicleOutTime'], '');
+    return !geIsBlankOutPrintValue(outDate) && !geIsBlankOutPrintValue(vehicleOutTime);
+}
+
+function geGetGateEntryOutDateTime(data) {
+    if (!geIsGateEntryOutCompleted(data)) {
+        return '';
+    }
+
+    const gridDateOutTime = gePickField(data, ['Date Out Time'], '');
+    if (!geIsBlankOutPrintValue(gridDateOutTime)) {
+        return gridDateOutTime;
+    }
+
+    return geFormatGateEntryDateTime(data.GateEntryOutDate, data.VehicleOutTime);
+}
+
+function geGetGateEntryVehicleOutTime(data) {
+    if (!geIsGateEntryOutCompleted(data)) {
+        return '';
+    }
+
+    const gridDateOutTime = gePickField(data, ['Date Out Time'], '');
+    if (!geIsBlankOutPrintValue(gridDateOutTime)) {
+        const parts = String(gridDateOutTime).trim().split(/\s+/);
+        if (parts.length > 1) {
+            return parts.slice(1).join(' ');
+        }
+    }
+
+    const vehicleOutTime = gePickField(data, ['VehicleOutTime'], '');
+    return geIsBlankOutPrintValue(vehicleOutTime) ? '' : vehicleOutTime;
+}
+
+function geFormatVehicleWeight(value) {
+    if (value == null || value === undefined || String(value).trim() === '') {
+        return '';
+    }
+    const num = parseFloat(String(value).replace(/,/g, ''));
+    if (isNaN(num) || num === 0) {
+        return '';
+    }
+    return num.toFixed(2);
+}
+
+function geGetGateEntryInVehicleWeight(data, isLoadedIn) {
+    const weight = isLoadedIn
+        ? gePickField(data, ['LoadedWeight', 'loadedWeight'], '')
+        : gePickField(data, ['EmptyWeight', 'emptyWeight'], '');
+    return geFormatVehicleWeight(weight);
+}
+
+function geGetGateEntryOutVehicleWeight(data, isLoadedIn) {
+    if (!geIsGateEntryOutCompleted(data)) {
+        return '';
+    }
+    const weight = isLoadedIn
+        ? gePickField(data, ['EmptyWeight', 'emptyWeight'], '')
+        : gePickField(data, ['LoadedWeight', 'loadedWeight'], '');
+    return geFormatVehicleWeight(weight);
+}
+
+function geGetGateEntryNetWeight(data) {
+    if (!geIsGateEntryOutCompleted(data)) {
+        return '';
+    }
+    return geFormatVehicleWeight(gePickField(data, ['NetWeight', 'netWeight'], ''));
+}
+
+function geFindGateEntryGridRow(code) {
+    if (!Array.isArray(ExcelExportDataArry) || ExcelExportDataArry.length === 0) {
+        return null;
+    }
+    const entryCode = parseInt(String(code), 10);
+    return ExcelExportDataArry.find(function (row) {
+        return parseInt(String(row.Code), 10) === entryCode;
+    }) || null;
+}
+
+function geMergeGateEntryPrintData(detailsRow, gridRow) {
+    const merged = Object.assign({}, detailsRow || {});
+    if (!gridRow) {
+        return merged;
+    }
+
+    if (!gePickField(merged, ['GateEntryNo', 'Entry No IN', 'Entry No', 'gateEntryNo'], '')) {
+        merged.GateEntryNo = gridRow['Entry No IN'] || gridRow['Entry No'] || gridRow.GateEntryNo;
+        merged['Entry No IN'] = merged.GateEntryNo;
+    }
+    if (!gePickField(merged, ['GateEntryOutNo', 'Entry No OUT', 'gateEntryOutNo', 'OutEntryNo'], '')) {
+        merged.GateEntryOutNo = gridRow['Entry No OUT'] || gridRow.GateEntryOutNo || gridRow.OutEntryNo;
+        merged['Entry No OUT'] = merged.GateEntryOutNo;
+    } else if (gridRow['Entry No OUT']) {
+        merged.GateEntryOutNo = gridRow['Entry No OUT'];
+        merged['Entry No OUT'] = gridRow['Entry No OUT'];
+    }
+    merged['Date Out Time'] = gridRow['Date Out Time'] || merged['Date Out Time'] || '';
+    if (geIsBlankOutPrintValue(gridRow['Date Out Time']) && geIsBlankOutPrintValue(gridRow['Entry No OUT'])) {
+        merged['Entry No OUT'] = '';
+        merged.GateEntryOutNo = '';
+        merged['Date Out Time'] = '';
+        merged.GateEntryOutDate = '';
+        merged.VehicleOutTime = '';
+    }
+    if (!gePickField(merged, ['Type In', 'TypeIn'], '')) {
+        merged['Type In'] = gridRow['Type In'];
+    }
+    if (!gePickField(merged, ['TransactionType', 'transactionType'], '')) {
+        merged.TransactionType = gridRow.TransactionType;
+    }
+    if (!gePickField(merged, ['GoodDescription', 'Good Desp', 'goodDescription', 'goodDesc'], '')) {
+        merged.GoodDescription = gridRow['Good Desp'] || gridRow.GoodDescription;
+        merged['Good Desp'] = merged.GoodDescription;
+    } else if (gridRow['Good Desp']) {
+        merged.GoodDescription = gridRow['Good Desp'];
+        merged['Good Desp'] = gridRow['Good Desp'];
+    }
+    if (!gePickField(merged, ['Qty', 'qty'], '')) {
+        merged.Qty = gridRow.Qty;
+    }
+    if (!gePickField(merged, ['UOM', 'Uom'], '')) {
+        merged.UOM = gridRow.UOM;
+    }
+    if (!gePickField(merged, ['VendorName', 'Party name'], '')) {
+        merged.VendorName = gridRow['Party name'] || gridRow.VendorName;
+    }
+    if (!gePickField(merged, ['DocumentType', 'Doc Type'], '')) {
+        merged.DocumentType = gridRow['Doc Type'] || gridRow.DocumentType;
+    }
+    if (!gePickField(merged, ['DocNo', 'Doc No'], '')) {
+        merged.DocNo = gridRow['Doc No'] || gridRow.DocNo;
+    }
+    return merged;
+}
+
+function geGetGateEntryOutNo(data) {
+    if (!geIsGateEntryOutCompleted(data)) {
+        return '';
+    }
+    return gePickField(data, [
+        'GateEntryOutNo',
+        'gateEntryOutNo',
+        'Entry No OUT',
+        'EntryNoOut',
+        'OutEntryNo',
+        'GateEntryNoOut',
+        'Out Gate Entry No'
+    ], '');
+}
+
+function geBuildGateEntryItemRows(data, poItems) {
+    const transactionType = String(gePickField(data, ['TransactionType', 'transactionType'], 'LIN')).toUpperCase();
+    const rows = [];
+
+    if (Array.isArray(poItems) && poItems.length > 0) {
+        poItems.forEach(function (item) {
+            rows.push({
+                itemName: gePickField(item, ['Item Name', 'ItemName', 'Product', 'GoodDescription', 'Good Desp'], ''),
+                specification: gePickField(item, ['Specification', 'ItemSpecificationDesp', 'Size Description'], ''),
+                billQty: gePickField(item, ['BILLED QTY', 'BiLLED QTY', 'Bill Qty', 'Bill QTY', 'Qty', 'Billed Qty'], ''),
+                uom: gePickField(item, ['UOM', 'Uom', 'Unit'], '')
+            });
+        });
+        return rows;
+    }
+
+    const itemName = gePickField(data, ['GoodDescription', 'Good Desp', 'goodDescription', 'goodDesc'], '');
+    const billQty = gePickField(data, ['Qty', 'qty'], '');
+    const uom = gePickField(data, ['UOM', 'Uom'], '');
+    if (itemName || billQty || uom) {
+        rows.push({
+            itemName: itemName,
+            specification: '',
+            billQty: billQty,
+            uom: uom
+        });
+    } else if (transactionType === 'EIN' && gePickField(data, ['GateEntryOutDate'], '')) {
+        rows.push({
+            itemName: '-',
+            specification: '-',
+            billQty: '-',
+            uom: '-'
+        });
+    }
+    return rows;
+}
+
+function geBuildGateEntryPrintHtml(data, poItems, photos) {
+    const company = geGetGateEntryCompanyInfo(data);
+    const transactionType = String(gePickField(data, ['TransactionType', 'transactionType'], '')).toUpperCase();
+    const typeInDesp = String(gePickField(data, ['Type In', 'TypeIn'], '')).replace(/\s/g, '').toLowerCase();
+    const isLoadedIn = transactionType === 'LIN' || typeInDesp === 'loadedin';
+    const entryTypeLabel = isLoadedIn ? 'Loaded IN' : 'Empty IN';
+    const inPhotoLabel = isLoadedIn ? 'Loaded In photos' : 'Empty In photos';
+    const outPhotoLabel = isLoadedIn ? 'Empty Out Photos' : 'Loaded Out Photos';
+
+    const withPO = parseInt(gePickField(data, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], 0), 10) > 0;
+    const withoutExistingItem =
+        gePickField(data, ['EntryWithOutExistingItem', 'entryWithOutExistingItem'], '') === 'Y' ||
+        gePickField(data, ['EntryWithOutExistingItem', 'entryWithOutExistingItem'], '') === true ||
+        String(gePickField(data, ['EntryWithOutExistingItem', 'entryWithOutExistingItem'], '')).toUpperCase() === 'Y';
+    const withoutPO = !withPO && !withoutExistingItem;
+    const poAccessHtml = isLoadedIn
+        ? `<strong>With PO</strong> ${withPO ? 'Y' : 'N'} &nbsp;&nbsp;
+           <strong>W/O PO</strong> ${withoutPO ? 'Y' : 'N'} &nbsp;&nbsp;
+           <strong>W/O Existing Item</strong> ${withoutExistingItem ? 'Y' : 'N'}`
+        : '';
+    const itemRows = geBuildGateEntryItemRows(data, poItems);
+    const itemRowsHtml = itemRows.length > 0
+        ? itemRows.map(function (row) {
+            return `<tr>
+                <td>${geEscapeHtml(row.itemName)}</td>
+                <td>${geEscapeHtml(row.specification)}</td>
+                <td style="text-align:center;">${geEscapeHtml(row.billQty)}</td>
+                <td style="text-align:center;">${geEscapeHtml(row.uom)}</td>
+            </tr>`;
+        }).join('')
+        : `<tr><td colspan="4" style="text-align:center;color:#666;">No item details</td></tr>`;
+    const vehicleRowHtml = isLoadedIn
+        ? `<tr>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Vehicle No.</strong><br>${geEscapeHtml(gePickField(data, ['VehicleNo', 'Vehicle No'], ''))}</td>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;">${poAccessHtml}</td>
+                </tr>`
+        : `<tr>
+                    <td colspan="4" style="border:1px solid #000;padding:6px 10px;"><strong>Vehicle No.</strong><br>${geEscapeHtml(gePickField(data, ['VehicleNo', 'Vehicle No'], ''))}</td>
+                </tr>`;
+    const itemTableHtml = `<tr>
+                    <td colspan="4" style="border:1px solid #000;padding:0;">
+                        <table class="ge-item-table" style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="border:1px solid #000;padding:6px;text-align:left;">Item name</th>
+                                    <th style="border:1px solid #000;padding:6px;text-align:left;">Specification</th>
+                                    <th style="border:1px solid #000;padding:6px;text-align:center;width:90px;">Bill Qty</th>
+                                    <th style="border:1px solid #000;padding:6px;text-align:center;width:70px;">UOM</th>
+                                </tr>
+                            </thead>
+                            <tbody>${itemRowsHtml}</tbody>
+                        </table>
+                    </td>
+                </tr>`;
+
+    const inPhotoHtml = photos.inSrc
+        ? `<img src="${photos.inSrc}" alt="${geEscapeHtml(inPhotoLabel)}" style="max-width:100%;max-height:220px;object-fit:contain;" />`
+        : `<div class="photo-placeholder">No photo</div>`;
+    const outPhotoHtml = photos.outSrc
+        ? `<img src="${photos.outSrc}" alt="${geEscapeHtml(outPhotoLabel)}" style="max-width:100%;max-height:220px;object-fit:contain;" />`
+        : `<div class="photo-placeholder">No photo</div>`;
+
+    const gateEntryNo = gePickField(data, ['GateEntryNo', 'Entry No IN', 'Entry No', 'gateEntryNo'], '');
+    const gateEntryOutNo = geGetGateEntryOutNo(data);
+    const gateEntryInDateTime = geFormatGateEntryDateTime(data.GateEntryDate, data.TimeIO);
+    const gateEntryOutDateTime = geGetGateEntryOutDateTime(data);
+    const vehicleInTime = gePickField(data, ['TimeIO', 'VehicleInTime'], '');
+    const vehicleOutTime = geGetGateEntryVehicleOutTime(data);
+    const isOutCompleted = geIsGateEntryOutCompleted(data);
+    const vehicleInWeight = geGetGateEntryInVehicleWeight(data, isLoadedIn);
+    const vehicleOutWeight = geGetGateEntryOutVehicleWeight(data, isLoadedIn);
+    const netWeight = geGetGateEntryNetWeight(data);
+    const inWeightLabel = isLoadedIn ? 'Vehicle Loaded Weight (KG)' : 'Vehicle Empty Weight (KG)';
+    const outWeightLabel = isLoadedIn ? 'Vehicle Empty Weight (KG)' : 'Vehicle Loaded Weight (KG)';
+    const outPhotoDisplayHtml = isOutCompleted ? outPhotoHtml : `<div class="photo-placeholder">-</div>`;
+    const netWeightHtml = netWeight
+        ? `<div style="margin-top:6px;"><strong>Net Weight (KG)</strong><br>${geEscapeHtml(netWeight)}</div>`
+        : '';
+    return `
+        <div class="ge-print-wrap">
+            <table class="ge-print-table">
+                <tr>
+                    <td class="logo-cell" rowspan="2" style="width:120px;border:1px solid #000;text-align:center;vertical-align:middle;">
+                        <img src="${company.logoUrl}" alt="Logo" style="max-width:100px;max-height:70px;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+                        <div style="display:none;font-weight:bold;">LOGO</div>
+                    </td>
+                    <td colspan="3" style="border:1px solid #000;text-align:center;font-size:20px;font-weight:bold;padding:8px;">
+                        ${geEscapeHtml(company.companyName || 'Company Name')}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="border:1px solid #000;padding:6px 10px;">
+                        <strong>Address:</strong> ${geEscapeHtml(company.companyAddress)}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="border:1px solid #000;padding:6px 10px;font-weight:bold;background:#f5f5f5;">
+                        Gate Entry Print &mdash; 
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #000;padding:6px 10px;width:25%;"><strong>Gate entry no</strong><br>${geEscapeHtml(gateEntryNo)}</td>
+                    <td style="border:1px solid #000;padding:6px 10px;width:25%;"><strong>Gate entry Date and time</strong><br>${geEscapeHtml(gateEntryInDateTime)}</td>
+                    <td style="border:1px solid #000;padding:6px 10px;width:25%;"><strong>OUT entry no</strong><br>${geEscapeHtml(gateEntryOutNo)}</td>
+                    <td style="border:1px solid #000;padding:6px 10px;width:25%;"><strong>Out entry Date and time</strong><br>${geEscapeHtml(gateEntryOutDateTime)}</td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #000;padding:6px 10px;"><strong>Driver no</strong><br>${geEscapeHtml(gePickField(data, ['DriverMobile', 'Driver No'], ''))}</td>
+                    <td colspan="3" style="border:1px solid #000;padding:6px 10px;"><strong>Driver Name</strong><br>${geEscapeHtml(gePickField(data, ['DriverName'], ''))}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Transporter name</strong><br>${geEscapeHtml(gePickField(data, ['OtherTransporterName', 'Transporter Name'], ''))}</td>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Vendor name</strong><br>${geEscapeHtml(gePickField(data, ['VendorName', 'Party name'], ''))}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Document type</strong><br>${geEscapeHtml(gePickField(data, ['DocumentType', 'Doc Type'], ''))}</td>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Document No.</strong><br>${geEscapeHtml(gePickField(data, ['DocNo', 'Doc No'], ''))}</td>
+                </tr>
+                ${vehicleRowHtml}
+                ${itemTableHtml}
+                <tr>
+                    <td colspan="2" style="border:1px solid #000;padding:8px;text-align:center;vertical-align:top;">
+                        <div style="font-weight:bold;margin-bottom:8px;">${geEscapeHtml(inPhotoLabel)}</div>
+                        <div class="photo-box">${inPhotoHtml}</div>
+                        <div style="margin-top:8px;"><strong>Vehicle IN time</strong><br>${geEscapeHtml(vehicleInTime)}</div>
+                        <div style="margin-top:6px;"><strong>${geEscapeHtml(inWeightLabel)}</strong><br>${geEscapeHtml(vehicleInWeight)}</div>
+                    </td>
+                    <td colspan="2" style="border:1px solid #000;padding:8px;text-align:center;vertical-align:top;">
+                        <div style="font-weight:bold;margin-bottom:8px;">${geEscapeHtml(outPhotoLabel)}</div>
+                        <div class="photo-box">${outPhotoDisplayHtml}</div>
+                        <div style="margin-top:8px;"><strong>Vehicle Out time</strong><br>${geEscapeHtml(vehicleOutTime)}</div>
+                        <div style="margin-top:6px;"><strong>${geEscapeHtml(outWeightLabel)}</strong><br>${geEscapeHtml(vehicleOutWeight)}</div>
+                        ${netWeightHtml}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="border:1px solid #000;padding:8px 10px;">
+                        <strong>Created By:</strong> ${geEscapeHtml(geGetGateEntryCreatedBy(data))}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    `;
+}
+
+function geOpenGateEntryPrintWindow(html, title) {
+    const printWindow = window.open('', '_blank', 'width=980,height=760,scrollbars=yes');
+    if (!printWindow) {
+        toastr.error('Please allow pop-ups for this site');
+        return;
+    }
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>${geEscapeHtml(title)}</title>
+            <style>
+                @media print {
+                    body { margin: 0; padding: 8mm; }
+                    @page { size: A4; margin: 8mm; }
+                }
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 12px;
+                    color: #000;
+                }
+                .ge-print-wrap {
+                    max-width: 900px;
+                    margin: 0 auto;
+                }
+                .ge-print-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 13px;
+                }
+                .ge-item-table th,
+                .ge-item-table td {
+                    font-size: 12px;
+                }
+                .photo-box {
+                    min-height: 180px;
+                    border: 1px solid #999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 8px;
+                    background: #fafafa;
+                }
+                .photo-placeholder {
+                    color: #777;
+                    font-size: 12px;
+                }
+            </style>
+        </head>
+        <body>
+            ${html}
+            <script>
+                window.onload = function() {
+                    window.focus();
+                    setTimeout(function() { window.print(); }, 400);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+function GateEnty_PrintGateEntry(Code) {
+    Showloader();
+    GateEntryService.GetGateEntryDetails(Code).then(function (response) {
+        if (!response || response.length === 0) {
+            HideLoader();
+            toastr.error('No data found for this gate entry');
+            return;
+        }
+
+        const data = geMergeGateEntryPrintData(response[0], geFindGateEntryGridRow(Code));
+        const isLoadedInEntry =
+            String(gePickField(data, ['TransactionType', 'transactionType'], '')).toUpperCase() === 'LIN' ||
+            String(gePickField(data, ['Type In', 'TypeIn'], '')).replace(/\s/g, '').toLowerCase() === 'loadedin';
+        const poPromise = isLoadedInEntry && parseInt(gePickField(data, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], 0), 10) > 0
+            ? GateEntryService.getPODetailByGateEntryCode(Code).catch(function () { return []; })
+            : Promise.resolve([]);
+
+        return Promise.all([poPromise, geFetchGateEntryPhotoSources(Code, data)]).then(function (results) {
+            const poItems = Array.isArray(results[0]) ? results[0] : [];
+            const photos = results[1] || { inSrc: '', outSrc: '' };
+            const entryNo = gePickField(data, ['GateEntryNo', 'Entry No IN', 'Entry No'], Code);
+            const html = geBuildGateEntryPrintHtml(data, poItems, photos);
+            geOpenGateEntryPrintWindow(html, `Gate Entry - ${entryNo}`);
+        });
+    }).catch(function (error) {
+        console.error('Gate entry print error:', error);
+        toastr.error('Failed to load gate entry for print');
+    }).finally(function () {
+        HideLoader();
+    });
+}
+
+function PrintGateEntry(GateEntyMaster_Code) {
+    GateEnty_PrintGateEntry(GateEntyMaster_Code);
 }
 function GateEntry_SaveData(Mode) {
     let valid = true;
@@ -3673,6 +4316,7 @@ window.GateEntry_SaveData = GateEntry_SaveData
 window.GateEntry_frmLoadedIn_ddlPurchaseOrder_Change = GateEntry_frmLoadedIn_ddlPurchaseOrder_Change
 window.GateEntry_InitSelectMachineToGetWeightControl = GateEntry_InitSelectMachineToGetWeightControl
 window.GateEnty_PrintPreviewToken = GateEnty_PrintPreviewToken
+window.GateEnty_PrintGateEntry = GateEnty_PrintGateEntry
 window.GateEntry_ExportExecl = GateEntry_ExportExecl
 window.GateEntry_changeDocumentType = GateEntry_changeDocumentType
 window.GateEntry_changeDocumentType_LoadedIn = GateEntry_changeDocumentType_LoadedIn

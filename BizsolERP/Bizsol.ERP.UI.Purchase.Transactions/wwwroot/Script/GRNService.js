@@ -20,6 +20,8 @@ function stripNonNumeric(el) {
 // ── App-level state ─────────────────────────────────────────────────────────
 let rowIndex          = 0;
 let poList            = [];
+/** Cached from GetVendor — party / account lookup for GetPOList. */
+let grnVendorListCache = [];
 
 let projectItemsCache = [];
 let editMode          = false;
@@ -30,11 +32,71 @@ let grnHasVerifyRight = false;
 let grnMasterSourceRows = [];
 /** Edit/New form: master already has attachment(s) — footer Attachment button green with list/API */
 let grnFormHasAttachmentYes = false;
+/** List grid: verified via GetAllDocumentAttachment (same source as Attachment control modal). */
+let grnListAttachmentYesMap = {};
 /** @type {null|string} null = all rows, 'N' = not verified (Pending), 'Y' = verified, 'R' = rejected */
 let grnListVerifiedFilter = null;
 
 /** Codes of GRNs that are rejected in the MRN approval workflow — keyed by integer Code */
 var grnRejectedCodesSet = {};
+
+/** Monotonic token — stale loadGRNList responses must not overwrite newer badge counts. */
+let grnListLoadSeq = 0;
+
+/**
+ * Single writer for GRN list header “Pending on me” badge (grnVerifyFilterCountPendingOnMe).
+ * @param {number|string} count
+ */
+function setGrnListPendingOnMeBadge(count) {
+    var n = parseInt(count, 10);
+    if (!Number.isFinite(n) || n < 0) n = 0;
+    var elOM = document.getElementById("grnVerifyFilterCountPendingOnMe");
+    if (elOM) elOM.textContent = String(n);
+    return n;
+}
+
+/** Prefer approval-chip count when loaded; avoids race with parallel loadGRNList / LoadPaymentList. */
+function readApprovalChipCount(chipId) {
+    var el = document.getElementById(chipId);
+    if (!el) return null;
+    var t = String(el.textContent || "").trim();
+    if (t === "" || t === "—") return null;
+    var n = parseInt(t, 10);
+    return Number.isFinite(n) ? Math.max(0, n) : null;
+}
+
+/** Sync GRN list header tab counts from embedded approval stat chips (inside = outside). */
+function syncGrnListHeaderTabsFromApprovalChips(stats) {
+    if (!stats || typeof stats !== "object") return;
+    var elP = document.getElementById("grnVerifyFilterCountPending");
+    var elV = document.getElementById("grnVerifyFilterCountVerified");
+    var elR = document.getElementById("grnVerifyFilterCountReject");
+    if (stats.pending !== undefined && stats.pending !== null && elP) {
+        elP.textContent = String(Math.max(0, parseInt(stats.pending, 10) || 0));
+    }
+    if (stats.approved !== undefined && stats.approved !== null && elV) {
+        elV.textContent = String(Math.max(0, parseInt(stats.approved, 10) || 0));
+    }
+    if (stats.rejected !== undefined && stats.rejected !== null && elR) {
+        elR.textContent = String(Math.max(0, parseInt(stats.rejected, 10) || 0));
+    }
+    if (stats.pendingOnMe !== undefined && stats.pendingOnMe !== null) {
+        setGrnListPendingOnMeBadge(stats.pendingOnMe);
+    }
+}
+
+function resolveGrnListPendingOnMeCount(localPending, localPendingOnMe) {
+    if (!localPending || localPending <= 0) return 0;
+    var chipEl = document.getElementById("gpaStatPendingOnMe");
+    if (chipEl) {
+        var chipTxt = String(chipEl.textContent || "").trim();
+        if (chipTxt !== "" && chipTxt !== "—") {
+            var chipNum = parseInt(chipTxt, 10);
+            if (Number.isFinite(chipNum)) return Math.max(0, chipNum);
+        }
+    }
+    return Math.max(0, localPendingOnMe || 0);
+}
 
 /**
  * Grid Verify button: **Y** = show Verify when user has right; **N** = hide Verify button (verified badge unchanged).
@@ -174,6 +236,20 @@ function rowIsVerifiedGrn(item) {
         return u === "Y" || u === "YES" || v === "1" || u === "TRUE" || u === "V" || u === "APPROVED";
     }
     return v === true || v === 1;
+}
+
+/** MRN multi-level approval complete — hide inline Verify; show approved badge instead. */
+function rowIsMrnApprovedGrn(item) {
+    if (!item || typeof item !== "object") return false;
+    var raw = String(item.ApprovalStatus ?? item.Status ?? item.Approval_Status ?? "").trim();
+    if (!raw) return false;
+    var upper = raw.toUpperCase();
+    var lower = raw.toLowerCase();
+    if (upper === "P" || upper === "Y" || lower === "approved") return true;
+    if (lower === "complete" || lower === "completed") return true;
+    var cur = parseInt(item.CurrentLevelNo ?? item.CurrentLevel ?? 0, 10) || 0;
+    var tot = parseInt(item.TotalLevels ?? item.MaxLevel ?? 0, 10) || 0;
+    return tot > 0 && cur > tot;
 }
 
 function rowIsRejectedGrn(item) {
@@ -394,6 +470,36 @@ function grnItemHasAttachmentYes(item) {
     return k ? grnAttachmentYesFromRaw(item[k]) : false;
 }
 
+/** List row paperclip: prefer attachment-control API over list HasAttachment flag. */
+function grnListRowHasAttachmentYes(item) {
+    if (!item || typeof item !== "object") return false;
+    var code = parseInt(String(item.Code != null ? item.Code : item.code != null ? item.code : 0), 10) || 0;
+    if (code > 0 && Object.prototype.hasOwnProperty.call(grnListAttachmentYesMap, code)) {
+        return !!grnListAttachmentYesMap[code];
+    }
+    return grnItemHasAttachmentYes(item);
+}
+
+/** Reconcile list HasAttachment with GetAllDocumentAttachment (modal uses the same API). */
+async function grnSyncListAttachmentStates(rows) {
+    grnListAttachmentYesMap = {};
+    if (!Array.isArray(rows) || rows.length === 0) return;
+    var tasks = rows.map(function (item) {
+        if (!item || typeof item !== "object") return Promise.resolve();
+        var rowCode = parseInt(String(item.Code != null ? item.Code : item.code != null ? item.code : 0), 10) || 0;
+        if (!rowCode) return Promise.resolve();
+        return AttachmentControlService.GetAttachmentUploadFiles("MRNMaster", rowCode, "", 0)
+            .then(function (resp) {
+                var apiRows = grnNormalizeAttachmentApiRows(resp);
+                grnListAttachmentYesMap[rowCode] = apiRows.length > 0;
+            })
+            .catch(function () {
+                grnListAttachmentYesMap[rowCode] = grnItemHasAttachmentYes(item);
+            });
+    });
+    await Promise.all(tasks);
+}
+
 /** SHOWDATA sometimes omits HasAttachment; list row still has it */
 function grnResolveHasAttachmentYesFromList(masterCode) {
     var c = parseInt(String(masterCode != null ? masterCode : 0), 10) || 0;
@@ -443,7 +549,8 @@ async function grnSyncFooterAttachmentFromApis(master, masterCode) {
         try {
             var resp = await AttachmentControlService.GetAttachmentUploadFiles("MRNMaster", c, "", 0);
             var rows = grnNormalizeAttachmentApiRows(resp);
-            if (rows.length > 0) grnFormHasAttachmentYes = true;
+            grnFormHasAttachmentYes = rows.length > 0;
+            grnListAttachmentYesMap[c] = grnFormHasAttachmentYes;
         } catch (err) {
             console.warn("grnSyncFooterAttachmentFromApis:", err);
         }
@@ -458,9 +565,11 @@ function mapGRNRowsToGrid(rows) {
         const enNum = parseInt(mrnRaw, 10) || 0;
         const rd = item.ReceiveDate ?? item.receiveDate ?? '';
         const rawRdStr = rd ? String(rd).substring(0, 10) : '';
-        const hasAttachmentYes = grnItemHasAttachmentYes(item);
+        const hasAttachmentYes = grnListRowHasAttachmentYes(item);
         const attachBtnClass = hasAttachmentYes ? "im-btn-attach im-btn-attach--has-attachment" : "im-btn-attach";
         var btns =
+            '<button type="button" class="im-btn-view" title="View" onclick="viewGRNFromList(' + code + ')">' +
+            '<i class="fa fa-eye"></i></button>' +
             '<button class="im-btn-edit" title="Edit" onclick="editGRN(' + code + ')">' +
             '<i class="fas fa-pen"></i></button>' +
             '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="openGrnServiceListAttachmentControl(' + code + ',' + enNum + ',\'' + rawRdStr + '\')">' +
@@ -468,9 +577,9 @@ function mapGRNRowsToGrid(rows) {
             '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
             '<i class="fas fa-trash-can"></i></button>';
         if (grnHasVerifyRight) {
-            if (rowIsVerifiedGrn(item)) {
+            if (rowIsVerifiedGrn(item) || rowIsMrnApprovedGrn(item)) {
                 btns += buildGrnVerifiedBadgeHtml(item);
-            } else if (grnGridVerifyButtonAllowedByMultilevel()) {
+            } else if (!grnGridVerifyButtonAllowedByMultilevel()) {
                 btns +=
                     '<button type="button" class="grn-btn-verify" title="Verify" aria-label="Verify" onclick="VerifyGRN(' +
                     code +
@@ -505,18 +614,18 @@ function getGRNListHiddenColumns() {
 
 function getGRNListColumnAlignment() {
     return {
-        Action: "center;min-width:240px;white-space:nowrap;",
+        Action: "center;min-width:280px;white-space:nowrap;",
     };
 }
 
 function applyGrnVerifiedListFilter(rows) {
     if (!grnListVerifiedFilter) return rows.slice();
     return rows.filter(function (row) {
-        var isV = rowIsVerifiedGrn(row);
+        var isV = rowIsVerifiedGrn(row) || rowIsMrnApprovedGrn(row);
         var isR = rowIsRejectedGrn(row);
         if (grnListVerifiedFilter === "Y") return isV;
         if (grnListVerifiedFilter === "R") return isR;
-        // 'N' = Pending: not verified and not rejected
+        // 'N' = Pending: not approved and not rejected
         return !isV && !isR;
     });
 }
@@ -573,6 +682,16 @@ function rowIsPendingOnMeGrn(item) {
 
 function updateGrnVerifyFilterTabCounts() {
     var rows = grnMasterSourceRows || [];
+    var elP = document.getElementById("grnVerifyFilterCountPending");
+    var elV = document.getElementById("grnVerifyFilterCountVerified");
+    var elR = document.getElementById("grnVerifyFilterCountReject");
+    if (rows.length === 0) {
+        if (elP) elP.textContent = "0";
+        if (elV) elV.textContent = "0";
+        if (elR) elR.textContent = "0";
+        setGrnListPendingOnMeBadge(0);
+        return;
+    }
     var pending = 0;
     var verified = 0;
     var rejected = 0;
@@ -585,14 +704,16 @@ function updateGrnVerifyFilterTabCounts() {
             if (rowIsPendingOnMeGrn(rows[i])) pendingOnMe++;
         }
     }
-    var elP = document.getElementById("grnVerifyFilterCountPending");
-    var elV = document.getElementById("grnVerifyFilterCountVerified");
-    var elR = document.getElementById("grnVerifyFilterCountReject");
-    var elOM = document.getElementById("grnVerifyFilterCountPendingOnMe");
-    if (elP) elP.textContent = String(pending);
-    if (elV) elV.textContent = String(verified);
+    if (pending === 0) pendingOnMe = 0;
+    var chipPending = readApprovalChipCount("gpaStatPending");
+    var chipApproved = readApprovalChipCount("gpaStatProcessed");
+    var chipOnMe = readApprovalChipCount("gpaStatPendingOnMe");
+    if (elP) elP.textContent = String(chipPending !== null ? chipPending : pending);
+    if (elV) elV.textContent = String(chipApproved !== null ? chipApproved : verified);
     if (elR) elR.textContent = String(rejected);
-    if (elOM) elOM.textContent = rows.length === 0 ? "—" : String(pendingOnMe);
+    setGrnListPendingOnMeBadge(
+        chipOnMe !== null ? chipOnMe : resolveGrnListPendingOnMeCount(pending, pendingOnMe)
+    );
 }
 
 function syncGrnVerifyFilterTabButtons() {
@@ -623,6 +744,28 @@ function navigateToMRNMasterApproval() {
 
 /** Same session key as MRNMasterApproval.js — after redirect, approval list applies “Pending on me” filter */
 var GRN_MRN_APPROVAL_LANDING_PENDING_ON_ME_KEY = "bizsol_mrnLandingPendingOnMe";
+/** Same session key as MRNMasterApproval.js — reload approval cards after GRN save/update */
+var GRN_MRN_APPROVAL_REFRESH_KEY = "bizsol_mrnApprovalRefresh";
+
+function signalMrnApprovalListRefresh() {
+    try {
+        sessionStorage.setItem(GRN_MRN_APPROVAL_REFRESH_KEY, String(Date.now()));
+    } catch (e) {
+        /* ignore */
+    }
+    var approvalEl = document.getElementById("divGRNApprovalView");
+    if (approvalEl && approvalEl.style.display !== "none" && typeof window.reloadMrnApprovalView === "function") {
+        window.reloadMrnApprovalView({});
+    }
+}
+
+function showApprovalViewOnly() {
+    document.getElementById('divGRNList').style.display = 'none';
+    document.getElementById('divGRNForm').style.display = 'none';
+    document.getElementById('floatBar').style.display   = 'none';
+    const approvalEl = document.getElementById('divGRNApprovalView');
+    if (approvalEl) approvalEl.style.display = 'block';
+}
 
 function navigateToMRNMasterApprovalPendingOnMe() {
     try {
@@ -630,8 +773,12 @@ function navigateToMRNMasterApprovalPendingOnMe() {
     } catch (e) {
         /* ignore */
     }
-    /* Show inline approval view instead of navigating to a separate page */
-    showApprovalView();
+    showApprovalViewOnly();
+    if (typeof window.reloadMrnApprovalView === "function") {
+        window.reloadMrnApprovalView({ pendingOnMe: true });
+    } else if (typeof window.LoadPaymentList === "function") {
+        window.LoadPaymentList();
+    }
 }
 
 function navigateToGRNServiceApprovalConfiguration() {
@@ -652,9 +799,29 @@ function onGrnListVerifyFilterClick(which) {
     refreshGRNListGrid();
 }
 
+function clearGRNListGridEmptyMessage() {
+    window.filteredData_grnListTable = [];
+    window.filteredDataTemp_grnListTable = [];
+    window.currentPage_grnListTable = 1;
+    var colCount = $("#grnListTable-hader th:visible").length;
+    if (!colCount) colCount = 1;
+    $("#grnListTbody-body").html(
+        '<tr><td colspan="' +
+            colCount +
+            '" style="text-align:center;padding:28px;color:#6b7280;">No data found</td></tr>'
+    );
+    $("#grnListTable-hader").find("th span.filter-table-heading .fa-filter").remove();
+    if (typeof window.updatePageInfo === "function") window.updatePageInfo("grnListTable");
+    if (typeof window.updateButtons === "function") window.updateButtons("grnListTable");
+    if (typeof window.updateFilteredClass === "function") window.updateFilteredClass("grnListTbody-body");
+}
+
 function refreshGRNListGrid() {
     var master = grnMasterSourceRows || [];
-    if (master.length === 0) return;
+    if (master.length === 0) {
+        clearGRNListGridEmptyMessage();
+        return;
+    }
 
     var source = applyGrnVerifiedListFilter(master);
     var mapped = mapGRNRowsToGrid(source.slice());
@@ -673,20 +840,7 @@ function refreshGRNListGrid() {
     }
 
     if (mapped.length === 0) {
-        window.filteredData_grnListTable = [];
-        window.filteredDataTemp_grnListTable = [];
-        window.currentPage_grnListTable = 1;
-        var colCount = $("#grnListTable-hader th:visible").length;
-        if (!colCount) colCount = 1;
-        $("#grnListTbody-body").html(
-            '<tr><td colspan="' +
-                colCount +
-                '" style="text-align:center;padding:28px;color:#6b7280;">No data found</td></tr>'
-        );
-        $("#grnListTable-hader").find("th span.filter-table-heading .fa-filter").remove();
-        if (typeof window.updatePageInfo === "function") window.updatePageInfo("grnListTable");
-        if (typeof window.updateButtons === "function") window.updateButtons("grnListTable");
-        if (typeof window.updateFilteredClass === "function") window.updateFilteredClass("grnListTbody-body");
+        clearGRNListGridEmptyMessage();
         return;
     }
 
@@ -731,7 +885,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadVendorList(),
         loadBankList(),
         initProjectDropdownEmpty(),
-        loadAllPOs(),
     ]);
     await resolveGRNVerifyRight();
     await loadGRNList();
@@ -800,14 +953,22 @@ function showFormView() {
 }
 
 function showApprovalView() {
-    document.getElementById('divGRNList').style.display = 'none';
-    document.getElementById('divGRNForm').style.display = 'none';
-    document.getElementById('floatBar').style.display   = 'none';
-    const approvalEl = document.getElementById('divGRNApprovalView');
-    if (approvalEl) approvalEl.style.display = 'block';
-    if (typeof window.LoadPaymentList === 'function') {
+    showApprovalViewOnly();
+    if (typeof window.reloadMrnApprovalView === 'function') {
+        window.reloadMrnApprovalView({
+            pendingOnMe: (function () {
+                try {
+                    var v = sessionStorage.getItem(GRN_MRN_APPROVAL_LANDING_PENDING_ON_ME_KEY);
+                    return v === 'Y' || v === '1';
+                } catch (e) {
+                    return false;
+                }
+            })(),
+        });
+    } else if (typeof window.refreshMrnApprovalListIfNeeded === 'function') {
+        window.refreshMrnApprovalListIfNeeded(true);
+    } else if (typeof window.LoadPaymentList === 'function') {
         window.LoadPaymentList();
-       
     }
 }
 
@@ -837,16 +998,150 @@ async function loadVendorList() {
     if (!ddl) return;
     try {
         const result = await GRNService.GetVendor();
+        const rows = normalizeApiRows(result);
+        grnVendorListCache = rows;
         ddl.innerHTML = '<option value="">-- Select Party --</option>';
-        (result || []).forEach(v => {
+        rows.forEach(v => {
             const opt = document.createElement('option');
             opt.value = v.VendorMaster_Code ?? v.vendorMaster_Code ?? v.Code ?? '';
             opt.text  = v.VendorName        ?? v.vendorName        ?? v.Name ?? '';
+            const acc = v.AccountMaster_Code ?? v.accountMaster_Code;
+            if (acc !== undefined && acc !== null && `${acc}`.trim() !== '') {
+                opt.dataset.accountCode = String(acc);
+            }
+            const partyMc = v.PartyMaster_Code ?? v.partyMaster_Code;
+            if (partyMc !== undefined && partyMc !== null && `${partyMc}`.trim() !== '') {
+                opt.dataset.partyMasterCode = String(partyMc);
+            }
             ddl.appendChild(opt);
         });
     } catch (e) {
         console.error('Failed to load vendors:', e);
+        grnVendorListCache = [];
     }
+}
+
+function grnGetSelectedVendorRecord(ddlVal) {
+    const val = ddlVal !== undefined && ddlVal !== null ? String(ddlVal).trim() : '';
+    if (!val) return null;
+    for (let i = 0; i < (grnVendorListCache || []).length; i++) {
+        const v = grnVendorListCache[i];
+        const vc = String(v.VendorMaster_Code ?? v.vendorMaster_Code ?? v.Code ?? v.code ?? '');
+        const ac = String(v.AccountMaster_Code ?? v.accountMaster_Code ?? '');
+        const pm = String(v.PartyMaster_Code ?? v.partyMaster_Code ?? '');
+        if (vc === val || ac === val || (pm && pm === val)) return v;
+    }
+    return null;
+}
+
+/** All plausible party codes to try for GetPOList (party master first, then vendor / account). */
+function grnPartyCodesForPoListApi(explicitCode) {
+    const codes = [];
+    const add = (v) => {
+        const s = v !== undefined && v !== null ? String(v).trim() : '';
+        if (s && s !== '0' && !codes.includes(s)) codes.push(s);
+    };
+    const ddl = document.getElementById('ddlPartyName');
+    const ddlVal = explicitCode !== undefined && explicitCode !== null
+        ? String(explicitCode).trim()
+        : (ddl?.value ?? '').trim();
+    const selOpt = ddl?.selectedOptions?.[0];
+    add(selOpt?.dataset?.partyMasterCode);
+    const vendor = grnGetSelectedVendorRecord(ddlVal);
+    if (vendor) {
+        add(vendor.PartyMaster_Code ?? vendor.partyMaster_Code);
+        add(vendor.VendorMaster_Code ?? vendor.vendorMaster_Code ?? vendor.Code ?? vendor.code);
+        add(vendor.AccountMaster_Code ?? vendor.accountMaster_Code);
+    }
+    add(explicitCode);
+    add(ddlVal);
+    add(selOpt?.dataset?.accountCode);
+    return codes;
+}
+
+function normalizePoListApiRows(result) {
+    let rows = normalizeApiRows(result);
+    if ((!rows || !rows.length) && result && typeof result === 'object') {
+        const datum = result.Data ?? result.data ?? result.Result ?? result.result ?? null;
+        const sources = [result, datum].filter(Boolean);
+        const keys = ['POList', 'poList', 'PoList', 'PurchaseOrderList', 'purchaseOrderList', 'List', 'list', 'Table', 'table', 'Tables', 'tables', 'value', 'Value'];
+        for (let s = 0; s < sources.length && !rows.length; s++) {
+            const src = sources[s];
+            for (let k = 0; k < keys.length; k++) {
+                const arr = src[keys[k]];
+                if (Array.isArray(arr) && arr.length) {
+                    rows = arr;
+                    break;
+                }
+            }
+            if (!rows.length && Array.isArray(src?.Tables) && src.Tables.length) {
+                rows = src.Tables[0];
+            }
+            if (!rows.length && Array.isArray(src?.tables) && src.tables.length) {
+                rows = src.tables[0];
+            }
+        }
+    }
+    if (!Array.isArray(rows)) rows = [];
+    return rows.map(function (r) {
+        if (typeof r === 'string' || typeof r === 'number') return { PONo: String(r).trim() };
+        return r;
+    }).filter(function (r) {
+        return r && typeof r === 'object';
+    });
+}
+
+function grnPoNoFromRecord(r) {
+    if (!r || typeof r !== 'object') return '';
+    const flat = r.PONo ?? r.pONo ?? r.PoNO ?? r.PoNo ?? r.PO_No ?? r.poNo ?? r.PO_NO
+        ?? r.PONumber ?? r.poNumber ?? r.PurchaseOrderNo ?? r.purchaseOrderNo ?? '';
+    if (flat !== undefined && flat !== null && String(flat).trim() !== '') return String(flat).trim();
+    const pom = r.PurchaseOrderMaster ?? r.purchaseOrderMaster;
+    if (pom && typeof pom === 'object') {
+        const v = pom.PONo ?? pom.pONo ?? pom.PoNO ?? pom.PO_No ?? pom.poNo ?? '';
+        if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+    }
+    return '';
+}
+
+function grnPoCodeFromRecord(r) {
+    if (!r || typeof r !== 'object') return '';
+    const pom = r.PurchaseOrderMaster ?? r.purchaseOrderMaster;
+    if (pom && typeof pom === 'object') {
+        const v = pom.Code ?? pom.code ?? pom.PurchaseOrderMaster_Code ?? pom.purchaseOrderMaster_Code ?? '';
+        if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+    }
+    const v = r.PurchaseOrderMaster_Code ?? r.purchaseOrderMaster_Code
+        ?? r.PO_Code ?? r.po_Code ?? r.PurchaseOrder_Code ?? r.purchaseOrder_Code ?? r.Code ?? r.code ?? '';
+    return v !== undefined && v !== null && String(v).trim() !== '' ? String(v).trim() : '';
+}
+
+function grnNormalizePoListRow(r) {
+    const code = grnPoCodeFromRecord(r);
+    const text = grnPoNoFromRecord(r) || (code ? `PO-${code}` : '');
+    return {
+        PurchaseOrderMaster_Code: code,
+        PoNO: text,
+    };
+}
+
+async function fetchGrnPoListFromApi(codes) {
+    const tried = new Set();
+    for (let i = 0; i < codes.length; i++) {
+        const c = String(codes[i] ?? '').trim();
+        if (!c || c === '0' || tried.has(c)) continue;
+        tried.add(c);
+        try {
+            const result = await GRNService.GetPOList(c);
+            const rows = normalizePoListApiRows(result);
+            if (rows.length) {
+                return rows.map(grnNormalizePoListRow).filter(po => po.PurchaseOrderMaster_Code || po.PoNO);
+            }
+        } catch (e) {
+            console.warn('fetchGrnPoListFromApi', c, e);
+        }
+    }
+    return [];
 }
 
 function normalizeGrnBankListRows(result) {
@@ -1043,6 +1338,9 @@ async function onPartyChange() {
 
     const against = document.getElementById('chkAgainstProject')?.checked;
     const partySel = document.getElementById('ddlPartyName')?.value?.trim();
+
+    await loadPOsForParty(partySel);
+
     if (against && partySel) {
         await loadSubProjectsForParty();
     }
@@ -1296,15 +1594,31 @@ async function loadItemsByProject(projectCode, subProjectCode, partyMaster_Code)
     }
 }
 
-async function loadAllPOs() {
+async function loadPOsForParty(partyCode) {
+    const code = partyCode !== undefined && partyCode !== null
+        ? String(partyCode).trim()
+        : (document.getElementById('ddlPartyName')?.value?.trim() ?? '');
+
+    if (!code) {
+        poList = [];
+        refreshAllPODropdowns();
+        return;
+    }
+
     try {
-        const result = await GRNService.GetPendingPOStoreList();
-        poList = result || [];
+        const codes = grnPartyCodesForPoListApi(code);
+        poList = await fetchGrnPoListFromApi(codes);
         refreshAllPODropdowns();
     } catch (e) {
-        console.error('Failed to load PO list:', e);
+        console.error('Failed to load PO list for party:', e);
         poList = [];
+        refreshAllPODropdowns();
     }
+}
+
+/** @deprecated Use loadPOsForParty — kept for existing callers. */
+async function loadAllPOs() {
+    return loadPOsForParty();
 }
 
 function refreshAllPODropdowns() {
@@ -1491,15 +1805,25 @@ async function openAddItemModalForm() {
             }
         } else {
             addItemModalUsePOList = true;
-            try {
-                await loadAllPOs();
-                poList.forEach(po => {
-                    const code = po.PurchaseOrderMaster_Code ?? po.PurchaseOrder_Code ?? po.Code ?? '';
-                    const text = po.PoNO ?? po.PO_No ?? po.PONo ?? po.PONumber ?? '';
-                    if (code && poSel) poSel.add(new Option(text, code));
-                });
-            } catch (e) {
-                showToast('Failed to load PO list.', 'error');
+            const partyVal = document.getElementById('ddlPartyName')?.value?.trim();
+            if (!partyVal) {
+                if (hintEl) {
+                    hintEl.style.display = 'block';
+                    const hintText = document.getElementById('addItemModalHintText');
+                    if (hintText) hintText.textContent = 'Please select Party Name first to load PO list.';
+                }
+                if (formEl) formEl.style.display = 'none';
+            } else {
+                try {
+                    await loadPOsForParty(partyVal);
+                    poList.forEach(po => {
+                        const code = po.PurchaseOrderMaster_Code ?? po.PurchaseOrder_Code ?? po.Code ?? '';
+                        const text = po.PoNO ?? po.PO_No ?? po.PONo ?? po.PONumber ?? '';
+                        if (code && poSel) poSel.add(new Option(text, code));
+                    });
+                } catch (e) {
+                    showToast('Failed to load PO list for party.', 'error');
+                }
             }
         }
     }
@@ -1739,21 +2063,22 @@ function renumberRows() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Guard — block PO interaction when Against Project is ON but project/sub not selected
+// Guard — block PO interaction until Party is selected (party-based PO list)
 function onPOFocus(select) {
-    const isAgainstProject = document.getElementById('chkAgainstProject')?.checked;
-    if (!isAgainstProject) return;  // toggle OFF → allow
-
-    const partyMaster_Code = document.getElementById('ddlPartyName')?.value;
-    const projectCode     = document.getElementById('frmDdlProject')?.value;
-    const subProjectCode  = document.getElementById('frmDdlSubProject')?.value;
-
+    const partyMaster_Code = document.getElementById('ddlPartyName')?.value?.trim();
     if (!partyMaster_Code) {
         showToast('Please select Party Name first.', 'warning');
         select.blur();
         document.getElementById('ddlPartyName')?.focus();
         return;
     }
+
+    const isAgainstProject = document.getElementById('chkAgainstProject')?.checked;
+    if (!isAgainstProject) return;
+
+    const projectCode     = document.getElementById('frmDdlProject')?.value;
+    const subProjectCode  = document.getElementById('frmDdlSubProject')?.value;
+
     if (!subProjectCode) {
         showToast('Please select Sub Project first.', 'warning');
         select.blur();
@@ -1764,7 +2089,6 @@ function onPOFocus(select) {
         showToast('Project could not be resolved; choose Sub Project again.', 'warning');
         select.blur();
         document.getElementById('frmDdlSubProject')?.focus();
-        return;
     }
 }
 
@@ -1984,7 +2308,9 @@ function calcNetPayable() {
 
 /** @param {number|string} [lastVerifiedGrnCode] Remember this code + merge (list API may omit Verified). */
 function loadGRNList(lastVerifiedGrnCode) {
-    return GRNService.GetGRNList().then(function (response) {
+    var seq = ++grnListLoadSeq;
+    return GRNService.GetGRNList().then(async function (response) {
+        if (seq !== grnListLoadSeq) return;
         applyGrnMultilevelVerificationFromApiPayload(response);
         var rows = [];
         if (Array.isArray(response)) rows = response;
@@ -1999,15 +2325,13 @@ function loadGRNList(lastVerifiedGrnCode) {
             rememberGrnVerifiedCode(lastVerifiedGrnCode);
         }
         grnMasterSourceRows = applyRememberedVerifiedToRows(rows);
+        window.grnMasterSourceRows = grnMasterSourceRows;
+        await grnSyncListAttachmentStates(grnMasterSourceRows);
+        if (seq !== grnListLoadSeq) return;
         updateGrnVerifyFilterTabCounts();
         syncGrnVerifyFilterTabButtons();
-        if (rows.length > 0) {
-            $("#grnListTable").show();
-            refreshGRNListGrid();
-        } else {
-            toastr.warning("No items found. Add your first item!");
-            $("#grnListTable").hide();
-        }
+        $("#grnListTable").show();
+        refreshGRNListGrid();
     }).catch(function () {
         toastr.error("Failed to load item list.");
     });
@@ -2123,6 +2447,21 @@ function newGRN() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// VIEW GRN — open MRN approval detail modal (same as approval cards)
+// ══════════════════════════════════════════════════════════════════════════════
+function viewGRNFromList(code) {
+    var codeNum = parseInt(code, 10);
+    if (!Number.isFinite(codeNum) || codeNum <= 0) return;
+    if (typeof window.OpenDetailModal === "function") {
+        window.OpenDetailModal(codeNum, { viewOnly: true });
+        return;
+    }
+    if (typeof toastr !== "undefined") {
+        toastr.warning("View is not available.");
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // EDIT GRN — load record into form
 // ══════════════════════════════════════════════════════════════════════════════
 async function editGRN(code) {
@@ -2175,9 +2514,32 @@ async function editGRN(code) {
                 set('txtDedutionRemark', master.DedutionRemark ?? master.dedutionRemark ?? master.DeductionRemark ?? '');
                 calcNetPayable();
 
-                // Party dropdown (SP: PartyMaster_Code)
+                // Party dropdown — match vendor by saved PartyMaster / Account / Vendor code
                 const ddlParty = document.getElementById('ddlPartyName');
-                if (ddlParty) ddlParty.value = master.PartyMaster_Code ?? '';
+                if (ddlParty) {
+                    const partyRaw = master.PartyMaster_Code ?? master.partyMaster_Code
+                        ?? master.AccountMaster_Code ?? master.accountMaster_Code
+                        ?? master.VendorMaster_Code ?? master.vendorMaster_Code ?? '';
+                    const pv = partyRaw !== '' && partyRaw !== null && partyRaw !== undefined ? String(partyRaw).trim() : '';
+                    if (pv) {
+                        let matched = false;
+                        for (let i = 0; i < ddlParty.options.length; i++) {
+                            const opt = ddlParty.options[i];
+                            if (opt.value === pv) {
+                                ddlParty.value = pv;
+                                matched = true;
+                                break;
+                            }
+                            if (opt.dataset.accountCode === pv || opt.dataset.partyMasterCode === pv) {
+                                ddlParty.value = opt.value;
+                                matched = true;
+                                break;
+                            }
+                        }
+                        if (!matched) ddlParty.value = pv;
+                        await loadPOsForParty(ddlParty.value);
+                    }
+                }
 
                 // Bank dropdown (SP: BankMaster_Code + BankName) — option text = name for save; ensure missing option on stale code
                 const ddlBank = document.getElementById('ddlBankName');
@@ -2357,11 +2719,16 @@ async function doDeleteGRN(code) {
                         });
                     }
 
-                    // Reset state and go back to list
+                    signalMrnApprovalListRefresh();
                     editMode = false;
                     editCode = 0;
-                    await loadGRNList();
                     showListView();
+                    await loadGRNList();
+                    if (typeof window.reloadMrnApprovalView === 'function') {
+                        await window.reloadMrnApprovalView({});
+                    } else if (typeof window.LoadPaymentList === 'function') {
+                        await window.LoadPaymentList();
+                    }
                 } else {
                     showToast(result?.Msg ?? result?.msg ?? 'Delete failed.', 'error');
                 }
@@ -2584,6 +2951,7 @@ function saveGRN() {
 
                         const msg = editMode ? 'GRN updated successfully!' : 'GRN saved successfully!';
                         showToast(msg, 'success');
+                        signalMrnApprovalListRefresh();
 
                         document.getElementById('floatModeBadge').textContent = editMode ? 'UPDATED' : 'SAVED';
                         document.getElementById('floatModeBadge').className = 'po-mode-badge badge bg-primary';
@@ -2594,6 +2962,9 @@ function saveGRN() {
                         setTimeout(async () => {
                             await loadGRNList();
                             showListView();
+                            if (typeof window.reloadMrnApprovalView === 'function') {
+                                window.reloadMrnApprovalView({});
+                            }
                         }, 1200);
                     } else {
                         showToast(data?.Msg ?? data?.Msg ?? 'Save failed.', 'error');
@@ -2798,6 +3169,7 @@ function getFinancialYear() {
 }
 window.showApprovalView     = showApprovalView;
 window.newGRN               = newGRN;
+window.viewGRNFromList      = viewGRNFromList;
 window.editGRN              = editGRN;
 window.confirmDeleteGRN     = confirmDeleteGRN;
 window.doDeleteGRN          = doDeleteGRN;
@@ -2819,6 +3191,8 @@ window.onProjectChange       = onProjectChange;
 window.onSubProjectChange     = onSubProjectChange;
 window.onProjectFieldFocus    = onProjectFieldFocus;
 window.loadGRNList          = loadGRNList;
+window.setGrnListPendingOnMeBadge = setGrnListPendingOnMeBadge;
+window.syncGrnListHeaderTabsFromApprovalChips = syncGrnListHeaderTabsFromApprovalChips;
 window.onGrnListVerifyFilterClick = onGrnListVerifyFilterClick;
 window.navigateToMRNMasterApproval = navigateToMRNMasterApproval;
 window.navigateToMRNMasterApprovalPendingOnMe = navigateToMRNMasterApprovalPendingOnMe;

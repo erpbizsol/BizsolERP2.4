@@ -5,63 +5,342 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/POApproval.js"></script>
 <style>
-    .modal-dialog {
-        max-width: 1100px;
+    /* ── PO APPROVAL (card UI, inspired by POLevelsApprove) ─────────────────── */
+    .poa-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 18px rgba(102,126,234,0.28);
+    }
+    .poa-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .poa-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display:block; margin-top:3px; }
+
+    .poa-stat-chip {
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 10px;
+        padding: 5px 14px;
+        text-align: center;
+        min-width: 92px;
+    }
+    .poa-stat-chip .val { font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1; }
+    .poa-stat-chip .lbl { font-size: 0.64rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    .poa-po-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease, transform 0.15s ease;
+        border-left: 4px solid #667eea;
+    }
+    .poa-po-card:hover { box-shadow: 0 6px 22px rgba(102,126,234,0.16); transform: translateY(-1px); }
+    .poa-po-card-header {
+        display:flex; align-items:flex-start; gap:12px;
+        padding: 14px 16px 10px;
+    }
+    .poa-po-no-badge {
+        flex-shrink:0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color:#fff;
+        border-radius:10px;
+        padding: 8px 12px;
+        min-width: 86px;
+        text-align:center;
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+        box-shadow: 0 3px 10px rgba(102,126,234,0.35);
+    }
+    .poa-po-card-vendor { flex:1; min-width:0; }
+    .poa-po-vendor-name {
+        font-size:0.88rem;
+        font-weight:700;
+        color:#1e293b;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        margin-bottom:4px;
+    }
+    .poa-po-card-meta {
+        display:flex; flex-wrap:wrap;
+        gap: 6px 10px;
+        font-size:0.74rem;
+        color:#64748b;
+    }
+    .poa-po-card-right {
+        flex-shrink:0;
+        text-align:right;
+        display:flex;
+        flex-direction:column;
+        gap:5px;
+        align-items:flex-end;
+    }
+    .poa-po-amount { font-size:0.92rem; font-weight:800; color:#667eea; }
+    .poa-po-status-badge {
+        font-size:0.68rem;
+        font-weight:700;
+        padding:3px 10px;
+        border-radius:20px;
+        letter-spacing:0.04em;
+        text-transform:uppercase;
+        display:inline-block;
+    }
+    .poa-po-card-footer {
+        padding: 8px 16px 12px;
+        display:flex;
+        justify-content: space-between;
+        align-items:center;
+        gap:8px;
+        flex-wrap:wrap;
+        border-top: 1px solid #f0f4ff;
+        background: #fafbff;
+    }
+    .poa-card-btns { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .btn-poa-icon {
+        width: 36px;
+        height: 32px;
+        border: none;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+        color:#fff;
+    }
+    .btn-poa-icon:hover { transform: translateY(-1px); color:#fff; }
+    .btn-poa-approve {
+        display:inline-flex; align-items:center; gap:5px;
+        background: linear-gradient(135deg,#10b981,#059669);
+        border:none; color:#fff;
+        border-radius: 8px;
+        padding: 7px 18px;
+        font-size:0.8rem; font-weight:700;
+        box-shadow: 0 3px 10px rgba(16,185,129,0.35);
+        transition: all 0.2s;
+        cursor:pointer;
+    }
+    .btn-poa-approve:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(16,185,129,0.45); color:#fff; }
+    .btn-poa-view {
+        display:inline-flex; align-items:center; gap:5px;
+        background:#eff6ff;
+        border: 1.5px solid #bfdbfe;
+        color:#2563eb;
+        border-radius: 8px;
+        padding: 7px 18px;
+        font-size:0.8rem; font-weight:700;
+        transition: all 0.2s;
+        cursor:pointer;
+    }
+    .btn-poa-view:hover { background:#2563eb; color:#fff; border-color:#2563eb; transform: translateY(-1px); }
+
+    .poa-empty-state {
+        text-align:center; padding: 52px 16px; color:#94a3b8;
+        background:#fff; border-radius:14px; border:1px dashed #e2e8f0;
+        margin-bottom:14px;
+    }
+    .poa-empty-state i { font-size:2.8rem; margin-bottom:12px; display:block; color:#c4b5fd; }
+    .poa-loading-state { text-align:center; padding: 52px 16px; color:#667eea; margin-bottom:14px; }
+    .poa-loading-state div { font-size:0.85rem; margin-top:10px; font-weight:600; }
+
+    /* ── DETAIL MODAL (styled like POLevelsApprove) ─────────────────────────── */
+    .poa-info-grid {
+        display:grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .poa-info-item {
+        background: #fafbff;
+        border: 1px solid #eef0f8;
+        border-radius: 10px;
+        padding: 8px 12px;
+    }
+    .poa-info-lbl {
+        font-size: 0.7rem; font-weight: 600; color: #64748b;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        display:block; margin-bottom:3px;
+    }
+    .poa-info-val { font-size: 0.84rem; font-weight: 700; color: #1e293b; }
+
+    .poa-items-title {
+        font-size: 0.78rem; font-weight: 700; color: #475569;
+        text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;
+    }
+    .poa-items-table { width: 100%; border-collapse: collapse; }
+    .poa-items-table thead tr th {
+        background: #4f46e5;
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        padding: 8px 10px;
+        white-space: nowrap;
+        border: none;
+    }
+    .poa-items-table thead tr th:first-child { border-radius: 8px 0 0 0; }
+    .poa-items-table thead tr th:last-child  { border-radius: 0 8px 0 0; }
+    .poa-items-table tbody tr:hover { background: #f5f3ff; }
+    .poa-items-table tbody tr td {
+        padding: 7px 10px;
+        vertical-align: middle;
+        border: 1px solid #ede9fe;
+        font-size: 0.8rem;
+        color: #374151;
+    }
+    #poaItemsTable thead tr th,
+    #poaItemsTable tbody tr td {
+        white-space: nowrap;
+    }
+    #poaItemsTable thead tr th:nth-child(2),
+    #poaItemsTable tbody tr td:nth-child(2),
+    #poaItemsTable tbody tr td:nth-child(13) {
+        white-space: normal;
+        min-width: 140px;
+        max-width: 220px;
+    }
+
+    @@media (max-width: 768px) {
+        .poa-po-card-header { flex-wrap: wrap; }
+        .poa-po-card-right { flex-direction: row; align-items:center; width:100%; justify-content:space-between; }
+        .poa-info-grid { grid-template-columns: repeat(2, 1fr); }
+        .poa-po-card-footer { justify-content: stretch; flex-direction: column; align-items: stretch; }
+        .btn-poa-approve, .btn-poa-view { width:100%; justify-content:center; }
     }
 </style>
 
-<div class="table-wrapper fixed-height-table">
-    <table id="POApproval" class="fixed-width-table table">
-        <thead id="table-header-POApproval">
-        </thead>
-        <tbody id="table-body-POApproval">
-        </tbody>
-    </table>
+<div class="poa-header section-entry-animation">
+    <div>
+        <h5><i class="fa fa-check-circle me-2"></i>PO Store</h5>
+        
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <div class="poa-stat-chip">
+            <div class="val" id="statPOA_Pending">—</div>
+            <div class="lbl">Pending</div>
+        </div>
+        <div class="poa-stat-chip">
+            <div class="val" id="statPOA_Total">—</div>
+            <div class="lbl">Total</div>
+        </div>
+    </div>
 </div>
-<div class="paginator" id="paginator-POApproval">
+
+<div id="poApprovalList" class="section-entry-animation"></div>
+
+<div id="poApprovalEmpty" style="display:none;" class="poa-empty-state section-entry-animation">
+    <i class="fa fa-inbox"></i>
+    <div>No POs found for approval</div>
+    <small>Check back later.</small>
+</div>
+
+<div id="poApprovalLoading" style="display:none;" class="poa-loading-state">
+    <i class="fa fa-spinner fa-spin fa-2x" style="color:#667eea;"></i>
+    <div>Loading purchase orders…</div>
 </div>
 
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <input type="hidden" id="hfCodeForBack" value="0"/>
-                <h5 class="modal-title">View Details</h5>
-                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()">
-                    <span aria-hidden="true" class="modal-close-icon">&times;</span>
+    <div class="modal-dialog modal-xl" style="max-width:96%;">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header"
+                 style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 20px;border:none;">
+                <input type="hidden" id="hfCodeForBack" value="0" />
+                <div>
+                    <h5 class="modal-title mb-0" style="font-size:0.95rem;font-weight:700;">
+                        <i class="fa fa-file-invoice me-2"></i><span id="poaModalPONo">View Details</span>
+                    </h5>
+                    <small id="poaModalVendor" style="font-size:0.75rem;opacity:0.82;display:block;margin-top:2px;"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto"
+                        onclick="CloseModal()" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body" style="padding:16px;max-height:72vh;overflow-y:auto;">
+                <div id="poaModalHeader"></div>
+
+                <div class="mb-3">
+                    <div class="poa-items-title">
+                        <i class="fa fa-boxes me-1"></i>PO Items
+                    </div>
+                    <div class="table-responsive">
+                        <table class="poa-items-table" id="poaItemsTable">
+                            <thead>
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Item Description</th>
+                                    <th>PO Qty</th>
+                                    <th>Tolerance %</th>
+                                    <th>Rate</th>
+                                    <th>Dis. (%)</th>
+                                    <th>Rate After Discount</th>
+                                    <th>Amount</th>
+                                    <th>Indent No</th>
+                                    <th>Requested By</th>
+                                    <th>Last Po Date</th>
+                                    <th>Last PO Rate</th>
+                                    <th>Last Purchased From</th>
+                                    <th>Last Purchased Qty</th>
+                                    <th>Purpose</th>
+                                    <th>Machine No</th>
+                                    <th style="width:72px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="poaModalItemsBody">
+                                <tr>
+                                    <td colspan="17" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                        <i class="fa fa-spinner fa-spin me-1"></i>Loading items…
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mb-1">
+                    <div class="poa-items-title">
+                        <i class="fa fa-truck-fast me-1"></i>Delivery / Terms
+                    </div>
+                    <div class="table-responsive">
+                        <table class="poa-items-table">
+                            <thead id="poaDeliveryTermsHead"></thead>
+                            <tbody id="poaDeliveryTermsBody">
+                                <tr>
+                                    <td class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                        <i class="fa fa-spinner fa-spin me-1"></i>Loading…
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer"
+                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
+                <button type="button" id="btnPOA_ModalAttachment" class="btn btn-info btn-height" onclick="POA_ModalAttachment()">
+                    <i class="fa fa-paperclip me-1"></i>Attachment
                 </button>
-                    
-            </div>
-            <div class="modal-body">
-                <div class="table-wrapper fixed-height-table">
-                    <table id="PoapprovalModal" class="fixed-width-table table">
-                        <thead id="table-header-PoapprovalModal">
-                        </thead>
-                        <tbody id="table-body-PoapprovalModal">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="paginator" id="paginator-PoapprovalModal">
-                </div>
-                <div class="table-wrapper ">
-                    <table id="PoapprovalDeliveryTerms" class="fixed-width-table table">
-                        <thead id="table-header-PoapprovalDeliveryTerms">
-                        </thead>
-                        <tbody id="table-body-PoapprovalDeliveryTerms">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="paginator" id="paginator-PoapprovalDeliveryTerms">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()">Cancel</button>
+                <button type="button" id="btnPOA_ModalVerify" class="btn btn-success btn-height" onclick="POA_ModalVerify()">
+                    <i class="fa fa-check-circle me-1"></i>@(string.IsNullOrWhiteSpace(ViewBag?.FrmAction as string) ? "Verify" : "Verify")
+                </button>
+                <button type="button" class="btn btn-danger btn-height ms-auto" onclick="CloseModal()">
+                    <i class="fa fa-times-circle me-1"></i>Close
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="myHistoryModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="myHistoryModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index:1060;">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">

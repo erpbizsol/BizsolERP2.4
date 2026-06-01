@@ -37,13 +37,13 @@ const GRNService = {
 
     // ── PO helpers ─────────────────────────────────────────────────────────
 
-    GetPendingPOStoreList: function GetPendingPOStoreList() {
-        let url = UrlService.API_ENDPOINT_GRNService + `/GetPendingPOStoreList`;
-        return promiseAjaxCallApi.CallAPI('GET', url, '')
-            .then(function (value) {
-                return value;
-            });
-    },
+    //GetPendingPOStoreList: function GetPendingPOStoreList() {
+    //    let url = UrlService.API_ENDPOINT_GRNService + `/GetPendingPOStoreList`;
+    //    return promiseAjaxCallApi.CallAPI('GET', url, '')
+    //        .then(function (value) {
+    //            return value;
+    //        });
+    //},
 
     GetPOItemDetails: function GetPOItemDetails(ProjectCode, SubProjectMaster_Code, partyMaster_Code) {
         let url = UrlService.API_ENDPOINT_GRNService +
@@ -106,7 +106,16 @@ const GRNService = {
                 return value;
             });
     },
-   
+
+    /** Pending PO numbers for the selected party/vendor (same contract as GRN Payment Entry GetPOList). */
+    GetPendingPOStoreList: function GetPendingPOStoreList(Code) {
+        const code = Code !== undefined && Code !== null ? String(Code).trim() : '';
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetPendingPOStoreList?Code=${encodeURIComponent(code || '0')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
 
 }
 
