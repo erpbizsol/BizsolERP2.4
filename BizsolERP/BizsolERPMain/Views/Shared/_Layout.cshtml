@@ -74,6 +74,11 @@
             background: var(--light-bg);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        html {
+            overflow-x: hidden;
         }
 
         .modern-header {
@@ -1080,6 +1085,8 @@
 
         .select2-container--open .select2-dropdown {
             z-index: 99999 !important;
+            max-width: 100vw !important;
+            box-sizing: border-box;
         }
 
         /* Mobile: bottom-sheet style — dropdown slides up above the keyboard */
