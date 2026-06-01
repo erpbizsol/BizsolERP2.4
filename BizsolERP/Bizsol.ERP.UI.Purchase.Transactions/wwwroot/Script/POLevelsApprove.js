@@ -306,6 +306,48 @@ function EscHtml(str) {
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+function PlaNormStatus(status) {
+    return String(status || 'Pending').trim().toLowerCase();
+}
+
+function PlaIsHoldStatus(status) {
+    return PlaNormStatus(status) === 'hold';
+}
+
+function PlaIsPendingStatus(status) {
+    return PlaNormStatus(status) === 'pending';
+}
+
+function PlaNeedsApprovalAction(status) {
+    const s = PlaNormStatus(status);
+    return s === 'pending' || s === 'hold';
+}
+
+function PlaLevelRowIsOnHold(lvlInfo) {
+    if (!lvlInfo) return false;
+    if (String(lvlInfo.IsOnHold ?? lvlInfo.isOnHold ?? '').trim().toUpperCase() === 'Y') return true;
+    const ls = PlaNormStatus(lvlInfo.LevelStatus ?? lvlInfo.Status ?? lvlInfo.ApprovalStatus ?? '');
+    return ls === 'hold';
+}
+
+function PlaLevelIsOnHold(lvlInfo, poStatus) {
+    if (!lvlInfo) return PlaIsHoldStatus(poStatus);
+    if (PlaLevelRowIsOnHold(lvlInfo)) return true;
+    return PlaIsHoldStatus(poStatus);
+}
+
+/** True when PO is on hold or any approval level is marked On Hold — Hold action not allowed again. */
+function PlaPOHasAnyLevelOnHold(po) {
+    if (!po) return false;
+    const status = (po.ApprovalStatus || po.Status || 'Pending').trim();
+    if (PlaIsHoldStatus(status)) return true;
+    const levels = Array.isArray(po.LevelDetails) ? po.LevelDetails : [];
+    for (let i = 0; i < levels.length; i++) {
+        if (PlaLevelRowIsOnHold(levels[i])) return true;
+    }
+    return false;
+}
+
 // ─── NORMALIZE API RESPONSE ───────────────────────────────────────────────────
 function NormalizePOList(list) {
     return list.map(function (po) {
@@ -405,13 +447,14 @@ function BuildPOCard(po) {
     const status   = (po.ApprovalStatus              || po.Status      || 'Pending').trim();
 
     let statusClr, statusBg;
-    if (status.toLowerCase() === 'approved')      { statusClr = '#059669'; statusBg = '#d1fae5'; }
-    else if (status.toLowerCase() === 'rejected') { statusClr = '#dc2626'; statusBg = '#fee2e2'; }
-    else                                          { statusClr = '#d97706'; statusBg = '#fef3c7'; }
+    if (PlaNormStatus(status) === 'approved')      { statusClr = '#059669'; statusBg = '#d1fae5'; }
+    else if (PlaNormStatus(status) === 'rejected') { statusClr = '#dc2626'; statusBg = '#fee2e2'; }
+    else if (PlaIsHoldStatus(status))              { statusClr = '#ea580c'; statusBg = '#ffedd5'; }
+    else                                           { statusClr = '#d97706'; statusBg = '#fef3c7'; }
 
     const stepperHtml = BuildCardStepper(curLvlNo, totalLvl, status);
 
-    const actionBtn = status.toLowerCase() === 'pending'
+    const actionBtn = PlaNeedsApprovalAction(status)
         ? `<button class="btn-pla-card-approve" onclick="OpenDetailModal(${code})">
                <i class="fa fa-check me-1"></i>Review &amp; Approve
            </button>`
@@ -509,21 +552,25 @@ function BuildPOCard(po) {
 
 function BuildCardStepper(currentLevel, totalLevels, status) {
     if (!totalLevels || totalLevels < 1) totalLevels = 1;
+    const st = PlaNormStatus(status);
     let html = '<div class="pla-stepper">';
     for (let i = 1; i <= totalLevels; i++) {
         let stepClass;
-        if (status.toLowerCase() === 'approved')      { stepClass = 'pla-step-done'; }
+        if (st === 'approved')                        { stepClass = 'pla-step-done'; }
         else if (i < currentLevel)                    { stepClass = 'pla-step-done'; }
-        else if (i === currentLevel)                  { stepClass = status.toLowerCase() === 'rejected' ? 'pla-step-rejected' : 'pla-step-active'; }
+        else if (i === currentLevel && st === 'hold') { stepClass = 'pla-step-hold'; }
+        else if (i === currentLevel)                  { stepClass = st === 'rejected' ? 'pla-step-rejected' : 'pla-step-active'; }
         else                                          { stepClass = 'pla-step-pending'; }
 
-        const lineClass = (i < currentLevel || status.toLowerCase() === 'approved')
+        const lineClass = (i < currentLevel || st === 'approved')
             ? 'pla-step-line-done' : 'pla-step-line-pending';
 
         const iconHtml = stepClass === 'pla-step-done'
             ? '<i class="fa fa-check" style="font-size:0.6rem;"></i>'
             : stepClass === 'pla-step-rejected'
                 ? '<i class="fa fa-times" style="font-size:0.6rem;"></i>'
+                : stepClass === 'pla-step-hold'
+                    ? '<i class="fa fa-pause" style="font-size:0.6rem;"></i>'
                 : i;
 
         html += `<div class="pla-step-item">
@@ -602,10 +649,16 @@ function OpenDetailModal(poCode) {
             // Approval level stepper
             $('#modalApprovalStepper').html(BuildDetailStepper(G_CurrentPO));
 
-            // Show/hide approve & reject buttons
-            const isPending = status.toLowerCase() === 'pending';
-            $('#btnApproveAction').toggle(isPending);
-            $('#btnRejectAction').toggle(isPending);
+            // Show/hide approve, reject & hold buttons
+            const needsAction = PlaNeedsApprovalAction(status);
+            const holdBlocked = PlaPOHasAnyLevelOnHold(G_CurrentPO);
+            $('#btnApproveAction').toggle(needsAction);
+            $('#btnRejectAction').toggle(needsAction);
+            $('#btnHoldAction').toggle(needsAction);
+            $('#btnHoldAction')
+                .prop('disabled', holdBlocked)
+                .toggleClass('pla-btn-hold-disabled', holdBlocked)
+                .attr('title', holdBlocked ? 'This PO is already on hold at an approval level.' : 'Put on hold');
 
             // Items placeholder
             $('#modalItemsBody').html(
@@ -659,17 +712,20 @@ function BuildDetailStepper(po) {
         const remarks    = EscHtml(lvlInfo.Remarks || lvlInfo.Remark || '');
 
         let stepState;
-        if (status.toLowerCase() === 'approved' || i < curLvlNo) stepState = 'done';
-        else if (i === curLvlNo) stepState = status.toLowerCase() === 'rejected' ? 'rejected' : 'active';
+        if (PlaNormStatus(status) === 'approved' || i < curLvlNo) stepState = 'done';
+        else if (PlaLevelRowIsOnHold(lvlInfo) || (i === curLvlNo && PlaIsHoldStatus(status))) stepState = 'hold';
+        else if (i === curLvlNo) stepState = PlaNormStatus(status) === 'rejected' ? 'rejected' : 'active';
         else stepState = 'pending';
 
         const iconHtml = stepState === 'done'     ? '<i class="fa fa-check"></i>'
                        : stepState === 'rejected' ? '<i class="fa fa-times"></i>'
+                       : stepState === 'hold'     ? '<i class="fa fa-pause"></i>'
                        : stepState === 'active'   ? '<i class="fa fa-hourglass-half"></i>'
                        : i;
 
         const badgeLabel = stepState === 'done'     ? 'Approved'
                          : stepState === 'rejected' ? 'Rejected'
+                         : stepState === 'hold'     ? 'On Hold'
                          : stepState === 'active'   ? 'Pending'
                          : 'Waiting';
 
@@ -735,26 +791,37 @@ function SubmitApproval(action) {
     const remarks   = ($('#frmRemarks').val() || '').trim();
 
     if (!poCode) { toastr.warning('No PO selected.'); return; }
-    if (action === 'Reject' && !remarks) {
-        toastr.warning('Please enter remarks before rejecting.');
+    if (action === 'Hold' && PlaPOHasAnyLevelOnHold(G_CurrentPO)) {
+        toastr.warning('This PO is already on hold at an approval level.');
+        return;
+    }
+    if ((action === 'Reject' || action === 'Hold') && !remarks) {
+        toastr.warning('Please enter remarks before ' + action.toLowerCase() + 'ing.');
         $('#frmRemarks').focus();
         return;
     }
 
     const poNo   = G_CurrentPO ? (G_CurrentPO['PO No'] || G_CurrentPO.PONo || '') : '';
     const isAppr = action === 'Approve';
+    const isHold = action === 'Hold';
     const hdrBg  = isAppr
         ? 'background:linear-gradient(135deg,#059669,#10b981);color:#fff;'
-        : 'background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;';
-    const btnCls = isAppr ? 'btn-pla-confirm-approve' : 'btn-pla-confirm-reject';
+        : isHold
+            ? 'background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;'
+            : 'background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;';
+    const btnCls = isAppr ? 'btn-pla-confirm-approve' : (isHold ? 'btn-pla-confirm-hold' : 'btn-pla-confirm-reject');
     const btnTxt = isAppr
         ? '<i class="fa fa-check me-1"></i>Yes, Approve'
-        : '<i class="fa fa-times me-1"></i>Yes, Reject';
+        : isHold
+            ? '<i class="fa fa-pause me-1"></i>Yes, Hold'
+            : '<i class="fa fa-times me-1"></i>Yes, Reject';
     const msg = isAppr
         ? 'Are you sure you want to <strong>approve</strong> PO# <strong>' + EscHtml(poNo) + '</strong>?'
-        : 'Are you sure you want to <strong>reject</strong> PO# <strong>' + EscHtml(poNo) + '</strong>?';
+        : isHold
+            ? 'Are you sure you want to put PO# <strong>' + EscHtml(poNo) + '</strong> on <strong>hold</strong>?'
+            : 'Are you sure you want to <strong>reject</strong> PO# <strong>' + EscHtml(poNo) + '</strong>?';
 
-    $('#confirmTitle').text(isAppr ? 'Confirm Approval' : 'Confirm Rejection');
+    $('#confirmTitle').text(isAppr ? 'Confirm Approval' : (isHold ? 'Confirm Hold' : 'Confirm Rejection'));
     $('#confirmModalHeader').attr('style', 'padding:12px 16px;border:none;' + hdrBg);
     $('#confirmMessage').html(msg);
     $('#btnConfirmAction')
@@ -788,7 +855,12 @@ function ExecuteApproval(poCode, levelCode, remarks, action) {
 
     const serviceCall = action === 'Approve'
         ? POLevelsApproveService.ApprovePO(poCode, levelCode, remarks)
-        : POLevelsApproveService.RejectPO(poCode, levelCode, remarks);
+        : action === 'Hold'
+            ? POLevelsApproveService.HoldPO(poCode, levelCode, remarks)
+            : POLevelsApproveService.RejectPO(poCode, levelCode, remarks);
+
+    const successVerb = action === 'Approve' ? 'approved' : (action === 'Hold' ? 'put on hold' : 'rejected');
+    const failVerb = action === 'Approve' ? 'approving' : (action === 'Hold' ? 'holding' : 'rejecting');
 
     serviceCall
         .then(function (response) {
@@ -798,7 +870,7 @@ function ExecuteApproval(poCode, levelCode, remarks, action) {
                 response.Success === true || response === true
             );
             if (ok) {
-                toastr.success('PO ' + (action === 'Approve' ? 'approved' : 'rejected') + ' successfully.');
+                toastr.success('PO ' + successVerb + ' successfully.');
                 CloseDetailModal();
                 LoadPOList();
             } else {
@@ -809,7 +881,7 @@ function ExecuteApproval(poCode, levelCode, remarks, action) {
         })
         .catch(function () {
             HideLoader();
-            toastr.error('Error while ' + (action === 'Approve' ? 'approving' : 'rejecting') + ' PO.');
+            toastr.error('Error while ' + failVerb + ' PO.');
         });
 }
 

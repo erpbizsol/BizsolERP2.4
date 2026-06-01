@@ -57,6 +57,20 @@ const POLevelsApproveService = {
         return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
     },
 
+    // ── Put a PO on hold at the current level ─────────────────────────────────
+    HoldPO: function HoldPO(poCode, levelCode, remarks) {
+        let userCode = 0, groupCode = 0;
+        try {
+            userCode  = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+            groupCode = JSON.parse(sessionStorage.getItem('UserDetails'))[0].GroupMaster_Code;
+        } catch (e) {}
+        let url = UrlService.API_ENDPOINT_POLevelsApprove +
+            `/HoldPO?PurchaseOrderMaster_Code=${poCode}&LevelCode=${levelCode}` +
+            `&UserMaster_Code=${userCode}&GroupMaster_Code=${groupCode}` +
+            `&Remarks=${encodeURIComponent(remarks || '')}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
+    },
+
 }
 
 export { POLevelsApproveService }

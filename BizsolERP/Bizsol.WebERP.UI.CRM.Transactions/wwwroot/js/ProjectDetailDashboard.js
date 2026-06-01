@@ -98,55 +98,26 @@ function BindKpiNavigation() {
 // ── Init ─────────────────────────────────────────────────────────────────────
 $(document).ready(function () {
     InitDefaultDates();
-    LoadProjectDropdown();
     BindProjectChange();
     BindKpiNavigation();
-
-    // Auto-load dashboard if company name contains 'solar'
-    var isSolarCompany = (function () {
-        try {
-            var ud = JSON.parse(sessionStorage.getItem('UserDetails'));
-            if (ud && ud.length > 0) {
-                return (ud[0].CompanyNameForShow || '').toLowerCase().includes('solar');
-            }
-        } catch (_) {}
-        return false;
-    })();
-
-    if (isSolarCompany) {
-        // Wait for project dropdown to finish loading, then auto-show
-        // We poll until at least one project option is available
-        var _autoLoadAttempts = 0;
-        var _autoLoadTimer = setInterval(function () {
-            _autoLoadAttempts++;
-            var ddl = document.getElementById('ddlProject');
-            if (ddl && ddl.options.length > 1) {
-                clearInterval(_autoLoadTimer);
-                // Select first project and trigger cascading load
-                ddl.selectedIndex = 1;
-                $(ddl).trigger('change');
-                // Wait for sub-project to load (if any), then call LoadDashboard
-                setTimeout(function () { LoadDashboard(); }, 600);
-            } else if (_autoLoadAttempts > 50) {
-                clearInterval(_autoLoadTimer); // Give up after ~5 seconds
-            }
-        }, 0);
-    }
+    LoadProjectDropdown()
+        .then(function () { LoadDashboard(); })
+        .catch(function () { LoadDashboard(); });
 });
 
 function InitDefaultDates() {
-    const today    = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    document.getElementById('pddFromDate').value = FmtDateInput(firstDay);
+    const today              = new Date();
+    const firstDayPrevMonth  = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    document.getElementById('pddFromDate').value = FmtDateInput(firstDayPrevMonth);
     document.getElementById('pddToDate').value   = FmtDateInput(today);
 }
 
 // ── Project dropdown ─────────────────────────────────────────────────────────
 function LoadProjectDropdown() {
-    ProjectDetailDashboardService.GetProjectList()
+    return ProjectDetailDashboardService.GetProjectList()
         .then(function (data) {
             const ddl = document.getElementById('ddlProject');
-            ddl.innerHTML = '<option value="0">-- Select Project --</option>';
+            ddl.innerHTML = '<option value="0">-- All Projects --</option>';
             (data || []).forEach(function (p) {
                 const opt = document.createElement('option');
                 opt.value       = p.Code ?? p.ProjectMaster_Code ?? p.code ?? 0;
@@ -194,10 +165,6 @@ function LoadDashboard() {
     const fromDate       = document.getElementById('pddFromDate').value;
     const toDate         = document.getElementById('pddToDate').value;
 
-    if (!projectCode) {
-        toastr.warning('Please select a Project first.');
-        return;
-    }
     if (!fromDate || !toDate) {
         toastr.warning('Please select From Date and To Date.');
         return;
@@ -249,7 +216,7 @@ function ClearAllWidgets() {
     ['kpiPOCount','kpiPaymentAmt','kpiExpenseAmt','kpiTotalProjects','kpiIsReconciled',
      'legPOApproved','legPOPending','legPORejected','legPOTotal',
      'projSummaryTotal','legProjActive','legProjPending','legProjCompleted','legProjOnHold',
-     'bvaBudget','bvaSpent','bvaPct',
+     'bvaBudget','bvaSpent','bvaBalance','bvaPct',
      'expTotalAmount','legExpApproved','legExpPending','legExpRejected',
      'pddDataNote','trendYear'
     ].forEach(function (id) {
@@ -450,12 +417,14 @@ function RenderBudgetVsActual(data) {
     const summary = data.find(function (r) { return (r.RowType ?? 0) === 0; }) || data[0];
     const details = data.filter(function (r) { return (r.RowType ?? 0) === 1; });
 
-    const budget = parseFloat(summary.TotalBudget ?? 0);
-    const spent  = parseFloat(summary.TotalSpent  ?? 0);
-    const pct    = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+    const budget  = parseFloat(summary.TotalBudget ?? 0);
+    const spent   = parseFloat(summary.TotalSpent  ?? 0);
+    const balance = parseFloat(summary.TotalBalance ?? (budget - spent));
+    const pct     = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
 
-    document.getElementById('bvaBudget').textContent = FmtLakh(budget);
-    document.getElementById('bvaSpent').textContent  = FmtLakh(spent);
+    document.getElementById('bvaBudget').textContent  = FmtLakh(budget);
+    document.getElementById('bvaSpent').textContent   = FmtLakh(spent);
+    document.getElementById('bvaBalance').textContent = FmtLakh(balance);
     document.getElementById('bvaPct').textContent    = pct.toFixed(2) + '%';
     document.getElementById('bvaProgressBar').style.width = pct.toFixed(2) + '%';
 
