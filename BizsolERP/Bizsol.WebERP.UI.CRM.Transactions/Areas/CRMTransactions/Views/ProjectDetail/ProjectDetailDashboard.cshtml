@@ -372,7 +372,7 @@
 
     /* ── BUDGET VS ACTUAL ───────────────────────────────────────── */
     .pdd-bva-stats-row {
-        display: grid; grid-template-columns: 1fr 1px 1fr;
+        display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr;
         gap: 0; background: linear-gradient(135deg,#f8faff,#f5f3ff);
         border-radius: 14px; padding: 14px 10px; margin-bottom: 14px;
         border: 1px solid #e0e7ff;
@@ -524,7 +524,7 @@
                     <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
                         <label class="form-label" for="ddlProject"><i class="fa-solid fa-folder-open me-1"></i>Project</label>
                         <select id="ddlProject" class="form-select form-select-sm">
-                            <option value="0">-- Select Project --</option>
+                            <option value="0">-- All Projects --</option>
                         </select>
                     </div>
                     <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
@@ -702,6 +702,11 @@
                         <div class="pdd-bva-stat">
                             <div class="bva-lbl"><i class="fa-solid fa-receipt me-1"></i>Total Spent</div>
                             <div class="bva-val" id="bvaSpent">—</div>
+                        </div>
+                        <div class="pdd-bva-divider"></div>
+                        <div class="pdd-bva-stat">
+                            <div class="bva-lbl"><i class="fa-solid fa-piggy-bank me-1"></i>Total Balance</div>
+                            <div class="bva-val" id="bvaBalance">—</div>
                         </div>
                     </div>
                     <div class="pdd-utilization-wrap">
