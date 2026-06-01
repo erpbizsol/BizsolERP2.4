@@ -57,8 +57,26 @@ const GRNPaymentApprovalService = {
         return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
     },
 
+    HoldGRNPayment: function HoldGRNPayment(grnPaymentMasterCode, levelCode, remarks) {
+        const { userCode, groupCode } = getSessionUserAndGroup();
+        const url = UrlService.API_ENDPOINT_GRNPaymentLevelsApproval +
+            `/HoldGRNPayment?GRNPaymentMaster_Code=${encodeURIComponent(grnPaymentMasterCode)}&LevelCode=${encodeURIComponent(levelCode)}` +
+            `&UserMaster_Code=${encodeURIComponent(userCode)}&GroupMaster_Code=${encodeURIComponent(groupCode)}` +
+            `&Remarks=${encodeURIComponent(remarks || '')}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
+    },
+
     GetFirstPendingEntryDate: function GetFirstPendingEntryDate() {
         const url = UrlService.API_ENDPOINT_GRNPaymentLevelsApproval + '/GetFirstPendingEntryDate';
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
+    GetGRNPaymentApprovalHistory: function GetGRNPaymentApprovalHistory(grnPaymentMasterCode, accountMasterCode, projectMasterCode, subProjectMasterCode) {
+        const url = UrlService.API_ENDPOINT_GRNPaymentLevelsApproval +
+            `/GetGRNPaymentApprovalHistory?GRNPaymentMaster_Code=${encodeURIComponent(grnPaymentMasterCode || 0)}` +
+            `&AccountMaster_Code=${encodeURIComponent(accountMasterCode || 0)}` +
+            `&ProjectMaster_Code=${encodeURIComponent(projectMasterCode || 0)}` +
+            `&SubProjectMaster_Code=${encodeURIComponent(subProjectMasterCode || 0)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
