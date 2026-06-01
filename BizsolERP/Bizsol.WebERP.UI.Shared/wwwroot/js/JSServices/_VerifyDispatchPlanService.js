@@ -60,6 +60,14 @@ const VerifyDispatchPlanService = {
             }
         );
     },
+    UnApprovedQuotation: function UnApprovedQuotation(Code, Transporter_Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/UnApprovedQuotation?Code=" + encodeURIComponent(Code) + "&Transporter_Code=" + encodeURIComponent(Transporter_Code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetDespatchAdviceQtyForUpdate: function GetDespatchAdviceQtyForUpdate(Code) {
         var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetDespatchAdviceQtyForUpdate?Code=" + encodeURIComponent(Code);
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(

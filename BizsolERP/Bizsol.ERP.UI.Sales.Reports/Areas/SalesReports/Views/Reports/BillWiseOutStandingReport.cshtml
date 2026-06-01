@@ -5,7 +5,7 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Sales.Reports/Script/BillWiseOutStandingReport.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Sales.Reports/Script/BillWiseOutStandingReport.js" asp-append-version="true"></script>
 <style>
     /* ── table ── */
     .fixed-width-table th,
@@ -71,6 +71,47 @@
 
     .bwo-drcr-toggle label:hover { background: #e9ecef; }
     .bwo-drcr-toggle input[type="radio"]:checked + label:hover { background: #0b5ed7; color: #fff; }
+
+    .bwo-drcr-toggle--triple label {
+        font-size: 0.72rem;
+        padding: 0 0.2rem;
+    }
+
+    .bwo-filter-show-col {
+        margin-top: 33px;
+    }
+
+    @@media (max-width: 767.98px) {
+        .bwo-drcr-toggle--triple {
+            flex-direction: column;
+            height: auto;
+        }
+
+        .bwo-drcr-toggle--triple label {
+            flex: none;
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid #ced4da;
+            white-space: normal;
+            text-align: center;
+            padding: 0.4rem 0.5rem;
+            font-size: 0.75rem;
+            line-height: 1.25;
+            min-height: 34px;
+        }
+
+        .bwo-drcr-toggle--triple label:last-of-type {
+            border-bottom: none;
+        }
+
+        .bwo-drcr-toggle--triple input[type="radio"]:checked + label {
+            border-bottom-color: #0d6efd;
+        }
+
+        .bwo-filter-show-col {
+            margin-top: 0;
+        }
+    }
 
     /* ── filter action row ── */
     .bwo-filter-actions {
@@ -182,10 +223,117 @@
         margin-bottom: 0.65rem;
     }
 
+    .bwo-chart-note {
+        font-size: 0.68rem;
+        color: #64748b;
+        margin: 0 0 0.5rem;
+        line-height: 1.35;
+    }
+
+    .bwo-chart-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.35rem;
+    }
+
+    .bwo-chart-head .bwo-chart-title {
+        margin-bottom: 0;
+        flex: 1 1 auto;
+    }
+
+    .bwo-chart-head-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+    }
+
+    .bwo-ageing-format-badge {
+        font-size: 0.68rem;
+        color: #64748b;
+        white-space: nowrap;
+    }
+
+    .bwo-ageing-format-badge strong {
+        color: #3d5cce;
+    }
+
+    #btnBillWiseAgeingParamChart {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.2rem 0.55rem;
+        white-space: nowrap;
+    }
+
+    .bwo-drcr-toggle--chart {
+        height: 28px;
+        min-width: 220px;
+    }
+
+    .bwo-drcr-toggle--chart label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        min-height: 26px;
+        padding: 0 0.35rem;
+    }
+
+    @@media (max-width: 575.98px) {
+        .bwo-drcr-toggle--chart {
+            min-width: 100%;
+            width: 100%;
+        }
+        .bwo-chart-head-actions {
+            width: 100%;
+        }
+    }
+
     .bwo-chart-wrap {
         position: relative;
         min-height: 250px;
         overflow: hidden;
+    }
+
+    .bwo-chart-wrap--monthly {
+        min-height: 280px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .bwo-chart-inner {
+        position: relative;
+        height: 320px;
+    }
+
+    .bwo-chart-wrap--monthly .bwo-chart-inner {
+        height: 400px;
+    }
+
+    .bwo-chart-wrap--wide .bwo-chart-inner {
+        height: 100%;
+        min-height: 440px;
+    }
+
+    .bwo-chart-wrap canvas {
+        display: block;
+    }
+
+    .bwo-chart-wrap--wide {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .bwo-chart-wrap.bwo-chart-wrap--bar10 { min-height: 360px; }
+
+    @@media (min-width: 576px) {
+        .bwo-chart-wrap--monthly { min-height: 320px; }
+        .bwo-chart-wrap--wide { min-height: 440px; }
+        .bwo-chart-wrap.bwo-chart-wrap--bar10 { min-height: 460px; }
     }
 
     /* ── table scroll wrapper ── */
@@ -198,8 +346,15 @@
     @@media (max-width: 575.98px) {
         .filter-card { padding: 10px; border-radius: 6px; }
 
-        .bwo-drcr-toggle { height: 30px; border-radius: 6px; }
-        .bwo-drcr-toggle label { font-size: 0.78rem; min-height: 30px; }
+        .bwo-drcr-toggle:not(.bwo-drcr-toggle--triple):not(.bwo-drcr-toggle--chart) {
+            height: 30px;
+            border-radius: 6px;
+        }
+
+        .bwo-drcr-toggle:not(.bwo-drcr-toggle--triple):not(.bwo-drcr-toggle--chart) label {
+            font-size: 0.78rem;
+            min-height: 30px;
+        }
 
         .bwo-kpi-row { gap: 8px; }
         .bwo-kpi-item { flex: 0 0 calc(50% - 5px); min-width: 130px; }
@@ -211,7 +366,14 @@
         .bwo-chart-title { font-size: 0.63rem; margin-bottom: 0.4rem; }
 
         .bwo-chart-wrap { min-height: 200px; }
-        .bwo-chart-wrap.bwo-chart-wrap--bar10 { min-height: 310px; }
+        .bwo-chart-wrap.bwo-chart-wrap--bar10 { min-height: 480px; }
+        .bwo-chart-wrap.bwo-chart-wrap--monthly {
+            min-height: 260px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        .bwo-chart-wrap--monthly .bwo-chart-inner { height: 260px; }
 
         #billWiseDashboardSection { padding: 8px !important; }
         .bwo-section-title { font-size: 0.62rem; margin-bottom: 0.45rem; padding-bottom: 0.3rem; }
@@ -231,6 +393,21 @@
 
     <!-- Filter Card -->
     <div class="filter-card">
+        <div class="row g-2 mb-1">
+            <!-- Cr. Days — Master / Invoice / Without Credit Limit -->
+            <div class="col-12 col-md-6 col-lg-5">
+                <label class="form-label filter-label">Cr. Days</label>
+                <div class="bwo-drcr-toggle bwo-drcr-toggle--triple" id="bwoCrDaysToggle">
+                    <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysMaster" value="Y" checked autocomplete="off" />
+                    <label for="radBillWiseCrDaysMaster">Cr. Days From Master</label>
+                    <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysInvoice" value="N" autocomplete="off" />
+                    <label for="radBillWiseCrDaysInvoice">Cr. Days From Invoice</label>
+                    <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysNoLimit" value="W" autocomplete="off" />
+                    <label for="radBillWiseCrDaysNoLimit">Without Credit Limit</label>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-2">
 
             <!-- Debtors / Creditors toggle — dynamically populated from GroupTypeMaster API -->
@@ -263,7 +440,7 @@
             </div>
 
             <!-- Action buttons — full row on mobile -->
-            <div class="col-12 col-sm-4 col-md-2" style="margin-top:33px;">
+            <div class="col-12 col-sm-4 col-md-2 bwo-filter-show-col">
                 <button type="button" id="btnShow" class="btn btn-success btn-height">
                     <i class="fas fa-search"></i><span class="d-none d-sm-inline"> Show</span><span class="d-inline d-sm-none"> Show</span>
                 </button>
@@ -301,13 +478,30 @@
         <!-- Ageing & Party -->
         <div class="bwo-section-title">&#9632; Ageing &amp; Party Analysis</div>
         <div class="row g-2 g-sm-3 mb-2 mb-sm-3">
-            <div class="col-12 col-xl-7">
+            <div class="col-12 col-xl-12">
                 <div class="bwo-chart-card">
-                    <div class="bwo-chart-title">Outstanding by Delay-Days Bucket</div>
+                    <div class="bwo-chart-head">
+                        <div class="bwo-chart-title">Outstanding by Delay-Days Bucket</div>
+                        <div class="bwo-chart-head-actions">
+                            <div class="bwo-drcr-toggle bwo-drcr-toggle--chart" id="bwoDelayBucketDateToggle">
+                                <input type="radio" name="bwoDelayBucketDateMode" id="radBwoDelayBillDate" value="bill" checked autocomplete="off" />
+                                <label for="radBwoDelayBillDate">As Per Bill Date</label>
+                                <input type="radio" name="bwoDelayBucketDateMode" id="radBwoDelayDueDate" value="due" autocomplete="off" />
+                                <label for="radBwoDelayDueDate">As Per Due Date</label>
+                            </div>
+                            <span class="bwo-ageing-format-badge">
+                                Format: <strong id="lblBillWiseAgeingFormatChart">Default</strong>
+                            </span>
+                            <button type="button" id="btnBillWiseAgeingParamChart" class="btn btn-primary btn-sm">
+                                <i class="fas fa-sliders-h"></i> Configure Range
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bwo-chart-note">Bucket ranges are loaded from database. Create or edit formats such as 1–10, 11–20, etc.</div>
                     <div class="bwo-chart-wrap"><canvas id="chartBillWiseDelayBuckets"></canvas></div>
                 </div>
             </div>
-            <div class="col-12 col-xl-5">
+            <div class="col-12 col-xl-12">
                 <div class="bwo-chart-card">
                     <div class="bwo-chart-title">Top 10 Parties by Outstanding</div>
                     <div class="bwo-chart-wrap bwo-chart-wrap--bar10"><canvas id="chartBillWiseTopParties"></canvas></div>
@@ -320,7 +514,7 @@
         <div class="row g-2 g-sm-3 mb-2 mb-sm-3">
             <div class="col-12">
                 <div class="bwo-chart-card">
-                    <div class="bwo-chart-title">Top 10 Sales Persons by Outstanding</div>
+                    <div class="bwo-chart-title">Top 10 Sales Persons — Outstanding Amount vs OverDue Amount</div>
                     <div class="bwo-chart-wrap bwo-chart-wrap--bar10"><canvas id="chartBillWiseSalesPerson"></canvas></div>
                 </div>
             </div>
@@ -331,8 +525,12 @@
         <div class="row g-2 g-sm-3 mb-2 mb-sm-3">
             <div class="col-12">
                 <div class="bwo-chart-card">
-                    <div class="bwo-chart-title">Month-wise Outstanding Trend (by Bill Date)</div>
-                    <div class="bwo-chart-wrap" style="min-height:220px;"><canvas id="chartBillWiseMonthlyTrend"></canvas></div>
+                    <div class="bwo-chart-title">Month-wise Outstanding vs Overdue Trend (by Bill Date)</div>
+                    <div class="bwo-chart-wrap bwo-chart-wrap--monthly">
+                        <div class="bwo-chart-inner" id="billWiseMonthlyChartInner">
+                            <canvas id="chartBillWiseMonthlyTrend"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -340,13 +538,17 @@
         <!-- Collection & Credit -->
         <div class="bwo-section-title">&#9632; Collection &amp; Credit Analysis</div>
         <div class="row g-2 g-sm-3 mb-1">
-            <div class="col-12 col-xl-7">
+            <div class="col-12 col-xl-12">
                 <div class="bwo-chart-card">
                     <div class="bwo-chart-title">Top 10 Parties — Billed vs Collected</div>
-                    <div class="bwo-chart-wrap bwo-chart-wrap--bar10"><canvas id="chartBillWiseCollectionEff"></canvas></div>
+                    <div class="bwo-chart-wrap bwo-chart-wrap--bar10 bwo-chart-wrap--wide">
+                        <div class="bwo-chart-inner" id="billWiseCollectionChartInner">
+                            <canvas id="chartBillWiseCollectionEff"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-12 col-xl-5">
+            <div class="col-12 col-xl-12">
                 <div class="bwo-chart-card">
                     <div class="bwo-chart-title">Top 10 Parties — Delay beyond Credit Days</div>
                     <div class="bwo-chart-wrap bwo-chart-wrap--bar10"><canvas id="chartBillWiseCreditBreach"></canvas></div>

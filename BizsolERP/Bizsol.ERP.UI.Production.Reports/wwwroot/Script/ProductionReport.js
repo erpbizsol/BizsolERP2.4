@@ -1,4 +1,11 @@
 import { MillWiseProductionReport } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_MillWiseProductionReportService.js';
+import {
+    loadYieldConfiguration,
+    getYieldConfigReady,
+    configureYieldStyleSelectors,
+    yieldCls,
+    getYieldRedClass,
+} from '../../Bizsol.WebERP.UI.Shared/js/YieldConfigurationHelper.js';
 
 /*
  * API returns an object:
@@ -8,9 +15,6 @@ import { MillWiseProductionReport } from '../../Bizsol.WebERP.UI.Shared/js/JSSer
  *     MonthWiseAverageRedYeild: [ { PeriodLabel, WeekNo, WeekStart, TotalShifts, [MACHINE]: redCount, … } ]
  *   }
  */
-
-const YIELD_GREEN = 99.0;   // > 99  → green
-const YIELD_AMBER = 98.0;   // 98–99 → yellow  |  < 98 → red
 
 /* ── small helpers ── */
 function pad2(n) { return String(n).padStart(2, '0'); }
@@ -38,13 +42,7 @@ function fmtYield(v) {
     const n = toNum(v);
     return n === null ? '—' : n.toFixed(2) + '%';
 }
-function yieldCls(v) {
-    const n = toNum(v);
-    if (n === null || n === 0) return '';
-    if (n > YIELD_GREEN)  return 'yield-green';   // > 99
-    if (n >= YIELD_AMBER) return 'yield-amber';   // 98 – 99
-    return 'yield-red';                           // < 98
-}
+
 /** "DAY" → "Day",  "NORMAL" → "Normal" */
 function titleCase(s) {
     return String(s).charAt(0).toUpperCase() + String(s).slice(1).toLowerCase();
@@ -227,7 +225,7 @@ function renderRedYieldTables(redRows) {
             machineCols.forEach(m => {
                 const v = toNum(row[m]);
                 const display = v !== null ? v : 0;
-                const cls = (v !== null && v > 0) ? 'yield-red' : '';
+                const cls = (v !== null && v > 0) ? getYieldRedClass() : '';
                 html += `<td class="td-num ${cls}">${display}</td>`;
             });
             html += `</tr>`;
@@ -293,7 +291,9 @@ function ShowReport() {
     clearReport();
     if (typeof Showloader === 'function') Showloader();
 
-    MillWiseProductionReport.GetMillWiseProductionReport(from, to)
+    getYieldConfigReady().then(function () {
+        return MillWiseProductionReport.GetMillWiseProductionReport(from, to);
+    })
         .then(function (res) {
             /*
              * Handle two possible API response shapes:
@@ -332,8 +332,36 @@ function ShowReport() {
         });
 }
 
+function OpenYieldModal() {
+    const baseUrl = sessionStorage.getItem('AppBaseURL') || '';
+    document.getElementById('iframeVendorMaster').src = baseUrl + '/ProductionTransactions/StockAgeingReport/YieldConfiguration?embedded=1&ModuleDesp=Yield%20configuration';
+    var modal = new bootstrap.Modal(document.getElementById('modalAddVendor'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    modal.show();
+}
+
 /* ── Init (ES modules are deferred — DOM is ready when this runs) ── */
 document.getElementById('txtPrFromDate').value = fyStartStr();
 document.getElementById('txtPrToDate').value   = todayStr();
 document.getElementById('btnPrShow').addEventListener('click', ShowReport);
 document.getElementById('btnPrDownload').addEventListener('click', downloadExcel);
+
+const modalYieldCfg = document.getElementById('modalAddVendor');
+if (modalYieldCfg) {
+    modalYieldCfg.addEventListener('hidden.bs.modal', function () {
+        loadYieldConfiguration().then(function () {
+            const from = (document.getElementById('txtPrFromDate').value || '').trim();
+            const to = (document.getElementById('txtPrToDate').value || '').trim();
+            if (from && to && !document.getElementById('tblProductionReport').classList.contains('d-none')) {
+                ShowReport();
+            }
+        });
+    });
+}
+
+configureYieldStyleSelectors('#tblProductionReport td.{cls}, .tbl-sum td.{cls}');
+loadYieldConfiguration();
+
+window.OpenYieldModal = OpenYieldModal;

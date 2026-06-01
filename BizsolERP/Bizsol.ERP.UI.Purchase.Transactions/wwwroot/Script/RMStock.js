@@ -1,6 +1,7 @@
 import { RMStockService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RMStockService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { loadYieldConfiguration, applyYieldCellColour } from '../../Bizsol.WebERP.UI.Shared/js/YieldConfigurationHelper.js';
 
 let G_today = '';
 let G_FromDateValue = '';
@@ -31,6 +32,7 @@ function applyAllowManualWeightState() {
 }
 
 $(document).ready(function () {
+    loadYieldConfiguration();
     let isInitialLoad = true;
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
    
@@ -2162,31 +2164,8 @@ function ChangecolorTr() {
         if (tds.length <= statusColIndex) {
             return;
         }
-        tds[statusColIndex].style.backgroundColor = "";
-
         const rawText = tds[statusColIndex].textContent.trim();
-        const yieldValue = parseFloat(rawText);
-
-        if (isNaN(yieldValue)) {
-            return;
-        }
-
-        let color = "";
-        switch (true) {
-            case (yieldValue < 98):
-                color = "#f87171"; 
-                break;
-            case (yieldValue >= 98 && yieldValue < 99):
-                color = "#ebb861"; 
-                break;
-            case (yieldValue >= 99):
-                color = "#07bb72"; 
-                break;
-            default:
-                color = "";
-                break;
-        }
-        tds[statusColIndex].style.backgroundColor = color || "";
+        applyYieldCellColour(tds[statusColIndex], rawText);
     });
 }
 
@@ -2201,31 +2180,8 @@ function ChangecolorTrYeald() {
         if (tds.length <= statusColIndex) {
             return;
         }
-        tds[statusColIndex].style.backgroundColor = "";
-
         const rawText = tds[statusColIndex].textContent.trim();
-        const yieldValue = parseFloat(rawText);
-
-        if (isNaN(yieldValue)) {
-            return;
-        }
-
-        let color = "";
-        switch (true) {
-            case (yieldValue < 98):
-                color = "#f87171";
-                break;
-            case (yieldValue >= 98 && yieldValue < 99):
-                color = "#ebb861";
-                break;
-            case (yieldValue >= 99):
-                color = "#07bb72";
-                break;
-            default:
-                color = "";
-                break;
-        }
-        tds[statusColIndex].style.backgroundColor = color || "";
+        applyYieldCellColour(tds[statusColIndex], rawText);
     });
 }
 

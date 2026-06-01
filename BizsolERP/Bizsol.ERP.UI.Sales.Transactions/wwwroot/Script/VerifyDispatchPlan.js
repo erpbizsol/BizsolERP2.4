@@ -11,6 +11,7 @@ let G_DispatchPlanlist = [];
 let G_DispatchAdviceNo = 0;
 let G_DispatchMaster_Code = 0;
 let G_AccountMaster_Code = 0;
+let G_ViewAll_Code = 0;
 
 let _vdpHeightRaf = 0;
 let _vdpHeightHandlersBound = false;
@@ -1269,6 +1270,7 @@ function getFinancialYear() {
     return startYear + "-" + (startYear + 1);
 }
 function ViewAll(Code) {
+    G_ViewAll_Code = Code;
     Showloader();
     VerifyDispatchPlanService.AllTransporterRateList(Code).then(function (response) {
         if (response && response.length > 0) {
@@ -1278,15 +1280,20 @@ function ViewAll(Code) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["DespatchAdviceMaster_Code","AccountMaster_Code"];
+            const hiddenColumns = ["DespatchAdviceMaster_Code", "AccountMaster_Code", "IsApproved", "IsTransporter"];
 
             const columnAlignment = {
                 Rate: 'right',
             };
             const updatedResponse = response.map(item => {
+                const isApprovedTransporter = item.IsTransporter === 'Y' || item.IsApproved === 'Y';
+                const actionButton = isApprovedTransporter
+                    ? `<button class="btn btn-info icon-height mb-1" onclick="UnApprovedQuotstion(${item.DespatchAdviceMaster_Code},${item.AccountMaster_Code})">Un-Approved</button>`
+                    : '';
                 const formattedItem = {
                     ...item,
-                    'Transporter Name': `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.AccountMaster_Code},${item.DespatchAdviceMaster_Code})">${item['Transporter Name']}</a>`,
+                    'Transporter Name': `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.DespatchAdviceMaster_Code},${item.AccountMaster_Code})">${item['Transporter Name']}</a>`,
+                    'Action': actionButton
                 };
                 return formattedItem;
             });
@@ -1483,13 +1490,27 @@ function SendMailToTransporter() {
         }
     });
 }
+function hideVerifyModal(modalId) {
+    const element = document.getElementById(modalId);
+    if (element && window.bootstrap && bootstrap.Modal) {
+        const instance = bootstrap.Modal.getInstance(element);
+        if (instance) {
+            instance.hide();
+            return;
+        }
+    }
+    $('#' + modalId).modal('hide');
+}
 function ApprovedTransporter() {
     Showloader();
     VerifyDispatchPlanService.ApprovedQuotation(G_DispatchMaster_Code, G_AccountMaster_Code).then(function (response) {
         if (response.Status == 'Y') {
             toastr.success(response.Message);
-            GetDispatchAdvicePlanList($("#ddlStatus").val());
             CloseApprovedModal();
+            GetDispatchAdvicePlanList($("#ddlStatus").val());
+            //if (G_ViewAll_Code) {
+            //    ViewAll(G_ViewAll_Code);
+            //}
             HideLoader();
         } else {
             toastr.error(response.Message);
@@ -1500,6 +1521,26 @@ function ApprovedTransporter() {
         toastr.error(error.Msg || 'Error During Approved Quotation ');
     });
 }
+function UnApprovedTransporter() {
+    Showloader();
+    VerifyDispatchPlanService.UnApprovedQuotation(G_DispatchMaster_Code, G_AccountMaster_Code).then(function (response) {
+        if (response.Status == 'Y') {
+            toastr.success(response.Message);
+            CloseUnApprovedModal();
+            GetDispatchAdvicePlanList($("#ddlStatus").val());
+            if (G_ViewAll_Code) {
+                ViewAll(G_ViewAll_Code);
+            }
+            HideLoader();
+        } else {
+            toastr.error(response.Message);
+            HideLoader();
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Un Approved Quotation ');
+    });
+}
 function ApprovedQuotstion(Code, TransporterCode) {
     G_DispatchMaster_Code = Code;
     G_AccountMaster_Code = TransporterCode;
@@ -1507,8 +1548,18 @@ function ApprovedQuotstion(Code, TransporterCode) {
     $('#dvApproved').modal('show');
     CloseModal();
 }
+function UnApprovedQuotstion(Code, TransporterCode) {
+    G_DispatchMaster_Code = Code;
+    G_AccountMaster_Code = TransporterCode;
+    $('#dvUnApproved').modal({ backdrop: 'static' });
+    $('#dvUnApproved').modal('show');
+    CloseModal();
+}
 function CloseApprovedModal() {
-    $('#dvApproved').modal('hide');
+    hideVerifyModal('dvApproved');
+}
+function CloseUnApprovedModal() {
+    hideVerifyModal('dvUnApproved');
 }
 function OpenVerifyModal(Code) {
     $('#hfCode').val(Code);
@@ -2188,6 +2239,7 @@ window.Verify = Verify;
 window.ExportExcel = ExportExcel;
 window.CloseModal = CloseModal;
 window.CloseApprovedModal = CloseApprovedModal;
+window.CloseUnApprovedModal = CloseUnApprovedModal;
 window.SendMail = SendMail;
 window.CloseTransporter = CloseTransporter;
 window.TransporterList = TransporterList;
@@ -2196,7 +2248,9 @@ window.updateSelected = updateSelected;
 window.UpdateTransporter = UpdateTransporter;
 window.SendMailToTransporter = SendMailToTransporter;
 window.ApprovedQuotstion = ApprovedQuotstion;
+window.UnApprovedQuotstion = UnApprovedQuotstion;
 window.ApprovedTransporter = ApprovedTransporter;
+window.UnApprovedTransporter = UnApprovedTransporter;
 window.UpdateQty = UpdateQty;
 window.OpenShowRemarksModal = OpenShowRemarksModal;
 window.CloseShowRemarksModal = CloseShowRemarksModal;
