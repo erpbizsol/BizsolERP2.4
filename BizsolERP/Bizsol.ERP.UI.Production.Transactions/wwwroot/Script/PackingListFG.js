@@ -21,6 +21,7 @@ let FourthOrderUnitApplicable = "N";
 let ShowPalletTypeAndNoInPackingList = "N";
 let FGNameForBatchNo = "";
 let ShowDeliveryCodeInPackingList = "N";
+let ApplicableValidationInPackingList = "N";
 
 let FinYear = '';
 let PackingListMaster_Code = 0;
@@ -41,6 +42,9 @@ let G_DetailsModalType ='ScanPallet'
 let FixedParameterQtyConfiguration = await PalletPackingService.FixedParameterQtyConfiguration();
 let G_TransactionRate = 0;
 let G_AutoSelectConsigneeByOrder = 'N';
+let G_ValidationPackingListMaster_Code = 0;
+let G_ValidationDetailsData = [];
+let G_PackingListViewData = {};
 
 if (FixedParameterQtyConfiguration.length > 0) {
     G_QtyMT = FixedParameterQtyConfiguration[0].QtyMT
@@ -85,15 +89,26 @@ function PackingListFG_ShowViewGrid() {
         //        Action: item.LoadingStatus !== 'C' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Loading end" onclick="PackingListFG_EndLoadingOnGrid(\'' + item.Code + '\')"> <i class="fa fa-ban"></i></a>' : item.Verify === 'N' && item.AllowVerify == 'Y' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-success icon-height" title="Verify" onclick="PackingListFG_Verify(\'' + item.Code + '\')"><i class="fa fa-check"></i></a>' : item.Verify === 'N' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>' : '<a class="btn btn-dark icon-height" title="View" onclick="PackingListFG_EditOrView(\'N\',\'' + item.Code + '\')"> <i class="fa fa-eye"></i></a>',
         //    }
         //})
+        const showValidationBtn = ApplicableValidationInPackingList === 'Y';
+        G_PackingListViewData = {};
         response = response.map(item => {
+            const validationActionBtn = showValidationBtn ? '<a href="javascript:void(0)" class="btn btn-warning icon-height" title="Validate" onclick="PackingListFG_OpenValidationModal(\'' + item.Code + '\'); return false;"><i class="fa fa-check-square"></i></a>&nbsp;&nbsp;' : '';
+            G_PackingListViewData[item.Code] = {
+                packingListNo: item.PackingListNo || '',
+                date: item.PackingListDate || '',
+                warehouse: item.GodownName || '',
+                packingType: item.PackingType || '',
+                partyName: item.ClienName || '',
+                validate: item.Validate || 'N'
+            };
             return {
                 "PackingList No": item.PackingListNo, Date: item.PackingListDate, Warehouse: item.GodownName, "Packing Type": item.PackingType, "Requisition No / Order No": item["Requisition No"], "Party Name": item.ClienName,
                 ["Qty "+G_QtyMT]: item.QtyMT  ,
                 ["Qty " + G_QtyPC]: item.QtyPC,
                 ["Qty " + G_QtyMTR]: item.QtyMTRS,
-                    Status: item.PKStatus,
-                Action: item.LoadingStatus !== 'C' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Loading end" onclick="PackingListFG_EndLoadingOnGrid(\'' + item.Code + '\')"> <i class="fa fa-ban"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>' : item.Verify === 'N' && item.AllowVerify == 'Y' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-success icon-height" title="Verify" onclick="PackingListFG_Verify(\'' + item.Code + '\')"><i class="fa fa-check"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>' : item.Verify === 'N' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>' : '<a class="btn btn-dark icon-height" title="View" onclick="PackingListFG_EditOrView(\'N\',\'' + item.Code + '\')"> <i class="fa fa-eye"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>', 
-                    QtyMT: item.QtyMT, QtyPC: item.QtyPC, QtyMTRS: item.QtyMTRS
+                    Status: item.Validate === 'Y' ? 'Validated' : item.PKStatus,
+                Action: item.LoadingStatus !== 'C' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Loading end" onclick="PackingListFG_EndLoadingOnGrid(\'' + item.Code + '\')"> <i class="fa fa-ban"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>' : item.Verify === 'N' && item.AllowVerify == 'Y' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-success icon-height" title="Verify" onclick="PackingListFG_Verify(\'' + item.Code + '\')"><i class="fa fa-check"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>' : item.Verify === 'N' ? '<a class="btn btn-info icon-height" title="Edit" onclick="PackingListFG_EditOrView(\'Y\',\'' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;&nbsp;<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>' : '<a class="btn btn-dark icon-height" title="View" onclick="PackingListFG_EditOrView(\'N\',\'' + item.Code + '\')"> <i class="fa fa-eye"></i></a>&nbsp;&nbsp;' + validationActionBtn + '<a class="btn btn-danger icon-height" title="Delete" onclick="PackingListFG_DeleteEntryOnGrid(\'' + item.Code + '\')"> <i class="fa fa-trash"></i></a>',
+                    QtyMT: item.QtyMT, QtyPC: item.QtyPC, QtyMTRS: item.QtyMTRS, Code: item.Code, Validate: item.Validate || 'N'
             }
         })
         //console.log(response);
@@ -103,7 +118,7 @@ function PackingListFG_ShowViewGrid() {
         const Button = false;
         const showButtons = []
         const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS"];
+        const hiddenColumns = ["QtyMT", "QtyPC", "QtyMTRS", "Code", "Validate"];
         const ColumnAlignment = {
             //"Qty PC": 'right',
             //"Qty KG": 'right',
@@ -286,6 +301,9 @@ function getPackingListFGFixedParaMeters() {
     PackingListFGService.GetFixedParaMeter().then(function (response) {
         PackingListFGFixedParaMeters = response;
         LoadFrm();
+        if ($('#DivPackingListFGViewGrid').is(':visible')) {
+            PackingListFG_ShowViewGrid();
+        }
     });
 }
 function SelectOptionByText(Id, FindText) {
@@ -818,6 +836,245 @@ function PackingListFG_Verify(PackingListMaster_Code) {
         } else {
             toastr.error(response.Msg);
         }
+    });
+}
+
+function PackingListFG_GetValidationBatchOrId(item) {
+    if (item.BatchNo && item.BatchNo !== '') {
+        return item.BatchNo;
+    }
+    if (item.BaleNo && item.BaleNo !== '') {
+        return item.BaleNo;
+    }
+    if (item.SerialNo && item.SerialNo !== '') {
+        return item.SerialNo;
+    }
+    return item.IdentificationNo || '';
+}
+
+function PackingListFG_GetValidationBatchOrIdLabel() {
+    if (ApplicableBatchWiseStock === "Y") {
+        return FGNameForBatchNo !== "" ? FGNameForBatchNo : "Batch No";
+    }
+    if (BaleNoDesp !== "") {
+        return BaleNoDesp;
+    }
+    return "Batch No / ID";
+}
+
+function PackingListFG_UpdateValidationCounts(data) {
+    const validatedCount = data.filter(item => (item.Validate || '').toUpperCase() === 'Y').length;
+    const unvalidatedCount = data.length - validatedCount;
+    const allValidated = data.length > 0 && unvalidatedCount === 0;
+
+    $('#spValidatedCount').text(validatedCount);
+    $('#spUnvalidatedCount').text(unvalidatedCount);
+
+    if (allValidated) {
+        $('#spValidationStatus').show();
+        $('#txtValidationScanText').prop('disabled', true).val('');
+        $('#btnValidationScanQR').hide();
+    } else {
+        $('#spValidationStatus').hide();
+        $('#txtValidationScanText').prop('disabled', false);
+        $('#btnValidationScanQR').show();
+    }
+
+    if (allValidated) {
+        PackingListFG_MarkGridAsValidated(G_ValidationPackingListMaster_Code);
+    }
+}
+
+function PackingListFG_MarkGridAsValidated(packingListMaster_Code) {
+    const tableId = 'tbPackingListFGView';
+    const bodyId = 'tbPackingListFGViewBody';
+
+    if (G_PackingListViewData[packingListMaster_Code]) {
+        G_PackingListViewData[packingListMaster_Code].validate = 'Y';
+    }
+
+    const updateRowStatus = (rows) => {
+        if (!rows || !Array.isArray(rows)) {
+            return;
+        }
+        rows.forEach(row => {
+            if (String(row.Code) === String(packingListMaster_Code)) {
+                row.Status = 'Validated';
+                row.Validate = 'Y';
+            }
+        });
+    };
+
+    updateRowStatus(window[`filteredData_${tableId}`]);
+    updateRowStatus(window[`filteredDataTemp_${tableId}`]);
+
+    if (typeof renderTableWithPagination === 'function' && $('#' + bodyId).length > 0) {
+        renderTableWithPagination(tableId, bodyId);
+    }
+}
+
+function PackingListFG_BuildValidationGridFooter(data) {
+    const rows = data || [];
+    if (rows.length === 0) {
+        $('#tbValidationDetailsFooter').html('');
+        return;
+    }
+
+    const palletNos = [...new Set(rows.map(item => String(item.PalletNo || '').trim()).filter(p => p !== ''))];
+    const totalMT = rows.reduce((sum, item) => sum + (parseFloat(item.QtyMT) || 0), 0);
+    const totalPC = rows.reduce((sum, item) => sum + (parseFloat(item.QtyPc) || 0), 0);
+    const totalMTRS = rows.reduce((sum, item) => sum + (parseFloat(item.QtyMTRS) || 0), 0);
+    const totalRMTR = rows.reduce((sum, item) => sum + (parseFloat(item.QtyRMTR) || 0), 0);
+
+    let footerHtml = '<tr>';
+    footerHtml += '<td style="text-align: right;">' + palletNos.length + '</td>';
+    footerHtml += '<td></td>';
+    footerHtml += '<td>TOTAL:</td>';
+    footerHtml += '<td></td>';
+
+    if (G_QtyMT.toUpperCase() !== "NA") {
+        footerHtml += '<td style="text-align: right;">' + parseFloat(totalMT).toFixed(2) + '</td>';
+    }
+    if (G_QtyPC.toUpperCase() !== "NA") {
+        footerHtml += '<td style="text-align: right;">' + totalPC + '</td>';
+    }
+    if (G_QtyMTR.toUpperCase() !== "NA") {
+        footerHtml += '<td style="text-align: right;">' + parseFloat(totalMTRS).toFixed(2) + '</td>';
+    }
+    if (FourthOrderUnitApplicable === "Y") {
+        footerHtml += '<td style="text-align: right;">' + parseFloat(totalRMTR).toFixed(2) + '</td>';
+    }
+
+    footerHtml += '<td></td><td></td>';
+    footerHtml += '</tr>';
+
+    $('#tbValidationDetailsFooter').html(footerHtml);
+}
+
+function PackingListFG_BindValidationGrid(data) {
+    G_ValidationDetailsData = data || [];
+    PackingListFG_UpdateValidationCounts(G_ValidationDetailsData);
+
+    const batchOrIdLabel = PackingListFG_GetValidationBatchOrIdLabel() + " / ID";
+    const columns = [
+        { key: "Pallet No", align: "left", show: true },
+        { key: batchOrIdLabel, align: "left", show: true },
+        { key: "Item Name", align: "left", show: true },
+        { key: "Size", align: "left", show: true },
+        { key: "Qty " + G_QtyMT, align: "right", show: G_QtyMT.toUpperCase() !== "NA" },
+        { key: "Qty " + G_QtyPC, align: "right", show: G_QtyPC.toUpperCase() !== "NA" },
+        { key: "Qty " + G_QtyMTR, align: "right", show: G_QtyMTR.toUpperCase() !== "NA" },
+        { key: "Qty RMTR", align: "right", show: FourthOrderUnitApplicable === "Y" },
+        { key: "Validate By", align: "left", show: true },
+        { key: "Validate On", align: "left", show: true }
+    ].filter(col => col.show);
+
+    let headerHtml = '<tr>';
+    columns.forEach(col => {
+        headerHtml += '<th class="' + (col.align === 'right' ? 'text-end' : '') + '">' + col.key + '</th>';
+    });
+    headerHtml += '</tr>';
+    $('#tbValidationDetailsHeader').html(headerHtml);
+
+    let bodyHtml = '';
+    if (G_ValidationDetailsData.length === 0) {
+        bodyHtml = '<tr><td colspan="' + columns.length + '" class="text-center">No validation details found.</td></tr>';
+    } else {
+        G_ValidationDetailsData.forEach(item => {
+            const rowClass = (item.Validate || '').toUpperCase() === 'Y' ? 'pl-validation-row-validated' : '';
+            bodyHtml += '<tr class="' + rowClass + '">';
+            bodyHtml += '<td>' + (item.PalletNo || '') + '</td>';
+            bodyHtml += '<td>' + PackingListFG_GetValidationBatchOrId(item) + '</td>';
+            bodyHtml += '<td>' + (item.ItemName || '') + '</td>';
+            bodyHtml += '<td>' + (item.SizeDesp || '') + '</td>';
+            if (G_QtyMT.toUpperCase() !== "NA") {
+                bodyHtml += '<td class="text-end">' + (item.QtyMT ?? '') + '</td>';
+            }
+            if (G_QtyPC.toUpperCase() !== "NA") {
+                bodyHtml += '<td class="text-end">' + (item.QtyPc ?? '') + '</td>';
+            }
+            if (G_QtyMTR.toUpperCase() !== "NA") {
+                bodyHtml += '<td class="text-end">' + (item.QtyMTRS ?? '') + '</td>';
+            }
+            if (FourthOrderUnitApplicable === "Y") {
+                bodyHtml += '<td class="text-end">' + parseFloat(item.QtyRMTR || 0).toFixed(3) + '</td>';
+            }
+            bodyHtml += '<td>' + (item.ValidateBy || '') + '</td>';
+            bodyHtml += '<td>' + (item.ValidateOn || '') + '</td>';
+            bodyHtml += '</tr>';
+        });
+    }
+
+    $('#tbValidationDetailsBody').html(bodyHtml);
+    PackingListFG_BuildValidationGridFooter(G_ValidationDetailsData);
+}
+
+function PackingListFG_SetValidationHeaderInfo(packingListMaster_Code) {
+    const header = G_PackingListViewData[packingListMaster_Code] || {};
+    $('#spValidationPackingListNo').text(header.packingListNo || '');
+    $('#spValidationDate').text(header.date || '');
+    $('#spValidationWarehouse').text(header.warehouse || '');
+    $('#spValidationPackingType').text(header.packingType || '');
+    $('#spValidationPartyName').text(header.partyName || '');
+}
+
+function PackingListFG_LoadValidationDetails(showModal) {
+    PackingListFGService.GetPackingListValidationDetails(G_ValidationPackingListMaster_Code).then(function (response) {
+        const data = Array.isArray(response) ? response : (response?.Data || []);
+        PackingListFG_BindValidationGrid(data);
+        if (showModal === true) {
+            $("#ValidationModal").modal({
+                backdrop: 'static',
+            });
+            $("#ValidationModal").modal('show');
+        }
+    }).catch(function () {
+        toastr.error('Unable to load validation details.');
+        if (showModal === true) {
+            PackingListFG_BindValidationGrid([]);
+            $("#ValidationModal").modal({
+                backdrop: 'static',
+            });
+            $("#ValidationModal").modal('show');
+        }
+    });
+}
+
+function PackingListFG_OpenValidationModal(packingListMaster_Code) {
+    if (ApplicableValidationInPackingList !== 'Y') {
+        toastr.error('Validation is not applicable for packing list.');
+        return;
+    }
+    G_ValidationPackingListMaster_Code = packingListMaster_Code;
+    $('#txtValidationScanText').val('').prop('disabled', false);
+    $('#btnValidationScanQR').show();
+    $('#spValidationStatus').hide();
+    PackingListFG_SetValidationHeaderInfo(packingListMaster_Code);
+    PackingListFG_LoadValidationDetails(true);
+}
+
+function PackingListFG_SubmitValidationScan() {
+    const scanText = ($('#txtValidationScanText').val() || '').trim();
+    if (scanText === '') {
+        return;
+    }
+
+    $('#txtValidationScanText').prop('disabled', true);
+    PackingListFGService.UpdatePackingListValidationDetails(G_ValidationPackingListMaster_Code, scanText).then(function (response) {
+        $('#txtValidationScanText').prop('disabled', false);
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg || 'Validated successfully.');
+            $('#txtValidationScanText').val('');
+            PackingListFG_LoadValidationDetails(false);
+            $('#txtValidationScanText').focus();
+        } else {
+            toastr.error(response.Msg || 'Validation failed.');
+            $('#txtValidationScanText').focus();
+        }
+    }).catch(function () {
+        $('#txtValidationScanText').prop('disabled', false);
+        toastr.error('Unable to update validation details.');
+        $('#txtValidationScanText').focus();
     });
 }
 
@@ -1692,6 +1949,11 @@ function LoadFrm() {
     if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'AutoSelectConsigneeByOrder').PeramaterValue === 'Y') {
         G_AutoSelectConsigneeByOrder = "Y";
     }
+    if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'ApplicableValidationInPackingList').PeramaterValue === 'Y') {
+        ApplicableValidationInPackingList = "Y";
+    } else {
+        ApplicableValidationInPackingList = "N";
+    }
     if (PackingListFGFixedParaMeters.length > 0 && PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'ShowDeliveryCodeInPackingList') &&
         PackingListFGFixedParaMeters.find(x => x.PeramaterName === 'ShowDeliveryCodeInPackingList').PeramaterValue === 'Y') {
         ShowDeliveryCodeInPackingList = "Y";
@@ -1764,6 +2026,17 @@ $('#txtScanIdentification').on('keydown', function (e) {
         return false;
     }
 });
+$('#txtValidationScanText').on('keydown', function (e) {
+    var keyCode = e.keyCode || e.which;
+    if (keyCode === 13) {
+        e.preventDefault();
+        PackingListFG_SubmitValidationScan();
+        return false;
+    }
+});
+$('#ValidationModal').on('shown.bs.modal', function () {
+    $('#txtValidationScanText').focus();
+});
 $('#chkSummary').on('change', function () {
     let chkSummary = document.getElementById("chkSummary");
     if (chkSummary.checked == true) {
@@ -1790,9 +2063,16 @@ function PackingListFG_btnScanQR() {
 
     InitScanQRCodeByCameraControl("txtScanIdentification", "PackingListFG_CallbackScanQRCode");
 }
+function PackingListFG_btnValidationScanQR() {
+    InitScanQRCodeByCameraControl("txtValidationScanText", "PackingListFG_CallbackValidationScanQRCode");
+}
 function PackingListFG_CallbackScanQRCode() {
     ScanId();
     $('#txtScanIdentification').focus()
+}
+function PackingListFG_CallbackValidationScanQRCode() {
+    PackingListFG_SubmitValidationScan();
+    $('#txtValidationScanText').focus();
 }
 
 function PackingListFG_DeleteEntryOnGrid(packingListMaster_Code) {
@@ -2098,6 +2378,8 @@ window.PackingListFG_Back = PackingListFG_Back;
 window.PackingListFG_ShowViewGrid = PackingListFG_ShowViewGrid;
 window.PackingListFG_EditOrView = PackingListFG_EditOrView;
 window.PackingListFG_Verify = PackingListFG_Verify;
+window.PackingListFG_OpenValidationModal = PackingListFG_OpenValidationModal;
+window.PackingListFG_SubmitValidationScan = PackingListFG_SubmitValidationScan;
 window.PackingListFG_ShowDetailsModals = PackingListFG_ShowDetailsModals;
 window.PackingListFG_OnChangeddlPackingType = PackingListFG_OnChangeddlPackingType;
 window.PackingListFG_OnChangeddlClientNameORddlConsignee = PackingListFG_OnChangeddlClientNameORddlConsignee;
@@ -2108,6 +2390,7 @@ window.PackingListFG_Remove = PackingListFG_Remove;
 window.PackingListFG_LoadNoOfPallet = PackingListFG_LoadNoOfPallet;
 window.PackingListFG_EndLoadingOnGrid = PackingListFG_EndLoadingOnGrid;
 window.PackingListFG_btnScanQR = PackingListFG_btnScanQR;
+window.PackingListFG_btnValidationScanQR = PackingListFG_btnValidationScanQR;
 window.PackingListFG_CallbackScanQRCode = PackingListFG_CallbackScanQRCode;
 window.PackingListFG_DeleteEntryOnGrid = PackingListFG_DeleteEntryOnGrid;
 window.PackingListFG_OnChangeddlOrderNo = PackingListFG_OnChangeddlOrderNo;

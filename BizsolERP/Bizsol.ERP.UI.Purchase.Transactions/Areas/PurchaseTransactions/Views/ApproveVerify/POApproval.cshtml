@@ -209,12 +209,77 @@
         max-width: 220px;
     }
 
+    /* ── HISTORY MODAL (match detail modal theme) ─────────────────────────── */
+    #myHistoryModal .modal-content {
+        border: none;
+        box-shadow: 0 14px 42px rgba(102, 126, 234, 0.28);
+    }
+    #myHistoryModal .poa-items-table thead tr th {
+        background: #4f46e5;
+        position: relative;
+    }
+    #myHistoryModal .poa-items-table thead tr th .fa-filter,
+    #myHistoryModal .poa-items-table thead tr th .fafilter,
+    #myHistoryModal .poa-items-table thead tr th .table-filter-arrow {
+        color: rgba(255, 255, 255, 0.88);
+    }
+    #myHistoryModal .poa-history-paginator {
+        display: flex;
+        align-items: center;
+        margin-top: 12px;
+        padding: 8px 0 4px;
+        font-size: 0.78rem;
+        color: #475569;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    #myHistoryModal .poa-history-paginator .page-size-select label {
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: #64748b;
+        margin-right: 6px;
+    }
+    #myHistoryModal .poa-history-paginator .pageSize {
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        background: #f5f3ff;
+        padding: 4px 8px;
+        color: #1e1b4b;
+    }
+    #myHistoryModal .poa-history-paginator .paginator-btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 8px;
+        padding: 4px 8px;
+        margin: 0 2px;
+        box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+    }
+    #myHistoryModal .poa-history-paginator .paginator-btn:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+    }
+    #myHistoryModal .poa-history-paginator .paginator-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+    #myHistoryModal .poa-history-paginator .paginator-btn .svg-icon {
+        fill: #fff;
+    }
+    #myHistoryModal .poa-history-paginator .page-info {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #475569;
+        margin: 0 10px;
+    }
+
     @@media (max-width: 768px) {
         .poa-po-card-header { flex-wrap: wrap; }
         .poa-po-card-right { flex-direction: row; align-items:center; width:100%; justify-content:space-between; }
         .poa-info-grid { grid-template-columns: repeat(2, 1fr); }
         .poa-po-card-footer { justify-content: stretch; flex-direction: column; align-items: stretch; }
         .btn-poa-approve, .btn-poa-view { width:100%; justify-content:center; }
+        #myHistoryModal .modal-dialog { margin: 8px; max-width: calc(100% - 16px) !important; }
     }
 </style>
 
@@ -341,30 +406,41 @@
 </div>
 
 <div class="modal fade" id="myHistoryModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index:1060;">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modal-title"></h5>
-                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseHistoryModal()">
-                    <span aria-hidden="true" class="modal-close-icon">&times;</span>
-                   @* <span aria-hidden="true">x</span> *@
-                </button>
+    <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width:90%;">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header"
+                 style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 20px;border:none;">
+                <div>
+                    <h5 class="modal-title mb-0" style="font-size:0.95rem;font-weight:700;">
+                        <i class="fa fa-history me-2"></i><span id="modal-title">View History</span>
+                    </h5>
+                    <small id="poaHistoryModalSub" style="font-size:0.75rem;opacity:0.82;display:block;margin-top:2px;"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto"
+                        onclick="CloseHistoryModal()" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="table-wrapper fixed-height-table">
-                    <table id="PoaprrovalHistory" class="fixed-width-table table">
-                        <thead id="table-header-PoaprrovalHistory">
-                        </thead>
-                        <tbody id="table-body-PoaprrovalHistory">
-                        </tbody>
+
+            <div class="modal-body" style="padding:16px;max-height:72vh;overflow-y:auto;">
+                <div class="poa-items-title" id="poaHistorySectionTitle">
+                    <i class="fa fa-list me-1"></i>PO History
+                </div>
+                <div class="table-responsive">
+                    <table id="PoaprrovalHistory" class="poa-items-table">
+                        <thead id="table-header-PoaprrovalHistory"></thead>
+                        <tbody id="table-body-PoaprrovalHistory"></tbody>
                     </table>
                 </div>
-                <div class="paginator" id="paginator-PoaprrovalHistory">
-                </div>
+                <div class="paginator poa-history-paginator" id="paginator-PoaprrovalHistory"></div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary btn-height" onclick="BackButton()">Back</button>
-                <button type="button" class="btn btn-danger btn-height" onclick="CloseHistoryModal()">Cancel</button>
+
+            <div class="modal-footer"
+                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-primary btn-height" onclick="BackButton()">
+                    <i class="fa fa-arrow-left me-1"></i>Back
+                </button>
+                <button type="button" class="btn btn-danger btn-height ms-auto" onclick="CloseHistoryModal()">
+                    <i class="fa fa-times-circle me-1"></i>Close
+                </button>
             </div>
         </div>
     </div>

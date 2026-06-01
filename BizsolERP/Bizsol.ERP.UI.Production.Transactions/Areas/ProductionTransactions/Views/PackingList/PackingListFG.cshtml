@@ -26,6 +26,15 @@
     .total-PL {
         display: none;
     }
+
+    .pl-validation-row-validated td {
+        background-color: #d4edda !important;
+    }
+
+    .pl-validation-status-badge {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.65rem;
+    }
 </style>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
 
@@ -39,6 +48,17 @@
 
         #tbPackingListFGView tfoot td, #tbPackingListFGView tfoot th, #tbPackingListFGView tfoot, #tbPackingListTransaction tfoot {
         background-color: #d5dde5; 
+    }
+
+    #tbValidationDetails tfoot {
+        position: sticky;
+        bottom: 0;
+        z-index: 0;
+    }
+
+    #tbValidationDetails tfoot td {
+        background-color: #d5dde5;
+        font-weight: bold;
     }
 </style>
 
@@ -318,6 +338,66 @@
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
+</div>
+
+<div class="modal fade bs-example-modal-center" id="ValidationModal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="false">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ValidationModalTitle">Packing List Validation <span id="spValidationStatus" class="badge bg-success pl-validation-status-badge ms-2" style="display:none;">Validated</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-2">
+                    <div class="col-md-2 col-6">
+                        <label class="col-form-label-sm fw-bold mb-0">PackingList No:</label>
+                        <div id="spValidationPackingListNo" class="form-control form-control-sm box_border bg-light"></div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="col-form-label-sm fw-bold mb-0">Date:</label>
+                        <div id="spValidationDate" class="form-control form-control-sm box_border bg-light"></div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="col-form-label-sm fw-bold mb-0">Warehouse:</label>
+                        <div id="spValidationWarehouse" class="form-control form-control-sm box_border bg-light"></div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="col-form-label-sm fw-bold mb-0">Packing Type:</label>
+                        <div id="spValidationPackingType" class="form-control form-control-sm box_border bg-light"></div>
+                    </div>
+                    <div class="col-md-4 col-12">
+                        <label class="col-form-label-sm fw-bold mb-0">Party Name:</label>
+                        <div id="spValidationPartyName" class="form-control form-control-sm box_border bg-light"></div>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 col-12">
+                        <label for="txtValidationScanText" class="col-form-label-sm fw-bold">Scan Batch No / ID / Pallet No:</label>
+                        <input type="text" id="txtValidationScanText" class="box_border form-control form-control-sm" autocomplete="off" />
+                    </div>
+                    <div class="col-md-2 col-6 without-label-field">
+                        <a class="btn btn-secondary btn-height" id="btnValidationScanQR" onclick="PackingListFG_btnValidationScanQR()">
+                            Scan QR
+                        </a>
+                    </div>
+                    <div class="col-md-6 col-12 without-label-field">
+                        <span class="me-3"><strong>Validated:</strong> <span id="spValidatedCount">0</span></span>
+                        <span><strong>Unvalidated:</strong> <span id="spUnvalidatedCount">0</span></span>
+                    </div>
+                </div>
+                <div class="table-wrapper fixed-height-table">
+                    <table id="tbValidationDetails" class="fixed-width-table table">
+                        <thead id="tbValidationDetailsHeader"></thead>
+                        <tbody id="tbValidationDetailsBody"></tbody>
+                        <tfoot id="tbValidationDetailsFooter"></tfoot>
+                    </table>
+                </div>
+                <div class="text-end mt-2">
+                    <a class="btn btn-danger btn-height" data-bs-dismiss="modal">Close</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="DivScanQRCodeByCameraControlModal"></div>
