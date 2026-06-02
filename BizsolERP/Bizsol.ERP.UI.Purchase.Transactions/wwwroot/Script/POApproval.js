@@ -555,6 +555,19 @@ function Approval(Code) {
         toastr.error("Error in PO Approval: ", error);
     });
 }
+function poaSetHistoryModalLabels(title, sectionTitle, subtitle) {
+    $('#modal-title').text(title || 'View History');
+    $('#poaHistorySectionTitle').html(
+        `<i class="fa fa-list me-1"></i>${EscHtml(sectionTitle || 'PO History')}`
+    );
+    const $sub = $('#poaHistoryModalSub');
+    if (subtitle) {
+        $sub.text(subtitle).show();
+    } else {
+        $sub.text('').hide();
+    }
+}
+
 function ViewHistory(ItemMaster_Code, itemsizemaster_Code) {
     if (!ItemMaster_Code) {
         toastr.warning('Item not available for history.');
@@ -562,8 +575,8 @@ function ViewHistory(ItemMaster_Code, itemsizemaster_Code) {
     }
     POApprovalService.GetPOHistory(ItemMaster_Code, itemsizemaster_Code).then(function (response) {
         if (response && response.length > 0) {
+            poaSetHistoryModalLabels('View History', 'PO History', 'Previous purchase orders for this item');
             poaShowHistoryModal();
-            $('#modal-title').text(`View History`);
             const stringFilterColumn = [];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
@@ -591,8 +604,8 @@ function CloseHistoryModal() {
 function POWithOutIndent(IndentMaster_Code) {
     POApprovalService.GetPOIndentPriceComparisonDetails(IndentMaster_Code).then(function (response) {
         if (response && response.length > 0) {
+            poaSetHistoryModalLabels('PO WithOut Indent History', 'Price Comparison', 'Indent price comparison details');
             poaShowHistoryModal();
-            $('#modal-title').text(`PO WithOut Indent History`);
             const stringFilterColumn = [];
             const numericFilterColumn = [];
             const dateFilterColumn = [];

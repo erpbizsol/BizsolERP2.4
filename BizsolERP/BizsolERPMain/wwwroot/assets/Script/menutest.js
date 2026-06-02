@@ -53,7 +53,7 @@ function bindMenu() {
             // Auto-redirect to dashboard on login for Solar company
             if (isSolar) {
                 var currentPath = window.location.pathname;
-                var isHomePage = currentPath === '/' || currentPath === '' ||
+                var isHomePage = currentPath === '/' || currentPath.toLowerCase() == '/erp25/' || currentPath === '' ||
                     currentPath.toLowerCase() === '/home' ||
                     currentPath.toLowerCase() === '/home/index';
                 if (isHomePage) {
