@@ -71,6 +71,21 @@ function FmtDateDisplay(d) {
         dt.getFullYear();
 }
 
+function FmtApprovedOnDisplay(d) {
+    if (!d && d !== 0) return '';
+    const s = String(d).trim();
+    if (s === '') return '';
+    // The approval procedure already returns a pre-formatted 'dd/MM/yyyy HH:mm'
+    // string. Showing it as-is keeps the time and avoids ambiguous client-side
+    // date parsing that silently drops the time when the day is <= 12.
+    if (s.indexOf('/') !== -1) return s;
+    const dt = new Date(s);
+    if (isNaN(dt.getTime())) return s;
+    const pad = function (n) { return String(n).padStart(2, '0'); };
+    return pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() +
+        ' ' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+}
+
 function FmtCurrency(val) {
     const n = parseFloat(val);
     if (isNaN(n)) return '—';
@@ -1222,7 +1237,7 @@ function BuildGpaDetailStepper(po) {
         }) || {};
         const lvlName = EscHtml(getLevelRowDisplayTitle(lvlInfo, i));
         const approver = EscHtml(lvlInfo.ApproverName ?? lvlInfo.UserName ?? '');
-        const approvedOn = lvlInfo.ApprovedOn ? FmtDateDisplay(lvlInfo.ApprovedOn) : '';
+        const approvedOn = lvlInfo.ApprovedOn ? FmtApprovedOnDisplay(lvlInfo.ApprovedOn) : '';
         const lvlRemarksRaw = getLevelRowRemarks(lvlInfo);
         const remarksHtml = lvlRemarksRaw
             ? '<div class="gpa-dstep-remarks"><i class="fa fa-comment me-1"></i>' + EscHtml(lvlRemarksRaw) + '</div>'
