@@ -1,6 +1,7 @@
 ﻿import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { TaskListMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/TaskListMasterService.js';
+import { UserMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_UserMasterService.js';
 
 var G_TLM_SourceRows = [];
 var G_TLM_ApiColumnKeys = null;
@@ -13,6 +14,16 @@ var TLM_MODULE_NAME = 'Task List Master';
 var TLM_STATUS_OPTIONS = [
     { value: 'Y', label: 'Active' },
     { value: 'N', label: 'Inactive' },
+];
+
+var TLM_WEEKDAYS = [
+    { value: '0', label: 'Sunday' },
+    { value: '1', label: 'Monday' },
+    { value: '2', label: 'Tuesday' },
+    { value: '3', label: 'Wednesday' },
+    { value: '4', label: 'Thursday' },
+    { value: '5', label: 'Friday' },
+    { value: '6', label: 'Saturday' },
 ];
 
 var TLM_GRID_HIDDEN_COLUMNS = [
@@ -133,20 +144,171 @@ function destroySelect2IfAny($sel) {
     } catch (e) {}
 }
 
+function unwrapNestedRecordList(payload, listKeys, isRecord) {
+    if (!payload || typeof payload !== 'object') return [];
+    var i;
+    for (i = 0; i < listKeys.length; i++) {
+        var named = payload[listKeys[i]];
+        if (Array.isArray(named) && named.length) return named;
+        if (isRecord(named)) return [named];
+    }
+    var containerKeys = ['Data', 'data', 'Result', 'result', 'value', 'Value', 'Table', 'table'];
+    for (i = 0; i < containerKeys.length; i++) {
+        var nested = payload[containerKeys[i]];
+        if (Array.isArray(nested) && nested.length) return nested;
+        if (isRecord(nested)) return [nested];
+    }
+    if (isRecord(payload)) return [payload];
+    return [];
+}
+
+function isUserRecord(r) {
+    if (!r || typeof r !== 'object' || Array.isArray(r)) return false;
+    return (
+        'UserName' in r ||
+        'userName' in r ||
+        'UserMaster_Code' in r ||
+        'userMaster_Code' in r ||
+        'EmployeeName' in r ||
+        ('Code' in r && ('UserID' in r || 'LoginName' in r))
+    );
+}
+
+function extractUserList(payload) {
+    var list = firstArray(payload);
+    if (list.length) return list;
+    return unwrapNestedRecordList(
+        payload,
+        ['UserMasterList', 'userMasterList', 'UserList', 'userList', 'UserMasterData', 'userMasterData'],
+        isUserRecord
+    );
+}
+
+function isFreqMasterRow(r) {
+    if (!r || typeof r !== 'object' || Array.isArray(r)) return false;
+    if (r.Task != null && String(r.Task).trim() !== '') return false;
+    if (r.UserMaster_Code != null && r.EmployeeName != null) return false;
+    return (
+        'Frequency' in r ||
+        'frequency' in r ||
+        'Freq' in r ||
+        'FrequencyMaster_Code' in r ||
+        ('Desp' in r && r.FinYear == null) ||
+        (r.Code != null && r.FinYear == null && r.Task == null)
+    );
+}
+
+function filterFreqMasterRows(rows) {
+    return (rows || []).filter(isFreqMasterRow);
+}
+
+function extractFreqList(payload) {
+    var list = filterFreqMasterRows(firstArray(payload));
+    if (list.length) return list;
+    return filterFreqMasterRows(
+        unwrapNestedRecordList(
+            payload,
+            [
+                'FrequencyList',
+                'frequencyList',
+                'FrequencyMasterList',
+                'frequencyMasterList',
+                'FreqList',
+                'freqList',
+            ],
+            isFreqMasterRow
+        )
+    );
+}
+
+function normalizeDropdownFreqRows(rows) {
+    return (rows || [])
+        .map(function (r) {
+            var code = r.Code != null ? r.Code : r.code != null ? r.code : r.FrequencyMaster_Code;
+            var text =
+                r.Frequency ||
+                r.frequency ||
+                r.Desp ||
+                r.Description ||
+                r.description ||
+                r.Freq ||
+                '';
+            if (code == null || code === '') return null;
+            return { Code: code, Desp: String(text).trim() || String(code) };
+        })
+        .filter(function (r) {
+            return r && r.Code != null && r.Code !== '' && String(r.Desp).trim() !== '';
+        });
+}
+
+function mergeFreqNameAndCodeRows(nameRows, codeRows) {
+    var names = firstArray(nameRows);
+    var codes = firstArray(codeRows);
+    var merged = [];
+    var len = Math.max(names.length, codes.length);
+    for (var i = 0; i < len; i++) {
+        var nameRec = names[i] || {};
+        var codeRec = codes[i] || {};
+        var code = codeRec.Code != null ? codeRec.Code : codeRec.code;
+        var text =
+            nameRec.Frequency ||
+            nameRec.frequency ||
+            nameRec.Desp ||
+            nameRec.Description ||
+            nameRec.description ||
+            '';
+        if (code == null || code === '') continue;
+        merged.push({ Code: code, Desp: String(text).trim() || String(code) });
+    }
+    return merged;
+}
+
+function loadFreqDropdownFallback() {
+    return Promise.all([
+        TaskListMasterService.GetFrequencyMasterDropdown(),
+        TaskListMasterService.GetFrequencyMasterCodeDropdown(),
+    ])
+        .then(function (results) {
+            var merged = mergeFreqNameAndCodeRows(results[0], results[1]);
+            if (merged.length) return normalizeFreqRows(merged);
+            return normalizeDropdownFreqRows(extractFreqList(results[0]).concat(firstArray(results[0])));
+        })
+        .catch(function () {
+            return TaskListMasterService.GetFrequencyMasterDropdown().then(function (res) {
+                return normalizeDropdownFreqRows(extractFreqList(res).concat(firstArray(res)));
+            });
+        });
+}
+
 function normalizeUserRows(rows) {
     return (rows || []).map(function (r) {
-        var code = r.Code != null ? r.Code : r.UserMaster_Code != null ? r.UserMaster_Code : r.code;
+        var code =
+            r.UserMaster_Code != null
+                ? r.UserMaster_Code
+                : r.userMaster_Code != null
+                  ? r.userMaster_Code
+                  : r.Code != null
+                    ? r.Code
+                    : r.code;
         var text =
             r.Desp ||
             r.EmployeeName ||
             r.UserName ||
+            r.userName ||
             r.DisplayName ||
             r.PersonName ||
             r.Name ||
             r.LoginName ||
             r.UserID ||
+            r.userID ||
             '';
         return { Code: code, Desp: String(text).trim() || String(code) };
+    });
+}
+
+function loadUserMasterFallback() {
+    return UserMasterService.GetUserMasterList().then(function (res) {
+        return normalizeUserRows(extractUserList(res));
     });
 }
 
@@ -158,11 +320,209 @@ function normalizeFreqRows(rows) {
     });
 }
 
+function parseRowCode(row) {
+    if (row == null) return 0;
+    if (typeof row === 'number' || typeof row === 'string') return parseInt(row, 10) || 0;
+    if (row.Code != null && row.Code !== '') return parseInt(row.Code, 10) || 0;
+    if (row.code != null && row.code !== '') return parseInt(row.code, 10) || 0;
+    return 0;
+}
+
+function getTaskRowExcludeCodes(rows) {
+    var excludeCodes = {};
+    var headerCode = parseInt($('#hfTaskListMaster_Code').val() || '0', 10) || 0;
+    if (headerCode) excludeCodes[headerCode] = true;
+    (rows || []).forEach(function (row) {
+        var code = parseRowCode(row);
+        if (code) excludeCodes[code] = true;
+    });
+    return excludeCodes;
+}
+
+function parseApiSaveResult(res) {
+    var root = firstRecord(res);
+    if (!root || typeof root !== 'object') root = res || {};
+    if (root.data && typeof root.data === 'object' && !Array.isArray(root.data)) {
+        root = Object.assign({}, root, root.data);
+    }
+    var statusVal = root.Status != null ? root.Status : root.status;
+    var msgVal = String(root.Msg || root.msg || root.Message || root.message || '').trim();
+    var msgLower = msgVal.toLowerCase();
+    var hasExplicitFailure =
+        statusVal === 'N' ||
+        statusVal === false ||
+        msgLower.indexOf('already exists') >= 0 ||
+        msgLower.indexOf('exists for this employee and fin year') >= 0 ||
+        msgLower.indexOf('task already exists') >= 0 ||
+        msgLower.indexOf('fail') >= 0 ||
+        msgLower.indexOf('error') >= 0;
+    var codeVal = parseRowCode(root);
+    var inferredSuccess =
+        statusVal === 'Y' ||
+        statusVal === true ||
+        codeVal > 0 ||
+        msgLower.indexOf('save') >= 0 ||
+        msgLower.indexOf('success') >= 0;
+    return {
+        ok: !hasExplicitFailure && inferredSuccess,
+        msg: msgVal,
+        code: codeVal,
+    };
+}
+
 function getFreqDesp(freqCode) {
     var match = (G_TLM_FreqList || []).find(function (f) {
         return String(f.Code) === String(freqCode);
     });
     return match ? match.Desp : '';
+}
+
+/**
+ * Decide which control the Date column must show for a given frequency:
+ *   none    -> Daily (no date is sent)
+ *   weekday -> Weekly (choose a day of the week)
+ *   month   -> Monthly (month picker, only month is saved)
+ *   day     -> Quarterly (date picker, only the day-of-month is saved)
+ *   date    -> As and when required / anything else (full date)
+ */
+function getFreqDateMode(freqCode) {
+    var s = String(getFreqDesp(freqCode) || '')
+        .trim()
+        .toLowerCase();
+    if (!s) return 'date';
+    if (s.indexOf('daily') >= 0) return 'none';
+    if (s.indexOf('week') >= 0) return 'weekday';
+    if (s.indexOf('month') >= 0) return 'month';
+    if (s.indexOf('quarter') >= 0) return 'day';
+    return 'date';
+}
+
+function buildTaskDateCell(mode, dateVal) {
+    var raw = dateVal != null ? String(dateVal).substring(0, 10) : '';
+    if (mode === 'none') {
+        return '<input type="text" class="tlm-task-date" data-date-mode="none" value="" placeholder="—" disabled />';
+    }
+    if (mode === 'month') {
+        var t = new Date();
+        var daysInMonth = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+        var selDay = '';
+        if (/^\d{1,2}$/.test(raw)) selDay = String(parseInt(raw, 10)).padStart(2, '0');
+        else if (raw.length >= 10) selDay = raw.substring(8, 10);
+        var dayOpts = '<option value="">-- Date --</option>';
+        for (var dnum = 1; dnum <= daysInMonth; dnum++) {
+            var dv = String(dnum).padStart(2, '0');
+            dayOpts += '<option value="' + dv + '"' + (dv === selDay ? ' selected' : '') + '>' + dv + '</option>';
+        }
+        return '<select class="tlm-task-date" data-date-mode="month">' + dayOpts + '</select>';
+    }
+    if (mode === 'day') {
+        var td = new Date();
+        var daysInMonthD = new Date(td.getFullYear(), td.getMonth() + 1, 0).getDate();
+        var selD = '';
+        if (/^\d{1,2}$/.test(raw)) selD = String(parseInt(raw, 10)).padStart(2, '0');
+        else if (raw.length >= 10) selD = raw.substring(8, 10);
+        var dOpts = '<option value="">-- Date --</option>';
+        for (var di = 1; di <= daysInMonthD; di++) {
+            var dvv = String(di).padStart(2, '0');
+            dOpts += '<option value="' + dvv + '"' + (dvv === selD ? ' selected' : '') + '>' + dvv + '</option>';
+        }
+        return '<select class="tlm-task-date" data-date-mode="day">' + dOpts + '</select>';
+    }
+    if (mode === 'weekday') {
+        var dow = '';
+        if (raw) {
+            var byName = TLM_WEEKDAYS.find(function (x) {
+                return x.label.toLowerCase() === raw.toLowerCase();
+            });
+            if (byName) {
+                dow = byName.value;
+            } else {
+                var d = new Date(raw + 'T00:00:00');
+                if (!isNaN(d.getTime())) dow = String(d.getDay());
+            }
+        }
+        var opts =
+            '<option value="">-- Day --</option>' +
+            TLM_WEEKDAYS.map(function (w) {
+                return (
+                    '<option value="' +
+                    w.value +
+                    '"' +
+                    (w.value === dow ? ' selected' : '') +
+                    '>' +
+                    w.label +
+                    '</option>'
+                );
+            }).join('');
+        return '<select class="tlm-task-date" data-date-mode="weekday">' + opts + '</select>';
+    }
+    var dateValue = raw || getTodayIso();
+    return (
+        '<input type="date" class="tlm-task-date" data-date-mode="date" value="' +
+        escapeHtml(dateValue) +
+        '" />'
+    );
+}
+
+/** Read the effective DATE (YYYY-MM-DD) to store, based on the active control mode. */
+function readTaskRowDate($tr) {
+    var $date = $tr.find('.tlm-task-date');
+    var mode = $date.attr('data-date-mode') || 'date';
+    var raw = ($date.val() || '').trim();
+    if (mode === 'none') return '';
+    if (mode === 'month') {
+        if (!raw) return '';
+        return raw;
+    }
+    if (mode === 'day') {
+        if (!raw) return '';
+        return raw;
+    }
+    if (mode === 'weekday') {
+        if (raw === '') return '';
+        var w = TLM_WEEKDAYS.find(function (x) {
+            return x.value === raw;
+        });
+        return w ? w.label : '';
+    }
+    return raw;
+}
+
+function applyTaskRowDateField($tr) {
+    var $date = $tr.find('.tlm-task-date');
+    var mode = $date.attr('data-date-mode') || 'date';
+    $date.prop('disabled', G_TLM_DetailMode === 'view' || mode === 'none');
+}
+
+function rebuildRowDateCell($tr) {
+    var freqCode = $tr.find('.tlm-task-freq').val() || '';
+    var mode = getFreqDateMode(freqCode);
+    var currentDate = readTaskRowDate($tr);
+    $tr.find('.tlm-task-date')
+        .closest('td')
+        .html(buildTaskDateCell(mode, currentDate));
+    applyTaskRowDateField($tr);
+    updateDateColumnHeader();
+}
+
+/** Switch the "Date" column header to Day / Month / Date based on the rows' frequencies. */
+function updateDateColumnHeader() {
+    var modes = {};
+    $('#tbodyTaskEntry .tlm-task-date').each(function () {
+        var mode = $(this).attr('data-date-mode') || 'date';
+        if (mode === 'none') return;
+        modes[mode] = true;
+    });
+    var keys = Object.keys(modes);
+    var label = 'Date';
+    if (keys.length === 1) {
+        if (keys[0] === 'weekday') label = 'Day';
+        else if (keys[0] === 'month') label = 'Month';
+        else label = 'Date';
+    } else if (keys.length > 1) {
+        label = 'Date / Day';
+    }
+    $('#thTaskDate').text(label);
 }
 
 function resolveFreqCode(data) {
@@ -179,22 +539,47 @@ function resolveFreqCode(data) {
         });
         if (byText) return byText.Code;
     }
-    return G_TLM_FreqList.length ? G_TLM_FreqList[0].Code : '';
+    return '';
+}
+
+function refreshTaskGridIfDetailOpen() {
+    if (!$('#tlmDetailPanel').is(':visible') || !G_TLM_TaskRows.length) return;
+    syncTaskRowsFromDom();
+    G_TLM_TaskRows = G_TLM_TaskRows.map(function (row) {
+        return newTaskRow(row);
+    });
+    renderTaskGrid();
+}
+
+function applyFreqList(rows) {
+    G_TLM_FreqList = normalizeFreqRows(filterFreqMasterRows(rows || []));
+    refreshTaskGridIfDetailOpen();
+    return G_TLM_FreqList;
 }
 
 function loadFreqList() {
     return TaskListMasterService.GetTaskListFreq()
         .then(function (res) {
-            G_TLM_FreqList = normalizeFreqRows(firstArray(res));
-            if (!G_TLM_FreqList.length && typeof toastr !== 'undefined') {
-                toastr.warning('Frequency list is empty. Check API mode DDL_FREQUENCYMASTER on server.');
-            }
-            return G_TLM_FreqList;
+            var rows = applyFreqList(extractFreqList(res));
+            if (rows.length) return rows;
+            return loadFreqDropdownFallback().then(function (fallbackRows) {
+                if (fallbackRows.length) return applyFreqList(fallbackRows);
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning('Frequency list is empty. Check API mode DDL_FREQUENCYMASTER on server.');
+                }
+                return applyFreqList([]);
+            });
         })
         .catch(function () {
-            G_TLM_FreqList = [];
-            if (typeof toastr !== 'undefined') toastr.error('Could not load frequency list.');
-            return [];
+            return loadFreqDropdownFallback()
+                .then(function (fallbackRows) {
+                    return applyFreqList(fallbackRows);
+                })
+                .catch(function () {
+                    applyFreqList([]);
+                    if (typeof toastr !== 'undefined') toastr.error('Could not load frequency list.');
+                    return [];
+                });
         });
 }
 
@@ -234,21 +619,58 @@ function bindEmployeeDropdown(rows, selectedCode) {
     if ($sel.data('select2')) $sel.trigger('change.select2');
 }
 
+function bindCopyEmployeeDropdown(rows, selectedCode) {
+    var $sel = $('#ddlCopyEmployee');
+    $sel.empty();
+    $sel.append(new Option('-- Select Employee --', ''));
+    $.each(rows || [], function (_, item) {
+        var code = item.Code != null ? String(item.Code) : '';
+        if (!code || code === '0') return;
+        var label = (item.Desp || item.UserName || '').toString().trim();
+        if (!label) label = 'User ' + code;
+        $sel.append(new Option(label, code));
+    });
+    destroySelect2IfAny($sel);
+    $sel.select2({
+        width: '100%',
+        placeholder: 'Select employee…',
+        allowClear: true,
+        minimumResultsForSearch: 0,
+        dropdownParent: $('#dvCopyFinYearModal'),
+    });
+    var v = selectedCode != null && selectedCode !== '' ? String(selectedCode) : '';
+    $sel.val(v);
+    if ($sel.data('select2')) $sel.trigger('change.select2');
+}
+
 function loadUserList(selectedCode) {
+    function applyUserList(rows) {
+        G_TLM_UserList = rows || [];
+        bindEmployeeDropdown(G_TLM_UserList, selectedCode);
+        return G_TLM_UserList;
+    }
+
     return TaskListMasterService.GetTaskListEmployee()
         .then(function (res) {
-            G_TLM_UserList = normalizeUserRows(firstArray(res));
-            if (!G_TLM_UserList.length && typeof toastr !== 'undefined') {
-                toastr.warning('Employee list is empty. Check API mode DDL_USERMASTER on server.');
-            }
-            bindEmployeeDropdown(G_TLM_UserList, selectedCode);
-            return G_TLM_UserList;
+            var rows = normalizeUserRows(extractUserList(res));
+            if (rows.length) return applyUserList(rows);
+            return loadUserMasterFallback().then(function (fallbackRows) {
+                if (!fallbackRows.length && typeof toastr !== 'undefined') {
+                    toastr.warning('Employee list is empty. Check API mode DDL_USERMASTER on server.');
+                }
+                return applyUserList(fallbackRows);
+            });
         })
         .catch(function () {
-            G_TLM_UserList = [];
-            bindEmployeeDropdown([], selectedCode);
-            if (typeof toastr !== 'undefined') toastr.error('Could not load employee list.');
-            return [];
+            return loadUserMasterFallback()
+                .then(function (fallbackRows) {
+                    return applyUserList(fallbackRows);
+                })
+                .catch(function () {
+                    applyUserList([]);
+                    if (typeof toastr !== 'undefined') toastr.error('Could not load employee list.');
+                    return [];
+                });
         });
 }
 
@@ -297,32 +719,50 @@ function finYearOptionValue(row) {
     return String(row.FinYear || row.Desp || row.Value || row.Name || '').trim();
 }
 
-function bindCopyFinYearDropdown() {
+function bindCopyFinYearDropdown(selectedEmployeeCode) {
     var $sel = $('#ddlCopySourceFinYear');
     var current = ($('#txtFinYear').val() || getFinancialYear()).trim();
+    var selectedEmp = parseInt(selectedEmployeeCode || '0', 10) || 0;
     $sel.empty();
     $sel.append(new Option('-- Select Fin Year --', ''));
+
+    var fyAdded = {};
+    function addFinYearOption(fy) {
+        var value = String(fy || '').trim();
+        if (!value || fyAdded[value]) return;
+        fyAdded[value] = true;
+        $sel.append(new Option(value, value));
+    }
+
+    if (selectedEmp && (G_TLM_SourceRows || []).length) {
+        (G_TLM_SourceRows || []).forEach(function (row) {
+            var rowEmp = row.UserMaster_Code != null ? row.UserMaster_Code : row.EmployeeMaster_Code;
+            if (String(rowEmp) !== String(selectedEmp)) return;
+            addFinYearOption(finYearOptionValue(row));
+        });
+        if (Object.keys(fyAdded).length) return;
+    }
 
     TaskListMasterService.GetFinyearList()
         .then(function (res) {
             var rows = firstArray(res);
             if (rows.length) {
                 rows.forEach(function (row) {
-                    var fy = finYearOptionValue(row);
-                    if (!fy || fy === current) return;
-                    $sel.append(new Option(fy, fy));
+                    addFinYearOption(finYearOptionValue(row));
+                });
+                // Keep API years, and append a rolling range so user can choose another source year.
+                buildFinYearOptions(current, 12).forEach(function (fy) {
+                    addFinYearOption(fy);
                 });
                 return;
             }
             buildFinYearOptions(current, 12).forEach(function (fy) {
-                if (fy === current) return;
-                $sel.append(new Option(fy, fy));
+                addFinYearOption(fy);
             });
         })
         .catch(function () {
             buildFinYearOptions(current, 12).forEach(function (fy) {
-                if (fy === current) return;
-                $sel.append(new Option(fy, fy));
+                addFinYearOption(fy);
             });
         });
 }
@@ -337,9 +777,6 @@ function normalizeActiveFlag(val) {
 function newTaskRow(data) {
     var d = data || {};
     var freqCode = resolveFreqCode(d);
-    if ((freqCode == null || freqCode === '') && G_TLM_FreqList.length) {
-        freqCode = G_TLM_FreqList[0].Code;
-    }
     var dateVal =
         d.Date != null
             ? String(d.Date).substring(0, 10)
@@ -347,16 +784,12 @@ function newTaskRow(data) {
               ? String(d.TaskDate).substring(0, 10)
               : getTodayIso();
     return {
-        Code: d.Code != null ? parseInt(d.Code, 10) || 0 : 0,
+        Code: parseRowCode(d),
         Task: d.Task != null ? String(d.Task).trim() : d.TaskName != null ? String(d.TaskName).trim() : '',
         FrequencyMaster_Code: freqCode,
         Active: normalizeActiveFlag(d.Active != null ? d.Active : d.IsActive != null ? d.IsActive : d.Status),
         Date: dateVal,
     };
-}
-
-function isDailyFreq(freqCode) {
-    return String(getFreqDesp(freqCode)).trim().toLowerCase() === 'daily';
 }
 
 function renderTaskGrid() {
@@ -367,23 +800,39 @@ function renderTaskGrid() {
         $tbody.html(
             '<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No tasks added. Click <strong>Add Task</strong>.</td></tr>'
         );
+        updateDateColumnHeader();
         return;
     }
 
     G_TLM_TaskRows.forEach(function (row, idx) {
-        var freqOpts = (G_TLM_FreqList || []).map(function (f) {
-            var code = f.Code != null ? String(f.Code) : '';
-            var sel = String(row.FrequencyMaster_Code) === code ? ' selected' : '';
-            return '<option value="' + escapeHtml(code) + '"' + sel + '>' + escapeHtml(f.Desp || code) + '</option>';
-        }).join('');
+        var freqCode = row.FrequencyMaster_Code != null ? String(row.FrequencyMaster_Code) : '';
+        var freqOpts =
+            '<option value=""' +
+            (!freqCode ? ' selected' : '') +
+            '>-- Select frequency --</option>';
+        freqOpts += (G_TLM_FreqList || [])
+            .map(function (f) {
+                var code = f.Code != null ? String(f.Code) : '';
+                if (!code) return '';
+                var sel = freqCode === code ? ' selected' : '';
+                return (
+                    '<option value="' +
+                    escapeHtml(code) +
+                    '"' +
+                    sel +
+                    '>' +
+                    escapeHtml(f.Desp || code) +
+                    '</option>'
+                );
+            })
+            .join('');
 
         var statusOpts = TLM_STATUS_OPTIONS.map(function (s) {
             var sel = s.value === row.Active ? ' selected' : '';
             return '<option value="' + s.value + '"' + sel + '>' + s.label + '</option>';
         }).join('');
 
-        var dateDisabled = isDailyFreq(row.FrequencyMaster_Code) ? ' disabled' : '';
-        var dateVal = row.Date || getTodayIso();
+        var dateCellHtml = buildTaskDateCell(getFreqDateMode(freqCode), row.Date);
 
         var tr =
             '<tr data-row-idx="' +
@@ -401,16 +850,17 @@ function renderTaskGrid() {
             '<td><select class="tlm-task-status">' +
             statusOpts +
             '</select></td>' +
-            '<td><input type="date" class="tlm-task-date" value="' +
-            escapeHtml(dateVal) +
-            '"' +
-            dateDisabled +
-            ' /></td>' +
+            '<td>' +
+            dateCellHtml +
+            '</td>' +
             '<td class="text-center"><button type="button" class="tlm-row-del tlm-btn-remove-row" title="Remove"><i class="fas fa-times"></i></button></td>' +
             '</tr>';
 
         $tbody.append(tr);
+        applyTaskRowDateField($tbody.find('tr[data-row-idx="' + idx + '"]'));
     });
+
+    updateDateColumnHeader();
 }
 
 function escapeHtml(val) {
@@ -421,19 +871,220 @@ function escapeHtml(val) {
         .replace(/>/g, '&gt;');
 }
 
+function normalizeTaskKey(task) {
+    return String(task || '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toLowerCase();
+}
+
+function getSavedTaskKeys(emp, finYear, excludeCodes) {
+    var keys = {};
+    var exclude = excludeCodes || {};
+    (G_TLM_SourceRows || []).forEach(function (row) {
+        var rowEmp = row.UserMaster_Code != null ? row.UserMaster_Code : row.EmployeeMaster_Code;
+        var rowFinYear = row.FinYear != null ? String(row.FinYear).trim() : '';
+        if (String(rowEmp) !== String(emp) || rowFinYear !== finYear) return;
+        var code = parseRowCode(row);
+        if (code && exclude[code]) return;
+        var key = normalizeTaskKey(row.Task);
+        if (key) keys[key] = String(row.Task || '').trim();
+    });
+    return keys;
+}
+
+function findDuplicateTaskInRows(rows) {
+    var seen = {};
+    for (var i = 0; i < rows.length; i++) {
+        var task = (rows[i].Task || '').trim();
+        var key = normalizeTaskKey(task);
+        if (!key) continue;
+        if (seen[key]) {
+            return { task: task, row: i + 1, firstRow: seen[key] };
+        }
+        seen[key] = i + 1;
+    }
+    return null;
+}
+
+function findDuplicateTaskAgainstSaved(rows, emp, finYear) {
+    var excludeCodes = getTaskRowExcludeCodes(rows);
+    var savedKeys = getSavedTaskKeys(emp, finYear, excludeCodes);
+    for (var i = 0; i < rows.length; i++) {
+        var task = (rows[i].Task || '').trim();
+        var key = normalizeTaskKey(task);
+        if (!key) continue;
+        if (savedKeys[key]) {
+            return { task: task, row: i + 1, existingTask: savedKeys[key] };
+        }
+    }
+    return null;
+}
+
+function isBulkNewTaskSave() {
+    syncTaskRowsFromDom();
+    if (!G_TLM_TaskRows.length) return false;
+    return G_TLM_TaskRows.every(function (row) {
+        return !parseRowCode(row);
+    });
+}
+
+function parseEmployeeFinYearExistsResult(res) {
+    var rec = firstRecord(res);
+    if (!rec || typeof rec !== 'object') rec = {};
+
+    var list = firstArray(res);
+    if (Array.isArray(list) && list.length && list[0] && typeof list[0] === 'object') {
+        rec = Object.assign({}, list[0], rec);
+    }
+
+    var existsFlag = rec.RecordExists != null ? rec.RecordExists : rec.recordExists != null ? rec.recordExists : rec.Exists;
+    if (
+        existsFlag === 1 ||
+        existsFlag === true ||
+        String(existsFlag || '')
+            .trim()
+            .toLowerCase() === '1' ||
+        String(existsFlag || '')
+            .trim()
+            .toLowerCase() === 'true' ||
+        String(existsFlag || '')
+            .trim()
+            .toLowerCase() === 'y'
+    ) {
+        return true;
+    }
+
+    var countVal = rec.RecordCount != null ? rec.RecordCount : rec.recordCount != null ? rec.recordCount : rec.Count;
+    if ((parseInt(countVal, 10) || 0) > 0) return true;
+
+    var msg = String((res && (res.Msg || res.msg || res.Message || res.message)) || (rec && (rec.Msg || rec.msg || rec.Message || rec.message)) || '').toLowerCase();
+    return msg.indexOf('already exists') >= 0 || msg.indexOf('exists') >= 0;
+}
+
+function checkEmployeeFinYearAlreadySaved(emp, finYear) {
+    if (typeof TaskListMasterService.CheckEmployeeFinYearExists !== 'function') {
+        return Promise.resolve(employeeFinYearExistsInSource(emp, finYear));
+    }
+    return TaskListMasterService.CheckEmployeeFinYearExists(emp, finYear)
+        .then(function (res) {
+            return parseEmployeeFinYearExistsResult(res);
+        })
+        .catch(function () {
+            return employeeFinYearExistsInSource(emp, finYear);
+        });
+}
+
+function employeeFinYearExistsInSource(emp, finYear) {
+    var found = false;
+    var targetFinYear = String(finYear || '').trim();
+    (G_TLM_SourceRows || []).forEach(function (row) {
+        var rowEmp =
+            row.UserMaster_Code != null
+                ? row.UserMaster_Code
+                : row.UserMasterCode != null
+                  ? row.UserMasterCode
+                  : row.EmployeeMaster_Code != null
+                    ? row.EmployeeMaster_Code
+                    : row.EmployeeCode;
+        var rowFinYear =
+            row.FinYear != null
+                ? String(row.FinYear).trim()
+                : row.FinancialYear != null
+                  ? String(row.FinancialYear).trim()
+                  : '';
+        if (String(rowEmp) === String(emp) && rowFinYear === targetFinYear) found = true;
+    });
+    return found;
+}
+
+function fetchTasksForEmployeeFinYear(emp, finYear) {
+    function fallbackTasks() {
+        return filterTasksFromSourceRows(emp, finYear);
+    }
+    if (typeof TaskListMasterService.GetTaskListByEmpFinYear === 'function') {
+        return TaskListMasterService.GetTaskListByEmpFinYear(emp, finYear)
+            .then(function (res) {
+                var rows = firstArray(res);
+                if (rows.length) return rows;
+                // API can return success metadata without array; use cached list as fallback.
+                return fallbackTasks();
+            })
+            .catch(function () {
+                return fallbackTasks();
+            });
+    }
+    return Promise.resolve(fallbackTasks());
+}
+
+function filterTasksFromSourceRows(emp, finYear) {
+    var targetFinYear = String(finYear || '').trim();
+    return (G_TLM_SourceRows || []).filter(function (row) {
+        var rowEmp =
+            row.UserMaster_Code != null
+                ? row.UserMaster_Code
+                : row.UserMasterCode != null
+                  ? row.UserMasterCode
+                  : row.EmployeeMaster_Code != null
+                    ? row.EmployeeMaster_Code
+                    : row.EmployeeCode;
+        var rowFinYear =
+            row.FinYear != null
+                ? String(row.FinYear).trim()
+                : row.FinancialYear != null
+                  ? String(row.FinancialYear).trim()
+                  : '';
+        return String(rowEmp) === String(emp) && rowFinYear === targetFinYear;
+    });
+}
+
+function warnDuplicateTaskInput($input) {
+    if (G_TLM_DetailMode === 'view') return;
+    var $tr = $input.closest('tr');
+    var idx = parseInt($tr.attr('data-row-idx'), 10);
+    if (!isFinite(idx)) return;
+
+    syncTaskRowsFromDom();
+    var task = ($input.val() || '').trim();
+    var key = normalizeTaskKey(task);
+    if (!key) {
+        $input.removeClass('tlm-task-dup');
+        return;
+    }
+
+    var dupInGrid = false;
+    G_TLM_TaskRows.forEach(function (row, i) {
+        if (i !== idx && normalizeTaskKey(row.Task) === key) dupInGrid = true;
+    });
+
+    var emp = parseInt($('#ddlEmployee').val() || '0', 10) || 0;
+    var finYear = ($('#txtFinYear').val() || getFinancialYear()).trim();
+    var excludeCodes = getTaskRowExcludeCodes(G_TLM_TaskRows);
+    var dupInDb = emp && getSavedTaskKeys(emp, finYear, excludeCodes)[key];
+
+    $input.toggleClass('tlm-task-dup', dupInGrid || !!dupInDb);
+    if (dupInGrid && typeof toastr !== 'undefined') {
+        toastr.warning('Duplicate task "' + task + '" is not allowed.');
+    } else if (dupInDb && typeof toastr !== 'undefined') {
+        toastr.warning('Task "' + task + '" already exists for this employee and fin year.');
+    }
+}
+
 function syncTaskRowsFromDom() {
     var rows = [];
-    $('#tbodyTaskEntry tr[data-row-idx]').each(function () {
+    $('#tbodyTaskEntry tr').each(function (domIdx) {
         var $tr = $(this);
-        var idx = parseInt($tr.attr('data-row-idx'), 10);
+        if (!$tr.find('.tlm-task-name').length) return;
+        var idxAttr = parseInt($tr.attr('data-row-idx'), 10);
+        var idx = isFinite(idxAttr) ? idxAttr : domIdx;
         var existing = G_TLM_TaskRows[idx] || newTaskRow();
         var freqCode = $tr.find('.tlm-task-freq').val() || resolveFreqCode(existing);
         rows.push({
-            Code: existing.Code || 0,
+            Code: parseRowCode(existing),
             Task: ($tr.find('.tlm-task-name').val() || '').trim(),
             FrequencyMaster_Code: freqCode,
             Active: $tr.find('.tlm-task-status').val() || 'Y',
-            Date: isDailyFreq(freqCode) ? '' : ($tr.find('.tlm-task-date').val() || '').trim(),
+            Date: readTaskRowDate($tr),
         });
     });
     G_TLM_TaskRows = rows;
@@ -542,7 +1193,7 @@ function formatGridCellValue(key, val) {
 }
 
 function mapApiRowToGridRow(item, idx, apiKeysOrdered) {
-    var code = item.Code != null ? Number(item.Code) : 0;
+    var code = item.Code != null ? Number(item.Code) : item.code != null ? Number(item.code) : 0;
     var row = {};
     row.Code = isFinite(code) ? code : 0;
     row['S.No.'] = idx + 1;
@@ -638,7 +1289,7 @@ function refreshTaskListGrid() {
 }
 
 function applyRecordToForm(rec) {
-    $('#hfTaskListMaster_Code').val(rec.Code != null ? rec.Code : 0);
+    $('#hfTaskListMaster_Code').val(String(parseRowCode(rec)));
     $('#txtFinYear').val(rec.FinYear != null ? rec.FinYear : getFinancialYear());
     var emp = rec.UserMaster_Code != null ? rec.UserMaster_Code : rec.EmployeeMaster_Code != null ? rec.EmployeeMaster_Code : '';
     return initDetailLookups(emp, { skipFinYear: true }).then(function () {
@@ -672,7 +1323,37 @@ function validateTaskRows() {
         return false;
     }
 
-    var seen = {};
+    var emp = parseInt($('#ddlEmployee').val() || '0', 10) || 0;
+    var finYear = ($('#txtFinYear').val() || getFinancialYear()).trim();
+
+    var gridDup = findDuplicateTaskInRows(G_TLM_TaskRows);
+    if (gridDup) {
+        if (typeof toastr !== 'undefined') {
+            toastr.warning(
+                'Duplicate task "' +
+                    gridDup.task +
+                    '" in row ' +
+                    gridDup.firstRow +
+                    ' and row ' +
+                    gridDup.row +
+                    '.'
+            );
+        }
+        return false;
+    }
+
+    if (emp) {
+        var savedDup = findDuplicateTaskAgainstSaved(G_TLM_TaskRows, emp, finYear);
+        if (savedDup) {
+            if (typeof toastr !== 'undefined') {
+                toastr.warning(
+                    'Task "' + savedDup.task + '" already exists for this employee and fin year (row ' + savedDup.row + ').'
+                );
+            }
+            return false;
+        }
+    }
+
     for (var i = 0; i < G_TLM_TaskRows.length; i++) {
         var row = G_TLM_TaskRows[i];
         var task = (row.Task || '').trim();
@@ -680,19 +1361,15 @@ function validateTaskRows() {
             if (typeof toastr !== 'undefined') toastr.warning('Task is required in row ' + (i + 1) + '.');
             return false;
         }
-        var key = task.toLowerCase();
-        if (seen[key]) {
-            if (typeof toastr !== 'undefined') toastr.warning('Duplicate task "' + task + '" is not allowed.');
-            return false;
-        }
-        seen[key] = true;
 
         if (row.FrequencyMaster_Code == null || row.FrequencyMaster_Code === '') {
             if (typeof toastr !== 'undefined') toastr.warning('Frequency is required in row ' + (i + 1) + '.');
             return false;
         }
-        if (!isDailyFreq(row.FrequencyMaster_Code) && !row.Date) {
-            if (typeof toastr !== 'undefined') toastr.warning('Date is required when frequency is not Daily (row ' + (i + 1) + ').');
+        var dateMode = getFreqDateMode(row.FrequencyMaster_Code);
+        if (dateMode !== 'none' && !row.Date) {
+            var fieldLabel = dateMode === 'weekday' ? 'Day' : dateMode === 'month' ? 'Month' : 'Date';
+            if (typeof toastr !== 'undefined') toastr.warning(fieldLabel + ' is required in row ' + (i + 1) + '.');
             return false;
         }
     }
@@ -702,34 +1379,54 @@ function validateTaskRows() {
 function buildSavePayload(row) {
     var active = normalizeActiveFlag(row.Active);
     return {
-        Code: row.Code || 0,
+        Mode: 'SAVE',
+        Code: parseRowCode(row),
         UserId: authUserCode(),
         UserMaster_Code: parseInt($('#ddlEmployee').val() || '0', 10) || 0,
         FinYear: ($('#txtFinYear').val() || getFinancialYear()).trim(),
-        Task: row.Task,
+        Task: (row.Task || '').trim(),
         FrequencyMaster_Code: parseInt(row.FrequencyMaster_Code, 10) || 0,
-        Date: isDailyFreq(row.FrequencyMaster_Code) ? null : row.Date || null,
+        Date: row.Date ? row.Date : ' ',
         Active: active,
         IsActive: active,
     };
 }
 
-function saveTaskRowsSequentially(rows, index) {
-    if (index >= rows.length) {
-        if (typeof toastr !== 'undefined') toastr.success('Saved successfully.');
-        setTimeout(showListPanel, 900);
-        return Promise.resolve();
+function addSavedTaskToSourceRows(row, savedCode) {
+    var emp = parseInt($('#ddlEmployee').val() || '0', 10) || 0;
+    var finYear = ($('#txtFinYear').val() || getFinancialYear()).trim();
+    G_TLM_SourceRows.push({
+        Code: savedCode || row.Code || 0,
+        UserMaster_Code: emp,
+        FinYear: finYear,
+        Task: (row.Task || '').trim(),
+    });
+}
+
+async function saveTaskRowsSequentially(rows, index) {
+    var startIndex = parseInt(index || 0, 10) || 0;
+    if (!Array.isArray(rows) || !rows.length || startIndex >= rows.length) {
+        if (typeof toastr !== 'undefined') toastr.warning('No rows to save.');
+        return;
     }
 
-    return TaskListMasterService.SaveTaskListMaster(buildSavePayload(rows[index])).then(function (res) {
-        var ok = res && (res.Status === 'Y' || res.status === 'Y');
-        if (!ok) {
-            if (typeof toastr !== 'undefined')
-                toastr.error((res && (res.Msg || res.Message || res.message)) || 'Save failed at row ' + (index + 1) + '.');
-            return Promise.reject(new Error('Save failed'));
+    for (var i = startIndex; i < rows.length; i++) {
+        var row = rows[i];
+        var payload = buildSavePayload(row);
+        var res = await TaskListMasterService.SaveTaskListMaster(payload);
+        var parsed = parseApiSaveResult(res);
+        if (!parsed.ok) {
+            var msg = parsed.msg || 'Save failed at row ' + (i + 1) + '.';
+            if (typeof toastr !== 'undefined') toastr.error(msg);
+            throw new Error(msg);
         }
-        return saveTaskRowsSequentially(rows, index + 1);
-    });
+        var savedCode = parsed.code || parseRowCode(row);
+        row.Code = savedCode;
+        addSavedTaskToSourceRows(row, savedCode);
+    }
+
+    if (typeof toastr !== 'undefined') toastr.success('Saved successfully.');
+    setTimeout(showListPanel, 900);
 }
 
 function saveTaskList() {
@@ -751,72 +1448,153 @@ function saveTaskList() {
             return;
         }
 
-        if (!validateTaskRows()) return;
-
-        syncTaskRowsFromDom();
-        saveTaskRowsSequentially(G_TLM_TaskRows.slice(), 0).catch(function () {
-            if (typeof toastr !== 'undefined') toastr.error('Save request failed.');
-        });
+        saveTaskListWithFreshData();
     /*});*/
 }
 
-function copyTasksFromFinYear() {
+function saveTaskListWithFreshData() {
     var emp = parseInt($('#ddlEmployee').val() || '0', 10) || 0;
+    var finYear = ($('#txtFinYear').val() || getFinancialYear()).trim();
+    var bulkNew = isBulkNewTaskSave();
+    var headerCode = parseInt($('#hfTaskListMaster_Code').val() || '0', 10) || 0;
+    var isCreateModeSave = headerCode === 0 && G_TLM_DetailMode === 'new';
+
+    function warnEmployeeFinYearExists() {
+        if (typeof toastr !== 'undefined') {
+            toastr.warning('Data already exists for this employee and fin year (' + finYear + ').');
+        }
+    }
+
+    return TaskListMasterService.GetTaskListMasterList()
+        .then(function (res) {
+            G_TLM_SourceRows = firstArray(res);
+        })
+        .catch(function () {
+            /* keep existing list if refresh fails */
+        })
+        .then(function () {
+            if (!validateTaskRows()) return;
+            if (isCreateModeSave || bulkNew) {
+                return Promise.resolve(checkEmployeeFinYearAlreadySaved(emp, finYear)).then(function (exists) {
+                    if (exists) {
+                        warnEmployeeFinYearExists();
+                        return;
+                    }
+                    syncTaskRowsFromDom();
+                    return saveTaskRowsSequentially(G_TLM_TaskRows.slice(), 0);
+                });
+            }
+            if (!bulkNew) {
+                syncTaskRowsFromDom();
+                return saveTaskRowsSequentially(G_TLM_TaskRows.slice(), 0);
+            }
+        });
+}
+
+function copyTasksFromFinYear() {
+    var headerEmp = parseInt($('#ddlEmployee').val() || '0', 10) || 0;
+    loadUserList(headerEmp || '')
+        .then(function () {
+            bindCopyEmployeeDropdown(G_TLM_UserList, headerEmp || '');
+            return TaskListMasterService.GetTaskListMasterList()
+                .then(function (res) {
+                    G_TLM_SourceRows = firstArray(res);
+                })
+                .catch(function () {
+                    /* continue with existing cache */
+                });
+        })
+        .then(function () {
+            var selectedEmp = parseInt($('#ddlCopyEmployee').val() || '0', 10) || 0;
+            bindCopyFinYearDropdown(selectedEmp);
+            showModal('dvCopyFinYearModal');
+        });
+}
+
+function confirmCopyFromFinYear() {
+    var emp = parseInt($('#ddlCopyEmployee').val() || $('#ddlEmployee').val() || '0', 10) || 0;
+    var sourceFinYear = ($('#ddlCopySourceFinYear').val() || '').trim();
+    var targetFinYear = ($('#txtFinYear').val() || getFinancialYear()).trim();
+    var isSameFinYear = sourceFinYear === targetFinYear;
+
     if (!emp) {
         if (typeof toastr !== 'undefined') toastr.warning('Please select an employee first.');
         return;
     }
-    bindCopyFinYearDropdown();
-    showModal('dvCopyFinYearModal');
-}
-
-function confirmCopyFromFinYear() {
-    var emp = parseInt($('#ddlEmployee').val() || '0', 10) || 0;
-    var sourceFinYear = ($('#ddlCopySourceFinYear').val() || '').trim();
-    var targetFinYear = ($('#txtFinYear').val() || getFinancialYear()).trim();
-
     if (!sourceFinYear) {
         if (typeof toastr !== 'undefined') toastr.warning('Please select source fin year.');
         return;
     }
-    if (sourceFinYear === targetFinYear) {
-        if (typeof toastr !== 'undefined') toastr.warning('Source and target fin year cannot be the same.');
-        return;
+
+    try {
+        if ($('#ddlEmployee').data('select2')) $('#ddlEmployee').val(String(emp)).trigger('change.select2');
+        else $('#ddlEmployee').val(String(emp));
+    } catch (e) {
+        $('#ddlEmployee').val(String(emp));
     }
 
-    TaskListMasterService.GetTaskListMasterList()
-        .then(function (res) {
+    Promise.resolve()
+        .then(function () {
+            return TaskListMasterService.GetTaskListMasterList()
+                .then(function (res) {
+                    G_TLM_SourceRows = firstArray(res);
+                })
+                .catch(function () {
+                    /* continue with existing cache */
+                });
+        })
+        .then(function () {
+            if (isSameFinYear) return false;
+            return employeeFinYearExistsInSource(emp, targetFinYear);
+        })
+        .then(function (targetExists) {
+            if (targetExists) {
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning(
+                        'Data already exists for this employee and fin year (' + targetFinYear + ').'
+                    );
+                }
+                return null;
+            }
+            return fetchTasksForEmployeeFinYear(emp, sourceFinYear);
+        })
+        .then(function (tasks) {
+            if (!tasks) return;
             hideModal('dvCopyFinYearModal');
-            var tasks = firstArray(res).filter(function (row) {
-                var rowEmp = row.UserMaster_Code != null ? row.UserMaster_Code : row.EmployeeMaster_Code;
-                var rowFinYear = row.FinYear != null ? String(row.FinYear).trim() : '';
-                return String(rowEmp) === String(emp) && rowFinYear === sourceFinYear;
-            });
 
             if (!tasks.length) {
-                if (typeof toastr !== 'undefined') toastr.warning('No tasks found in selected fin year.');
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning('No tasks found for selected employee in fin year ' + sourceFinYear + '.');
+                }
                 return;
             }
 
-            syncTaskRowsFromDom();
-            var existingKeys = {};
-            G_TLM_TaskRows.forEach(function (r) {
-                existingKeys[(r.Task || '').trim().toLowerCase()] = true;
-            });
-
-            var added = 0;
-            tasks.forEach(function (t) {
+            G_TLM_TaskRows = tasks.map(function (t) {
                 var row = newTaskRow(t);
-                row.Code = 0;
-                var key = (row.Task || '').trim().toLowerCase();
-                if (!key || existingKeys[key]) return;
-                existingKeys[key] = true;
-                G_TLM_TaskRows.push(row);
-                added++;
+                row.Code = isSameFinYear ? parseRowCode(t) : 0;
+                row.Date = getTodayIso();
+                return row;
             });
             renderTaskGrid();
-            if (typeof toastr !== 'undefined')
-                toastr.success(added + ' task(s) copied from ' + sourceFinYear + ' to ' + targetFinYear + '.');
+            if (typeof toastr !== 'undefined') {
+                if (isSameFinYear) {
+                    toastr.success(
+                        G_TLM_TaskRows.length +
+                            ' task(s) loaded for fin year ' +
+                            sourceFinYear +
+                            '. You can edit and save these tasks.'
+                    );
+                } else {
+                    toastr.success(
+                        G_TLM_TaskRows.length +
+                            ' task(s) loaded from ' +
+                            sourceFinYear +
+                            '. Review and click Save for fin year ' +
+                            targetFinYear +
+                            '.'
+                    );
+                }
+            }
         })
         .catch(function () {
             if (typeof toastr !== 'undefined') toastr.error('Copy request failed.');
@@ -947,19 +1725,19 @@ $(document).ready(function () {
     });
     $('#btnCopyFromFinYear').on('click', copyTasksFromFinYear);
     $('#btnConfirmCopyFinYear').on('click', confirmCopyFromFinYear);
+    $('#ddlCopyEmployee').on('change', function () {
+        var selectedEmp = parseInt($(this).val() || '0', 10) || 0;
+        bindCopyFinYearDropdown(selectedEmp);
+    });
     $('#btnTaskListConfirmDelete').on('click', confirmTaskListDelete);
 
+    $(document).on('blur', '.tlm-task-name', function () {
+        warnDuplicateTaskInput($(this));
+    });
+
     $(document).on('change', '.tlm-task-freq', function () {
-        var $tr = $(this).closest('tr');
-        var freq = $(this).val();
-        var $date = $tr.find('.tlm-task-date');
-        if (isDailyFreq(freq)) {
-            if (!$date.val()) $date.val(getTodayIso());
-            $date.prop('disabled', true);
-        } else {
-            if (!$date.val()) $date.val(getTodayIso());
-            $date.prop('disabled', false);
-        }
+        if (G_TLM_DetailMode === 'view') return;
+        rebuildRowDateCell($(this).closest('tr'));
     });
 
     $(document).on('click', '.tlm-btn-remove-row', function () {

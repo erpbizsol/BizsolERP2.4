@@ -202,13 +202,6 @@
         overflow: hidden;
         cursor: default;
     }
-    .pdd-kpi-card.pdd-kpi-click {
-        cursor: pointer;
-    }
-    .pdd-kpi-card.pdd-kpi-click:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
-    }
     .pdd-kpi-card::after {
         content: '';
         position: absolute;
@@ -372,7 +365,7 @@
 
     /* ── BUDGET VS ACTUAL ───────────────────────────────────────── */
     .pdd-bva-stats-row {
-        display: grid; grid-template-columns: 1fr 1px 1fr;
+        display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr;
         gap: 0; background: linear-gradient(135deg,#f8faff,#f5f3ff);
         border-radius: 14px; padding: 14px 10px; margin-bottom: 14px;
         border: 1px solid #e0e7ff;
@@ -524,7 +517,7 @@
                     <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
                         <label class="form-label" for="ddlProject"><i class="fa-solid fa-folder-open me-1"></i>Project</label>
                         <select id="ddlProject" class="form-select form-select-sm">
-                            <option value="0">-- Select Project --</option>
+                            <option value="0">-- All Projects --</option>
                         </select>
                     </div>
                     <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
@@ -556,7 +549,7 @@
 
             <!-- ── KPI CARDS ────────────────────────────────────────── -->
             <div class="pdd-kpi-grid" id="pddKpiGrid">
-                <div class="pdd-kpi-card kpi-red pdd-kpi-click" id="kpiCardPO" title="Open PO Approval" role="button" tabindex="0">
+                <div class="pdd-kpi-card kpi-red">
                     <div class="pdd-kpi-icon"><i class="fa-solid fa-cart-shopping"></i></div>
                     <div class="pdd-kpi-body">
                         <div class="pdd-kpi-value" id="kpiPOCount">—</div>
@@ -564,7 +557,7 @@
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-triangle-exclamation fa-xs"></i> High Priority</span>
                     </div>
                 </div>
-                <div class="pdd-kpi-card kpi-amber pdd-kpi-click" id="kpiCardPayment" title="Open GRN Payment Approval" role="button" tabindex="0">
+                <div class="pdd-kpi-card kpi-amber">
                     <div class="pdd-kpi-icon"><i class="fa-solid fa-credit-card"></i></div>
                     <div class="pdd-kpi-body">
                         <div class="pdd-kpi-value" id="kpiPaymentAmt">—</div>
@@ -572,7 +565,7 @@
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-bell fa-xs"></i> Attention</span>
                     </div>
                 </div>
-                <div class="pdd-kpi-card kpi-purple pdd-kpi-click" id="kpiCardExpense" title="Open Expense Entry Approval" role="button" tabindex="0">
+                <div class="pdd-kpi-card kpi-purple">
                     <div class="pdd-kpi-icon"><i class="fa-solid fa-file-invoice"></i></div>
                     <div class="pdd-kpi-body">
                         <div class="pdd-kpi-value" id="kpiExpenseAmt">—</div>
@@ -588,7 +581,7 @@
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-circle-check fa-xs"></i> Active</span>
                     </div>
                 </div>
-                <div class="pdd-kpi-card kpi-blue pdd-kpi-click" id="kpiCardReconciled" title="Open Bank Statement Import" role="button" tabindex="0">
+                <div class="pdd-kpi-card kpi-blue">
                     <div class="pdd-kpi-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
                     <div class="pdd-kpi-body">
                         <div class="pdd-kpi-value" id="kpiIsReconciled">—</div>
@@ -702,6 +695,11 @@
                         <div class="pdd-bva-stat">
                             <div class="bva-lbl"><i class="fa-solid fa-receipt me-1"></i>Total Spent</div>
                             <div class="bva-val" id="bvaSpent">—</div>
+                        </div>
+                        <div class="pdd-bva-divider"></div>
+                        <div class="pdd-bva-stat">
+                            <div class="bva-lbl"><i class="fa-solid fa-piggy-bank me-1"></i>Total Balance</div>
+                            <div class="bva-val" id="bvaBalance">—</div>
                         </div>
                     </div>
                     <div class="pdd-utilization-wrap">
