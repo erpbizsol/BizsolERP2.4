@@ -336,12 +336,22 @@
 
         /* Sidebar section label */
         .sidebar-section-label {
-            font-size: 0.6rem;
-            letter-spacing: 1.5px;
+            font-size: 0.58rem;
+            letter-spacing: 2px;
             text-transform: uppercase;
-            color: rgba(199,210,254,0.45);
-            padding: 0.5rem 0.5rem 0.15rem 0.5rem;
-            margin-top: 0.25rem;
+            color: rgba(199, 210, 254, 0.35);
+            padding: 0.75rem 0.75rem 0.2rem 0.75rem;
+            margin-top: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sidebar-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.25) 0%, transparent 100%);
         }
 
         /* Fav menu link star icon */
@@ -1560,10 +1570,7 @@
 
         <!-- Modern Sidebar -->
         <div class="modern-sidebar" id="modern-sidebar">
-            <div class="p-2">
-                <div class="mb-2 mt-1">
-                    <h6 class="text-uppercase mb-0" style="font-size: 0.65rem; letter-spacing: 1.5px; color: rgba(199, 210, 254, 0.5);">Main Menu</h6>
-                </div>
+            <div class="p-2 pt-3">
                 <div id="sidebar-menu">
                     <!-- Dynamic menu will be loaded here -->
                 </div>
