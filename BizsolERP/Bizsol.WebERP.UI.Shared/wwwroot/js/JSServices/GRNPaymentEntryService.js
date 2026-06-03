@@ -144,6 +144,14 @@ const GRNPaymentApprovalService = {
                 return value;
             });
     },
+    GetPOWISELIST: function GetPOWISELIST(POCode) {
+        const code = POCode !== undefined && POCode !== null ? String(POCode).trim() : '0';
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetPOWISELIST?POCode=${encodeURIComponent(code || '0')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
 };
 
 export { GRNPaymentApprovalService };
