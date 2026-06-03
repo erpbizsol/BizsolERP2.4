@@ -576,16 +576,6 @@ function mapGRNRowsToGrid(rows) {
             '<i class="fas fa-paperclip"></i></button>' +
             '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
             '<i class="fas fa-trash-can"></i></button>';
-        if (grnHasVerifyRight) {
-            if (rowIsVerifiedGrn(item) || rowIsMrnApprovedGrn(item)) {
-                btns += buildGrnVerifiedBadgeHtml(item);
-            } else if (!grnGridVerifyButtonAllowedByMultilevel()) {
-                btns +=
-                    '<button type="button" class="grn-btn-verify" title="Verify" aria-label="Verify" onclick="VerifyGRN(' +
-                    code +
-                    ')"><i class="fas fa-check" aria-hidden="true"></i></button>';
-            }
-        }
         var patch = { Action: btns };
         return Object.assign({}, item, patch);
     });
