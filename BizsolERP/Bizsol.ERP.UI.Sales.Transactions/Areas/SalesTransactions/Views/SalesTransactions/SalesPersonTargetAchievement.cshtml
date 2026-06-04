@@ -1,0 +1,341 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="~/assets/libs/pdfmake/build/pdfmake.min.js"></script>
+<script src="~/assets/libs/pdfmake/build/vfs_fonts.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Sales.Transactions/Script/SalesPersonTargetAchievement.js"></script>
+<style>
+    .spta-wrap {
+        --accent: #1f4e8c;
+    }
+
+    .spta-toolbar {
+        background: #fff;
+        border: 1px solid #e6e9f0;
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin-bottom: 0;
+        box-shadow: 0 2px 10px rgba(31, 78, 140, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .spta-field {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        min-width: 0;
+    }
+
+    .spta-field label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #2c3852;
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .spta-field select,
+    .spta-field input[type="date"] {
+        height: 36px;
+        width: 100%;
+        max-width: 100%;
+        border: 1px solid #d4d9e3;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 0.83rem;
+        color: #333;
+    }
+
+    .spta-field select:focus,
+    .spta-field input[type="date"]:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(31, 78, 140, 0.12);
+    }
+
+    .spta-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    .spta-btn {
+        height: 34px;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0 16px;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+    .spta-btn-primary {
+        background: var(--accent);
+        color: #fff;
+    }
+
+    .spta-btn-primary:hover {
+        background: #173c6e;
+    }
+
+    .spta-btn-soft {
+        background: #fff;
+        color: var(--accent);
+        border-color: #cdd5e3;
+    }
+
+    .spta-btn-soft:hover {
+        background: #f1f4fa;
+    }
+
+    #divReportSections {
+        display: none;
+    }
+
+    .spta-section {
+        background: #fff;
+        border: 1px solid #e6e9f0;
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        margin-top: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(31, 78, 140, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .spta-section-head {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 16px;
+        font-size: 0.86rem;
+        font-weight: 600;
+        color: #2c3852;
+        background: #f6f8fc;
+        border-bottom: 1px solid #e6e9f0;
+        border-left: 3px solid var(--accent);
+    }
+
+    .spta-section-head i {
+        color: var(--accent);
+        font-size: 0.9rem;
+    }
+
+    .spta-panel {
+        padding: 10px;
+    }
+
+    .spta-table-wrapper {
+        max-height: 420px;
+        overflow: auto;
+    }
+
+    .spta-table {
+        font-size: 0.8rem;
+        margin-bottom: 0;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .spta-table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f1f4fa;
+        color: #2c3852;
+        white-space: nowrap;
+        z-index: 1;
+        font-weight: 600;
+        padding: 9px 12px;
+        border-bottom: 2px solid #d9e0ee;
+    }
+
+    .spta-table tbody td {
+        white-space: nowrap;
+        padding: 7px 12px;
+        border-bottom: 1px solid #eef1f6;
+        color: #3a3f4b;
+    }
+
+    .spta-table tbody tr:hover td {
+        background-color: #f6f9ff;
+    }
+
+    .spta-empty {
+        display: none;
+        padding: 40px 20px;
+        text-align: center;
+        color: #98a1b3;
+        font-size: 0.85rem;
+    }
+
+    .spta-empty i {
+        display: block;
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+        opacity: 0.45;
+    }
+
+    .spta-wrap .paginator {
+        margin-top: 4px;
+        padding-top: 8px;
+        border-top: 1px solid #eef1f6;
+    }
+
+    /* ---- Grid theming: align shared filter grid with page accent ---- */
+    .spta-wrap .spta-table thead th {
+        background: linear-gradient(180deg, #275a9e 0%, #1f4e8c 100%) !important;
+        color: #fff !important;
+        border-bottom: none !important;
+        vertical-align: middle;
+    }
+
+    .spta-wrap .spta-table thead th .filter-table-heading {
+        color: #fff !important;
+        font-weight: 600;
+    }
+
+    .spta-wrap .spta-table thead th .table-filter-arrow i,
+    .spta-wrap .spta-table thead th .fa-angle-down {
+        color: #cfe0f5 !important;
+    }
+
+    .spta-wrap .spta-table tbody tr:nth-child(even) td {
+        background-color: #fafbfe;
+    }
+
+    .spta-wrap .spta-table tbody tr:hover td {
+        background-color: #eef4ff;
+    }
+
+    .spta-wrap .spta-table tbody tr.total-row td {
+        font-weight: 700;
+        color: #1f4e8c;
+        background-color: #eaf1fb !important;
+        border-top: 1.5px solid #c4d6ee;
+        border-bottom: 1.5px solid #c4d6ee;
+    }
+
+    .spta-wrap .spta-table tbody tr.grand-total-row td {
+        font-weight: 700;
+        color: #fff;
+        background: #1f4e8c !important;
+        border-top: 2px solid #163d6e;
+    }
+
+    .spta-wrap .spta-field .select2-container {
+        width: 100% !important;
+    }
+
+    .spta-wrap .select2-container .select2-selection--single {
+        height: 36px !important;
+        border: 1px solid #d4d9e3 !important;
+        border-radius: 6px !important;
+        display: flex;
+        align-items: center;
+    }
+
+    .spta-wrap .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 34px !important;
+        font-size: 0.83rem;
+        color: #333;
+        padding-left: 10px;
+    }
+
+    .spta-wrap .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 34px !important;
+    }
+</style>
+
+<div class="spta-wrap">
+    <div class="spta-toolbar">
+        <div class="row g-3">
+            <div class="col-sm-3 spta-field">
+                <label for="ddlReportTypelist">Report Type</label>
+                <select id="ddlReportTypelist" class="form-control form-control-sm"></select>
+            </div>
+            <div class="col-sm-3 spta-field">
+                <label for="txtdateFrom">From Date <span class="text-danger">*</span></label>
+                <input id="txtdateFrom" type="date" name="txtdateFrom" autocomplete="off" required>
+            </div>
+            <div class="col-sm-3 spta-field">
+                <label for="txtdateTo">To Date <span class="text-danger">*</span></label>
+                <input id="txtdateTo" type="date" name="txtdateTo" autocomplete="off" required>
+            </div>
+            <div class="col-sm-3 spta-field">
+                <label for="ddlMarketingMan">Marketing Man</label>
+                <select id="ddlMarketingMan" class="form-control form-control-sm"></select>
+            </div>
+        </div>
+        <div class="spta-actions">
+            <button type="button" id="btnShow" class="spta-btn spta-btn-primary">
+                 Show
+            </button>
+            <button type="button" id="btnLoading" class="spta-btn spta-btn-primary" hidden="true">
+                <i class="fa-solid fa-spinner fa-spin"></i> Loading
+            </button>
+            <button type="button" id="btnDownload" class="spta-btn spta-btn-soft">
+                 Download PDF
+            </button>
+        </div>
+    </div>
+
+    <div id="divReportSections">
+        <div id="secPartyDetail" class="spta-section" style="display:none;">
+            <div class="spta-section-head"><i class="fa-solid fa-building"></i> Party Detail</div>
+            <div class="spta-panel">
+                <div class="spta-table-wrapper">
+                    <table id="tblPartyDetail" class="table spta-table">
+                        <thead id="tblPartyDetail-header"></thead>
+                        <tbody id="tblPartyDetail-body"></tbody>
+                    </table>
+                    <div id="noPartyDetail" class="spta-empty">
+                        <i class="fa-regular fa-folder-open"></i> No party detail data.
+                    </div>
+                </div>
+                <div class="paginator" id="paginator-tblPartyDetail"></div>
+            </div>
+        </div>
+
+        <div id="secExecutiveSummary" class="spta-section" style="display:none;">
+            <div class="spta-section-head"><i class="fa-solid fa-chart-line"></i> Executive Summary</div>
+            <div class="spta-panel">
+                <div class="spta-table-wrapper">
+                    <table id="tblExecutiveSummary" class="table spta-table">
+                        <thead id="tblExecutiveSummary-header"></thead>
+                        <tbody id="tblExecutiveSummary-body"></tbody>
+                    </table>
+                    <div id="noExecutiveSummary" class="spta-empty">
+                        <i class="fa-regular fa-folder-open"></i> No executive summary data.
+                    </div>
+                </div>
+                <div class="paginator" id="paginator-tblExecutiveSummary"></div>
+            </div>
+        </div>
+
+        <div id="secGrandTotal" class="spta-section" style="display:none;">
+            <div class="spta-section-head"><i class="fa-solid fa-calculator"></i> Grand Total</div>
+            <div class="spta-panel">
+                <div class="spta-table-wrapper">
+                    <table id="tblGrandTotal" class="table spta-table">
+                        <thead id="tblGrandTotal-header"></thead>
+                        <tbody id="tblGrandTotal-body"></tbody>
+                    </table>
+                    <div id="noGrandTotal" class="spta-empty">
+                        <i class="fa-regular fa-folder-open"></i> No grand total data.
+                    </div>
+                </div>
+                <div class="paginator" id="paginator-tblGrandTotal"></div>
+            </div>
+        </div>
+    </div>
+</div>
