@@ -32,6 +32,8 @@ let grnHasVerifyRight = false;
 let grnMasterSourceRows = [];
 /** Edit/New form: master already has attachment(s) — footer Attachment button green with list/API */
 let grnFormHasAttachmentYes = false;
+/** List grid: verified via GetAllDocumentAttachment (same source as Attachment control modal). */
+let grnListAttachmentYesMap = {};
 /** @type {null|string} null = all rows, 'N' = not verified (Pending), 'Y' = verified, 'R' = rejected */
 let grnListVerifiedFilter = null;
 
@@ -468,6 +470,36 @@ function grnItemHasAttachmentYes(item) {
     return k ? grnAttachmentYesFromRaw(item[k]) : false;
 }
 
+/** List row paperclip: prefer attachment-control API over list HasAttachment flag. */
+function grnListRowHasAttachmentYes(item) {
+    if (!item || typeof item !== "object") return false;
+    var code = parseInt(String(item.Code != null ? item.Code : item.code != null ? item.code : 0), 10) || 0;
+    if (code > 0 && Object.prototype.hasOwnProperty.call(grnListAttachmentYesMap, code)) {
+        return !!grnListAttachmentYesMap[code];
+    }
+    return grnItemHasAttachmentYes(item);
+}
+
+/** Reconcile list HasAttachment with GetAllDocumentAttachment (modal uses the same API). */
+async function grnSyncListAttachmentStates(rows) {
+    grnListAttachmentYesMap = {};
+    if (!Array.isArray(rows) || rows.length === 0) return;
+    var tasks = rows.map(function (item) {
+        if (!item || typeof item !== "object") return Promise.resolve();
+        var rowCode = parseInt(String(item.Code != null ? item.Code : item.code != null ? item.code : 0), 10) || 0;
+        if (!rowCode) return Promise.resolve();
+        return AttachmentControlService.GetAttachmentUploadFiles("MRNMaster", rowCode, "", 0)
+            .then(function (resp) {
+                var apiRows = grnNormalizeAttachmentApiRows(resp);
+                grnListAttachmentYesMap[rowCode] = apiRows.length > 0;
+            })
+            .catch(function () {
+                grnListAttachmentYesMap[rowCode] = grnItemHasAttachmentYes(item);
+            });
+    });
+    await Promise.all(tasks);
+}
+
 /** SHOWDATA sometimes omits HasAttachment; list row still has it */
 function grnResolveHasAttachmentYesFromList(masterCode) {
     var c = parseInt(String(masterCode != null ? masterCode : 0), 10) || 0;
@@ -517,7 +549,8 @@ async function grnSyncFooterAttachmentFromApis(master, masterCode) {
         try {
             var resp = await AttachmentControlService.GetAttachmentUploadFiles("MRNMaster", c, "", 0);
             var rows = grnNormalizeAttachmentApiRows(resp);
-            if (rows.length > 0) grnFormHasAttachmentYes = true;
+            grnFormHasAttachmentYes = rows.length > 0;
+            grnListAttachmentYesMap[c] = grnFormHasAttachmentYes;
         } catch (err) {
             console.warn("grnSyncFooterAttachmentFromApis:", err);
         }
@@ -532,25 +565,17 @@ function mapGRNRowsToGrid(rows) {
         const enNum = parseInt(mrnRaw, 10) || 0;
         const rd = item.ReceiveDate ?? item.receiveDate ?? '';
         const rawRdStr = rd ? String(rd).substring(0, 10) : '';
-        const hasAttachmentYes = grnItemHasAttachmentYes(item);
+        const hasAttachmentYes = grnListRowHasAttachmentYes(item);
         const attachBtnClass = hasAttachmentYes ? "im-btn-attach im-btn-attach--has-attachment" : "im-btn-attach";
         var btns =
+            '<button type="button" class="im-btn-view" title="View" onclick="viewGRNFromList(' + code + ')">' +
+            '<i class="fa fa-eye"></i></button>' +
             '<button class="im-btn-edit" title="Edit" onclick="editGRN(' + code + ')">' +
             '<i class="fas fa-pen"></i></button>' +
             '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="openGrnServiceListAttachmentControl(' + code + ',' + enNum + ',\'' + rawRdStr + '\')">' +
             '<i class="fas fa-paperclip"></i></button>' +
             '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
             '<i class="fas fa-trash-can"></i></button>';
-        if (grnHasVerifyRight) {
-            if (rowIsVerifiedGrn(item) || rowIsMrnApprovedGrn(item)) {
-                btns += buildGrnVerifiedBadgeHtml(item);
-            } else if (!grnGridVerifyButtonAllowedByMultilevel()) {
-                btns +=
-                    '<button type="button" class="grn-btn-verify" title="Verify" aria-label="Verify" onclick="VerifyGRN(' +
-                    code +
-                    ')"><i class="fas fa-check" aria-hidden="true"></i></button>';
-            }
-        }
         var patch = { Action: btns };
         return Object.assign({}, item, patch);
     });
@@ -579,7 +604,7 @@ function getGRNListHiddenColumns() {
 
 function getGRNListColumnAlignment() {
     return {
-        Action: "center;min-width:240px;white-space:nowrap;",
+        Action: "center;min-width:280px;white-space:nowrap;",
     };
 }
 
@@ -647,6 +672,16 @@ function rowIsPendingOnMeGrn(item) {
 
 function updateGrnVerifyFilterTabCounts() {
     var rows = grnMasterSourceRows || [];
+    var elP = document.getElementById("grnVerifyFilterCountPending");
+    var elV = document.getElementById("grnVerifyFilterCountVerified");
+    var elR = document.getElementById("grnVerifyFilterCountReject");
+    if (rows.length === 0) {
+        if (elP) elP.textContent = "0";
+        if (elV) elV.textContent = "0";
+        if (elR) elR.textContent = "0";
+        setGrnListPendingOnMeBadge(0);
+        return;
+    }
     var pending = 0;
     var verified = 0;
     var rejected = 0;
@@ -663,9 +698,6 @@ function updateGrnVerifyFilterTabCounts() {
     var chipPending = readApprovalChipCount("gpaStatPending");
     var chipApproved = readApprovalChipCount("gpaStatProcessed");
     var chipOnMe = readApprovalChipCount("gpaStatPendingOnMe");
-    var elP = document.getElementById("grnVerifyFilterCountPending");
-    var elV = document.getElementById("grnVerifyFilterCountVerified");
-    var elR = document.getElementById("grnVerifyFilterCountReject");
     if (elP) elP.textContent = String(chipPending !== null ? chipPending : pending);
     if (elV) elV.textContent = String(chipApproved !== null ? chipApproved : verified);
     if (elR) elR.textContent = String(rejected);
@@ -757,9 +789,29 @@ function onGrnListVerifyFilterClick(which) {
     refreshGRNListGrid();
 }
 
+function clearGRNListGridEmptyMessage() {
+    window.filteredData_grnListTable = [];
+    window.filteredDataTemp_grnListTable = [];
+    window.currentPage_grnListTable = 1;
+    var colCount = $("#grnListTable-hader th:visible").length;
+    if (!colCount) colCount = 1;
+    $("#grnListTbody-body").html(
+        '<tr><td colspan="' +
+            colCount +
+            '" style="text-align:center;padding:28px;color:#6b7280;">No data found</td></tr>'
+    );
+    $("#grnListTable-hader").find("th span.filter-table-heading .fa-filter").remove();
+    if (typeof window.updatePageInfo === "function") window.updatePageInfo("grnListTable");
+    if (typeof window.updateButtons === "function") window.updateButtons("grnListTable");
+    if (typeof window.updateFilteredClass === "function") window.updateFilteredClass("grnListTbody-body");
+}
+
 function refreshGRNListGrid() {
     var master = grnMasterSourceRows || [];
-    if (master.length === 0) return;
+    if (master.length === 0) {
+        clearGRNListGridEmptyMessage();
+        return;
+    }
 
     var source = applyGrnVerifiedListFilter(master);
     var mapped = mapGRNRowsToGrid(source.slice());
@@ -778,20 +830,7 @@ function refreshGRNListGrid() {
     }
 
     if (mapped.length === 0) {
-        window.filteredData_grnListTable = [];
-        window.filteredDataTemp_grnListTable = [];
-        window.currentPage_grnListTable = 1;
-        var colCount = $("#grnListTable-hader th:visible").length;
-        if (!colCount) colCount = 1;
-        $("#grnListTbody-body").html(
-            '<tr><td colspan="' +
-                colCount +
-                '" style="text-align:center;padding:28px;color:#6b7280;">No data found</td></tr>'
-        );
-        $("#grnListTable-hader").find("th span.filter-table-heading .fa-filter").remove();
-        if (typeof window.updatePageInfo === "function") window.updatePageInfo("grnListTable");
-        if (typeof window.updateButtons === "function") window.updateButtons("grnListTable");
-        if (typeof window.updateFilteredClass === "function") window.updateFilteredClass("grnListTbody-body");
+        clearGRNListGridEmptyMessage();
         return;
     }
 
@@ -2260,7 +2299,7 @@ function calcNetPayable() {
 /** @param {number|string} [lastVerifiedGrnCode] Remember this code + merge (list API may omit Verified). */
 function loadGRNList(lastVerifiedGrnCode) {
     var seq = ++grnListLoadSeq;
-    return GRNService.GetGRNList().then(function (response) {
+    return GRNService.GetGRNList().then(async function (response) {
         if (seq !== grnListLoadSeq) return;
         applyGrnMultilevelVerificationFromApiPayload(response);
         var rows = [];
@@ -2277,15 +2316,12 @@ function loadGRNList(lastVerifiedGrnCode) {
         }
         grnMasterSourceRows = applyRememberedVerifiedToRows(rows);
         window.grnMasterSourceRows = grnMasterSourceRows;
+        await grnSyncListAttachmentStates(grnMasterSourceRows);
+        if (seq !== grnListLoadSeq) return;
         updateGrnVerifyFilterTabCounts();
         syncGrnVerifyFilterTabButtons();
-        if (rows.length > 0) {
-            $("#grnListTable").show();
-            refreshGRNListGrid();
-        } else {
-            toastr.warning("No items found. Add your first item!");
-            $("#grnListTable").hide();
-        }
+        $("#grnListTable").show();
+        refreshGRNListGrid();
     }).catch(function () {
         toastr.error("Failed to load item list.");
     });
@@ -2398,6 +2434,21 @@ function toInputDate(val) {
 function newGRN() {
     resetForm();
     showFormView();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// VIEW GRN — open MRN approval detail modal (same as approval cards)
+// ══════════════════════════════════════════════════════════════════════════════
+function viewGRNFromList(code) {
+    var codeNum = parseInt(code, 10);
+    if (!Number.isFinite(codeNum) || codeNum <= 0) return;
+    if (typeof window.OpenDetailModal === "function") {
+        window.OpenDetailModal(codeNum, { viewOnly: true });
+        return;
+    }
+    if (typeof toastr !== "undefined") {
+        toastr.warning("View is not available.");
+    }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2658,11 +2709,16 @@ async function doDeleteGRN(code) {
                         });
                     }
 
-                    // Reset state and go back to list
+                    signalMrnApprovalListRefresh();
                     editMode = false;
                     editCode = 0;
-                    await loadGRNList();
                     showListView();
+                    await loadGRNList();
+                    if (typeof window.reloadMrnApprovalView === 'function') {
+                        await window.reloadMrnApprovalView({});
+                    } else if (typeof window.LoadPaymentList === 'function') {
+                        await window.LoadPaymentList();
+                    }
                 } else {
                     showToast(result?.Msg ?? result?.msg ?? 'Delete failed.', 'error');
                 }
@@ -3103,6 +3159,7 @@ function getFinancialYear() {
 }
 window.showApprovalView     = showApprovalView;
 window.newGRN               = newGRN;
+window.viewGRNFromList      = viewGRNFromList;
 window.editGRN              = editGRN;
 window.confirmDeleteGRN     = confirmDeleteGRN;
 window.doDeleteGRN          = doDeleteGRN;

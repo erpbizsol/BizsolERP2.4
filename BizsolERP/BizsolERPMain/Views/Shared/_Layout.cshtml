@@ -74,6 +74,11 @@
             background: var(--light-bg);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        html {
+            overflow-x: hidden;
         }
 
         .modern-header {
@@ -331,12 +336,22 @@
 
         /* Sidebar section label */
         .sidebar-section-label {
-            font-size: 0.6rem;
-            letter-spacing: 1.5px;
+            font-size: 0.58rem;
+            letter-spacing: 2px;
             text-transform: uppercase;
-            color: rgba(199,210,254,0.45);
-            padding: 0.5rem 0.5rem 0.15rem 0.5rem;
-            margin-top: 0.25rem;
+            color: rgba(199, 210, 254, 0.35);
+            padding: 0.75rem 0.75rem 0.2rem 0.75rem;
+            margin-top: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sidebar-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.25) 0%, transparent 100%);
         }
 
         /* Fav menu link star icon */
@@ -1080,6 +1095,8 @@
 
         .select2-container--open .select2-dropdown {
             z-index: 99999 !important;
+            max-width: 100vw !important;
+            box-sizing: border-box;
         }
 
         /* Mobile: bottom-sheet style — dropdown slides up above the keyboard */
@@ -1553,10 +1570,7 @@
 
         <!-- Modern Sidebar -->
         <div class="modern-sidebar" id="modern-sidebar">
-            <div class="p-2">
-                <div class="mb-2 mt-1">
-                    <h6 class="text-uppercase mb-0" style="font-size: 0.65rem; letter-spacing: 1.5px; color: rgba(199, 210, 254, 0.5);">Main Menu</h6>
-                </div>
+            <div class="p-2 pt-3">
                 <div id="sidebar-menu">
                     <!-- Dynamic menu will be loaded here -->
                 </div>
@@ -1777,6 +1791,9 @@
         // the keyboard, making the Method-1 calculation return 0.
         var _s2ViewportHandler  = null;
         var _s2InitialVvpHeight = null;
+        var _s2BodyOverflowPrev = null;
+        var _s2HtmlOverflowPrev = null;
+        var _s2ScrollLocked = false;
 
         // ── Modal-scroll guard ────────────────────────────────────────────────
         // Select2 focuses its search field BEFORE firing select2:open, which
@@ -1786,6 +1803,36 @@
         // select2:open via requestAnimationFrame (before the browser paints).
         var _s2ModalEl  = null;
         var _s2ModalTop = 0;
+
+        function _lockSelect2PageScroll() {
+            if (_s2ScrollLocked) return;
+            _s2BodyOverflowPrev = document.body.style.overflow;
+            _s2HtmlOverflowPrev = document.documentElement.style.overflow;
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            _s2ScrollLocked = true;
+        }
+
+        function _unlockSelect2PageScroll() {
+            if (!_s2ScrollLocked) return;
+            document.body.style.overflow = _s2BodyOverflowPrev || '';
+            document.documentElement.style.overflow = _s2HtmlOverflowPrev || '';
+            _s2BodyOverflowPrev = null;
+            _s2HtmlOverflowPrev = null;
+            _s2ScrollLocked = false;
+        }
+
+        function _cleanupSelect2MobileState() {
+            $('.select2-backdrop').remove();
+            _unlockSelect2PageScroll();
+
+            if (_s2ViewportHandler && window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', _s2ViewportHandler);
+                window.visualViewport.removeEventListener('scroll', _s2ViewportHandler);
+                _s2ViewportHandler = null;
+            }
+            _s2InitialVvpHeight = null;
+        }
 
         $(document).on('select2:opening', function (e) {
             var $modal = $(e.target).closest('.modal');
@@ -1882,7 +1929,7 @@
                 if (!$('.select2-backdrop').length) {
                     $('<div class="select2-backdrop"></div>').appendTo('body');
                 }
-                document.body.style.overflow = 'hidden';
+                _lockSelect2PageScroll();
 
                 // Capture viewport height BEFORE the keyboard animation starts
                 _s2InitialVvpHeight = window.visualViewport
@@ -1901,18 +1948,9 @@
         });
 
         // Cleanup on close
-        $(document).on('select2:close', function () {
+        $(document).on('select2:close select2:closing', function () {
             _s2ModalEl = null;
-            $('.select2-backdrop').remove();
-            document.body.style.overflow = '';
-
-            // Remove keyboard listeners
-            if (_s2ViewportHandler && window.visualViewport) {
-                window.visualViewport.removeEventListener('resize', _s2ViewportHandler);
-                window.visualViewport.removeEventListener('scroll', _s2ViewportHandler);
-                _s2ViewportHandler  = null;
-            }
-            _s2InitialVvpHeight = null;
+            _cleanupSelect2MobileState();
         });
 
         // Tap backdrop (top area above dropdown) to dismiss the open Select2.

@@ -12,6 +12,8 @@ let G_PaymentList = [];
 let G_CurrentPayment = null;
 let G_OnlyPendingOnMe = false;
 let G_LoadPaymentListSeq = 0;
+/** When true, detail modal is read-only (opened from GRN list View). */
+let G_GpaModalViewOnly = false;
 
 BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
 
@@ -67,6 +69,21 @@ function FmtDateDisplay(d) {
     return String(dt.getDate()).padStart(2, '0') + '/' +
         String(dt.getMonth() + 1).padStart(2, '0') + '/' +
         dt.getFullYear();
+}
+
+function FmtApprovedOnDisplay(d) {
+    if (!d && d !== 0) return '';
+    const s = String(d).trim();
+    if (s === '') return '';
+    // The approval procedure already returns a pre-formatted 'dd/MM/yyyy HH:mm'
+    // string. Showing it as-is keeps the time and avoids ambiguous client-side
+    // date parsing that silently drops the time when the day is <= 12.
+    if (s.indexOf('/') !== -1) return s;
+    const dt = new Date(s);
+    if (isNaN(dt.getTime())) return s;
+    const pad = function (n) { return String(n).padStart(2, '0'); };
+    return pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() +
+        ' ' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
 }
 
 function FmtCurrency(val) {
@@ -1083,7 +1100,40 @@ function unwrapGpaActionResponse(res) {
     if (!res || typeof res !== 'object') return res;
     return res.Data ?? res.data ?? res.Result ?? res.result ?? res;
 }
-function OpenDetailModal(paymentCode) {
+
+function setGpaModalViewOnlyMode(viewOnly) {
+    G_GpaModalViewOnly = !!viewOnly;
+    var $attach = $('#btnGpaModalAttach');
+    var $approve = $('#gpaBtnApproveAction');
+    var $reject = $('#gpaBtnRejectAction');
+    var $remarks = $('#gpaFrmRemarks');
+
+    if (G_GpaModalViewOnly) {
+        $attach.hide().prop('disabled', true);
+        $approve.hide().prop('disabled', true);
+        $reject.hide().prop('disabled', true);
+        $remarks.prop('readonly', true).prop('disabled', true);
+        return;
+    }
+
+    $attach.show().prop('disabled', false);
+    $remarks.prop('readonly', false).prop('disabled', false);
+}
+
+function applyGpaModalActionButtons(payment) {
+    if (G_GpaModalViewOnly) {
+        setGpaModalViewOnlyMode(true);
+        return;
+    }
+    var pend = getApprovalStatus(payment || G_CurrentPayment || {}).toLowerCase() === 'pending';
+    $('#gpaBtnApproveAction').toggle(pend).prop('disabled', !pend);
+    $('#gpaBtnRejectAction').toggle(pend).prop('disabled', !pend);
+    $('#btnGpaModalAttach').show().prop('disabled', false);
+}
+
+function OpenDetailModal(paymentCode, options) {
+    const viewOnly = options === true || !!(options && options.viewOnly);
+    setGpaModalViewOnlyMode(viewOnly);
     const code = parseInt(paymentCode, 10);
     if (!Number.isFinite(code) || code <= 0) return;
 
@@ -1109,8 +1159,7 @@ function OpenDetailModal(paymentCode) {
         '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
     );
 
-    $('#gpaBtnApproveAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
-    $('#gpaBtnRejectAction').toggle(getApprovalStatus(G_CurrentPayment).toLowerCase() === 'pending');
+    applyGpaModalActionButtons(G_CurrentPayment);
 
     $('#modalGpaDetail').modal({ backdrop: 'static' });
     $('#modalGpaDetail').modal('show');
@@ -1128,10 +1177,7 @@ function OpenDetailModal(paymentCode) {
             $('#gpaModalEntryTitle').text('MRN# ' + formatMrnDisplayNo(G_CurrentPayment));
             paintModalFromPayment(G_CurrentPayment);
             RenderGpaModalItems(lines);
-            const st = getApprovalStatus(G_CurrentPayment);
-            const pend = st.toLowerCase() === 'pending';
-            $('#gpaBtnApproveAction').toggle(pend);
-            $('#gpaBtnRejectAction').toggle(pend);
+            applyGpaModalActionButtons(G_CurrentPayment);
         })
         .catch(function (err) {
             console.error('GetMRNMasterDetail', err);
@@ -1191,7 +1237,7 @@ function BuildGpaDetailStepper(po) {
         }) || {};
         const lvlName = EscHtml(getLevelRowDisplayTitle(lvlInfo, i));
         const approver = EscHtml(lvlInfo.ApproverName ?? lvlInfo.UserName ?? '');
-        const approvedOn = lvlInfo.ApprovedOn ? FmtDateDisplay(lvlInfo.ApprovedOn) : '';
+        const approvedOn = lvlInfo.ApprovedOn ? FmtApprovedOnDisplay(lvlInfo.ApprovedOn) : '';
         const lvlRemarksRaw = getLevelRowRemarks(lvlInfo);
         const remarksHtml = lvlRemarksRaw
             ? '<div class="gpa-dstep-remarks"><i class="fa fa-comment me-1"></i>' + EscHtml(lvlRemarksRaw) + '</div>'
@@ -1496,6 +1542,7 @@ function CloseDetailModal() {
     $('#modalGpaDetail').modal('hide');
     const wrap = document.getElementById('gpaModalAttachList');
     if (wrap) wrap.innerHTML = '';
+    setGpaModalViewOnlyMode(false);
     G_CurrentPayment = null;
 }
 

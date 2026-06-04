@@ -15,6 +15,42 @@ function FmtDateInput(d) {
         String(d.getDate()).padStart(2, '0');
 }
 
+function SetKpiText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
+function FormatUnReconciled(val) {
+    const n = Number(val);
+    if (!n) return '0';
+    if (Math.abs(n) >= 1e5) {
+        const l = n / 1e5;
+        return (Number.isInteger(l) ? l : parseFloat(l.toFixed(2))) + 'L';
+    }
+    return String(n);
+}
+
+function FirstRow(data) {
+    if (!data) return null;
+    if (Array.isArray(data)) return data[0] || null;
+    if (Array.isArray(data.Data)) return data.Data[0] || null;
+    if (Array.isArray(data.data)) return data.data[0] || null;
+    if (typeof data === 'object') return data;
+    return null;
+}
+
+function AsArray(data) {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.Data)) return data.Data;
+    if (Array.isArray(data.data)) return data.data;
+    return [];
+}
+
+function RowTypeVal(row) {
+    return parseInt(row.RowType ?? row.rowType ?? 0, 10);
+}
+
 function FmtLakh(val) {
     const n = parseFloat(val);
     if (isNaN(n) || n === 0) return '₹0';
@@ -39,57 +75,65 @@ function NowNote() {
         ', ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 }
 
+function AppBase() {
+    let base = sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/');
+    if (base && !base.endsWith('/')) base += '/';
+    return base;
+}
+
+function NavToPage(path) {
+    window.location.href = AppBase() + String(path || '').replace(/^\//, '');
+}
+
+function BindKpiNavigation() {
+    const routes = {
+        kpiCardPO:         'PurchaseTransactions/PurchaseOrder/POLevelsApprove?ModuleDesp=PO%20Approval',
+        kpiCardPayment:    'PurchaseTransactions/GRNService/GRNPaymentApproval',
+        kpiCardExpense:    'CRMTransactions/ExpenseEntry/ExpenseEntryLevelsApproval',
+        kpiCardReconciled: 'FinanceTransactions/BankStatement/BankStatementImport?ModuleDesp=Bank%20Statement%20Import',
+    };
+
+    Object.keys(routes).forEach(function (id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const path = routes[id];
+        el.addEventListener('click', function () { NavToPage(path); });
+        el.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                NavToPage(path);
+            }
+        });
+    });
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 $(document).ready(function () {
     InitDefaultDates();
-    LoadProjectDropdown();
-    BindProjectChange();
-
-    // Auto-load dashboard if company name contains 'solar'
-    var isSolarCompany = (function () {
-        try {
-            var ud = JSON.parse(sessionStorage.getItem('UserDetails'));
-            if (ud && ud.length > 0) {
-                return (ud[0].CompanyNameForShow || '').toLowerCase().includes('solar');
-            }
-        } catch (_) {}
-        return false;
-    })();
-
-    if (isSolarCompany) {
-        // Wait for project dropdown to finish loading, then auto-show
-        // We poll until at least one project option is available
-        var _autoLoadAttempts = 0;
-        var _autoLoadTimer = setInterval(function () {
-            _autoLoadAttempts++;
-            var ddl = document.getElementById('ddlProject');
-            if (ddl && ddl.options.length > 1) {
-                clearInterval(_autoLoadTimer);
-                // Select first project and trigger cascading load
-                ddl.selectedIndex = 1;
-                $(ddl).trigger('change');
-                // Wait for sub-project to load (if any), then call LoadDashboard
-                setTimeout(function () { LoadDashboard(); }, 600);
-            } else if (_autoLoadAttempts > 50) {
-                clearInterval(_autoLoadTimer); // Give up after ~5 seconds
-            }
-        }, 0);
-    }
+    BindFilterChange();
+    BindKpiNavigation();
+    LoadProjectDropdown()
+        .then(function () {
+            // On page load with "All Projects" selected, also load all sub-projects
+            LoadSubProjectDropdown(0);
+            LoadDashboard();
+        })
+        .catch(function () { LoadDashboard(); });
 });
 
 function InitDefaultDates() {
-    const today    = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    document.getElementById('pddFromDate').value = FmtDateInput(firstDay);
+    const today              = new Date();
+    const firstDayPrevMonth  = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    document.getElementById('pddFromDate').value = FmtDateInput(firstDayPrevMonth);
     document.getElementById('pddToDate').value   = FmtDateInput(today);
 }
 
 // ── Project dropdown ─────────────────────────────────────────────────────────
 function LoadProjectDropdown() {
-    ProjectDetailDashboardService.GetProjectList()
+    return ProjectDetailDashboardService.GetProjectList()
         .then(function (data) {
             const ddl = document.getElementById('ddlProject');
-            ddl.innerHTML = '<option value="0">-- Select Project --</option>';
+            ddl.innerHTML = '<option value="0">-- All Projects --</option>';
             (data || []).forEach(function (p) {
                 const opt = document.createElement('option');
                 opt.value       = p.Code ?? p.ProjectMaster_Code ?? p.code ?? 0;
@@ -102,31 +146,40 @@ function LoadProjectDropdown() {
         });
 }
 
-// ── Sub-project dropdown (cascades on project change) ────────────────────────
-function BindProjectChange() {
-    document.getElementById('ddlProject').addEventListener('change', function () {
-        const projectCode = parseInt(this.value, 10);
-        const ddlSub      = document.getElementById('ddlSubProject');
+// ── Load sub-project dropdown for a given project code (0 = All) ─────────────
+function LoadSubProjectDropdown(projectCode) {
+    const ddlSub = document.getElementById('ddlSubProject');
+    ddlSub.innerHTML = '<option value="0">-- All Sub Projects --</option>';
+    ddlSub.disabled  = true;
 
-        ddlSub.innerHTML  = '<option value="0">-- All Sub Projects --</option>';
-        ddlSub.disabled   = true;
-
-        if (!projectCode) return;
-
-        ProjectDetailDashboardService.GetSubProjectListByProject(projectCode)
-            .then(function (data) {
-                (data || []).forEach(function (s) {
-                    const opt = document.createElement('option');
-                    opt.value       = s.Code ?? s.SubProjectMaster_Code ?? s.code ?? 0;
-                    opt.textContent = s.SubProjectDesp ?? s.SubProjectName ?? s.Desp ?? '';
-                    ddlSub.appendChild(opt);
-                });
-                ddlSub.disabled = false;
-            })
-            .catch(function (err) {
-                console.error('GetSubProjectListByProject error:', err);
-                ddlSub.disabled = false;
+    return ProjectDetailDashboardService.GetSubProjectListByProject(projectCode)
+        .then(function (data) {
+            (data || []).forEach(function (s) {
+                const opt = document.createElement('option');
+                opt.value       = s.Code ?? s.SubProjectMaster_Code ?? s.code ?? 0;
+                opt.textContent = s.SubProjectDesp ?? s.SubProjectName ?? s.Desp ?? '';
+                ddlSub.appendChild(opt);
             });
+            // Enable only if there are actual sub-projects to choose from
+            if (ddlSub.options.length > 1) ddlSub.disabled = false;
+        })
+        .catch(function (err) {
+            console.error('GetSubProjectListByProject error:', err);
+            ddlSub.disabled = false;
+        });
+}
+
+// ── Project / Sub-project change → reload dashboard ─────────────────────────
+function BindFilterChange() {
+    document.getElementById('ddlProject').addEventListener('change', function () {
+        const projectCode = parseInt(this.value, 10) || 0;
+        LoadSubProjectDropdown(projectCode).then(function () {
+            LoadDashboard();
+        });
+    });
+
+    document.getElementById('ddlSubProject').addEventListener('change', function () {
+        LoadDashboard();
     });
 }
 
@@ -137,10 +190,6 @@ function LoadDashboard() {
     const fromDate       = document.getElementById('pddFromDate').value;
     const toDate         = document.getElementById('pddToDate').value;
 
-    if (!projectCode) {
-        toastr.warning('Please select a Project first.');
-        return;
-    }
     if (!fromDate || !toDate) {
         toastr.warning('Please select From Date and To Date.');
         return;
@@ -185,14 +234,16 @@ function ResetDashboard() {
     document.getElementById('ddlSubProject').innerHTML = '<option value="0">-- All Sub Projects --</option>';
     document.getElementById('ddlSubProject').disabled  = true;
     InitDefaultDates();
-    ClearAllWidgets();
+    LoadSubProjectDropdown(0).then(function () {
+        LoadDashboard();
+    });
 }
 
 function ClearAllWidgets() {
-    ['kpiPOCount','kpiPaymentAmt','kpiExpenseAmt','kpiTotalProjects',
+    ['kpiPOCount','kpiPaymentAmt','kpiExpenseAmt','kpiTotalProjects','kpiIsReconciled',
      'legPOApproved','legPOPending','legPORejected','legPOTotal',
      'projSummaryTotal','legProjActive','legProjPending','legProjCompleted','legProjOnHold',
-     'bvaBudget','bvaSpent','bvaPct',
+     'bvaBudget','bvaSpent','bvaBalance','bvaPct',
      'expTotalAmount','legExpApproved','legExpPending','legExpRejected',
      'pddDataNote','trendYear'
     ].forEach(function (id) {
@@ -211,12 +262,13 @@ function ClearAllWidgets() {
 
 // ── Render KPI cards ─────────────────────────────────────────────────────────
 function RenderKPI(data) {
-    if (!data || !data.length) return;
-    const d = data[0];
-    document.getElementById('kpiPOCount').textContent      = d.PendingPOCount      ?? '0';
-    document.getElementById('kpiPaymentAmt').textContent   = FmtLakh(d.PendingPaymentAmount  ?? 0);
-    document.getElementById('kpiExpenseAmt').textContent   = FmtLakh(d.PendingExpenseAmount  ?? 0);
-    document.getElementById('kpiTotalProjects').textContent = d.TotalProjects       ?? '0';
+    const d = FirstRow(data);
+    if (!d) return;
+    SetKpiText('kpiPOCount',       d.PendingPOCount      ?? '0');
+    SetKpiText('kpiPaymentAmt',    FmtLakh(d.PendingPaymentAmount  ?? 0));
+    SetKpiText('kpiExpenseAmt',    FmtLakh(d.PendingExpenseAmount  ?? 0));
+    SetKpiText('kpiTotalProjects', d.TotalProjects       ?? '0');
+    SetKpiText('kpiIsReconciled',  FormatUnReconciled(d.IsReconciled ?? d.isReconciled ?? 0));
 }
 
 // ── Render PO Status donut ────────────────────────────────────────────────────
@@ -386,18 +438,21 @@ function RenderProjectSummary(data) {
 
 // ── Render Budget vs Actual ───────────────────────────────────────────────────
 function RenderBudgetVsActual(data) {
-    if (!data || !data.length) return;
+    const rows = AsArray(data);
+    if (!rows.length) return;
 
     // RowType=0 → summary header; RowType=1 → monthly detail rows
-    const summary = data.find(function (r) { return (r.RowType ?? 0) === 0; }) || data[0];
-    const details = data.filter(function (r) { return (r.RowType ?? 0) === 1; });
+    const summary = rows.find(function (r) { return RowTypeVal(r) === 0; }) || rows[0];
+    const details = rows.filter(function (r) { return RowTypeVal(r) === 1; });
 
-    const budget = parseFloat(summary.TotalBudget ?? 0);
-    const spent  = parseFloat(summary.TotalSpent  ?? 0);
-    const pct    = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+    const budget  = parseFloat(summary.TotalBudget ?? 0);
+    const spent   = parseFloat(summary.TotalSpent  ?? 0);
+    const balance = parseFloat(summary.TotalBalance ?? (budget - spent));
+    const pct     = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
 
-    document.getElementById('bvaBudget').textContent = FmtLakh(budget);
-    document.getElementById('bvaSpent').textContent  = FmtLakh(spent);
+    document.getElementById('bvaBudget').textContent  = FmtLakh(budget);
+    document.getElementById('bvaSpent').textContent   = FmtLakh(spent);
+    document.getElementById('bvaBalance').textContent = FmtLakh(balance);
     document.getElementById('bvaPct').textContent    = pct.toFixed(2) + '%';
     document.getElementById('bvaProgressBar').style.width = pct.toFixed(2) + '%';
 

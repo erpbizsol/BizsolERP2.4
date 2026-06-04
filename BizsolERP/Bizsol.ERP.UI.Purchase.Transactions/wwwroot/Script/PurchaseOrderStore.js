@@ -691,6 +691,21 @@ function FormatDateDisplay(d) {
     return `${dy}/${mo}/${yr}`;
 }
 
+function FmtApprovedOnDisplay(d) {
+    if (!d && d !== 0) return '';
+    const s = String(d).trim();
+    if (s === '') return '';
+    // The approval procedure already returns a pre-formatted 'dd/MM/yyyy HH:mm'
+    // string. Showing it as-is keeps the time and avoids ambiguous client-side
+    // date parsing that silently drops the time when the day is <= 12.
+    if (s.indexOf('/') !== -1) return s;
+    const dt = new Date(s);
+    if (isNaN(dt.getTime())) return s;
+    const pad = function (n) { return String(n).padStart(2, '0'); };
+    return pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() +
+           ' ' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+}
+
 function IsMobile() {
     return window.innerWidth <= 768;
 }
@@ -1767,7 +1782,7 @@ function BuildApprovalFlowHTML(steps) {
             : '';
 
         // ── approved / action date ────────────────────────────────────────────
-        const dateStr  = ((approved || rejected) && step.ApprovedOn && step.ApprovedOn.trim() !== '') ? FormatDateDisplay(step.ApprovedOn) : '';
+        const dateStr  = ((approved || rejected) && step.ApprovedOn && step.ApprovedOn.trim() !== '') ? FmtApprovedOnDisplay(step.ApprovedOn) : '';
         const dateHtml = dateStr
             ? '<div style="font-size:10px;color:#888;margin-top:2px;text-align:center;white-space:nowrap;">'
               + '<i class="fa fa-calendar-check" style="font-size:9px;margin-right:2px;"></i>' + dateStr
@@ -2655,6 +2670,17 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             + (forPdfExport ? '.pdf-export-body{background:#fff;margin:0;padding:4px 8px;overflow:hidden;}.po-pdf-root{max-width:794px;margin:0 auto;}.pdf-export-body .inv-text-box{margin:6px 0 4px;padding:6px 8px;font-size:8pt;line-height:1.5;}.pdf-export-body .sig-row{margin-top:8px;}.pdf-export-body .sig-box{min-height:120px;}.pdf-export-body .sig-stamp{width:82px;height:82px;}.pdf-export-body .gtc-para,.pdf-export-body .gtc-list,.pdf-export-body .gtc-sublist{line-height:1.5;margin-bottom:3px;}.pdf-export-body .gtc-heading{margin:7px 0 2px;}.pdf-export-body .gtc-section{padding:4px 2px;}' : '')
             + gtcCssOverride
 
+        const signatureHtml = isGoods
+            ? '<div class="sig-row">'
+                + '<div class="sig-box">' + BuildSigBox('Approved By Finance', stampUrlFinance) + '</div>'
+                + '<div class="sig-box">' + BuildSigBox('Approved By COO', stampUrlHOD) + '</div>'
+                + '<div class="sig-box">' + BuildSigBox('Approved By CEO', stampUrlCEO) + '</div>'
+            + '</div>'
+            : '<div class="sig-row">'
+                + '<div class="sig-box"><div class="sig-stamp-wrap"></div><div class="sig-title">To be accepted by Vendor</div></div>'
+                + '<div class="sig-box">' + BuildSigBox('Authorized signatory by Purshotam Profiles Pvt Ltd', stampUrlFinance) + '</div>'
+            + '</div>';
+
         const mainBlock = ''
             + '<div class="po-hdr">'
             + '<div class="hdr-left">' + (showLogo ? '<img class="hdr-logo" src="' + logoUrl + '" alt="Logo">' : '') + '<div class="hdr-co"><div class="hdr-name">' + (companyAliasName || 'COMPANY NAME') + '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
@@ -2720,11 +2746,7 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             +     (isGoods ? '' : '<li>xiv)&nbsp;&nbsp;TDS will be deducted/Applicable as per government law.</li>')
             +   '</ul>'
             + '</div>'
-            + '<div class="sig-row">'
-            + '<div class="sig-box">' + BuildSigBox('Approved By Finance', stampUrlFinance) + '</div>'
-            + '<div class="sig-box">' + BuildSigBox('Approved By COO', stampUrlHOD )     + '</div>'
-            + '<div class="sig-box">' + BuildSigBox('Approved By CEO', stampUrlCEO )     + '</div>'
-            + '</div>'
+            + signatureHtml
             + '</div>';
 
         const coreInner = termsOnly ? generalTermsHtml : (mainBlock + generalTermsHtml);

@@ -1,0 +1,742 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/TaskListMaster.js"></script>
+
+<style>
+    #TaskListMasterPage {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 4px 12px 0;
+        height: calc(100vh - 174px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tlm-po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        margin-bottom: 0;
+    }
+
+    .tlm-po-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .tlm-po-list-header .tlm-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+    }
+
+    .tlm-po-list-header .tlm-hero-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .tlm-po-list-header .tlm-hero-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .tlm-po-list-header .tlm-hero-sub {
+        font-size: 0.78rem;
+        color: rgba(255, 255, 255, 0.78);
+        margin-top: 4px;
+        font-weight: 500;
+    }
+
+    .tlm-po-create-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+        line-height: 1;
+        font-size: 0.85rem;
+    }
+
+    .tlm-po-create-btn:hover {
+        background: #f0f4ff;
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .tlm-po-create-btn .pm-plus {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: rgba(102, 126, 234, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    #tlmListPanel {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tlm-list-grid-wrap {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+        overflow: hidden;
+        margin-bottom: 0;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tlm-list-grid-wrap .pm-card-toolbar {
+        flex-shrink: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 18px 22px 16px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .tlm-list-grid-wrap .pm-table-wrap {
+        flex: 1;
+        min-height: 0;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+
+    .tlm-list-grid-wrap .paginator {
+        flex-shrink: 0;
+        padding: 10px 16px 14px;
+        border-top: 1px solid #eef2ff;
+        background: #fafbff;
+    }
+
+    .pm-search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+        max-width: 340px;
+    }
+
+    .pm-search-wrap i {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 13px;
+        pointer-events: none;
+    }
+
+    #tlmSearch {
+        width: 100%;
+        padding: 9px 14px 9px 38px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        background: var(--light-bg);
+        box-sizing: border-box;
+    }
+
+    #tlmSearch:focus {
+        border-color: var(--accent-primary);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
+    }
+
+    .pm-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        min-width: 600px;
+    }
+
+    .pm-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+
+    .pm-table thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 13px 16px;
+        text-align: left;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 12px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .pm-table tbody tr:nth-child(even) { background: var(--light-bg) !important; }
+    .pm-table tbody tr:hover { background: rgba(102, 126, 234, .07) !important; }
+
+    .pm-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-light) !important;
+        vertical-align: middle;
+    }
+
+    .pm-sno {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--primary-gradient);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pm-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pm-icon-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: transform .14s;
+    }
+
+    .pm-icon-btn:hover { transform: translateY(-2px); }
+    .pm-icon-btn.view { background: rgba(6, 182, 212, .12); color: var(--accent-info); border: 1px solid rgba(6, 182, 212, .25); }
+    .pm-icon-btn.edit { background: rgba(102, 126, 234, .12); color: var(--accent-primary); border: 1px solid rgba(102, 126, 234, .25); }
+    .pm-icon-btn.del { background: rgba(239, 68, 68, .1); color: #ef4444; border: 1px solid rgba(239, 68, 68, .2); }
+
+    #tlmDetailPanel {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    #tlmDetailPanel .tlm-ci-po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+    }
+
+    #tlmDetailPanel .tlm-ci-entry-title {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    #tlmDetailPanel .tlm-ci-entry-sub {
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 0.78rem;
+        display: block;
+        margin-top: 4px;
+    }
+
+    #tlmDetailPanel .tlm-ci-po-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    #tlmDetailPanel .tlm-ci-po-footer-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .tlm-ci-po-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+
+    .tlm-ci-po-back-btn:hover { background: #f0f4ff; }
+
+    .btn-tlm-copy {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #7c3aed;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+
+    .btn-tlm-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+        border: none;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 28px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #tlmDetailPanel .tlm-ci-po-step-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 14px;
+    }
+
+    #tlmDetailPanel .tlm-ci-po-step-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 18px;
+        background: #fafbff;
+        border-bottom: 1px solid #eef0f8;
+        border-left: 4px solid #667eea;
+    }
+
+    #tlmDetailPanel .tlm-ci-po-step-num {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #667eea;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.72rem;
+    }
+
+    #tlmDetailPanel .tlm-ci-po-step-title {
+        font-weight: 700;
+        font-size: 0.84rem;
+        color: #1e293b;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        flex: 1;
+    }
+
+    #tlmDetailPanel .tlm-ci-po-step-body {
+        padding: 20px 22px 24px;
+    }
+
+    .tlm-fg {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .tlm-fg label {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .tlm-fg input[type="text"],
+    .tlm-fg input[type="date"],
+    .tlm-fg select {
+        padding: 10px 13px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .tlm-fg input:focus,
+    .tlm-fg select:focus {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
+    }
+
+    .tlm-fg input.tlm-readonly {
+        background: #f1f5f9;
+        cursor: default;
+    }
+
+    #tlmDetailPanel .select2-container { width: 100% !important; }
+
+    #tlmDetailPanel .select2-container--default .select2-selection--single {
+        min-height: 42px;
+        padding: 4px 10px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color) !important;
+    }
+
+    .tlm-task-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 12px;
+    }
+
+    .btn-tlm-add-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #eef2ff;
+        color: #4f46e5;
+        border: 1px solid #c7d2fe;
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .tlm-task-grid-wrap {
+        overflow-x: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+
+    #tblTaskEntry {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        min-width: 720px;
+    }
+
+    #tblTaskEntry thead th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+    }
+
+    #tblTaskEntry tbody td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #eef2f7;
+        vertical-align: middle;
+    }
+
+    #tblTaskEntry tbody tr:last-child td { border-bottom: none; }
+
+    #tblTaskEntry input[type="text"],
+    #tblTaskEntry input[type="date"],
+    #tblTaskEntry select {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1.5px solid #e2e8f0;
+        font-size: 13px;
+        box-sizing: border-box;
+    }
+
+    #tblTaskEntry input:disabled {
+        background: #f1f5f9;
+        color: #94a3b8;
+        cursor: not-allowed;
+    }
+
+    #tblTaskEntry input.tlm-task-dup {
+        border-color: #f87171;
+        background: #fef2f2;
+    }
+
+    .tlm-row-del {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: 1px solid #fecaca;
+        background: #fef2f2;
+        color: #dc2626;
+        cursor: pointer;
+    }
+
+    #tlmDetailPanel.tlm-readonly .tlm-fg input,
+    #tlmDetailPanel.tlm-readonly .tlm-fg select,
+    #tlmDetailPanel.tlm-readonly #tblTaskEntry input,
+    #tlmDetailPanel.tlm-readonly #tblTaskEntry select {
+        pointer-events: none;
+        background: #f8fafc;
+    }
+
+    .pm-modal .modal-content {
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .pm-modal .modal-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        border-bottom: none;
+    }
+
+    .pm-modal .modal-title { color: #fff; font-weight: 700; }
+
+    .pm-close-btn {
+        background: rgba(255, 255, 255, .15);
+        border: none;
+        color: #fff;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        cursor: pointer;
+    }
+
+    .pm-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .pm-btn.secondary {
+        background: var(--light-bg);
+        color: var(--text-muted);
+        border: 1.5px solid var(--border-color);
+    }
+
+    .pm-btn.primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+    }
+
+    .pm-btn.danger {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: #fff;
+    }
+</style>
+
+<div id="TaskListMasterPage">
+
+    <div id="tlmListPanel">
+        <div class="tlm-po-list-header">
+            <div class="tlm-po-header-top">
+                <div class="tlm-hero-left">
+                    <div class="tlm-hero-icon"><i class="fas fa-list-check"></i></div>
+                    <div>
+                        <div class="tlm-hero-title">Task List Master</div>
+                        <div class="tlm-hero-sub">Employee task schedules by financial year</div>
+                    </div>
+                </div>
+                <button type="button" class="tlm-po-create-btn" id="btnCreateTaskList">
+                    <span class="pm-plus">+</span>
+                    <span>Create New</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="tlm-list-grid-wrap">
+            <div class="pm-card-toolbar">
+                <div class="pm-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="tlmSearch" placeholder="Search by employee, fin year or task…" autocomplete="off" />
+                </div>
+            </div>
+            <div class="pm-table-wrap table-wrapper">
+                <table class="pm-table" id="TaskListMaster">
+                    <thead id="table-header-TaskListMaster"></thead>
+                    <tbody id="table-body-TaskListMaster"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-TaskListMaster"></div>
+        </div>
+    </div>
+
+    <div id="tlmDetailPanel" style="display:none;">
+        <input type="hidden" id="hfTaskListMaster_Code" value="0" />
+
+        <div class="tlm-ci-po-list-header">
+            <div class="tlm-ci-po-header-top">
+                <div>
+                    <h5 class="tlm-ci-entry-title">Task List Master</h5>
+                    <small class="tlm-ci-entry-sub">Assign tasks with frequency and active status</small>
+                </div>
+                <div class="tlm-ci-po-footer-right">
+                    <button type="button" class="tlm-ci-po-back-btn" id="btnBackToTaskList"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="btn-tlm-copy" id="btnCopyFromFinYear"><i class="fas fa-copy"></i> Copy From Fin Year</button>
+                    <button type="button" class="tlm-ci-po-back-btn" id="btnClearTaskList"><i class="fas fa-eraser"></i> Clear</button>
+                    <button type="button" class="btn-tlm-save" id="btnSaveTaskList"><i class="fas fa-check"></i> Save</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tlm-ci-po-step-card">
+            <div class="tlm-ci-po-step-header">
+                <span class="tlm-ci-po-step-num">1</span>
+                <span class="tlm-ci-po-step-title">Header</span>
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="tlm-ci-po-step-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <div class="tlm-fg">
+                            <label for="ddlEmployee">Employee Name <span class="text-danger">*</span></label>
+                            <select id="ddlEmployee"></select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="tlm-fg">
+                            <label for="txtFinYear">Fin Year</label>
+                            <input type="text" id="txtFinYear" class="tlm-readonly" readonly />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tlm-ci-po-step-card">
+            <div class="tlm-ci-po-step-header">
+                <span class="tlm-ci-po-step-num">2</span>
+                <span class="tlm-ci-po-step-title">Tasks</span>
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="tlm-ci-po-step-body">
+                <div class="tlm-task-toolbar">
+                    <button type="button" class="btn-tlm-add-row" id="btnAddTaskRow"><i class="fas fa-plus"></i> Add Task</button>
+                </div>
+                <div class="tlm-task-grid-wrap">
+                    <table id="tblTaskEntry">
+                        <thead>
+                            <tr>
+                                <th style="width:48px;">S.No.</th>
+                                <th>Task <span class="text-danger">*</span></th>
+                                <th style="width:140px;">Freq <span class="text-danger">*</span></th>
+                                <th style="width:140px;">Active / Inactive</th>
+                                <th style="width:170px;" id="thTaskDate">Date</th>
+                                <th style="width:52px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyTaskEntry"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade pm-modal" id="dvTaskListDeleteModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Confirm Delete</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:22px;">
+                <p class="mb-3">Delete this task list record?</p>
+                <label for="txtTaskListDeleteRemark" class="form-label">Reason for deletion <span class="text-danger">*</span></label>
+                <input type="text" id="txtTaskListDeleteRemark" class="form-control" autocomplete="off" placeholder="Enter reason" />
+                <input type="hidden" id="hfTaskListDeleteCode" value="0" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal"><i class="fas fa-ban"></i> Cancel</button>
+                <button type="button" class="pm-btn danger" id="btnTaskListConfirmDelete"><i class="fas fa-trash-alt"></i> Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade pm-modal" id="dvCopyFinYearModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Copy From Fin Year</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:22px;">
+                <p class="mb-3" style="font-size:14px;">Copy tasks from another financial year into the current fin year for the selected employee.</p>
+                <div class="tlm-fg mb-3">
+                    <label for="ddlCopyEmployee">Employee <span class="text-danger">*</span></label>
+                    <select id="ddlCopyEmployee"></select>
+                </div>
+                <div class="tlm-fg">
+                    <label for="ddlCopySourceFinYear">Source Fin Year <span class="text-danger">*</span></label>
+                    <select id="ddlCopySourceFinYear"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="pm-btn primary" id="btnConfirmCopyFinYear"><i class="fas fa-copy"></i> Copy Tasks</button>
+            </div>
+        </div>
+    </div>
+</div>
