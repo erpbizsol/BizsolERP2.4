@@ -576,16 +576,6 @@ function mapGRNRowsToGrid(rows) {
             '<i class="fas fa-paperclip"></i></button>' +
             '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
             '<i class="fas fa-trash-can"></i></button>';
-        if (grnHasVerifyRight) {
-            if (rowIsVerifiedGrn(item) || rowIsMrnApprovedGrn(item)) {
-                btns += buildGrnVerifiedBadgeHtml(item);
-            } else if (!grnGridVerifyButtonAllowedByMultilevel()) {
-                btns +=
-                    '<button type="button" class="grn-btn-verify" title="Verify" aria-label="Verify" onclick="VerifyGRN(' +
-                    code +
-                    ')"><i class="fas fa-check" aria-hidden="true"></i></button>';
-            }
-        }
         var patch = { Action: btns };
         return Object.assign({}, item, patch);
     });
@@ -711,9 +701,15 @@ function updateGrnVerifyFilterTabCounts() {
     if (elP) elP.textContent = String(chipPending !== null ? chipPending : pending);
     if (elV) elV.textContent = String(chipApproved !== null ? chipApproved : verified);
     if (elR) elR.textContent = String(rejected);
-    setGrnListPendingOnMeBadge(
-        chipOnMe !== null ? chipOnMe : resolveGrnListPendingOnMeCount(pending, pendingOnMe)
-    );
+    // “Pending on me” must come from MRN approval API — GRN verify list has no reliable approver info.
+    if (chipOnMe !== null) {
+        setGrnListPendingOnMeBadge(chipOnMe);
+    } else if (chipPending !== null) {
+        setGrnListPendingOnMeBadge(0);
+    } else {
+        var elOM = document.getElementById("grnVerifyFilterCountPendingOnMe");
+        if (elOM) elOM.textContent = "—";
+    }
 }
 
 function syncGrnVerifyFilterTabButtons() {
@@ -775,9 +771,13 @@ function navigateToMRNMasterApprovalPendingOnMe() {
     }
     showApprovalViewOnly();
     if (typeof window.reloadMrnApprovalView === "function") {
-        window.reloadMrnApprovalView({ pendingOnMe: true });
+        window.reloadMrnApprovalView({ pendingOnMe: true, forceRefreshDates: false });
     } else if (typeof window.LoadPaymentList === "function") {
-        window.LoadPaymentList();
+        var ddl = document.getElementById("gpaDdlStatus");
+        if (ddl) ddl.value = "A";
+        var searchEl = document.getElementById("gpaLstSearch");
+        if (searchEl) searchEl.value = "";
+        window.LoadPaymentList({});
     }
 }
 

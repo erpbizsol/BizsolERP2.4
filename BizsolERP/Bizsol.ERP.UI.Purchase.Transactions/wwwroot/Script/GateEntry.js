@@ -535,7 +535,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtVendorName').val(gateEntryData[0].VendorName);
 
     $('#frmLoadedIn_txtDocumentNo').val(gateEntryData[0].DocNo);
-    $('#frmLoadedIn_txtDocumentDate').val(gateEntryData[0].InvoiceDate == null ? '' : new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
+    $('#frmLoadedIn_txtDocumentDate').val(geFormatGateEntryInputDate(gateEntryData[0].InvoiceDate));
     $('#frmLoadedIn_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
     $('#frmLoadedIn_txtEWayBillDate').val(gateEntryData[0].EwaybillDate ==null?'': new Date(gateEntryData[0].EwaybillDate).toISOString().slice(0, 10));
     $('#frmLoadedIn_txtRemarks').val(gateEntryData[0].Remarks);
@@ -597,7 +597,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmEmptyOut_btnSave').attr('onclick', "GateEntry_SaveData('UpdateLoadedInSave')");
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
-        
+
         $('#RowfrmLoadedInReportingDatetime').show();
     }
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'TokenApplicable').PerameterValue === 'Y') {
@@ -928,24 +928,57 @@ function BindGateEntryTransportModeSelects() {
 
 function ShowGateEntryConfigurationModal() {
     GateEntryService.GetConfigGateEntry().then(function (response) {
-        //console.log(response);
+        const toleranceParamName = 'ToleranceToMatchNetWeightWithDocumentQty';
+        const matchParamName = 'MatchNetWeightWithDocumentQty';
+
+        const matchParam = response.find(x => x.PerameterName === matchParamName);
+        const isMatchEnabled = matchParam && String(matchParam.PerameterValue).toUpperCase() === 'Y';
 
         let option = '';
         $.each(response, function (key, val) {
-            let Checked = val.PerameterValue.toLowerCase() === 'y'?'checked':''
-            option += `<div class="col-6"><input type="checkbox" class="box_border" ${Checked} onclick="setGateEntryParamater(this,'${val.PerameterName}','${val.PerameterValue}')" />&nbsp;<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName) }</label></div>`;
+            if (val.PerameterName === toleranceParamName) {
+                // Render as number textbox; only show when MatchNetWeightWithDocumentQty = Y
+                const displayStyle = isMatchEnabled ? '' : 'display:none;';
+                option += `<div class="col-6" id="DivConfig_${toleranceParamName}" style="${displayStyle}">` +
+                    `<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label>` +
+                    `&nbsp;<input type="number" min="0" max="100" step="0.01" class="form-control d-inline-block w-50" ` +
+                    `value="${val.PerameterValue}" onchange="setGateEntryToleranceParamater(this,'${val.PerameterName}')" /></div>`;
+            } else {
+                let Checked = String(val.PerameterValue).toLowerCase() === 'y' ? 'checked' : '';
+                let extraOnClick = val.PerameterName === matchParamName
+                    ? ` GateEntry_ToggleToleranceVisibility(this);`
+                    : '';
+                option += `<div class="col-6"><input type="checkbox" class="box_border" ${Checked} onclick="setGateEntryParamater(this,'${val.PerameterName}','${val.PerameterValue}');${extraOnClick}" />&nbsp;<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label></div>`;
+            }
         });
-
 
         $('#DivChkSetGateEntryConfiguration')[0].innerHTML = option;
         $("#GateEntryConfigurationModal").modal({
             backdrop: 'static',
-            // keyboard: false
         });
         $("#GateEntryConfigurationModal").modal('show');
     });
+}
 
-    
+function GateEntry_ToggleToleranceVisibility(checkbox) {
+    const div = document.getElementById('DivConfig_ToleranceToMatchNetWeightWithDocumentQty');
+    if (div) {
+        div.style.display = checkbox.checked ? '' : 'none';
+    }
+}
+
+function setGateEntryToleranceParamater(element, PerameterName) {
+    const val = parseFloat(element.value);
+    if (isNaN(val) || val < 0 || val > 100) {
+        toastr.error('Please enter a valid tolerance value between 0 and 100');
+        return;
+    }
+    GateEntryService.UpdateConfigGateEntry(PerameterName, String(val)).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            GetConfigGateEntry();
+        }
+    });
 }
 function setGateEntryParamater(element, PerameterName, PerameterValue) {
     let SetPerameterValue = 'N';
@@ -2144,6 +2177,29 @@ function GateEntry_SaveData(Mode) {
                 $('#frmLoadedOut_txtOutReason').focus();
                 return;
             }
+
+            // Net Weight vs Document Qty tolerance check (only for Loaded Out, not for Empty Out/Reject)
+            if (RejectEntry == 'N') {
+                const matchNetWeightParam = ConfigGateEntry.find(x => x.PerameterName === 'MatchNetWeightWithDocumentQty');
+                if (matchNetWeightParam && String(matchNetWeightParam.PerameterValue).toUpperCase() === 'Y') {
+                    const toleranceParam = ConfigGateEntry.find(x => x.PerameterName === 'ToleranceToMatchNetWeightWithDocumentQty');
+                    const tolerancePct = toleranceParam ? (parseFloat(toleranceParam.PerameterValue) || 0) : 0;
+                    const docQty = parseFloat($('#frmLoadedOut_txtQty').val()) || 0;
+                    const lw = parseFloat($('#frmLoadedOut_txtVehicleLoadedWeight').val()) || 0;
+                    const ew = parseFloat($('#frmEmptyIn_txtVehicleEmptyWeight').val()) || 0;
+                    const netWt = lw - ew;
+                    if (docQty > 0) {
+                        const allowedDiff = (tolerancePct / 100) * docQty;
+                        const minAllowed = docQty - allowedDiff;
+                        const maxAllowed = docQty + allowedDiff;
+                        if (netWt < minAllowed || netWt > maxAllowed) {
+                            valid = false;
+                            toastr.error(`Net Weight (${parseFloat(netWt).toFixed(2)}) does not match Document Qty (${docQty}) within tolerance of ${tolerancePct}%. Allowed range: ${parseFloat(minAllowed).toFixed(2)} - ${parseFloat(maxAllowed).toFixed(2)}`);
+                            return;
+                        }
+                    }
+                }
+            }
         }
     }
     else if (Mode === 'LoadedInSave' || Mode ==='loadedinedit') {
@@ -2405,6 +2461,10 @@ function GateEntry_SaveData(Mode) {
             }
         }
 
+        // Note: Net Weight check is NOT done here for LoadedInSave/loadedinedit
+        // because at this stage empty weight is always zero (empty out not done yet).
+        // The check is applied in UpdateLoadedInSave (Loaded In + Empty Out complete entry).
+
     }
     else if (Mode == 'UpdateLoadedInSave' || Mode ==='loadedineditfull') {
         Time = $('#frmLoadedIn_txtVehicleInTime').val();
@@ -2526,9 +2586,32 @@ function GateEntry_SaveData(Mode) {
                 $('#frmEmptyOut_txtOutReason').focus();
                 return;
             }
+
+            // Net Weight vs Document Qty tolerance check (only for Loaded In, not for Loaded Out/Reject)
+            if (RejectEntry == 'N') {
+                const matchNetWeightParam = ConfigGateEntry.find(x => x.PerameterName === 'MatchNetWeightWithDocumentQty');
+                if (matchNetWeightParam && String(matchNetWeightParam.PerameterValue).toUpperCase() === 'Y') {
+                    const toleranceParam = ConfigGateEntry.find(x => x.PerameterName === 'ToleranceToMatchNetWeightWithDocumentQty');
+                    const tolerancePct = toleranceParam ? (parseFloat(toleranceParam.PerameterValue) || 0) : 0;
+                    const docQty = parseFloat($('#frmLoadedIn_txtQTY').val()) || 0;
+                    const lw = parseFloat($('#frmLoadedIn_txtVehicleLoadedWeight').val()) || 0;
+                    const ew = parseFloat($('#frmEmptyOut_txtVehicleEmptyWeight').val()) || 0;
+                    const netWt = lw - ew;
+                    if (docQty > 0) {
+                        const allowedDiff = (tolerancePct / 100) * docQty;
+                        const minAllowed = docQty - allowedDiff;
+                        const maxAllowed = docQty + allowedDiff;
+                        if (netWt < minAllowed || netWt > maxAllowed) {
+                            valid = false;
+                            toastr.error(`Net Weight (${parseFloat(netWt).toFixed(2)}) does not match Document Qty (${docQty}) within tolerance of ${tolerancePct}%. Allowed range: ${parseFloat(minAllowed).toFixed(2)} - ${parseFloat(maxAllowed).toFixed(2)}`);
+                            return;
+                        }
+                    }
+                }
+            }
         }
     }
-    
+
     if (EmptyWeight == ""){
         EmptyWeight = "0";
     }
@@ -3315,7 +3398,7 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtCustomerName').val(gateEntryData[0].VendorName);
         
         $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
-        $('#frmLoadedOut_txtDocumentDate').val(new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
+        $('#frmLoadedOut_txtDocumentDate').val(geFormatGateEntryInputDate(gateEntryData[0].InvoiceDate));
         $('#frmLoadedOut_txtManualDocNo').val(gateEntryData[0].ManualDocNo);
         $('#frmLoadedOut_txtGRNo').val(gateEntryData[0].GRNo);
 
@@ -3455,7 +3538,7 @@ function EditGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtCustomerName').val(gateEntryData[0].VendorName);
 
         $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
-        $('#frmLoadedOut_txtDocumentDate').val(new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
+        $('#frmLoadedOut_txtDocumentDate').val(geFormatGateEntryInputDate(gateEntryData[0].InvoiceDate));
 
         $('#frmLoadedOut_txtManualDocNo').val(gateEntryData[0].ManualDocNo);
         $('#frmLoadedOut_txtGRNo').val(gateEntryData[0].GRNo);
@@ -4063,6 +4146,13 @@ function GateEntry_changeDocumentType() {
                                 $('#frmLoadedOut_txtQty').val(parseFloat(sumtotalWeight).toFixed(2))
                                 $('#frmLoadedOut_txtGRNo').val(RespDocumentDetails[0].GRNo)
                                 $('#frmLoadedOut_ddlUOM').val(RespDocumentDetails[0].UOM).trigger('change')
+                                $('#frmLoadedOut_txtEWayBillNo').val(RespDocumentDetails[0].EWayBillNo)
+                                if (RespDocumentDetails[0].EWayBillDate) {
+                                    $('#frmLoadedOut_txtEWayBillDate').val(RespDocumentDetails[0].EWayBillDate.split('T')[0]);
+                                }
+                                if (RespDocumentDetails[0].DocumentDate) {
+                                    $('#frmLoadedOut_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
+                                }
 
                                // G_TableName = RespDocumentDetails[0].TableName;
                                // G_TableCode = RespDocumentDetails[0].Code;
@@ -4210,6 +4300,13 @@ function GateEntry_changeDocumentType_LoadedIn() {
                                 $('#frmLoadedIn_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
                                 $('#frmLoadedIn_txtQTY').val(parseFloat(sumtotalWeight).toFixed(2))
                                 $('#frmLoadedIn_txtUOM').val(RespDocumentDetails[0].UOM).trigger('change')
+                                $('#frmLoadedIn_txtEWayBillNo').val(RespDocumentDetails[0].EWayBillNo)
+                                if (RespDocumentDetails[0].EWayBillDate) {
+                                    $('#frmLoadedIn_txtEWayBillDate').val(RespDocumentDetails[0].EWayBillDate.split('T')[0]);
+                                }
+                                if (RespDocumentDetails[0].DocumentDate) {
+                                    $('#frmLoadedIn_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
+                                }
 
                                 $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
                                 $('#frmLoadedIn_txtGoodsDescription').attr('readonly', 'readonly');
@@ -4370,11 +4467,36 @@ function ClearWeightScalePreviews() {
     }
 }
 
+function geFormatGateEntryInputDate(value) {
+    if (!value) return '';
+
+    if (typeof value === 'string') {
+        const datePart = value.trim().slice(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+            return datePart;
+        }
+    }
+
+    try {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+    } catch (ex) { /* ignore */ }
+
+    return '';
+}
+
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry
 window.GateEntryGirdByDates = GateEntryGirdByDates
 window.ViewAttachment_GateEntry = ViewAttachment_GateEntry
 window.ShowGateEntryConfigurationModal = ShowGateEntryConfigurationModal
 window.setGateEntryParamater = setGateEntryParamater
+window.GateEntry_ToggleToleranceVisibility = GateEntry_ToggleToleranceVisibility
+window.setGateEntryToleranceParamater = setGateEntryToleranceParamater
 window.GateEntry_rdPOAccess_onClick = GateEntry_rdPOAccess_onClick
 window.GateEntry_SaveData = GateEntry_SaveData
 window.GateEntry_frmLoadedIn_ddlPurchaseOrder_Change = GateEntry_frmLoadedIn_ddlPurchaseOrder_Change
@@ -4385,3 +4507,5 @@ window.GateEntry_ExportExecl = GateEntry_ExportExecl
 window.GateEntry_changeDocumentType = GateEntry_changeDocumentType
 window.GateEntry_changeDocumentType_LoadedIn = GateEntry_changeDocumentType_LoadedIn
 window.GateEntry_GetNetWeight = GateEntry_GetNetWeight
+
+

@@ -2670,6 +2670,17 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             + (forPdfExport ? '.pdf-export-body{background:#fff;margin:0;padding:4px 8px;overflow:hidden;}.po-pdf-root{max-width:794px;margin:0 auto;}.pdf-export-body .inv-text-box{margin:6px 0 4px;padding:6px 8px;font-size:8pt;line-height:1.5;}.pdf-export-body .sig-row{margin-top:8px;}.pdf-export-body .sig-box{min-height:120px;}.pdf-export-body .sig-stamp{width:82px;height:82px;}.pdf-export-body .gtc-para,.pdf-export-body .gtc-list,.pdf-export-body .gtc-sublist{line-height:1.5;margin-bottom:3px;}.pdf-export-body .gtc-heading{margin:7px 0 2px;}.pdf-export-body .gtc-section{padding:4px 2px;}' : '')
             + gtcCssOverride
 
+        const signatureHtml = isGoods
+            ? '<div class="sig-row">'
+                + '<div class="sig-box">' + BuildSigBox('Approved By Finance', stampUrlFinance) + '</div>'
+                + '<div class="sig-box">' + BuildSigBox('Approved By COO', stampUrlHOD) + '</div>'
+                + '<div class="sig-box">' + BuildSigBox('Approved By CEO', stampUrlCEO) + '</div>'
+            + '</div>'
+            : '<div class="sig-row">'
+                + '<div class="sig-box"><div class="sig-stamp-wrap"></div><div class="sig-title">To be accepted by Vendor</div></div>'
+                + '<div class="sig-box">' + BuildSigBox('Authorized signatory by Purshotam Profiles Pvt Ltd', stampUrlFinance) + '</div>'
+            + '</div>';
+
         const mainBlock = ''
             + '<div class="po-hdr">'
             + '<div class="hdr-left">' + (showLogo ? '<img class="hdr-logo" src="' + logoUrl + '" alt="Logo">' : '') + '<div class="hdr-co"><div class="hdr-name">' + (companyAliasName || 'COMPANY NAME') + '</div><div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
@@ -2735,11 +2746,7 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             +     (isGoods ? '' : '<li>xiv)&nbsp;&nbsp;TDS will be deducted/Applicable as per government law.</li>')
             +   '</ul>'
             + '</div>'
-            + '<div class="sig-row">'
-            + '<div class="sig-box">' + BuildSigBox('Approved By Finance', stampUrlFinance) + '</div>'
-            + '<div class="sig-box">' + BuildSigBox('Approved By COO', stampUrlHOD )     + '</div>'
-            + '<div class="sig-box">' + BuildSigBox('Approved By CEO', stampUrlCEO )     + '</div>'
-            + '</div>'
+            + signatureHtml
             + '</div>';
 
         const coreInner = termsOnly ? generalTermsHtml : (mainBlock + generalTermsHtml);

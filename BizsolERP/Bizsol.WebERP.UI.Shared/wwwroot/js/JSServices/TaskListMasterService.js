@@ -21,7 +21,7 @@ function authUserCode() {
 
 const TaskListMasterService = {
     GetCurrentFinYear: function GetCurrentFinYear() {
-        const URL = TASKLIST_MASTER_BASE + '/GetCurrentFinYear';
+        const URL = TASKLIST_MASTER_BASE + '/GetFinyearList';
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
@@ -55,11 +55,79 @@ const TaskListMasterService = {
         });
     },
 
+    /** Fallback when GetTaskListFreq returns empty — reads FrequencyMaster via generic Dropdown API. */
+    GetFrequencyMasterDropdown: function GetFrequencyMasterDropdown() {
+        const userCode = authUserCode();
+        const jsonData = {
+            distinct: 'N',
+            fieldName: 'Frequency',
+            fieldNameOrderBy: 'Frequency',
+            filterCondition: '',
+            tableName: 'FrequencyMaster',
+            UserMaster_Code: userCode,
+        };
+        const URL = UrlService.API_ENDPOINT_DROPDOWN + '/GetDropdownList';
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(jsonData)).then(function (value) {
+            return value;
+        });
+    },
+
+    GetFrequencyMasterCodeDropdown: function GetFrequencyMasterCodeDropdown() {
+        const userCode = authUserCode();
+        const jsonData = {
+            distinct: 'N',
+            fieldName: 'Code',
+            fieldNameOrderBy: 'Code',
+            filterCondition: '',
+            tableName: 'FrequencyMaster',
+            UserMaster_Code: userCode,
+        };
+        const URL = UrlService.API_ENDPOINT_DROPDOWN + '/GetDropdownList';
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(jsonData)).then(function (value) {
+            return value;
+        });
+    },
+
     GetTaskListMasterByCode: function GetTaskListMasterByCode(code) {
+        const masterCode = parseInt(code, 10) || 0;
         const URL =
             TASKLIST_MASTER_BASE +
             '/GetTaskListMasterByCode?Code=' +
-            encodeURIComponent(code);
+            encodeURIComponent(masterCode) +
+            '&TaskListMaster_Code=' +
+            encodeURIComponent(masterCode);
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
+    /** Copy From Fin Year — tasks for employee + source fin year (SP Mode: GETBYEMPFINYEAR) */
+    GetTaskListByEmpFinYear: function GetTaskListByEmpFinYear(userMasterCode, finYear) {
+        const code = parseInt(userMasterCode, 10) || 0;
+        const URL =
+            TASKLIST_MASTER_BASE +
+            '/GetTaskListByEmpFinYear?userMasterCode=' +
+            encodeURIComponent(code) +
+            '&UserMaster_Code=' +
+            encodeURIComponent(code) +
+            '&FinYear=' +
+            encodeURIComponent(finYear || '');
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
+    /** Before bulk save — SP Mode: CHECKEMPFINYEAR */
+    CheckEmployeeFinYearExists: function CheckEmployeeFinYearExists(userMasterCode, finYear) {
+        const code = parseInt(userMasterCode, 10) || 0;
+        const URL =
+            TASKLIST_MASTER_BASE +
+            '/CheckEmployeeFinYearExists?userMasterCode=' +
+            encodeURIComponent(code) +
+            '&UserMaster_Code=' +
+            encodeURIComponent(code) +
+            '&FinYear=' +
+            encodeURIComponent(finYear || '');
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
@@ -67,7 +135,8 @@ const TaskListMasterService = {
 
     SaveTaskListMaster: function SaveTaskListMaster(data) {
         const URL = TASKLIST_MASTER_BASE + '/SaveTaskListMaster';
-        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data)).then(function (value) {
+        const payload = Object.assign({ Mode: 'SAVE' }, data || {});
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload)).then(function (value) {
             return value;
         });
     },

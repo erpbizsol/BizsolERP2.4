@@ -1,0 +1,249 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.MIS.Reports/Script/DayWiseMISReport.js"></script>
+<style>
+    .mis-wrap {
+        --accent: #1f4e8c;
+    }
+
+    /* ---------- Toolbar ---------- */
+    .mis-toolbar {
+        background: #fff;
+        border: 1px solid #e6e9f0;
+        border-radius: 8px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .mis-field {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .mis-field label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #2c3852;
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .mis-field input[type="date"] {
+        height: 36px;
+        width: 210px;
+        border: 1px solid #d4d9e3;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 0.83rem;
+        color: #333;
+    }
+
+    .mis-field input[type="date"]:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(31, 78, 140, 0.12);
+    }
+
+    .mis-btn {
+        height: 34px;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0 16px;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+    .mis-btn-primary { background: var(--accent); color: #fff; }
+    .mis-btn-primary:hover { background: #173c6e; }
+
+    .mis-btn-soft { background: #fff; color: var(--accent); border-color: #cdd5e3; }
+    .mis-btn-soft:hover { background: #f1f4fa; }
+
+    /* ---------- Section cards ---------- */
+    .mis-section {
+        background: #fff;
+        border: 1px solid #e6e9f0;
+        border-radius: 8px;
+        margin-top: 16px;
+        overflow: hidden;
+    }
+
+    .mis-section-head {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 16px;
+        font-size: 0.86rem;
+        font-weight: 600;
+        color: #2c3852;
+        background: #f6f8fc;
+        border-bottom: 1px solid #e6e9f0;
+        border-left: 3px solid var(--accent);
+    }
+
+    .mis-section-head i {
+        color: var(--accent);
+        font-size: 0.9rem;
+    }
+
+    .mis-panel {
+        padding: 10px;
+    }
+
+    .mis-table-wrapper {
+        max-height: 420px;
+        overflow: auto;
+    }
+
+    .mis-table {
+        font-size: 0.8rem;
+        margin-bottom: 0;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .mis-table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f1f4fa;
+        color: #2c3852;
+        white-space: nowrap;
+        z-index: 1;
+        font-weight: 600;
+        padding: 9px 12px;
+        border-bottom: 2px solid #d9e0ee;
+    }
+
+    .mis-table tbody td {
+        white-space: nowrap;
+        padding: 7px 12px;
+        border-bottom: 1px solid #eef1f6;
+        color: #3a3f4b;
+    }
+
+    .mis-table tbody tr:hover td {
+        background-color: #f6f9ff;
+    }
+
+    .mis-empty {
+        padding: 40px 20px;
+        text-align: center;
+        color: #98a1b3;
+        font-size: 0.85rem;
+    }
+
+    .mis-empty i {
+        display: block;
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+        opacity: 0.45;
+    }
+</style>
+
+<div class="mis-wrap">
+
+    <!-- Toolbar -->
+    <div class="mis-toolbar">
+        <div class="mis-field">
+            <label for="txtDate">Date <span class="text-danger">*</span></label>
+            <input id="txtDate" type="date" name="txtDate" required>
+        </div>
+        <button type="button" id="btnShow" class="mis-btn mis-btn-primary">
+             Show
+        </button>
+        <button type="button" id="btnLoading" class="mis-btn mis-btn-primary" hidden="true">
+            <i class="fa-solid fa-spinner fa-spin"></i> Loading
+        </button>
+        <button type="button" id="btnDownload" class="mis-btn mis-btn-soft">
+             Download
+        </button>
+    </div>
+
+    <!-- Report Sections (all shown together) -->
+    <div id="divReportSections" style="display:none;">
+
+        <!-- Receiving -->
+        <div class="mis-section">
+            <div class="mis-section-head"><i class="fa-solid fa-truck-ramp-box"></i> Receiving (MRN)</div>
+            <div class="mis-panel">
+                <div class="mis-table-wrapper">
+                    <table id="tblMRNReceive" class="table mis-table">
+                        <thead><tr id="tblMRNReceive-header"></tr></thead>
+                        <tbody id="tblMRNReceive-body"></tbody>
+                    </table>
+                    <div id="noMRN" class="mis-empty" style="display:none;">
+                        <i class="fa-regular fa-folder-open"></i> No data available.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Production -->
+        <div class="mis-section">
+            <div class="mis-section-head"><i class="fa-solid fa-industry"></i> Production</div>
+            <div class="mis-panel">
+                <div class="mis-table-wrapper">
+                    <table id="tblProduction" class="table mis-table">
+                        <thead><tr id="tblProduction-header"></tr></thead>
+                        <tbody id="tblProduction-body"></tbody>
+                    </table>
+                    <div id="noProduction" class="mis-empty" style="display:none;">
+                        <i class="fa-regular fa-folder-open"></i> No data available.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dispatch -->
+        <div class="mis-section">
+            <div class="mis-section-head"><i class="fa-solid fa-truck-fast"></i> Dispatch / Sales</div>
+            <div class="mis-panel">
+                <div class="mis-table-wrapper">
+                    <table id="tblDispatch" class="table mis-table">
+                        <thead><tr id="tblDispatch-header"></tr></thead>
+                        <tbody id="tblDispatch-body"></tbody>
+                    </table>
+                    <div id="noDispatch" class="mis-empty" style="display:none;">
+                        <i class="fa-regular fa-folder-open"></i> No data available.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slitting -->
+        <div class="mis-section">
+            <div class="mis-section-head"><i class="fa-solid fa-scissors"></i> Slitting</div>
+            <div class="mis-panel">
+                <div class="mis-table-wrapper">
+                    <table id="tblSlitting" class="table mis-table">
+                        <thead><tr id="tblSlitting-header"></tr></thead>
+                        <tbody id="tblSlitting-body"></tbody>
+                    </table>
+                    <div id="noSlitting" class="mis-empty" style="display:none;">
+                        <i class="fa-regular fa-folder-open"></i> No data available.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Hidden table for combined Excel export (2x2 quadrant layout) -->
+<div style="display:none;">
+    <table id="tblExportMaster"><tbody></tbody></table>
+</div>

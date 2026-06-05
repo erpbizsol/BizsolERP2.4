@@ -27,7 +27,9 @@ namespace BizsolERPMain
                 .AddApplicationPart(
                     typeof(Bizsol.ERP.UI.Finance.Transactions.Program).Assembly)
                 .AddApplicationPart(
-                    typeof(Bizsol.ERP.UI.Finance.Masters.Program).Assembly);
+                    typeof(Bizsol.ERP.UI.Finance.Masters.Program).Assembly)
+                .AddApplicationPart(
+                    typeof(Bizsol.ERP.UI.MIS.Reports.Program).Assembly);
 
             var app = builder.Build();
 
@@ -96,6 +98,11 @@ namespace BizsolERPMain
             app.MapControllerRoute(
                name: "PurchaseMasters",
                pattern: "{area:exists}/{controller=PurchaseOrder}/{action=POApprovalConfiguration}/{id?}");
+
+            app.MapAreaControllerRoute(
+               name: "MISReports",
+               areaName: "MISReports",
+               pattern: "MISReports/{controller=Report}/{action=DayWiseMISReport}/{id?}");
 
             app.MapAreaControllerRoute(
                name: "FinanceTransactions",

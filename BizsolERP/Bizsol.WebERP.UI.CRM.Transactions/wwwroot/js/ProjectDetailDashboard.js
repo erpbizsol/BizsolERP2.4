@@ -39,6 +39,18 @@ function FirstRow(data) {
     return null;
 }
 
+function AsArray(data) {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.Data)) return data.Data;
+    if (Array.isArray(data.data)) return data.data;
+    return [];
+}
+
+function RowTypeVal(row) {
+    return parseInt(row.RowType ?? row.rowType ?? 0, 10);
+}
+
 function FmtLakh(val) {
     const n = parseFloat(val);
     if (isNaN(n) || n === 0) return '₹0';
@@ -98,10 +110,14 @@ function BindKpiNavigation() {
 // ── Init ─────────────────────────────────────────────────────────────────────
 $(document).ready(function () {
     InitDefaultDates();
-    BindProjectChange();
+    BindFilterChange();
     BindKpiNavigation();
     LoadProjectDropdown()
-        .then(function () { LoadDashboard(); })
+        .then(function () {
+            // On page load with "All Projects" selected, also load all sub-projects
+            LoadSubProjectDropdown(0);
+            LoadDashboard();
+        })
         .catch(function () { LoadDashboard(); });
 });
 
@@ -130,31 +146,40 @@ function LoadProjectDropdown() {
         });
 }
 
-// ── Sub-project dropdown (cascades on project change) ────────────────────────
-function BindProjectChange() {
-    document.getElementById('ddlProject').addEventListener('change', function () {
-        const projectCode = parseInt(this.value, 10);
-        const ddlSub      = document.getElementById('ddlSubProject');
+// ── Load sub-project dropdown for a given project code (0 = All) ─────────────
+function LoadSubProjectDropdown(projectCode) {
+    const ddlSub = document.getElementById('ddlSubProject');
+    ddlSub.innerHTML = '<option value="0">-- All Sub Projects --</option>';
+    ddlSub.disabled  = true;
 
-        ddlSub.innerHTML  = '<option value="0">-- All Sub Projects --</option>';
-        ddlSub.disabled   = true;
-
-        if (!projectCode) return;
-
-        ProjectDetailDashboardService.GetSubProjectListByProject(projectCode)
-            .then(function (data) {
-                (data || []).forEach(function (s) {
-                    const opt = document.createElement('option');
-                    opt.value       = s.Code ?? s.SubProjectMaster_Code ?? s.code ?? 0;
-                    opt.textContent = s.SubProjectDesp ?? s.SubProjectName ?? s.Desp ?? '';
-                    ddlSub.appendChild(opt);
-                });
-                ddlSub.disabled = false;
-            })
-            .catch(function (err) {
-                console.error('GetSubProjectListByProject error:', err);
-                ddlSub.disabled = false;
+    return ProjectDetailDashboardService.GetSubProjectListByProject(projectCode)
+        .then(function (data) {
+            (data || []).forEach(function (s) {
+                const opt = document.createElement('option');
+                opt.value       = s.Code ?? s.SubProjectMaster_Code ?? s.code ?? 0;
+                opt.textContent = s.SubProjectDesp ?? s.SubProjectName ?? s.Desp ?? '';
+                ddlSub.appendChild(opt);
             });
+            // Enable only if there are actual sub-projects to choose from
+            if (ddlSub.options.length > 1) ddlSub.disabled = false;
+        })
+        .catch(function (err) {
+            console.error('GetSubProjectListByProject error:', err);
+            ddlSub.disabled = false;
+        });
+}
+
+// ── Project / Sub-project change → reload dashboard ─────────────────────────
+function BindFilterChange() {
+    document.getElementById('ddlProject').addEventListener('change', function () {
+        const projectCode = parseInt(this.value, 10) || 0;
+        LoadSubProjectDropdown(projectCode).then(function () {
+            LoadDashboard();
+        });
+    });
+
+    document.getElementById('ddlSubProject').addEventListener('change', function () {
+        LoadDashboard();
     });
 }
 
@@ -209,7 +234,9 @@ function ResetDashboard() {
     document.getElementById('ddlSubProject').innerHTML = '<option value="0">-- All Sub Projects --</option>';
     document.getElementById('ddlSubProject').disabled  = true;
     InitDefaultDates();
-    ClearAllWidgets();
+    LoadSubProjectDropdown(0).then(function () {
+        LoadDashboard();
+    });
 }
 
 function ClearAllWidgets() {
@@ -411,11 +438,12 @@ function RenderProjectSummary(data) {
 
 // ── Render Budget vs Actual ───────────────────────────────────────────────────
 function RenderBudgetVsActual(data) {
-    if (!data || !data.length) return;
+    const rows = AsArray(data);
+    if (!rows.length) return;
 
     // RowType=0 → summary header; RowType=1 → monthly detail rows
-    const summary = data.find(function (r) { return (r.RowType ?? 0) === 0; }) || data[0];
-    const details = data.filter(function (r) { return (r.RowType ?? 0) === 1; });
+    const summary = rows.find(function (r) { return RowTypeVal(r) === 0; }) || rows[0];
+    const details = rows.filter(function (r) { return RowTypeVal(r) === 1; });
 
     const budget  = parseFloat(summary.TotalBudget ?? 0);
     const spent   = parseFloat(summary.TotalSpent  ?? 0);
