@@ -415,10 +415,10 @@ function getFreqDateMode(freqCode) {
     if (s.indexOf('daily') >= 0) return 'none';
     if (s.indexOf('as and when') >= 0 || s.indexOf('when required') >= 0) return 'none';
     if (s.indexOf('week') >= 0) return 'weekday';
-    if (s.indexOf('quarter') >= 0) return 'quarter';
-    if (s.indexOf('half') >= 0 && s.indexOf('year') >= 0) return 'halfyear';
-    if (s.indexOf('halfyear') >= 0 || s.indexOf('half yearly') >= 0) return 'halfyear';
-    if (s.indexOf('year') >= 0 && s.indexOf('quarter') < 0 && s.indexOf('month') < 0) return 'yearly';
+    if (s.indexOf('quarter') >= 0) return 'date';
+    if (s.indexOf('half') >= 0 && s.indexOf('year') >= 0) return 'date';
+    if (s.indexOf('halfyear') >= 0 || s.indexOf('half yearly') >= 0) return 'date';
+    if (s.indexOf('year') >= 0 && s.indexOf('quarter') < 0 && s.indexOf('month') < 0) return 'date';
     if (s.indexOf('month') >= 0) return 'month';
     return 'date';
 }
@@ -663,9 +663,6 @@ function buildTaskDateCell(mode, dateVal) {
         );
         return '<select class="tlm-task-date" data-date-mode="month">' + dayOpts + '</select>';
     }
-    if (mode === 'quarter' || mode === 'halfyear' || mode === 'yearly') {
-        return buildPeriodDateCell(mode, dateVal);
-    }
     if (mode === 'weekday') {
         var dow = '';
         if (raw) {
@@ -694,7 +691,19 @@ function buildTaskDateCell(mode, dateVal) {
             }).join('');
         return '<select class="tlm-task-date" data-date-mode="weekday">' + opts + '</select>';
     }
-    var dateValue = raw || getTodayIso();
+    // If value looks like a period-encoded string (e.g. "Q1:2026-04-01|Q2:..."), extract the first date
+    var dateValue = raw;
+    if (!isIsoDate(dateValue) && dateVal != null && String(dateVal).indexOf(':') >= 0) {
+        var periodParsed = parsePeriodDateStorage(String(dateVal));
+        var periodMap = periodParsed.map || {};
+        var firstSlotDate = '';
+        var slotKeys = Object.keys(periodMap);
+        for (var pi = 0; pi < slotKeys.length; pi++) {
+            if (isIsoDate(periodMap[slotKeys[pi]])) { firstSlotDate = periodMap[slotKeys[pi]]; break; }
+        }
+        dateValue = firstSlotDate || '';
+    }
+    dateValue = dateValue || getTodayIso();
     return (
         '<input type="date" class="tlm-task-date" data-date-mode="date" value="' +
         escapeHtml(dateValue) +
@@ -787,7 +796,7 @@ function updateDateColumnHeader() {
     if (keys.length === 1) {
         if (keys[0] === 'weekday') label = 'Day';
         else if (keys[0] === 'month') label = 'Month';
-        else if (keys[0] === 'quarter' || keys[0] === 'halfyear' || keys[0] === 'yearly') label = 'Period / Date';
+        else if (keys[0] === 'quarter' || keys[0] === 'halfyear' || keys[0] === 'yearly') label = 'Date';
         else label = 'Date';
     } else if (keys.length > 1) {
         label = 'Date / Day';
