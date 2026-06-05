@@ -701,9 +701,15 @@ function updateGrnVerifyFilterTabCounts() {
     if (elP) elP.textContent = String(chipPending !== null ? chipPending : pending);
     if (elV) elV.textContent = String(chipApproved !== null ? chipApproved : verified);
     if (elR) elR.textContent = String(rejected);
-    setGrnListPendingOnMeBadge(
-        chipOnMe !== null ? chipOnMe : resolveGrnListPendingOnMeCount(pending, pendingOnMe)
-    );
+    // “Pending on me” must come from MRN approval API — GRN verify list has no reliable approver info.
+    if (chipOnMe !== null) {
+        setGrnListPendingOnMeBadge(chipOnMe);
+    } else if (chipPending !== null) {
+        setGrnListPendingOnMeBadge(0);
+    } else {
+        var elOM = document.getElementById("grnVerifyFilterCountPendingOnMe");
+        if (elOM) elOM.textContent = "—";
+    }
 }
 
 function syncGrnVerifyFilterTabButtons() {
@@ -765,9 +771,13 @@ function navigateToMRNMasterApprovalPendingOnMe() {
     }
     showApprovalViewOnly();
     if (typeof window.reloadMrnApprovalView === "function") {
-        window.reloadMrnApprovalView({ pendingOnMe: true });
+        window.reloadMrnApprovalView({ pendingOnMe: true, forceRefreshDates: false });
     } else if (typeof window.LoadPaymentList === "function") {
-        window.LoadPaymentList();
+        var ddl = document.getElementById("gpaDdlStatus");
+        if (ddl) ddl.value = "A";
+        var searchEl = document.getElementById("gpaLstSearch");
+        if (searchEl) searchEl.value = "";
+        window.LoadPaymentList({});
     }
 }
 
