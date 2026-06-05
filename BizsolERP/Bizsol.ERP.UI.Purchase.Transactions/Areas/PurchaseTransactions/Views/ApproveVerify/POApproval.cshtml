@@ -151,7 +151,201 @@
     .poa-loading-state { text-align:center; padding: 52px 16px; color:#667eea; margin-bottom:14px; }
     .poa-loading-state div { font-size:0.85rem; margin-top:10px; font-weight:600; }
 
-    /* ── DETAIL MODAL (styled like POLevelsApprove) ─────────────────────────── */
+    .btn-av-modal-attach {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        padding: 9px 16px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        box-shadow: 0 3px 10px rgba(14, 165, 233, 0.35);
+        transition: all 0.2s;
+        cursor: pointer;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    }
+    .btn-av-modal-attach:hover {
+        transform: translateY(-1px);
+        color: #fff;
+        box-shadow: 0 5px 14px rgba(2, 132, 199, 0.45);
+    }
+    .btn-av-modal-attach.av-attach-has-files {
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        box-shadow: 0 3px 10px rgba(22, 163, 74, 0.35);
+    }
+    .btn-av-modal-attach.av-attach-has-files:hover {
+        box-shadow: 0 5px 14px rgba(22, 163, 74, 0.45);
+    }
+    #POApproval_AttachmentControlmodal { z-index: 1080 !important; }
+
+    .btn-pla-approve {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none; color: #fff; border-radius: 9px; padding: 9px 22px;
+        font-size: 0.85rem; font-weight: 700;
+        box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-pla-approve:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(16, 185, 129, 0.5); color: #fff; }
+    .btn-pla-close {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none; color: #fff; border-radius: 9px; padding: 9px 20px;
+        font-size: 0.85rem; font-weight: 700;
+        box-shadow: 0 3px 12px rgba(245, 158, 11, 0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-pla-close:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(245, 158, 11, 0.5); color: #fff; }
+
+    /* ── DETAIL MODAL (match QuotationApproval) ─────────────────────────────── */
+    body.modal-open { overflow: hidden !important; }
+
+    #myModal .modal-dialog {
+        max-width: 940px;
+        height: calc(100vh - 2.5rem);
+        max-height: 880px;
+        margin: 1.25rem auto;
+    }
+
+    #myModal .modal-content {
+        border-radius: 14px;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.22);
+    }
+
+    #myModal .modal-header {
+        position: relative;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border-bottom: none;
+        padding: 0.85rem 3.25rem 0.85rem 1.25rem;
+        gap: 0.75rem;
+    }
+
+    #myModal .qa-modal-header-main {
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: center;
+    }
+
+    #myModal .modal-header .modal-title {
+        margin: 0;
+        padding: 0 0.25rem;
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: 0.02em;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #myModal .qa-modal-header-date {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        margin-top: 0.2rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.92);
+        letter-spacing: 0.02em;
+        flex-wrap: wrap;
+    }
+
+    #myModal .qa-modal-header-date .qa-od-chip {
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: 6px;
+        padding: 0.12rem 0.55rem;
+        font-weight: 700;
+    }
+
+    #myModal .modal-header .btn-close {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        margin: 0;
+        opacity: 1;
+    }
+
+    #myModal .qa-modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: #fff;
+    }
+
+    #myModal .qa-modal-header-panel { flex-shrink: 0; }
+
+    #myModal .poa-items-section {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    #myModal .poa-items-title {
+        flex-shrink: 0;
+        margin-bottom: 8px;
+        padding-left: 0.45rem;
+        border-left: 3px solid #667eea;
+    }
+
+    #myModal .poa-items-table-wrap {
+        flex: 1 1 auto;
+        min-height: 120px;
+        overflow-y: auto;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    #myModal .poa-items-table thead tr th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    #myModal .poa-delivery-section { flex-shrink: 0; }
+
+    #myModal .poa-delivery-table-wrap {
+        max-height: 160px;
+        overflow: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+
+    #myModal .modal-footer {
+        flex-shrink: 0;
+        padding: 10px 16px;
+        background: #fafbff;
+        border-top: 1px solid #eef0f8;
+        gap: 8px;
+        flex-wrap: wrap;
+        display: flex;
+        align-items: center;
+    }
+
+    #myModal .modal-footer .btn-av-modal-attach { margin-right: auto; }
+
+    /* ── DETAIL MODAL info grid ─────────────────────────────────────────────── */
     .poa-info-grid {
         display:grid;
         grid-template-columns: repeat(3, 1fr);
@@ -273,6 +467,12 @@
         margin: 0 10px;
     }
 
+    .section-entry-animation { animation: fadeSlideIn 0.3s ease both; }
+    @@keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
     @@media (max-width: 768px) {
         .poa-po-card-header { flex-wrap: wrap; }
         .poa-po-card-right { flex-direction: row; align-items:center; width:100%; justify-content:space-between; }
@@ -280,6 +480,42 @@
         .poa-po-card-footer { justify-content: stretch; flex-direction: column; align-items: stretch; }
         .btn-poa-approve, .btn-poa-view { width:100%; justify-content:center; }
         #myHistoryModal .modal-dialog { margin: 8px; max-width: calc(100% - 16px) !important; }
+
+        #myModal .modal-dialog {
+            max-width: 100%;
+            width: 100%;
+            height: 100dvh;
+            max-height: 100dvh;
+            margin: 0;
+        }
+        #myModal .modal-content { border-radius: 0; }
+        #myModal .modal-header {
+            padding: 0.65rem 2.65rem 0.65rem 0.7rem;
+            align-items: flex-start;
+        }
+        #myModal .modal-header .modal-title {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            font-size: 0.82rem;
+            line-height: 1.35;
+            text-align: center;
+        }
+        #myModal .qa-modal-body {
+            padding: 12px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #myModal .modal-footer {
+            padding: 10px 12px;
+        }
+        #myModal .modal-footer .btn-pla-approve,
+        #myModal .modal-footer .btn-pla-close,
+        #myModal .modal-footer .btn-av-modal-attach {
+            flex: 1 1 calc(50% - 4px);
+            justify-content: center;
+            margin: 0 !important;
+        }
     }
 </style>
 
@@ -314,29 +550,29 @@
 </div>
 
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-xl" style="max-width:96%;">
-        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
-            <div class="modal-header"
-                 style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 20px;border:none;">
-                <input type="hidden" id="hfCodeForBack" value="0" />
-                <div>
-                    <h5 class="modal-title mb-0" style="font-size:0.95rem;font-weight:700;">
-                        <i class="fa fa-file-invoice me-2"></i><span id="poaModalPONo">View Details</span>
-                    </h5>
-                    <small id="poaModalVendor" style="font-size:0.75rem;opacity:0.82;display:block;margin-top:2px;"></small>
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="qa-modal-header-main">
+                    <h5 class="modal-title mb-0" id="poaModalTitle">View Details</h5>
+                    <div class="qa-modal-header-date" id="poaModalDateWrap" style="display:none;">
+                        <i class="fa fa-calendar-alt" aria-hidden="true"></i>
+                        <span>PO Date:</span>
+                        <span class="qa-od-chip" id="poaModalDate"></span>
+                    </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white ms-auto"
+                <button type="button" class="btn-close btn-close-white"
                         onclick="CloseModal()" aria-label="Close"></button>
             </div>
 
-            <div class="modal-body" style="padding:16px;max-height:72vh;overflow-y:auto;">
-                <div id="poaModalHeader"></div>
+            <div class="modal-body qa-modal-body">
+                <div id="poaModalHeader" class="qa-modal-header-panel"></div>
 
-                <div class="mb-3">
+                <div class="poa-items-section">
                     <div class="poa-items-title">
                         <i class="fa fa-boxes me-1"></i>PO Items
                     </div>
-                    <div class="table-responsive">
+                    <div class="poa-items-table-wrap table-responsive">
                         <table class="poa-items-table" id="poaItemsTable">
                             <thead>
                                 <tr>
@@ -370,11 +606,11 @@
                     </div>
                 </div>
 
-                <div class="mb-1">
+                <div class="poa-delivery-section">
                     <div class="poa-items-title">
                         <i class="fa fa-truck-fast me-1"></i>Delivery / Terms
                     </div>
-                    <div class="table-responsive">
+                    <div class="poa-delivery-table-wrap table-responsive">
                         <table class="poa-items-table">
                             <thead id="poaDeliveryTermsHead"></thead>
                             <tbody id="poaDeliveryTermsBody">
@@ -389,16 +625,19 @@
                 </div>
             </div>
 
-            <div class="modal-footer"
-                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
-                <button type="button" id="btnPOA_ModalAttachment" class="btn btn-info btn-height" onclick="POA_ModalAttachment()">
-                    <i class="fa fa-paperclip me-1"></i>Attachment
+            <div class="modal-footer">
+                <input type="hidden" id="hfCodeForBack" value="0" />
+                <input type="hidden" id="hfPOAAttachNo" value="" />
+                <input type="hidden" id="hfPOAAttachDate" value="" />
+                <button type="button" id="btnPOA_ModalAttachment" class="btn-av-modal-attach"
+                        onclick="POA_ModalAttachment()" title="Attachments">
+                    <i class="fa fa-paperclip"></i>Attachment
                 </button>
-                <button type="button" id="btnPOA_ModalVerify" class="btn btn-success btn-height" onclick="POA_ModalVerify()">
-                    <i class="fa fa-check-circle me-1"></i>@(string.IsNullOrWhiteSpace(ViewBag?.FrmAction as string) ? "Verify" : "Verify")
+                <button type="button" id="btnPOA_ModalVerify" class="btn-pla-approve" onclick="POA_ModalVerify()">
+                    <i class="fa fa-check"></i>@(string.IsNullOrWhiteSpace(ViewBag?.FrmAction as string) ? "Verify" : "Verify")
                 </button>
-                <button type="button" class="btn btn-danger btn-height ms-auto" onclick="CloseModal()">
-                    <i class="fa fa-times-circle me-1"></i>Close
+                <button type="button" class="btn-pla-close ms-auto" onclick="CloseModal()">
+                    <i class="fa fa-times-circle"></i>Close
                 </button>
             </div>
         </div>

@@ -22,7 +22,13 @@ $(document).ready(function () {
         poaCleanupModalState();
     });
 
+    $('#myModal').on('shown.bs.modal', function () {
+        document.body.style.overflow = 'hidden';
+        const wrap = document.querySelector('#myModal .poa-items-table-wrap');
+        if (wrap) wrap.scrollTop = 0;
+    });
     $('#myModal').on('hidden.bs.modal', function () {
+        document.body.style.overflow = '';
         poaCleanupModalState();
     });
 
@@ -108,6 +114,64 @@ function getListTotalAmount(po) {
 function getListProductSummary(po) {
     if (!po) return '';
     return String(po.Product || po['Product'] || '').trim().replace(/,\s*$/, '');
+}
+
+function BuildInfoItem(label, value, icon, valueColor) {
+    const clr = valueColor ? 'style="color:' + valueColor + ';font-weight:800;"' : '';
+    return '<div class="poa-info-item">' +
+        '<span class="poa-info-lbl"><i class="fa ' + icon + ' me-1"></i>' + EscHtml(label) + '</span>' +
+        '<span class="poa-info-val" ' + clr + '>' + value + '</span>' +
+        '</div>';
+}
+
+function PoaRawPONoForAttach(po) {
+    if (!po) return '';
+    return String(po.PONo || po.PO_No || po['PO No'] || po.PONumber || po.DocNo || '').trim();
+}
+
+function PoaRawPODateForAttach(po) {
+    if (!po) return '';
+    const d = po.PODate || po.PO_Date || po['PO Date'] || po.DocDate || '';
+    const s = String(d).trim();
+    return s.length >= 10 ? s.substring(0, 10) : '';
+}
+
+function PoaHasAttachmentYes(po) {
+    if (!po) return false;
+    const v = po.HasAttach != null ? po.HasAttach
+        : po.hasAttach != null ? po.hasAttach
+        : po.HasAttachment != null ? po.HasAttachment
+        : po['Has Attachment'];
+    return String(v || '').trim().toUpperCase() === 'Y';
+}
+
+function SyncPOAModalHeader(po) {
+    if (!po) {
+        $('#poaModalTitle').text('View Details');
+        $('#poaModalDate').text('');
+        $('#poaModalDateWrap').hide();
+        return;
+    }
+    const poNo = po['PO No'] || po.PONo || po.PONumber || '—';
+    const vendor = po['Party Name'] || po.VendorName || po.PartyName || '—';
+    const poDate = FmtDateDisplay(po['PO Date'] || po.PODate || po.DocDate);
+    const title = 'PO# ' + poNo + (vendor && vendor !== '—' ? ' — ' + vendor : '');
+    $('#poaModalTitle').text(title);
+    const od = String(poDate || '').trim();
+    if (od) {
+        $('#poaModalDate').text(od);
+        $('#poaModalDateWrap').show();
+    } else {
+        $('#poaModalDate').text('');
+        $('#poaModalDateWrap').hide();
+    }
+}
+
+function SyncPOAModalAttachmentButton(po) {
+    if (!po) return;
+    $('#hfPOAAttachNo').val(PoaRawPONoForAttach(po) || '');
+    $('#hfPOAAttachDate').val(PoaRawPODateForAttach(po) || '');
+    $('#btnPOA_ModalAttachment').toggleClass('av-attach-has-files', PoaHasAttachmentYes(po));
 }
 
 function buildItemDescription(item, listPo, itemIndex, itemCount) {
@@ -211,8 +275,8 @@ function poaLoadDetailContent(Code) {
     PODeliveryTermsDetails(Code);
     G_CurrentPOA = getPOFromList(Code);
     const po = G_CurrentPOA;
-    $('#poaModalPONo').text(po ? `PO# ${po['PO No'] || po.PONo || ''}` : 'View Details');
-    $('#poaModalVendor').text(po ? (po['Party Name'] || po.VendorName || '') : '');
+    SyncPOAModalHeader(po);
+    SyncPOAModalAttachmentButton(po);
     $('#poaModalHeader').html(po ? BuildPOAModalHeader(po, null) : '');
     $('#poaModalItemsBody').html(
         `<tr><td colspan="${POA_ITEM_COL_COUNT}" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
@@ -317,9 +381,6 @@ function RenderPOACards(list) {
 
 function BuildPOAModalHeader(po, items) {
     if (!po) return '';
-    const poNo = EscHtml(po['PO No'] || po.PONo || po.PONumber || '—');
-    const vendor = EscHtml(po['Party Name'] || po.VendorName || po.PartyName || '—');
-    const poDate = EscHtml(FmtDateDisplay(po['PO Date'] || po.PODate || po.DocDate) || '—');
     let totalAmt = getListTotalAmount(po);
     if (isNaN(totalAmt) || totalAmt === 0) {
         totalAmt = (items || []).reduce(function (acc, it) {
@@ -329,33 +390,11 @@ function BuildPOAModalHeader(po, items) {
     }
     const amount = EscHtml(FmtCurrency(totalAmt));
 
-    return `
-        <div class="poa-info-grid">
-            <div class="poa-info-item">
-                <span class="poa-info-lbl"><i class="fa fa-file-invoice me-1"></i>PO Number</span>
-                <span class="poa-info-val">${poNo}</span>
-            </div>
-            <div class="poa-info-item">
-                <span class="poa-info-lbl"><i class="fa fa-building me-1"></i>Vendor</span>
-                <span class="poa-info-val">${vendor}</span>
-            </div>
-            <div class="poa-info-item">
-                <span class="poa-info-lbl"><i class="fa fa-calendar-alt me-1"></i>PO Date</span>
-                <span class="poa-info-val">${poDate}</span>
-            </div>
-            <div class="poa-info-item">
-                <span class="poa-info-lbl"><i class="fa fa-rupee-sign me-1"></i>Total Amount</span>
-                <span class="poa-info-val" style="color:#667eea;font-weight:800;">${amount}</span>
-            </div>
-            <div class="poa-info-item">
-                <span class="poa-info-lbl"><i class="fa fa-info-circle me-1"></i>Status</span>
-                <span class="poa-info-val">Pending</span>
-            </div>
-            <div class="poa-info-item">
-                <span class="poa-info-lbl"><i class="fa fa-user-check me-1"></i>Action</span>
-                <span class="poa-info-val">${EscHtml(FrmAction || 'Approve')}</span>
-            </div>
-        </div>`;
+    return '<div class="poa-info-grid">' +
+        BuildInfoItem('Total Amount', amount, 'fa-rupee-sign', '#667eea') +
+        BuildInfoItem('Status', 'Pending', 'fa-info-circle') +
+        BuildInfoItem('Action', EscHtml(FrmAction || 'Verify'), 'fa-user-check') +
+        '</div>';
 }
 
 function RenderPOAModalItems(items, listPo) {
@@ -486,7 +525,8 @@ function ViewData(Code) {
         poaRemoveOrphanBackdrops();
         poaLoadDetailContent(Code);
         $detail.off('shown.bs.modal.poaScroll').one('shown.bs.modal.poaScroll', function () {
-            $(this).find('.modal-body').scrollTop(0);
+            const wrap = this.querySelector('.poa-items-table-wrap');
+            if (wrap) wrap.scrollTop = 0;
         });
         poaShowModal($detail);
     }
@@ -513,12 +553,16 @@ function PODeliveryTermsDetails(Code) {
     });
 }
 function CloseModal() {
+    G_CurrentPOA = null;
+    $('#poaModalDate').text('');
+    $('#poaModalDateWrap').hide();
     if ($('#myHistoryModal').hasClass('show')) {
         poaHideModal($('#myHistoryModal'));
     }
     $('#myModal').one('hidden.bs.modal.poaClose', function () {
         poaRemoveOrphanBackdrops();
         poaClearStaleModal($('#myModal'));
+        document.body.style.overflow = '';
     });
     poaHideModal($('#myModal'));
 }
@@ -534,11 +578,9 @@ function POA_ModalVerify() {
 
 function POA_ModalAttachment() {
     const code = $('#hfCodeForBack').val() || '';
-    if (!code) {
-        toastr.warning('No PO selected.');
-        return;
-    }
-    AttchmentFile(code);
+    const entryNo = $('#hfPOAAttachNo').val() || '';
+    const entryDate = $('#hfPOAAttachDate').val() || '';
+    OpenPOApprovalAttachment(code, entryNo, entryDate);
 }
 
 function Approval(Code) {
@@ -622,13 +664,36 @@ function POWithOutIndent(IndentMaster_Code) {
         toastr.error("Error in fetching data:", error);
     });
 }
-function AttchmentFile(Code) {
-    InitAttachmentControl('PurchaseOrderMaster', Code, '', 0, 0, '', "View");
-    
+function InitPOApprovalAttachmentControl(masterCode, entryNo, entryDate) {
+    const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
+    $('#POApproval_AttachmentControlmodal').load(appBase + 'CustomControl/AttachmentControl', {
+        MasterTableName: 'PurchaseOrderMaster',
+        MasterTableCode: parseInt(masterCode, 10) || 0,
+        DetailTableName: '',
+        DetailTableCode: 0,
+        EntryNo: parseInt(entryNo, 10) || 0,
+        EntryDate: entryDate || '',
+        Mode: 'all'
+    });
 }
-function InitAttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode, entryNo, entryDate, mode) {
-    var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
-    $('#POApproval_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode });
+
+function OpenPOApprovalAttachment(code, entryNo, entryDate) {
+    const masterCode = parseInt(code, 10) || 0;
+    if (masterCode <= 0) {
+        toastr.warning('Invalid record. Cannot open attachments.');
+        return;
+    }
+    const po = getPOFromList(code) ||
+        (G_CurrentPOA && String(G_CurrentPOA.Code || G_CurrentPOA.PurchaseOrderMaster_Code) === String(code) ? G_CurrentPOA : null);
+    const en = entryNo != null && String(entryNo) !== '' ? entryNo : (po ? PoaRawPONoForAttach(po) : '');
+    const ed = entryDate != null && String(entryDate) !== ''
+        ? entryDate
+        : (po ? PoaRawPODateForAttach(po) : '');
+    InitPOApprovalAttachmentControl(masterCode, en, ed);
+}
+
+function AttchmentFile(Code) {
+    OpenPOApprovalAttachment(Code);
 }
 
 function getUrlVars() {
@@ -651,6 +716,7 @@ window.ViewHistory = ViewHistory;
 window.CloseHistoryModal = CloseHistoryModal;
 window.POWithOutIndent = POWithOutIndent;
 window.AttchmentFile = AttchmentFile;
+window.OpenPOApprovalAttachment = OpenPOApprovalAttachment;
 window.BackButton = BackButton;
 window.POA_ModalVerify = POA_ModalVerify;
 window.POA_ModalAttachment = POA_ModalAttachment;
