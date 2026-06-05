@@ -89,10 +89,13 @@ const TaskListMasterService = {
     },
 
     GetTaskListMasterByCode: function GetTaskListMasterByCode(code) {
+        const masterCode = parseInt(code, 10) || 0;
         const URL =
             TASKLIST_MASTER_BASE +
             '/GetTaskListMasterByCode?Code=' +
-            encodeURIComponent(code);
+            encodeURIComponent(masterCode) +
+            '&TaskListMaster_Code=' +
+            encodeURIComponent(masterCode);
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
@@ -100,10 +103,13 @@ const TaskListMasterService = {
 
     /** Copy From Fin Year — tasks for employee + source fin year (SP Mode: GETBYEMPFINYEAR) */
     GetTaskListByEmpFinYear: function GetTaskListByEmpFinYear(userMasterCode, finYear) {
+        const code = parseInt(userMasterCode, 10) || 0;
         const URL =
             TASKLIST_MASTER_BASE +
-            '/GetTaskListByEmpFinYear?UserMaster_Code=' +
-            encodeURIComponent(userMasterCode || 0) +
+            '/GetTaskListByEmpFinYear?userMasterCode=' +
+            encodeURIComponent(code) +
+            '&UserMaster_Code=' +
+            encodeURIComponent(code) +
             '&FinYear=' +
             encodeURIComponent(finYear || '');
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
@@ -113,10 +119,13 @@ const TaskListMasterService = {
 
     /** Before bulk save — SP Mode: CHECKEMPFINYEAR */
     CheckEmployeeFinYearExists: function CheckEmployeeFinYearExists(userMasterCode, finYear) {
+        const code = parseInt(userMasterCode, 10) || 0;
         const URL =
             TASKLIST_MASTER_BASE +
-            '/CheckEmployeeFinYearExists?UserMaster_Code=' +
-            encodeURIComponent(userMasterCode || 0) +
+            '/CheckEmployeeFinYearExists?userMasterCode=' +
+            encodeURIComponent(code) +
+            '&UserMaster_Code=' +
+            encodeURIComponent(code) +
             '&FinYear=' +
             encodeURIComponent(finYear || '');
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
