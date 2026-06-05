@@ -202,12 +202,10 @@ function syncClientAccountCodesFromCheckboxes() {
 
 function refreshClientTable() {
     var mm = getMarketingManCodeForDealers();
-    var showAll = $('#chkShowAllParty').is(':checked');
-    var codeArg = showAll ? 0 : mm;
     var viewMode = G_MMM_DetailMode === 'view';
     var linked = getLinkedClientAccountSet();
 
-    CRMReportsServices.GetDealerList(codeArg)
+    MarketingManMasterService.GetMarketingManAccountList(mm)
         .then(function (res) {
             var rows = firstArray(res);
             var $tb = $('#tblClientBody');
@@ -589,7 +587,7 @@ function buildSavePayload() {
     if ($('#tblClientBody').find('input.mmm-client-link-cb').length) {
         syncClientAccountCodesFromCheckboxes();
     }
-    if (G_MMM_ClientCodesLoaded) {
+    if (G_MMM_ClientCodesLoaded && !$('#chkShowAllParty').is(':checked')) {
         payload.ClientAccountCodes = $('#hfClientAccountCodes').val() || '';
     } else {
         payload.ClientAccountCodes = null;
@@ -639,11 +637,14 @@ function mapRecordToForm(rec) {
         'checked',
         String(rec.ShowAllParty || rec.ShowAllClient || '').toUpperCase() === 'Y'
     );
+    var showAllClient =
+        String(rec.ShowAllParty || rec.ShowAllClient || '').toUpperCase() === 'Y';
     var cc = rec.ClientAccountCodes != null ? rec.ClientAccountCodes : rec.clientAccountCodes;
-    if (cc != null && cc !== undefined) {
+    if (!showAllClient && cc != null && cc !== undefined && String(cc).trim() !== '') {
         $('#hfClientAccountCodes').val(String(cc));
         G_MMM_ClientCodesLoaded = true;
     } else {
+        $('#hfClientAccountCodes').val('');
         G_MMM_ClientCodesLoaded = false;
     }
     toggleSeniorJuniorUi();
@@ -935,6 +936,10 @@ $(document).ready(function () {
 
     $('#chkShowAllParty').on('change', function () {
         toggleUserIdRequiredUi();
+        if ($(this).is(':checked')) {
+            $('#hfClientAccountCodes').val('');
+            G_MMM_ClientCodesLoaded = false;
+        }
         refreshClientTable();
     });
 
