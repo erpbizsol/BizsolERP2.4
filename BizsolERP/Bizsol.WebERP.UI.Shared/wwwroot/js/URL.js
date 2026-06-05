@@ -162,6 +162,8 @@ let UrlService = {
     API_ENDPOINT_MillWiseProductionReport: `${environment.BASE_URL}/MillWiseProductionReport`,
     API_DOCUMENT_StockAgeingYieldConfiguration: `${environment.BASE_URL}/StockAgeingYieldConfiguration`,
     API_ENDPOINT_ProjectDetailDashboard: `${environment.BASE_URL}/ProjectDetail`,
+    API_ENDPOINT_SalesPersonTargetAchievement: `${environment.BASE_URL}/SalesPersonTargetAchievement`,
+    API_ENDPOINT_SalesPersonTargetAchievementReport: `${environment.BASE_URL}/SalesPersonTargetAchievementReport`,
 }
 
 export { UrlService  }
