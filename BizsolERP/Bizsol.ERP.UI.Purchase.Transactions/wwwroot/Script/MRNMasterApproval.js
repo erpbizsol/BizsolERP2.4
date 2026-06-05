@@ -813,11 +813,17 @@ function UpdateGpaStatChips() {
         elOnMe.textContent = String(onMe);
     }
     if (typeof window.syncGrnListHeaderTabsFromApprovalChips === 'function') {
+        const approvedCodes = source
+            .filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'approved'; })
+            .map(function (p) { return getPaymentMasterCode(p); })
+            .map(function (c) { return parseInt(c, 10); })
+            .filter(function (n) { return n > 0; });
         window.syncGrnListHeaderTabsFromApprovalChips({
             pending: pendingOnly,
             approved: approvedCount,
             rejected: rejectedCount,
             pendingOnMe: onMe,
+            approvedCodes: approvedCodes,
         });
     }
 }
