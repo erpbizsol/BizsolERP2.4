@@ -1,51 +1,694 @@
-﻿
-@{
+﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/QuotationApproval.js"></script>
+
 <style>
-    .modal-dialog {
-        max-width: 1100px;
+    /* ── PAGE HEADER ──────────────────────────────────────────── */
+    .pla-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 18px rgba(102,126,234,0.28);
+    }
+    .pla-header h5  { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .pla-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; margin-top: 3px; }
+
+    .pla-stat-chip {
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 10px;
+        padding: 5px 14px;
+        text-align: center;
+        min-width: 78px;
+    }
+    .pla-stat-chip .val { font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1; }
+    .pla-stat-chip .lbl { font-size: 0.64rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── QUOTATION CARDS ──────────────────────────────────────── */
+    .pla-po-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease, transform 0.15s ease;
+        border-left: 4px solid #667eea;
+    }
+    .pla-po-card:hover { box-shadow: 0 6px 22px rgba(102,126,234,0.16); transform: translateY(-1px); }
+    .pla-po-card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px 10px;
+    }
+    .pla-po-no-badge {
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        border-radius: 10px;
+        padding: 8px 12px;
+        min-width: 68px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        box-shadow: 0 3px 10px rgba(102,126,234,0.35);
+    }
+    .pla-po-card-vendor { flex: 1; min-width: 0; }
+    .pla-po-vendor-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 4px;
+    }
+    .pla-po-card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        font-size: 0.74rem;
+        color: #64748b;
+    }
+    .pla-po-level-chip {
+        background: rgba(102,126,234,0.08);
+        border: 1px solid rgba(102,126,234,0.18);
+        border-radius: 6px;
+        padding: 1px 7px;
+        color: #667eea;
+        font-weight: 600;
+    }
+    .pla-po-card-right {
+        flex-shrink: 0;
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        align-items: flex-end;
+    }
+    .pla-po-amount { font-size: 0.92rem; font-weight: 800; color: #667eea; }
+    .pla-po-status-badge {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        display: inline-block;
+        color: #d97706;
+        background: #fef3c7;
+    }
+
+    .pla-po-card-footer {
+        padding: 8px 16px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        border-top: 1px solid #f0f4ff;
+        background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+    }
+    .av-card-attach-btns {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .btn-av-attach-icon {
+        width: 36px;
+        height: 32px;
+        border: none;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+        color: #fff;
+    }
+    .btn-av-attach-icon:hover {
+        transform: translateY(-1px);
+        color: #fff;
+    }
+    .btn-av-modal-attach {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        padding: 9px 16px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        box-shadow: 0 3px 10px rgba(14, 165, 233, 0.35);
+        transition: all 0.2s;
+        cursor: pointer;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    }
+    .btn-av-modal-attach:hover {
+        transform: translateY(-1px);
+        color: #fff;
+        box-shadow: 0 5px 14px rgba(2, 132, 199, 0.45);
+    }
+    .btn-av-modal-attach.av-attach-has-files {
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        box-shadow: 0 3px 10px rgba(22, 163, 74, 0.35);
+    }
+    .btn-av-modal-attach.av-attach-has-files:hover {
+        box-shadow: 0 5px 14px rgba(22, 163, 74, 0.45);
+    }
+    #AttachmentControlmodal { z-index: 1080 !important; }
+    .btn-pla-card-approve {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg,#10b981,#059669);
+        border: none; color: #fff;
+        border-radius: 8px; padding: 7px 18px;
+        font-size: 0.8rem; font-weight: 700;
+        box-shadow: 0 3px 10px rgba(16,185,129,0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-pla-card-approve:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(16,185,129,0.45); color: #fff; }
+    .btn-pla-card-view {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: #eff6ff; border: 1.5px solid #bfdbfe;
+        color: #2563eb; border-radius: 8px; padding: 7px 18px;
+        font-size: 0.8rem; font-weight: 700;
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-pla-card-view:hover { background: #2563eb; color: #fff; border-color: #2563eb; transform: translateY(-1px); }
+
+    .pla-empty-state {
+        text-align: center; padding: 52px 16px; color: #94a3b8;
+        background: #fff; border-radius: 14px; border: 1px dashed #e2e8f0;
+        margin-bottom: 14px;
+    }
+    .pla-empty-state i { font-size: 2.8rem; margin-bottom: 12px; display: block; color: #c4b5fd; }
+    .pla-empty-state div { font-size: 0.88rem; font-weight: 600; margin-bottom: 4px; }
+    .pla-empty-state small { font-size: 0.78rem; }
+    .pla-loading-state {
+        text-align: center; padding: 52px 16px; color: #667eea;
+        margin-bottom: 14px;
+    }
+    .pla-loading-state div { font-size: 0.85rem; margin-top: 10px; font-weight: 600; }
+
+    /* ── DETAIL MODAL ─────────────────────────────────────────── */
+    .pla-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .pla-info-item {
+        background: #fafbff;
+        border: 1px solid #eef0f8;
+        border-radius: 10px;
+        padding: 8px 12px;
+    }
+    .pla-info-lbl {
+        font-size: 0.7rem; font-weight: 600; color: #64748b;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        display: block; margin-bottom: 3px;
+    }
+    .pla-info-val { font-size: 0.84rem; font-weight: 700; color: #1e293b; }
+
+    .pla-items-wrap  { margin-bottom: 0; }
+    .pla-items-title {
+        font-size: 0.78rem; font-weight: 700; color: #475569;
+        text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;
+    }
+    .pla-items-table { width: 100%; border-collapse: collapse; }
+    .pla-items-table thead tr th {
+        background: #4f46e5; color: #fff;
+        font-size: 0.72rem; font-weight: 600;
+        text-align: center; vertical-align: middle;
+        padding: 8px 10px; white-space: nowrap; border: none;
+    }
+    .pla-items-table thead tr th:first-child { border-radius: 8px 0 0 0; }
+    .pla-items-table thead tr th:last-child  { border-radius: 0 8px 0 0; }
+    .pla-items-table tbody tr { transition: background 0.15s; }
+    .pla-items-table tbody tr:hover { background: #f5f3ff; }
+    .pla-items-table tbody tr td {
+        padding: 7px 10px; vertical-align: middle;
+        border: 1px solid #ede9fe; font-size: 0.8rem; color: #374151;
+    }
+
+    .btn-pla-approve {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#10b981,#059669);
+        border:none; color:#fff; border-radius:9px; padding:9px 22px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(16,185,129,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-approve:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(16,185,129,0.5); color:#fff; }
+    .btn-pla-close {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#f59e0b,#d97706);
+        border:none; color:#fff; border-radius:9px; padding:9px 20px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(245,158,11,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-close:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(245,158,11,0.5); color:#fff; }
+
+    /* ── QUOTATION DETAIL MODAL (fixed layout, table scroll inside) ── */
+    body.modal-open {
+        overflow: hidden !important;
+    }
+
+    #myModal .modal-dialog {
+        max-width: 940px;
+        height: calc(100vh - 2.5rem);
+        max-height: 880px;
+        margin: 1.25rem auto;
+    }
+
+    #myModal .modal-content {
+        border-radius: 14px;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.22);
+    }
+
+    #myModal .modal-header {
+        position: relative;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border-bottom: none;
+        padding: 0.85rem 3.25rem 0.85rem 1.25rem;
+        gap: 0.75rem;
+    }
+
+    #myModal .qa-modal-header-main {
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: center;
+    }
+
+    #myModal .modal-header .modal-title {
+        margin: 0;
+        padding: 0 0.25rem;
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: 0.02em;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #myModal .qa-modal-header-date {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        margin-top: 0.2rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.92);
+        letter-spacing: 0.02em;
+        flex-wrap: wrap;
+    }
+
+    #myModal .qa-modal-header-date .qa-od-chip {
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: 6px;
+        padding: 0.12rem 0.55rem;
+        font-weight: 700;
+    }
+
+    #myModal .modal-header .btn-close {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        margin: 0;
+        opacity: 1;
+    }
+
+    #myModal .qa-modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: #fff;
+    }
+
+    #myModal .qa-modal-header-panel {
+        flex-shrink: 0;
+    }
+
+    #myModal .qa-items-section {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    #myModal .pla-items-title {
+        flex-shrink: 0;
+        margin-bottom: 8px;
+        padding-left: 0.45rem;
+        border-left: 3px solid #667eea;
+    }
+
+    #myModal .qa-items-table-wrap {
+        flex: 1 1 auto;
+        min-height: 120px;
+        overflow-y: auto;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    #myModal .pla-items-table thead tr th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    #myModal .modal-footer {
+        flex-shrink: 0;
+        padding: 10px 16px;
+        background: #fafbff;
+        border-top: 1px solid #eef0f8;
+        gap: 8px;
+        flex-wrap: wrap;
+        display: flex;
+        align-items: center;
+    }
+
+    #myModal .modal-footer .btn-pla-approve { margin-right: auto; }
+
+    /* Mobile item cards — desktop hidden */
+    .qa-lineitems-mobile { display: none; }
+
+    .qa-li-mobile-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 3px solid #667eea;
+        border-radius: 10px;
+        padding: 0.6rem 0.65rem;
+        margin-bottom: 0.55rem;
+    }
+
+    .qa-li-mobile-card:last-child { margin-bottom: 0; }
+
+    .qa-li-mobile-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.45rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .qa-li-mobile-sno {
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 800;
+        border-radius: 6px;
+        padding: 0.15rem 0.45rem;
+    }
+
+    .qa-li-mobile-item {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .qa-li-mobile-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem 0.45rem;
+    }
+
+    .qa-li-mobile-kv {
+        background: #fff;
+        border: 1px solid #eef2f7;
+        border-radius: 6px;
+        padding: 0.32rem 0.45rem;
+        min-width: 0;
+    }
+
+    .qa-li-mobile-kv--full { grid-column: 1 / -1; }
+
+    .qa-li-mobile-lbl {
+        display: block;
+        font-size: 0.58rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #94a3b8;
+        margin-bottom: 0.1rem;
+    }
+
+    .qa-li-mobile-val {
+        display: block;
+        font-size: 0.76rem;
+        font-weight: 600;
+        color: #334155;
+        word-break: break-word;
+    }
+
+    .qa-li-mobile-val.is-num {
+        text-align: right;
+        color: #667eea;
+    }
+
+    .section-entry-animation { animation: fadeSlideIn 0.3s ease both; }
+    @@keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @@media (max-width: 768px) {
+        .pla-header { border-radius: 10px; padding: 14px 16px; }
+        .pla-po-card-header { flex-wrap: wrap; }
+        .pla-po-card-right {
+            flex-direction: row; align-items: center;
+            width: 100%; justify-content: space-between;
+        }
+        .pla-info-grid { grid-template-columns: repeat(2, 1fr); }
+        .pla-po-card-footer .btn-pla-card-approve,
+        .pla-po-card-footer .btn-pla-card-view { width: 100%; justify-content: center; }
+
+        /* Modal — full screen, readable mobile layout */
+        #myModal .modal-dialog {
+            max-width: 100%;
+            width: 100%;
+            height: 100dvh;
+            max-height: 100dvh;
+            margin: 0;
+        }
+
+        #myModal .modal-content { border-radius: 0; }
+
+        #myModal .modal-header {
+            padding: 0.65rem 2.65rem 0.65rem 0.7rem;
+            align-items: flex-start;
+        }
+
+        #myModal .modal-header .modal-title {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            font-size: 0.82rem;
+            line-height: 1.35;
+            text-align: center;
+        }
+
+        #myModal .qa-modal-header-main {
+            text-align: center;
+        }
+
+        #myModal .qa-modal-header-date {
+            font-size: 0.66rem;
+        }
+
+        #myModal .qa-modal-body {
+            padding: 12px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #myModal .pla-info-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        #myModal .pla-info-item { padding: 6px 10px; }
+
+        #myModal .pla-info-lbl { font-size: 0.62rem; }
+
+        #myModal .pla-info-val { font-size: 0.78rem; }
+
+        #myModal .qa-items-table-wrap { display: none !important; }
+
+        #myModal .qa-lineitems-mobile {
+            display: block;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        #myModal .qa-items-section {
+            flex: 0 0 auto;
+            overflow: visible;
+        }
+
+        #myModal .modal-footer {
+            padding: 10px 12px;
+        }
+
+        #myModal .modal-footer .btn-pla-approve,
+        #myModal .modal-footer .btn-pla-close,
+        #myModal .modal-footer .btn-av-modal-attach {
+            flex: 1 1 calc(50% - 4px);
+            justify-content: center;
+            margin: 0 !important;
+        }
+
+        .pla-po-card-footer {
+            justify-content: stretch;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pla-po-card-footer .av-card-attach-btns {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .pla-po-card-footer .btn-pla-card-approve,
+        .pla-po-card-footer .btn-pla-card-view {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+    @@media (max-width: 576px) {
+        .pla-info-grid { grid-template-columns: 1fr 1fr; }
+        #myModal .pla-info-grid { grid-template-columns: 1fr; }
     }
 </style>
 
-<div class="table-wrapper fixed-height-table">
-    <table id="QuotationTable" class="fixed-width-table table">
-        <thead id="table-header-QuotationTable">
-        </thead>
-        <tbody id="table-body-QuotationTable">
-        </tbody>
-    </table>
-</div>
-<div class="paginator" id="paginator-QuotationTable">
+<!-- PAGE HEADER (no filter bar) -->
+<div class="pla-header section-entry-animation">
+    <div>
+        <h5><i class="fa fa-file-invoice me-2"></i><span id="qaPageTitle">Quotation Approval</span></h5>
+        <small id="qaPageSubtitle">Review and verify pending quotations</small>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <div class="pla-stat-chip">
+            <div class="val" id="statPendingQuotation">—</div>
+            <div class="lbl">Pending</div>
+        </div>
+    </div>
 </div>
 
-<div class="modal fade" id="myModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg">
+<!-- QUOTATION CARDS LIST -->
+<div id="quotationPendingList" class="section-entry-animation"></div>
+
+<div id="quotationPendingEmpty" style="display:none;" class="pla-empty-state section-entry-animation">
+    <i class="fa fa-inbox"></i>
+    <div>No pending quotations found</div>
+    <small>Check back later for new records.</small>
+</div>
+
+<div id="quotationPendingLoading" style="display:none;" class="pla-loading-state">
+    <i class="fa fa-spinner fa-spin fa-2x" style="color:#667eea;"></i>
+    <div>Loading quotations…</div>
+</div>
+
+<!-- DETAIL / REVIEW MODAL -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Quotation Approval Detail</h5>
-                <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">x</span></button>
+                <div class="qa-modal-header-main">
+                    <h5 class="modal-title mb-0" id="modalQuotationTitle">Quotation Detail</h5>
+                    <div class="qa-modal-header-date" id="modalQuotationDateWrap" style="display:none;">
+                        <i class="fa fa-calendar-alt" aria-hidden="true"></i>
+                        <span>Quotation Date:</span>
+                        <span class="qa-od-chip" id="modalQuotationDate"></span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white"
+                        onclick="CloseModal()" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="table-wrapper fixed-height-table">
-                    <table id="Quotation" class="fixed-width-table table">
-                        <thead id="table-header-Quotation">
-                        </thead>
-                        <tbody id="table-body-Quotation">
-                        </tbody>
-                    </table>
+            <div class="modal-body qa-modal-body">
+                <div id="modalQuotationHeader" class="qa-modal-header-panel"></div>
+                <div class="qa-items-section pla-items-wrap">
+                    <div class="pla-items-title">
+                        <i class="fa fa-boxes me-1"></i>Quotation Items
+                    </div>
+                    <div class="qa-items-table-wrap">
+                        <table class="pla-items-table">
+                            <thead id="table-header-Quotation"></thead>
+                            <tbody id="table-body-Quotation">
+                                <tr>
+                                    <td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                        <i class="fa fa-spinner fa-spin me-1"></i>Loading items…
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="qaLineItemsMobile" class="qa-lineitems-mobile" aria-label="Quotation items"></div>
                 </div>
-                <div class="paginator" id="paginator-Quotation">
-                </div>
+                <div class="paginator d-none" id="paginator-Quotation" aria-hidden="true"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-danger btn-height" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
+                <input type="hidden" id="hfQuotationCode" value="0" />
+                <input type="hidden" id="hfQuotationAttachNo" value="" />
+                <input type="hidden" id="hfQuotationAttachDate" value="" />
+                <button type="button" id="btnQuotationModalAttachment" class="btn-av-modal-attach"
+                        onclick="OpenQuotationApprovalAttachmentFromModal()" title="Attachments">
+                    <i class="fa fa-paperclip"></i>Attachment
+                </button>
+                <button type="button" id="btnQuotationVerify" class="btn-pla-approve" style="display:none;"
+                        onclick="QuotationApprovedlist(document.getElementById('hfQuotationCode').value)">
+                    <i class="fa fa-check"></i><span id="btnQuotationVerifyLabel">Verify</span>
+                </button>
+                <button type="button" class="btn-pla-close ms-auto" onclick="CloseModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- hidden legacy table -->
+<div class="table-wrapper fixed-height-table d-none" aria-hidden="true">
+    <table id="QuotationTable" class="fixed-width-table table">
+        <thead id="table-header-QuotationTable"></thead>
+        <tbody id="table-body-QuotationTable"></tbody>
+    </table>
+</div>
+<div class="paginator d-none" id="paginator-QuotationTable" aria-hidden="true"></div>
+
+<div id="QuotationApproval_AttachmentControlmodal"></div>
