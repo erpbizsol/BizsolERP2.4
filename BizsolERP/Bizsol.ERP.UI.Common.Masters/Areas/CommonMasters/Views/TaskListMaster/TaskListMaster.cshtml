@@ -514,6 +514,25 @@
         background: #fef2f2;
     }
 
+    .tlm-period-date-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        min-width: 0;
+    }
+
+    .tlm-period-date-wrap .tlm-period-slot {
+        flex: 1 1 88px;
+        min-width: 72px;
+        max-width: 120px;
+    }
+
+    .tlm-period-date-wrap .tlm-period-picker {
+        flex: 1 1 130px;
+        min-width: 120px;
+    }
+
     .tlm-row-del {
         width: 30px;
         height: 30px;
@@ -527,6 +546,9 @@
     #tlmDetailPanel.tlm-readonly .tlm-fg input,
     #tlmDetailPanel.tlm-readonly .tlm-fg select,
     #tlmDetailPanel.tlm-readonly #tblTaskEntry input,
+    #tlmDetailPanel.tlm-readonly #tblTaskEntry select,
+    #tlmDetailPanel.tlm-readonly .tlm-period-date-wrap input,
+    #tlmDetailPanel.tlm-readonly .tlm-period-date-wrap select,
     #tlmDetailPanel.tlm-readonly #tblTaskEntry select {
         pointer-events: none;
         background: #f8fafc;
