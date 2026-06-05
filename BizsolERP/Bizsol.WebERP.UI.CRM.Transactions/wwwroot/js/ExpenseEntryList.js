@@ -12,6 +12,10 @@ function CheckRight(optionName) {
 var G_EEL_LevelVerifyApplicable = 'N';
 /** Cached list rows keyed by Code — used by approval-flow modal (avoids wrong DOM column reads). */
 var G_EE_ListRowCache = {};
+/** Detail lines for the open approval-flow modal — used by line history lookup. */
+var G_EE_ListHistoryContext = { detailLines: [], masterCode: 0 };
+const EE_SALES_PERSON_MAX_RETRIES = 4;
+const EE_SALES_PERSON_RETRY_DELAY_MS = 600;
 
 const Indx_Tbl = {
     Code: 0,
@@ -30,9 +34,22 @@ const Indx_Tbl = {
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Entry");
 
-    GetNestedMarketingManList();
     DatePicker();
     renderInitialEmptyExpenseTable();
+
+    var urlParams = getUrlVars();
+    var FromDateSave = decodeURIComponent(urlParams['FromDate'] || "");
+    var ToDateSave   = decodeURIComponent(urlParams['ToDate']   || "");
+
+    // URL params may arrive as dd-mm-yyyy (old format) — convert to yyyy-mm-dd for type="date"
+    if (FromDateSave) {
+        document.getElementById('txtFromDate').value = toIsoDateStr(FromDateSave);
+    }
+    if (ToDateSave) {
+        document.getElementById('txtToDate').value = toIsoDateStr(ToDateSave);
+    }
+
+    GetNestedMarketingManList();
 
     // Load config → controls approval-level UI visibility
     ExpenseEntryService.GetConfigExpenseEntryParameter()
@@ -45,23 +62,9 @@ $(document).ready(function () {
             applyEEListConfigVisibility();
         });
 
-    var urlParams = getUrlVars();
-
-    var SalesPersonNameSave = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
-    var FromDateSave = decodeURIComponent(urlParams['FromDate'] || "");
-    var ToDateSave   = decodeURIComponent(urlParams['ToDate']   || "");
-
-    if (SalesPersonNameSave) {
-        $('#ddlMarketingMan').val(SalesPersonNameSave);
-    }
-
-    // URL params may arrive as dd-mm-yyyy (old format) — convert to yyyy-mm-dd for type="date"
-    if (FromDateSave) {
-        document.getElementById('txtFromDate').value = toIsoDateStr(FromDateSave);
-    }
-    if (ToDateSave) {
-        document.getElementById('txtToDate').value = toIsoDateStr(ToDateSave);
-    }
+    $('#ddlMarketingMan').on('change', function () {
+        triggerShowIfValid();
+    });
 
    $('#txtFromDate').on('keydown', function (e) {
         if (e.key === "Enter") {
@@ -165,48 +168,151 @@ function applyEEListConfigVisibility() {
 
 function getUrlVars() {
     var vars = {};
-    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    var query = window.location.href.indexOf('?');
+    if (query < 0) return vars;
+    var hashes = window.location.href.slice(query + 1).split('&');
     for (var i = 0; i < hashes.length; i++) {
         var hash = hashes[i].split('=');
         vars[hash[0]] = hash[1];
     }
     return vars;
 }
-function GetNestedMarketingManList() {
-    ExpenseEntryService.GetNestedMarketingManList().then(function (response) {
-        if (response && response.length > 0) {
-            $('#ddlSalesPersonList').empty();
 
-            let options = '<option value="ALL" selected>ALL</option>';
-            let matchedPersonName = null;
+function isAuthKeyReady() {
+    try {
+        var authKey = JSON.parse(sessionStorage.getItem('authKey'));
+        return !!(authKey && authKey.UserMaster_Code != null && authKey.UserMaster_Code !== '');
+    } catch (e) {
+        return false;
+    }
+}
 
-            for (let i = 0; i < response.length; i++) {
-                const person = response[i];
-                let userMaster_Code = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-                // Check if UserMaster_Code matches
-                if (person.Usermaster_Code == userMaster_Code) {
-                    matchedPersonName = person.PersonName;
-                }
+function getAuthUserMasterCode() {
+    try {
+        var authKey = JSON.parse(sessionStorage.getItem('authKey'));
+        return authKey ? authKey.UserMaster_Code : null;
+    } catch (e) {
+        return null;
+    }
+}
 
-                options += `<option value="${person.PersonName}">${person.PersonName}</option>`;
-            }
+function normalizeApiList(response) {
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
 
-            $('#ddlSalesPersonList').html(options);
+/** URL may carry plain encoded text (back from detail) or base64 (navigation links). */
+function resolveMarketingManNameFromUrl() {
+    var raw = (getUrlVars()['MarketingMan_Name'] || '').trim();
+    if (!raw) return '';
+    try {
+        raw = decodeURIComponent(String(raw).replace(/\+/g, ' ')).trim();
+    } catch (e) { /* keep raw */ }
+    if (!raw) return '';
+    try {
+        var decoded = atob(raw);
+        if (decoded && decoded.trim()) return decoded.trim();
+    } catch (e) { /* plain text */ }
+    return raw;
+}
 
-            // Set the marketing man input or dropdown value
-            var urlParams = getUrlVars();
-            if (decodeURIComponent(urlParams['MarketingMan_Name'] || "") == '') {
-                if (matchedPersonName) {
-                    $('#ddlMarketingMan').val(matchedPersonName);
-                } else {
-                    $('#ddlMarketingMan').val("ALL");
-                }
-            }
+function eeEscHtmlAttr(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
 
-            GetExpenseEntryList({ suppressEmptyToast: true });
+function bindSalesPersonValue(matchedPersonName, urlPersonName, personNames) {
+    var preferred = (urlPersonName || '').trim();
+    var fallback = (matchedPersonName || 'ALL').trim();
+    var bound = '';
 
+    if (preferred && personNames.indexOf(preferred) >= 0) {
+        bound = preferred;
+    } else if (fallback === 'ALL' || personNames.indexOf(fallback) >= 0) {
+        bound = fallback;
+    } else if (personNames.length > 0) {
+        bound = personNames[0];
+    }
+
+    if (bound) {
+        $('#ddlMarketingMan').val(bound);
+    }
+    return bound;
+}
+
+function loadExpenseListWhenSalesPersonReady(opts) {
+    var person = ($('#ddlMarketingMan').val() || '').trim();
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!person || !fromDate || !toDate) return;
+    GetExpenseEntryList(opts || { suppressEmptyToast: true });
+}
+
+function GetNestedMarketingManList(attempt) {
+    attempt = attempt || 0;
+
+    if (!isAuthKeyReady()) {
+        if (attempt < EE_SALES_PERSON_MAX_RETRIES) {
+            setTimeout(function () {
+                GetNestedMarketingManList(attempt + 1);
+            }, EE_SALES_PERSON_RETRY_DELAY_MS);
         } else {
-            toastr.error('No Data Found');
+            toastr.error('Unable to load sales person list. Please refresh the page.');
+        }
+        return;
+    }
+
+    ExpenseEntryService.GetNestedMarketingManList().then(function (response) {
+        var rows = normalizeApiList(response);
+        if (!rows.length) {
+            if (attempt < EE_SALES_PERSON_MAX_RETRIES) {
+                setTimeout(function () {
+                    GetNestedMarketingManList(attempt + 1);
+                }, EE_SALES_PERSON_RETRY_DELAY_MS);
+            } else {
+                toastr.error('No Data Found');
+            }
+            return;
+        }
+
+        var userMaster_Code = getAuthUserMasterCode();
+        var matchedPersonName = null;
+        var personNames = [];
+        var options = '<option value="ALL">ALL</option>';
+
+        for (var i = 0; i < rows.length; i++) {
+            var person = rows[i];
+            if (!person || !person.PersonName) continue;
+
+            var personName = String(person.PersonName).trim();
+            personNames.push(personName);
+
+            var userCode = person.Usermaster_Code != null ? person.Usermaster_Code : person.UserMaster_Code;
+            if (userMaster_Code != null && userCode == userMaster_Code) {
+                matchedPersonName = personName;
+            }
+
+            options += '<option value="' + eeEscHtmlAttr(personName) + '">' + eeEscHtmlAttr(personName) + '</option>';
+        }
+
+        $('#ddlSalesPersonList').empty().html(options);
+
+        var urlPersonName = resolveMarketingManNameFromUrl();
+        bindSalesPersonValue(matchedPersonName, urlPersonName, personNames);
+        loadExpenseListWhenSalesPersonReady({ suppressEmptyToast: true });
+
+    }).catch(function () {
+        if (attempt < EE_SALES_PERSON_MAX_RETRIES) {
+            setTimeout(function () {
+                GetNestedMarketingManList(attempt + 1);
+            }, EE_SALES_PERSON_RETRY_DELAY_MS);
+        } else {
+            toastr.error('Error loading sales person list.');
         }
     });
 }
@@ -361,7 +467,7 @@ function GetExpenseEntryList(opts){
                 G_EE_ListRowCache[item.Code] = { ...item };
                 let approvalFlowBtn = '';
                 if (G_EEL_LevelVerifyApplicable === 'Y') {
-                    approvalFlowBtn = `<button class="btn icon-height mb-1 ee-btn-view-approval" title="View Approval Flow" onclick="ViewApprovalFlowData(${item.Code},this)"><i class="fa fa-eye"></i></button>`;
+                    approvalFlowBtn = `<button class="btn icon-height mb-1 ee-btn-view-approval" title="View Approval Flow" onclick="ViewApprovalFlowData(${item.Code},this)"><i class="fa fa-layer-group"></i></button>`;
                 }
                 let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.Status !== 'Unverified' ? 'disabled' : ''} onclick="EditData(${item.Code},this)"><i class="fa fa-pencil"></i></button>
                 <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.VerifyStatus === 'Y' ? 'disabled' : ''} onclick="DeleteData('${item.Code}',this)"><i class="fa fa-times"></i></button>
@@ -504,7 +610,7 @@ function CreateNew(Code) {
 var G_DeleteExpenseEntryCode = 0;
 
 function DeleteData(Code) {
-    CheckRight('Edit').then(function (respCheck) {
+    CheckRight('Delete').then(function (respCheck) {
         if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
             toastr.error(respCheck.Msg);
             return;
@@ -1187,6 +1293,13 @@ function eeListMergeShowDataOntoLine(line, showLine) {
     }
     if (showLine.ProjectMaster_Code != null) r.ProjectMaster_Code = showLine.ProjectMaster_Code;
     if (showLine.SubProjectMaster_Code != null) r.SubProjectMaster_Code = showLine.SubProjectMaster_Code;
+    const detailCode = parseInt(
+        showLine.ExpenseEntryDetail_Code ?? showLine.Code ?? showLine.code ?? 0,
+        10
+    );
+    if (Number.isFinite(detailCode) && detailCode > 0) {
+        r.ExpenseEntryDetail_Code = detailCode;
+    }
     return r;
 }
 
@@ -1284,10 +1397,28 @@ function eeListApplyCalculatedAllowedAmounts(entry, lines) {
     });
 }
 
-function eeListBuildDetailRowsHtml(items) {
-    if (!items || items.length === 0) {
-        return '<tr><td colspan="6" class="text-center py-3 text-muted">No expense lines found.</td></tr>';
+function eeListDetailLineCodeFromRow(row, masterCode) {
+    if (!row || typeof row !== 'object') return 0;
+    const mc = parseInt(masterCode, 10) || 0;
+    const keys = [
+        'ExpenseEntryDetail_Code', 'ExpenseEntryDetailCode',
+        'Detail Line Code', 'Detail_Line_Code',
+        'Detail_Code', 'DetailCode', 'detailCode', 'ExpenseDetail_Code', 'Line_Code', 'LineCode'
+    ];
+    for (let i = 0; i < keys.length; i++) {
+        const n = parseInt(row[keys[i]], 10);
+        if (Number.isFinite(n) && n > 0) return n;
     }
+    const code = parseInt(row.Code ?? row.code, 10);
+    if (Number.isFinite(code) && code > 0 && code !== mc) return code;
+    return 0;
+}
+
+function eeListBuildDetailRowsHtml(items, masterCode) {
+    if (!items || items.length === 0) {
+        return '<tr><td colspan="7" class="text-center py-3 text-muted">No expense lines found.</td></tr>';
+    }
+    const mc = parseInt(masterCode, 10) || 0;
     let rows = '';
     items.forEach(function (row, idx) {
         const head = eeListEscHtml(row['Expense Head'] ?? row.ExpenseHead ?? row.ExpenseDesp ?? '—');
@@ -1295,6 +1426,12 @@ function eeListBuildDetailRowsHtml(items) {
         const expAmt = eeListFmtCurrency(row['Expense Amount'] ?? row.ExpendedAmount ?? row['Expended Amount'] ?? 0);
         const apprAmt = eeListFmtCurrency(row['Approved Amount'] ?? row.Approved ?? row.ApprovedAmount ?? 0);
         const rem = eeListEscHtml(row.Remarks ?? row['Remarks'] ?? row.Description ?? '');
+        const detailCode = eeListDetailLineCodeFromRow(row, mc);
+        const histBtn = detailCode > 0
+            ? '<button type="button" class="btn-eea-line-history" title="View approval amount history" ' +
+              'onclick="OpenEeListLineHistory(' + detailCode + ')"><i class="fa fa-history"></i></button>'
+            : '<button type="button" class="btn-eea-line-history" disabled title="Line must be saved before history is available">' +
+              '<i class="fa fa-history"></i></button>';
         rows += '<tr>' +
             '<td class="text-center">' + (idx + 1) + '</td>' +
             '<td>' + head + '</td>' +
@@ -1302,12 +1439,111 @@ function eeListBuildDetailRowsHtml(items) {
             '<td class="text-end">' + expAmt + '</td>' +
             '<td class="text-end">' + apprAmt + '</td>' +
             '<td>' + rem + '</td>' +
+            '<td class="text-center">' + histBtn + '</td>' +
             '</tr>';
     });
     return rows;
 }
 
+function eeListNormalizeHistoryList(data) {
+    if (Array.isArray(data)) return data;
+    if (!data || typeof data !== 'object') return [];
+    if (Array.isArray(data.Data)) return data.Data;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.ExpenseEntryApprovalHistory)) return data.ExpenseEntryApprovalHistory;
+    if (Array.isArray(data.Result)) return data.Result;
+    return [];
+}
+
+function eeListHistoryTextFromRow(row, keys) {
+    const arr = Array.isArray(keys) ? keys : [keys];
+    for (let i = 0; i < arr.length; i++) {
+        const v = row[arr[i]];
+        if (v != null && String(v).trim() !== '') return String(v).trim();
+    }
+    return '';
+}
+
+function eeListRenderHistoryModalBody(rows) {
+    const $body = $('#eeListHistoryModalBody');
+    if (!rows || rows.length === 0) {
+        $body.html(
+            '<tr><td colspan="4" class="text-center py-4" style="color:#0e7499;font-size:0.82rem;">' +
+            '<i class="fa fa-inbox me-1"></i>No approval history for this line.</td></tr>'
+        );
+        return;
+    }
+    let html = '';
+    rows.forEach(function (row, idx) {
+        const level = eeListEscHtml(eeListHistoryTextFromRow(row, ['Level', 'LevelDesc', 'LevelDesp', 'Level Name', 'Level Description'])
+            || ('L' + (row.ExpenseEntryApprovalConfiguration_Code || row.LevelCode || '')));
+        const oldAmt = eeListFmtCurrency(eeListNumFromRow(row, ['Old Approved Amount', 'OldApprovedAmount', 'Old Approved', 'OldApproved']));
+        const newAmt = eeListFmtCurrency(eeListNumFromRow(row, ['New Approved Amount', 'NewApprovedAmount', 'New Approved', 'NewApproved']));
+        html += '<tr>' +
+            '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
+            '<td style="font-weight:600;">' + (level || '—') + '</td>' +
+            '<td class="text-end">' + oldAmt + '</td>' +
+            '<td class="text-end" style="font-weight:700;color:#0891b2;">' + newAmt + '</td>' +
+            '</tr>';
+    });
+    $body.html(html);
+}
+
+function OpenEeListLineHistory(detailCode) {
+    const dc = parseInt(detailCode, 10) || 0;
+    if (dc <= 0) {
+        toastr.warning('This line has no detail code; history is not available.');
+        return;
+    }
+
+    let lineLabel = '';
+    const ctx = G_EE_ListHistoryContext || {};
+    const masterCode = parseInt(ctx.masterCode, 10) || 0;
+    if (Array.isArray(ctx.detailLines)) {
+        const hit = ctx.detailLines.find(function (r) {
+            return eeListDetailLineCodeFromRow(r, masterCode) === dc;
+        });
+        if (hit) {
+            lineLabel = String(hit['Expense Head'] ?? hit.ExpenseHead ?? hit.ExpenseDesp ?? '').trim();
+        }
+    }
+
+    $('#eeListHistoryModalTitle').text('Approval history');
+    $('#eeListHistoryModalSub').text(
+        'ExpenseEntryDetail_Code: ' + dc + (lineLabel ? ' · ' + lineLabel : '')
+    );
+    $('#eeListHistoryModalBody').html(
+        '<tr><td colspan="4" class="text-center py-3" style="color:#0e7499;font-size:0.82rem;">' +
+        '<i class="fa fa-spinner fa-spin me-1"></i>Loading…</td></tr>'
+    );
+
+    $('#modalEeListLineHistory').modal({ backdrop: 'static' });
+    $('#modalEeListLineHistory').modal('show');
+
+    ExpenseEntryLevelsApprovalService.GetExpenseEntryApprovalHistory(dc)
+        .then(function (res) {
+            eeListRenderHistoryModalBody(eeListNormalizeHistoryList(res));
+        })
+        .catch(function () {
+            $('#eeListHistoryModalBody').html(
+                '<tr><td colspan="4" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<i class="fa fa-exclamation-triangle me-1"></i>Unable to load history.</td></tr>'
+            );
+            toastr.error('Error loading approval history for this line.');
+        });
+}
+
+function CloseEeListLineHistoryModal() {
+    $('#modalEeListLineHistory').modal('hide');
+}
+
 function renderExpenseEntryApprovalFlowModal(entry, detailLines) {
+    const masterCode = parseInt(entry.Code ?? entry.ExpenseEntryMaster_Code, 10) || 0;
+    G_EE_ListHistoryContext = {
+        detailLines: Array.isArray(detailLines) ? detailLines.slice() : [],
+        masterCode: masterCode
+    };
+
     const person = eeListEscHtml(entry['Person Name'] ?? entry.PersonName ?? '—');
     const entryNo = eeListEscHtml(entry['Entry No'] ?? entry.EntryNo ?? '—');
     const entryDate = eeListEscHtml(eeListDisplayDate(entry['Entry Date'] ?? entry.EntryDate));
@@ -1353,9 +1589,10 @@ function renderExpenseEntryApprovalFlowModal(entry, detailLines) {
                         '<th class="text-end">Expended</th>' +
                         '<th class="text-end">Approved</th>' +
                         '<th>Remarks</th>' +
+                        '<th class="text-center">History</th>' +
                     '</tr>' +
                 '</thead>' +
-                '<tbody>' + eeListBuildDetailRowsHtml(detailLines) + '</tbody>' +
+                '<tbody>' + eeListBuildDetailRowsHtml(detailLines, masterCode) + '</tbody>' +
             '</table>' +
         '</div>'
     );
@@ -1428,3 +1665,5 @@ window.CloseExpenseEntrySuccessModal = CloseExpenseEntrySuccessModal;
 window.closeApprovedEntriesModal = closeApprovedEntriesModal;
 window.ViewApprovalFlowData = ViewApprovalFlowData;
 window.closeExpenseEntryApprovalFlowModal = closeExpenseEntryApprovalFlowModal;
+window.OpenEeListLineHistory = OpenEeListLineHistory;
+window.CloseEeListLineHistoryModal = CloseEeListLineHistoryModal;
