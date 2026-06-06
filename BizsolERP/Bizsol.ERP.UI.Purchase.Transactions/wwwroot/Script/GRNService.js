@@ -34,8 +34,10 @@ let grnMasterSourceRows = [];
 let grnFormHasAttachmentYes = false;
 /** List grid: verified via GetAllDocumentAttachment (same source as Attachment control modal). */
 let grnListAttachmentYesMap = {};
-/** @type {null|string} null = all rows, 'N' = not verified (Pending), 'Y' = verified, 'R' = rejected */
-let grnListVerifiedFilter = null;
+/** @type {null|string} null = all rows, 'N' = Pending, 'P' = Approved, 'R' = Rejected. Default: 'N' (Pending). Matches GRNPaymentApproval codes. */
+let grnListVerifiedFilter = "N";
+/** Codes (integer) of GRN records that MRN approval API reports as fully approved. */
+let grnMrnApprovedCodeSet = new Set();
 
 /** Codes of GRNs that are rejected in the MRN approval workflow — keyed by integer Code */
 var grnRejectedCodesSet = {};
@@ -82,6 +84,16 @@ function syncGrnListHeaderTabsFromApprovalChips(stats) {
     }
     if (stats.pendingOnMe !== undefined && stats.pendingOnMe !== null) {
         setGrnListPendingOnMeBadge(stats.pendingOnMe);
+    }
+    if (Array.isArray(stats.approvedCodes)) {
+        grnMrnApprovedCodeSet = new Set(
+            stats.approvedCodes
+                .map(function (c) { return parseInt(c, 10); })
+                .filter(function (n) { return n > 0; })
+        );
+        if (grnListVerifiedFilter === "P") {
+            refreshGRNListGrid();
+        }
     }
 }
 
@@ -196,9 +208,9 @@ function applyRememberedVerifiedToRows(rows) {
     if (!has) return rows.slice();
     return rows.map(function (row) {
         var rc = parseInt(row.Code ?? row.code ?? 0, 10);
-        // Don't overwrite rows that already have a definitive status from the API
+        // Don't overwrite rows that already have a definitive status from the API (P=Approved, R=Rejected)
         var existing = String(row.Verified ?? row.verified ?? "").trim().toUpperCase();
-        if (!isNaN(rc) && set[rc] && existing !== "REJECTED" && existing !== "R") {
+        if (!isNaN(rc) && set[rc] && existing !== "P" && existing !== "REJECTED" && existing !== "R") {
             return Object.assign({}, row, { Verified: "Y" });
         }
         return row;
@@ -276,6 +288,30 @@ function rowIsRejectedGrn(item) {
     // Secondary: check against codes fetched from MRN approval API
     var c = parseInt(item.Code ?? item.code ?? 0, 10);
     return !!(c && grnRejectedCodesSet[c]);
+}
+
+/**
+ * Returns 'P' (Approved/Posted), 'R' (Rejected), or 'N' (Pending).
+ * API Verified field mapping: 'P' = Approved, 'R' = Rejected, 'Y' = Pending (entry saved, not yet approved).
+ * Mirrors normalizeGpaListStatusCode in GRNPaymentEntry.js.
+ */
+function computeGrnListStatusCode(row) {
+    if (!row || typeof row !== "object") return "N";
+
+    // Primary: check Verified field with correct DB mapping
+    var verifiedRaw = row.Verified ?? row.verified ?? row.IsVerified ?? row.isVerified ?? row.Verify ?? row.verify;
+    if (verifiedRaw !== undefined && verifiedRaw !== null) {
+        var v = String(verifiedRaw).trim().toUpperCase();
+        if (v === "P") return "P";    // Approved / Posted
+        if (v === "R") return "R";    // Rejected
+        // 'Y' = entry saved but not yet approved → falls through to Pending
+    }
+
+    // Fallback: MRN multi-level approval data (rejection or approval via approval API)
+    if (rowIsRejectedGrn(row)) return "R";
+    var code = parseInt(row.Code ?? row.code ?? 0, 10);
+    if (rowIsMrnApprovedGrn(row) || (code > 0 && grnMrnApprovedCodeSet.has(code))) return "P";
+    return "N";
 }
 
 function escapeGrnAttr(str) {
@@ -611,12 +647,7 @@ function getGRNListColumnAlignment() {
 function applyGrnVerifiedListFilter(rows) {
     if (!grnListVerifiedFilter) return rows.slice();
     return rows.filter(function (row) {
-        var isV = rowIsVerifiedGrn(row) || rowIsMrnApprovedGrn(row);
-        var isR = rowIsRejectedGrn(row);
-        if (grnListVerifiedFilter === "Y") return isV;
-        if (grnListVerifiedFilter === "R") return isR;
-        // 'N' = Pending: not approved and not rejected
-        return !isV && !isR;
+        return computeGrnListStatusCode(row) === grnListVerifiedFilter;
     });
 }
 
@@ -687,8 +718,9 @@ function updateGrnVerifyFilterTabCounts() {
     var rejected = 0;
     var pendingOnMe = 0;
     for (var i = 0; i < rows.length; i++) {
-        if (rowIsVerifiedGrn(rows[i])) verified++;
-        else if (rowIsRejectedGrn(rows[i])) rejected++;
+        var st = computeGrnListStatusCode(rows[i]);
+        if (st === "P") verified++;
+        else if (st === "R") rejected++;
         else {
             pending++;
             if (rowIsPendingOnMeGrn(rows[i])) pendingOnMe++;
@@ -701,9 +733,15 @@ function updateGrnVerifyFilterTabCounts() {
     if (elP) elP.textContent = String(chipPending !== null ? chipPending : pending);
     if (elV) elV.textContent = String(chipApproved !== null ? chipApproved : verified);
     if (elR) elR.textContent = String(rejected);
-    setGrnListPendingOnMeBadge(
-        chipOnMe !== null ? chipOnMe : resolveGrnListPendingOnMeCount(pending, pendingOnMe)
-    );
+    // “Pending on me” must come from MRN approval API — GRN verify list has no reliable approver info.
+    if (chipOnMe !== null) {
+        setGrnListPendingOnMeBadge(chipOnMe);
+    } else if (chipPending !== null) {
+        setGrnListPendingOnMeBadge(0);
+    } else {
+        var elOM = document.getElementById("grnVerifyFilterCountPendingOnMe");
+        if (elOM) elOM.textContent = "—";
+    }
 }
 
 function syncGrnVerifyFilterTabButtons() {
@@ -715,8 +753,8 @@ function syncGrnVerifyFilterTabButtons() {
         btnN.setAttribute("aria-pressed", grnListVerifiedFilter === "N" ? "true" : "false");
     }
     if (btnY) {
-        btnY.classList.toggle("is-active", grnListVerifiedFilter === "Y");
-        btnY.setAttribute("aria-pressed", grnListVerifiedFilter === "Y" ? "true" : "false");
+        btnY.classList.toggle("is-active", grnListVerifiedFilter === "P");
+        btnY.setAttribute("aria-pressed", grnListVerifiedFilter === "P" ? "true" : "false");
     }
     if (btnR) {
         btnR.classList.toggle("is-active", grnListVerifiedFilter === "R");
@@ -765,9 +803,13 @@ function navigateToMRNMasterApprovalPendingOnMe() {
     }
     showApprovalViewOnly();
     if (typeof window.reloadMrnApprovalView === "function") {
-        window.reloadMrnApprovalView({ pendingOnMe: true });
+        window.reloadMrnApprovalView({ pendingOnMe: true, forceRefreshDates: false });
     } else if (typeof window.LoadPaymentList === "function") {
-        window.LoadPaymentList();
+        var ddl = document.getElementById("gpaDdlStatus");
+        if (ddl) ddl.value = "A";
+        var searchEl = document.getElementById("gpaLstSearch");
+        if (searchEl) searchEl.value = "";
+        window.LoadPaymentList({});
     }
 }
 
@@ -779,12 +821,8 @@ function navigateToGRNServiceApprovalConfiguration() {
 }
 
 function onGrnListVerifyFilterClick(which) {
-    if (which !== "N" && which !== "Y" && which !== "R") return;
-    if (grnListVerifiedFilter === which) {
-        grnListVerifiedFilter = null;
-    } else {
-        grnListVerifiedFilter = which;
-    }
+    if (which !== "N" && which !== "P" && which !== "R") return;
+    grnListVerifiedFilter = which;
     syncGrnVerifyFilterTabButtons();
     refreshGRNListGrid();
 }

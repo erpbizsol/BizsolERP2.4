@@ -9,6 +9,8 @@ const MRN_LANDING_PENDING_ON_ME_KEY = 'bizsol_mrnLandingPendingOnMe';
 const MRN_APPROVAL_REFRESH_KEY = 'bizsol_mrnApprovalRefresh';
 
 let G_PaymentList = [];
+/** Full API result for current date range (before status dropdown filter) — used for stat chips. */
+let G_PaymentListFull = [];
 let G_CurrentPayment = null;
 let G_OnlyPendingOnMe = false;
 let G_LoadPaymentListSeq = 0;
@@ -709,12 +711,22 @@ function LoadPaymentList(options) {
     options = options || {};
     const seq = ++G_LoadPaymentListSeq;
     const landingPendingOnMe = shouldApplyLandingPendingOnMe();
-    const keepPendingOnMe = !!(options.preservePendingOnMe || landingPendingOnMe || G_OnlyPendingOnMe);
+    // Opening from GRN list “Pending on me” tab: status All + show all cards; chip filter is optional.
+    const keepPendingOnMe = !!(options.preservePendingOnMe || G_OnlyPendingOnMe);
 
-    if (keepPendingOnMe) {
+    if (landingPendingOnMe) {
+        prepareGpaPendingOnMeLanding();
+        try {
+            sessionStorage.removeItem(MRN_LANDING_PENDING_ON_ME_KEY);
+        } catch (e) {
+            /* ignore */
+        }
+    }
+
+    if (keepPendingOnMe && !landingPendingOnMe) {
         G_OnlyPendingOnMe = true;
         syncGpaPendingOnMeChipActive();
-    } else {
+    } else if (!keepPendingOnMe || landingPendingOnMe) {
         G_OnlyPendingOnMe = false;
         syncGpaPendingOnMeChipActive();
     }
@@ -736,8 +748,11 @@ function LoadPaymentList(options) {
         .then(function (data) {
             if (seq !== G_LoadPaymentListSeq) return G_PaymentList;
             ShowGpaLoading(false);
-            let list = NormalizePaymentList(normalizeListResponse(data));
+            let fullList = NormalizePaymentList(normalizeListResponse(data));
+            fullList = enrichPaymentListMrnNos(fullList);
+            G_PaymentListFull = fullList;
 
+            let list = fullList.slice();
             // Client-side status filter based on selected dropdown value
             if (statusVal === 'P') {
                 list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'pending'; });
@@ -748,7 +763,7 @@ function LoadPaymentList(options) {
             }
             // 'A' (All Status) — no filter, keep full list
 
-            G_PaymentList = enrichPaymentListMrnNos(list);
+            G_PaymentList = list;
             UpdateGpaStatChips();
             RenderPaymentCards();
             const searchEl = document.getElementById('gpaLstSearch');
@@ -761,6 +776,7 @@ function LoadPaymentList(options) {
             console.error('LoadPaymentList MRN', err);
             ShowGpaLoading(false);
             G_PaymentList = [];
+            G_PaymentListFull = [];
             UpdateGpaStatChips();
             if (container) container.innerHTML = '';
             ShowGpaEmpty(true);
@@ -771,14 +787,19 @@ function LoadPaymentList(options) {
         });
 }
 
+function getGpaStatCountSource() {
+    return (G_PaymentListFull && G_PaymentListFull.length) ? G_PaymentListFull : G_PaymentList;
+}
+
 function UpdateGpaStatChips() {
-    const pendingOnly = G_PaymentList.filter(function (p) {
+    const source = getGpaStatCountSource();
+    const pendingOnly = source.filter(function (p) {
         return getApprovalStatus(p).toLowerCase() === 'pending';
     }).length;
-    const approvedCount = G_PaymentList.filter(function (p) {
+    const approvedCount = source.filter(function (p) {
         return getApprovalStatus(p).toLowerCase() === 'approved';
     }).length;
-    const rejectedCount = G_PaymentList.filter(function (p) {
+    const rejectedCount = source.filter(function (p) {
         return getApprovalStatus(p).toLowerCase() === 'rejected';
     }).length;
     const elP = document.getElementById('gpaStatPending');
@@ -786,17 +807,23 @@ function UpdateGpaStatChips() {
     if (elP) elP.textContent = String(pendingOnly);
     if (elO) elO.textContent = String(approvedCount);
 
-    let onMe = pendingOnly === 0 ? 0 : G_PaymentList.filter(paymentIsPendingOnMe).length;
+    let onMe = pendingOnly === 0 ? 0 : source.filter(paymentIsPendingOnMe).length;
     const elOnMe = document.getElementById('gpaStatPendingOnMe');
     if (elOnMe) {
         elOnMe.textContent = String(onMe);
     }
     if (typeof window.syncGrnListHeaderTabsFromApprovalChips === 'function') {
+        const approvedCodes = source
+            .filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'approved'; })
+            .map(function (p) { return getPaymentMasterCode(p); })
+            .map(function (c) { return parseInt(c, 10); })
+            .filter(function (n) { return n > 0; });
         window.syncGrnListHeaderTabsFromApprovalChips({
             pending: pendingOnly,
             approved: approvedCount,
             rejected: rejectedCount,
             pendingOnMe: onMe,
+            approvedCodes: approvedCodes,
         });
     }
 }
@@ -832,18 +859,26 @@ function ToggleGpaPendingOnMeFilter() {
 }
 
 function applyLandingPendingOnMeFilterIfNeeded() {
-    try {
-        const v = sessionStorage.getItem(MRN_LANDING_PENDING_ON_ME_KEY);
-        if (v !== 'Y' && v !== '1') return;
-        sessionStorage.removeItem(MRN_LANDING_PENDING_ON_ME_KEY);
-        G_OnlyPendingOnMe = true;
-        syncGpaPendingOnMeChipActive();
-        RenderPaymentCards();
-        const searchEl = document.getElementById('gpaLstSearch');
-        FilterGpaCards(searchEl ? searchEl.value : '');
-    } catch (e) {
-        /* ignore */
+    /* Session key consumed in LoadPaymentList — status/search already reset; cards show full list. */
+}
+
+function reloadMrnApprovalView(options) {
+    options = options || {};
+    const landingOnMe = !!(options.pendingOnMe || shouldApplyLandingPendingOnMe());
+    if (landingOnMe) {
+        prepareGpaPendingOnMeLanding();
+        try {
+            sessionStorage.removeItem(MRN_LANDING_PENDING_ON_ME_KEY);
+        } catch (e) {
+            /* ignore */
+        }
     }
+    const refreshDates = !!options.forceRefreshDates;
+    return InitDates(refreshDates).then(function () {
+        return LoadPaymentList({
+            preservePendingOnMe: !!(options.preservePendingOnMe && !landingOnMe),
+        });
+    });
 }
 
 function consumeMrnApprovalRefreshFlag() {
@@ -866,17 +901,27 @@ function refreshMrnApprovalListIfNeeded(forceReload) {
     return Promise.resolve(G_PaymentList);
 }
 
-function reloadMrnApprovalView(options) {
-    options = options || {};
-    if (options.pendingOnMe || shouldApplyLandingPendingOnMe()) {
-        G_OnlyPendingOnMe = true;
-        syncGpaPendingOnMeChipActive();
+/** Reset approval filters when opening from GRN list “Pending on me” tab. */
+function prepareGpaPendingOnMeLanding() {
+    const ddl = document.getElementById('gpaDdlStatus');
+    if (ddl) ddl.value = 'A';
+    const searchEl = document.getElementById('gpaLstSearch');
+    if (searchEl) searchEl.value = '';
+}
+
+/** Back to GRN list — restore header chip counts (Approved etc.) from full approval data. */
+function restoreGrnListHeaderAfterApprovalView() {
+    G_OnlyPendingOnMe = false;
+    syncGpaPendingOnMeChipActive();
+    const ddl = document.getElementById('gpaDdlStatus');
+    if (ddl) ddl.value = 'A';
+    const searchEl = document.getElementById('gpaLstSearch');
+    if (searchEl) searchEl.value = '';
+    if (G_PaymentListFull.length) {
+        UpdateGpaStatChips();
+        return Promise.resolve(G_PaymentListFull);
     }
-    return InitDates(true).then(function () {
-        return LoadPaymentList({
-            preservePendingOnMe: !!(options.pendingOnMe || G_OnlyPendingOnMe || shouldApplyLandingPendingOnMe()),
-        });
-    });
+    return LoadPaymentList({ preservePendingOnMe: false });
 }
 
 function BuildPaymentCard(p) {
@@ -1010,7 +1055,8 @@ function FilterGpaCards(query) {
         card.style.display = match ? '' : 'none';
         if (match) visible++;
     });
-    ShowGpaEmpty(visible === 0 && G_PaymentList.length > 0);
+    const filteredBase = getFilteredPaymentListForRender();
+    ShowGpaEmpty(visible === 0 && filteredBase.length > 0);
 }
 
 function mergeDetailIntoPayment(root, basePayment) {
@@ -1600,6 +1646,7 @@ window.addEventListener('pageshow', function () {
 window.LoadPaymentList = LoadPaymentList;
 window.refreshMrnApprovalListIfNeeded = refreshMrnApprovalListIfNeeded;
 window.reloadMrnApprovalView = reloadMrnApprovalView;
+window.restoreGrnListHeaderAfterApprovalView = restoreGrnListHeaderAfterApprovalView;
 window.MRN_APPROVAL_REFRESH_KEY = MRN_APPROVAL_REFRESH_KEY;
 window.OpenDetailModal = OpenDetailModal;
 window.SubmitApproval = SubmitApproval;

@@ -1562,7 +1562,7 @@
                 </button>
                 <button type="button" id="grnVerifyFilterTabVerified" class="grn-verify-filter-tab grn-verify-filter-tab--y" role="tab"
                         aria-pressed="false" title="Show approved GRNs in this list"
-                        onclick="onGrnListVerifyFilterClick('Y')">
+                        onclick="onGrnListVerifyFilterClick('P')">
                     <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountVerified">0</span>
                     <span class="grn-verify-filter-tab-lbl">Approved</span>
                 </button>
@@ -1874,11 +1874,6 @@
             <div class="gpa-stat-chip gpa-stat-chip--pending" title="Pending entries">
                 <div class="val" id="gpaStatPending">—</div>
                 <div class="lbl">Pending</div>
-            </div>
-            <div class="gpa-stat-chip gpa-stat-chip--onme" id="gpaStatChipPendingOnMe"
-                 onclick="ToggleGpaPendingOnMeFilter()" title="Pending on me — click to filter">
-                <div class="val" id="gpaStatPendingOnMe">—</div>
-                <div class="lbl">Pending on Me</div>
             </div>
             <div class="gpa-stat-chip gpa-stat-chip--approved" title="Approved entries">
                 <div class="val" id="gpaStatProcessed">—</div>
@@ -2230,9 +2225,14 @@
         var approvalEl = document.getElementById('divGRNApprovalView');
         if (approvalEl) approvalEl.style.display = 'none';
         if (listEl) listEl.style.display = 'block';
-        if (typeof window.loadGRNList === 'function') {
-            window.loadGRNList();
-        }
+        var restorePromise = (typeof window.restoreGrnListHeaderAfterApprovalView === 'function')
+            ? window.restoreGrnListHeaderAfterApprovalView()
+            : Promise.resolve();
+        Promise.resolve(restorePromise).then(function () {
+            if (typeof window.loadGRNList === 'function') {
+                window.loadGRNList();
+            }
+        });
     };
 
     /**

@@ -251,13 +251,16 @@ function renderCalendar() {
             var iso = toIso(d);
             var cell = task.cells[iso] || {};
             var isPast = iso < today;
+            // The server decides whether a cell is editable based on the task's
+            // frequency + assigned date (e.g. monthly recurs on the same day each
+            // month). Honour that flag instead of blanket-locking past dates.
             var enabled = cell.IsEnabled != null ? cell.IsEnabled : !isPast;
             var done = !!cell.IsDone;
 
             var cls = 'tu-day-cell';
             if (d.getDay() === 0 || d.getDay() === 6) cls += ' tu-weekend';
             if (iso === today) cls += ' tu-today';
-            if (isPast) cls += ' tu-past';
+            if (isPast && !enabled) cls += ' tu-past';
             if (done) cls += ' tu-done';
 
             bodyHtml +=
@@ -265,7 +268,7 @@ function renderCalendar() {
                 '<div class="tu-chk-wrap">' +
                 '<input type="checkbox" class="tu-chk" data-date="' + iso + '"' +
                 (done ? ' checked' : '') +
-                (enabled && !isPast ? '' : ' disabled') +
+                (enabled ? '' : ' disabled') +
                 ' />' +
                 '</div>' +
                 '</td>';
@@ -327,16 +330,18 @@ function initUserDropdown() {
         });
 }
 
-/* Normal (non-admin) user: dropdown shows only themselves and stays locked. */
+/* Normal (non-admin) user: no dropdown at all — only their own name is shown,
+   so they can never switch to another user. Admin alone gets the selector. */
 function initSelfLockedUser() {
     var $sel = $('#tuUserSelect');
     var selfCode = authUserCode();
+    G_TU_SelectedUserCode = selfCode;
     $sel.empty();
     $sel.append('<option value="' + selfCode + '">' + escapeHtml(authUserName() || ('User #' + selfCode)) + '</option>');
     $sel.val(String(selfCode));
     $sel.prop('disabled', true);            // locked for normal users
-    $('#tuEmpName').hide();
-    $sel.show();
+    $sel.hide();                            // hidden so it can't be interacted with
+    $('#tuEmpName').show();                 // show the read-only name badge instead
 }
 
 function onToggleStatus($chk) {
@@ -421,6 +426,12 @@ $(document).ready(function () {
     });
 
     $('#tuUserSelect').on('change', function () {
+        // Only admins may view/update another user's tasks; normal users stay on self.
+        if (!isAdminUser()) {
+            $(this).val(String(authUserCode()));
+            G_TU_SelectedUserCode = authUserCode();
+            return;
+        }
         G_TU_SelectedUserCode = parseInt($(this).val() || '0', 10) || authUserCode();
         loadCalendar();
     });
