@@ -33,14 +33,16 @@ const SalesPersonTargetAchievementService = {
         fromDate,
         toDate,
         mode,
-        marketingManMaster_Code
+        marketingManMaster_Code,
+        isNested
     ) {
         var URL =
             `${getReportApiBase()}/GetRptTargetVsAchievement` +
             `?FromDate=${encodeURIComponent(fromDate)}` +
             `&ToDate=${encodeURIComponent(toDate)}` +
             `&Mode=${encodeURIComponent(mode || 'Week')}` +
-            `&MarketingManMaster_Code=${encodeURIComponent(marketingManMaster_Code ?? 0)}`;
+            `&MarketingManMaster_Code=${encodeURIComponent(marketingManMaster_Code ?? 0)}` +
+            `&IsNested=${encodeURIComponent(isNested ?? 'Y')}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
@@ -52,6 +54,52 @@ const SalesPersonTargetAchievementService = {
             `?ModuleDesp=${encodeURIComponent(moduleDesp)}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
+        });
+    },
+    SendWhatsappToMarketingMan: function SendWhatsappToMarketingMan(
+        reportType,
+        link,
+        marketingManMaster_Code,
+        isNested
+    ) {
+        var URL =
+            `${getReportApiBase()}/SendWhatsappToMarketingMan` +
+            `?ReportType=${encodeURIComponent(reportType || '')}` +
+            `&Link=${encodeURIComponent(link || '')}` +
+            `&MarketingManMaster_Code=${encodeURIComponent(marketingManMaster_Code ?? 0)}` +
+            `&IsNested=${encodeURIComponent(isNested ?? 'Y')}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
+    UploadWhatsappFile: function UploadWhatsappFile(fileName, fileExtension, fileBase64String) {
+       var URL =
+            (typeof window !== 'undefined' && window.UPLOAD_WHATSAPP_URL) ||
+            '/SalesTransactions/SalesTransactions/UploadWhatsappFile';
+        var payload = JSON.stringify({
+            FileName: fileName,
+            FileExtension: fileExtension,
+            FileDataBase64string: fileBase64String,
+        });
+        return new Promise(function (resolve, reject) {
+            $.ajax({
+                url: URL,
+                method: 'POST',
+                contentType: 'application/json',
+                dataType: 'text',
+                data: payload,
+                success: function (response) {
+                    resolve(response);
+                },
+                error: function (xhr, status, error) {
+                    var msg = (xhr && xhr.responseText) ? xhr.responseText.trim() : '';
+                    if (!msg) {
+                        msg = status + ': ' + error;
+                    }
+                    reject(new Error(msg));
+                },
+            });
         });
     },
 };

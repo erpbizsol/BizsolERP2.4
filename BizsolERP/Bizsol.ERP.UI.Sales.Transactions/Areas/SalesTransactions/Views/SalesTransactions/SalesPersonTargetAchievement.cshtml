@@ -1,6 +1,9 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<script>
+    window.UPLOAD_WHATSAPP_URL = '@Url.Action("UploadWhatsappFile", "SalesTransactions", new { area = "SalesTransactions" })';
+</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
@@ -96,6 +99,17 @@
 
     .spta-btn-soft:hover {
         background: #f1f4fa;
+    }
+
+    .spta-btn-whatsapp {
+        background: #25d366;
+        color: #fff;
+        border-color: #25d366;
+    }
+
+    .spta-btn-whatsapp:hover {
+        background: #1ebe5b;
+        border-color: #1ebe5b;
     }
 
     #divReportSections {
@@ -254,6 +268,44 @@
     .spta-wrap .select2-container--default .select2-selection--single .select2-selection__arrow {
         height: 34px !important;
     }
+
+    .spta-marketing-man-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .spta-recursive-check {
+        display: flex;
+        align-items: center;
+        flex: 0 0 auto;
+        margin: 0;
+        padding-top: 34px;
+    }
+
+    .spta-recursive-check .form-check-input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        cursor: pointer;
+        accent-color: var(--accent);
+    }
+
+    .spta-recursive-check .form-check-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #2c3852;
+        margin: 0 0 0 4px;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
+    .spta-marketing-man-row .select2-container,
+    .spta-marketing-man-row select {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
 </style>
 
 <div class="spta-wrap">
@@ -272,8 +324,17 @@
                 <input id="txtdateTo" type="date" name="txtdateTo" autocomplete="off" required>
             </div>
             <div class="col-sm-3 spta-field">
+            <div class="form-check spta-recursive-check" title="Show Recursive Marketing Man">
+                <input type="checkbox" id="chkShowRecursive" class="form-check-input" checked>
+                <label class="form-check-label" for="chkShowRecursive">Recursive</label>
+            </div>
+            </div>
+            <div class="col-sm-4 spta-field">
                 <label for="ddlMarketingMan">Marketing Man</label>
-                <select id="ddlMarketingMan" class="form-control form-control-sm"></select>
+                <div class="spta-marketing-man-row">
+                    
+                    <select id="ddlMarketingMan" class="form-control form-control-sm"></select>
+                </div>
             </div>
         </div>
         <div class="spta-actions">
@@ -285,6 +346,9 @@
             </button>
             <button type="button" id="btnDownload" class="spta-btn spta-btn-soft">
                  Download PDF
+            </button>
+            <button type="button" id="btnWhatsApp" class="spta-btn spta-btn-whatsapp" hidden="true">
+                <i class="fa-brands fa-whatsapp"></i> Send WhatsApp
             </button>
         </div>
     </div>
