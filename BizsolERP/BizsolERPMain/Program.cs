@@ -29,7 +29,9 @@ namespace BizsolERPMain
                 .AddApplicationPart(
                     typeof(Bizsol.ERP.UI.Finance.Masters.Program).Assembly)
                 .AddApplicationPart(
-                    typeof(Bizsol.ERP.UI.MIS.Reports.Program).Assembly);
+                    typeof(Bizsol.ERP.UI.MIS.Reports.Program).Assembly)
+                .AddApplicationPart(
+                    typeof(Bizsol.ERP.UI.Common.Reports.Program).Assembly);
 
             var app = builder.Build();
 

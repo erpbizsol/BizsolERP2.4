@@ -2933,8 +2933,10 @@ function confirmTaskListDelete() {
 }
 
 $(document).ready(function () {
-    BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
-    if (!$('#ERPHeading').text().trim()) {
+    var moduleDesp = decodeURI(BizSolHelperFunction.getUrlVars()['ModuleDesp'] || '');
+    if (moduleDesp && moduleDesp !== 'undefined' && moduleDesp.trim() !== '') {
+        BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
+    } else {
         $('#ERPHeading').text('Task List Master');
     }
 
