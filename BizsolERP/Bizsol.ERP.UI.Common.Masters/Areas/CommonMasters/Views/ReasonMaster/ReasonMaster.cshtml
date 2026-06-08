@@ -518,6 +518,42 @@
         height: 40px;
     }
 
+    .reason-check-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        background: var(--white-bg);
+        cursor: pointer;
+        user-select: none;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-dark);
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+    .reason-check-wrap:hover {
+        border-color: var(--accent-primary);
+    }
+
+    .reason-check-wrap input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #667eea;
+        cursor: pointer;
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    #reasonDetailPanel.reason-readonly .reason-check-wrap {
+        background: var(--light-bg);
+        cursor: default;
+        pointer-events: none;
+    }
+
     /* ── Save button ── */
     .btn-reason-save {
         display: inline-flex;
@@ -712,7 +748,6 @@
     <div id="reasonDetailPanel" style="display:none;">
         <input type="hidden" id="hfReasonMaster_Code" value="0" />
         <input type="hidden" id="hfReason_DataBaseLocation_Code" value="0" />
-        <input type="hidden" id="hfReason_ReasonCode" value="" />
         <input type="hidden" id="hfReason_DoNotShowInFollowUp" value="N" />
 
         <div class="reason-ci-po-list-header">
@@ -743,6 +778,12 @@
             </div>
             <div class="reason-ci-po-step-body">
                 <div class="row g-3 reason-detail-form">
+                    <div class="col-12 col-md-6 col-lg-4 reason-config-field" id="reasonCodeCol" style="display:none;">
+                        <div class="reason-fg">
+                            <label for="txtReasonCode">Reason Code</label>
+                            <input type="text" id="txtReasonCode" autocomplete="off" maxlength="10" placeholder="Reason code" />
+                        </div>
+                    </div>
                     <div class="col-12 col-md-6 col-lg-4">
                         <div class="reason-fg">
                             <label for="txtReasonName">Reason Name <span class="text-danger">*</span></label>
@@ -755,13 +796,13 @@
                             <select id="ddlReasonTypeMaster"></select>
                         </div>
                     </div>
-                    <div class="col-12 col-md-6 col-lg-4">
+                    <div class="col-12 col-md-6 col-lg-4 reason-breakdown-field" id="reasonCategoryCol" style="display:none;">
                         <div class="reason-fg">
                             <label for="ddlReasonCategory">Category</label>
                             <select id="ddlReasonCategory"></select>
                         </div>
                     </div>
-                    <div class="col-12 col-md-6 col-lg-4">
+                    <div class="col-12 col-md-6 col-lg-4 reason-breakdown-field" id="reasonEmployeeCol" style="display:none;">
                         <div class="reason-fg">
                             <label for="ddlEmployeeResponsible">Responsible Person</label>
                             <select id="ddlEmployeeResponsible"></select>
@@ -771,6 +812,15 @@
                         <div class="reason-fg">
                             <label for="txtReasonDesp">Reason Description <span class="text-danger">*</span></label>
                             <textarea id="txtReasonDesp" rows="4" maxlength="255" class="form-control" style="border-radius:10px;border:1.5px solid var(--border-color);resize:vertical;" placeholder="Description"></textarea>
+                        </div>
+                    </div>
+                    <div class="col-12 reason-config-field" id="reasonLeadFollowUpCol" style="display:none;">
+                        <div class="reason-fg">
+                            <label for="chkLeadFollowUp">Lead Follow Up</label>
+                            <label class="reason-check-wrap" for="chkLeadFollowUp">
+                                <input type="checkbox" id="chkLeadFollowUp" />
+                                <span>Lead Follow Up Applicable</span>
+                            </label>
                         </div>
                     </div>
                 </div>

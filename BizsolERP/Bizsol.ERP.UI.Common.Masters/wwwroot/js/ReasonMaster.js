@@ -1,10 +1,11 @@
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { ReasonMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ReasonMasterService.js';
-import { EmployeeMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/EmployeeMasterServices.js';
 var G_REASON_SourceRows = [];
 var G_REASON_ApiColumnKeys = null;
 var G_REASON_DetailMode = 'list';
+var G_REASON_ShowReasonCode = false;
+var G_REASON_ShowLeadFollowUp = false;
 
 var REASON_GRID_HIDDEN_COLUMNS = [
     'Code',
@@ -80,6 +81,96 @@ function reasonTypeLabel(row) {
         .toString()
         .trim();
 }
+function isBreakDownReasonTypeLabel(label) {
+    return (label || '').toString().trim().toLowerCase() === 'break down reason';
+}
+function isBreakDownReasonTypeSelected() {
+    var $sel = $('#ddlReasonTypeMaster');
+    var label = '';
+    try {
+        if ($sel.data('select2')) {
+            var data = $sel.select2('data');
+            if (data && data.length && data[0].text) {
+                label = data[0].text;
+            }
+        }
+    } catch (e) {}
+    if (!label) {
+        label = ($sel.find('option:selected').text() || '').trim();
+    }
+    return isBreakDownReasonTypeLabel(label);
+}
+function clearBreakDownFieldValues() {
+    clearFieldError('ddlReasonCategory');
+    clearFieldError('ddlEmployeeResponsible');
+    try {
+        if ($('#ddlReasonCategory').data('select2')) {
+            $('#ddlReasonCategory').val('').trigger('change.select2');
+        } else {
+            $('#ddlReasonCategory').val('');
+        }
+    } catch (e) {
+        $('#ddlReasonCategory').val('');
+    }
+    try {
+        if ($('#ddlEmployeeResponsible').data('select2')) {
+            $('#ddlEmployeeResponsible').val('').trigger('change.select2');
+        } else {
+            $('#ddlEmployeeResponsible').val('');
+        }
+    } catch (e) {
+        $('#ddlEmployeeResponsible').val('');
+    }
+}
+function toggleBreakDownReasonFields() {
+    var show = isBreakDownReasonTypeSelected();
+    $('.reason-breakdown-field').toggle(show);
+    if (!show) {
+        clearBreakDownFieldValues();
+    }
+}
+function isConfigFlagYes(val) {
+    return (val || '').toString().trim().toUpperCase() === 'Y';
+}
+function toggleReasonCodeField() {
+    $('#reasonCodeCol').toggle(G_REASON_ShowReasonCode);
+    if (!G_REASON_ShowReasonCode) {
+        $('#txtReasonCode').val('');
+        clearFieldError('txtReasonCode');
+    }
+}
+function toggleLeadFollowUpField() {
+    $('#reasonLeadFollowUpCol').toggle(G_REASON_ShowLeadFollowUp);
+    if (!G_REASON_ShowLeadFollowUp) {
+        $('#chkLeadFollowUp').prop('checked', false);
+        $('#hfReason_DoNotShowInFollowUp').val('N');
+    }
+}
+function syncLeadFollowUpHidden() {
+    if (!G_REASON_ShowLeadFollowUp) {
+        $('#hfReason_DoNotShowInFollowUp').val('N');
+        return;
+    }
+    $('#hfReason_DoNotShowInFollowUp').val($('#chkLeadFollowUp').is(':checked') ? 'N' : 'Y');
+}
+function loadReasonMasterConfig() {
+    return ReasonMasterService.GetReasonMasterConfig()
+        .then(function (res) {
+            var rec = firstRecord(res);
+            G_REASON_ShowReasonCode = isConfigFlagYes(rec && rec.ShowBreakDownShortCodeInResionMaster);
+            G_REASON_ShowLeadFollowUp = isConfigFlagYes(rec && rec.LeadFollowUpApplicable);
+            toggleReasonCodeField();
+            toggleLeadFollowUpField();
+            return rec;
+        })
+        .catch(function () {
+            G_REASON_ShowReasonCode = false;
+            G_REASON_ShowLeadFollowUp = false;
+            toggleReasonCodeField();
+            toggleLeadFollowUpField();
+            return null;
+        });
+}
 function destroySelect2IfAny($sel) {
     try {
         if ($sel.data('select2')) {
@@ -110,6 +201,7 @@ function bindDetailReasonTypeDropdown(types, selectedCode) {
     if ($sel.data('select2')) {
         $sel.trigger('change.select2');
     }
+    toggleBreakDownReasonFields();
 }
 function bindReasonCategoryDropdown(rows, selectedCode) {
     var $sel = $('#ddlReasonCategory');
@@ -143,13 +235,6 @@ function bindReasonCategoryDropdown(rows, selectedCode) {
     if ($sel.data('select2')) {
         $sel.trigger('change.select2');
     }
-}
-function normalizeEmployeeRows(rows) {
-    return (rows || []).map(function (r) {
-        var code = r.Code != null ? r.Code : r.EmployeeMaster_Code;
-        var text = r.EmployeeName || r.Name || r.CardNoDesp || '';
-        return { Code: code, Desp: String(text).trim() || String(code) };
-    });
 }
 function bindEmployeeResponsibleDropdown(rows, selectedCode) {
     var $sel = $('#ddlEmployeeResponsible');
@@ -213,9 +298,14 @@ function loadReasonCategories(selectedCode) {
         });
 }
 function loadEmployeesForReason(selectedCode) {
-    return EmployeeMasterService.GetEmployeeMasterList('All')
+    return ReasonMasterService.GetEmployeeMasterDropdownList()
         .then(function (res) {
-            var rows = normalizeEmployeeRows(firstArray(res));
+            var rows = firstArray(res).map(function (r) {
+                return {
+                    Code: r.Code,
+                    Desp: (r.Desp || r.EmployeeName || '').toString().trim(),
+                };
+            });
             bindEmployeeResponsibleDropdown(rows, selectedCode);
             return rows;
         })
@@ -257,7 +347,8 @@ function clearForm() {
     clearAllFieldErrors();
     $('#hfReasonMaster_Code').val('0');
     $('#hfReason_DataBaseLocation_Code').val('0');
-    $('#hfReason_ReasonCode').val('');
+    $('#txtReasonCode').val('');
+    $('#chkLeadFollowUp').prop('checked', false);
     $('#hfReason_DoNotShowInFollowUp').val('N');
     $('#txtReasonName').val('');
     $('#txtReasonDesp').val('');
@@ -281,12 +372,14 @@ function clearForm() {
             $('#ddlEmployeeResponsible').val('');
         }
     } catch (e) {}
+    toggleBreakDownReasonFields();
 }
 function setDetailFormMode(mode) {
     G_REASON_DetailMode = mode;
     var ro = mode === 'view';
     $('#reasonDetailPanel').toggleClass('reason-readonly', ro);
-    $('#txtReasonName, #txtReasonDesp').prop('disabled', ro);
+    $('#txtReasonName, #txtReasonDesp, #txtReasonCode').prop('disabled', ro);
+    $('#chkLeadFollowUp').prop('disabled', ro);
     $('#ddlReasonTypeMaster, #ddlReasonCategory, #ddlEmployeeResponsible').prop('disabled', ro);
     try {
         if ($('#ddlReasonTypeMaster').data('select2')) $('#ddlReasonTypeMaster').prop('disabled', ro);
@@ -521,12 +614,13 @@ function loadEditRecord(code, mode) {
             $('#txtReasonDesp').val(rec.ReasonDesp != null ? String(rec.ReasonDesp).trim() : '');
             var dblNum = rec.DataBaseLocation_Code != null ? Number(rec.DataBaseLocation_Code) : 0;
             $('#hfReason_DataBaseLocation_Code').val(isFinite(dblNum) && dblNum > 0 ? String(dblNum) : '0');
-            $('#hfReason_ReasonCode').val(rec.ReasonCode != null ? String(rec.ReasonCode).trim() : '');
+            $('#txtReasonCode').val(rec.ReasonCode != null ? String(rec.ReasonCode).trim() : '');
             var dns =
                 rec.DoNotShowInFollowUp != null
                     ? String(rec.DoNotShowInFollowUp).trim().toUpperCase()
                     : 'N';
             $('#hfReason_DoNotShowInFollowUp').val(dns === 'Y' ? 'Y' : 'N');
+            $('#chkLeadFollowUp').prop('checked', dns !== 'Y');
             var rtc = rec.ReasonTypeMaster_Code != null ? rec.ReasonTypeMaster_Code : '';
             var cat = rec.F_CommonValues_Code_Category != null ? rec.F_CommonValues_Code_Category : '';
             var emp = rec.EmployeeMaster_Code != null ? rec.EmployeeMaster_Code : '';
@@ -543,6 +637,7 @@ function loadEditRecord(code, mode) {
         });
 }
 function buildSavePayload() {
+    syncLeadFollowUpHidden();
     var dns = (($('#hfReason_DoNotShowInFollowUp').val() || '') + '').trim().toUpperCase();
     return {
         Code: parseInt($('#hfReasonMaster_Code').val() || '0', 10) || 0,
@@ -552,7 +647,7 @@ function buildSavePayload() {
         DataBaseLocation_Code: parseInt($('#hfReason_DataBaseLocation_Code').val() || '0', 10) || 0,
         DoNotShowInFollowUp: dns === 'Y' ? 'Y' : 'N',
         F_CommonValues_Code_Category: parseInt($('#ddlReasonCategory').val() || '0', 10) || 0,
-        ReasonCode: ($('#hfReason_ReasonCode').val() || '').trim(),
+        ReasonCode: G_REASON_ShowReasonCode ? ($('#txtReasonCode').val() || '').trim() : '',
         EmployeeMaster_Code: parseInt($('#ddlEmployeeResponsible').val() || '0', 10) || 0,
     };
 }
@@ -675,11 +770,29 @@ function confirmReasonDelete() {
             if (typeof toastr !== 'undefined') toastr.error('Delete request failed.');
         });
 }
+function initReasonMasterPage() {
+    var params = BizSolHelperFunction.getUrlVars();
+    var codeFromUrl = parseInt(params.Code || params.code || '0', 10);
+
+    if (isFinite(codeFromUrl) && codeFromUrl > 0) {
+        showDetailPanel('edit');
+        clearForm();
+        $('#hfReasonMaster_Code').val(String(codeFromUrl));
+        loadEditRecord(codeFromUrl, 'edit');
+    } else {
+        refreshReasonGrid();
+    }
+}
+
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
     if (!$('#ERPHeading').text().trim()) {
         $('#ERPHeading').text('Reason Master');
     }
+
+    loadReasonMasterConfig().then(function () {
+        initReasonMasterPage();
+    });
 
     $('#btnCreateReason').on('click', function () {
         MenuService.CheckModuleOptionRight('Reason Master', 'New', 'Y', getFinancialYear()).then(function (response) {
@@ -702,6 +815,12 @@ $(document).ready(function () {
     });
     $('#btnSaveReason').on('click', function () {
         saveReason();
+    });
+    $('#ddlReasonTypeMaster').on('change', function () {
+        toggleBreakDownReasonFields();
+    });
+    $('#chkLeadFollowUp').on('change', function () {
+        syncLeadFollowUpHidden();
     });
     $('#btnReasonConfirmDelete').on('click', function () {
         confirmReasonDelete();
@@ -733,17 +852,6 @@ $(document).ready(function () {
         }, 200);
     });
 
-    var params = BizSolHelperFunction.getUrlVars();
-    var codeFromUrl = parseInt(params.Code || params.code || '0', 10);
-
-    if (isFinite(codeFromUrl) && codeFromUrl > 0) {
-        showDetailPanel('edit');
-        clearForm();
-        $('#hfReasonMaster_Code').val(String(codeFromUrl));
-        loadEditRecord(codeFromUrl, 'edit');
-    } else {
-        refreshReasonGrid();
-    }
 });
 
 window.Reason_OpenView = Reason_OpenView;
