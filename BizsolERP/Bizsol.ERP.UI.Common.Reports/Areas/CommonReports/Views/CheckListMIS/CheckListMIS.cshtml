@@ -1,0 +1,228 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Reports/CheckListMIS.js"></script>
+
+<style>
+#CheckListMISPage {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 16px 0;
+    height: calc(100vh - 174px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(145deg, #eef2ff 0%, #f5f3ff 50%, #ede9fe 100%);
+}
+
+.cm-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(99,102,241,.18), 0 4px 16px rgba(0,0,0,.08);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.6);
+    background: #fff;
+}
+
+/* ── header ── */
+.cm-header {
+    background: linear-gradient(120deg, #0b1f3a 0%, #14305c 45%, #1d4ed8 100%);
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.cm-hero-left { display: flex; align-items: center; gap: 14px; }
+.cm-hero-icon {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.14);
+    border: 2px solid rgba(255,255,255,.28);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 20px;
+}
+.cm-hero-title { font-size: 1.1rem; font-weight: 800; color: #fff; margin: 0; letter-spacing: .3px; }
+.cm-hero-sub { font-size: .74rem; color: rgba(255,255,255,.7); margin-top: 2px; }
+
+.cm-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cm-search-wrap { position: relative; }
+.cm-search-wrap i {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: #94a3b8; font-size: .8rem;
+}
+.cm-input, .cm-date {
+    border: 1.5px solid rgba(255,255,255,.35);
+    background: rgba(255,255,255,.95);
+    color: #1e3a8a; font-weight: 600;
+    border-radius: 50px; padding: 8px 14px; font-size: .82rem;
+    outline: none; box-shadow: 0 3px 10px rgba(0,0,0,.12);
+}
+.cm-input { padding-left: 32px; min-width: 200px; }
+.cm-btn-reset {
+    border: none; cursor: pointer;
+    background: rgba(255,255,255,.95); color: #1d4ed8; font-weight: 700;
+    border-radius: 50px; padding: 8px 18px; font-size: .82rem;
+    box-shadow: 0 3px 10px rgba(0,0,0,.12); transition: transform .15s;
+}
+.cm-btn-reset:hover { transform: translateY(-1px); }
+
+/* ── sub-banner ── */
+.cm-subbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 9px 22px; background: #eff6ff; border-bottom: 1px solid #dbeafe;
+}
+.cm-period-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #dbeafe; color: #1d4ed8; font-weight: 800;
+    padding: 6px 16px; border-radius: 50px; font-size: .82rem;
+}
+.cm-week-note { color: #1e40af; font-weight: 700; font-size: .8rem; }
+
+/* ── body split: grid + chart ── */
+.cm-body { display: flex; flex: 1; min-height: 0; }
+.cm-grid-side { flex: 1.7; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.cm-chart-side {
+    flex: 1; min-width: 280px; max-width: 360px;
+    border-left: 1px solid #e8edf5; padding: 16px;
+    display: flex; flex-direction: column; min-height: 0;
+    background: linear-gradient(180deg, #fbfdff, #f5f8ff);
+}
+
+.cm-grid-wrap { flex: 1; min-height: 0; overflow: auto; }
+.cm-grid-wrap::-webkit-scrollbar { width: 7px; height: 7px; }
+.cm-grid-wrap::-webkit-scrollbar-thumb { background: #bfdbfe; border-radius: 50px; }
+.cm-grid-wrap::-webkit-scrollbar-thumb:hover { background: #60a5fa; }
+
+table.cm-table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+table.cm-table thead th {
+    position: sticky; top: 0; z-index: 5;
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+    color: #fff; font-weight: 700; padding: 11px 10px; text-align: left;
+    border-right: 1px solid rgba(255,255,255,.12); white-space: nowrap;
+}
+table.cm-table thead th.cm-th-num { text-align: center; }
+table.cm-table tbody td {
+    border-bottom: 1px solid #eef1f8; padding: 9px 10px; vertical-align: middle; color: #1e293b;
+}
+table.cm-table tbody tr:nth-child(even) td { background: #f8faff; }
+table.cm-table tbody tr:hover td { background: #eff6ff; }
+
+.cm-sno { width: 42px; text-align: center; color: #64748b; font-weight: 700; }
+.cm-period { white-space: nowrap; color: #475569; }
+.cm-doer { font-weight: 700; color: #0f172a; }
+.cm-numcell { text-align: center; font-weight: 600; }
+.cm-na { color: #94a3b8; font-style: italic; font-weight: 600; }
+
+.cm-empty { text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 13px; }
+.cm-empty i { font-size: 2.4rem; display: block; margin-bottom: 10px; color: #bfdbfe; }
+
+/* ── pager ── */
+.cm-pager {
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+    padding: 8px 16px; border-top: 1px solid #e8edf5; background: #fff;
+}
+.cm-pager-info { font-size: 12px; color: #475569; font-weight: 600; margin-right: 6px; }
+.cm-pager-btn {
+    border: 1px solid #cbd5e1; background: #fff; color: #1d4ed8;
+    width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 12px;
+}
+.cm-pager-btn:disabled { opacity: .4; cursor: not-allowed; }
+.cm-pager-btn:not(:disabled):hover { background: #eff6ff; }
+
+/* ── chart side ── */
+.cm-chart-title { font-size: .9rem; font-weight: 800; color: #b91c1c; margin: 0 0 12px; line-height: 1.3; }
+.cm-donut { display: flex; align-items: center; justify-content: center; min-height: 200px; }
+.cm-donut-svg { width: 190px; height: 190px; }
+.cm-donut-total { font-size: 30px; font-weight: 900; fill: #0f172a; }
+.cm-donut-sub { font-size: 11px; font-weight: 600; fill: #94a3b8; }
+.cm-donut-empty { text-align: center; color: #94a3b8; font-size: 12.5px; }
+.cm-donut-empty i { font-size: 2.2rem; display: block; margin-bottom: 8px; color: #86efac; }
+
+.cm-legend { margin-top: 14px; overflow: auto; flex: 1; min-height: 0; }
+.cm-legend::-webkit-scrollbar { width: 6px; }
+.cm-legend::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 50px; }
+.cm-leg-item { display: flex; align-items: center; gap: 8px; padding: 4px 2px; }
+.cm-leg-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.cm-leg-name { flex: 1; font-size: 12px; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cm-leg-val { font-size: 12px; font-weight: 800; color: #b91c1c; }
+
+@@media (max-width: 900px) {
+    .cm-body { flex-direction: column; }
+    .cm-chart-side { max-width: none; border-left: none; border-top: 1px solid #e8edf5; }
+}
+</style>
+
+<div id="CheckListMISPage">
+    <div class="cm-card">
+
+        <!-- header -->
+        <div class="cm-header">
+            <div class="cm-hero-left">
+                <div class="cm-hero-icon"><i class="fas fa-clipboard-check"></i></div>
+                <div>
+                    <div class="cm-hero-title">Checklist MIS Report</div>
+                    <div class="cm-hero-sub">Weekly task completion score per doer</div>
+                </div>
+            </div>
+            <div class="cm-toolbar">
+                <div class="cm-search-wrap">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <input type="text" class="cm-input" id="cmNameSearch" placeholder="Search by Name" />
+                </div>
+                <input type="date" class="cm-date" id="cmWeekPicker" title="Pick any day of the week" />
+                <button class="cm-btn-reset" id="cmResetFilter"><i class="fas fa-rotate-left"></i>&nbsp;Reset Filter</button>
+            </div>
+        </div>
+
+        <!-- sub banner -->
+        <div class="cm-subbar">
+            <span class="cm-period-chip"><i class="fas fa-calendar-week"></i> <span id="cmPeriodBanner">--</span></span>
+            <span class="cm-week-note">Check List MIS Score, EM Weekly day&nbsp;Monday!!</span>
+        </div>
+
+        <!-- body -->
+        <div class="cm-body">
+            <!-- grid -->
+            <div class="cm-grid-side">
+                <div class="cm-grid-wrap">
+                    <table class="cm-table" id="cmTable">
+                        <thead>
+                            <tr>
+                                <th class="cm-th-num">#</th>
+                                <th>MIS Period</th>
+                                <th>Doer Name</th>
+                                <th class="cm-th-num">Work to be<br />accomplished</th>
+                                <th class="cm-th-num">Accomplished</th>
+                                <th class="cm-th-num">This week Work<br />Not Done%</th>
+                                <th class="cm-th-num">This week work not<br />done on time %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cmTableBody">
+                            <tr>
+                                <td class="cm-empty" colspan="7"><i class="fas fa-spinner fa-spin"></i> Loading report…</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="cm-pager" id="cmPager"></div>
+            </div>
+
+            <!-- chart -->
+            <div class="cm-chart-side">
+                <div class="cm-chart-title">This week's count of tasks not completed on time</div>
+                <div class="cm-donut" id="cmDonut"></div>
+                <div class="cm-legend" id="cmDonutLegend"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
