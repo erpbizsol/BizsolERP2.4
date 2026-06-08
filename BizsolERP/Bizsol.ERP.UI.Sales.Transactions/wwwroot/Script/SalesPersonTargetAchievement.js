@@ -3,7 +3,6 @@ import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFun
 
 let G_LastReportVm = null;
 
-// Technical/internal columns hidden in EVERY report type.
 const HIDDEN_REPORT_COLUMNS = [
     'Code',
     'MarketingManMaster_Code',
@@ -12,24 +11,16 @@ const HIDDEN_REPORT_COLUMNS = [
     'Target Type',
 ];
 
-// Columns hidden ONLY in the Marketing Man & Party Wise (Party Detail) report.
-// Other report types (e.g. "Weekly Marketing Man Wise Sales") keep these columns.
 const PARTY_WISE_HIDDEN_COLUMNS = [
     'Weekly Target',
     'Achieved Sale',
+    'Status',
 ];
 
-// Party-wise section should show only: S.No, Marketing Executive, Party Name,
-// Invoice Count, Total Qty, Total Sale Amount. Hide any target / achievement
-// columns regardless of how the backend names them (Weekly/Monthly target, etc.).
 const PARTY_WISE_HIDDEN_COLUMN_PATTERNS = [
     /target/,
     /achiev/,
 ];
-
-// The target/achievement columns should only be hidden for the Party Wise report
-// type (e.g. "Weekly Marketing Man And Party Wise Sales"). Other report types such
-// as "Weekly Marketing Man Wise Sales" must keep all their columns.
 function isPartyWiseReportSelected() {
     const label = (
         $('#ddlReportTypelist option:selected').text() ||
@@ -74,7 +65,6 @@ function isNumericValue(value) {
     return !isNaN(n) && isFinite(n);
 }
 
-/** Detect columns where every non-empty cell is numeric (filter.js total row uses these). */
 function getNumericColumnsFromData(data, hideTargets) {
     if (!data || data.length === 0) return [];
 
@@ -104,8 +94,6 @@ function getTotalColumnsFromData(data, hideTargets) {
         return true;
     });
 }
-
-/** Numeric columns where every non-empty value is a whole number (no fractional part). */
 function getIntegerColumnsFromData(data, hideTargets) {
     return getNumericColumnsFromData(data, hideTargets).filter(function (key) {
         for (let i = 0; i < data.length; i++) {
@@ -119,7 +107,6 @@ function getIntegerColumnsFromData(data, hideTargets) {
     });
 }
 
-/** Build per-column decimal config: integer columns -> 0 decimals, others -> 2. */
 function buildFixedDecimalsFromData(data, hideTargets) {
     const config = {};
     if (!data || data.length === 0) return config;
@@ -197,7 +184,16 @@ $(document).ready(function () {
     $('#btnDownload').click(function () {
         Export();
     });
+
+    $('#btnWhatsApp').click(function () {
+        SendWhatsApp();
+    });
 });
+
+function getIsNestedValue() {
+    return $('#chkShowRecursive').is(':checked') ? 'Y' : 'N';
+}
+
 function validateFilters() {
     const fromVal = $('#txtdateFrom').val();
     const toVal = $('#txtdateTo').val();
@@ -488,12 +484,12 @@ function GetReportData() {
     const mode = $('#ddlReportTypelist').val() || 'Week';
     const marketingManMaster_Code =
         $('#ddlMarketingMan option:selected').val() == 'All' ? 0 : $('#ddlMarketingMan option:selected').val();
-
     SalesPersonTargetAchievementService.GetRptTargetVsAchievement(
         fromDate,
         toDate,
         mode,
-        marketingManMaster_Code
+        marketingManMaster_Code,
+        getIsNestedValue()
     )
         .then(function (response) {
             $('#btnShow').prop('hidden', false);
@@ -505,15 +501,18 @@ function GetReportData() {
             if (hasAnyReportData(vm)) {
                 $('#divReportSections').show();
                 bindReportGrids(vm);
+                $('#btnWhatsApp').prop('hidden', false);
             } else {
                 $('#divReportSections').hide();
                 G_LastReportVm = null;
+                $('#btnWhatsApp').prop('hidden', true);
                 toastr.error('Record not found...!');
             }
         })
         .catch(function (error) {
             $('#btnShow').prop('hidden', false);
             $('#btnLoading').prop('hidden', true);
+            $('#btnWhatsApp').prop('hidden', true);
             console.error('Error fetching report:', error);
             toastr.error('Unable to load report. Please try again.');
         });
@@ -576,7 +575,6 @@ function LoadWeekDateRange() {
 function getPdfMake() {
     return window.pdfMake || window.pdfmake || null;
 }
-
 function formatPdfCell(value, decimals) {
     if (value === null || value === undefined) return '';
     if (isNumericValue(value)) {
@@ -591,7 +589,6 @@ const PDF_NAVY = '#16284d';
 const PDF_HEADER_FILL = '#1b2c52';
 const PDF_TOTAL_FILL = '#eef2f8';
 const PDF_BORDER = '#c8d0dd';
-
 function formatPdfDisplayDate(isoDate) {
     if (!isoDate) return '';
     const parts = String(isoDate).split('-');
@@ -601,7 +598,6 @@ function formatPdfDisplayDate(isoDate) {
     if (isNaN(m) || m < 1 || m > 12) return isoDate;
     return parts[2] + '-' + monthNames[m - 1] + '-' + parts[0];
 }
-
 function buildPdfTableSection(title, data, options) {
     options = options || {};
     const hideTargets = options.hideTargets;
@@ -725,7 +721,6 @@ function buildPdfTableSection(title, data, options) {
     });
     return block;
 }
-
 function buildPdfDocumentDefinition(vm) {
     const content = [];
     const reportType = $('#ddlReportTypelist option:selected').text() || '';
@@ -793,9 +788,8 @@ function buildPdfDocumentDefinition(vm) {
         },
     };
 }
-
 function getExportFileName() {
-    const reportType = ($('#ddlReportTypelist option:selected').text() || 'Report').replace(/\s+/g, '_');
+    const reportType = ($('#ddlReportTypelist option:selected').text() || 'Report').replace(/\s+/g, '');
     const d = new Date();
     const dateString =
         d.getFullYear() +
@@ -806,9 +800,8 @@ function getExportFileName() {
         '_' +
         String(d.getHours()).padStart(2, '0') +
         String(d.getMinutes()).padStart(2, '0');
-    return 'SalesPersonTargetAchievement_' + reportType + '_' + dateString + '.pdf';
+    return 'Sales_' + reportType+'.pdf';
 }
-
 function Export() {
     if (!G_LastReportVm || !hasAnyReportData(G_LastReportVm)) {
         toastr.warning('No data to download. Please run Show first.');
@@ -830,5 +823,85 @@ function Export() {
         toastr.error('Unable to generate PDF.');
     }
 }
+function getReportPdfBase64() {
+    return new Promise(function (resolve, reject) {
+        if (!G_LastReportVm || !hasAnyReportData(G_LastReportVm)) {
+            reject(new Error('No data to export. Please run Show first.'));
+            return;
+        }
+        const pdfMake = getPdfMake();
+        if (!pdfMake || typeof pdfMake.createPdf !== 'function') {
+            reject(new Error('PDF library is not loaded. Please refresh the page.'));
+            return;
+        }
+        try {
+            pdfMake.createPdf(buildPdfDocumentDefinition(G_LastReportVm)).getBase64(resolve);
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+function extractUploadedFileLink(response) {
+    if (response == null) return '';
+    const text = String(response).trim().replace(/^["']|["']$/g, '');
+    if (!text) return '';
+    const httpMatch = text.match(/https?:\/\/[^\s"'<>\\]+/i);
+    if (httpMatch) return httpMatch[0];
+    if (text.charAt(0) === '/') return 'http://web.bizsol.in' + text;
+    return text;
+}
+function SendWhatsApp() {
+    if (!G_LastReportVm || !hasAnyReportData(G_LastReportVm)) {
+        toastr.warning('No data to send. Please run Show first.');
+        return;
+    }
+    const $btn = $('#btnWhatsApp');
+    $btn.prop('disabled', true);
+    if (typeof Showloader === 'function') Showloader();
+    const fullName = getExportFileName();
+    const fileExtension = '.pdf';
+    const fileName = fullName.replace(/\.pdf$/i, '');
+    const reportType = $('#ddlReportTypelist option:selected').text() || $('#ddlReportTypelist').val() || '';
+    const marketingManMaster_Code =
+        $('#ddlMarketingMan option:selected').val() == 'All' ? 0 : $('#ddlMarketingMan option:selected').val();
+
+    getReportPdfBase64()
+        .then(function (base64) {
+            return SalesPersonTargetAchievementService.UploadWhatsappFile(fileName, fileExtension, base64);
+        })
+        .then(function (response) {
+            const link = extractUploadedFileLink(response);
+            if (!link) {
+                toastr.error('File uploaded but no link was returned.');
+                return;
+            }
+            return SalesPersonTargetAchievementService.SendWhatsappToMarketingMan(
+                reportType,
+                link,
+                marketingManMaster_Code,
+                getIsNestedValue()
+            );
+        })
+        .then(function (result) {
+            if (!result) return;
+            const row = Array.isArray(result) ? result[0] : result;
+            const status = row && (row.Status ?? row.status);
+            const message = row && (row.Message ?? row.message);
+            if (status === 'Y') {
+                toastr.success(message || 'WhatsApp sent successfully.');
+            } else {
+                toastr.error(message || 'Unable to send WhatsApp.');
+            }
+        })
+        .catch(function (err) {
+            toastr.error(err && err.message ? err.message : 'Unable to send report on WhatsApp.');
+        })
+        .finally(function () {
+            $btn.prop('disabled', false);
+            if (typeof HideLoader === 'function') HideLoader();
+        });
+}
+
 window.Export = Export;
+window.SendWhatsApp = SendWhatsApp;
 window.BindSelectList = BindSelectList;
