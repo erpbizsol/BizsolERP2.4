@@ -79,7 +79,7 @@ function GetReportData() {
         RenderSection('tblMRNReceive-header', 'tblMRNReceive-body', 'noMRN', MRNReceive);
         RenderGroupedSection('tblProduction-header', 'tblProduction-body', 'noProduction', ProductionData, 'Machine');
         RenderSection('tblDispatch-header', 'tblDispatch-body', 'noDispatch', DispatchSales);
-        RenderSection('tblSlitting-header', 'tblSlitting-body', 'noSlitting', SlittingData);
+        RenderSlittingSection('tblSlitting', 'noSlitting', SlittingData);
 
     }).catch(function (error) {
         $('#btnShow').prop('hidden', false);
@@ -331,7 +331,8 @@ function RenderGroupedSection(headerId, bodyId, noDataId, data, groupKeyName) {
         displayCols.forEach(function (key) {
             const th = document.createElement('th');
             th.textContent = key;
-            th.style.backgroundColor = '#e9ecef';
+            th.style.backgroundColor = '#1f4e8c';
+            th.style.color = '#fff';
             headTr.appendChild(th);
         });
         $body[0].appendChild(headTr);
@@ -375,6 +376,309 @@ function RenderGroupedSection(headerId, bodyId, noDataId, data, groupKeyName) {
         });
         $body[0].appendChild(totalTr);
     });
+}
+
+function findDataColumn(data, candidates) {
+    if (!data || !data.length) return null;
+    const keys = Object.keys(data[0]);
+    for (let i = 0; i < candidates.length; i++) {
+        const found = keys.find(function (k) {
+            return k.toLowerCase() === candidates[i].toLowerCase();
+        });
+        if (found) return found;
+    }
+    return null;
+}
+
+function normalizeWeightType(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function slittingIssueColumnLabel(key, shiftKey, sizeKey, weightKey) {
+    if (key === shiftKey) return 'Shift';
+    if (key === sizeKey) return 'Size Desp';
+    if (key === weightKey) return 'Weight MT';
+    return key;
+}
+
+// Slitting: one Issue row per Code, many Receive rows — issue/receive side-by-side layout.
+function RenderSlittingSection(tableId, noDataId, data) {
+    const $table = $('#' + tableId);
+    const $thead = $('#' + tableId + '-thead');
+    const $body = $('#' + tableId + '-body');
+    const $noData = $('#' + noDataId);
+
+    $thead.empty();
+    $body.empty();
+    $table.find('tfoot').remove();
+
+    if (!data || data.length === 0) {
+        $table.hide();
+        $noData.show();
+        return;
+    }
+
+    const codeKey = findDataColumn(data, ['Code']);
+    const shiftKey = findDataColumn(data, ['ShiftName', 'Shift']);
+    const sizeKey = findDataColumn(data, ['SizeDesp', 'Size Desp', 'SizeDescription']);
+    const typeKey = findDataColumn(data, ['WeightType', 'Type']);
+    const weightKey = findDataColumn(data, ['WeightMT', 'WeightMT.', 'Weight MT', 'Weight']);
+
+    // Fall back to flat table when the API does not send issue/receive rows
+    if (!codeKey || !typeKey || !weightKey) {
+        $table.removeClass('mis-slitting-table');
+        const tr = document.createElement('tr');
+        tr.id = tableId + '-fallback-header';
+        $thead.empty().append(tr);
+        RenderSection(tr.id, tableId + '-body', noDataId, data);
+        return;
+    }
+
+    $table.addClass('mis-slitting-table');
+    $noData.hide();
+    $table.show();
+
+    // Code is used for grouping only — not shown in the grid
+    const issueCols = [shiftKey, sizeKey, weightKey].filter(Boolean);
+    const receiveCols = 2;
+
+    // Header band: Issue | Receive
+    const bandTr = document.createElement('tr');
+    const issueBand = document.createElement('th');
+    issueBand.colSpan = issueCols.length;
+    issueBand.textContent = 'Issue';
+    issueBand.className = 'mis-slit-band-issue';
+    bandTr.appendChild(issueBand);
+
+    const receiveBand = document.createElement('th');
+    receiveBand.colSpan = receiveCols;
+    receiveBand.textContent = 'Receive';
+    receiveBand.className = 'mis-slit-band-receive';
+    bandTr.appendChild(receiveBand);
+    $thead[0].appendChild(bandTr);
+
+    // Sub-header row
+    const subTr = document.createElement('tr');
+    subTr.className = 'mis-slit-subhead';
+    issueCols.forEach(function (key) {
+        const th = document.createElement('th');
+        th.textContent = slittingIssueColumnLabel(key, shiftKey, sizeKey, weightKey);
+        subTr.appendChild(th);
+    });
+    ['Weight MT', 'Size Desp'].forEach(function (label) {
+        const th = document.createElement('th');
+        th.className = 'mis-slit-subhead-receive';
+        th.textContent = label;
+        subTr.appendChild(th);
+    });
+    $thead[0].appendChild(subTr);
+
+    // Group rows by Code preserving order
+    const groups = {};
+    const order = [];
+    data.forEach(function (row) {
+        const code = row[codeKey];
+        if (!groups[code]) {
+            groups[code] = [];
+            order.push(code);
+        }
+        groups[code].push(row);
+    });
+
+    let totalIssueWeight = 0;
+    let totalReceiveWeight = 0;
+
+    order.forEach(function (code) {
+        const rows = groups[code];
+        const issueRow = rows.find(function (r) {
+            return normalizeWeightType(r[typeKey]) === 'issue';
+        });
+        const receiveRows = rows.filter(function (r) {
+            return normalizeWeightType(r[typeKey]) === 'receive';
+        });
+
+        const displayRows = receiveRows.length > 0 ? receiveRows : [null];
+        const rowSpan = displayRows.length;
+
+        displayRows.forEach(function (receiveRow, idx) {
+            const tr = document.createElement('tr');
+            if (idx === 0) tr.className = 'mis-slit-group-start';
+
+            if (idx === 0) {
+                issueCols.forEach(function (key) {
+                    const td = document.createElement('td');
+                    td.rowSpan = rowSpan;
+                    td.className = 'mis-slit-issue-col' + (key === sizeKey ? ' mis-slit-size' : '');
+                    if (key === weightKey) {
+                        td.textContent = formatCellValue(issueRow ? issueRow[key] : '', key);
+                        td.style.textAlign = 'right';
+                        const n = parseFloat(issueRow ? issueRow[key] : '');
+                        if (!isNaN(n)) totalIssueWeight += n;
+                    } else {
+                        td.textContent = formatCellValue(issueRow ? issueRow[key] : '', key);
+                    }
+                    tr.appendChild(td);
+                });
+            }
+
+            const wtTd = document.createElement('td');
+            wtTd.className = 'mis-slit-receive-col';
+            wtTd.style.textAlign = 'right';
+            wtTd.textContent = receiveRow ? formatCellValue(receiveRow[weightKey], weightKey) : '';
+            tr.appendChild(wtTd);
+
+            const sizeTd = document.createElement('td');
+            sizeTd.className = 'mis-slit-receive-col mis-slit-size';
+            sizeTd.textContent = receiveRow && sizeKey ? formatCellValue(receiveRow[sizeKey], sizeKey) : '';
+            tr.appendChild(sizeTd);
+
+            if (receiveRow) {
+                const n = parseFloat(receiveRow[weightKey]);
+                if (!isNaN(n)) totalReceiveWeight += n;
+            }
+
+            $body[0].appendChild(tr);
+        });
+    });
+
+    // Footer totals
+    const tfoot = document.createElement('tfoot');
+    const totalTr = document.createElement('tr');
+    let labelPlaced = false;
+
+    issueCols.forEach(function (key) {
+        const td = document.createElement('td');
+        td.style.fontWeight = 'bold';
+        td.style.backgroundColor = '#f1f3f5';
+        if (key === weightKey) {
+            td.textContent = formatTotalValue(key, totalIssueWeight);
+            td.style.textAlign = 'right';
+        } else if (!labelPlaced) {
+            td.textContent = 'Total';
+            labelPlaced = true;
+        } else {
+            td.textContent = '';
+        }
+        totalTr.appendChild(td);
+    });
+
+    const recvWtTd = document.createElement('td');
+    recvWtTd.style.fontWeight = 'bold';
+    recvWtTd.style.backgroundColor = '#f1f3f5';
+    recvWtTd.style.textAlign = 'right';
+    recvWtTd.textContent = formatTotalValue(weightKey, totalReceiveWeight);
+    totalTr.appendChild(recvWtTd);
+
+    const recvSizeTd = document.createElement('td');
+    recvSizeTd.style.backgroundColor = '#f1f3f5';
+    totalTr.appendChild(recvSizeTd);
+
+    tfoot.appendChild(totalTr);
+    $table[0].appendChild(tfoot);
+}
+
+// Build slitting block for Excel export (issue / receive side-by-side per Code).
+function buildSlittingBlock(title, data) {
+    if (!data || data.length === 0) {
+        return { rows: [[cell(title, { type: 'title', bold: true })], [cell('No data')]], cols: 1 };
+    }
+
+    const codeKey = findDataColumn(data, ['Code']);
+    const shiftKey = findDataColumn(data, ['ShiftName', 'Shift']);
+    const sizeKey = findDataColumn(data, ['SizeDesp', 'Size Desp', 'SizeDescription']);
+    const typeKey = findDataColumn(data, ['WeightType', 'Type']);
+    const weightKey = findDataColumn(data, ['WeightMT', 'WeightMT.', 'Weight MT', 'Weight']);
+
+    if (!codeKey || !typeKey || !weightKey) {
+        return buildFlatBlock(title, data);
+    }
+
+    const issueCols = [shiftKey, sizeKey, weightKey].filter(Boolean);
+    const cols = issueCols.length + 2;
+    const rows = [];
+
+    rows.push([cell(title, { type: 'title', bold: true, align: 'center', colspan: cols })]);
+
+    const bandRow = [
+        cell('Issue', { type: 'band', bold: true, align: 'center', colspan: issueCols.length }),
+        cell('Receive', { type: 'band', bold: true, align: 'center', colspan: 2 })
+    ];
+    rows.push(bandRow);
+
+    const subRow = issueCols.map(function (k) {
+        const label = slittingIssueColumnLabel(k, shiftKey, sizeKey, weightKey);
+        return cell(label, { type: 'header', bold: true });
+    }).concat([
+        cell('Weight MT', { type: 'header', bold: true }),
+        cell('Size Desp', { type: 'header', bold: true })
+    ]);
+    rows.push(subRow);
+
+    const groups = {};
+    const order = [];
+    data.forEach(function (row) {
+        const code = row[codeKey];
+        if (!groups[code]) {
+            groups[code] = [];
+            order.push(code);
+        }
+        groups[code].push(row);
+    });
+
+    let totalIssueWeight = 0;
+    let totalReceiveWeight = 0;
+
+    order.forEach(function (code) {
+        const groupRows = groups[code];
+        const issueRow = groupRows.find(function (r) {
+            return normalizeWeightType(r[typeKey]) === 'issue';
+        });
+        const receiveRows = groupRows.filter(function (r) {
+            return normalizeWeightType(r[typeKey]) === 'receive';
+        });
+        const displayRows = receiveRows.length > 0 ? receiveRows : [null];
+
+        displayRows.forEach(function (receiveRow, idx) {
+            const row = [];
+
+            issueCols.forEach(function (key) {
+                if (key === weightKey) {
+                    const n = parseFloat(issueRow ? issueRow[key] : '');
+                    if (idx === 0 && !isNaN(n)) totalIssueWeight += n;
+                    row.push(cell(formatCellValue(issueRow ? issueRow[key] : '', key), { align: 'right' }));
+                } else {
+                    row.push(cell(formatCellValue(issueRow ? issueRow[key] : '', key)));
+                }
+            });
+
+            if (receiveRow) {
+                const n = parseFloat(receiveRow[weightKey]);
+                if (!isNaN(n)) totalReceiveWeight += n;
+            }
+
+            row.push(cell(receiveRow ? formatCellValue(receiveRow[weightKey], weightKey) : '', { align: 'right' }));
+            row.push(cell(receiveRow && sizeKey ? formatCellValue(receiveRow[sizeKey], sizeKey) : ''));
+            rows.push(row);
+        });
+    });
+
+    let labelPlaced = false;
+    const totalRow = issueCols.map(function (key) {
+        if (key === weightKey) {
+            return cell(formatTotalValue(key, totalIssueWeight), { type: 'total', bold: true, align: 'right' });
+        }
+        if (!labelPlaced) {
+            labelPlaced = true;
+            return cell('Total', { type: 'total', bold: true });
+        }
+        return cell('', { type: 'total' });
+    }).concat([
+        cell(formatTotalValue(weightKey, totalReceiveWeight), { type: 'total', bold: true, align: 'right' }),
+        cell('', { type: 'total' })
+    ]);
+    rows.push(totalRow);
+
+    return { rows: rows, cols: cols };
 }
 
 /* =====================================================================
@@ -571,6 +875,10 @@ function renderCellGridToTable($tbody, gridRows) {
                 td.colSpan = c.colspan;
                 td.setAttribute('colspan', c.colspan);
             }
+            if (c.rowspan && c.rowspan > 1) {
+                td.rowSpan = c.rowspan;
+                td.setAttribute('rowspan', c.rowspan);
+            }
             styleCell(td, c);
             tr.appendChild(td);
         });
@@ -587,7 +895,7 @@ function Export() {
     const receivingBlock = buildFlatBlock('RECEIVING', lastReportData.MRNReceive);
     const productionBlock = buildGroupedBlock('PRODUCTION', lastReportData.ProductionData, 'Machine');
     const dispatchBlock   = buildFlatBlock('DISPATCH', lastReportData.DispatchSales);
-    const slittingBlock   = buildFlatBlock('SLITTING', lastReportData.SlittingData);
+    const slittingBlock   = buildSlittingBlock('SLITTING', lastReportData.SlittingData);
 
     const topRows    = combineSideBySide(receivingBlock, productionBlock);
     const bottomRows = combineSideBySide(dispatchBlock, slittingBlock);
