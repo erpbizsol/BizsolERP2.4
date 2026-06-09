@@ -11,6 +11,7 @@ var G_CITY_CountryRows = [];
 var G_CITY_DetailMode = 'list';
 var G_CITY_ListState = 'ALL';
 var G_CITY_ListCountry = 'India';
+var G_CITY_DistrictApplicable = false;
 
 function getFinancialYear() {
     return BizSolHelperFunction.getFinancialYear();
@@ -101,30 +102,104 @@ function bindListStateFilter(states) {
     });
     $sel.val(G_CITY_ListState || 'ALL');
 }
-function bindDetailCountryDropdown(countries, selectedCountryName) {
-    var $sel = $('#ddlDetailCountry');
-    if (!$sel.length) return;
+function isConfigFlagYes(val) {
+    return (val || '').toString().trim().toUpperCase() === 'Y';
+}
+function toggleDistrictFields() {
+    $('.city-district-field').toggle(G_CITY_DistrictApplicable);
+    if (!G_CITY_DistrictApplicable) {
+        $('#chkIsDistrict').prop('checked', false);
+        $('#ddlDistrictName').val('').trigger('change');
+        try {
+            if ($('#ddlDistrictName').data('select2')) {
+                $('#ddlDistrictName').val('').trigger('change.select2');
+            }
+        } catch (e) {}
+        clearFieldError('ddlDistrictName');
+    } else {
+        toggleDistrictNameDropdown();
+    }
+}
+function toggleDistrictNameDropdown() {
+    if (!G_CITY_DistrictApplicable) {
+        $('#cityDistrictNameCol').hide();
+        return;
+    }
+    var isDistrict = $('#chkIsDistrict').is(':checked');
+    $('#cityDistrictNameCol').toggle(!isDistrict);
+    if (isDistrict) {
+        $('#ddlDistrictName').val('').trigger('change');
+        try {
+            if ($('#ddlDistrictName').data('select2')) {
+                $('#ddlDistrictName').val('').trigger('change.select2');
+            }
+        } catch (e) {}
+        clearFieldError('ddlDistrictName');
+    }
+}
+function bindDistrictDropdown(rows, selectedCode) {
+    var $sel = $('#ddlDistrictName');
     $sel.empty();
-    $sel.append(new Option('-- Select Country --', ''));
-    $.each(countries, function (_, item) {
-        var cn = (item.CountryName || item.countryName || '').toString().trim();
-        if (!cn) return;
-        $sel.append(new Option(cn, cn));
+    $sel.append(new Option('-- Select District --', ''));
+    $.each(rows || [], function (_, item) {
+        var code = item.Code != null ? String(item.Code) : '';
+        if (!code || code === '0') return;
+        var label = (item.DistrictName || item.CityName || item.Desp || '').toString().trim();
+        if (!label) label = 'District ' + code;
+        $sel.append(new Option(label, code));
     });
     if ($sel.data('select2')) {
         $sel.select2('destroy');
     }
     $sel.select2({
         width: '100%',
-        placeholder: 'Search country…',
+        placeholder: 'Search or select district…',
         allowClear: true,
         minimumResultsForSearch: 0,
     });
-    var v = (selectedCountryName || '').toString().trim();
+    var v = selectedCode != null && selectedCode !== '' && Number(selectedCode) > 0 ? String(selectedCode) : '';
     $sel.val(v);
     if ($sel.data('select2')) {
         $sel.trigger('change.select2');
     }
+}
+function loadDistrictsForDetail(stateName, selectedCode) {
+    if (!G_CITY_DistrictApplicable) {
+        bindDistrictDropdown([], '');
+        return Promise.resolve([]);
+    }
+    var st = (stateName || ($('#ddlStateName').val() || '')).toString().trim();
+    if (!st) {
+        bindDistrictDropdown([], selectedCode);
+        return Promise.resolve([]);
+    }
+    var country = ($('#ddlListCountryFilter').val() || G_CITY_ListCountry || 'India').toString();
+    var excludeCode = parseInt($('#hfCityMaster_Code').val() || '0', 10) || 0;
+    return CityMasterService.GetDistrictList(country, st, excludeCode)
+        .then(function (res) {
+            var rows = firstArray(res);
+            bindDistrictDropdown(rows, selectedCode);
+            toggleDistrictNameDropdown();
+            return rows;
+        })
+        .catch(function () {
+            bindDistrictDropdown([], selectedCode);
+            return [];
+        });
+}
+function loadCityMasterConfig() {
+    return CityMasterService.GetIsDistrictParameter()
+        .then(function (res) {
+            var rec = firstRecord(res);
+            G_CITY_DistrictApplicable = isConfigFlagYes(rec && rec.DistrictApplicableInClient);
+            toggleDistrictFields();
+            return rec;
+        })
+        .catch(function () {
+            G_CITY_DistrictApplicable = false;
+            toggleDistrictFields();
+            return null;
+        });
 }
 function bindDetailStateDropdown(states, selectedStateName) {
     var $sel = $('#ddlStateName');
@@ -239,10 +314,11 @@ function clearForm() {
     $('#txtCityName').val('');
     $('#txtPin').val('');
     $('#txtSTDCode').val('0');
-    $('#ddlDetailCountry').val('').trigger('change');
+    $('#chkIsDistrict').prop('checked', false);
+    $('#ddlDistrictName').val('').trigger('change');
     try {
-        if ($('#ddlDetailCountry').data('select2')) {
-            $('#ddlDetailCountry').val('').trigger('change.select2');
+        if ($('#ddlDistrictName').data('select2')) {
+            $('#ddlDistrictName').val('').trigger('change.select2');
         }
     } catch (e) {}
     $('#ddlStateName').val('').trigger('change');
@@ -251,16 +327,17 @@ function clearForm() {
             $('#ddlStateName').val('').trigger('change.select2');
         }
     } catch (e) {}
+    toggleDistrictNameDropdown();
 }
 function setDetailFormMode(mode) {
     G_CITY_DetailMode = mode;
     var ro = mode === 'view';
     $('#cityDetailPanel').toggleClass('city-readonly', ro);
-    $('#txtCityName, #txtPin, #txtSTDCode').prop('disabled', ro);
-    $('#ddlDetailCountry, #ddlStateName').prop('disabled', ro);
+    $('#txtCityName, #txtPin, #txtSTDCode, #chkIsDistrict').prop('disabled', ro);
+    $('#ddlStateName, #ddlDistrictName').prop('disabled', ro);
     try {
-        if ($('#ddlDetailCountry').data('select2')) $('#ddlDetailCountry').prop('disabled', ro);
         if ($('#ddlStateName').data('select2')) $('#ddlStateName').prop('disabled', ro);
+        if ($('#ddlDistrictName').data('select2')) $('#ddlDistrictName').prop('disabled', ro);
     } catch (e) {}
     if (!ro) {
         $('#btnSaveCity, #btnClearCity').show();
@@ -415,10 +492,13 @@ function loadEditRecord(code, mode) {
                 $('#txtPin').val(normalizePinInputDisplay(String(rec.Pin)));
             }
             $('#txtSTDCode').val(rec.STDCode != null ? String(rec.STDCode).trim() : '');
-            return loadCountriesCache().then(function (countryRows) {
-                bindDetailCountryDropdown(countryRows, G_CITY_ListCountry || 'India');
-                return loadStatesForDetail('ALL').then(function (stateRows) {
-                    bindDetailStateDropdown(stateRows, rec.StateName != null ? String(rec.StateName).trim() : '');
+            var isDistrict = isConfigFlagYes(rec.IsDistrict);
+            $('#chkIsDistrict').prop('checked', isDistrict);
+            var districtCode = rec.DistrictMaster_Code != null ? Number(rec.DistrictMaster_Code) : 0;
+            return loadStatesForDetail(G_CITY_ListCountry || 'India').then(function (stateRows) {
+                var stateName = rec.StateName != null ? String(rec.StateName).trim() : '';
+                bindDetailStateDropdown(stateRows, stateName);
+                return loadDistrictsForDetail(stateName, isDistrict ? 0 : districtCode).then(function () {
                     setDetailFormMode(mode || 'edit');
                 });
             });
@@ -434,12 +514,19 @@ function buildSavePayload() {
         pinNum = parseInt(pinRaw, 10);
         if (isNaN(pinNum)) pinNum = 0;
     }
+    var isDistrict = G_CITY_DistrictApplicable && $('#chkIsDistrict').is(':checked');
+    var districtCode = 0;
+    if (G_CITY_DistrictApplicable && !isDistrict) {
+        districtCode = parseInt($('#ddlDistrictName').val() || '0', 10) || 0;
+    }
     return {
         Code: parseInt($('#hfCityMaster_Code').val() || '0', 10) || 0,
         StateName: ($('#ddlStateName').val() || '').toString().trim(),
         CityName: ($('#txtCityName').val() || '').trim(),
         Pin: pinNum,
         STDCode: ($('#txtSTDCode').val() || '').trim(),
+        IsDistrict: isDistrict ? 'Y' : 'N',
+        DistrictMaster_Code: districtCode,
         UserMaster_Code: G_UserMasterCode,
     };
 }
@@ -482,6 +569,20 @@ function saveCity() {
             );
             $('#txtPin').focus();
             return;
+        }
+
+        if (G_CITY_DistrictApplicable && !$('#chkIsDistrict').is(':checked')) {
+            var districtCode = parseInt($('#ddlDistrictName').val() || '0', 10) || 0;
+            if (!districtCode) {
+                if (typeof toastr !== 'undefined') toastr.warning('Please select a district.');
+                try {
+                    if ($('#ddlDistrictName').data('select2')) $('#ddlDistrictName').select2('open');
+                    else $('#ddlDistrictName').focus();
+                } catch (e) {
+                    $('#ddlDistrictName').focus();
+                }
+                return;
+            }
         }
 
         CityMasterService.SaveCityMaster(buildSavePayload())
@@ -579,13 +680,12 @@ $(document).ready(function () {
                 return;
             }
             var listCountry = ($('#ddlListCountryFilter').val() || G_CITY_ListCountry || 'India').toString();
-            loadCountriesCache().then(function (crows) {
-                clearForm();
-                bindDetailCountryDropdown(crows, listCountry);
-                return loadStatesForDetail(listCountry).then(function (srows) {
-                    bindDetailStateDropdown(srows, '');
-                    showDetailPanel('new');
-                });
+            clearForm();
+            loadStatesForDetail(listCountry).then(function (srows) {
+                bindDetailStateDropdown(srows, '');
+                bindDistrictDropdown([], '');
+                toggleDistrictNameDropdown();
+                showDetailPanel('new');
             });
         });
     });
@@ -615,14 +715,13 @@ $(document).ready(function () {
         G_CITY_ListState = ($(this).val() || 'ALL').toString();
         refreshCityGrid();
     });
-    $(document).on('change', '#ddlDetailCountry', function () {
-        if (!$('#cityDetailPanel').is(':visible')) return;
-        var c = ($(this).val() || '').toString().trim() || 'ALL';
-        loadStatesForDetail(c).then(function (rows) {
-            bindDetailStateDropdown(rows, '');
-        });
+    $('#chkIsDistrict').on('change', function () {
+        toggleDistrictNameDropdown();
     });
-
+    $('#ddlStateName').on('change', function () {
+        if (!$('#cityDetailPanel').is(':visible')) return;
+        loadDistrictsForDetail($(this).val(), '');
+    });
     $('#txtCityName').on('blur', function () {
         clearFieldError('txtCityName');
         if (!$(this).val().trim()) showFieldError('txtCityName', 'City Name is required.');
@@ -684,6 +783,8 @@ $(document).ready(function () {
 
     var params = BizSolHelperFunction.getUrlVars();
     var codeFromUrl = parseInt(params.Code || params.code || '0', 10);
+
+    loadCityMasterConfig();
 
     loadCountriesCache()
         .then(function (crows) {

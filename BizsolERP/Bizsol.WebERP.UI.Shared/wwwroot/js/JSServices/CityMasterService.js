@@ -20,13 +20,26 @@ const CityMasterService = {
             return value;
         });
     },
-    GetCityList: function GetCityList(CountryName, StateName) {
+    GetCityList: function GetCityList(CountryName, StateName, Mode, Code) {
+        const modePart = Mode ? `&Mode=${encodeURIComponent(Mode)}` : '';
+        const codePart = Code != null && Number(Code) > 0 ? `&Code=${encodeURIComponent(Code)}` : '';
         const URL =
             UrlService.API_ENDPOINT_CITY +
-            `/GetCityList?CountryName=${encodeURIComponent(CountryName || '')}&StateName=${encodeURIComponent(StateName || 'ALL')}&UserId=${encodeURIComponent(authUserCode())}`;
+            `/GetCityList?CountryName=${encodeURIComponent(CountryName || '')}&StateName=${encodeURIComponent(StateName || 'ALL')}&UserId=${encodeURIComponent(authUserCode())}${modePart}${codePart}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
+    },
+    GetIsDistrictParameter: function GetIsDistrictParameter() {
+        const URL =
+            UrlService.API_ENDPOINT_CITY +
+            `/GetCityMasterByName?CityName=&Mode=${encodeURIComponent('IsDistructParameter')}&UserId=${encodeURIComponent(authUserCode())}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+    GetDistrictList: function GetDistrictList(CountryName, StateName, excludeCode) {
+        return CityMasterService.GetCityList(CountryName, StateName, 'DistrictList', excludeCode);
     },
     GetCityMasterByName: function GetCityMasterByName(CityName, Mode) {
         const URL =

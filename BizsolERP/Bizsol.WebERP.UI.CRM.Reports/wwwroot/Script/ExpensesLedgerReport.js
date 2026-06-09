@@ -178,6 +178,7 @@ function bindSelectList(element, list, firstItem) {
     const $el = $(element);
     $el.empty();
     if (firstItem === 'All') $el.append(new Option('All', '0'));
+    else if (firstItem === 'Select') $el.append(new Option('Select', ''));
     list.forEach(function (val) {
         const code = val.Code != null ? String(val.Code) : '';
         let text = val.Desp != null ? String(val.Desp) : '';
@@ -285,7 +286,7 @@ function loadDropdowns() {
 
     const pEmp = ExpensesLedgerReportService.GetEmployeeMasterList().then(function (response) {
         const rows = mapDdLEmployees(asDdLArray(response));
-        bindSelectList($('#ddlEmployee')[0], rows, 'All');
+        bindSelectList($('#ddlEmployee')[0], rows, 'Select');
         initSelect2('#ddlEmployee');
     });
 

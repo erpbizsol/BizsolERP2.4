@@ -3,232 +3,179 @@
 }
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Production.Transactions/css/PalletPacking.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/PalletPacking.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
 <script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
-    .modal-dialog {
-        max-width: 350px;
-    }
-    .highlighted-date {
-        background-color: #3926B6;
-        color: white;
-        border-radius: 30px;
-    }
-    .datepicker td, .datepicker th {
-        border-radius: 20px !important;
-    }
-    .datepicker table tr td, .datepicker table tr td {
-        padding: 8px 9px !important;
-        height: 16px !important;
-    }
-    .datepicker table tfoot {
-        display: none;
-    }
-    #hidetexbox {
-        display: none;
-    }
-    .btn:not(:disabled):not(.disabled) {
-        cursor: pointer !important;
-    }
-    .without-label-field {
-        margin-top: 2.1rem;
-    }
-
-    input[type="checkbox"] {
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-        width: 20px;
-        height: 20px;
-        border: 2px solid #ccc;
-        border-radius: 4px;
-        position: relative !important;
-        top: 0 !important;
-        cursor: pointer;
-    }
-
-    /* When checkbox is checked, make the background green */
-    input[type="checkbox"]:checked {
-        background-color: green;
-        border-color: green;
-    }
-
-    th input[type="checkbox"]:checked {
-        position: relative !important;
-        top: 5px !important;
-        left: 5px;
-    }
-
-    /* Adding a checkmark when checked */
-    input[type="checkbox"]:checked::after {
-        content: '✔';
-        color: white;
-        font-size: 12px;
-        position: absolute;
-        top: 0px;
-        left: 3px;
-    }
+    .modal-dialog { max-width: 350px; }
+    .highlighted-date { background-color: #3926B6; color: white; border-radius: 30px; }
+    .datepicker td, .datepicker th { border-radius: 20px !important; }
+    .datepicker table tr td, .datepicker table tr td { padding: 8px 9px !important; height: 16px !important; }
+    .datepicker table tfoot { display: none; }
+    #hidetexbox { display: none; }
+    .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
+    #ExportModal .modal-dialog { max-width: 90%; }
+    #ViewInIDPallet .modal-dialog { max-width: 560px; }
 </style>
+
+<div class="pp-page">
 <div id="dateAndOrderByPallet">
-<div class="card">
-    <div class="card-header">
-        <div class="row">
-            <input type="hidden" name="Code" class="form-control" value="0">
-            <div class="form-group col-md-3">
-                <span class="radioSection">
-                    <input type="radio" id="dateWise" name="filterType" class="col-form-label-sm fw-bold" value="dateWise" checked> Date Wise
-                    <input type="radio" id="orderWise" name="filterType" class="col-form-label-sm fw-bold" value="orderWise"> Order Wise
-                </span>
+    <!-- ExpenseEntry-style purple header -->
+    <div class="pp-list-header section-entry-animation">
+        <div class="pp-list-header-top">
+            <div class="pp-list-header-title-block">
+                <h2 class="pp-list-header-title"><i class="fa fa-boxes-stacked me-2" aria-hidden="true"></i>Pallet Packing</h2>
+                <small class="pp-list-header-sub">Manage pallet packing by date or order.</small>
+            </div>
+            <div class="pp-list-header-actions">
+                <input type="button" onclick="PalletPacking_Print('Grid','N')" class="pp-list-create-btn" value="Print" />
+                <input type="button" onclick="PalletPacking_Print('Grid','Y')" class="pp-list-create-btn" value="Print Download" />
+                <input type="button" id="btnExport" class="pp-list-create-btn" value="Export">
+                <button type="button" onclick="CreateNew()" class="pp-list-create-btn">
+                    <i class="fa fa-plus-circle" aria-hidden="true"></i>
+                    <span class="pp-list-create-btn-label ms-1">Create New</span>
+                </button>
             </div>
         </div>
+    </div>
+
+    <!-- ExpenseEntry-style filter bar -->
+    <div class="pp-list-filter-bar">
+        <input type="hidden" name="Code" class="form-control" value="0">
         <form class="form-card">
-            <!-- Date Filter Section -->
-            <div class="row" id="dateWiseSection">
-                <div class="col-md-2 pe-0">
-                    <label for="txtdate" class="col-form-label-sm fw-bold">Pallet Date:<span class="text-danger">*</span></label>
+            <div class="pp-filter-row">
+                <div class="pp-radio-group">
+                    <label for="dateWise">
+                        <input type="radio" id="dateWise" name="filterType" value="dateWise" checked> Date Wise
+                    </label>
+                    <label for="orderWise">
+                        <input type="radio" id="orderWise" name="filterType" value="orderWise"> Order Wise
+                    </label>
+                </div>
+                <div id="dateWiseSection" class="pp-filter-field">
+                    <label for="txtdate" class="form-label">Pallet Date <span class="text-danger">*</span></label>
                     <input id="txtdate" name="txtdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" required />
                 </div>
-                <div class="col-md-10 without-label-field ">
-                    <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
-                    <input type="button" onclick="PalletPacking_Print('Grid','N')" class="btn btn-primary btn-height" value="Print" />&nbsp;
-                    <input type="button" onclick="PalletPacking_Print('Grid','Y')" class="btn btn-primary btn-height" value="Print Download" />&nbsp;
-                    <input type="button" id="btnExport" class="btn btn-primary btn-height" value="Export">
+                <div id="orderWiseSection" class="pp-filter-field" style="display:none;">
+                    <label for="txtOrderNo" class="form-label">Order No <span class="text-danger">*</span></label>
+                    <select id="txtOrderNo" class="form-control form-control-sm box_border"></select>
                 </div>
             </div>
-            <div class="row" id="orderWiseSection" style="display:none;">
-                <div class="col-md-2 pe-0">
-                    <label for="txtorderNo" class="col-form-label-sm fw-bold">Order No:<span class="text-danger">*</span></label>
-                        <select id="txtOrderNo" class="form-control form-control-sm box_border"></select>
-                </div>                    
-                    <div class="col-md-4 without-label-field">
-                        <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" /> &nbsp;
-                        <input type="button" onclick="PalletPacking_Print('Grid','N')" class="btn btn-primary btn-height" value="Print" />&nbsp;
-                        <input type="button" onclick="PalletPacking_Print('Grid','Y')" class="btn btn-primary btn-height" value="Print Download" />&nbsp;
-                        <input type="button" id="btnExport" class="btn btn-primary btn-height" value="Export" onclick="Export()">
-                    </div>
-            </div>
-
         </form>
     </div>
+
+    <!-- ExpenseEntry-style grid -->
+    <div class="pp-list-grid-wrap">
+        <div id="tblDateOrderPallet">
+            <div class="pp-table-wrapper table-wrapper fixed-height-table">
+                <table id="PalletPacking" class="fixed-width-table table">
+                    <thead id="table-header-PalletPacking"></thead>
+                    <tbody id="table-body-PalletPacking"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-PalletPacking"></div>
+        </div>
+    </div>
 </div>
-<div id="tblDateOrderPallet">
-<div class="table-wrapper fixed-height-table">
-    <table id="PalletPacking" class="fixed-width-table table">
-        <thead id="table-header-PalletPacking">
-        </thead>
-        <tbody id="table-body-PalletPacking">
-        </tbody>
-    </table>
-</div>
-<div class="paginator" id="paginator-PalletPacking">
-</div>
-</div>
-</div>
-<div id="newCreateForm" class="card" style="display:none">
-    <form class="card-body">
-        <div class="row">
+
+<!-- Create / Edit form (ExpenseEntry-style) -->
+<div id="newCreateForm" style="display:none">
+    <div class="pp-form-header section-entry-animation">
+        <div class="pp-list-header-top">
+            <div class="pp-list-header-title-block">
+                <h2 class="pp-list-header-title"><i class="fa fa-box-open me-2" aria-hidden="true"></i>Pallet Entry</h2>
+                <small class="pp-list-header-sub">Create or edit pallet packing details.</small>
+            </div>
+            <div class="pp-list-header-actions">
+                <button type="button" class="pp-list-create-btn" title="Back" onclick="Close()">
+                    <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                    <span class="pp-list-create-btn-label ms-1">Back</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pp-form-card">
+    <form>
+        <div class="row g-3">
             <input type="hidden" name="Code" id="Code" class="form-control" value="0">
-            <!-- Pallet Date -->
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label for="txtdate" class="col-form-label-sm fw-bold"><b>Pallet Date:<span class="text-danger">*</span></b></label>
-                    <input id="txtPalletdate" name="txtPalletdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly required />
-                </div>
-            </div>
 
-            <!-- Pallet No -->
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="col-form-label-sm fw-bold required"><b>Pallet No:<span class="text-danger">*</span></b></label>
-                    <input type="text" name="palletNo" id="palletNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Pallet No" readonly />
-                </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="txtPalletdate" class="form-label fw-bold">Pallet Date <span class="text-danger">*</span></label>
+                <input id="txtPalletdate" name="txtPalletdate" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Date" value="" readonly required />
             </div>
-
-            <!-- Warehouse -->
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="col-form-label-sm fw-bold required"><b>Warehouse:</b><span class="text-danger">*</span></label>
-                    <select id="txtWarehouse" class="form-control form-control-sm box_border"></select>
-                </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="palletNo" class="form-label fw-bold">Pallet No <span class="text-danger">*</span></label>
+                <input type="text" name="palletNo" id="palletNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Pallet No" readonly />
             </div>
-
-            <!-- Packing Weight -->
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="col-form-label-sm fw-bold required"><b>Packing Wt:</b><span class="text-danger">*</span></label>
-                    <input type="text" name="packingWt" id="packingWt" class="box_border form-control form-control-sm" autocomplete="off" maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Packing Wt" required />
-                </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="txtWarehouse" class="form-label fw-bold">Warehouse <span class="text-danger">*</span></label>
+                <select id="txtWarehouse" class="form-control form-control-sm box_border"></select>
             </div>
-
-            <!-- Reference No -->
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="col-form-label-sm fw-bold required"><b>Reference No:</b><span class="text-danger">*</span></label>
-                    <input type="text" name="referenceNo" id="referenceNo" class="box_border form-control form-control-sm" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '');"  placeholder="Reference No" maxlength="8" required />
-                </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="packingWt" class="form-label fw-bold">Packing Wt <span class="text-danger">*</span></label>
+                <input type="text" name="packingWt" id="packingWt" class="box_border form-control form-control-sm" autocomplete="off" maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Packing Wt" required />
             </div>
-
-            <!-- Pallet Type -->
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="col-form-label-sm fw-bold required"><b>Pallet Type:</b><span class="text-danger">*</span></label>
-                    <select id="txtPalletType" class="form-control form-control-sm box_border"></select>
-                </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="referenceNo" class="form-label fw-bold">Reference No <span class="text-danger">*</span></label>
+                <input type="text" name="referenceNo" id="referenceNo" class="box_border form-control form-control-sm" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Reference No" maxlength="8" required />
             </div>
-
-            <!-- Order No -->
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="col-form-label-sm fw-bold required"><b>Order No:</b><span class="text-danger">*</span></label>
-                    <select id="txtOrderNo1" class="form-control form-control-sm box_border"></select>
-                </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="txtPalletType" class="form-label fw-bold">Pallet Type <span class="text-danger">*</span></label>
+                <select id="txtPalletType" class="form-control form-control-sm box_border"></select>
             </div>
-
-            <!-- Scan Identification No -->
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="col-form-label-sm fw-bold required"><b>Scan Identification No:</b><span class="text-danger">*</span></label>
-                    <input type="text" id="txtScanIdentificationNo" name="txtScanIdentificationNo" class="box_border form-control form-control-sm" autocomplete="off" />
-                    <ul id="txtScanIdentificationNoList" class="AutoSuggestion-list"></ul>
-                </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="txtOrderNo1" class="form-label fw-bold">Order No <span class="text-danger">*</span></label>
+                <select id="txtOrderNo1" class="form-control form-control-sm box_border"></select>
             </div>
-            <div class="row">
-                <div class="col-md-12 mb-2 text-start">
-                    <a class="btn btn-primary btn-height" id="btnAvailableOrderStock" onclick="PalletPacking_ShowDetailsModals('AvailableStockDetail')">
-                        AVAILABLE ORDER STOCK
-                    </a>
-                    <a class="btn btn-secondary btn-height" id="btnScanQR" onclick="QRPalletPacking_btnScanQR()">
-                        Scan QR
-                    </a>
-                    <button type="button" title="Print" onclick="PalletPacking_Print('Single','N')" class="btn btn-primary btn-height">Print</button>
-                    <button type="button" onclick="CreateNew()" title="Create New" class="btn btn-primary btn-height">Create New</button>
-                    <button type="button" class="btn btn-primary btn-height" title="Back" onclick="Close()">BACK</button>
-                </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="txtScanIdentificationNo" class="form-label fw-bold">Scan Identification No <span class="text-danger">*</span></label>
+                <input type="text" id="txtScanIdentificationNo" name="txtScanIdentificationNo" class="box_border form-control form-control-sm" autocomplete="off" />
+                <ul id="txtScanIdentificationNoList" class="AutoSuggestion-list"></ul>
             </div>
         </div>
     </form>
+    </div>
+
+    <div class="pp-form-card pp-form-actions-card">
+        <div class="pp-form-actions">
+            <button type="button" class="btn btn-primary btn-height" id="btnAvailableOrderStock" onclick="PalletPacking_ShowDetailsModals('AvailableStockDetail')">
+                <i class="fa fa-warehouse me-1" aria-hidden="true"></i>Available Order Stock
+            </button>
+            <button type="button" class="btn btn-secondary btn-height" id="btnScanQR" onclick="QRPalletPacking_btnScanQR()">
+                <i class="fa fa-qrcode me-1" aria-hidden="true"></i>Scan QR
+            </button>
+            <button type="button" title="Print" onclick="PalletPacking_Print('Single','N')" class="btn btn-primary btn-height">
+                <i class="fa fa-print me-1" aria-hidden="true"></i>Print
+            </button>
+            <button type="button" onclick="CreateNew()" title="Create New" class="btn btn-info btn-height">
+                <i class="fa fa-plus-circle me-1" aria-hidden="true"></i>Create New
+            </button>
+            <!-- <button type="button" class="btn btn-secondary btn-height" title="Back" onclick="Close()">
+                <i class="fa fa-arrow-left me-1" aria-hidden="true"></i>Back
+            </button> -->
+        </div>
+    </div>
 </div>
+
 <div id="tdlScanIdentification" style="display: none;">
-    <div class="table-wrapper fixed-height-table">
-        <table id="ScanIdentification" class="fixed-width-table table">
-            <thead id="table-header-ScanIdentification">
-            </thead>
-            <tbody id="table-body-ScanIdentification">
-            </tbody>
-        </table>
-    </div>
-    <div class="paginator" id="paginator-ScanIdentification">
+    <div class="pp-list-grid-wrap">
+        <div class="pp-table-wrapper table-wrapper fixed-height-table">
+            <table id="ScanIdentification" class="fixed-width-table table">
+                <thead id="table-header-ScanIdentification"></thead>
+                <tbody id="table-body-ScanIdentification"></tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-ScanIdentification"></div>
     </div>
 </div>
+
 <div class="table-wrapper fixed-height-table" hidden="hidden">
     <table id="tblReport" hidden="hidden">
-        <thead id="table-headerPrint">
-            <tr></tr>
-        </thead>
-        <tbody id="table-bodyPrint">
-        </tbody>
+        <thead id="table-headerPrint"><tr></tr></thead>
+        <tbody id="table-bodyPrint"></tbody>
     </table>
 </div>
 
@@ -239,7 +186,7 @@
                 <h5 class="modal-title" id="modal-title">Please Choose Button</h5>
                 <button type="button" class="close modal-close" aria-label="Close" onclick="Close_ExportModal()"<span aria-hidden="true">x</span></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body d-flex flex-wrap gap-2">
                 <button type="button" id="btnDownload" class="btn btn-primary btn-height" onclick="ExportSummary()">Export Summary</button>
                 <button type="button" id="btnDownloadDetails" class="btn btn-primary btn-height" onclick="DownloadPalletPacking()">Export Details</button>
             </div>
@@ -249,57 +196,64 @@
         </div>
     </div>
 </div>
+
 <div class="modal fade" id="ViewInIDPallet" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modal-title">Pallet No </h5>
-                <button type="button" class="close modal-close" aria-label="Close" onclick="Close_ViewIdInPalletModal()"<span aria-hidden="true">x</span></button>
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content pp-viewid-modal">
+            <div class="modal-header pp-viewid-modal-header">
+                <h5 class="modal-title" id="viewIdModalTitle">
+                    <i class="fa-solid fa-barcode me-2" aria-hidden="true"></i>
+                    <span id="viewIdModalPalletNo">Pallet Identification</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" aria-label="Close" onclick="Close_ViewIdInPalletModal()"></button>
             </div>
-            <div class="modal-body">
-                <div class="table-wrapper">
+            <div class="modal-body pp-viewid-modal-body">
+                <div class="pp-viewid-modal-sub" id="viewIdModalSub">Identification numbers packed in this pallet.</div>
+                <div class="pp-viewid-table-wrap pp-modal-table-wrap table-wrapper">
                     <table id="ViewInIdPalletTable" class="fixed-width-table table">
-                        <thead id="table-header-ViewInIdPalletTable">
-                        </thead>
-                        <tbody id="table-body-ViewInIdPalletTable">
-                        </tbody>
+                        <thead id="table-header-ViewInIdPalletTable"></thead>
+                        <tbody id="table-body-ViewInIdPalletTable"></tbody>
                     </table>
                 </div>
-                <div class="paginator" id="paginator-ViewInIdPalletTable">
-                </div>
+                <div class="paginator pp-viewid-paginator" id="paginator-ViewInIdPalletTable"></div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger btn-height" onclick="Close_ViewIdInPalletModal()">Cancel</button>
+            <div class="modal-footer pp-viewid-modal-footer">
+                <button type="button" class="pp-viewid-close-btn" onclick="Close_ViewIdInPalletModal()">
+                    <i class="fa fa-times me-1" aria-hidden="true"></i>Close
+                </button>
             </div>
         </div>
     </div>
 </div>
+
 <div id="DivScanQRCodeByCameraControlModal"></div>
+
 <div class="modal fade bs-example-modal-center" id="DetailsModal" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="false">
-    <div class="modal-dialog modal-dialog-scrollable" style="max-width:484px">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="ModalTitle"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content pp-stock-modal">
+            <div class="modal-header pp-stock-modal-header">
+                <h5 class="modal-title" id="ModalTitle">
+                    <i class="fa fa-warehouse me-2" aria-hidden="true"></i>
+                    <span id="stockModalTitleText">Available Stock Detail</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="table-wrapper fixed-height-table">
+            <div class="modal-body pp-stock-modal-body">
+                <div class="pp-stock-modal-sub" id="stockModalSub">Available order stock for the selected order.</div>
+                <div class="pp-stock-table-wrap pp-modal-table-wrap table-wrapper">
                     <table id="tbDetails" class="fixed-width-table table">
-                        <thead id="tbDetailsHeader">
-                        </thead>
-                        <tbody id="tbDetailsbody">
-                        </tbody>
+                        <thead id="tbDetailsHeader"></thead>
+                        <tbody id="tbDetailsbody"></tbody>
                     </table>
                 </div>
-                <div class="paginator" id="paginator-tbDetails">
-                </div>
-
-                <div class="text-end mt-1">
-                    <a class="btn btn-danger btn-height" data-bs-dismiss="modal">
-                        Close
-                    </a>
-                </div>
+                <div class="paginator pp-stock-paginator" id="paginator-tbDetails"></div>
             </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
+            <div class="modal-footer pp-stock-modal-footer">
+                <button type="button" class="pp-stock-close-btn" data-bs-dismiss="modal">
+                    <i class="fa fa-times me-1" aria-hidden="true"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 </div>

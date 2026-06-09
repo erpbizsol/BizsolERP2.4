@@ -231,18 +231,24 @@ function GetPackedPalletDateAndOrderWise(todayDate, BuyerPOMaster_Code) {
 
             if (G_QtyMTR.toUpperCase() == "NA") {
                 hiddenColumns.push("Qty " + G_QtyMTR);
+            } else {
+                numericFilterColumn.push("Qty " + G_QtyMTR);
             }
             if (G_QtyMT.toUpperCase() == "NA") {
                 hiddenColumns.push("Qty " + G_QtyMT);
+            } else {
+                numericFilterColumn.push("Qty " + G_QtyMT);
             }
             if (G_QtyPC.toUpperCase() == "NA") {
                 hiddenColumns.push("Qty " + G_QtyPC);
+            } else {
+                numericFilterColumn.push("Qty " + G_QtyPC);
             }
             const updatedResponse = response.map(item => {
                 let buttonsCheckBox = `<input type="checkbox" id="checkPrint" onchange="toggleSelection(this, this.checked)" checked>`;
                 let buttonsHTML = item?.['Allow Edit'] === 'Y'
-                    ? `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']},'Y')"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>&nbsp;<button class="btn btn-secondary icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>`
-                    : `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletViewDetail(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>&nbsp;&nbsp;<button class="btn btn-secondary icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>`;
+                    ? `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="EditPallet(${item?.['Pallet No']},'Y')"><i class="fa-solid fa-pencil"></i></button>&nbsp;<button class="btn btn-warning icon-height mb-1" title="Remove Pallet" onclick="PalletPacking_DeletePallet(${item?.['Pallet No']})"><i class="fa fa-remove"></i></button>&nbsp;<button class="btn pp-btn-view-id icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-solid fa-barcode"></i></button>`
+                    : `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetPalletViewDetail(${item?.['Pallet No']})"><i class="fa-regular fa-eye"></i></button>&nbsp;&nbsp;<button class="btn pp-btn-view-id icon-height mb-1" title="View In ID" onclick="ViewPalletId(${item?.['Pallet No']})"><i class="fa-solid fa-barcode"></i></button>`;
 
                 return {
                     ...item,
@@ -1255,6 +1261,8 @@ function ViewPalletId(PalletNo) {
     PalletPackingService.ViewInIDPallet(PalletNo).then(function (response) {
         if (response && response.length > 0) {
             HideLoader();
+            $('#viewIdModalPalletNo').text('Pallet No: ' + PalletNo);
+            $('#viewIdModalSub').text(response.length + ' identification number(s) in this pallet.');
             $('#ViewInIDPallet').modal({
                 backdrop: 'static',
             });
@@ -1325,12 +1333,40 @@ $('#txtScanIdentificationNo').on('keydown', function (e) {
         return false;
     }
 });
-function PalletPacking_ShowDetailsModals(For) {
-    BuyerPOMaster_Code = $('#txtOrderNo1').val();
-     if (For === 'AvailableStockDetail') {
+function getSelectedBuyerPOMasterCode() {
+    let code = $('#txtOrderNo1').val();
+    const orderSelect = document.getElementById('txtOrderNo1');
 
-        PackingListFGService.GetDetails(For, BuyerPOMaster_Code).then(function (response) {
-            console.log(response);
+    if (!code || code === '' || code === '0' || String(code).toLowerCase() === 'null') {
+        if (orderSelect && orderSelect.selectedIndex >= 0) {
+            code = orderSelect.options[orderSelect.selectedIndex].value;
+        }
+    }
+
+    if (!code || code === '' || code === '0' || String(code).toLowerCase() === 'null') {
+        if (BuyerPOMaster_Code && BuyerPOMaster_Code !== 0) {
+            code = BuyerPOMaster_Code;
+        }
+    }
+
+    const parsedCode = parseInt(code, 10);
+    return (isNaN(parsedCode) || parsedCode <= 0) ? 0 : parsedCode;
+}
+
+function PalletPacking_ShowDetailsModals(For) {
+    if (For === 'AvailableStockDetail') {
+        const orderCode = getSelectedBuyerPOMasterCode();
+        if (!orderCode) {
+            toastr.warning('Please select Order No first.');
+            $('#txtOrderNo1').focus();
+            return;
+        }
+
+        BuyerPOMaster_Code = orderCode;
+        Showloader();
+
+        PackingListFGService.GetDetails(For, orderCode).then(function (response) {
+            HideLoader();
             const StringFilterColumn = [];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
@@ -1342,9 +1378,10 @@ function PalletPacking_ShowDetailsModals(For) {
                 "PC": 'right',
             };
 
-            if (response.length > 0) {
-                BizsolCustomFilterGrid.CreateDataTable("tbDetailsHeader", "tbDetailsbody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-                $('#ModalTitle')[0].innerHTML = 'Available Stock Detail';
+            if (response && response.length > 0) {
+                BizsolCustomFilterGrid.CreateDataTable("tbDetailsHeader", "tbDetailsbody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+                $('#stockModalTitleText').text('Available Stock Detail');
+                $('#stockModalSub').text(response.length + ' stock record(s) available for this order.');
                 $("#DetailsModal").modal({
                     backdrop: 'static',
                 });
@@ -1352,6 +1389,9 @@ function PalletPacking_ShowDetailsModals(For) {
             } else {
                 toastr.error('No Data Found!');
             }
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error?.Msg || 'Unable to load available stock detail.');
         });
     }
 }
