@@ -559,6 +559,43 @@
         cursor: default !important;
     }
 
+    .city-check-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 13px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        background: var(--white-bg);
+        cursor: pointer;
+        user-select: none;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-dark);
+        transition: border-color .2s, box-shadow .2s;
+        min-height: 42px;
+        box-sizing: border-box;
+    }
+
+    .city-check-wrap:hover {
+        border-color: var(--accent-primary);
+    }
+
+    .city-check-wrap input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #667eea;
+        cursor: pointer;
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    #cityDetailPanel.city-readonly .city-check-wrap {
+        background: var(--light-bg);
+        cursor: default;
+        pointer-events: none;
+    }
+
     /* ── Inline validation ── */
     .city-fg input.city-input-error,
     .city-fg select.city-input-error {
@@ -746,12 +783,6 @@
                 <div class="row g-3 city-detail-form">
                     <div class="col-12 col-md-3">
                         <div class="city-fg">
-                            <label for="ddlDetailCountry">Country</label>
-                            <select id="ddlDetailCountry"></select>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-3">
-                        <div class="city-fg">
                             <label for="txtCityName">City Name <span class="text-danger">*</span></label>
                             <input type="text" id="txtCityName" autocomplete="off" maxlength="50" placeholder="City name" />
                         </div>
@@ -773,6 +804,21 @@
                         <div class="city-fg">
                             <label for="ddlStateName">State Name <span class="text-danger">*</span></label>
                             <select id="ddlStateName"></select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3 city-district-field" id="cityIsDistrictCol" style="display:none;">
+                        <div class="city-fg">
+                            <label for="chkIsDistrict">Is District</label>
+                            <label class="city-check-wrap" for="chkIsDistrict">
+                                <input type="checkbox" id="chkIsDistrict" />
+                                <span>Is district</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3 city-district-field" id="cityDistrictNameCol" style="display:none;">
+                        <div class="city-fg">
+                            <label for="ddlDistrictName">District Name</label>
+                            <select id="ddlDistrictName"></select>
                         </div>
                     </div>
                 </div>

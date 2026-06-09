@@ -35,6 +35,22 @@ const ReasonMasterService = {
             return value;
         });
     },
+    GetEmployeeMasterDropdownList: function GetEmployeeMasterDropdownList() {
+        const URL =
+            UrlService.API_ENDPOINT_REASON_MASTER +
+            `/GetEmployeeMasterDropdownList?UserId=${encodeURIComponent(authUserCode())}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+    GetReasonMasterConfig: function GetReasonMasterConfig() {
+        const URL =
+            UrlService.API_ENDPOINT_REASON_MASTER +
+            `/GetReasonMasterConfig?UserId=${encodeURIComponent(authUserCode())}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
     GetReasonMasterByCode: function GetReasonMasterByCode(code) {
         const URL = UrlService.API_ENDPOINT_REASON_MASTER + '/' + encodeURIComponent(code);
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {

@@ -156,6 +156,7 @@ let UrlService = {
     API_ENDPOINT_AREA_MASTER: `${environment.BASE_URL}/AreaMaster`,
     API_ENDPOINT_TASKLIST_MASTER: `${environment.BASE_URL}/TaskListMaster`,
     API_ENDPOINT_TASK_UPDATION: `${environment.BASE_URL}/TaskUpdation`,
+    API_ENDPOINT_CHECKLIST_MIS: `${environment.BASE_URL}/CheckListMIS`,
     API_ENDPOINT_SendMail: `${environment.BASE_URL}/SendMail`,
     API_ENDPOINT_ExpensesLedgerReport: `${environment.BASE_URL}/ExpensesLedgerReport`,
     API_ENDPOINT_AREA_ExpensesLedgerReport: `${environment.BASE_URL}/ExpensesLedgerReport`,
