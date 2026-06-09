@@ -78,6 +78,12 @@
             --sidebar-glow-green: rgba(85, 239, 196, 0.18);
             --sidebar-glow-blue: rgba(116, 185, 255, 0.2);
             --sidebar-width: 280px;
+            --sidebar-width-collapsed: 70px;
+            /* Content pane — fixed like sidebar; top pad aligns with FAVOURITES row */
+            --erp-header-height: 55px;
+            --erp-footer-height: 34px;
+            --erp-content-top-offset: calc(4px + 0.35rem + 0.05rem);
+            --erp-content-pad-x: 0.5rem;
             /* Professional Shadow Effects */
             --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
             --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
@@ -89,15 +95,17 @@
         }
 
         body {
+            height: 100%;
             background: var(--light-bg);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: var(--text-dark);
-            overflow-x: hidden;
+            overflow: hidden;
             max-width: 100%;
         }
 
         html {
-            overflow-x: hidden;
+            height: 100%;
+            overflow: hidden;
             max-width: 100%;
         }
 
@@ -163,7 +171,7 @@
             width: var(--sidebar-width);
             position: fixed;
             left: 0;
-            top: 55px;
+            top: var(--erp-header-height);
             bottom: 0;
             box-shadow: var(--sidebar-border-width) 0 20px rgba(99, 102, 241, 0.08);
             overflow-y: auto;
@@ -1090,22 +1098,60 @@
             }
 
         .modern-sidebar.collapsed ~ .modern-footer {
-            margin-left: 70px;
+            margin-left: var(--sidebar-width-collapsed);
         }
 
-        .modern-content {
-            margin-left: var(--sidebar-width);
-            margin-top: 55px;
-            padding: 0.25rem 0.5rem 80px;
-            min-height: calc(100vh - 55px);
-            transition: margin-left 0.3s ease;
-            overflow-x: hidden;
-            max-width: 100%;
-            box-sizing: border-box;
+        /* Fixed content pane — same top as sidebar; scroll inside pane only (no body scroll) */
+        #modern-content.modern-content {
+            position: fixed !important;
+            top: var(--erp-header-height) !important;
+            left: var(--sidebar-width) !important;
+            right: 0 !important;
+            bottom: var(--erp-footer-height) !important;
+            margin: 0 !important;
+            padding: var(--erp-content-top-offset) var(--erp-content-pad-x) 8px !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            box-sizing: border-box !important;
+            /* no z-index — avoids trapping Bootstrap modals below body-level .modal-backdrop */
+            transition: left 0.3s ease, right 0.3s ease;
         }
 
-        .modern-sidebar.collapsed ~ .modern-content {
-            margin-left: 70px;
+        /* Collapsed sidebar — must match #modern-content specificity */
+        .modern-sidebar.collapsed ~ #modern-content.modern-content,
+        body:has(.modern-sidebar.collapsed) #modern-content.modern-content {
+            left: var(--sidebar-width-collapsed) !important;
+        }
+
+        .modern-content > main {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .modern-content > main > :first-child,
+        .modern-content [class$="-page"],
+        .modern-content > main > :first-child > [class*="-header"]:first-child,
+        .modern-content > main > :first-child > [class*="-list-header"]:first-child,
+        .modern-content > main > :first-child > [class*="-page-header"]:first-child,
+        .modern-content > main > .card:first-child,
+        .modern-content > main > .row:first-child {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+
+        /* Bootstrap modals — must sit above header (1000), sidebar (999), footer (1001) */
+        .modal-backdrop {
+            z-index: 1054 !important;
+        }
+
+        .modal {
+            z-index: 1055 !important;
+        }
+
+        body.modal-open #modern-content.modern-content {
+            overflow: hidden !important;
         }
 
         .welcome-card {
@@ -1383,9 +1429,13 @@
                     display: block;
                 }
 
-            .modern-content {
-                margin-left: 0;
-                padding: 0.25rem 0.375rem 150px;
+            #modern-content.modern-content,
+            .modern-sidebar.collapsed ~ #modern-content.modern-content,
+            body:has(.modern-sidebar.collapsed) #modern-content.modern-content {
+                left: 0 !important;
+                right: 0 !important;
+                bottom: calc(var(--erp-footer-height) + 30px) !important;
+                padding: var(--erp-content-top-offset) 0.375rem 8px !important;
             }
 
             .modern-footer {
@@ -1501,8 +1551,8 @@
                 bottom: 28px;
             }
 
-            .modern-content {
-                padding-bottom: 145px;
+            #modern-content.modern-content {
+                bottom: calc(var(--erp-footer-height) + 28px) !important;
             }
 
             .mobile-nav-item i {
@@ -1644,11 +1694,20 @@
         }
 
         body.erp-embedded .modern-content {
-            margin-left: 0 !important;
-            margin-top: 0 !important;
+            position: static !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            top: auto !important;
+            margin: 0 !important;
             padding: 1rem !important;
-            padding-bottom: 1rem !important;
             min-height: 100vh;
+            overflow: visible !important;
+        }
+
+        body.erp-embedded {
+            overflow: auto !important;
+            height: auto !important;
         }
 
         /* ERP Heading */
@@ -1992,6 +2051,10 @@
         }
 
         body.erp-home-page .modern-content {
+            top: var(--erp-home-top) !important;
+            left: var(--erp-home-left-offset) !important;
+            right: 0 !important;
+            bottom: var(--erp-home-bottom) !important;
             padding: 0 !important;
             margin: 0 !important;
             overflow: hidden !important;
@@ -2312,6 +2375,19 @@
         window.Showloader = Showloader;
         window.HideLoader = HideLoader;
         HideLoader();
+
+        /* Move modals to <body> so they are not trapped inside #modern-content stacking context */
+        function erpMoveModalToBody(modal) {
+            if (modal && modal.classList && modal.classList.contains('modal') && modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+        }
+
+        document.querySelectorAll('.modal').forEach(erpMoveModalToBody);
+
+        document.addEventListener('show.bs.modal', function (e) {
+            erpMoveModalToBody(e.target);
+        }, true);
 
         // Sidebar toggle
         document.getElementById('vertical-menu-btn').addEventListener('click', function() {
