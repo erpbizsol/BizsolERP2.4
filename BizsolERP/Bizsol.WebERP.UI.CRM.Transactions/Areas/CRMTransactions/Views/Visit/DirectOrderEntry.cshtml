@@ -2,100 +2,540 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
-<script>
-    var param_VisitMode='@ViewBag.VisitMode';
-    var param_RoutePlanCode='@ViewBag.RoutePlanCode';
-    var param_VisitMaster_Code='@ViewBag.VisitMaster_Code';
-
-</script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/DirectOrderEntry.js"></script>
 
 <style>
-
-    /* Table Styles */
-
-    /*  .table-wrapper {
-            margin: 5px 5px 5px;
-            box-shadow: 0px 35px 50px rgba( 0, 0, 0, 0.2 );
-        }
-     */
-
-    /* #tblorderbooking {
-        width: 125%;
-    } */
-   
-
-  
-    .modal {
+    .doe-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 0 0 32px;
+    }
+    .section-entry-animation {
+        animation: doe-fade-slide 0.35s ease both;
+    }
+    @@keyframes doe-fade-slide {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .doe-page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px;
+        padding: 18px 24px;
+        margin-bottom: 16px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 24px rgba(102, 126, 234, 0.22);
+    }
+    .doe-page-header::before {
+        content: '';
+        position: absolute;
+        top: -40px;
+        right: -40px;
+        width: 180px;
+        height: 180px;
+        background: rgba(255, 255, 255, 0.07);
+        border-radius: 50%;
+    }
+    .doe-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        z-index: 1;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .doe-header-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .doe-header-icon {
+        width: 46px;
+        height: 46px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: #fff;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+    .doe-header-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+    }
+    .doe-header-subtitle {
+        font-size: 0.78rem;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 2px;
+        font-weight: 500;
+    }
+    .doe-step-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+        margin-bottom: 16px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease;
+    }
+    .doe-step-card:hover {
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.13);
+    }
+    .doe-step-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 18px;
+        background: #fafbff;
+        border-bottom: 1px solid #eef0f8;
+        border-left: 4px solid var(--step-clr, #667eea);
+    }
+    .doe-step-num {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--step-clr, #667eea);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.72rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+    }
+    .doe-step-title {
+        font-weight: 700;
+        font-size: 0.84rem;
+        color: #1e293b;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        flex: 1;
+    }
+    .doe-step-icon {
+        color: var(--step-clr, #667eea);
+        font-size: 1rem;
+    }
+    .doe-step-body {
+        padding: 18px 20px;
+    }
+    .doe-page .form-label,
+    .doe-page .col-form-label-sm {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--text-primary, #334155);
+        margin-bottom: 0.35rem;
+    }
+    .doe-page .box_border.form-control,
+    .doe-page .box_border.form-select,
+    .doe-page .form-control,
+    .doe-page .form-select {
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color, #e2e8f0);
+        font-size: 13px;
+        outline: none;
+        background: var(--white-bg, #fff);
+        color: var(--text-dark, #1e293b);
+        transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .doe-page .box_border.form-control:focus,
+    .doe-page .box_border.form-select:focus,
+    .doe-page .form-control:focus,
+    .doe-page .form-select:focus {
+        border-color: var(--accent-primary, #667eea);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        outline: none;
+    }
+    .doe-page .form-control[readonly],
+    .doe-page .form-control.disabled,
+    .doe-page .disabled {
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+        color: #64748b;
+        cursor: default;
+    }
+    .doe-page .universal {
+        color: #ef4444;
+    }
+    .doe-page #imgSelfie {
+        border: 2px solid #e0e7ff;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+        object-fit: cover;
+    }
+    .doe-page .select2-container {
+        width: 100% !important;
+    }
+    .doe-kpi-grid .form-group {
+        margin-bottom: 0;
+    }
+    .doe-kpi-grid .form-control {
+        text-align: right;
+        font-weight: 600;
+        background: linear-gradient(135deg, #fafaff 0%, #f5f3ff 100%);
+        border-color: #ddd6fe;
+        color: #4338ca;
+    }
+    .doe-tab-shell {
+        margin-bottom: 16px;
+    }
+    .doe-tab-bar {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 42%, #3b82f6 100%);
+        border: 1px solid #1e40af;
+        border-bottom: none;
+        border-radius: 14px 14px 0 0;
+        padding: 0;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+    #myTab.nav-tabs {
+        border-bottom: none;
+        margin: 0;
+        padding: 6px 10px 0 14px;
+        gap: 4px;
+        flex-wrap: wrap;
+        align-items: center;
+        min-height: 50px;
+        box-sizing: border-box;
+    }
+    #myTab .nav-item {
+        margin-bottom: 0;
+    }
+    #myTab .nav-link {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        border: none !important;
+        border-radius: 10px 10px 0 0 !important;
+        padding: 0 16px !important;
+        margin-bottom: 0 !important;
+        height: 39px;
+        box-sizing: border-box;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.72) !important;
+        background: transparent !important;
+        border-bottom: 3px solid transparent !important;
+        transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    #myTab .nav-link:not(.active) {
+        color: rgba(255, 255, 255, 0.92) !important;
+        font-weight: 500;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.22) !important;
+        border-bottom: none !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(15, 23, 42, 0.12);
+    }
+    #myTab .nav-link:not(.active):hover {
+        color: #fff !important;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.14) 100%) !important;
+        border-color: rgba(255, 255, 255, 0.38) !important;
+    }
+    #myTab .nav-link.active {
+        color: #1e3a8a !important;
+        font-weight: 700;
+        background: #fff !important;
+        border-bottom-color: #1e40af !important;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.12);
+    }
+    #myTab .nav-link.active i {
+        color: #1e40af !important;
+    }
+    .doe-tab-content-wrap {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        padding: 18px;
+        box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(102, 126, 234, 0.06);
+    }
+    .doe-page .tab-section .tab-content {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        background: transparent;
+    }
+    .doe-page .table-wrapper {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        overflow: auto;
+        background: #fff;
+    }
+    .doe-page .fixed-height-table {
+        max-height: 360px;
+    }
+    .doe-page #tblorderbooking,
+    .doe-page #tblPendingOrder,
+    .doe-page #tblSizeWiseSales,
+    .doe-page #PaymentHistory,
+    .doe-page #ConsigneeDeliveryAddress,
+    .doe-page #LogicalStock {
+        margin-bottom: 0;
+        font-size: 12.5px;
+    }
+    .doe-page #tblorderbooking thead,
+    .doe-page #tblPendingOrder thead,
+    .doe-page #tblSizeWiseSales thead,
+    .doe-page #PaymentHistory thead,
+    .doe-page #ConsigneeDeliveryAddress thead,
+    .doe-page #LogicalStock thead,
+    .doe-page .fixed-width-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+    .doe-page #tblorderbooking thead th,
+    .doe-page #tblPendingOrder thead th,
+    .doe-page #tblSizeWiseSales thead th,
+    .doe-page #PaymentHistory thead th,
+    .doe-page #ConsigneeDeliveryAddress thead th,
+    .doe-page #LogicalStock thead th,
+    .doe-page .fixed-width-table thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 10px 12px;
+        text-align: center;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 11px;
+        letter-spacing: 0.03em;
+        vertical-align: middle;
+    }
+    .doe-page #tblorderbooking tbody tr:nth-child(even),
+    .doe-page #tblPendingOrder tbody tr:nth-child(even),
+    .doe-page #tblSizeWiseSales tbody tr:nth-child(even),
+    .doe-page #PaymentHistory tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+    .doe-page #tblorderbooking tbody tr:hover,
+    .doe-page #tblPendingOrder tbody tr:hover,
+    .doe-page #tblSizeWiseSales tbody tr:hover,
+    .doe-page #PaymentHistory tbody tr:hover {
+        background: rgba(102, 126, 234, 0.07) !important;
+    }
+    .doe-page #tblorderbooking tfoot tr#trTotal {
+        background: #f5f3ff;
+        font-weight: 700;
+    }
+    .doe-page .paginator {
+        padding: 10px 14px;
+        border-top: 1px solid #eef0f8;
+        background: #fafbff;
+    }
+    .doe-page .app-search .form-control {
+        border-radius: 10px 0 0 10px;
+        border: 1.5px solid #ddd6fe;
+        background: #f5f3ff;
+    }
+    .doe-page .app-search .btn-search {
+        border-radius: 0 10px 10px 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        color: #fff;
+    }
+    .doe-order-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        background: #fafbff;
+        border: 1px solid #eef0f8;
+        border-radius: 10px;
+        margin-bottom: 14px;
+    }
+    .doe-order-toolbar label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0;
+    }
+    .doe-page .sizeDes {
+        display: flex;
+        gap: 3px;
+    }
+    .doe-page .sizeDesInput {
+        width: 240px;
+    }
+    .doe-page .digit10 {
+        width: 100px;
+    }
+    .doe-page .digit8 {
+        width: 68px;
+    }
+    .doe-page .digit13 {
+        width: 130px;
+    }
+    .doe-footer-card .doe-step-body {
+        padding-top: 14px;
+    }
+    .doe-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid #eef0f8;
+    }
+    .doe-actions .btn {
+        border-radius: 12px;
+        font-weight: 700;
+        min-height: 36px;
+        padding: 8px 22px;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .doe-actions .btn-primary,
+    .doe-page .btn.btn-primary {
+        background: var(--primary-gradient, linear-gradient(135deg, #667eea, #764ba2));
+        border: none;
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
+    }
+    .doe-actions .btn-primary:hover,
+    .doe-page .btn.btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(102, 126, 234, 0.45);
+        color: #fff;
+    }
+    .doe-actions .btn-secondary,
+    .doe-page .btn.btn-secondary {
+        background: linear-gradient(135deg, #64748b, #475569);
+        border: none;
+        color: #fff;
+    }
+    .doe-actions .btn-secondary:hover {
+        transform: translateY(-2px);
+        color: #fff;
+    }
+    .doe-page .submit-btn.btn-primary {
+        border-radius: 10px;
+        font-weight: 700;
+    }
+    .doe-page .modal {
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        max-width: 90%; /* Optional: Adjust to fit the screen size */
+        max-width: 90%;
         overflow-x: hidden;
         overflow-y: hidden;
     }
-
-    /* Hide the spinner arrows in most modern browsers */
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
+    .doe-modal .modal-content {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.18);
+        overflow: hidden;
+    }
+    .doe-modal .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-bottom: none;
+        padding: 14px 20px;
+    }
+    .doe-modal .modal-title {
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    .doe-modal .modal-header .close,
+    .doe-modal .modal-header .btn-close {
+        color: #fff;
+        opacity: 0.9;
+        filter: brightness(0) invert(1);
+    }
+    .doe-modal .modal-body {
+        padding: 18px 20px;
+    }
+    .doe-modal .modal-footer {
+        background: #fafbff;
+        border-top: 1px solid #eef0f8;
+        padding: 12px 20px;
+    }
+    .doe-page input[type="number"]::-webkit-outer-spin-button,
+    .doe-page input[type="number"]::-webkit-inner-spin-button {
         -webkit-appearance: none;
         margin: 0;
     }
-
-    /* Hide the spinner arrows in Firefox */
-    input[type="number"] {
+    .doe-page input[type="number"] {
         -moz-appearance: textfield;
     }
-
-    .select2-container {
-        width: 100% !important;
+    @@media (max-width: 576px) {
+        #myTab .nav-item {
+            flex: 1;
+            min-width: 0;
+        }
+        #myTab .nav-link {
+            width: 100%;
+            font-size: 0.75rem;
+            padding: 0 8px !important;
+        }
+        #myTab .nav-link.active {
+            color: #fff !important;
+            background: linear-gradient(180deg, #38bdf8 0%, #2563eb 38%, #1d4ed8 100%) !important;
+        }
+        .doe-header-title {
+            font-size: 1rem;
+        }
+        .doe-step-body {
+            padding: 14px 12px;
+        }
     }
-    .sizeDes {
-        display: flex;
-        gap: 3px;
-    }
-
-    .sizeDesInput {
-        width: 240px;
-    }
-
-    .digit10 {
-        width: 100px;
-    }
-
-    .digit8 {
-        width: 68px;
-    }
-
-    .digit13 {
-        width: 130px;
-    }
-
 </style>
 
-<div class="row mb-2">
-    <div class="col-md-12">
-        <fieldset class="rounded-1 p-3">
-            <legend class="float-none w-auto px-2">Entry Details</legend>
+<script>
+    var param_VisitMode='@ViewBag.VisitMode';
+    var param_RoutePlanCode='@ViewBag.RoutePlanCode';
+    var param_VisitMaster_Code='@ViewBag.VisitMaster_Code';
+</script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/DirectOrderEntry.js"></script>
 
-            <div class="row">
+<div class="doe-page">
+
+    <!-- Page Header -->
+    <div class="doe-page-header section-entry-animation">
+        <div class="doe-header-content">
+            <div class="doe-header-left">
+                <div class="doe-header-icon"><i class="fa fa-cart-shopping" aria-hidden="true"></i></div>
+                <div>
+                    <div class="doe-header-title">Direct Order Entry</div>
+                    <div class="doe-header-subtitle">Create and submit customer orders during field visits</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 1: Entry Details -->
+    <div class="doe-step-card section-entry-animation" style="--step-clr:#667eea;">
+        <div class="doe-step-header">
+            <span class="doe-step-num">1</span>
+            <span class="doe-step-title">Entry Details</span>
+            <i class="doe-step-icon fa fa-clipboard-list" aria-hidden="true"></i>
+        </div>
+        <div class="doe-step-body">
+            <div class="row g-3">
                 <div class="col-md-3 form-group">
-                    <label for="txtUserName" class="col-form-label-sm fw-bold">User Name</label>
+                    <label for="txtUserName" class="form-label">User Name</label>
                     <input type="text" id="txtUserName" class="box_border form-control form-control-sm disabled" autocomplete="off" readonly="readonly" value="">
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
-                    <label for="txtdate" class="col-form-label-sm fw-bold">Date</label>
+                    <label for="txtdate" class="form-label">Date</label>
                     <input ID="txtdate" name="txtdate" class="box_border form-control form-control-sm disabled" autocomplete="off" placeholder="Date" value="" readonly="readonly" required />
                 </div>
                 <div class="col-md-3 col-sm-6 col-6">
-                    <label for="txtCheckInTime" class="col-form-label-sm fw-bold">Check In Time</label>
+                    <label for="txtCheckInTime" class="form-label">Check In Time</label>
                     <input type="text" id="txtCheckInTime" name="txtCheckInTime" class="box_border form-control form-control-sm" value="" readonly="readonly" />
                 </div>
                 <div class="col-md-3">
-                    <label for="txtLocation" class="col-form-label-sm fw-bold ">Location</label>
+                    <label for="txtLocation" class="form-label">Location</label>
                     <input type="text" id="txtAddLocation" name="txtAddLocation" class="box_border form-control form-control-sm" hidden required />
                     <input type="text" id="txtCurrentLocation" name="txtCurrentLocation" class="box_border form-control form-control-sm disabled" value="" readonly="readonly" required />
                     <input type="text" id="txtCheckOutLocation" name="txtCheckOutLocation" class="box_border form-control form-control-sm" hidden required />
@@ -103,82 +543,75 @@
                 </div>
             </div>
 
-            <div class="row">
+            <div class="row g-3 mt-1">
                 <div class="col-md-3 form-group">
-                    <label for="txtDealer" class="col-form-label-sm fw-bold">Customer</label>
-                    @* <input type="text" class="box_border form-control form-control-sm" id="txtDealer" list="listdealer" name="txtDealer" value="" onclick="$(this).val('');" placeholder="" autocomplete="off" required onfocusout="GetAccountMasterDetails();" /> *@
-                    <input type="text" class="box_border form-control form-control-sm" id="txtDealer" name="txtDealer" value=""  placeholder="" autocomplete="off" required hidden />
+                    <label for="txtDealer" class="form-label">Customer</label>
+                    <input type="text" class="box_border form-control form-control-sm" id="txtDealer" name="txtDealer" value="" placeholder="" autocomplete="off" required hidden />
                     <select id="ddlCustomerName" class="form-control form-control-sm box_border" onchange="GetAccountMasterDetails();">
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label for="txtGSTNo" class="col-form-label-sm fw-bold">GST No</label>
+                    <label for="txtGSTNo" class="form-label">GST No</label>
                     <input ID="txtGSTNo" name="txtGSTNo" class="box_border form-control form-control-sm" autocomplete="off" placeholder="" value="" readonly="readonly" required />
                 </div>
                 <div class="col-md-3">
-                    <label for="txtAddress" class="col-form-label-sm fw-bold">Address</label>
+                    <label for="txtAddress" class="form-label">Address</label>
                     <textarea type="text" id="txtAddress" name="txtAddress" class="box_border form-control form-control-sm disabled" value="" readonly="readonly" rows="2"></textarea>
                 </div>
                 <div class="col-md-2 col-sm-8 col-8">
-                    <label for="txtAttachment" class="col-form-label-sm fw-bold">Attachment</label>
+                    <label for="txtAttachment" class="form-label">Attachment</label>
                     <div class="form-group">
                         <input type="file" id="txtFileInput" name="txtFileInput" class="box_border form-control form-control-sm" accept="image/*" capture="camera" />
-
                         <input type="hidden" id="hfFileInput" name="hfFileInput" value="" />
                     </div>
                 </div>
-                <div class="col-md-1 col-sm-4 col-4">
+                <div class="col-md-1 col-sm-4 col-4 d-flex align-items-end">
                     <div class="form-group">
-
-                        <img id="imgSelfie" class="rounded-circle avatar-lg" src="" />
-
+                        <img id="imgSelfie" class="rounded-circle avatar-lg" src="" alt="Selfie" />
                     </div>
                 </div>
             </div>
-        </fieldset>
+        </div>
     </div>
-</div>
 
-
-<div class="row mb-2">
-    <div class="col-md-12">
-       
-
-        <div class="tab-section" id="divSecDashboard">
+    <!-- Customer Dashboard Tabs -->
+    <div class="doe-tab-shell section-entry-animation" id="divSecDashboard">
+        <div class="doe-tab-bar">
             <ul class="nav nav-tabs" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard"
                             type="button" role="tab" aria-controls="dashboard" aria-selected="true">
-                        Dashboard
+                        <i class="fa fa-gauge-high" aria-hidden="true"></i> Dashboard
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="pendingOrder-tab" data-bs-toggle="tab" data-bs-target="#pendingOrder"
                             type="button" role="tab" aria-controls="pendingOrder" aria-selected="false">
-                        Pending Order
+                        <i class="fa fa-clock" aria-hidden="true"></i> Pending Order
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="sizeWiseS-tab" data-bs-toggle="tab" data-bs-target="#sizeWiseS" type="button"
                             role="tab" aria-controls="sizeWiseS" aria-selected="true">
-                        Size Wise Sales
+                        <i class="fa fa-chart-line" aria-hidden="true"></i> Size Wise Sales
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="paymentHis-tab" data-bs-toggle="tab" data-bs-target="#paymentHis" type="button"
                             role="tab" aria-controls="paymentHis" aria-selected="false">
-                        Payment History
+                        <i class="fa fa-money-bill-wave" aria-hidden="true"></i> Payment History
                     </button>
                 </li>
             </ul>
-            <div class="tab-content" id="myTabContent">
-                @* 1 *@
+        </div>
+        <div class="tab-section">
+            <div class="doe-tab-content-wrap tab-content" id="myTabContent">
                 <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
-                    <div id="Dashboard" role="tabpanel" class="tab-pane active border-1 ">
-                        <div id="otherdata">
-                            <div class="row">
+                    <div id="Dashboard" role="tabpanel" class="tab-pane active">
+                        <div id="otherdata" class="doe-kpi-grid">
+                            <div class="row g-3">
                                 <div class="col-md-3">
-                                    <label for="txtCreditLimitRs" class="col-form-label-sm fw-bold">Credit Limits</label>
+                                    <label for="txtCreditLimitRs" class="form-label">Credit Limits</label>
                                     <div class="form-group">
                                         <input type="text" id="txtCreditLimitRs"
                                                class="box_border form-control form-control-sm text-end" name="txtCreditLimitRs"
@@ -186,9 +619,8 @@
                                                required>
                                     </div>
                                 </div>
-
                                 <div class="col-md-3">
-                                    <label for="txtCreditDays" class="col-form-label-sm fw-bold">Credit Days</label>
+                                    <label for="txtCreditDays" class="form-label">Credit Days</label>
                                     <div class="form-group">
                                         <input type="text" id="txtCreditDays" name="txtCreditDays"
                                                class="box_border form-control form-control-sm text-end" placeholder="Credit Days"
@@ -196,7 +628,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <label for="txtOverDueAmount" class="col-form-label-sm fw-bold">Over Due Amount</label>
+                                    <label for="txtOverDueAmount" class="form-label">Over Due Amount</label>
                                     <div class="form-group">
                                         <input type="text" class="box_border form-control form-control-sm text-end"
                                                id="txtOverDueAmount" name="txtOverDueAmount" placeholder="Over Due Amount"
@@ -204,7 +636,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <label for="txtOutstanding" class="col-form-label-sm fw-bold">Outstanding</label>
+                                    <label for="txtOutstanding" class="form-label">Outstanding</label>
                                     <div class="form-group">
                                         <input type="number" class="box_border form-control form-control-sm text-end"
                                                id="txtOutstanding" name="txtOutstanding" placeholder="Outstanding" value="0.00"
@@ -212,38 +644,35 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="row">
+                            <div class="row g-3 mt-1">
                                 <div class="col-md-3">
-                                    <label for="txtTarget" class="col-form-label-sm fw-bold">Target Amount</label>
+                                    <label for="txtTarget" class="form-label">Target Amount</label>
                                     <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm text-end " id="txtTarget"
+                                        <input type="text" class="form-control form-control-sm text-end" id="txtTarget"
                                                name="txtTarget" placeholder="Target Amount" value="0.00" autocomplete="off"
                                                readonly="readonly" required>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <label for="txtTargetShortFall" class="col-form-label-sm fw-bold">Target Shortfall</label>
+                                    <label for="txtTargetShortFall" class="form-label">Target Shortfall</label>
                                     <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm text-end"
+                                        <input type="text" class="form-control form-control-sm text-end"
                                                id="txtTargetShortFall" name="txtTargetShortFall" placeholder="Target Shortfall"
                                                value="0.00" autocomplete="off" readonly="readonly" required>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <label for="txtLastMonthSales" class="col-form-label-sm fw-bold">Last Month Sale</label>
+                                    <label for="txtLastMonthSales" class="form-label">Last Month Sale</label>
                                     <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm text-end" id="txtLastMonthSales"
+                                        <input type="text" class="form-control form-control-sm text-end" id="txtLastMonthSales"
                                                name="txtLastMonthSales" value="0.00" placeholder="Last Month Sale"
                                                readonly="readonly" autocomplete="off" required>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <label for="txtCurrentMonthSale" class="col-form-label-sm fw-bold">
-                                        Current Month
-                                        Sale
-                                    </label>
+                                    <label for="txtCurrentMonthSale" class="form-label">Current Month Sale</label>
                                     <div class="form-group">
-                                        <input type="text" class="form-control  form-control-sm text-end"
+                                        <input type="text" class="form-control form-control-sm text-end"
                                                id="txtCurrentMonthSale" name="txtCurrentMonthSale" value="0.00"
                                                placeholder="Current Month Sale" readonly="readonly" autocomplete="off" required>
                                     </div>
@@ -252,345 +681,260 @@
                         </div>
                     </div>
                 </div>
-                @* 2 *@
-                <div class="tab-pane fade" id="pendingOrder" role="tabpanel" aria-labelledby="profile-tab">
-                    <div id="tabPendingOrder" role="tabpanel" class="tab-pane  ">
-                        <div class="table-wrapper  fixed-height-table" id="divtblPendingOrder">
-                            <table id="tblPendingOrder" class="fixed-width-table table">
-                                <thead id="thPendingOrder">
 
-                                    <!-- end table row-->
-                                </thead>
+                <div class="tab-pane fade" id="pendingOrder" role="tabpanel" aria-labelledby="profile-tab">
+                    <div id="tabPendingOrder" role="tabpanel" class="tab-pane">
+                        <div class="table-wrapper fixed-height-table" id="divtblPendingOrder">
+                            <table id="tblPendingOrder" class="fixed-width-table table">
+                                <thead id="thPendingOrder"></thead>
                                 <tbody id="PendingOrderdata" class="filter-class"></tbody>
                             </table>
-                            <!-- end table -->
                         </div>
-                        <div class="paginator" id="paginator-tblPendingOrder">
-                        </div>
+                        <div class="paginator" id="paginator-tblPendingOrder"></div>
                     </div>
                 </div>
-                @* 3 *@
+
                 <div class="tab-pane fade show" id="sizeWiseS" role="tabpanel" aria-labelledby="home-tab">
-                    <div id="tabSizeWiseSales" role="tabpanel" class="tab-pane  ">
-                        <div class="row">
+                    <div id="tabSizeWiseSales" role="tabpanel" class="tab-pane">
+                        <div class="row mb-3">
                             <div class="col-md-3 col-sm-6 col-8">
-                             
                                 <div class="app-search">
                                     <div class="position-relative">
-                                        <input type="text" class="form-control  form-control-sm" placeholder="Search ..."
+                                        <input type="text" class="form-control form-control-sm" placeholder="Search ..."
                                                aria-label="Search Result">
                                         <button class="btn btn-search" type="submit"><i class="bx bx-search-alt align-middle"></i></button>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
-
-                        <div class="table-wrapper  fixed-height-table" id="divtblSizeWiseSales">
+                        <div class="table-wrapper fixed-height-table" id="divtblSizeWiseSales">
                             <table id="tblSizeWiseSales" class="fixed-width-table table">
-                                <thead id="thSizeWiseSales">
-
-                                    <!-- end table row-->
-                                </thead>
+                                <thead id="thSizeWiseSales"></thead>
                                 <tbody id="SizeWiseSalesdata" class="filter-class"></tbody>
                             </table>
-                            <!-- end table -->
                         </div>
-                        <div class="paginator" id="paginator-tblSizeWiseSales">
-                        </div>
-                        <!-- end table -->
+                        <div class="paginator" id="paginator-tblSizeWiseSales"></div>
                     </div>
                 </div>
 
-                @* 4 *@
                 <div class="tab-pane fade" id="paymentHis" role="tabpanel" aria-labelledby="profile-tab">
                     <div id="tabPaymentHistory" role="tabpanel" class="tab-pane">
-                        <div class="table-wrapper  fixed-height-table" id="divtblPaymentHistory">
+                        <div class="table-wrapper fixed-height-table" id="divtblPaymentHistory">
                             <table id="PaymentHistory" class="fixed-width-table table">
-                                <thead id="thPaymentHistory">
-
-                                    <!-- end table row-->
-                                </thead>
+                                <thead id="thPaymentHistory"></thead>
                                 <tbody id="PaymentHistorydata" class="filter-class"></tbody>
                             </table>
-                            <!-- end table -->
                         </div>
-                        <div class="paginator" id="paginator-PaymentHistory">
-                        </div>
+                        <div class="paginator" id="paginator-PaymentHistory"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row" id="divOrderBooking mb-2">
-    <div class="accordion accordion-flush" id="accordionFlushOrder">
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="flush-headingOne">
-                <button class="accordion-button fw-medium " type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOrder" aria-expanded="false" aria-controls="flush-collapseOrder">
-                    Order Booking
-                </button>
-            </h2>
-            <div id="flush-collapseOrder" class="accordion-collapse collapse show" aria-labelledby="flush-collapseOrder" data-bs-parent="#accordionFlushOrder" style="">
-                <div class="accordion-body-sec">
-                    <div class="row">&nbsp;</div>
-                    <div class="row">
-                        <div class="col-md-2">
-                            <div class="form-group " id="divShowSizeButton">
-                                <div class="d-flex flex-wrap gap-xxl-2 ">
-                                    <input type="checkbox"
-                                           id="toggleSwitch"
-                                           switch="success">
-                                    <label data-on-label="Yes" data-off-label="No" for="toggleSwitch"></label>
-                                    <label class="">Show Size Button</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <input type="button" name="btnShow" id="btnShow" class="btn btn-primary btn-height btn-width" value="Show Stock" />
-
-                                <button type="button" class="btn btn-primary btn-height btn-width" id="btnLoading" hidden="true">
-                                    <i class="bx bx-loader bx-spin font-size-14 align-middle me-2"></i>Loading
-                                </button>
-                                <label id="lblStockDate"></label>
-                            </div>
-                        </div>
-                       
-
+    <!-- Step 2: Order Booking -->
+    <div id="divOrderBooking" class="doe-step-card section-entry-animation" style="--step-clr:#10b981;">
+        <div class="doe-step-header">
+            <span class="doe-step-num">2</span>
+            <span class="doe-step-title">Order Booking</span>
+            <i class="doe-step-icon fa fa-box-open" aria-hidden="true"></i>
+        </div>
+        <div class="doe-step-body">
+            <div class="doe-order-toolbar">
+                <div class="form-group mb-0" id="divShowSizeButton">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <input type="checkbox" id="toggleSwitch" switch="success">
+                        <label data-on-label="Yes" data-off-label="No" for="toggleSwitch"></label>
+                        <label class="mb-0">Show Size Button</label>
                     </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="table-wrapper" style="overflow: auto;">
-                                <table id="tblorderbooking" class="table">
-                                    <thead role="rowgroup" class="text-sm-center">
-                                        <tr role="row">
-                                            <th class="lead-Date width_cust" role="columnheader">Consignee</th>
-                                            <th class="lead-Date width_cust" role="columnheader">Delivery Address</th>
-                                            <th class="lead-text width_cust" role="columnheader">Dealer</th> 
-                                            <th class="lead-text width_cust" role="columnheader">Item Name</th>
-                                            <th class="lead-text width_cust" role="columnheader" style="width: 154px;">Size</th>
-                                            <th class="lead-text width_cust" role="columnheader">Thickness</th>
-                                            <th class="lead-Date width_cust" role="columnheader">SizeDesp</th>
-                                            <th class="lead-Date width_cust" role="columnheader">UOM</th>
-                                            <th class="lead-text width_cust" role="columnheader">Stock</th>
-                                            <th class="lead-text width_cust" role="columnheader">Order Qty Crate</th>
-                                            <th class="lead-text width_cust" role="columnheader">Order Qty PC</th>
-                                            <th class="lead-text width_cust" role="columnheader">Order Qty MT</th>
-                                            <th class="lead-text width_cust" role="columnheader">Order Qty MTR</th>
-                                            <th class="lead-text width_cust" role="columnheader">Rate Unit</th>
-                                            <th class="lead-text width_cust" role="columnheader">Order UOM</th>
-                                            <th class="lead-text width_cust" role="columnheader">Order QTY</th>
-                                            <th class="lead-text width_cust" role="columnheader">Tolerance</th>
-                                            <th class="lead-text width_cust" role="columnheader">Basic Rate</th>
-                                            <th class="lead-text width_cust" role="columnheader">Extra Charges</th>
-                                            <th class="lead-text width_cust" role="columnheader" style="width: 60px;">Dis. Type</th>
-                                            <th class="lead-text width_cust" role="columnheader">Discount</th>
-                                            <th class="lead-text width_cust" role="columnheader">Order Rate</th>
-                                            
-                                            <th class="lead-text width_cust" role="columnheader">Discount Type(After Rate)</th>
-                                            <th class="lead-text width_cust" role="columnheader">Discount(After Rate)</th>
-                                            <th class="lead-text width_cust digit10" role="columnheader">Amount</th>
-                                            <th class="lead-text width_cust" role="columnheader">Delivery Date</th>
-                                            <th class="lead-text width_cust digit13" role="columnheader">Price List</th>
-                                           @*  <th class="lead-text width_cust" role="columnheader">Dealer</th> *@
-                                            <th class="lead-text width_cust digit10" role="columnheader">Remarks</th>
-                                            <th class="lead-text width_cust" role="columnheader">Delete</th>
-                                            
-                                        </tr>
-                                        <!-- end table row-->
-                                    </thead>
-                                    <tbody id="Orderdata" role="rowgroup"></tbody>
-                                    <tfoot>
-                                        <tr role="row" id="trTotal" class="text-sm-center ">
+                </div>
+                <div class="form-group mb-0">
+                    <input type="button" name="btnShow" id="btnShow" class="btn btn-primary btn-height btn-width" value="Show Stock" />
+                    <button type="button" class="btn btn-primary btn-height btn-width" id="btnLoading" hidden="true">
+                        <i class="bx bx-loader bx-spin font-size-14 align-middle me-2"></i>Loading
+                    </button>
+                    <label id="lblStockDate" class="ms-2 mb-0"></label>
+                </div>
+            </div>
 
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: center;"><b>Total</b></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;" class="font-weight-bold" id="txtStockTotal"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyPCTotal"></td>
-                                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTTotal"></td>
-                                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTRTotal"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyTotal"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;" class="font-weight-bold" id="txtDiscountTotal"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            
-                                            <td style="text-align: right;" class="font-weight-bold" id="txtDiscountTotal_AfterRate"></td>
-                                            <td style="text-align: right;" class="font-weight-bold" id="txtAmountTotal"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                            <td style="text-align: right;"></td>
-                                        </tr>
-                                        <tr role="row" id="trAddBtn">
-                                            <td style="text-align: left;">
-                                                <input id="btnAddNewRow" type="button" class="submit-btn btn btn-primary btn-sm waves-effect waves-light" value="Add New Row" />
+            <div class="table-wrapper" style="overflow: auto;">
+                <table id="tblorderbooking" class="table">
+                    <thead role="rowgroup" class="text-sm-center">
+                        <tr role="row">
+                            <th class="lead-Date width_cust" role="columnheader">Consignee</th>
+                            <th class="lead-Date width_cust" role="columnheader">Delivery Address</th>
+                            <th class="lead-text width_cust" role="columnheader">Dealer</th>
+                            <th class="lead-text width_cust" role="columnheader">Item Name</th>
+                            <th class="lead-text width_cust" role="columnheader" style="width: 154px;">Size</th>
+                            <th class="lead-text width_cust" role="columnheader">Thickness</th>
+                            <th class="lead-Date width_cust" role="columnheader">SizeDesp</th>
+                            <th class="lead-Date width_cust" role="columnheader">UOM</th>
+                            <th class="lead-text width_cust" role="columnheader">Stock</th>
+                            <th class="lead-text width_cust" role="columnheader">Order Qty Crate</th>
+                            <th class="lead-text width_cust" role="columnheader">Order Qty PC</th>
+                            <th class="lead-text width_cust" role="columnheader">Order Qty MT</th>
+                            <th class="lead-text width_cust" role="columnheader">Order Qty MTR</th>
+                            <th class="lead-text width_cust" role="columnheader">Rate Unit</th>
+                            <th class="lead-text width_cust" role="columnheader">Order UOM</th>
+                            <th class="lead-text width_cust" role="columnheader">Order QTY</th>
+                            <th class="lead-text width_cust" role="columnheader">Tolerance</th>
+                            <th class="lead-text width_cust" role="columnheader">Basic Rate</th>
+                            <th class="lead-text width_cust" role="columnheader">Extra Charges</th>
+                            <th class="lead-text width_cust" role="columnheader" style="width: 60px;">Dis. Type</th>
+                            <th class="lead-text width_cust" role="columnheader">Discount</th>
+                            <th class="lead-text width_cust" role="columnheader">Order Rate</th>
+                            <th class="lead-text width_cust" role="columnheader">Discount Type(After Rate)</th>
+                            <th class="lead-text width_cust" role="columnheader">Discount(After Rate)</th>
+                            <th class="lead-text width_cust digit10" role="columnheader">Amount</th>
+                            <th class="lead-text width_cust" role="columnheader">Delivery Date</th>
+                            <th class="lead-text width_cust digit13" role="columnheader">Price List</th>
+                            <th class="lead-text width_cust digit10" role="columnheader">Remarks</th>
+                            <th class="lead-text width_cust" role="columnheader">Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody id="Orderdata" role="rowgroup"></tbody>
+                    <tfoot>
+                        <tr role="row" id="trTotal" class="text-sm-center">
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: center;"><b>Total</b></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;" class="font-weight-bold" id="txtStockTotal"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyPCTotal"></td>
+                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTTotal"></td>
+                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyMTRTotal"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;" class="font-weight-bold" id="txtOrderQtyTotal"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;" class="font-weight-bold" id="txtDiscountTotal"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;" class="font-weight-bold" id="txtDiscountTotal_AfterRate"></td>
+                            <td style="text-align: right;" class="font-weight-bold" id="txtAmountTotal"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                            <td style="text-align: right;"></td>
+                        </tr>
+                        <tr role="row" id="trAddBtn">
+                            <td style="text-align: left;">
+                                <input id="btnAddNewRow" type="button" class="submit-btn btn btn-primary btn-sm waves-effect waves-light" value="Add New Row" />
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
 
-                                            </td>
-                                        </tr>
-
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </div>
+            <div class="row g-3 mt-2">
+                <div class="col-md-3">
+                    <label for="txtDeliveryDays" class="form-label">Delivery Days <span class="universal">*</span></label>
+                    <div class="form-group">
+                        <input type="number" class="box_border form-control form-control-sm text-end" id="txtDeliveryDays" value="" name="txtDeliveryDays" placeholder="" autocomplete="off" maxlength="3" required>
                     </div>
-
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label for="txtDeliveryDays" class="col-form-label-sm fw-bold">Delivery Days <span class="universal">*</span></label>
-                            <div class="form-group">
-                                <input type="number" class="box_border form-control form-control-sm text-end" id="txtDeliveryDays" value="" name="txtDeliveryDays" placeholder="" autocomplete="off" maxlength="3" required>
-                            </div>
-                        </div>
-
-
-                        <div class="col-md-2" id="divFreight">
-                            <label for="txtlistFreight" class="col-form-label-sm fw-bold">Freight </label>
-                          @*   <div class="form-group">
-                                <input type="text" list="listFreight" class="box_border form-control form-control-sm" id="txtlistFreight" onclick="this.value=''" name="txtlistFreight" value="" placeholder="" autocomplete="off" maxlength="250" required>
-                            </div> *@
-                            <select id="ddlFreight" class="form-control form-control-sm box_border" autocomplete="off">
-                            </select>
-                        </div>
-                        <div class="col-md-2" id="divShowFreight">
-                            <label for="txtFreightType" class="col-form-label-sm fw-bold">Freight Type </label>
-                          @*   <div class="form-group">
-                                <input type="text" list="listFreightType" class="box_border form-control form-control-sm" onclick="this.value=''" id="txtFreightType" name="txtFreightType" value="" placeholder="" autocomplete="off" number maxlength="250" required />
-
-                            </div> *@
-                            <select id="ddlFreightType" class="form-control form-control-sm box_border" autocomplete="off">
-                            </select>
-                        </div>
-                         <div class="col-md-3" id="divBuyerPONo">
-                            <label for="txtBuyerPONo" class="col-form-label-sm fw-bold">Buyer PO No </label>
-                            <div class="form-group">
-                                <input type="text"  class="box_border form-control form-control-sm" id="txtBuyerPONo" name="txtBuyerPONo" value="" placeholder="" autocomplete="off" number maxlength="50" required>
-
-                            </div>
-                        </div>
-
-                   @*      <div class="col-md-3" id="divDeliveryLocation">
-                            <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Delivery Location<span class="universal"></span></label>
-                            <div class="form-group">
-                                <input type="text" list="listDeliveryLocation" class="box_border form-control form-control-sm" id="txtDeliveryLocation" name="txtDeliveryLocation" placeholder="" value="" onblur="" autocomplete="off" maxlength="500" required>
-                            </div>
-                        </div> *@
-
-                        <div class="col-md-3" id="divCreditDays">
-                            <label for="txtCreditDaysForDC" class="col-form-label-sm fw-bold">Credit Days<span class="universal"></span></label>
-                            <div class="form-group">
-                                <input type="number" class="box_border form-control form-control-sm text-end" id="txtCreditDaysForDC" name="txtCreditDaysForDC" placeholder="" value="" autocomplete="off" maxlength="3" required>
-                            </div>
-                        </div>
-
-                       @*  <div class="col-md-3" id="divRateUnit">
-                            <label for="txtMRateUnit" class="col-form-label-sm fw-bold">Rate Unit <span class="universal">*</span></label>
-                            <div class="form-group">
-                                <input type="text" list="listMRateUnit" class="box_border form-control form-control-sm" id="txtMRateUnit" name="txtMRateUnit" value="" placeholder="" autocomplete="off" number maxlength="50" required>
-
-                            </div>
-                        </div> *@
-
-                        @*   <div class="col-md-3" id="divZone">
-                        <label for="txtZone" class="col-form-label-sm fw-bold">Price List <span class="universal">*</span></label>
-                        <div class="form-group">
-                        <input type="text" list="listZone" class="box_border form-control form-control-sm" id="txtZone" name="txtZone" value="" placeholder="" autocomplete="off" number maxlength="50" required>
-
-                        </div>
-                        </div> *@
-
-
-                        <div class="col-md-1" id="divBasicRate">
-                            <label for="txtBasicRateLock" class="col-form-label-sm fw-bold">Basic Rate<span class="universal"></span></label>
-                            <div class="form-group">
-                                <input type="text" class="box_border form-control form-control-sm text-end" id="txtBasicRateLock" value="0" readonly>
-                            </div>
-                        </div>
-
-                        <div class="col-md-1" id="divselectSign">
-                            <label class="col-form-label-sm fw-bold">Discount<span class="universal"></span></label>
-                            <div class="form-group">
-                                <select id="selectSign" onchange="ValidateDiscountLimit();calFinalAmt();" name="selectSign" class="box_border form-control form-control-sm sizewidth">
-                                    <option value="-" selected>-</option>
-                                    <option value="+">+</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-md-1" id="divAmt">
-                            <label for="txtAmt" class="col-form-label-sm fw-bold">Amount<span class="universal"></span></label>
-                            <div class="form-group">
-                                <input type="number" onkeypress="return numberdecimalOnly(event); " onfocusout="ValidateDiscountLimit();calFinalAmt();" ID="txtAmt" name="txtAmt" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" placeholder=" " />
-                            </div>
-                        </div>
-                        <div class="col-md-2" id="divFinalRate">
-                            <label for="txtDeliveryLocation" class="col-form-label-sm fw-bold">Final Rate<span class="universal"></span></label>
-                            <div class="form-group">
-                                <input type="text" onkeypress="return numberdecimalOnly(event);" ID="txtAmtFinal" name="txtAmtFinal" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" readonly />
-                            </div>
-                        </div>
-                        <div class="col-md-3" id="divPaymentTerms">
-                            <label for="txtPaymentTerm" class="col-form-label-sm fw-bold">Payment Term </label>
-                            @* <div class="form-group">
-                                <input type="text" list="listPaymentTerms" class="box_border form-control form-control-sm" id="txtPaymentTerms" name="txtPaymentTerms" onclick="this.value=''" value="" placeholder="" autocomplete="off" maxlength="250" required>
-                                <input type="hidden" id="hiddentxtPaymentTerm" name="hiddentxtPaymentTerm">
-                            </div> *@
-                            <select id="ddlPaymentTerms" class="form-control form-control-sm box_border" autocomplete="off">
-                            </select>
-                        </div>
+                </div>
+                <div class="col-md-2" id="divFreight">
+                    <label for="txtlistFreight" class="form-label">Freight</label>
+                    <select id="ddlFreight" class="form-control form-control-sm box_border" autocomplete="off"></select>
+                </div>
+                <div class="col-md-2" id="divShowFreight">
+                    <label for="txtFreightType" class="form-label">Freight Type</label>
+                    <select id="ddlFreightType" class="form-control form-control-sm box_border" autocomplete="off"></select>
+                </div>
+                <div class="col-md-3" id="divBuyerPONo">
+                    <label for="txtBuyerPONo" class="form-label">Buyer PO No</label>
+                    <div class="form-group">
+                        <input type="text" class="box_border form-control form-control-sm" id="txtBuyerPONo" name="txtBuyerPONo" value="" placeholder="" autocomplete="off" number maxlength="50" required>
                     </div>
-
+                </div>
+                <div class="col-md-3" id="divCreditDays">
+                    <label for="txtCreditDaysForDC" class="form-label">Credit Days</label>
+                    <div class="form-group">
+                        <input type="number" class="box_border form-control form-control-sm text-end" id="txtCreditDaysForDC" name="txtCreditDaysForDC" placeholder="" value="" autocomplete="off" maxlength="3" required>
+                    </div>
+                </div>
+                <div class="col-md-1" id="divBasicRate">
+                    <label for="txtBasicRateLock" class="form-label">Basic Rate</label>
+                    <div class="form-group">
+                        <input type="text" class="box_border form-control form-control-sm text-end" id="txtBasicRateLock" value="0" readonly>
+                    </div>
+                </div>
+                <div class="col-md-1" id="divselectSign">
+                    <label class="form-label">Discount</label>
+                    <div class="form-group">
+                        <select id="selectSign" onchange="ValidateDiscountLimit();calFinalAmt();" name="selectSign" class="box_border form-control form-control-sm sizewidth">
+                            <option value="-" selected>-</option>
+                            <option value="+">+</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-1" id="divAmt">
+                    <label for="txtAmt" class="form-label">Amount</label>
+                    <div class="form-group">
+                        <input type="number" onkeypress="return numberdecimalOnly(event); " onfocusout="ValidateDiscountLimit();calFinalAmt();" ID="txtAmt" name="txtAmt" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" placeholder=" " />
+                    </div>
+                </div>
+                <div class="col-md-2" id="divFinalRate">
+                    <label for="txtDeliveryLocation" class="form-label">Final Rate</label>
+                    <div class="form-group">
+                        <input type="text" onkeypress="return numberdecimalOnly(event);" ID="txtAmtFinal" name="txtAmtFinal" class="box_border form-control form-control-sm number text-end" autocomplete="off" value="0" readonly />
+                    </div>
+                </div>
+                <div class="col-md-3" id="divPaymentTerms">
+                    <label for="txtPaymentTerm" class="form-label">Payment Term</label>
+                    <select id="ddlPaymentTerms" class="form-control form-control-sm box_border" autocomplete="off"></select>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row">
-    <div class="col-md-12">
-        <label for="txtRemarks" class="col-form-label-sm fw-bold">Remarks </label>
-        <div class="form-group">
-            <input type="text" class="box_border form-control form-control-sm" id="txtRemarks" value="" name="txtRemarks" placeholder="Remarks" autocomplete="off" maxlength="200">
-
+    <!-- Step 3: Remarks & Actions -->
+    <div class="doe-step-card doe-footer-card section-entry-animation" style="--step-clr:#0dcaf0;">
+        <div class="doe-step-header">
+            <span class="doe-step-num">3</span>
+            <span class="doe-step-title">Remarks &amp; Submit</span>
+            <i class="doe-step-icon fa fa-paper-plane" aria-hidden="true"></i>
+        </div>
+        <div class="doe-step-body">
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label for="txtRemarks" class="form-label">Remarks</label>
+                    <div class="form-group">
+                        <input type="text" class="box_border form-control form-control-sm" id="txtRemarks" value="" name="txtRemarks" placeholder="Remarks" autocomplete="off" maxlength="200">
+                    </div>
+                </div>
+                <div class="col-md-3" id="divtxtNextVistDate">
+                    <label for="txtNextVistDate" class="form-label">Next Visit Date <span class="universal">*</span></label>
+                    <div class="form-group">
+                        <input ID="txtNextVistDate" type="date" name="txtNextVistDate" class="box_border form-control form-control-sm textRight" autocomplete="off" placeholder="Next Visit Date" required value="" />
+                    </div>
+                </div>
+            </div>
+            <div class="doe-actions">
+                <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-sm waves-effect waves-light" onclick="ValidateOverdueAmount();" />
+                <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-secondary btn-sm waves-effect waves-light" />
+            </div>
         </div>
     </div>
-    <div class="col-md-3" id="divtxtNextVistDate">
-        <label for="txtNextVistDate" class="col-form-label-sm fw-bold">Next Visit Date <span class="universal">*</span></label>
-        <div class="form-group">
-            <input ID="txtNextVistDate" type="date" name="txtNextVistDate" class="box_border form-control form-control-sm textRight" autocomplete="off" placeholder="Next Visit Date" required value="" />
-        </div>
-    </div>
+
 </div>
 
-<div class="row">
-    <div class="col-md-12">
-        <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-sm waves-effect waves-light" onclick="ValidateOverdueAmount();" />
-        @* <input type="button" name="btnCheckOut" id="btnCheckOut" value="Check Out" class="btn btn-primary btn-sm waves-effect waves-light" /> *@
-        <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-sm waves-effect waves-light" />
-    </div>
-</div>
 <input type="hidden" id="hfVisitType" name="hfVisitType" value="" />
 <input type="hidden" id="hfDealerZone" name="hfDealerZone" value="" />
+
 <datalist id="listdealer"></datalist>
 <datalist id="listItem"></datalist>
 <datalist id="listItemSize"></datalist>
 <datalist id="listItemThickness"></datalist>
-
 <datalist id="listFreight"></datalist>
 <datalist id="listFreightType"></datalist>
 <datalist id="listZone"></datalist>
@@ -602,124 +946,103 @@
 </datalist>
 <datalist id="listConsignee"></datalist>
 <datalist id="listUOM">
-        <option>As Per Master</option>
-        <option>NA</option>
+    <option>As Per Master</option>
+    <option>NA</option>
 </datalist>
 <datalist id="listOrderUOM"></datalist>
 <datalist id="listOrderUOMDecimalDigits"></datalist>
 <datalist id="ItemParameterMasterList"></datalist>
 <datalist id="listRateUnit"></datalist>
 
-<div class="row">
-    <div class="modal fade" id="ImageModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog  modal-lg">
-            <div class="modal-content modal-content-width-lg">
-                <div class="modal-header">
-                    <h5 class="modal-title">Image</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseModal()" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <img id="ImgModal" style="border: 1px solid #555; width:80%; display: block; margin-left: auto; margin-right: auto; " />
+<!-- Image Modal -->
+<div class="modal fade doe-modal" id="ImageModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content modal-content-width-lg">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-image me-2" aria-hidden="true"></i>Image</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseModal()" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img id="ImgModal" style="border: 1px solid #e2e8f0; width:80%; display: block; margin-left: auto; margin-right: auto; border-radius: 8px;" alt="Preview" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
-                </div>
+<!-- Delivery Address Modal -->
+<div class="modal fade doe-modal" id="DeliveryAddressModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content modal-content-width-lg">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-location-dot me-2" aria-hidden="true"></i>Consignee Delivery Address</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseDeliveryAddressModal()" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-        </div>
-    </div>
-</div>
-<div class="row">
-    <div class="modal fade" id="DeliveryAddressModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog  modal-lg">
-            <div class="modal-content modal-content-width-lg">
-                <div class="modal-header">
-                    <h5 class="modal-title">Consignee Delivery Address</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseDeliveryAddressModal()" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="tblConsigneeDeliveryAddress">
-                        <div class="table-wrapper fixed-height-table">
-                            <table id="ConsigneeDeliveryAddress" class="fixed-width-table table">
-                                <thead id="ConsigneeDeliveryAddress-header">
-                                </thead>
-                                <tbody id="ConsigneeDeliveryAddress-body">
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="paginator" id="paginator-ConsigneeDeliveryAddress">
-                        </div>
+            <div class="modal-body">
+                <div id="tblConsigneeDeliveryAddress">
+                    <div class="table-wrapper fixed-height-table">
+                        <table id="ConsigneeDeliveryAddress" class="fixed-width-table table">
+                            <thead id="ConsigneeDeliveryAddress-header"></thead>
+                            <tbody id="ConsigneeDeliveryAddress-body"></tbody>
+                        </table>
                     </div>
-                    <input type="hidden" id="hdnRowNo" name="hdnRowNo">
-                    <input type="hidden" id="hdnSelectedCode" name="hdnSelectedCode">
+                    <div class="paginator" id="paginator-ConsigneeDeliveryAddress"></div>
                 </div>
-                <div class="modal-footer">
-                     <button type="button" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SelectAddress()" >Select</button>
-                    <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseDeliveryAddressModal()" data-bs-dismiss="modal">Close</button>
-                </div>
+                <input type="hidden" id="hdnRowNo" name="hdnRowNo">
+                <input type="hidden" id="hdnSelectedCode" name="hdnSelectedCode">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-sm waves-effect waves-light" onclick="SelectAddress()">Select</button>
+                <button type="button" class="btn btn-secondary btn-sm waves-effect waves-light" onclick="CloseDeliveryAddressModal()" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
+
 <div id="DivSizeControlmodal"></div>
 <div id="DivCheckCreditLimitsModal"></div>
 
-
-<div class="row">
-    <div class="modal fade" id="LogicalStockModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog  modal-lg">
-            <div class="modal-content modal-content-width-lg">
-                <div class="modal-header">
-                    <h5 class="modal-title">Stock</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseLogicalStockModal()" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                
-
-                <div class="modal-body">
-
-                    <div class="form-group " id="divMoreCols">
-                                <div class="d-flex flex-wrap gap-xxl-2 ">
-                                    <input type="checkbox"
-                                           id="toggleMoreCols"
-                                           switch="success">
-                            <label data-on-label="Yes" data-off-label="No" for="toggleMoreCols"></label>
-                                    <label class="">Show More Columns</label>
+<!-- Logical Stock Modal -->
+<div class="modal fade doe-modal" id="LogicalStockModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content modal-content-width-lg">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-warehouse me-2" aria-hidden="true"></i>Stock</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseLogicalStockModal()" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" id="divMoreCols">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <input type="checkbox" id="toggleMoreCols" switch="success">
+                        <label data-on-label="Yes" data-off-label="No" for="toggleMoreCols"></label>
+                        <label class="mb-0">Show More Columns</label>
                         <button type="button" class="btn btn-primary btn-height" onclick="SelectStockRows()">Done</button>
                         <button type="button" class="btn btn-secondary btn-height" onclick="CloseLogicalStockModal()" data-bs-dismiss="modal">Close</button>
-
-                                </div>
                     </div>
-
-                    <div id="tblLogicalStock">
-                        <div class="table-wrapper fixed-height-table">
-                            <table id="LogicalStock" class="fixed-width-table table">
-                                <thead id="LogicalStock-header">
-                                </thead>
-                                <tbody id="LogicalStock-body">
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="paginator" id="paginator-LogicalStock">
-                        </div>
+                </div>
+                <div id="tblLogicalStock">
+                    <div class="table-wrapper fixed-height-table">
+                        <table id="LogicalStock" class="fixed-width-table table">
+                            <thead id="LogicalStock-header"></thead>
+                            <tbody id="LogicalStock-body"></tbody>
+                        </table>
                     </div>
-                    <table id="LogicalStock1" class="fixed-width-table table">
-                        <thead id="LogicalStock-header1">
-                        </thead>
-                        <tbody id="LogicalStock-body1">
-                        </tbody>
-                    </table>
+                    <div class="paginator" id="paginator-LogicalStock"></div>
                 </div>
-                <div class="modal-footer">
-                    @* <button type="button" class="btn btn-primary btn-height" onclick="SelectStockRows()">Done</button> *@
-                    @* <button type="button" class="btn btn-secondary btn-height" onclick="CloseLogicalStockModal()" data-bs-dismiss="modal">Close</button> *@
-                </div>
+                <table id="LogicalStock1" class="fixed-width-table table">
+                    <thead id="LogicalStock-header1"></thead>
+                    <tbody id="LogicalStock-body1"></tbody>
+                </table>
             </div>
+            <div class="modal-footer"></div>
         </div>
     </div>
 </div>

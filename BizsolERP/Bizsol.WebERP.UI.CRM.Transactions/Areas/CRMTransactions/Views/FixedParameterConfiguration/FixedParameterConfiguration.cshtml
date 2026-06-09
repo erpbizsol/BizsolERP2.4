@@ -6,81 +6,339 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/FixedParameterConfiguration.js"></script>
+
 <style>
-    /* Hide the spinner arrows in most modern browsers */
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
+    .fpc-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 0 0 32px;
+    }
+    .section-entry-animation {
+        animation: fpc-fade-slide 0.35s ease both;
+    }
+    @@keyframes fpc-fade-slide {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Page header */
+    .fpc-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 18px rgba(102, 126, 234, 0.28);
+        position: relative;
+        overflow: hidden;
+    }
+    .fpc-header::before {
+        content: '';
+        position: absolute;
+        top: -30px;
+        right: -30px;
+        width: 140px;
+        height: 140px;
+        background: rgba(255, 255, 255, 0.07);
+        border-radius: 50%;
+    }
+    .fpc-header-content {
+        position: relative;
+        z-index: 1;
+    }
+    .fpc-header h5 {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+    }
+    .fpc-header small {
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.78rem;
+        display: block;
+        margin-top: 4px;
+    }
+    .fpc-header-badge {
+        position: relative;
+        z-index: 1;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 20px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    /* Config card */
+    .fpc-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+        margin-bottom: 14px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease;
+    }
+    .fpc-card:hover {
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.13);
+    }
+    .fpc-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 18px;
+        background: #fafbff;
+        border-bottom: 1px solid #eef0f8;
+        border-left: 4px solid #667eea;
+    }
+    .fpc-card-num {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #667eea;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.72rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+    }
+    .fpc-card-title {
+        font-weight: 700;
+        font-size: 0.84rem;
+        color: #1e293b;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        flex: 1;
+    }
+    .fpc-card-icon {
+        color: #667eea;
+        font-size: 1rem;
+    }
+    .fpc-card-body {
+        padding: 0;
+    }
+
+    /* Configuration table */
+    .fpc-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+    }
+    #tblFixedParameterList {
+        margin-bottom: 0;
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    #tblFixedParameterList thead {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+    #tblFixedParameterList thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 13px 16px;
+        text-align: left;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 11.5px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        vertical-align: middle;
+    }
+    #tblFixedParameterList tbody tr {
+        transition: background 0.12s;
+    }
+    #tblFixedParameterList tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+    #tblFixedParameterList tbody tr:hover {
+        background: rgba(102, 126, 234, 0.07) !important;
+    }
+    #tblFixedParameterList tbody td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1e293b;
+        vertical-align: middle;
+        font-size: 0.82rem;
+    }
+    #tblFixedParameterList tbody td:first-child {
+        font-weight: 600;
+        color: #334155;
+        min-width: 220px;
+    }
+    #tblFixedParameterList tbody td:nth-child(2) {
+        min-width: 180px;
+    }
+    #tblFixedParameterList tbody td:last-child {
+        color: #64748b;
+        font-size: 0.78rem;
+        line-height: 1.45;
+    }
+
+    /* Form controls inside table */
+    .fpc-page .BizSolFormControl,
+    .fpc-page .box_border.form-control,
+    .fpc-page .form-control {
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        background-color: #f5f3ff;
+        color: #1e1b4b;
+        padding: 6px 10px;
+        transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+        max-width: 260px;
+    }
+    .fpc-page .BizSolFormControl:focus,
+    .fpc-page .box_border.form-control:focus,
+    .fpc-page .form-control:focus {
+        border-color: #667eea;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        outline: none;
+    }
+    .fpc-page .BizSolFormControl:disabled,
+    .fpc-page .form-control:disabled {
+        background-color: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #94a3b8;
+        cursor: not-allowed;
+        opacity: 0.75;
+    }
+
+    /* Number input spinners */
+    .fpc-page input[type="number"]::-webkit-outer-spin-button,
+    .fpc-page input[type="number"]::-webkit-inner-spin-button {
         -webkit-appearance: none;
         margin: 0;
     }
-
-    /* Hide the spinner arrows in Firefox */
-    input[type="number"] {
+    .fpc-page input[type="number"] {
         -moz-appearance: textfield;
     }
-    /* Basic styling for the button */
-    .toggle-btn {
-        padding: 10px 20px;
+
+    /* Footer actions */
+    .fpc-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 20px;
+        background: #fafbff;
+        border-top: 1px solid #eef0f8;
+    }
+    .fpc-btn-save {
+        background: linear-gradient(135deg, #667eea, #764ba2);
         border: none;
+        color: #fff;
+        border-radius: 10px;
+        padding: 9px 26px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        min-height: 36px;
+        box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+        transition: all 0.2s;
         cursor: pointer;
-        font-size: 16px;
-        transition: background-color 0.3s ease;
-        border-radius: 5px;
-        background-color: #f44336; /* Red (initially Off) */
-        color: white;
+        height: auto !important;
+        line-height: normal !important;
+    }
+    .fpc-btn-save:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(102, 126, 234, 0.5);
+        color: #fff;
+    }
+    .fpc-btn-back {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: #fff;
+        border-radius: 10px;
+        padding: 9px 22px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        min-height: 36px;
+        box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+        transition: all 0.2s;
+        cursor: pointer;
+        height: auto !important;
+        line-height: normal !important;
+    }
+    .fpc-btn-back:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(245, 158, 11, 0.5);
+        color: #fff;
     }
 
-        /* Green color for the active (On) state */
-        .toggle-btn.active {
-            background-color: #4CAF50; /* Green */
-        }
-
-    /* Custom CSS to change the background color when off */
-    .switch-off {
-        background-color: red !important;
-    }
-
-    .switch-on {
-        background-color: green !important;
+    @@media (max-width: 768px) {
+        .fpc-header { border-radius: 10px; padding: 14px 16px; }
+        .fpc-header-badge { display: none; }
+        #tblFixedParameterList tbody td:first-child { min-width: 140px; }
     }
 </style>
-<div class="card">
-    <div class="card-body">
-        <div class="row">
 
-            <div id="divFixedParameterList" class="col-md-8">
-                <table id="tblFixedParameterList" class="fixed-width-table table">
-                    <thead id="FixedParameter-header">
-                        <tr>
-                            <th>Configuration</th>
-                            <th>Value</th>
-                            <th>Purpose</th>
-                        </tr>
-                    </thead>
-                    <tbody id="FixedParameter-body">
-                    </tbody>
-                </table>
-            </div>
+<div class="fpc-page">
+
+    <div class="fpc-header section-entry-animation">
+        <div class="fpc-header-content">
+            <h5><i class="fa fa-gear me-2" aria-hidden="true"></i>Order Entry Configuration</h5>
+            <small>Configure fixed parameters for order entry behaviour and display options.</small>
         </div>
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="btn btn-primary btn-height btn-width" />
-                <input type="button" name="btnBack" id="btnBack" value="Back" class="btn btn-primary btn-height btn-width" />
+        <span class="fpc-header-badge"><i class="fa fa-sliders me-1" aria-hidden="true"></i>CRM Settings</span>
+    </div>
+
+    <div class="fpc-card section-entry-animation">
+        <div class="fpc-card-header">
+            <span class="fpc-card-num">1</span>
+            <span class="fpc-card-title">Fixed Parameter Settings</span>
+            <i class="fpc-card-icon fa fa-table-list" aria-hidden="true"></i>
+        </div>
+        <div class="fpc-card-body">
+            <div id="divFixedParameterList">
+                <div class="fpc-table-wrap">
+                    <table id="tblFixedParameterList" class="fixed-width-table table">
+                        <thead id="FixedParameter-header">
+                            <tr>
+                                <th><i class="fa fa-tag me-1" aria-hidden="true"></i>Configuration</th>
+                                <th><i class="fa fa-pen-to-square me-1" aria-hidden="true"></i>Value</th>
+                                <th><i class="fa fa-circle-info me-1" aria-hidden="true"></i>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody id="FixedParameter-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="fpc-actions">
+                <input type="button" name="btnSubmit" id="btnSubmit" value="Save" class="fpc-btn-save" />
+                <input type="button" name="btnBack" id="btnBack" value="Back" class="fpc-btn-back" />
             </div>
         </div>
     </div>
+
 </div>
 
 <datalist id="listYesNo">
-    <option >Y</option>
-    <option >N</option>
+    <option>Y</option>
+    <option>N</option>
 </datalist>
 <datalist id="listShowDeliveryDate">
     <option>Item Wise</option>
     <option>Order Wise</option>
 </datalist>
-<datalist id="listShowStock">
-</datalist>
+<datalist id="listShowStock"></datalist>
 <datalist id="listShowUOM">
     <option>NA</option>
     <option>As Per Master</option>

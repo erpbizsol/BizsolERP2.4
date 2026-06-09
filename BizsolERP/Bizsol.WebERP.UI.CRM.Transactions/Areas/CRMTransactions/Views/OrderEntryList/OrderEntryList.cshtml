@@ -8,90 +8,347 @@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/OrderEntryList.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
 <script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
 <style>
+    .oel-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 0 0 32px;
+    }
+    .section-entry-animation {
+        animation: oel-fade-slide 0.35s ease both;
+    }
+    @@keyframes oel-fade-slide {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .oel-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 4px 24px rgba(102, 126, 234, 0.22);
+    }
+    .oel-list-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    .oel-list-header-title-block { flex: 1; min-width: 0; }
+    .oel-list-header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+    .oel-list-header-title {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+    }
+    .oel-list-header-sub {
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.78rem;
+        display: block;
+        margin-top: 4px;
+    }
+    .oel-list-create-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+        cursor: pointer;
+        height: auto !important;
+        min-height: 40px;
+        line-height: 1.25 !important;
+        font-size: 0.85rem !important;
+        transition: all 0.2s;
+    }
+    .oel-list-create-btn:hover {
+        background: #f0f4ff;
+        border-color: #667eea;
+        color: #667eea;
+    }
+    .oel-list-header-icon-btn {
+        height: auto !important;
+        min-height: 40px;
+        min-width: 44px;
+        padding: 0 12px;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        line-height: 1 !important;
+        font-size: 1rem !important;
+        border-radius: 10px;
+        border: 2px solid rgba(255, 255, 255, 0.85);
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .oel-list-header-icon-btn:hover {
+        background: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+    }
+    .oel-list-header-icon-btn--settings i { color: #c2410c; font-size: 1.15rem; }
+    .oel-list-header-icon-btn--download i { color: #4338ca; font-size: 1.1rem; }
+    .oel-list-filter-bar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        padding: 14px 18px 12px;
+        margin-bottom: 14px;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.06);
+    }
+    .oel-list-filter-bar .form-label {
+        font-size: 0.77rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.35rem;
+    }
+    .oel-list-filter-bar .form-control,
+    .oel-list-filter-bar .form-select {
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        background: #fafaff;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .oel-list-filter-bar .form-control:focus,
+    .oel-list-filter-bar .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        background: #fff;
+        outline: none;
+    }
+    .oel-list-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+    .oel-list-filter-bar .oel-btn-show.btn-primary {
+        border: none !important;
+        border-radius: 9px;
+        font-weight: 700;
+        font-size: 0.82rem !important;
+        padding: 7px 20px;
+        min-height: 32px;
+        height: auto !important;
+        line-height: normal !important;
+        color: #fff !important;
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        box-shadow: 0 3px 10px rgba(102, 126, 234, 0.35);
+    }
+    .oel-list-filter-bar .oel-btn-show.btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 14px rgba(102, 126, 234, 0.45);
+        color: #fff !important;
+    }
+    .oel-grid-wrap {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .oel-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100vh - 340px);
+        overflow-y: auto;
+    }
+    .oel-page #OrderList {
+        margin-bottom: 0;
+        font-size: 13px;
+    }
+    .oel-page #OrderList thead {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+    .oel-page #OrderList thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 12px 14px;
+        text-align: left;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 11.5px;
+        letter-spacing: 0.04em;
+        vertical-align: middle;
+    }
+    .oel-page #OrderList thead th .filter-table-heading,
+    .oel-page #OrderList thead th i,
+    .oel-page #OrderList thead th .fa {
+        color: rgba(255, 255, 255, 0.95);
+    }
+    .oel-page #OrderList tbody tr {
+        transition: background 0.12s;
+    }
+    .oel-page #OrderList tbody tr:nth-child(even) {
+        background: #f8fafc !important;
+    }
+    .oel-page #OrderList tbody tr:hover {
+        background: rgba(102, 126, 234, 0.07) !important;
+    }
+    .oel-page #OrderList td {
+        padding: 11px 14px;
+        border-bottom: 1px solid #f1f5f9 !important;
+        color: #1e293b;
+        vertical-align: middle;
+    }
+    .oel-page #OrderList tfoot {
+        background: #f5f3ff;
+        font-weight: 700;
+    }
+    .oel-page #OrderList tfoot td {
+        padding: 11px 14px;
+        border-top: 2px solid #e0e7ff;
+        color: #4338ca;
+    }
+    .oel-page .paginator {
+        padding: 10px 16px;
+        border-top: 1px solid #eef0f8;
+        background: #fafbff;
+    }
+    .oel-modal .modal-content {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.18);
+        overflow: hidden;
+    }
+    .oel-modal .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-bottom: none;
+        padding: 14px 20px;
+    }
+    .oel-modal .modal-title {
+        color: #fff;
+        font-weight: 700;
+    }
+    .oel-modal .modal-header .close {
+        color: #fff;
+        opacity: 0.9;
+        filter: brightness(0) invert(1);
+    }
+    .oel-modal .modal-footer {
+        background: #fafbff;
+        border-top: 1px solid #eef0f8;
+    }
     .highlighted-date {
-        background-color: #3926B6;
+        background-color: #667eea;
         color: white;
         border-radius: 30px;
     }
-
-    .datepicker td, .datepicker th {
-        border-radius: 20px !important;
-    }
-
+    .datepicker td, .datepicker th { border-radius: 20px !important; }
     .datepicker table tr td, .datepicker table tr td {
         padding: 8px 9px !important;
         height: 16px !important;
     }
-
-    .datepicker table tfoot {
-        display: none;
+    .datepicker table tfoot { display: none; }
+    #hidetexbox { display: none; }
+    .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
+    .without-label-field {
+        display: flex;
+        align-items: flex-end;
     }
-
-    #hidetexbox {
-        display: none;
-    }
-
-    .btn:not(:disabled):not(.disabled) {
-        cursor: pointer !important;
+    @@media (max-width: 480px) {
+        .oel-list-create-btn-label { display: none; }
     }
 </style>
 
-<div class="card">
-    <div class="card-body">
-       <div class="row">
-            <div class="col-md-2 col-sm-6 col-6">
-                <label for="fromDate" class="form-label">From Date <span class="text-danger">*</span></label>
-                <input type="text" id="txtFromDate" name="FromDate" class="form-control form-control-sm box_border" autocomplete="off" required/>
-            </div>
-            <div class="col-md-2 col-sm-6 col-6">
-                <label for="toDate" class="form-label">To Date <span class="text-danger">*</span></label>
-                <input type="text" id="txtToDate" name="ToDate" class="form-control form-control-sm box_border" autocomplete="off" required/>
-            </div>
-            <div class="col-12 col-md-3 col-lg-2 col-xl-3">
-                <label for="userName" class="form-label">User Name <span class="text-danger">*</span></label>
-               @*  <input list="ddlUserNameList" id="ddlUserName" name="ddlUserName" class="form-control form-control-sm box_border" placeholder="User Name" autocomplete="off" required>
-                <datalist id="ddlUserNameList"></datalist> *@
-                <select id="ddlUserNameList" class="form-control form-control-sm box_border"></select>
-            </div>
-            <div class="col-md-2">
-                <label for="orderstatus" class="form-label">Order Status <span class="text-danger">*</span></label>
-               @*  <input list="ddlOrderStatusList" id="ddlOrderStatus" name="ddlOrderStatus" class="form-control form-control-sm box_border" placeholder="Order Status" autocomplete="off" value="All" required>
-                <datalist id="ddlOrderStatusList"></datalist> *@
-                <select id="ddlOrderStatusList" class="form-control form-control-sm box_border"></select>
-            </div>
+<div class="oel-page">
 
-
-            <div class="col-12 col-md-5 col-lg-4 col-xl-3 without-label-field">
-                <button type="button" id="btnShow" class="btn btn-primary btn-height" title="Show Orders">Show</button>
-               @*  <button type="button" id="btnAddDirectOrder" class="btn btn-primary btn-height" title="Create New Order">Create New</button> *@
-                <button type="button" id="btnDirectOrder" class="btn btn-primary btn-height" title="Create New Order ">Create New</button>
-                <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download List"><i class="fa fa-download" aria-hidden="true"></i></button>
-               @*  <button type="button" id="btnDownload" class="btn btn-primary btn-height" title="Download">Download</button> *@
-                <button type="button" id="btnCRMConfig" class="btn btn-warning btn-height" title="CRM Configuration Settings"> <i class="fa fa-gear"></i></button>
-               
+    <div class="oel-list-header section-entry-animation">
+        <div class="oel-list-header-top">
+            <div class="oel-list-header-title-block">
+                <h2 class="oel-list-header-title"><i class="fa fa-list-check me-2" aria-hidden="true"></i>Order Entry List</h2>
+                <small class="oel-list-header-sub">View, filter, and manage all order entries.</small>
             </div>
-            
+            <div class="oel-list-header-actions">
+                <button type="button" id="btnDownload" class="oel-list-header-icon-btn oel-list-header-icon-btn--download" title="Download List">
+                    <i class="fa fa-download" aria-hidden="true"></i>
+                </button>
+                <button type="button" id="btnCRMConfig" class="oel-list-header-icon-btn oel-list-header-icon-btn--settings" title="CRM Configuration Settings">
+                    <i class="fa fa-gear" aria-hidden="true"></i>
+                </button>
+                <button type="button" id="btnDirectOrder" class="oel-list-create-btn" title="Create New Order">
+                    <i class="fa fa-plus-circle" aria-hidden="true"></i>
+                    <span class="oel-list-create-btn-label ms-1">Create New</span>
+                </button>
+            </div>
         </div>
     </div>
+
+    <div class="oel-list-filter-bar section-entry-animation">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label for="fromDate" class="form-label">From Date <span class="text-danger">*</span></label>
+                <input type="text" id="txtFromDate" name="FromDate" class="form-control form-control-sm box_border" autocomplete="off" required />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label for="toDate" class="form-label">To Date <span class="text-danger">*</span></label>
+                <input type="text" id="txtToDate" name="ToDate" class="form-control form-control-sm box_border" autocomplete="off" required />
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <label for="userName" class="form-label">User Name <span class="text-danger">*</span></label>
+                <select id="ddlUserNameList" class="form-control form-control-sm box_border"></select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label for="orderstatus" class="form-label">Order Status <span class="text-danger">*</span></label>
+                <select id="ddlOrderStatusList" class="form-control form-control-sm box_border"></select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2 without-label-field">
+                <div class="oel-list-toolbar">
+                    <button type="button" id="btnShow" class="btn btn-primary btn-height oel-btn-show" title="Show Orders">
+                        <i class="fas fa-search me-1"></i>Show
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="oel-grid-wrap section-entry-animation" id="tblOrderList">
+        <div class="oel-table-wrapper fixed-height-table">
+            <table id="OrderList" class="fixed-width-table table">
+                <thead id="table-header"></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-OrderList"></div>
+    </div>
+
 </div>
-<div id="tblOrderList">
-<div class="table-wrapper fixed-height-table">
-    <table id="OrderList" class="fixed-width-table table">
-        <thead id="table-header">
-        </thead>
-        <tbody id="table-body">
-        </tbody>
-    </table>
-</div>
-<div class="paginator" id="paginator-OrderList">
-</div>
-</div>
-<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="modal fade oel-modal" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content modal-content-width-sm">
             <div class="modal-header">
-                <h5 class="modal-title">Reason</h5>
+                <h5 class="modal-title"><i class="fa fa-comment-dots me-2" aria-hidden="true"></i>Reason</h5>
                 <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
@@ -99,18 +356,18 @@
                 <input type="hidden" id="txtcode" class="form-control" placeholder="" />
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-success icon-height" onclick="DeleteModal()" >Ok</button>
+                <button type="button" class="btn btn-success icon-height" onclick="DeleteModal()">Ok</button>
                 <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Cancel</button>
             </div>
         </div>
     </div>
-</div> 
+</div>
+
 <div class="table-wrapper fixed-height-table" hidden="hidden">
     <table id="tblReport" hidden="hidden">
         <thead id="table-headerPrint">
             <tr></tr>
         </thead>
-        <tbody id="table-bodyPrint">
-        </tbody>
+        <tbody id="table-bodyPrint"></tbody>
     </table>
 </div>
