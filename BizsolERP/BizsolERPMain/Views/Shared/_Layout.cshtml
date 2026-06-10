@@ -110,8 +110,9 @@
         }
 
         #layout-wrapper {
-            overflow-x: hidden;
             max-width: 100%;
+            /* do not set overflow here — fixed children collapse wrapper height and
+               overflow-x:hidden forces overflow-y:auto, clipping header dropdown menus */
         }
 
         .modern-header {
@@ -122,10 +123,10 @@
             top: 0;
             left: 0;
             right: 0;
-            z-index: 1000;
+            z-index: 1030;
             border-bottom: 2px solid;
             border-image: linear-gradient(90deg, #667eea 0%, #0dcaf0 100%) 1;
-            overflow-x: hidden;
+            overflow: visible;
             max-width: 100%;
             box-sizing: border-box;
         }
@@ -1115,7 +1116,7 @@
             overflow-x: hidden !important;
             overflow-y: auto !important;
             box-sizing: border-box !important;
-            /* no z-index — avoids trapping Bootstrap modals below body-level .modal-backdrop */
+            z-index: 1; /* below header chrome; modals are moved to body on show */
             transition: left 0.3s ease, right 0.3s ease;
         }
 
@@ -1775,8 +1776,14 @@
 
         /* ── Notification bell + dropdown panel (well list) ── */
         .modern-header .dropdown-menu.notification-dropdown,
-        .modern-header .dropdown-menu.profile-dropdown {
-            z-index: 1025;
+        .modern-header .dropdown-menu.profile-dropdown,
+        .header-actions > .dropdown-menu.notification-dropdown {
+            z-index: 1040 !important;
+        }
+
+        .modern-header .dropdown-menu.show,
+        .header-actions > .dropdown-menu.show {
+            z-index: 1040 !important;
         }
 
         .notification-dropdown {
@@ -2177,7 +2184,7 @@
                        class="header-icon-btn" aria-label="Home">
                         <i class="fas fa-home"></i>
                     </a>
-                    <button type="button" class="header-icon-btn position-relative" id="bell-icon" data-bs-toggle="dropdown" aria-label="Notifications">
+                    <button type="button" class="header-icon-btn position-relative" id="bell-icon" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-label="Notifications">
                         <i class="fa-regular fa-bell"></i>
                         <span class="notification-badge notification-bell-badge position-absolute" id="notificationCount" aria-hidden="true"></span>
                     </button>
@@ -2191,7 +2198,7 @@
                     </div>
 
                     <div class="dropdown">
-                        <button type="button" class="header-icon-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+                        <button type="button" class="header-icon-btn" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" aria-label="Account menu">
                             <img class="profile-avatar" src="~/assets/images/users/user.jpg" alt="User">
                         </button>
                         <div class="dropdown-menu dropdown-menu-end profile-dropdown">
