@@ -755,6 +755,14 @@
                     </button>
                     <label id="lblStockDate" class="ms-2 mb-0"></label>
                 </div>
+                <div class="form-group mb-0 d-flex align-items-center gap-2">
+                    <label class="mb-0 fw-semibold text-nowrap" for="txtTotalOrderQty">Total Order Qty <span class="text-danger">*</span></label>
+                    <input type="number" step="any" id="txtTotalOrderQty" name="txtTotalOrderQty"
+                           class="BizSolFormControl box_border form-control form-control-sm"
+                           style="width:130px;" placeholder="Enter Total Qty" min="0.001"
+                           onkeydown="return event.key !== '-' && event.key !== '+' && event.key !== 'e' && event.key !== 'E';"
+                           onblur="if(parseFloat(this.value) <= 0 || isNaN(parseFloat(this.value))) this.value = '';" />
+                </div>
             </div>
 
             <div class="table-wrapper" style="overflow: auto;">
