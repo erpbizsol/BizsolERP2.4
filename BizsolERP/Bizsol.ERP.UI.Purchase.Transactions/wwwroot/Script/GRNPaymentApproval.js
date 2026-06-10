@@ -1470,7 +1470,7 @@ function OpenDetailModal(paymentCode) {
             paintModalFromPayment(G_CurrentPayment);
 
             $('#gpaModalItemsBody').html(
-                '<tr><td colspan="10" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+                '<tr><td colspan="11" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
                 '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
             );
 
@@ -1520,7 +1520,7 @@ function OpenDetailModal(paymentCode) {
                 } catch (err) {
                     console.error('GetGRNPaymentDetail', err);
                     $('#gpaModalItemsBody').html(
-                        '<tr><td colspan="10" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                        '<tr><td colspan="11" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
                         '<i class="fa fa-exclamation-triangle me-1"></i>Error loading bill lines.</td></tr>'
                     );
                 }
@@ -1679,7 +1679,7 @@ function RenderGpaModalItems(items) {
     const $body = $('#gpaModalItemsBody');
     if (!items || items.length === 0) {
         $body.html(
-            '<tr><td colspan="10" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No bill lines found.</td></tr>'
+            '<tr><td colspan="11" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No bill lines found.</td></tr>'
         );
         return;
     }
@@ -1708,14 +1708,17 @@ function RenderGpaModalItems(items) {
         const payNum = payRaw != null ? parseFloat(payRaw) : (isNaN(netNum) ? 0 : netNum);
         const netPay = FmtCurrency(isNaN(netNum) ? 0 : netNum);
         const payAmt = FmtCurrency(isNaN(payNum) ? 0 : payNum);
+        const catRaw = gpaCategoryNameFromRecord(enriched);
         const projRaw = gpaProjectLabelFromRow(enriched);
         const subRaw = gpaSubProjectLabelFromRow(enriched);
+        const cat = EscHtml(catRaw !== '' ? catRaw : '—');
         const proj = EscHtml(projRaw !== '' ? projRaw : '—');
         const subProj = EscHtml(subRaw !== '' ? subRaw : '—');
         html += '<tr>' +
             '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
             '<td style="font-weight:600;">' + billNo + '</td>' +
             '<td>' + poNo + '</td>' +
+            '<td>' + cat + '</td>' +
             '<td>' + proj + '</td>' +
             '<td>' + subProj + '</td>' +
             '<td class="text-center">' + EscHtml(bdt || '—') + '</td>' +
@@ -2081,7 +2084,7 @@ function PrintGPAVoucher(code, mode) {
                     + '<b>Line ' + (idx + 1) + '</b>'
                     + (poNo ? ' &mdash; PO: ' + gpaEscH(String(poNo)) : '')
                     + (category ? ' &mdash; Category: ' + gpaEscH(String(category)) : '')
-                    + (pay !== '' && pay != null ? ' &mdash; Paid: &#8377;' + gpaFmtIndian(pay) : '')
+                    + (pay !== '' && pay != null ? ' &mdash; PO Amount: &#8377;' + gpaFmtIndian(pay) : '')
                     + (proj ? ' &mdash; Project: ' + gpaEscH(String(proj)) : '')
                     + (site ? ' &mdash; Sub Project: ' + gpaEscH(String(site)) : '')
                     + '</div>';
