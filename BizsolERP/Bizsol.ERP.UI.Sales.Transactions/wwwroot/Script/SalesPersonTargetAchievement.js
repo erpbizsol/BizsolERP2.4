@@ -2,6 +2,7 @@ import { SalesPersonTargetAchievementService} from '../../Bizsol.WebERP.UI.Share
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 let G_LastReportVm = null;
+let G_autoShowTimer = null;
 
 const HIDDEN_REPORT_COLUMNS = [
     'Code',
@@ -173,12 +174,10 @@ $(document).ready(function () {
     LoadWeekDateRange();
     GetNestedMarketingManList();
     GetReportTypeList();
+    bindFilterAutoRefresh();
 
     $('#btnShow').click(function () {
-        if (!validateFilters()) return;
-        $(this).prop('hidden', true);
-        $('#btnLoading').prop('hidden', false);
-        GetReportData();
+        runShowReport({ silent: false });
     });
 
     $('#btnDownload').click(function () {
@@ -192,6 +191,41 @@ $(document).ready(function () {
 
 function getIsNestedValue() {
     return $('#chkShowRecursive').is(':checked') ? 'Y' : 'N';
+}
+
+function canShowReport() {
+    return !!(
+        $('#txtdateFrom').val() &&
+        $('#txtdateTo').val() &&
+        $('#ddlReportTypelist').val()
+    );
+}
+
+function runShowReport(options) {
+    const silent = options && options.silent;
+    if (silent) {
+        if (!canShowReport()) return;
+    } else if (!validateFilters()) {
+        return;
+    }
+    $('#btnShow').prop('hidden', true);
+    $('#btnLoading').prop('hidden', false);
+    GetReportData();
+}
+
+function scheduleAutoShowReport() {
+    if (G_autoShowTimer) {
+        clearTimeout(G_autoShowTimer);
+    }
+    G_autoShowTimer = setTimeout(function () {
+        G_autoShowTimer = null;
+        runShowReport({ silent: true });
+    }, 350);
+}
+
+function bindFilterAutoRefresh() {
+    $('#txtdateFrom, #txtdateTo, #chkShowRecursive').on('change', scheduleAutoShowReport);
+    $('#ddlReportTypelist, #ddlMarketingMan').on('change', scheduleAutoShowReport);
 }
 
 function validateFilters() {
@@ -275,6 +309,8 @@ function GetNestedMarketingManList(attempt) {
 
                 if (matchedCode != null && matchedCode !== '') {
                     $ddl.val(String(matchedCode)).trigger('change');
+                } else {
+                    scheduleAutoShowReport();
                 }
             } else if (attempt < MARKETING_MAN_MAX_RETRIES) {
                 // Empty response on refresh is usually transient; retry before erroring.
@@ -327,6 +363,7 @@ function GetReportTypeList() {
                 if (list.length > 0) {
                     BindSelectList($ddl[0], list, 'FirstItemSelected');
                     initSelect2($ddl);
+                    scheduleAutoShowReport();
                 } else {
                     $ddl.empty();
                     toastr.warning('No report types found.');
@@ -566,6 +603,7 @@ function LoadWeekDateRange() {
                 return;
             }
             setWeekDates(weekStart, weekEnd);
+            scheduleAutoShowReport();
         })
         .catch(function (error) {
             console.error('Error fetching week date range:', error);
@@ -799,8 +837,9 @@ function getExportFileName() {
         String(d.getDate()).padStart(2, '0') +
         '_' +
         String(d.getHours()).padStart(2, '0') +
-        String(d.getMinutes()).padStart(2, '0');
-    return 'Sales_' + reportType+'.pdf';
+        String(d.getMinutes()).padStart(2, '0') +
+        String(d.getSeconds()).padStart(2, '0');
+    return 'Sales_' + reportType + '_' + dateString + '.pdf';
 }
 function Export() {
     if (!G_LastReportVm || !hasAnyReportData(G_LastReportVm)) {
