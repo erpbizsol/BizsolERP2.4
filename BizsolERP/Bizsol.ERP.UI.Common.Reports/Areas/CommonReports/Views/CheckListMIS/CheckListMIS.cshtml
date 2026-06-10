@@ -53,27 +53,58 @@
 .cm-hero-title { font-size: 1.1rem; font-weight: 800; color: #fff; margin: 0; letter-spacing: .3px; }
 .cm-hero-sub { font-size: .74rem; color: rgba(255,255,255,.7); margin-top: 2px; }
 
-.cm-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.cm-search-wrap { position: relative; }
-.cm-search-wrap i {
-    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-    color: #94a3b8; font-size: .8rem;
+.cm-toolbar { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.cm-filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cm-filter-label {
+    font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; color: rgba(255,255,255,.78); padding-left: 4px;
 }
-.cm-input, .cm-date {
-    border: 1.5px solid rgba(255,255,255,.35);
-    background: rgba(255,255,255,.95);
-    color: #1e3a8a; font-weight: 600;
-    border-radius: 50px; padding: 8px 14px; font-size: .82rem;
-    outline: none; box-shadow: 0 3px 10px rgba(0,0,0,.12);
+.cm-input, .cm-date, .cm-select {
+    border: 1.5px solid rgba(255,255,255,.45);
+    background: #fff !important;
+    color: #0f172a !important;
+    font-weight: 600;
+    border-radius: 12px; padding: 9px 14px; font-size: .82rem;
+    outline: none; box-shadow: 0 4px 14px rgba(0,0,0,.14);
+    height: 38px; line-height: 1.2;
+    -webkit-appearance: none; appearance: none;
 }
 .cm-input { padding-left: 32px; min-width: 200px; }
-.cm-btn-reset {
-    border: none; cursor: pointer;
-    background: rgba(255,255,255,.95); color: #1d4ed8; font-weight: 700;
-    border-radius: 50px; padding: 8px 18px; font-size: .82rem;
-    box-shadow: 0 3px 10px rgba(0,0,0,.12); transition: transform .15s;
+.cm-select {
+    min-width: 190px; cursor: pointer; padding-right: 34px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231d4ed8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 14px center !important;
 }
-.cm-btn-reset:hover { transform: translateY(-1px); }
+.cm-select--wide { min-width: 210px; }
+.cm-select option { color: #0f172a !important; background: #fff !important; }
+#CheckListMISPage .select2-container--default .select2-selection--single {
+    height: 38px !important; border: 1.5px solid rgba(255,255,255,.45) !important;
+    border-radius: 12px !important; background: #fff !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,.14) !important;
+}
+#CheckListMISPage .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #0f172a !important; line-height: 36px !important; padding-left: 12px !important; font-weight: 600;
+}
+#CheckListMISPage .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px !important; right: 8px !important;
+}
+#CheckListMISPage .select2-container { min-width: 210px; }
+.cm-actions { display: flex; align-items: flex-end; gap: 8px; }
+.cm-btn-pdf, .cm-btn-reset {
+    border: none; cursor: pointer; height: 38px;
+    border-radius: 12px; padding: 0 16px; font-size: .82rem; font-weight: 700;
+    box-shadow: 0 4px 14px rgba(0,0,0,.14); transition: transform .15s, box-shadow .15s;
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.cm-btn-pdf {
+    background: #fef2f2; color: #b91c1c;
+}
+.cm-btn-pdf:hover { transform: translateY(-1px); background: #fee2e2; }
+.cm-btn-reset {
+    background: #fff; color: #1d4ed8;
+}
+.cm-btn-reset:hover { transform: translateY(-1px); background: #eff6ff; }
 
 /* ── sub-banner ── */
 .cm-subbar {
@@ -96,6 +127,8 @@
     display: flex; flex-direction: column; min-height: 0;
     background: linear-gradient(180deg, #fbfdff, #f5f8ff);
 }
+.cm-chart-side.cm-hidden { display: none; }
+.cm-grid-side.cm-full { flex: 1; }
 
 .cm-grid-wrap { flex: 1; min-height: 0; overflow: auto; }
 .cm-grid-wrap::-webkit-scrollbar { width: 7px; height: 7px; }
@@ -175,12 +208,26 @@ table.cm-table tbody tr:hover td { background: #eff6ff; }
                 </div>
             </div>
             <div class="cm-toolbar">
-                <div class="cm-search-wrap">
-                    <i class="fas fa-magnifying-glass"></i>
-                    <input type="text" class="cm-input" id="cmNameSearch" placeholder="Search by Name" />
+                <div class="cm-filter-group">
+                    <span class="cm-filter-label"><i class="fas fa-chart-pie"></i> Report Type</span>
+                    <select class="cm-select cm-select--wide" id="cmReportType" title="Report Type">
+                        <option value="">Loading…</option>
+                    </select>
                 </div>
-                <input type="date" class="cm-date" id="cmWeekPicker" title="Pick any day of the week" />
-                <button class="cm-btn-reset" id="cmResetFilter"><i class="fas fa-rotate-left"></i>&nbsp;Reset Filter</button>
+                <div class="cm-filter-group">
+                    <span class="cm-filter-label"><i class="fas fa-user"></i> User</span>
+                    <select class="cm-select cm-select--wide" id="cmUserFilter" title="Doer / User">
+                        <option value="0">All Users</option>
+                    </select>
+                </div>
+                <div class="cm-filter-group">
+                    <span class="cm-filter-label"><i class="fas fa-calendar-day"></i> Week Date</span>
+                    <input type="date" class="cm-date" id="cmWeekPicker" title="Pick any day of the week" />
+                </div>
+                <div class="cm-actions">
+                    <button class="cm-btn-pdf" id="cmExportPdf" title="Download PDF"><i class="fas fa-file-pdf"></i>&nbsp;PDF</button>
+                    <button class="cm-btn-reset" id="cmResetFilter"><i class="fas fa-rotate-left"></i>&nbsp;Reset</button>
+                </div>
             </div>
         </div>
 
@@ -196,20 +243,10 @@ table.cm-table tbody tr:hover td { background: #eff6ff; }
             <div class="cm-grid-side">
                 <div class="cm-grid-wrap">
                     <table class="cm-table" id="cmTable">
-                        <thead>
-                            <tr>
-                                <th class="cm-th-num">#</th>
-                                <th>MIS Period</th>
-                                <th>Doer Name</th>
-                                <th class="cm-th-num">Work to be<br />accomplished</th>
-                                <th class="cm-th-num">Accomplished</th>
-                                <th class="cm-th-num">This week Work<br />Not Done%</th>
-                                <th class="cm-th-num">This week work not<br />done on time %</th>
-                            </tr>
-                        </thead>
+                        <thead id="cmTableHead"></thead>
                         <tbody id="cmTableBody">
                             <tr>
-                                <td class="cm-empty" colspan="7"><i class="fas fa-spinner fa-spin"></i> Loading report…</td>
+                                <td class="cm-empty" colspan="8"><i class="fas fa-spinner fa-spin"></i> Loading report…</td>
                             </tr>
                         </tbody>
                     </table>
