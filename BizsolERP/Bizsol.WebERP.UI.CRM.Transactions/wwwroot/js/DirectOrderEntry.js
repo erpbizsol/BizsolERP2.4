@@ -472,7 +472,9 @@ function GetEditVisitDetails() {
             //$('#hiddentxtPaymentTerm').val(response.VisitORroutePlanMaster[0].PaymentTermsMaster_Code);
             $('#txtBuyerPONo').val(response.VisitORroutePlanMaster[0].BuyerPONo);
 
-
+            if (response.VisitORroutePlanMaster[0].TotalOrderQty != null && response.VisitORroutePlanMaster[0].TotalOrderQty !== undefined) {
+                $('#txtTotalOrderQty').val(parseFloat(response.VisitORroutePlanMaster[0].TotalOrderQty) || '');
+            }
 
 
         }
@@ -1285,6 +1287,13 @@ function ValidateData() {
         MsgStr += "* Please Select Customer Name!" + newLine;
         Valid = false;
     }
+
+    var totalOrderQtyVal = parseFloat($('#txtTotalOrderQty').val());
+    if (isNaN(totalOrderQtyVal) || totalOrderQtyVal <= 0) {
+        MsgStr += "* Total Order Qty cannot be blank or zero. Please enter a valid Total Order Qty!" + newLine;
+        Valid = false;
+    }
+
     if (GetSelectedCustomerBillApplicable() === 'N') {
         MsgStr += "* Order cannot be saved. Billing is not applicable for the selected Customer!" + newLine;
         Valid = false;
@@ -1662,6 +1671,22 @@ function ValidateData() {
         })
         Valid = false;
     }
+
+    var _totalOrderQty = parseFloat($('#txtTotalOrderQty').val()) || 0;
+    if (_totalOrderQty > 0) {
+        ShowFooterTotal();
+        var _sizeWiseTotalMT = parseFloat($('#txtOrderQtyMTTotal').text()) || 0;
+        var _sizeWiseTotalPC = parseFloat($('#txtOrderQtyPCTotal').text()) || 0;
+        var _sizeWiseTotalMTR = parseFloat($('#txtOrderQtyMTRTotal').text()) || 0;
+        var _sizeWiseTotal = _sizeWiseTotalMT > 0 ? _sizeWiseTotalMT
+                           : _sizeWiseTotalPC > 0 ? _sizeWiseTotalPC
+                           : _sizeWiseTotalMTR;
+        if (_sizeWiseTotal > _totalOrderQty) {
+            MsgStr += "* Size-wise total Order Qty (" + _sizeWiseTotal.toFixed(3) + ") exceeds the Total Order Qty (" + _totalOrderQty.toFixed(3) + "). Please reduce the ordered quantities!" + newLine;
+            Valid = false;
+        }
+    }
+
     if (Valid == false) {
         toastr.error(MsgStr);
         return false;
@@ -1760,6 +1785,7 @@ function SaveData() {
     visitMasterRow["buyerPONo"] = $("#txtBuyerPONo").val() !== null ? $("#txtBuyerPONo").val() : '';
     visitMasterRow["buyerPODate"] = new Date().toISOString().split("T")[0];
     visitMasterRow["zoneName"] = '';
+    visitMasterRow["totalOrderQty"] = parseFloat($("#txtTotalOrderQty").val()) || 0;
 
     visitMasterData.push(visitMasterRow);
 
@@ -4761,7 +4787,6 @@ function SelectStockRows() {
             var ItemMaster_Code = recordRow.cells[Indx_Stock.ItemMaster_Code].innerText;
             var ItemName = recordRow.cells[Indx_Stock.ItemName].innerText;
 
-
             if (ShowSizeButton == true) {
                 var SIZE = recordRow.cells[Indx_Stock.Size].innerText;
                 var THICKNESS = "";
@@ -4770,9 +4795,10 @@ function SelectStockRows() {
                 var PendingCRMOrder = recordRow.cells[Indx_Stock.PendingCRMOrder - 1].innerText;
                 var RollingForcast = recordRow.cells[Indx_Stock.RollingForcast - 1].innerText;
                 var MinimumQty = recordRow.cells[Indx_Stock.MinimumQty - 1].innerText;
-                var BalanceQty = recordRow.cells[Indx_Stock.BalQty - 1].innerText;
-                var currentCell = recordRow.cells[Indx_Stock.Qty - 1];
-                var Qty = currentCell.querySelector("input").value;
+                var balQtyCell = recordRow.cells[Indx_Stock.BalQty - 1];
+                var BalanceQty = balQtyCell ? (balQtyCell.querySelector('label') ? balQtyCell.querySelector('label').innerText : balQtyCell.innerText) : 0;
+                var qtyCell = recordRow.querySelector('input[name="txtStockQty"]');
+                var Qty = qtyCell ? qtyCell.value : 0;
 
             } else {
                 var SIZE = recordRow.cells[Indx_Stock.Size].innerText;
@@ -4782,9 +4808,10 @@ function SelectStockRows() {
                 var PendingCRMOrder = recordRow.cells[Indx_Stock.PendingCRMOrder].innerText;
                 var RollingForcast = recordRow.cells[Indx_Stock.RollingForcast].innerText;
                 var MinimumQty = recordRow.cells[Indx_Stock.MinimumQty].innerText;
-                var BalanceQty = recordRow.cells[Indx_Stock.BalQty].innerText;
-                var currentCell = recordRow.cells[Indx_Stock.Qty];
-                var Qty = currentCell.querySelector("input").value;
+                var balQtyCell = recordRow.cells[Indx_Stock.BalQty];
+                var BalanceQty = balQtyCell ? (balQtyCell.querySelector('label') ? balQtyCell.querySelector('label').innerText : balQtyCell.innerText) : 0;
+                var qtyCell = recordRow.querySelector('input[name="txtStockQty"]');
+                var Qty = qtyCell ? qtyCell.value : 0;
             }
 
 

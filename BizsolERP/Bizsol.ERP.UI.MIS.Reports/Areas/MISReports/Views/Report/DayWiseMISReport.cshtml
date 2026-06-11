@@ -119,13 +119,13 @@
     .mis-table thead th {
         position: sticky;
         top: 0;
-        background-color: #f1f4fa;
-        color: #2c3852;
+        background-color: var(--accent);
+        color: #fff;
         white-space: nowrap;
         z-index: 1;
         font-weight: 600;
         padding: 9px 12px;
-        border-bottom: 2px solid #d9e0ee;
+        border-bottom: 2px solid #173c6e;
     }
 
     .mis-table tbody td {
@@ -151,6 +151,53 @@
         font-size: 1.8rem;
         margin-bottom: 8px;
         opacity: 0.45;
+    }
+
+    /* ---------- Slitting issue / receive layout ---------- */
+    .mis-table.mis-slitting-table thead th {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .mis-slitting-table .mis-slit-band-issue {
+        background-color: #2c5282 !important;
+        color: #fff !important;
+    }
+
+    .mis-slitting-table .mis-slit-band-receive {
+        background-color: #276749 !important;
+        color: #fff !important;
+    }
+
+    .mis-slitting-table .mis-slit-subhead th {
+        background-color: #3d5a80 !important;
+        color: #fff !important;
+        font-size: 0.78rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .mis-slitting-table .mis-slit-subhead th.mis-slit-subhead-receive {
+        background-color: #2f6b4f !important;
+    }
+
+    .mis-slitting-table .mis-slit-issue-col {
+        background-color: #f0f4fa;
+        vertical-align: middle;
+        border-right: 2px solid #c8d2e8;
+    }
+
+    .mis-slitting-table .mis-slit-receive-col {
+        vertical-align: middle;
+    }
+
+    .mis-slitting-table .mis-slit-group-start td {
+        border-top: 2px solid #c8d2e8;
+    }
+
+    .mis-slitting-table tbody td.mis-slit-size {
+        white-space: normal;
+        min-width: 180px;
+        max-width: 320px;
     }
 </style>
 
@@ -229,8 +276,8 @@
             <div class="mis-section-head"><i class="fa-solid fa-scissors"></i> Slitting</div>
             <div class="mis-panel">
                 <div class="mis-table-wrapper">
-                    <table id="tblSlitting" class="table mis-table">
-                        <thead><tr id="tblSlitting-header"></tr></thead>
+                    <table id="tblSlitting" class="table mis-table mis-slitting-table">
+                        <thead id="tblSlitting-thead"></thead>
                         <tbody id="tblSlitting-body"></tbody>
                     </table>
                     <div id="noSlitting" class="mis-empty" style="display:none;">

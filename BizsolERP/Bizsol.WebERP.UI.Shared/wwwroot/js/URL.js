@@ -163,6 +163,7 @@ let UrlService = {
     API_ENDPOINT_ProjectManagementReport: `${environment.BASE_URL}/ProjectManagementReport`,
     API_ENDPOINT_AREA_ProjectManagementReport: `${environment.BASE_URL}/ProjectManagementReport`,
     API_ENDPOINT_MillWiseProductionReport: `${environment.BASE_URL}/MillWiseProductionReport`,
+    API_ENDPOINT_ProductionBreakDownReport: `${environment.BASE_URL}/ProductionBreakDownReport`,
     API_DOCUMENT_StockAgeingYieldConfiguration: `${environment.BASE_URL}/StockAgeingYieldConfiguration`,
     API_ENDPOINT_ProjectDetailDashboard: `${environment.BASE_URL}/ProjectDetail`,
     API_ENDPOINT_SalesPersonTargetAchievement: `${environment.BASE_URL}/SalesPersonTargetAchievement`,
