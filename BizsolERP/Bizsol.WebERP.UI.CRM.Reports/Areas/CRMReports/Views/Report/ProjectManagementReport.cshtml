@@ -1,0 +1,457 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.CRM.Transactions/css/ExpenseEntry.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/ProjectManagementReport.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<style>
+    .pmr-page .pmr-filter-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+        gap: 0.75rem 2rem;
+        align-items: end;
+    }
+    .pmr-page .pmr-filter-field {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+    .pmr-page .pmr-filter-field .form-label {
+        font-size: 0.77rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.35rem;
+    }
+    .pmr-page .pmr-filter-field input.form-control.form-control-sm,
+    .pmr-page .pmr-filter-field select.form-control.form-control-sm {
+        height: 38px !important;
+        min-height: 38px !important;
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+        font-size: 13px !important;
+    }
+    .pmr-page .pmr-filter-field .select2-container--default .select2-selection--single {
+        height: 38px !important;
+        min-height: 38px !important;
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+    }
+    .pmr-page .pmr-filter-field .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 34px !important;
+        font-size: 13px;
+    }
+    .pmr-page .pmr-filter-actions .pmr-btn-show {
+        height: 38px;
+        border: none !important;
+        color: #fff !important;
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        border-radius: 999px;
+        font-weight: 700;
+        padding: 0 1.2rem;
+    }
+    .pmr-page .ee-list-stats-strip .ee-list-stat-chip {
+        cursor: default;
+        pointer-events: none;
+    }
+    .pmr-page .expense-entry-table-wrapper {
+        overflow-x: hidden !important;
+    }
+    #tblPMR {
+        table-layout: fixed;
+        width: 100%;
+    }
+    #tblPMR thead th {
+        white-space: normal;
+        line-height: 1.15;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 0.35rem 0.2rem;
+        vertical-align: middle;
+        text-align: center;
+    }
+    #tblPMR thead th.num {
+        word-break: break-word;
+    }
+    #tblPMR td.num, #tblPMR th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    #tblPMR td.num {
+        white-space: nowrap;
+        font-size: 0.74rem;
+        padding: 0.3rem 0.25rem;
+    }
+    #tblPMR th.pmr-th-dim,
+    #tblPMR td.pmr-particulars-cell {
+        text-align: left;
+        min-width: 8.5rem;
+        width: 11%;
+        word-break: normal;
+        overflow-wrap: normal;
+        hyphens: none;
+        line-height: 1.3;
+        vertical-align: middle;
+    }
+    #tblPMR .pmr-particulars-text {
+        display: inline-block;
+        max-width: 100%;
+        font-weight: 600;
+        word-break: normal;
+        overflow-wrap: normal;
+        white-space: normal;
+    }
+    .pmr-nested-table th:nth-child(2),
+    .pmr-nested-table td:nth-child(2) {
+        min-width: 9rem;
+        word-break: normal;
+        overflow-wrap: normal;
+        white-space: normal;
+        line-height: 1.3;
+    }
+    #tblPMR tr.row-total td {
+        font-weight: 700;
+        background: rgba(102, 126, 234, 0.12) !important;
+        color: #4338ca !important;
+    }
+    .pmr-drill-crumb {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        margin-bottom: 0.35rem;
+        background: rgba(102, 126, 234, 0.08);
+        border-radius: 8px;
+        font-size: 0.82rem;
+    }
+    .pmr-drill-crumb #btnDrillBack {
+        color: #4338ca;
+        font-weight: 700;
+        text-decoration: none;
+        padding: 0;
+    }
+    .pmr-project-drill {
+        border: none;
+        background: none;
+        padding: 0;
+        color: #4338ca;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        text-decoration: underline;
+        font-size: inherit;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .pmr-project-drill:hover {
+        color: #312e81;
+    }
+    .pmr-tree-root,
+    .pmr-tree-parent {
+        cursor: pointer;
+        background: #f8fafc;
+        font-weight: 600;
+    }
+    .pmr-tree-root:hover,
+    .pmr-tree-parent:hover {
+        background: #eef2ff;
+    }
+    .pmr-tree-toggle {
+        width: 14px;
+        color: #4338ca;
+    }
+    .pmr-tree-child-panel {
+        margin: 0.25rem 0 0.35rem 1rem;
+        border-left: 3px solid rgba(102, 126, 234, 0.35);
+        padding-left: 0.5rem;
+    }
+    .pmr-tree-child-panel--root {
+        margin-left: 0.75rem;
+    }
+    /* Main grid only — ExpenseEntry.css sticky thead applies to every .table in the wrapper */
+    .pmr-page .expense-entry-table-wrapper #tblPMR > thead {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+    .pmr-page .expense-entry-table-wrapper #tblPMR > thead th {
+        color: #fff !important;
+        background: transparent !important;
+    }
+    .pmr-nested-table {
+        width: 100%;
+        table-layout: auto;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin: 0;
+    }
+    /* Nested drill headers — override ExpenseEntry.css transparent thead th */
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table thead {
+        position: static !important;
+        top: auto !important;
+        z-index: auto !important;
+        display: table-header-group !important;
+        background: transparent !important;
+        background-image: none !important;
+        --bs-table-bg: transparent;
+        --bs-table-striped-bg: transparent;
+        --bs-table-hover-bg: transparent;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table thead tr.pmr-nested-head,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table thead th {
+        position: static !important;
+        color: #fff !important;
+        background-image: none !important;
+        font-size: 0.66rem !important;
+        font-weight: 700 !important;
+        padding: 0.35rem 0.25rem !important;
+        white-space: normal !important;
+        line-height: 1.15 !important;
+        text-align: center;
+        border: none !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        letter-spacing: normal !important;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--default > thead,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--default > thead tr.pmr-nested-head,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--default > thead th {
+        background: #5b9bd5 !important;
+        background-color: #5b9bd5 !important;
+        color: #fff !important;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--subproject > thead,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--subproject > thead tr.pmr-nested-head,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--subproject > thead th {
+        background: #2563eb !important;
+        background-color: #2563eb !important;
+        color: #fff !important;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--projectVendor > thead,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--projectVendor > thead tr.pmr-nested-head,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--projectVendor > thead th {
+        background: #0d9488 !important;
+        background-color: #0d9488 !important;
+        color: #fff !important;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--vendor > thead,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--vendor > thead tr.pmr-nested-head,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--vendor > thead th {
+        background: #7c3aed !important;
+        background-color: #7c3aed !important;
+        color: #fff !important;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--categoryItem > thead,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--categoryItem > thead tr.pmr-nested-head,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--categoryItem > thead th {
+        background: #ea580c !important;
+        background-color: #ea580c !important;
+        color: #fff !important;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--categoryGroup > thead,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--categoryGroup > thead tr.pmr-nested-head,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--categoryGroup > thead th {
+        background: #db2777 !important;
+        background-color: #db2777 !important;
+        color: #fff !important;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--categoryItemLeaf > thead,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--categoryItemLeaf > thead tr.pmr-nested-head,
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table.pmr-nested--categoryItemLeaf > thead th {
+        background: #16a34a !important;
+        background-color: #16a34a !important;
+        color: #fff !important;
+    }
+    .pmr-tree-child-panel[data-fetch-level="subproject"] { border-left-color: #2563eb; }
+    .pmr-tree-child-panel[data-fetch-level="projectVendor"] { border-left-color: #0d9488; }
+    .pmr-tree-child-panel[data-fetch-level="vendor"] { border-left-color: #7c3aed; }
+    .pmr-tree-child-panel[data-fetch-level="categoryItem"] { border-left-color: #ea580c; }
+    .pmr-tree-child-panel[data-fetch-level="categoryItemLeaf"] { border-left-color: #16a34a; }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table thead th:nth-child(2) {
+        text-align: left;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table thead th.num {
+        text-align: right;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table tbody td {
+        font-size: 0.74rem;
+        vertical-align: middle;
+        padding: 0.35rem 0.25rem !important;
+    }
+    .pmr-page .expense-entry-table-wrapper .pmr-nested-table .pmr-tree-parent {
+        background: #f1f5f9;
+        font-weight: 600;
+    }
+    .pmr-tree-child-wrap > td {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+    }
+    /* Override layout app.min.css: button { height:25px; font-size:7pt } — same fix as Expenses Ledger */
+    .pmr-page .ee-list-header .pmr-header-toolbar {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    .pmr-page .ee-list-header .pmr-header-icon-btn {
+        width: 46px;
+        height: auto !important;
+        min-width: 46px;
+        min-height: 46px !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid rgba(255, 255, 255, 0.92);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.06);
+        cursor: pointer;
+        line-height: 1 !important;
+        font-size: 1rem !important;
+        -webkit-appearance: none;
+        appearance: none;
+        box-sizing: border-box;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+    .pmr-page .ee-list-header .pmr-header-icon-btn:hover {
+        background: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.08);
+        border-color: #fff;
+    }
+    .pmr-page .ee-list-header .pmr-header-icon-btn i {
+        font-size: 1.25rem !important;
+        line-height: 1 !important;
+        display: inline-block;
+        pointer-events: none;
+    }
+    .pmr-page .ee-list-header .pmr-header-icon-btn--excel i { color: #0f7c3a !important; }
+    .pmr-page .ee-list-header .pmr-header-icon-btn--excel:hover i { color: #0a5c2a !important; }
+    .pmr-page .ee-list-header .pmr-header-icon-btn--print i { color: #334155 !important; }
+    .pmr-page .ee-list-header .pmr-header-icon-btn--print:hover i { color: #1e293b !important; }
+    .pmr-page .ee-list-header .pmr-header-icon-btn--close i { color: #c2410c !important; }
+    .pmr-page .ee-list-header .pmr-header-icon-btn--close:hover {
+        background: #fff7ed;
+        border-color: rgba(254, 215, 170, 0.95);
+    }
+    .pmr-page .ee-list-header .pmr-header-icon-btn--close:hover i { color: #9a3412 !important; }
+    @@media (max-width: 991px) {
+        .pmr-page .pmr-filter-row { grid-template-columns: 1fr; }
+    }
+    @@media print {
+        .no-print { display: none !important; }
+        .expense-entry-table-wrapper { max-height: none !important; overflow: visible !important; }
+    }
+</style>
+
+<div class="ee-page pmr-page">
+    <div class="ee-list-header section-entry-animation">
+        <div class="ee-list-header-top">
+            <div class="ee-list-header-title-block">
+                <h2 class="ee-list-header-title"><i class="fa fa-chart-bar me-2" aria-hidden="true"></i>Management Report</h2>
+                <small class="ee-list-header-sub">BOM, PO, GRN and payment summary with balance columns for the selected project filters.</small>
+            </div>
+            <div class="ee-list-header-actions no-print pmr-header-toolbar">
+                <button type="button" id="btnDownload" class="pmr-header-icon-btn pmr-header-icon-btn--excel" title="Export to Excel" aria-label="Export to Excel">
+                    <i class="fas fa-file-excel" aria-hidden="true"></i>
+                </button>
+                <!-- <button type="button" id="btnPrint" class="pmr-header-icon-btn pmr-header-icon-btn--print" title="Print report" aria-label="Print">
+                    <i class="fas fa-print" aria-hidden="true"></i>
+                </button> -->
+                <button type="button" id="btnClose" class="pmr-header-icon-btn pmr-header-icon-btn--close" title="Clear report" aria-label="Clear report">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+        <!-- <div class="ee-list-stats-strip" role="group" aria-label="Report summary">
+            <div class="ee-list-stat-chip">
+                <span class="val" id="pmrStatRows">0</span>
+                <span class="lbl">Lines</span>
+            </div>
+            <div class="ee-list-stat-chip ee-list-stat-chip--pending">
+                <span class="val" id="pmrStatBOM">0.00</span>
+                <span class="lbl">Total BOM value</span>
+            </div>
+            <div class="ee-list-stat-chip ee-list-stat-chip--onme">
+                <span class="val" id="pmrStatPO">0.00</span>
+                <span class="lbl">Total PO value</span>
+            </div>
+            <div class="ee-list-stat-chip ee-list-stat-chip--approved">
+                <span class="val" id="pmrStatGRN">0.00</span>
+                <span class="lbl">Total GRN value</span>
+            </div>
+        </div> -->
+    </div>
+
+    <div class="ee-list-filter-bar no-print">
+        <div class="pmr-filter-row">
+            <div class="pmr-filter-field">
+                <label for="ddlReportType" class="form-label">Report type <span class="text-danger">*</span></label>
+                <select id="ddlReportType" class="form-control form-control-sm box_border w-100"></select>
+            </div>
+            <div class="pmr-filter-field">
+                <label for="ddlProject" class="form-label">Project</label>
+                <select id="ddlProject" class="form-control form-control-sm box_border w-100"></select>
+            </div>
+            <div class="pmr-filter-field" id="pmrSubProjectField">
+                <label for="ddlSubProject" class="form-label">Sub project</label>
+                <select id="ddlSubProject" class="form-control form-control-sm box_border w-100"></select>
+            </div>
+            <div class="pmr-filter-actions">
+                <button type="button" id="fetchReportButton" class="btn btn-sm pmr-btn-show">
+                    <i class="fas fa-search me-1" aria-hidden="true"></i>Show
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pmrDrillBreadcrumb" class="pmr-drill-crumb no-print" style="display:none" aria-live="polite">
+        <button type="button" id="btnDrillBack" class="btn btn-link btn-sm p-0">← Back to Project wise</button>
+        <span class="text-muted">|</span>
+        <span id="pmrDrillLabel"></span>
+    </div>
+
+    <div class="expense-entry-card expense-entry-card-table ee-list-grid-wrap">
+        <div class="expense-entry-table-wrapper pmr-table-wrap">
+            <table id="tblPMR" class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:2.4rem">S.No</th>
+                        <th id="thProject" class="pmr-th-dim">Project<br>name</th>
+                        <th id="thSubProject" class="pmr-th-dim" style="display:none">Sub project<br>name</th>
+                        <th id="thVendor" class="pmr-th-dim" style="display:none">Vendor</th>
+                        <th id="thCategory" class="pmr-th-dim" style="display:none">Category</th>
+                        <th id="thItem" class="pmr-th-dim" style="display:none">Item<br>name</th>
+                        <th class="num" data-metric="bomQty">BOM<br>QTY</th>
+                        <th class="num" data-metric="bomValue">BOM<br>Value</th>
+                        <th class="num" data-metric="poQty">PO<br>QTY</th>
+                        <th class="num" data-metric="poValue">PO<br>Value</th>
+                        <th class="num" data-metric="grnQty">GRN<br>QTY</th>
+                        <th class="num" data-metric="grnValue">GRN<br>Value</th>
+                        <th class="num" data-metric="payment">Pay-<br>ment</th>
+                        <th class="num" data-metric="bomPoQtyBal">BOM to<br>PO qty Bal</th>
+                        <th class="num" data-metric="bomPoValBal">BOM to<br>PO Val Bal</th>
+                        <th class="num" data-metric="poGrnQtyBal">PO to<br>GRN Qty Bal</th>
+                        <th class="num" data-metric="poGrnValBal">PO to<br>GRN Val Bal</th>
+                        <th class="num" data-metric="grnPayBal">GRN to<br>Pay Bal</th>
+                    </tr>
+                </thead>
+                <tbody id="tblPMRBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<table id="tblPMRExport" hidden="hidden" style="display:none">
+    <thead><tr></tr></thead>
+    <tbody></tbody>
+</table>
