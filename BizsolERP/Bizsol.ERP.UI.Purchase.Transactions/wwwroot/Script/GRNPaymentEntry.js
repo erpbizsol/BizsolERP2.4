@@ -5075,7 +5075,7 @@ function gpaBuildPrintDetailLineHtml(row, idx, listRows, siteFallback) {
         + '<b>Line ' + (idx + 1) + '</b>'
         + (poLine ? ' &mdash; PO: ' + gpaEscapeHtml(String(poLine)) : '')
         + catPart
-        + (pay !== '' && pay != null ? ' &mdash; Paid: &#8377;' + gpaFormatIndianCurrency(pay) : '')
+        + (pay !== '' && pay != null ? ' &mdash; PO Amount: &#8377;' + gpaFormatIndianCurrency(pay) : '')
         + (sb.project ? ' &mdash; Project: ' + gpaEscapeHtml(String(sb.project)) : '')
         + (sb.site ? ' &mdash; Sub Project: ' + gpaEscapeHtml(String(sb.site)) : '')
         + '</div>';
