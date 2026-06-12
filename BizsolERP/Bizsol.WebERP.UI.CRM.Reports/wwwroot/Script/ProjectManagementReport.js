@@ -1,8 +1,30 @@
 import { ProjectManagementReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectManagementReportService.js';
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { ProjectDetailDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectDetailDashboardService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
-const MODULE_DESCRIPTION_FOR_REPORT_CONFIG = 'Project Management Report';
+/** Fallback when ModuleDesp query string is missing — must match F_ReportConfiguration.ModuleDescription if used. */
+const FALLBACK_MODULE_DESCRIPTION = 'Management Report';
+
+function moduleDescriptionForReportConfig() {
+    const fromUrl = decodeURI(BizSolHelperFunction.getUrlVars()['ModuleDesp'] || '');
+    if (fromUrl && fromUrl !== 'undefined' && String(fromUrl).trim() !== '') {
+        return String(fromUrl).trim();
+    }
+    return FALLBACK_MODULE_DESCRIPTION;
+}
+
+function moduleDescriptionForDisplay() {
+    return BizSolHelperFunction.ToWithSpace(moduleDescriptionForReportConfig());
+}
+
+function applyPageHeadingFromModuleDesp() {
+    const display = moduleDescriptionForDisplay();
+    if (display && display !== 'undefined') {
+        $('#ERPHeading').text(display);
+        $('#pmrPageTitleText').text(display);
+    }
+}
 
 const FALLBACK_REPORT_TYPES = [
     'Project wise',
@@ -359,7 +381,7 @@ function loadSubProjectDropdown(projectMasterCode) {
 }
 
 function loadReportTypeDropdown() {
-    return ProjectManagementReportService.GetReportType(MODULE_DESCRIPTION_FOR_REPORT_CONFIG)
+    return ProjectManagementReportService.GetReportType(moduleDescriptionForReportConfig())
         .then(function (response) {
             const rows = asArray(response);
             const $rt = $('#ddlReportType');
@@ -1319,7 +1341,7 @@ function handleTreeRowClick($row) {
 }
 
 $(document).ready(function () {
-    $('#ERPHeading').text('Management Report');
+    applyPageHeadingFromModuleDesp();
     loadDropdowns();
 
     $('#ddlReportType').on('change', function () {
