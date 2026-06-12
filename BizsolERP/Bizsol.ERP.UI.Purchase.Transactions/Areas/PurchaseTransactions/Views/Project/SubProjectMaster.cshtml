@@ -1091,6 +1091,9 @@
                             <li class="nav-item" role="presentation">
                                 <button type="button" class="nav-link" data-approval-tab="Expense" role="tab">Expense</button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link" data-approval-tab="GRN" role="tab">GRN</button>
+                            </li>
                         </ul>
                         <div id="approvalLevelTabContent">
                             <div class="pm-approval-tab-pane active" id="approvalTabPanePO" data-approval-tab="PO">
@@ -1142,6 +1145,24 @@
                                             </tr>
                                         </thead>
                                         <tbody id="tblLevelsBody_Expense">
+                                            <tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="pm-approval-tab-pane" id="approvalTabPaneGRN" data-approval-tab="GRN">
+                                <div id="dvSingleLevelSelect_GRN" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_GRN" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_GRN">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;display:none;">Users to Verify GRN</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_GRN">
                                             <tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
                                         </tbody>
                                     </table>

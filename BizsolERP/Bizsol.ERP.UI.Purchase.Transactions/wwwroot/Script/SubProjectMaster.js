@@ -7,11 +7,12 @@ import { UserMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_
 import { PurchaseOrderStoreService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseOrderStoreServices.js';
 import { API_ENDPOINT_GRNPaymentApprovalConfig } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNPaymentService.js';
 import { ExpenseEntryApprovalConfigurationService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryApprovalConfigurationService.js';
+import { MRNMasterApprovalConfigService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MRNMasterApprovalConfigService.js';
 
 let G_SubProjectList    = [];
 let G_ProjectList       = [];
 let G_UserList          = [];
-let G_ApprovalLevelLists = { PO: [], Payment: [], Expense: [] };
+let G_ApprovalLevelLists = { PO: [], Payment: [], Expense: [], GRN: [] };
 let G_ApprovalLevelListsLoadPromise = null;
 /** Level details waiting to bind after approval level API lists finish loading. */
 let G_PendingApprovalLevelDetails = [];
@@ -20,7 +21,7 @@ let G_ActiveStatusFilter = 'all'; // 'all' | 'running' | 'pending'
 /** GRN Check codes to apply after modal is visible (Select2 multi in hidden modal often keeps only one if set earlier). */
 let G_SubProjectModalGRNPendingCodes = null;
 
-const APPROVAL_LEVEL_TAB_KEYS = ['PO', 'Payment', 'Expense'];
+const APPROVAL_LEVEL_TAB_KEYS = ['PO', 'Payment', 'Expense', 'GRN'];
 
 const APPROVAL_LEVEL_TAB_CONFIG = {
     PO: {
@@ -43,6 +44,13 @@ const APPROVAL_LEVEL_TAB_CONFIG = {
         showUserRight : false,
         userColLabel  : 'Users to Verify Expense',
         emptyLabel    : 'No Expense approval levels configured.'
+    },
+    GRN: {
+        forValue      : 'MRNEntry',
+        apiMode       : 'GET_MRNMasterAPPROVELLEVELS',
+        showUserRight : false,
+        userColLabel  : 'Users to Verify GRN',
+        emptyLabel    : 'No GRN approval levels configured.'
     }
 };
 
@@ -496,7 +504,7 @@ window.SaveSiteRepresentativeSPM = function () {
     });
 };
 
-/* ── Load approval levels list (PO / Payment / Expense) ─── */
+/* ── Load approval levels list (PO / Payment / Expense / GRN) ─── */
 function unwrapApprovalLevelList(raw) {
     if (!raw) return [];
     if (Array.isArray(raw)) {
@@ -530,6 +538,10 @@ function loadApprovalLevelListForTab(tabKey) {
         }
         if (tabKey === 'Expense') {
             return ExpenseEntryApprovalConfigurationService.GetLevelList()
+                .then(function (legacy) { assignList(unwrapApprovalLevelList(legacy)); });
+        }
+        if (tabKey === 'GRN') {
+            return MRNMasterApprovalConfigService.GetLevelList()
                 .then(function (legacy) { assignList(unwrapApprovalLevelList(legacy)); });
         }
         assignList([]);
@@ -598,10 +610,16 @@ function pickLevelConfigCode(level, tabKey) {
             level.GRNPaymentLevel_Code,
             level.GRNPaymentApprovalLevel_Code
         );
-    } else {
+    } else if (tabKey === 'Expense') {
         candidates.push(
             level.ExpenseEntryApprovalConfiguration_Code,
             level.ExpenseEntryApprovalLevel_Code
+        );
+    } else if (tabKey === 'GRN') {
+        candidates.push(
+            level.MRNMasterApprovalConfiguration_Code,
+            level.MRNMasterApprovalLevel_Code,
+            level.MRNMasterLevel_Code
         );
     }
     candidates.push(
@@ -627,6 +645,7 @@ function pickDetailConfigCode(detail, tabKey) {
     return pickLevelConfigCode(detail, tabKey)
         || parseInt(detail.GRNPaymentApprovalConfiguration_Code, 10)
         || parseInt(detail.ExpenseEntryApprovalConfiguration_Code, 10)
+        || parseInt(detail.MRNMasterApprovalConfiguration_Code, 10)
         || parseInt(detail.ApprovalConfiguration_Code, 10)
         || parseInt(detail.Code, 10)
         || 0;
@@ -638,6 +657,7 @@ function inferForFromDetail(detail) {
     if (f) return f;
     if (parseInt(detail.GRNPaymentApprovalConfiguration_Code, 10) > 0) return 'GRNPayment';
     if (parseInt(detail.ExpenseEntryApprovalConfiguration_Code, 10) > 0) return 'ExpenseEntry';
+    if (parseInt(detail.MRNMasterApprovalConfiguration_Code, 10) > 0) return 'MRNEntry';
     return 'PurchaseOrder';
 }
 
@@ -656,6 +676,8 @@ function normalizeLoadedLevelDetail(detail, defaultFor) {
             src = parseInt(d.GRNPaymentApprovalConfiguration_Code, 10);
         } else if (d.For === 'ExpenseEntry') {
             src = parseInt(d.ExpenseEntryApprovalConfiguration_Code, 10);
+        } else if (d.For === 'MRNEntry') {
+            src = parseInt(d.MRNMasterApprovalConfiguration_Code, 10);
         } else {
             src = parseInt(d.PurchaseOrderApprovalConfiguration_Code, 10) || parseInt(d.Code, 10);
         }
@@ -672,24 +694,27 @@ function appendNormalizedLevelDetails(target, arr, defaultFor) {
     });
 }
 
-/** GetSubProjectByCode array shape: [0]=master, [1]=PO levels, [2]=GRN users, [3]=Payment, [4]=Expense */
+/** GetSubProjectByCode array shape: [0]=master, [1]=PO levels, [2]=GRN users, [3]=Payment, [4]=Expense, [5]=MRN/GRN approval */
 function mergeLevelDetailsFromArrayResponse(response) {
     const merged = [];
     if (!Array.isArray(response)) return merged;
     appendNormalizedLevelDetails(merged, response[1], 'PurchaseOrder');
     appendNormalizedLevelDetails(merged, response[3], 'GRNPayment');
     appendNormalizedLevelDetails(merged, response[4], 'ExpenseEntry');
+    appendNormalizedLevelDetails(merged, response[5], 'MRNEntry');
     return merged;
 }
 
 function splitLevelDetailsByFor(allDetails) {
-    const result = { PO: [], Payment: [], Expense: [] };
+    const result = { PO: [], Payment: [], Expense: [], GRN: [] };
     (allDetails || []).forEach(function (d) {
         const forVal = inferForFromDetail(d);
         if (forVal === 'GRNPayment') {
             result.Payment.push(d);
         } else if (forVal === 'ExpenseEntry') {
             result.Expense.push(d);
+        } else if (forVal === 'MRNEntry') {
+            result.GRN.push(d);
         } else {
             result.PO.push(d);
         }
@@ -723,6 +748,10 @@ function mergeLevelDetailsFromResponse(response, row) {
     appendNormalizedLevelDetails(merged, response && response.GRNPaymentLevelsApprovalProjectUserDetails, 'GRNPayment');
     appendNormalizedLevelDetails(merged, response && response.ExpenseEntryLevelsApprovalProjectUserDetails, 'ExpenseEntry');
     appendNormalizedLevelDetails(merged, row && row.ExpenseEntryLevelsApprovalProjectUserDetails, 'ExpenseEntry');
+    appendNormalizedLevelDetails(merged, response && response.MRNEntryLevelsApprovalProjectUserDetails, 'MRNEntry');
+    appendNormalizedLevelDetails(merged, row && row.MRNEntryLevelsApprovalProjectUserDetails, 'MRNEntry');
+    appendNormalizedLevelDetails(merged, response && response.MRNMasterLevelsApprovalProjectUserDetails, 'MRNEntry');
+    appendNormalizedLevelDetails(merged, row && row.MRNMasterLevelsApprovalProjectUserDetails, 'MRNEntry');
     appendNormalizedLevelDetails(merged, response && response.PaymentLevelsApprovalProjectUserDetails, 'GRNPayment');
     appendNormalizedLevelDetails(merged, response && response.ExpenseLevelsApprovalProjectUserDetails, 'ExpenseEntry');
 
@@ -745,7 +774,7 @@ function tabDomIds(tabKey) {
     };
 }
 
-/** Show/hide Users column header per tab (Payment & Expense: hidden). */
+/** Show/hide Users column header per tab (Payment, Expense & GRN: hidden). */
 function syncApprovalTabUserColumnVisibility(tabKey) {
     const cfg = APPROVAL_LEVEL_TAB_CONFIG[tabKey];
     const show = !!(cfg && cfg.showUserRight);
@@ -1069,7 +1098,7 @@ function OpenNew_SubProjectMaster() {
 }
 
 /* ── Parse GetSubProjectByCode response ──────────────────── */
-/*  Array shape: [0]=master, [1]=PO levels, [2]=GRN users, [3]=Payment levels, [4]=Expense levels
+/*  Array shape: [0]=master, [1]=PO levels, [2]=GRN users, [3]=Payment levels, [4]=Expense levels, [5]=MRN/GRN approval levels
     Object shape: polevelDetails[] or separate *LevelsApprovalProjectUserDetails arrays              */
 function parseSubProjectByCodeResponse(response) {
     var row          = null;
