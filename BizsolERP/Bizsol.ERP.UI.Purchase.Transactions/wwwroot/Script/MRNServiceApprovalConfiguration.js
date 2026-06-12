@@ -104,6 +104,55 @@ function InitSelect2() {
     } catch (e) { /* Select2 unavailable */ }
 }
 
+function isYnYes(val) {
+    const s = String(val ?? '').trim().toUpperCase();
+    return s === 'Y' || s === '1' || s === 'TRUE';
+}
+
+function pickIsLevelApplicable(item) {
+    if (!item) return 'N';
+    const raw = item.IsLevelApplicable != null ? item.IsLevelApplicable : item.isLevelApplicable;
+    return isYnYes(raw) ? 'Y' : 'N';
+}
+
+function setApplicableCheckbox(val, locked) {
+    const chk = document.getElementById('frmApplicable');
+    if (!chk) return;
+    const forceY = !!locked;
+    chk.checked = forceY ? true : isYnYes(val);
+    chk.disabled = forceY;
+    chk.title = forceY ? 'First and last levels must always be applicable.' : '';
+}
+
+function isAnchorLevelIndex(idx, count) {
+    return count <= 1 || idx === 0 || idx === count - 1;
+}
+
+function isAnchorLevelPosition(levelNum, code) {
+    const count = G_LevelList.length;
+    if (count === 0 || G_EditMode === 'New') return true;
+
+    const idx = G_LevelList.findIndex(function (l) { return String(l.Code) === String(code); });
+    if (idx >= 0) return isAnchorLevelIndex(idx, count);
+
+    const levels = G_LevelList.map(function (l) { return l.Level; });
+    const minLevel = Math.min.apply(null, levels);
+    const maxLevel = Math.max.apply(null, levels);
+    return levelNum === minLevel || levelNum === maxLevel;
+}
+
+function getIsLevelApplicableForSave(levelNum, code) {
+    if (isAnchorLevelPosition(levelNum, code)) return 'Y';
+    const chk = document.getElementById('frmApplicable');
+    return (chk && chk.checked) ? 'Y' : 'N';
+}
+
+function renderApplicableBadge(val) {
+    return isYnYes(val)
+        ? '<span style="color:#059669;font-weight:700;font-size:0.76rem;">Yes</span>'
+        : '<span style="color:#94a3b8;font-weight:600;font-size:0.76rem;">No</span>';
+}
+
 async function LoadLevelList() {
     try {
         const result = await MRNMasterApprovalConfigService.GetLevelList();
@@ -125,7 +174,7 @@ function RenderTable() {
 
     if (count === 0) {
         tbody.innerHTML =
-            '<tr><td colspan="5" class="empty-levels">' +
+            '<tr><td colspan="6" class="empty-levels">' +
             '<i class="fa fa-layer-group"></i>' +
             'No approval levels configured yet.<br>' +
             'Click <strong>Add Level</strong> to get started.' +
@@ -142,6 +191,10 @@ function RenderTable() {
             ? '<span class="group-tag">' + EscapeHtml(item.GroupName.trim()) + '</span>'
             : '<span style="color:#94a3b8;font-size:0.75rem;">—</span>';
 
+        const applicable = renderApplicableBadge(
+            isAnchorLevelIndex(idx, count) ? 'Y' : pickIsLevelApplicable(item)
+        );
+
         const delBtn = isLast
             ? '<button type="button" class="btn-del-level ms-1"' +
               ' onclick="OpenDeleteModal(' + item.Code + ',\'' + EscapeAttr(item.LevelDesp) + '\')"' +
@@ -153,6 +206,7 @@ function RenderTable() {
             '<td style="text-align:center;"><span class="level-badge">' + item.Level + '</span></td>' +
             '<td style="font-weight:600;">' + EscapeHtml(item.LevelDesp) + '</td>' +
             '<td>' + groups + '</td>' +
+            '<td style="text-align:center;">' + applicable + '</td>' +
             '<td style="text-align:center;white-space:nowrap;">' +
                 '<button type="button" class="btn-edit-level"' +
                 ' onclick="OpenEditForm(' + item.Code + ')" title="Edit level">' +
@@ -179,6 +233,7 @@ function OpenAddForm() {
         try {
             $('#frmGroup').trigger('change');
         } catch (e) { }
+        setApplicableCheckbox('Y', true);
 
         document.getElementById('formTitle').textContent = 'Add New Level';
         HideInfoBar();
@@ -218,6 +273,11 @@ async function OpenEditForm(code) {
             const groupCode = matched ? String(matched.Code) : '';
             $('#frmGroup').val(groupCode).trigger('change');
         } catch (e) { }
+
+        setApplicableCheckbox(
+            pickIsLevelApplicable(item),
+            isAnchorLevelPosition(item.Level, item.Code)
+        );
 
         document.getElementById('formTitle').textContent =
             'Edit Level ' + item.Level + ' — ' + (item.LevelDesp || '');
@@ -282,7 +342,8 @@ async function SaveLevel() {
         Code: code,
         Level: level,
         LevelDesp: levelDesc,
-        GroupMaster_Code: groupCode
+        GroupMaster_Code: groupCode,
+        IsLevelApplicable: getIsLevelApplicableForSave(level, code)
     };
 
     Showloader();

@@ -1086,10 +1086,16 @@
                                 <button type="button" class="nav-link active" data-approval-tab="PO" role="tab">PO</button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button type="button" class="nav-link" data-approval-tab="Payment" role="tab">Payment</button>
+                                <button type="button" class="nav-link" data-approval-tab="GoodsPayment" role="tab">Goods Payment</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link" data-approval-tab="ServicesPayment" role="tab">Services Payment</button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button type="button" class="nav-link" data-approval-tab="Expense" role="tab">Expense</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link" data-approval-tab="GRN" role="tab">GRN</button>
                             </li>
                         </ul>
                         <div id="approvalLevelTabContent">
@@ -1111,20 +1117,38 @@
                                     </table>
                                 </div>
                             </div>
-                            <div class="pm-approval-tab-pane" id="approvalTabPanePayment" data-approval-tab="Payment">
-                                <div id="dvSingleLevelSelect_Payment" class="pm-fg pm-single-level-select" style="display:none;"></div>
-                                <div id="dvLevelsTableWrap_Payment" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
-                                    <table class="pm-levels-table" id="tblLevels_Payment">
+                            <div class="pm-approval-tab-pane" id="approvalTabPaneGoodsPayment" data-approval-tab="GoodsPayment">
+                                <div id="dvSingleLevelSelect_GoodsPayment" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_GoodsPayment" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_GoodsPayment">
                                         <thead>
                                             <tr>
                                                 <th style="width:44px; text-align:center;">#</th>
                                                 <th style="min-width:160px;">Level</th>
                                                 <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
-                                                <th class="col-level-user-right" style="min-width:220px;display:none;">Users to Verify Payment</th>
+                                                <th class="col-level-user-right" style="min-width:220px;">Users to Verify Goods Payment</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="tblLevelsBody_Payment">
-                                            <tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        <tbody id="tblLevelsBody_GoodsPayment">
+                                            <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="pm-approval-tab-pane" id="approvalTabPaneServicesPayment" data-approval-tab="ServicesPayment">
+                                <div id="dvSingleLevelSelect_ServicesPayment" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_ServicesPayment" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_ServicesPayment">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;">Users to Verify Services Payment</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_ServicesPayment">
+                                            <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -1138,11 +1162,29 @@
                                                 <th style="width:44px; text-align:center;">#</th>
                                                 <th style="min-width:160px;">Level</th>
                                                 <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
-                                                <th class="col-level-user-right" style="min-width:220px;display:none;">Users to Verify Expense</th>
+                                                <th class="col-level-user-right" style="min-width:220px;">Users to Verify Expense</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tblLevelsBody_Expense">
-                                            <tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                            <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="pm-approval-tab-pane" id="approvalTabPaneGRN" data-approval-tab="GRN">
+                                <div id="dvSingleLevelSelect_GRN" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_GRN" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_GRN">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;">Users to Verify GRN</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_GRN">
+                                            <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
