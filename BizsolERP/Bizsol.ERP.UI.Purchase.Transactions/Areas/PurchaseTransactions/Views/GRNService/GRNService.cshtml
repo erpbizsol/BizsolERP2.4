@@ -1801,29 +1801,31 @@
                 <i class="fa fa-paperclip me-1"></i>Use <strong>Attachment</strong> on the bar below to add files (same as Payment Entry).
             </p>
             <div class="row g-2 mt-1">
-
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Total Bill Amount</label>
                     <input type="number" id="txtTotalBillAmountManual" class="form-control form-control-sm po-input-amount-right" placeholder="Total Bill Amount" autocomplete="off" min="0" step="any"
                            onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
                 </div>
                 <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Dedution <span class="req">*</span></label>
+                    <label class="po-field-lbl d-block mb-1">Tds Amount</label>
+                    <input type="number" id="txtTDSAmount" class="form-control form-control-sm po-input-amount-right" placeholder="0.00" autocomplete="off" min="0" step="any"
+                           onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
+                </div>
+                <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">Other Dedution <span class="req">*</span></label>
                     <input type="number" id="txtDedution" class="form-control form-control-sm po-input-amount-right" placeholder="0.00" autocomplete="off" min="0" step="any"
                            onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
-
                 </div>
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Net Payable <span class="req">*</span></label>
                     <input type="text" id="txtNetPayable" class="form-control form-control-sm po-input-amount-right" placeholder="Net Payable" autocomplete="off" readonly>
-
                 </div>
             </div>
             <div class="row g-2 mt-1">
                 <div class="col-md-12">
-                    <label class="po-field-lbl d-block mb-1">Dedution Remark</label>
+                    <label class="po-field-lbl d-block mb-1">Other Dedution Remark</label>
                     <textarea id="txtDedutionRemark" class="form-control form-control-sm" rows="2"
-                              placeholder="Enter Dedution Remark..." maxlength="500"></textarea>
+                              placeholder="Enter Other Dedution Remark..." maxlength="500"></textarea>
                 </div>
             </div>
         </div>
