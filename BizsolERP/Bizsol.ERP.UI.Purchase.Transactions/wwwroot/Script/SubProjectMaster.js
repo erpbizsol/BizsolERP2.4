@@ -12,7 +12,7 @@ import { MRNMasterApprovalConfigService } from '../../Bizsol.WebERP.UI.Shared/js
 let G_SubProjectList    = [];
 let G_ProjectList       = [];
 let G_UserList          = [];
-let G_ApprovalLevelLists = { PO: [], Payment: [], Expense: [], GRN: [] };
+let G_ApprovalLevelLists = { PO: [], GoodsPayment: [], ServicesPayment: [], Expense: [], GRN: [] };
 let G_ApprovalLevelListsLoadPromise = null;
 /** Level details waiting to bind after approval level API lists finish loading. */
 let G_PendingApprovalLevelDetails = [];
@@ -21,34 +21,46 @@ let G_ActiveStatusFilter = 'all'; // 'all' | 'running' | 'pending'
 /** GRN Check codes to apply after modal is visible (Select2 multi in hidden modal often keeps only one if set earlier). */
 let G_SubProjectModalGRNPendingCodes = null;
 
-const APPROVAL_LEVEL_TAB_KEYS = ['PO', 'Payment', 'Expense', 'GRN'];
+const APPROVAL_LEVEL_TAB_KEYS = ['PO', 'GoodsPayment', 'ServicesPayment', 'Expense', 'GRN'];
 
 const APPROVAL_LEVEL_TAB_CONFIG = {
     PO: {
+        tabLabel      : 'PO',
         forValue      : 'PurchaseOrder',
         apiMode       : 'GETPOAPPROVELLEVELS',
         showUserRight : true,
         userColLabel  : 'Users to Verify PO',
         emptyLabel    : 'No PO approval levels configured.'
     },
-    Payment: {
-        forValue      : 'GRNPayment',
+    GoodsPayment: {
+        tabLabel      : 'Goods Payment',
+        forValue      : 'GoodsGRNPayment',
         apiMode       : 'GET_GRNPaymentAPPROVELLEVELS',
-        showUserRight : false,
-        userColLabel  : 'Users to Verify Payment',
-        emptyLabel    : 'No Payment approval levels configured.'
+        showUserRight : true,
+        userColLabel  : 'Users to Verify Goods Payment',
+        emptyLabel    : 'No Goods Payment approval levels configured.'
+    },
+    ServicesPayment: {
+        tabLabel      : 'Services Payment',
+        forValue      : 'ServicesGRNPayment',
+        apiMode       : 'GET_GRNPaymentAPPROVELLEVELS',
+        showUserRight : true,
+        userColLabel  : 'Users to Verify Services Payment',
+        emptyLabel    : 'No Services Payment approval levels configured.'
     },
     Expense: {
+        tabLabel      : 'Expense',
         forValue      : 'ExpenseEntry',
         apiMode       : 'GET_ExpenseEntryAPPROVELLEVELS',
-        showUserRight : false,
+        showUserRight : true,
         userColLabel  : 'Users to Verify Expense',
         emptyLabel    : 'No Expense approval levels configured.'
     },
     GRN: {
+        tabLabel      : 'GRN',
         forValue      : 'MRNEntry',
         apiMode       : 'GET_MRNMasterAPPROVELLEVELS',
-        showUserRight : false,
+        showUserRight : true,
         userColLabel  : 'Users to Verify GRN',
         emptyLabel    : 'No GRN approval levels configured.'
     }
@@ -504,7 +516,7 @@ window.SaveSiteRepresentativeSPM = function () {
     });
 };
 
-/* ── Load approval levels list (PO / Payment / Expense / GRN) ─── */
+/* ── Load approval levels list (PO / Goods Payment / Services Payment / Expense / GRN) ─── */
 function unwrapApprovalLevelList(raw) {
     if (!raw) return [];
     if (Array.isArray(raw)) {
@@ -532,7 +544,7 @@ function loadApprovalLevelListForTab(tabKey) {
             return SubProjectMasterService.GetLevelList()
                 .then(function (legacy) { assignList(unwrapApprovalLevelList(legacy)); });
         }
-        if (tabKey === 'Payment') {
+        if (tabKey === 'GoodsPayment' || tabKey === 'ServicesPayment') {
             return API_ENDPOINT_GRNPaymentApprovalConfig.GetLevelList()
                 .then(function (legacy) { assignList(unwrapApprovalLevelList(legacy)); });
         }
@@ -604,7 +616,7 @@ function pickLevelConfigCode(level, tabKey) {
             level.PurchaseOrderApprovalConfiguration_Code,
             level.POApprovalConfiguration_Code
         );
-    } else if (tabKey === 'Payment') {
+    } else if (tabKey === 'GoodsPayment' || tabKey === 'ServicesPayment') {
         candidates.push(
             level.GRNPaymentApprovalConfiguration_Code,
             level.GRNPaymentLevel_Code,
@@ -654,8 +666,11 @@ function pickDetailConfigCode(detail, tabKey) {
 function inferForFromDetail(detail) {
     if (!detail) return 'PurchaseOrder';
     const f = String(detail.For || detail.for || '').trim();
-    if (f) return f;
-    if (parseInt(detail.GRNPaymentApprovalConfiguration_Code, 10) > 0) return 'GRNPayment';
+    if (f) {
+        if (f === 'GRNPayment') return 'GoodsGRNPayment';
+        return f;
+    }
+    if (parseInt(detail.GRNPaymentApprovalConfiguration_Code, 10) > 0) return 'GoodsGRNPayment';
     if (parseInt(detail.ExpenseEntryApprovalConfiguration_Code, 10) > 0) return 'ExpenseEntry';
     if (parseInt(detail.MRNMasterApprovalConfiguration_Code, 10) > 0) return 'MRNEntry';
     return 'PurchaseOrder';
@@ -672,7 +687,7 @@ function normalizeLoadedLevelDetail(detail, defaultFor) {
     let poCode = parseInt(d.PurchaseOrderApprovalConfiguration_Code, 10);
     if (isNaN(poCode) || poCode <= 0) {
         let src = 0;
-        if (d.For === 'GRNPayment') {
+        if (d.For === 'GRNPayment' || d.For === 'GoodsGRNPayment' || d.For === 'ServicesGRNPayment') {
             src = parseInt(d.GRNPaymentApprovalConfiguration_Code, 10);
         } else if (d.For === 'ExpenseEntry') {
             src = parseInt(d.ExpenseEntryApprovalConfiguration_Code, 10);
@@ -694,23 +709,26 @@ function appendNormalizedLevelDetails(target, arr, defaultFor) {
     });
 }
 
-/** GetSubProjectByCode array shape: [0]=master, [1]=PO levels, [2]=GRN users, [3]=Payment, [4]=Expense, [5]=MRN/GRN approval */
+/** GetSubProjectByCode array shape: [0]=master, [1]=PO, [2]=GRN users, [3]=Goods Payment, [4]=Services Payment, [5]=Expense, [6]=MRN/GRN approval */
 function mergeLevelDetailsFromArrayResponse(response) {
     const merged = [];
     if (!Array.isArray(response)) return merged;
     appendNormalizedLevelDetails(merged, response[1], 'PurchaseOrder');
-    appendNormalizedLevelDetails(merged, response[3], 'GRNPayment');
-    appendNormalizedLevelDetails(merged, response[4], 'ExpenseEntry');
-    appendNormalizedLevelDetails(merged, response[5], 'MRNEntry');
+    appendNormalizedLevelDetails(merged, response[3], 'GoodsGRNPayment');
+    appendNormalizedLevelDetails(merged, response[4], 'ServicesGRNPayment');
+    appendNormalizedLevelDetails(merged, response[5], 'ExpenseEntry');
+    appendNormalizedLevelDetails(merged, response[6], 'MRNEntry');
     return merged;
 }
 
 function splitLevelDetailsByFor(allDetails) {
-    const result = { PO: [], Payment: [], Expense: [], GRN: [] };
+    const result = { PO: [], GoodsPayment: [], ServicesPayment: [], Expense: [], GRN: [] };
     (allDetails || []).forEach(function (d) {
         const forVal = inferForFromDetail(d);
-        if (forVal === 'GRNPayment') {
-            result.Payment.push(d);
+        if (forVal === 'GoodsGRNPayment' || forVal === 'GRNPayment') {
+            result.GoodsPayment.push(d);
+        } else if (forVal === 'ServicesGRNPayment') {
+            result.ServicesPayment.push(d);
         } else if (forVal === 'ExpenseEntry') {
             result.Expense.push(d);
         } else if (forVal === 'MRNEntry') {
@@ -744,15 +762,19 @@ function mergeLevelDetailsFromResponse(response, row) {
 
     appendNormalizedLevelDetails(merged, response && response.PurchaseOrderLevelsApprovalProjectUserDetails, 'PurchaseOrder');
     appendNormalizedLevelDetails(merged, row && row.PurchaseOrderLevelsApprovalProjectUserDetails, 'PurchaseOrder');
-    appendNormalizedLevelDetails(merged, response && response.GRNPaymentLevelsApprovalProjectUserDetails, 'GRNPayment');
-    appendNormalizedLevelDetails(merged, response && response.GRNPaymentLevelsApprovalProjectUserDetails, 'GRNPayment');
+    appendNormalizedLevelDetails(merged, response && response.GoodsGRNPaymentLevelsApprovalProjectUserDetails, 'GoodsGRNPayment');
+    appendNormalizedLevelDetails(merged, row && row.GoodsGRNPaymentLevelsApprovalProjectUserDetails, 'GoodsGRNPayment');
+    appendNormalizedLevelDetails(merged, response && response.ServicesGRNPaymentLevelsApprovalProjectUserDetails, 'ServicesGRNPayment');
+    appendNormalizedLevelDetails(merged, row && row.ServicesGRNPaymentLevelsApprovalProjectUserDetails, 'ServicesGRNPayment');
+    appendNormalizedLevelDetails(merged, response && response.GRNPaymentLevelsApprovalProjectUserDetails, 'GoodsGRNPayment');
+    appendNormalizedLevelDetails(merged, row && row.GRNPaymentLevelsApprovalProjectUserDetails, 'GoodsGRNPayment');
     appendNormalizedLevelDetails(merged, response && response.ExpenseEntryLevelsApprovalProjectUserDetails, 'ExpenseEntry');
     appendNormalizedLevelDetails(merged, row && row.ExpenseEntryLevelsApprovalProjectUserDetails, 'ExpenseEntry');
     appendNormalizedLevelDetails(merged, response && response.MRNEntryLevelsApprovalProjectUserDetails, 'MRNEntry');
     appendNormalizedLevelDetails(merged, row && row.MRNEntryLevelsApprovalProjectUserDetails, 'MRNEntry');
     appendNormalizedLevelDetails(merged, response && response.MRNMasterLevelsApprovalProjectUserDetails, 'MRNEntry');
     appendNormalizedLevelDetails(merged, row && row.MRNMasterLevelsApprovalProjectUserDetails, 'MRNEntry');
-    appendNormalizedLevelDetails(merged, response && response.PaymentLevelsApprovalProjectUserDetails, 'GRNPayment');
+    appendNormalizedLevelDetails(merged, response && response.PaymentLevelsApprovalProjectUserDetails, 'GoodsGRNPayment');
     appendNormalizedLevelDetails(merged, response && response.ExpenseLevelsApprovalProjectUserDetails, 'ExpenseEntry');
 
     if (Array.isArray(response)) {
@@ -774,11 +796,13 @@ function tabDomIds(tabKey) {
     };
 }
 
-/** Show/hide Users column header per tab (Payment, Expense & GRN: hidden). */
+/** Show/hide Users column header per tab. */
 function syncApprovalTabUserColumnVisibility(tabKey) {
     const cfg = APPROVAL_LEVEL_TAB_CONFIG[tabKey];
     const show = !!(cfg && cfg.showUserRight);
     $(tabDomIds(tabKey).table + ' thead .col-level-user-right').toggle(show);
+    const $th = $(tabDomIds(tabKey).table + ' thead .col-level-user-right');
+    if (cfg && cfg.userColLabel) $th.text(cfg.userColLabel);
 }
 
 /* ── PO level applicable / ApprovalType (P = project assignment, U = user — locked) ─ */
@@ -1098,7 +1122,7 @@ function OpenNew_SubProjectMaster() {
 }
 
 /* ── Parse GetSubProjectByCode response ──────────────────── */
-/*  Array shape: [0]=master, [1]=PO levels, [2]=GRN users, [3]=Payment levels, [4]=Expense levels, [5]=MRN/GRN approval levels
+/*  Array shape: [0]=master, [1]=PO levels, [2]=GRN users, [3]=Goods Payment, [4]=Services Payment, [5]=Expense, [6]=MRN/GRN approval
     Object shape: polevelDetails[] or separate *LevelsApprovalProjectUserDetails arrays              */
 function parseSubProjectByCodeResponse(response) {
     var row          = null;
@@ -1240,7 +1264,7 @@ function buildApprovalLevelsViewHtml(allDetails) {
         const cfg = APPROVAL_LEVEL_TAB_CONFIG[tabKey];
         const showUsers = cfg.showUserRight;
         let tbl = '<div style="margin-bottom:10px;"><div style="font-weight:700;color:#4338ca;font-size:12px;margin-bottom:4px;">' +
-            escHtml(tabKey) + '</div>';
+            escHtml((cfg && cfg.tabLabel) || tabKey) + '</div>';
         tbl += '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
         tbl += '<thead><tr>' +
             '<th style="padding:5px 10px;background:#f1f5f9;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Level</th>' +
