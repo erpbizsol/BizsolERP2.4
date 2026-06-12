@@ -942,7 +942,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Allow only positive numbers with decimals in amount fields
-    ['txtTotalBillAmountManual', 'txtDedution'].forEach(id => {
+    ['txtTotalBillAmountManual', 'txtTDSAmount', 'txtDedution'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('keypress', e => {
@@ -2325,9 +2325,10 @@ function calcTotal() {
 
 function calcNetPayable() {
     const total   = parseFloat(document.getElementById('txtTotalBillAmountManual')?.value) || 0;
+    const tds     = parseFloat(document.getElementById('txtTDSAmount')?.value) || 0;
     const deduct  = parseFloat(document.getElementById('txtDedution')?.value) || 0;
     const netEl   = document.getElementById('txtNetPayable');
-    if (netEl) netEl.value = Math.max(0, total - deduct).toFixed(2);
+    if (netEl) netEl.value = Math.max(0, total - tds - deduct).toFixed(2);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2538,6 +2539,7 @@ async function editGRN(code) {
                     return isNaN(n) ? '0.00' : n.toFixed(2);
                 };
                 set('txtTotalBillAmountManual', amtStr(master.TotalBillAmountManual));
+                set('txtTDSAmount', amtStr(master.TDSAmount ?? master.tdsAmount));
                 set('txtDedution', amtStr(master.Dedution));
                 set('txtDedutionRemark', master.DedutionRemark ?? master.dedutionRemark ?? master.DeductionRemark ?? '');
                 calcNetPayable();
@@ -2944,6 +2946,7 @@ function saveGRN() {
                 AttachFileName: '',
                 AttachData: [],
                 TotalBillAmountManual: parseFloat(document.getElementById('txtTotalBillAmountManual')?.value) || 0,
+                TDSAmount: parseFloat(document.getElementById('txtTDSAmount')?.value) || 0,
                 Dedution: parseFloat(document.getElementById('txtDedution')?.value) || 0,
                 DedutionRemark: document.getElementById('txtDedutionRemark')?.value || '',
                 NetPayable: parseFloat(document.getElementById('txtNetPayable')?.value) || 0,
@@ -3043,6 +3046,8 @@ function resetForm() {
     if (hint) hint.style.display = 'none';
     showGridProjectHint();
     setAddItemBtnState(false);
+    const tdsEl = document.getElementById('txtTDSAmount');
+    if (tdsEl) tdsEl.value = '0.00';
     const dedEl = document.getElementById('txtDedution');
     if (dedEl) dedEl.value = '0.00';
     calcTotal();
