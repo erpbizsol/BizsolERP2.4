@@ -4787,7 +4787,6 @@ function SelectStockRows() {
             var ItemMaster_Code = recordRow.cells[Indx_Stock.ItemMaster_Code].innerText;
             var ItemName = recordRow.cells[Indx_Stock.ItemName].innerText;
 
-
             if (ShowSizeButton == true) {
                 var SIZE = recordRow.cells[Indx_Stock.Size].innerText;
                 var THICKNESS = "";
@@ -4796,9 +4795,10 @@ function SelectStockRows() {
                 var PendingCRMOrder = recordRow.cells[Indx_Stock.PendingCRMOrder - 1].innerText;
                 var RollingForcast = recordRow.cells[Indx_Stock.RollingForcast - 1].innerText;
                 var MinimumQty = recordRow.cells[Indx_Stock.MinimumQty - 1].innerText;
-                var BalanceQty = recordRow.cells[Indx_Stock.BalQty - 1].innerText;
-                var currentCell = recordRow.cells[Indx_Stock.Qty - 1];
-                var Qty = currentCell.querySelector("input").value;
+                var balQtyCell = recordRow.cells[Indx_Stock.BalQty - 1];
+                var BalanceQty = balQtyCell ? (balQtyCell.querySelector('label') ? balQtyCell.querySelector('label').innerText : balQtyCell.innerText) : 0;
+                var qtyCell = recordRow.querySelector('input[name="txtStockQty"]');
+                var Qty = qtyCell ? qtyCell.value : 0;
 
             } else {
                 var SIZE = recordRow.cells[Indx_Stock.Size].innerText;
@@ -4808,9 +4808,10 @@ function SelectStockRows() {
                 var PendingCRMOrder = recordRow.cells[Indx_Stock.PendingCRMOrder].innerText;
                 var RollingForcast = recordRow.cells[Indx_Stock.RollingForcast].innerText;
                 var MinimumQty = recordRow.cells[Indx_Stock.MinimumQty].innerText;
-                var BalanceQty = recordRow.cells[Indx_Stock.BalQty].innerText;
-                var currentCell = recordRow.cells[Indx_Stock.Qty];
-                var Qty = currentCell.querySelector("input").value;
+                var balQtyCell = recordRow.cells[Indx_Stock.BalQty];
+                var BalanceQty = balQtyCell ? (balQtyCell.querySelector('label') ? balQtyCell.querySelector('label').innerText : balQtyCell.innerText) : 0;
+                var qtyCell = recordRow.querySelector('input[name="txtStockQty"]');
+                var Qty = qtyCell ? qtyCell.value : 0;
             }
 
 
