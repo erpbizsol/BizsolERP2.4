@@ -3,7 +3,10 @@
 }
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+<link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/FilterSidePanelControl/FilterSidePanelControl.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ProjectDetailDashboard.js"></script>
 
 
@@ -74,6 +77,30 @@
         margin-top: 2px;
         font-weight: 500;
     }
+    .pdd-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    .pdd-header-reset {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.35);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 5px 14px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .pdd-header-reset:hover {
+        background: rgba(255,255,255,0.25);
+    }
     .pdd-header-badge {
         background: rgba(255,255,255,0.15);
         border: 1px solid rgba(255,255,255,0.3);
@@ -84,6 +111,220 @@
         border-radius: 20px;
         backdrop-filter: blur(10px);
         letter-spacing: 0.04em;
+        white-space: nowrap;
+    }
+
+    /* Filter button — integrated in header (works on desktop & mobile) */
+    .pdd-filter-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 2px solid rgba(255,255,255,0.45);
+        background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        flex-shrink: 0;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .pdd-filter-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.28);
+    }
+    .pdd-filter-btn i {
+        font-size: 1rem;
+    }
+    .pdd-filter-btn-text {
+        display: none;
+    }
+
+    /* ── MOBILE RESPONSIVE ───────────────────────────────────────── */
+    @@media (max-width: 768px) {
+        .pdd-wrap {
+            padding: 2px;
+            min-height: auto;
+            overflow-x: hidden;
+            padding-bottom: 20px;
+        }
+        .pdd-page-header {
+            padding: 14px 14px 12px;
+            margin-bottom: 14px;
+            border-radius: 14px;
+            overflow: visible;
+        }
+        .pdd-header-content {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+        .pdd-header-left {
+            flex: 1;
+            min-width: 0;
+        }
+        .pdd-header-left > div:last-child {
+            min-width: 0;
+            flex: 1;
+        }
+        .pdd-header-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+        .pdd-header-title {
+            font-size: 1.05rem;
+            line-height: 1.25;
+        }
+        .pdd-header-subtitle {
+            font-size: 0.68rem;
+            line-height: 1.35;
+        }
+        .pdd-header-actions {
+            justify-content: flex-end;
+            flex-wrap: nowrap;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .pdd-header-reset {
+            padding: 7px 12px;
+            font-size: 0.68rem;
+        }
+        .pdd-header-badge {
+            padding: 7px 12px;
+            font-size: 0.68rem;
+        }
+        .pdd-filter-btn {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+        }
+        .pdd-filter-btn i {
+            font-size: 0.95rem;
+        }
+        .pdd-chart-area {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        .pdd-chart-area-donut {
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pdd-chart-area-bar {
+            height: 210px;
+        }
+        .pdd-chart-area-pie {
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pdd-chart-area-line {
+            height: 110px;
+        }
+        .pdd-chart-area-exp {
+            height: 135px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pdd-bva-stats-row {
+            grid-template-columns: 1fr;
+            gap: 0;
+            padding: 10px 12px;
+        }
+        .pdd-bva-divider {
+            display: none;
+        }
+        .pdd-bva-stat {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: left;
+            padding: 8px 4px;
+            border-bottom: 1px solid #e0e7ff;
+        }
+        .pdd-bva-stat:last-child {
+            border-bottom: none;
+        }
+        .bva-val {
+            font-size: 1rem;
+        }
+        .pdd-chart-header {
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .pdd-chart-title {
+            font-size: 0.82rem;
+        }
+        .pdd-legend-row {
+            font-size: 0.78rem;
+        }
+        .pdd-exp-total-box {
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .pdd-exp-total-val {
+            font-size: 0.95rem;
+        }
+        .pdd-kpi-grid {
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .pdd-kpi-card {
+            padding: 16px 16px 14px;
+            border-radius: 14px;
+        }
+        .pdd-kpi-icon {
+            width: 44px;
+            height: 44px;
+            font-size: 1.15rem;
+            border-radius: 12px;
+        }
+        .pdd-kpi-value {
+            font-size: 1.45rem;
+        }
+        .pdd-kpi-label {
+            font-size: 0.7rem;
+        }
+        .pdd-chart-card {
+            padding: 14px 14px 12px;
+            border-radius: 14px;
+        }
+        .pdd-chart-row,
+        .pdd-chart-row-3 {
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .pdd-header-reset span.pdd-reset-text {
+            display: none;
+        }
+        .pdd-header-badge span.pdd-live-text {
+            display: none;
+        }
+        .pdd-header-reset {
+            padding: 8px 10px;
+        }
+        .pdd-header-badge {
+            padding: 8px 10px;
+        }
+        .pdd-kpi-value {
+            font-size: 1.3rem;
+        }
+        .pdd-kpi-badge {
+            font-size: 0.62rem;
+        }
     }
 
     /* ── FILTER BAR ─────────────────────────────────────────────── */
@@ -486,6 +727,34 @@
     }
     .pdd-exp-total-label { font-size: 0.68rem; font-weight: 700; color: #8b5cf6; text-transform: uppercase; letter-spacing: 0.06em; }
     .pdd-exp-total-val { font-size: 1.1rem; font-weight: 900; color: #1e293b; }
+
+    /* Chart canvas containers */
+    .pdd-chart-area {
+        position: relative;
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+    }
+    .pdd-chart-area-donut { height: 190px; display: flex; align-items: center; justify-content: center; }
+    .pdd-chart-area-bar   { height: 270px; }
+    .pdd-chart-area-pie   { height: 165px; display: flex; align-items: center; justify-content: center; }
+    .pdd-chart-area-line  { height: 120px; }
+    .pdd-chart-area-exp   { height: 148px; display: flex; align-items: center; justify-content: center; }
+    .pdd-pie-center-val {
+        font-size: 1.6rem;
+        font-weight: 900;
+        background: linear-gradient(135deg,#6366f1,#8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .pdd-pie-center-lbl {
+        font-size: 0.62rem;
+        color: #94a3b8;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
 </style>
 
 <!-- Loading overlay -->
@@ -512,47 +781,22 @@
                             <div class="pdd-header-subtitle">Real-time project analytics &amp; financial insights</div>
                         </div>
                     </div>
-                    <div class="pdd-header-badge">
-                        <i class="fa-solid fa-circle-dot fa-fade" style="color:#86efac;"></i> &nbsp;Live Data
+                    <div class="pdd-header-actions">
+                        <button type="button" class="pdd-filter-btn" id="btnPddFilter" onclick="OpenPddFilterPanel()" title="Filters" aria-label="Open Filters">
+                            <i class="fa-solid fa-filter"></i>
+                        </button>
+                        <button type="button" class="pdd-header-reset" id="btnPddReset" onclick="ResetDashboard()" title="Reset Filters">
+                            <i class="fa-solid fa-rotate-left"></i> <span class="pdd-reset-text">Reset</span>
+                        </button>
+                        <div class="pdd-header-badge">
+                            <i class="fa-solid fa-circle-dot fa-fade" style="color:#86efac;"></i><span class="pdd-live-text">&nbsp;Live Data</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ── FILTER BAR ──────────────────────────────────────── -->
-            <div class="pdd-filter-bar">
-                <div class="row g-3 align-items-end">
-                    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
-                        <label class="form-label" for="ddlProject"><i class="fa-solid fa-folder-open me-1"></i>Project</label>
-                        <select id="ddlProject" class="form-select form-select-sm">
-                            <option value="0">-- All Projects --</option>
-                        </select>
-                    </div>
-                    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
-                        <label class="form-label" for="ddlSubProject"><i class="fa-solid fa-diagram-project me-1"></i>Sub Project</label>
-                        <select id="ddlSubProject" class="form-select form-select-sm" disabled>
-                            <option value="0">-- All Sub Projects --</option>
-                        </select>
-                    </div>
-                    <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6">
-                        <label class="form-label" for="pddFromDate"><i class="fa-solid fa-calendar-days me-1"></i>From Date</label>
-                        <input type="date" id="pddFromDate" class="form-control form-control-sm" />
-                    </div>
-                    <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6">
-                        <label class="form-label" for="pddToDate"><i class="fa-solid fa-calendar-check me-1"></i>To Date</label>
-                        <input type="date" id="pddToDate" class="form-control form-control-sm" />
-                    </div>
-                    <div class="col-xl-1 col-lg-1 col-md-2 col-sm-6">
-                        <button class="pdd-btn-show" id="btnPddShow" onclick="LoadDashboard()">
-                            <i class="fa-solid fa-magnifying-glass me-1"></i>Show
-                        </button>
-                    </div>
-                    <div class="col-xl-1 col-lg-1 col-md-2 col-sm-6">
-                        <button class="pdd-btn-reset" id="btnPddReset" onclick="ResetDashboard()">
-                            <i class="fa-solid fa-rotate-left me-1"></i>Reset
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <!-- Filter Side Panel -->
+            <filter-side-panel-control id="pddFilterPanel" show-button="false"></filter-side-panel-control>
 
             <!-- ── KPI CARDS ────────────────────────────────────────── -->
             <div class="pdd-kpi-grid" id="pddKpiGrid">
@@ -608,7 +852,7 @@
                             <div class="pdd-chart-title">PO Status <span>This Period</span></div>
                         </div>
                     </div>
-                    <div style="position:relative;height:190px;display:flex;align-items:center;justify-content:center;">
+                    <div class="pdd-chart-area pdd-chart-area-donut">
                         <canvas id="chartPOStatus"></canvas>
                     </div>
                     <div class="pdd-legend" id="legendPOStatus">
@@ -641,7 +885,7 @@
                         </div>
                         <span class="pdd-chart-action" id="trendYear">—</span>
                     </div>
-                    <div style="position:relative;height:270px;">
+                    <div class="pdd-chart-area pdd-chart-area-bar">
                         <canvas id="chartPaymentTrend"></canvas>
                     </div>
                 </div>
@@ -658,11 +902,11 @@
                         </div>
                         <a class="pdd-chart-action">View All</a>
                     </div>
-                    <div style="position:relative;height:165px;display:flex;align-items:center;justify-content:center;">
+                    <div class="pdd-chart-area pdd-chart-area-pie">
                         <canvas id="chartProjectSummary"></canvas>
                         <div style="position:absolute;text-align:center;pointer-events:none;">
-                            <div style="font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;" id="projSummaryTotal">—</div>
-                            <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Total<br>Projects</div>
+                            <div class="pdd-pie-center-val" id="projSummaryTotal">—</div>
+                            <div class="pdd-pie-center-lbl">Total<br>Projects</div>
                         </div>
                     </div>
                     <div class="pdd-legend" id="legendProjectSummary">
@@ -720,7 +964,7 @@
                     </div>
                     <div style="margin-top:8px;">
                         <div class="pdd-section-label">Monthly Spend Breakdown</div>
-                        <div style="position:relative;height:120px;">
+                        <div class="pdd-chart-area pdd-chart-area-line">
                             <canvas id="chartBudgetLine"></canvas>
                         </div>
                     </div>
@@ -735,7 +979,7 @@
                         </div>
                         <a class="pdd-chart-action">View All</a>
                     </div>
-                    <div style="position:relative;height:148px;display:flex;align-items:center;justify-content:center;">
+                    <div class="pdd-chart-area pdd-chart-area-exp">
                         <canvas id="chartExpenseSummary"></canvas>
                     </div>
                     <div class="pdd-exp-total-box">
