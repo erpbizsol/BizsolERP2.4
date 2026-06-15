@@ -832,17 +832,22 @@ function GetFilteredItemList() {
     const projectCode    = parseInt($('#frmDdlProject').val())    || 0;
     const subProjectCode = parseInt($('#frmDdlSubProject').val()) || 0;
 
-    if (subProjectCode && workTypeCode) {
-        return G_ItemMasterList.filter(i =>
-            i.ProjectMaster_Code    == projectCode &&
-            i.SubProjectMaster_Code == subProjectCode &&
-            i.WorkTypeMaster_Code   == workTypeCode
-        );
-    }
-    if (workTypeCode) {
-        return G_ItemMasterList.filter(i => i.WorkTypeMaster_Code == workTypeCode);
-    }
-    return G_ItemMasterList;
+    return G_ItemMasterList.filter(i =>
+        (!projectCode    || i.ProjectMaster_Code    == projectCode) &&
+        (!subProjectCode || i.SubProjectMaster_Code == subProjectCode) &&
+        (!workTypeCode   || i.WorkTypeMaster_Code   == workTypeCode)
+    );
+}
+
+function GetFilteredItemListByParams(projectCode, subProjectCode, workTypeCode) {
+    const pCode  = parseInt(projectCode)    || 0;
+    const spCode = parseInt(subProjectCode) || 0;
+    const wtCode = parseInt(workTypeCode)   || 0;
+    return G_ItemMasterList.filter(i =>
+        (!pCode  || i.ProjectMaster_Code    == pCode) &&
+        (!spCode || i.SubProjectMaster_Code == spCode) &&
+        (!wtCode || i.WorkTypeMaster_Code   == wtCode)
+    );
 }
 
 function RefreshAllItemDropdowns() {
@@ -861,10 +866,10 @@ function RefreshAllItemDropdowns() {
 
 // ─── ITEM SELECT HTML ────────────────────────────────────────────────────────
 
-function BuildItemSelect(rowId, selectedCode) {
+function BuildItemSelect(rowId, selectedCode, filteredList) {
     let html = `<select id="frmDdlItem_${rowId}" class="form-control form-control-sm" onchange="OnItemChange(${rowId})">
         <option value="">-- Select Item --</option>`;
-    GetFilteredItemList().forEach(i => {
+    (filteredList || GetFilteredItemList()).forEach(i => {
         const sel = selectedCode && i.Code == selectedCode ? 'selected' : '';
         html += `<option value="${i.Code}" ${sel}>${i.Name}</option>`;
     });
@@ -1330,6 +1335,9 @@ window.AddItemRow = function (silent) {
             <input type="hidden" id="frmHfQtyTolerance_${rowId}" value="0" />
             <input type="hidden" id="frmHfBaseRate_${rowId}" value="0" />
             <input type="hidden" id="frmHfRateTolerance_${rowId}" value="0" />
+            <input type="hidden" id="frmHfTolOnQty_${rowId}" value="N" />
+            <input type="hidden" id="frmHfTolOnRate_${rowId}" value="N" />
+            <input type="hidden" id="frmHfTolOnAmount_${rowId}" value="N" />
             <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
         </td>
     </tr>`;
@@ -1354,18 +1362,22 @@ function RenumberRows() {
     });
 }
 
-// ─── TOLERANCE HELPERS (temporarily disabled — desktop CalcRowValue/SavePO + mobile modal) ─
+// ─── TOLERANCE HELPERS ───────────────────────────────────────────────────────
 
-/* TOLERANCE DISABLED
 function GetRowToleranceInfo(rowId) {
-    const baseQty  = parseFloat($(`#frmHfBaseQty_${rowId}`).val())       || 0;
-    const qtyTol   = parseFloat($(`#frmHfQtyTolerance_${rowId}`).val())  || 0;
-    const baseRate = parseFloat($(`#frmHfBaseRate_${rowId}`).val())      || 0;
-    const rateTol  = parseFloat($(`#frmHfRateTolerance_${rowId}`).val()) || 0;
-    // When baseQty > 0 and tolerance is 0, cap equals baseQty (no excess allowed)
-    const maxQty   = baseQty  > 0 ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
-    const maxRate  = baseRate > 0 ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
-    return { baseQty, qtyTol, baseRate, rateTol, maxQty, maxRate };
+    const baseQty     = parseFloat($(`#frmHfBaseQty_${rowId}`).val())       || 0;
+    const qtyTol      = parseFloat($(`#frmHfQtyTolerance_${rowId}`).val())  || 0;
+    const baseRate    = parseFloat($(`#frmHfBaseRate_${rowId}`).val())      || 0;
+    const rateTol     = parseFloat($(`#frmHfRateTolerance_${rowId}`).val()) || 0;
+    const tolOnQty    = $(`#frmHfTolOnQty_${rowId}`).val()    || 'N';
+    const tolOnRate   = $(`#frmHfTolOnRate_${rowId}`).val()   || 'N';
+    const tolOnAmount = $(`#frmHfTolOnAmount_${rowId}`).val() || 'N';
+    const maxQty      = baseQty  > 0 ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
+    const maxRate     = baseRate > 0 ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
+    const maxAmount   = (baseQty > 0 && baseRate > 0)
+        ? parseFloat((baseQty * (1 + qtyTol / 100) * baseRate * (1 + rateTol / 100)).toFixed(2))
+        : 0;
+    return { baseQty, qtyTol, baseRate, rateTol, maxQty, maxRate, maxAmount, tolOnQty, tolOnRate, tolOnAmount };
 }
 
 function ApplyToleranceToRow(rowId, item) {
@@ -1375,44 +1387,49 @@ function ApplyToleranceToRow(rowId, item) {
         $(`#frmHfQtyTolerance_${rowId}`).val(0);
         $(`#frmHfBaseRate_${rowId}`).val(0);
         $(`#frmHfRateTolerance_${rowId}`).val(0);
+        $(`#frmHfTolOnQty_${rowId}`).val('N');
+        $(`#frmHfTolOnRate_${rowId}`).val('N');
+        $(`#frmHfTolOnAmount_${rowId}`).val('N');
         $(`#frmTxtQty_${rowId}`).removeAttr('title');
         $(`#frmTxtRate_${rowId}`).removeAttr('title');
         return;
     }
-    const baseQty  = item ? (parseFloat(item.QtyRequired  || item.Qty          || 0)) : 0;
-    const qtyTol   = item ? (parseFloat(item.QtyTolerance || item.Tolerance     || 0)) : 0;
-    const baseRate = item ? (parseFloat(item.Rate         || item.EstimatedRate || 0)) : 0;
-    const rateTol  = item ? (parseFloat(item.RateTolerance                      || 0)) : 0;
+    const baseQty     = item ? (parseFloat(item.QtyRequired  || item.Qty          || 0)) : 0;
+    const qtyTol      = item ? (parseFloat(item.QtyTolerance || item.Tolerance     || 0)) : 0;
+    const baseRate    = item ? (parseFloat(item.Rate         || item.EstimatedRate || 0)) : 0;
+    const rateTol     = item ? (parseFloat(item.RateTolerance                      || 0)) : 0;
+    const tolOnQty    = item ? (item.ToleranceApplicableOnPOQty    || 'N') : 'N';
+    const tolOnRate   = item ? (item.ToleranceApplicableOnPORate   || 'N') : 'N';
+    const tolOnAmount = item ? (item.ToleranceApplicableOnPOAmount || 'N') : 'N';
 
     $(`#frmHfBaseQty_${rowId}`).val(baseQty);
     $(`#frmHfQtyTolerance_${rowId}`).val(qtyTol);
     $(`#frmHfBaseRate_${rowId}`).val(baseRate);
     $(`#frmHfRateTolerance_${rowId}`).val(rateTol);
+    $(`#frmHfTolOnQty_${rowId}`).val(tolOnQty);
+    $(`#frmHfTolOnRate_${rowId}`).val(tolOnRate);
+    $(`#frmHfTolOnAmount_${rowId}`).val(tolOnAmount);
 
-    // When base value > 0 and tolerance is 0, cap equals base value (no excess allowed)
     const maxQty  = baseQty  > 0 ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
     const maxRate = baseRate > 0 ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
 
-    if (maxQty  > 0) {
+    if (tolOnQty === 'Y' && maxQty > 0) {
         const qtyTitle = qtyTol > 0 ? 'Max Qty (' + qtyTol + '% tolerance): ' + maxQty : 'Max Qty (no tolerance): ' + maxQty;
         $(`#frmTxtQty_${rowId}`).attr('title', qtyTitle);
     } else {
         $(`#frmTxtQty_${rowId}`).removeAttr('title');
     }
-    if (maxRate > 0) {
+    if (tolOnRate === 'Y' && maxRate > 0) {
         const rateTitle = rateTol > 0 ? 'Max Rate (' + rateTol + '% tolerance): ' + maxRate : 'Max Rate (no tolerance): ' + maxRate;
         $(`#frmTxtRate_${rowId}`).attr('title', rateTitle);
     } else {
         $(`#frmTxtRate_${rowId}`).removeAttr('title');
     }
 }
-TOLERANCE DISABLED */
 
 window.OnItemChange = function (rowId) {
     const selectedCode = $(`#frmDdlItem_${rowId}`).val();
-    const againstProject = $('#frmChkAgainstProject').is(':checked');
-    const itemList = againstProject ? G_ItemMasterList : G_ItemWithoutProjectList;
-    const item = itemList.find(i => String(i.Code) === String(selectedCode));
+    const item = GetFilteredItemList().find(i => String(i.Code) === String(selectedCode));
     if (item && item.UOM_Code) {
         $(`#frmDdlUOM_${rowId}`).val(item.UOM_Code);
     }
@@ -1420,7 +1437,7 @@ window.OnItemChange = function (rowId) {
         $(`#frmTxtGSTRate_${rowId}`).val(item.GSTRate || 0);
     }
     $(`#frmTxtSpecification_${rowId}`).val(item ? (item.ItemSpecificationDesp || '') : '');
-    // ApplyToleranceToRow(rowId, item || null); // TOLERANCE DISABLED
+    ApplyToleranceToRow(rowId, item || null);
     CalcRowValue(rowId);
 };
 
@@ -1428,10 +1445,10 @@ window.CalcRowValue = function (rowId) {
     let qty  = parseFloat($(`#frmTxtQty_${rowId}`).val())  || 0;
     let rate = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
 
-    /* TOLERANCE DISABLED
+    const againstProject = $('#frmChkAgainstProject').is(':checked');
     if (againstProject) {
         const tol = GetRowToleranceInfo(rowId);
-        if (tol.maxQty > 0 && qty > tol.maxQty) {
+        if (tol.tolOnQty === 'Y' && tol.maxQty > 0 && qty > tol.maxQty) {
             const qtyMsg = tol.qtyTol > 0
                 ? 'Qty exceeds the ' + tol.qtyTol + '% tolerance. Maximum allowed Qty is ' + tol.maxQty + '.'
                 : 'Qty cannot exceed the required Qty of ' + tol.maxQty + ' (no tolerance allowed).';
@@ -1439,7 +1456,7 @@ window.CalcRowValue = function (rowId) {
             qty = tol.maxQty;
             $(`#frmTxtQty_${rowId}`).val(qty);
         }
-        if (tol.maxRate > 0 && rate > tol.maxRate) {
+        if (tol.tolOnRate === 'Y' && tol.maxRate > 0 && rate > tol.maxRate) {
             const rateMsg = tol.rateTol > 0
                 ? 'Rate exceeds the ' + tol.rateTol + '% tolerance. Maximum allowed Rate is ' + tol.maxRate + '.'
                 : 'Rate cannot exceed the required Rate of ' + tol.maxRate + ' (no tolerance allowed).';
@@ -1447,8 +1464,13 @@ window.CalcRowValue = function (rowId) {
             rate = tol.maxRate;
             $(`#frmTxtRate_${rowId}`).val(rate);
         }
+        if (tol.tolOnAmount === 'Y' && tol.maxAmount > 0) {
+            const enteredAmount = parseFloat((qty * rate).toFixed(2));
+            if (enteredAmount > tol.maxAmount) {
+                toastr.warning('Amount ' + enteredAmount + ' exceeds the maximum allowed amount of ' + tol.maxAmount + '.');
+            }
+        }
     }
-    TOLERANCE DISABLED */
 
     const value = qty * rate;
     $(`#frmTxtValue_${rowId}`).val(value.toFixed(2));
@@ -1527,25 +1549,30 @@ window.SavePO = function () {
 
         if (!itemCode) { toastr.warning('Please select item in all rows.'); itemValid = false; return false; }
         if (qty <= 0) { toastr.warning('Qty must be greater than 0 for all items.'); itemValid = false; return false; }
-        /* TOLERANCE DISABLED
         if (agaistProject === 'Y') {
             const saveTol = GetRowToleranceInfo(rowId);
-            if (saveTol.maxQty > 0 && qty > saveTol.maxQty) {
+            if (saveTol.tolOnQty === 'Y' && saveTol.maxQty > 0 && qty > saveTol.maxQty) {
                 const saveQtyMsg = saveTol.qtyTol > 0
                     ? 'Row ' + rowId + ': Qty ' + qty + ' exceeds the ' + saveTol.qtyTol + '% tolerance. Maximum allowed: ' + saveTol.maxQty + '.'
                     : 'Row ' + rowId + ': Qty ' + qty + ' cannot exceed the required Qty of ' + saveTol.maxQty + ' (no tolerance allowed).';
                 toastr.warning(saveQtyMsg);
                 itemValid = false; return false;
             }
-            if (saveTol.maxRate > 0 && rate > saveTol.maxRate) {
+            if (saveTol.tolOnRate === 'Y' && saveTol.maxRate > 0 && rate > saveTol.maxRate) {
                 const saveRateMsg = saveTol.rateTol > 0
                     ? 'Row ' + rowId + ': Rate ' + rate + ' exceeds the ' + saveTol.rateTol + '% tolerance. Maximum allowed: ' + saveTol.maxRate + '.'
                     : 'Row ' + rowId + ': Rate ' + rate + ' cannot exceed the required Rate of ' + saveTol.maxRate + ' (no tolerance allowed).';
                 toastr.warning(saveRateMsg);
                 itemValid = false; return false;
             }
+            if (saveTol.tolOnAmount === 'Y' && saveTol.maxAmount > 0) {
+                const saveAmount = parseFloat((qty * rate).toFixed(2));
+                if (saveAmount > saveTol.maxAmount) {
+                    toastr.warning('Row ' + rowId + ': Amount ' + saveAmount + ' exceeds the maximum allowed amount of ' + saveTol.maxAmount + '.');
+                    itemValid = false; return false;
+                }
+            }
         }
-        TOLERANCE DISABLED */
 
         transactions.push({
             code: detailCode,
@@ -1715,10 +1742,14 @@ function LoadPOForEdit(code) {
         $('#tblPOItemsBody').html('');
         G_ItemRowCount = 0;
 
+        const editItems = againstProject
+            ? GetFilteredItemListByParams(header.ProjectMaster_Code, header.SubProjectMaster_Code, header.WorkTypeMaster_Code)
+            : G_ItemWithoutProjectList;
+
         details.forEach(function (det) {
             G_ItemRowCount++;
             const rowId = G_ItemRowCount;
-            const itemSelect = BuildItemSelect(rowId, det.ItemMaster_Code);
+            const itemSelect = BuildItemSelect(rowId, det.ItemMaster_Code, editItems);
             const uomSelect = BuildUOMSelect(rowId, det.UOMMaster_Code);
             const row = `<tr id="itemRow_${rowId}">
                 <td class="text-center fw-bold">${rowId}</td>
@@ -1735,13 +1766,15 @@ function LoadPOForEdit(code) {
                     <input type="hidden" id="frmHfQtyTolerance_${rowId}" value="0" />
                     <input type="hidden" id="frmHfBaseRate_${rowId}" value="0" />
                     <input type="hidden" id="frmHfRateTolerance_${rowId}" value="0" />
+                    <input type="hidden" id="frmHfTolOnQty_${rowId}" value="N" />
+                    <input type="hidden" id="frmHfTolOnRate_${rowId}" value="N" />
+                    <input type="hidden" id="frmHfTolOnAmount_${rowId}" value="N" />
                     <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
                 </td>
             </tr>`;
             $('#tblPOItemsBody').append(row);
-            // TOLERANCE DISABLED
-            // const tolItem = G_ItemMasterList.find(i => String(i.Code) === String(det.ItemMaster_Code));
-            // ApplyToleranceToRow(rowId, tolItem || null);
+            const tolItem = editItems.find(i => String(i.Code) === String(det.ItemMaster_Code));
+            ApplyToleranceToRow(rowId, tolItem || null);
         });
 
         if (details.length === 0) AddItemRow(true);
@@ -2040,10 +2073,8 @@ window.ConfirmCancelPO = function () {
 function OpenMobileItemModal(rowId) {
     G_MobileItemEditRowId = rowId;
 
-    // Populate item dropdown
+    // Populate item dropdown using the filtered list (project / subproject / worktype)
     const mobileItemList = GetFilteredItemList();
-    const mobileAgainstProject = $('#frmChkAgainstProject').is(':checked');
-    const mobileItemSrcList = mobileAgainstProject ? G_ItemMasterList : G_ItemWithoutProjectList;
     let itemHtml = '<option value="">-- Select Item --</option>';
     mobileItemList.forEach(i => { itemHtml += `<option value="${i.Code}">${i.Name}</option>`; });
     $('#mobileItemDdlItem').html(itemHtml);
@@ -2053,10 +2084,11 @@ function OpenMobileItemModal(rowId) {
     G_UOMMasterList.forEach(u => { uomHtml += `<option value="${u.Code}">${u.Name}</option>`; });
     $('#mobileItemDdlUOM').html(uomHtml);
 
-    // Auto-fill UOM and GST when item changes
+    // Auto-fill UOM, GST and Spec when item changes — use mobileItemList so the
+    // correct project/subproject/worktype row is matched (not just the first Code hit)
     $('#mobileItemDdlItem').off('change').on('change', function () {
         const code = $(this).val();
-        const item = mobileItemSrcList.find(i => String(i.Code) === String(code));
+        const item = mobileItemList.find(i => String(i.Code) === String(code));
         if (item && item.UOM_Code) $('#mobileItemDdlUOM').val(item.UOM_Code);
         if (item && item.GSTRate !== undefined) $('#mobileItemTxtGST').val(item.GSTRate || 0);
         $('#mobileItemTxtSpec').val(item ? (item.ItemSpecificationDesp || '') : '');
@@ -2103,32 +2135,43 @@ function MobileItemModalConfirm() {
     if (!itemCode) { toastr.warning('Please select an item.'); return; }
     if (qty <= 0) { toastr.warning('Qty must be greater than 0.'); return; }
 
-    /* TOLERANCE DISABLED (temporary) — mobile add/edit: qty & rate vs project BOM caps
     if ($('#frmChkAgainstProject').is(':checked')) {
-        const mobileItem = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
+        const mobileItem = GetFilteredItemList().find(i => String(i.Code) === String(itemCode));
         if (mobileItem) {
-            const mbBaseQty  = parseFloat(mobileItem.QtyRequired  || mobileItem.Qty          || 0);
-            const mbQtyTol   = parseFloat(mobileItem.QtyTolerance || mobileItem.Tolerance     || 0);
-            const mbBaseRate = parseFloat(mobileItem.Rate         || mobileItem.EstimatedRate || 0);
-            const mbRateTol  = parseFloat(mobileItem.RateTolerance                             || 0);
-            const mobileRate = parseFloat($('#mobileItemTxtRate').val()) || 0;
-            const mbMaxQty   = (mbBaseQty  > 0 && mbQtyTol  > 0) ? parseFloat((mbBaseQty  * (1 + mbQtyTol  / 100)).toFixed(3)) : 0;
-            const mbMaxRate  = (mbBaseRate > 0 && mbRateTol > 0) ? parseFloat((mbBaseRate * (1 + mbRateTol / 100)).toFixed(2)) : 0;
-            if (mbMaxQty > 0 && qty > mbMaxQty) {
+            const mbBaseQty     = parseFloat(mobileItem.QtyRequired  || mobileItem.Qty          || 0);
+            const mbQtyTol      = parseFloat(mobileItem.QtyTolerance || mobileItem.Tolerance     || 0);
+            const mbBaseRate    = parseFloat(mobileItem.Rate         || mobileItem.EstimatedRate || 0);
+            const mbRateTol     = parseFloat(mobileItem.RateTolerance                             || 0);
+            const mbTolOnQty    = mobileItem.ToleranceApplicableOnPOQty    || 'N';
+            const mbTolOnRate   = mobileItem.ToleranceApplicableOnPORate   || 'N';
+            const mbTolOnAmount = mobileItem.ToleranceApplicableOnPOAmount || 'N';
+            const mobileRate    = parseFloat($('#mobileItemTxtRate').val()) || 0;
+            const mbMaxQty      = mbBaseQty  > 0 ? parseFloat((mbBaseQty  * (1 + mbQtyTol  / 100)).toFixed(3)) : 0;
+            const mbMaxRate     = mbBaseRate > 0 ? parseFloat((mbBaseRate * (1 + mbRateTol / 100)).toFixed(2)) : 0;
+            const mbMaxAmount   = (mbBaseQty > 0 && mbBaseRate > 0)
+                ? parseFloat((mbBaseQty * (1 + mbQtyTol / 100) * mbBaseRate * (1 + mbRateTol / 100)).toFixed(2))
+                : 0;
+            if (mbTolOnQty === 'Y' && mbMaxQty > 0 && qty > mbMaxQty) {
                 toastr.warning(`Qty exceeds the ${mbQtyTol}% tolerance. Maximum allowed Qty is ${mbMaxQty}.`);
                 $('#mobileItemTxtQty').val(mbMaxQty);
                 MobileCalcValue();
                 return;
             }
-            if (mbMaxRate > 0 && mobileRate > mbMaxRate) {
+            if (mbTolOnRate === 'Y' && mbMaxRate > 0 && mobileRate > mbMaxRate) {
                 toastr.warning(`Rate exceeds the ${mbRateTol}% tolerance. Maximum allowed Rate is ${mbMaxRate}.`);
                 $('#mobileItemTxtRate').val(mbMaxRate);
                 MobileCalcValue();
                 return;
             }
+            if (mbTolOnAmount === 'Y' && mbMaxAmount > 0) {
+                const mbEnteredAmount = parseFloat((qty * mobileRate).toFixed(2));
+                if (mbEnteredAmount > mbMaxAmount) {
+                    toastr.warning(`Amount ${mbEnteredAmount} exceeds the maximum allowed amount of ${mbMaxAmount}.`);
+                    return;
+                }
+            }
         }
     }
-    TOLERANCE DISABLED */
 
     const uomCode = $('#mobileItemDdlUOM').val();
     const gst = parseFloat($('#mobileItemTxtGST').val()) || 0;
@@ -2157,13 +2200,15 @@ function MobileItemModalConfirm() {
                 <input type="hidden" id="frmHfQtyTolerance_${rowId}" value="0" />
                 <input type="hidden" id="frmHfBaseRate_${rowId}" value="0" />
                 <input type="hidden" id="frmHfRateTolerance_${rowId}" value="0" />
+                <input type="hidden" id="frmHfTolOnQty_${rowId}" value="N" />
+                <input type="hidden" id="frmHfTolOnRate_${rowId}" value="N" />
+                <input type="hidden" id="frmHfTolOnAmount_${rowId}" value="N" />
                 <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
             </td>
         </tr>`;
         $('#tblPOItemsBody').append(row);
-        // TOLERANCE DISABLED
-        // const newTolItem = G_ItemMasterList.find(i => String(i.Code) === String(itemCode));
-        // ApplyToleranceToRow(rowId, newTolItem || null);
+        const newTolItem = GetFilteredItemList().find(i => String(i.Code) === String(itemCode));
+        ApplyToleranceToRow(rowId, newTolItem || null);
         RenumberRows();
     } else {
         // Update existing row in the hidden table
@@ -2175,6 +2220,8 @@ function MobileItemModalConfirm() {
         $(`#frmTxtRate_${rowId}`).val(rate);
         $(`#frmTxtValue_${rowId}`).val(value);
         $(`#frmTxtSpecification_${rowId}`).val(spec);
+        const editTolItem = GetFilteredItemList().find(i => String(i.Code) === String(itemCode));
+        ApplyToleranceToRow(rowId, editTolItem || null);
     }
 
     CalcTotals();

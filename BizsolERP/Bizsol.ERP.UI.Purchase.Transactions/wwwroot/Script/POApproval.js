@@ -673,7 +673,7 @@ function InitPOApprovalAttachmentControl(masterCode, entryNo, entryDate) {
         DetailTableCode: 0,
         EntryNo: parseInt(entryNo, 10) || 0,
         EntryDate: entryDate || '',
-        Mode: 'all'
+        Mode: 'View'
     });
 }
 

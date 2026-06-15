@@ -5,6 +5,7 @@ import { BizSolHelperFunction } from '../../_content/Bizsol.WebERP.UI.Shared/js/
 var _menuAllItems = [];
 var _menuUserID = '';
 var _favouriteMenuCodes = [];
+var _FAV_COLLAPSE_KEY = 'sidebarFavouritesCollapsed';
 
 $(document).ready(function () {
         bindMenu();
@@ -84,12 +85,12 @@ function renderFullMenu(value, baseUrl) {
     var mobileMenuCount = 0;
     var maxMobileItems = 5;
 
-    // --- Favourites section ---
+    // --- Favourites section (collapsible) ---
     var favMenuHtml = buildFavouritesSection(value, baseUrl);
     if (favMenuHtml) {
-        menuHtml += '<div class="sidebar-section-label">Favourites</div>';
+        menuHtml += buildFavouritesToggleHtml(getFavouritesCount());
         menuHtml += '<div id="fav-menu-section">' + favMenuHtml + '</div>';
-        menuHtml += '<div class="sidebar-section-label">All Menus</div>';
+        menuHtml += '<div class="sidebar-section-label sidebar-static-label">All Menus</div>';
     } else {
         menuHtml += '<div id="fav-menu-section"></div>';
     }
@@ -131,6 +132,110 @@ function renderFullMenu(value, baseUrl) {
     initCollapsedSidebarHover();
     bindMobileMenuEvents();
     bindStarEvents();
+    bindFavouritesToggleEvents();
+    applyFavouritesCollapseState(false);
+}
+
+function getFavouritesCount() {
+    if (!_favouriteMenuCodes || !_favouriteMenuCodes.length) return 0;
+    var count = 0;
+    $.each(_favouriteMenuCodes, function (i, code) {
+        if (getMenuItemByCode(_menuAllItems, code)) count++;
+    });
+    return count;
+}
+
+function isFavouritesCollapsed() {
+    return sessionStorage.getItem(_FAV_COLLAPSE_KEY) === '1';
+}
+
+function setFavouritesCollapsed(collapsed) {
+    sessionStorage.setItem(_FAV_COLLAPSE_KEY, collapsed ? '1' : '0');
+}
+
+function buildFavouritesToggleHtml(count) {
+    var collapsed = isFavouritesCollapsed();
+    var activeClass = collapsed ? '' : ' active';
+    var ariaExpanded = collapsed ? 'false' : 'true';
+    var html = '<a href="javascript:void(0);" class="sidebar-fav-toggle has-arrow' + activeClass + '" id="fav-section-toggle" aria-expanded="' + ariaExpanded + '" title="Toggle Favourites">';
+    html += '<i class="fas fa-star fav-toggle-icon" aria-hidden="true"></i>';
+    html += '<span>Favourites</span>';
+    if (count > 0) {
+        html += '<span class="fav-count">' + count + '</span>';
+    }
+    html += '</a>';
+    return html;
+}
+
+function applyFavouritesCollapseState(animate) {
+    var $toggle = $('#fav-section-toggle');
+    var $section = $('#fav-menu-section');
+    if (!$toggle.length || !$section.length || !$section.children().length) {
+        return;
+    }
+
+    var collapsed = isFavouritesCollapsed();
+    if (collapsed) {
+        $toggle.removeClass('active').attr('aria-expanded', 'false');
+        if (animate) {
+            $section.stop(true, true).slideUp(200);
+        } else {
+            $section.hide();
+        }
+    } else {
+        $toggle.addClass('active').attr('aria-expanded', 'true');
+        if (animate) {
+            $section.stop(true, true).slideDown(200);
+        } else {
+            $section.show();
+        }
+    }
+}
+
+function bindFavouritesToggleEvents() {
+    $(document).off('click.favtoggle').on('click.favtoggle', '#fav-section-toggle', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if ($('#modern-sidebar').hasClass('collapsed')) {
+            return;
+        }
+
+        setFavouritesCollapsed(!isFavouritesCollapsed());
+        applyFavouritesCollapseState(true);
+    });
+}
+
+function ensureFavouritesSectionChrome() {
+    var $favSection = $('#fav-menu-section');
+    var favHtml = $favSection.html();
+    var hasFavs = favHtml && favHtml.trim().length > 0;
+    var $favToggle = $('#fav-section-toggle');
+    var $allMenusLabel = $favSection.next('.sidebar-static-label');
+
+    if (hasFavs) {
+        var count = getFavouritesCount();
+        if ($favToggle.length === 0) {
+            $favSection.before(buildFavouritesToggleHtml(count));
+        } else {
+            var $count = $favToggle.find('.fav-count');
+            if (count > 0) {
+                if ($count.length) {
+                    $count.text(count);
+                } else {
+                    $favToggle.append('<span class="fav-count">' + count + '</span>');
+                }
+            } else {
+                $count.remove();
+            }
+        }
+        if ($allMenusLabel.length === 0) {
+            $favSection.after('<div class="sidebar-section-label sidebar-static-label">All Menus</div>');
+        }
+    } else {
+        $favToggle.remove();
+        $allMenusLabel.remove();
+    }
 }
 
 function buildFavouritesSection(value, baseUrl) {
@@ -142,8 +247,8 @@ function buildFavouritesSection(value, baseUrl) {
         var separator = item.FormToOpen.indexOf('?') !== -1 ? '&' : '?';
         var href = sessionStorage.getItem('AppBaseURL') + '/' + item.FormToOpen + separator + 'ModuleDesp=' + item.ModuleDesp;
         html += '<a href="' + href + '" class="sidebar-menu-item fav-menu-link" data-menu-code="' + item.Code + '">';
-        html += '<i class="fas fa-star fav-star-icon" style="color:#f6c90e;font-size:0.75rem;margin-right:2px;"></i>';
-        html += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
+        html += '<i class="fas fa-star fav-star-icon" aria-hidden="true"></i>';
+        html += '<i class="' + getMenuIcon(item.ModuleDesp) + '" aria-hidden="true"></i>';
         html += '<span>' + item.ModuleDesp + '</span>';
         html += '</a>';
     });
@@ -171,13 +276,13 @@ function getChildMenu(value, masterCode, baseUrl) {
             var isLeaf = !subChildMenuHtml;
             var isFav = _favouriteMenuCodes.indexOf(item.Code) !== -1;
             var starClass = isFav ? 'fas fa-star menu-fav-star active-fav' : 'far fa-star menu-fav-star';
-            var starColor = isFav ? 'color:#f6c90e;' : 'color:rgba(150,150,180,0.55);';
+            var starColor = isFav ? '' : 'menu-fav-inactive';
 
             childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + separator + 'ModuleDesp=' + item.ModuleDesp + '" class="sidebar-menu-item menu-toggle ' + hasArrow + '" data-menu-code="' + item.Code + '">';
             if (isLeaf) {
-                childMenuHtml += '<i class="' + starClass + ' menu-star-btn" data-menu-code="' + item.Code + '" data-module-desp="' + item.ModuleDesp + '" title="Add to Favourites" style="font-size:0.8rem;margin-right:4px;cursor:pointer;transition:color 0.2s;' + starColor + '"></i>';
+                childMenuHtml += '<i class="' + starClass + ' menu-star-btn ' + starColor + '" data-menu-code="' + item.Code + '" data-module-desp="' + item.ModuleDesp + '" title="Add to Favourites" aria-label="Toggle favourite"></i>';
             }
-            childMenuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
+            childMenuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '" aria-hidden="true"></i>';
             childMenuHtml += '<span>' + item.ModuleDesp + '</span>';
             childMenuHtml += '</a>';
 
@@ -202,12 +307,12 @@ function bindStarEvents() {
 
         // Optimistically update UI
         if (newIsFav) {
-            $star.removeClass('far').addClass('fas active-fav').css('color', '#f6c90e');
+            $star.removeClass('far menu-fav-inactive').addClass('fas active-fav');
             if (_favouriteMenuCodes.indexOf(menuCode) === -1) {
                 _favouriteMenuCodes.push(menuCode);
             }
         } else {
-            $star.removeClass('fas active-fav').addClass('far').css('color', 'rgba(150,150,180,0.55)');
+            $star.removeClass('fas active-fav').addClass('far menu-fav-inactive');
             _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
         }
 
@@ -221,10 +326,10 @@ function bindStarEvents() {
             } else {
                 // Revert on API-level failure
                 if (newIsFav) {
-                    $star.removeClass('fas active-fav').addClass('far').css('color', 'rgba(150,150,180,0.55)');
+                    $star.removeClass('fas active-fav').addClass('far menu-fav-inactive');
                     _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
                 } else {
-                    $star.removeClass('far').addClass('fas active-fav').css('color', '#f6c90e');
+                    $star.removeClass('far menu-fav-inactive').addClass('fas active-fav');
                     if (_favouriteMenuCodes.indexOf(menuCode) === -1) _favouriteMenuCodes.push(menuCode);
                 }
                 refreshFavouritesSection();
@@ -233,10 +338,10 @@ function bindStarEvents() {
         }).catch(function () {
             // Revert on failure
             if (newIsFav) {
-                $star.removeClass('fas active-fav').addClass('far').css('color', 'rgba(150,150,180,0.55)');
+                $star.removeClass('fas active-fav').addClass('far menu-fav-inactive');
                 _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
             } else {
-                $star.removeClass('far').addClass('fas active-fav').css('color', '#f6c90e');
+                $star.removeClass('far menu-fav-inactive').addClass('fas active-fav');
                 if (_favouriteMenuCodes.indexOf(menuCode) === -1) _favouriteMenuCodes.push(menuCode);
             }
             refreshFavouritesSection();
@@ -248,21 +353,14 @@ function bindStarEvents() {
 function refreshFavouritesSection() {
     var favHtml = buildFavouritesSection(_menuAllItems, sessionStorage.getItem('AppBaseURL'));
     var $favSection = $('#fav-menu-section');
-    var $sectionLabel = $favSection.prev('.sidebar-section-label');
-    var $allMenusLabel = $favSection.next('.sidebar-section-label');
 
     $favSection.html(favHtml);
+    ensureFavouritesSectionChrome();
 
     if (favHtml) {
-        if ($sectionLabel.length === 0) {
-            $favSection.before('<div class="sidebar-section-label">Favourites</div>');
-        }
-        if ($allMenusLabel.length === 0) {
-            $favSection.after('<div class="sidebar-section-label">All Menus</div>');
-        }
-    } else {
-        $sectionLabel.remove();
-        $allMenusLabel.remove();
+        applyFavouritesCollapseState(false);
+        bindFavouritesToggleEvents();
+        setActiveMenu();
     }
 }
 
@@ -361,10 +459,16 @@ function setActiveMenu() {
     $('.mobile-nav-item').removeClass('active');
 
     // Find and activate the current page menu item
+    var activeInFavourites = false;
+
     $('#sidebar-menu a').each(function () {
         var menuLink = $(this).attr('href');
         if (menuLink && menuLink !== 'javascript:void(0);' && menuLinkMatchesCurrentPage(menuLink)) {
             $(this).addClass('active');
+
+            if ($(this).closest('#fav-menu-section').length) {
+                activeInFavourites = true;
+            }
 
             // Show all parent submenus
             $(this).parents('.sub-menu').each(function() {
@@ -374,6 +478,11 @@ function setActiveMenu() {
             });
         }
     });
+
+    if (activeInFavourites) {
+        setFavouritesCollapsed(false);
+        applyFavouritesCollapseState(false);
+    }
 
     // Set active state for mobile nav
     $('.mobile-nav-item').each(function () {
@@ -457,6 +566,45 @@ function initCollapsedSidebarHover() {
     var popupMenu = null;
     var hideTimeout = null;
 
+    function removePopupMenu() {
+        if (popupMenu) {
+            popupMenu.remove();
+            popupMenu = null;
+        }
+        $('.sidebar-popup-menu').remove();
+    }
+
+    function createFavouritesPopupMenu() {
+        var favLinks = $('#fav-menu-section a.fav-menu-link');
+        if (!favLinks.length) {
+            return null;
+        }
+
+        var popupHtml = '<div class="sidebar-popup-menu sidebar-fav-popup">';
+        popupHtml += '<div class="popup-menu-title"><i class="fas fa-star" style="margin-right:5px;font-size:0.6rem;color:#b45309;"></i>Favourites</div>';
+
+        favLinks.each(function () {
+            var $link = $(this);
+            var name = $link.find('span').text();
+            var href = $link.attr('href');
+            var iconClass = 'fas fa-star';
+            $link.find('i').each(function () {
+                if (!$(this).hasClass('fav-star-icon')) {
+                    iconClass = $(this).attr('class');
+                    return false;
+                }
+            });
+
+            popupHtml += '<a href="' + href + '" class="popup-menu-item">';
+            popupHtml += '<i class="' + iconClass + '"></i>';
+            popupHtml += '<span>' + name + '</span>';
+            popupHtml += '</a>';
+        });
+
+        popupHtml += '</div>';
+        return $(popupHtml);
+    }
+
     // Create popup menu element
     function createPopupMenu(menuItem) {
         var menuName = menuItem.find('span').text();
@@ -506,14 +654,77 @@ function initCollapsedSidebarHover() {
         return $(popupHtml);
     }
 
+    function positionPopup($popup, $trigger) {
+        var menuItemOffset = $trigger.offset();
+        $popup.css({
+            top: menuItemOffset.top + 'px',
+            display: 'block'
+        });
+    }
+
+    function bindPopupHover($popup) {
+        var subMenuHideTimeout = null;
+
+        $popup.find('.popup-menu-item.has-arrow').on('mouseenter', function () {
+            clearTimeout(subMenuHideTimeout);
+            var $subMenu = $(this).next('.popup-submenu');
+            $popup.find('.popup-submenu').not($subMenu).slideUp(200);
+            $subMenu.slideDown(200);
+        }).on('mouseleave', function () {
+            var $subMenu = $(this).next('.popup-submenu');
+            subMenuHideTimeout = setTimeout(function () {
+                $subMenu.slideUp(200);
+            }, 300);
+        });
+
+        $popup.find('.popup-submenu').on('mouseenter', function () {
+            clearTimeout(subMenuHideTimeout);
+        }).on('mouseleave', function () {
+            var $subMenu = $(this);
+            subMenuHideTimeout = setTimeout(function () {
+                $subMenu.slideUp(200);
+            }, 300);
+        });
+
+        $popup.hover(
+            function () {
+                clearTimeout(hideTimeout);
+            },
+            function () {
+                hidePopupMenu();
+            }
+        );
+
+        $popup.find('a.popup-menu-item').click(function () {
+            removePopupMenu();
+        });
+    }
+
+    function showFavouritesPopup(triggerItem) {
+        if (!$('#modern-sidebar').hasClass('collapsed')) {
+            return;
+        }
+
+        removePopupMenu();
+        clearTimeout(hideTimeout);
+
+        popupMenu = createFavouritesPopupMenu();
+        if (!popupMenu) {
+            return;
+        }
+
+        $('body').append(popupMenu);
+        positionPopup(popupMenu, triggerItem);
+        bindPopupHover(popupMenu);
+    }
+
     // Show popup menu
     function showPopupMenu(menuItem) {
         if (!$('#modern-sidebar').hasClass('collapsed')) {
-            return; // Only show popup when sidebar is collapsed
+            return;
         }
 
-        // Remove existing popup
-        $('.sidebar-popup-menu').remove();
+        removePopupMenu();
         clearTimeout(hideTimeout);
 
         popupMenu = createPopupMenu(menuItem);
@@ -522,79 +733,38 @@ function initCollapsedSidebarHover() {
         }
 
         $('body').append(popupMenu);
-
-        // Position the popup
-        var menuItemOffset = menuItem.offset();
-        var menuItemHeight = menuItem.outerHeight();
-
-        popupMenu.css({
-            top: menuItemOffset.top + 'px',
-            display: 'block'
-        });
-
-        // Handle popup menu item hover to show nested submenus
-        var subMenuHideTimeout = null;
-
-        popupMenu.find('.popup-menu-item.has-arrow').on('mouseenter', function() {
-            clearTimeout(subMenuHideTimeout);
-            var $subMenu = $(this).next('.popup-submenu');
-            popupMenu.find('.popup-submenu').not($subMenu).slideUp(200);
-            $subMenu.slideDown(200);
-        }).on('mouseleave', function() {
-            var $subMenu = $(this).next('.popup-submenu');
-            subMenuHideTimeout = setTimeout(function() {
-                $subMenu.slideUp(200);
-            }, 300);
-        });
-
-        popupMenu.find('.popup-submenu').on('mouseenter', function() {
-            clearTimeout(subMenuHideTimeout);
-        }).on('mouseleave', function() {
-            var $subMenu = $(this);
-            subMenuHideTimeout = setTimeout(function() {
-                $subMenu.slideUp(200);
-            }, 300);
-        });
-
-        // Keep popup visible when hovering over it
-        popupMenu.hover(
-            function() {
-                clearTimeout(hideTimeout);
-            },
-            function() {
-                hideTimeout = setTimeout(function() {
-                    popupMenu.fadeOut(200, function() {
-                        $(this).remove();
-                    });
-                }, 300);
-            }
-        );
-
-        // Close popup when clicking a link
-        popupMenu.find('a').click(function() {
-            popupMenu.remove();
-        });
+        positionPopup(popupMenu, menuItem);
+        bindPopupHover(popupMenu);
     }
 
     // Hide popup menu
     function hidePopupMenu() {
-        hideTimeout = setTimeout(function() {
-            if (popupMenu) {
-                popupMenu.fadeOut(200, function() {
-                    $(this).remove();
-                });
-            }
+        hideTimeout = setTimeout(function () {
+            removePopupMenu();
         }, 300);
     }
 
     // Attach hover events to menu items (only parent items with submenus)
-    $(document).on('mouseenter', '#sidebar-menu > a.sidebar-menu-item.has-arrow', function() {
+    $(document).on('mouseenter', '#sidebar-menu > a.sidebar-menu-item.has-arrow', function () {
         if ($('#modern-sidebar').hasClass('collapsed')) {
             showPopupMenu($(this));
         }
     });
 
-    $(document).on('mouseleave', '#sidebar-menu > a.sidebar-menu-item.has-arrow', function() {
+    $(document).on('mouseleave', '#sidebar-menu > a.sidebar-menu-item.has-arrow', function () {
+        if ($('#modern-sidebar').hasClass('collapsed')) {
+            hidePopupMenu();
+        }
+    });
+
+    // Favourites star — popup when sidebar collapsed
+    $(document).on('mouseenter', '#fav-section-toggle', function () {
+        if ($('#modern-sidebar').hasClass('collapsed')) {
+            showFavouritesPopup($(this));
+        }
+    });
+
+    $(document).on('mouseleave', '#fav-section-toggle', function () {
         if ($('#modern-sidebar').hasClass('collapsed')) {
             hidePopupMenu();
         }

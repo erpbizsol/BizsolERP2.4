@@ -50,8 +50,10 @@ let editMode = false;
 let gpaAddBillModalBillRowsCache = [];
 /** Full list rows (all statuses); tabs filter client-side. Matches DDL: U Pending, P Approved, R Rejected. */
 let gpaListFullRows = [];
-/** Raw API rows (same order as list load); used when GetByCode omits HasAttachment. */
+/** Raw API rows from GetGRNPaymentApprovalList (grid bind + attachment/status). */
 let gpaListSourceRows = [];
+/** Raw API rows from GetList (DDL_LIST) — print/preview site, PO, project fields. */
+let gpaGetListPrintRows = [];
 /** Edit/New form: master has attachment(s) or files on server — footer Attachment button green. */
 let gpaFormHasAttachmentYes = false;
 /** Cached from GetVendor — used for print voucher party lookup. */
@@ -67,6 +69,8 @@ let gpaPoListPartyCodeCache = '';
 let gpaPartyBillRowsCache = [];
 /** Cached from GetProjectCategory — header Payment for + bill row Category. */
 let gpaProjectCategoryCache = [];
+/** Cached from GetWorkType — header Work type dropdown. */
+let gpaWorkTypeListCache = [];
 /** Cached from GetMarketingManMaster — employee dropdown. */
 let gpaEmployeeListCache = [];
 /** Active list tab: 'U' | 'P' | 'R' */
@@ -341,7 +345,7 @@ async function tryApplyBankStatementEmbedPrefill(openedNewForm) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// LIST VIEW (GetGRNPaymentApprovalList → BizsolCustomFilterGrid, same as GRNService)
+// LIST VIEW (GetGRNPaymentApprovalList → grid; GetList cached for print/preview)
 // ══════════════════════════════════════════════════════════════════════════════
 /** Per-level row approved — same rules as GRNPaymentApproval.js levelRowIsApproved. */
 function gpaListLevelRowIsApproved(lvl) {
@@ -740,6 +744,8 @@ function mapGpaListRow(item) {
     const rawAmt = item.Amount ?? item.amount ?? item.HeaderAmount ?? item.headerAmount;
     const amt = rawAmt !== undefined && rawAmt !== null && rawAmt !== '' ? Number(rawAmt) : '';
     const ref = item.RefNo ?? item.refNo ?? '';
+    const workType = item['Work Type'] ?? item['work type']
+        ?? gpaResolveWorkTypeLabelFromItem(item);
     const label = String(entryNo || code || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     const rawEdStr = ed ? String(ed).substring(0, 10) : '';
     const enNum = parseInt(entryNo, 10) || 0;
@@ -765,10 +771,14 @@ function mapGpaListRow(item) {
         Employee: employee,
         'Amount': amt,
         'Ref No': ref,
+        'Work Type': workType,
         Action: btns,
         Code: code,
         StatusCode: normalizeGpaListStatusCode(item),
-        _gpaRaw: item,
+        _gpaRaw: item
+      
+
+
     };
     return row;
 }
@@ -895,10 +905,10 @@ function BuildGpeEntryCard(rawItem) {
     </div>`;
 
     const projName = gpeEscHtml(
-        rawItem.ProjectName ?? rawItem.projectName ?? rawItem.Project ?? rawItem.project ?? ''
+        rawItem.ProjectDesp ?? rawItem.projectDesp ?? rawItem.ProjectName ?? rawItem.projectName ?? rawItem.Project ?? rawItem.project ?? ''
     );
     const subProjName = gpeEscHtml(
-        rawItem.SubProjectName ?? rawItem.subProjectName ?? rawItem.SubProject ?? rawItem.subProject ?? ''
+        rawItem.SubProjectDesp ?? rawItem.subProjectDesp ?? rawItem.SubProjectName ?? rawItem.subProjectName ?? rawItem.SubProject ?? rawItem.subProject ?? ''
     );
     const projLine = projName
         ? `<div style="font-size:0.7rem;color:#64748b;margin-top:4px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
@@ -978,6 +988,7 @@ function gpaListEmptyTabPlaceholderRow() {
         Employee: '',
         'Amount': '',
         'Ref No': '',
+        'Work Type': '',
         Action: '',
         Code: '__gpa_empty__',
         StatusCode: gpaListActiveStatusTab,
@@ -1006,7 +1017,7 @@ function updateGpaStatusTabStrip() {
 }
 
 function renderGpaListGridForActiveTab() {
-    const StringFilterColumn = ['Party Name', 'Employee', 'Ref No'];
+    const StringFilterColumn = ['Party Name', 'Employee', 'Ref No', 'Work Type'];
     const NumericFilterColumn = ['Entry No', 'Amount'];
     const DateFilterColumn = ['Entry Date'];
     const Button = false;
@@ -1055,14 +1066,38 @@ function onGpaListStatusTabClick(code) {
 }
 window.onGpaListStatusTabClick = onGpaListStatusTabClick;
 
+/** Warm GetList (DDL_LIST) cache for voucher print — grid stays on GetGRNPaymentApprovalList. */
+function loadGpaGetListPrintCache() {
+    return GRNPaymentApprovalService.GetList()
+        .then(function (response) {
+            gpaGetListPrintRows = normalizeApiRows(response);
+        })
+        .catch(function () {
+            gpaGetListPrintRows = [];
+        });
+}
+
 function loadGRNPaymentApprovalList() {
     gpaListOnlyPendingOnMe = false;
     syncGpaListPendingOnMeChipActive();
-    return GRNPaymentApprovalService.GetGRNPaymentApprovalList()
-        .then(function (response) {
+    const wtReady = (gpaWorkTypeListCache && gpaWorkTypeListCache.length)
+        ? Promise.resolve()
+        : loadGpaWorkTypeList().catch(function () { return null; });
+    return Promise.all([GRNPaymentApprovalService.GetGRNPaymentApprovalList(), wtReady])
+        .then(function (results) {
+            const response = results[0];
             const raw = normalizeApiRows(response);
             gpaListSourceRows = raw;
             gpaListFullRows = raw.map(mapGpaListRow);
+            return loadGpaGetListPrintCache().then(function () {
+                gpaListFullRows = gpaListFullRows.map(function (row) {
+                    if (row['Work Type']) return row;
+                    const label = gpaResolveWorkTypeLabelFromItem(row._gpaRaw || row);
+                    return label ? Object.assign({}, row, { 'Work Type': label }) : row;
+                });
+            });
+        })
+        .then(function () {
             if (gpaListFullRows.length === 0) {
                 if (typeof toastr !== 'undefined') toastr.warning('No payment entries found.');
                 $('#gpaListTable').hide();
@@ -1075,6 +1110,7 @@ function loadGRNPaymentApprovalList() {
         .catch(function () {
             gpaListFullRows = [];
             gpaListSourceRows = [];
+            gpaGetListPrintRows = [];
             gpaListOnlyPendingOnMe = false;
             syncGpaListPendingOnMeChipActive();
             if (typeof toastr !== 'undefined') toastr.error('Failed to load payment list.');
@@ -1206,6 +1242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadEmployeeList(),
         loadGpaProjectListForGrid(),
         loadGpaProjectCategoryLists(),
+        loadGpaWorkTypeList(),
     ]);
     syncGpaPartyEmployeeUI();
     setTodayDates();
@@ -1272,6 +1309,8 @@ function normalizeApiRows(result) {
     if (Array.isArray(result?.subProjectList)) return result.subProjectList;
     if (Array.isArray(result?.ProjectList)) return result.ProjectList;
     if (Array.isArray(result?.projectList)) return result.projectList;
+    if (Array.isArray(result?.WorkTypeList)) return result.WorkTypeList;
+    if (Array.isArray(result?.workTypeList)) return result.workTypeList;
     if (Array.isArray(result?.Table)) return result.Table;
     if (Array.isArray(result?.table)) return result.table;
     if (Array.isArray(result?.data)) return result.data;
@@ -1391,10 +1430,21 @@ function gpaRowHasEmbeddedDetailFields(r) {
     if (r.PaymentAmount != null || r.paymentAmount != null || r['Payment Amount'] != null) return true;
     if (r.PONo != null || r.pONo != null || r.PODate != null || r.pODate != null) return true;
     if (r.CategoryName != null || r.categoryName != null) return true;
+    if (r.CategoryDesc != null || r.categoryDesc != null) return true;
     if (r.PurchaseOrderMaster_Code != null || r.purchaseOrderMaster_Code != null) return true;
     if (r.ProjectCategory_Code != null || r.projectCategory_Code != null) return true;
     if (r.ProjectMaster_Code != null || r.mRNMaster_Code != null) return true;
+    if (r.ProjectDesp != null || r.projectDesp != null) return true;
+    if (r.SubProjectDesp != null || r.subProjectDesp != null) return true;
+    if (r.TotalPOAmount != null || r.totalPOAmount != null) return true;
+    if ((r.Amount != null || r.amount != null) && (r.PONo != null || r.pONo != null || r.CategoryDesc != null || r.categoryDesc != null)) return true;
     return false;
+}
+
+function gpaIsBlankPrintValue(v) {
+    if (v === undefined || v === null) return true;
+    const s = String(v).trim();
+    return s === '' || s.toLowerCase() === 'null';
 }
 
 /** Build detail DTO from master+detail flat join row (single result set). */
@@ -1404,10 +1454,12 @@ function gpaDetailRowFromCombinedRecord(row) {
         Code: row.GRNPaymentDetails_Code ?? row.GRNPaymentDetail_Code ?? row.DetailCode ?? row.detailCode ?? 0,
         GRNPaymentMaster_Code: row.GRNPaymentMaster_Code ?? row.gRNPaymentMaster_Code ?? row.Code ?? row.code,
         MRNMaster_Code: row.MRNMaster_Code ?? row.mRNMaster_Code ?? row.mrnMaster_Code ?? 0,
-        PaymentAmount: row.PaymentAmount ?? row.paymentAmount ?? row['Payment Amount'],
+        PaymentAmount: row.PaymentAmount ?? row.paymentAmount ?? row['Payment Amount']
+            ?? row.Amount ?? row.amount,
         PONo: row.PONo ?? row.pONo ?? row.PoNO ?? row.PO_No ?? row.poNo,
         PODate: row.PODate ?? row.pODate ?? row.PO_Date ?? row.poDate ?? row.PurchaseOrderDate ?? row.purchaseOrderDate,
-        CategoryName: row.CategoryName ?? row.categoryName,
+        CategoryName: row.CategoryName ?? row.categoryName ?? row.CategoryDesc ?? row.categoryDesc,
+        CategoryDesc: row.CategoryDesc ?? row.categoryDesc ?? row.CategoryName ?? row.categoryName,
         PurchaseOrderMaster_Code: row.PurchaseOrderMaster_Code ?? row.purchaseOrderMaster_Code,
         ProjectCategory_Code: row.ProjectCategory_Code ?? row.projectCategory_Code,
         ProjectMaster_Code: row.ProjectMaster_Code ?? row.projectMaster_Code,
@@ -1416,6 +1468,11 @@ function gpaDetailRowFromCombinedRecord(row) {
         SubProject: row.SubProject ?? row.subProject,
         ProjectDesp: row.ProjectDesp ?? row.projectDesp ?? row.Project ?? row.project,
         SubProjectDesp: row.SubProjectDesp ?? row.subProjectDesp ?? row.SubProject ?? row.subProject,
+        SiteType: row.SiteType ?? row.siteType,
+        IndustryType: row.IndustryType ?? row.industryType,
+        PhoneNo: row.PhoneNo ?? row.phoneNo,
+        TotalPOAmount: row.TotalPOAmount ?? row.totalPOAmount,
+        AdvanceAmount: row.AdvanceAmount ?? row.advanceAmount,
         BillNo: row.BillNo ?? row.billNo ?? row.Name ?? row.name,
         BillDate: row.BillDate ?? row.billDate,
         BillAmount: row.BillAmount ?? row.billAmount,
@@ -1533,6 +1590,159 @@ function syncRefNoRequiredUI() {
         if (req) inp.setAttribute('required', 'required');
         else inp.removeAttribute('required');
     }
+}
+
+function gpaWorkTypeNameFromRow(w) {
+    if (!w || typeof w !== 'object') return '';
+    return String(
+        w['Work Type'] ?? w['work type'] ?? w['WORK TYPE']
+        ?? w.Name ?? w.name ?? w.WorkTypeDesp ?? w.workTypeDesp
+        ?? w.WorkType ?? w.workType ?? w.WorkTypeName ?? w.workTypeName ?? ''
+    ).trim();
+}
+
+function gpaWorkTypeCodeFromRow(w) {
+    if (!w || typeof w !== 'object') return null;
+    const masterCode = w.WorkTypeMaster_Code ?? w.workTypeMaster_Code;
+    if (!gpaIsBlankOrZeroCode(masterCode)) {
+        const n = parseInt(String(masterCode).trim(), 10);
+        return Number.isFinite(n) && n > 0 ? n : null;
+    }
+    // Payment list rows use Code as entry PK — never as WorkTypeMaster_Code.
+    const isPaymentListRow = w.EntryNo != null || w.entryNo != null
+        || w.PartyName != null || w.partyName != null
+        || w.GRNPaymentMaster_Code != null || w.gRNPaymentMaster_Code != null
+        || w['Work Type'] != null || w['work type'] != null;
+    if (isPaymentListRow) return null;
+    const ddlCode = w.Code ?? w.code;
+    if (gpaIsBlankOrZeroCode(ddlCode)) return null;
+    const n = parseInt(String(ddlCode).trim(), 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Display label for list / print — name on row, else lookup by WorkTypeMaster_Code. */
+function gpaResolveWorkTypeLabelFromItem(item) {
+    if (!item || typeof item !== 'object') return '';
+    const direct = gpaWorkTypeNameFromRow(item);
+    if (direct && !gpaIsBlankOrZeroCode(direct)) return direct;
+    const code = gpaWorkTypeCodeFromRow(item);
+    if (code !== null) {
+        const hit = (gpaWorkTypeListCache || []).find(w => gpaWorkTypeCodeFromRow(w) === code);
+        if (hit) {
+            const name = gpaWorkTypeNameFromRow(hit);
+            if (name) return name;
+        }
+    }
+    const codeNum = parseInt(String(item.Code ?? item.code ?? 0), 10);
+    if (Number.isFinite(codeNum) && codeNum > 0 && (gpaGetListPrintRows || []).length) {
+        const listRow = gpaFindListRowForPrint(gpaGetListPrintRows, codeNum, item);
+        if (listRow) {
+            const fromList = gpaWorkTypeNameFromRow(listRow);
+            if (fromList) return fromList;
+        }
+    }
+    return '';
+}
+
+function gpaSelectedWorkTypeName() {
+    const ddl = document.getElementById('ddlWorkType');
+    if (!ddl || !ddl.value) return '';
+    const opt = ddl.options[ddl.selectedIndex];
+    return String((opt && opt.text) ? opt.text : '').trim();
+}
+
+/** Goods / Service(s) — Project mandatory on every bill allocation row. */
+function gpaWorkTypeRequiresProject() {
+    const name = gpaSelectedWorkTypeName().toLowerCase();
+    return name === 'goods' || name === 'service' || name === 'services';
+}
+
+/** Toggle Project * and HTML required on bill rows when Work type is Goods or Services. */
+function syncGpaProjectRequiredUI() {
+    const mark = document.getElementById('gpaProjectReqMark');
+    const req = gpaWorkTypeRequiresProject();
+    if (mark) {
+        mark.style.display = req ? '' : 'none';
+        mark.setAttribute('aria-hidden', req ? 'false' : 'true');
+    }
+    document.querySelectorAll('#billTbody tr.bill-row .inp-project-ddl').forEach(sel => {
+        if (req) sel.setAttribute('required', 'required');
+        else sel.removeAttribute('required');
+    });
+}
+
+function onGpaWorkTypeChange() {
+    syncGpaProjectRequiredUI();
+}
+
+async function loadGpaWorkTypeList() {
+    const ddl = document.getElementById('ddlWorkType');
+    if (!ddl) return;
+    const prev = ddl.value;
+    try {
+        const result = await GRNPaymentApprovalService.GetWorkType();
+        const rows = normalizeApiRows(result);
+        gpaWorkTypeListCache = rows;
+        ddl.innerHTML = '<option value="">-- Select Work Type --</option>';
+        rows.forEach(w => {
+            const name = gpaWorkTypeNameFromRow(w);
+            const code = gpaWorkTypeCodeFromRow(w);
+            if (!name || code === null) return;
+            const opt = document.createElement('option');
+            opt.value = String(code);
+            opt.text = name;
+            ddl.appendChild(opt);
+        });
+        if (prev && [...ddl.options].some(o => o.value === prev)) ddl.value = prev;
+    } catch (e) {
+        console.error('loadGpaWorkTypeList', e);
+        ddl.innerHTML = '<option value="">-- Select Work Type --</option>';
+    }
+    syncGpaProjectRequiredUI();
+}
+
+function gpaBindWorkTypeOnMaster(master) {
+    const ddl = document.getElementById('ddlWorkType');
+    if (!ddl) return;
+    ddl.value = '';
+    const codeRaw = master?.WorkTypeMaster_Code ?? master?.workTypeMaster_Code;
+    const name = gpaWorkTypeNameFromRow(master);
+    const codeStr = (codeRaw !== undefined && codeRaw !== null && String(codeRaw).trim() !== '')
+        ? String(codeRaw).trim()
+        : '';
+    if (codeStr) {
+        for (let i = 0; i < ddl.options.length; i++) {
+            if (ddl.options[i].value === codeStr) {
+                ddl.value = codeStr;
+                syncGpaProjectRequiredUI();
+                return;
+            }
+        }
+    }
+    if (name) {
+        const needle = name.toLowerCase();
+        for (let j = 0; j < ddl.options.length; j++) {
+            const opt = ddl.options[j];
+            if (!opt.value) continue;
+            if (String(opt.text).trim().toLowerCase() === needle) {
+                ddl.value = opt.value;
+                syncGpaProjectRequiredUI();
+                return;
+            }
+        }
+        const hit = (gpaWorkTypeListCache || []).find(w => gpaWorkTypeNameFromRow(w).toLowerCase() === needle);
+        if (hit) {
+            const c = gpaWorkTypeCodeFromRow(hit);
+            if (c !== null) {
+                const cStr = String(c);
+                if (![...ddl.options].some(o => o.value === cStr)) {
+                    ddl.add(new Option(gpaWorkTypeNameFromRow(hit), cStr));
+                }
+                ddl.value = cStr;
+            }
+        }
+    }
+    syncGpaProjectRequiredUI();
 }
 
 /** Mode BANKPAYMENTTYPE — bind F_BankPaymentTypeMaster_Code + display name. */
@@ -1671,7 +1881,10 @@ function gpaPoNoFromRecord(r) {
     const flat = r.PONo ?? r.pONo ?? r.PoNO ?? r.PoNo ?? r.PO_No ?? r.poNo ?? r.PO_NO ?? r.PO_NO_
         ?? r.PONumber ?? r.poNumber ?? r.PurchaseOrderNo ?? r.purchaseOrderNo
         ?? r.PurchaseOrderNO ?? r.purchaseOrderNO ?? '';
-    if (flat !== undefined && flat !== null && String(flat).trim() !== '') return String(flat).trim();
+    if (flat !== undefined && flat !== null && String(flat).trim() !== '') {
+        const poNo = gpaDisplayTextOrEmpty(flat);
+        if (poNo) return poNo;
+    }
     const pom = r.PurchaseOrderMaster ?? r.purchaseOrderMaster;
     if (pom && typeof pom === 'object') {
         const v = pom.PONo ?? pom.pONo ?? pom.PoNO ?? pom.PO_No ?? pom.poNo ?? '';
@@ -1972,7 +2185,10 @@ function gpaCategoryNameFromRecord(r) {
     const flat = r.CategoryName ?? r.categoryName
         ?? r.CategoryDesc ?? r.categoryDesc
         ?? r.CategoryDescription ?? r.categoryDescription ?? '';
-    if (flat !== undefined && flat !== null && String(flat).trim() !== '') return String(flat).trim();
+    if (flat !== undefined && flat !== null && String(flat).trim() !== '') {
+        const name = gpaDisplayTextOrEmpty(flat);
+        if (name) return name;
+    }
     const cm = r.CategoryMaster ?? r.categoryMaster;
     if (cm && typeof cm === 'object') {
         const v = cm.CategoryName ?? cm.categoryName ?? cm.CategoryDesc ?? cm.categoryDesc ?? '';
@@ -1988,12 +2204,12 @@ function gpaPoCodeFromRecord(r) {
     const pom = r.PurchaseOrderMaster ?? r.purchaseOrderMaster;
     if (pom && typeof pom === 'object') {
         const v = pom.Code ?? pom.code ?? pom.PurchaseOrderMaster_Code ?? pom.purchaseOrderMaster_Code ?? '';
-        if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+        const code = gpaCodeStringOrEmpty(v);
+        if (code) return code;
     }
     const v = r.PurchaseOrderMaster_Code ?? r.purchaseOrderMaster_Code
         ?? r.PO_Code ?? r.po_Code ?? r.PurchaseOrder_Code ?? r.purchaseOrder_Code;
-    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
-    return '';
+    return gpaCodeStringOrEmpty(v);
 }
 
 function gpaCategoryCodeFromRecord(r) {
@@ -2002,13 +2218,13 @@ function gpaCategoryCodeFromRecord(r) {
     if (cm && typeof cm === 'object') {
         const v = cm.Code ?? cm.code ?? cm.CategoryMaster_Code ?? cm.categoryMaster_Code
             ?? cm.ProjectCategory_Code ?? cm.projectCategory_Code ?? '';
-        if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+        const code = gpaCodeStringOrEmpty(v);
+        if (code) return code;
     }
     const v = r.CategoryMaster_Code ?? r.categoryMaster_Code
         ?? r.ProjectCategory_Code ?? r.projectCategory_Code
         ?? r.Category_Code ?? r.category_Code ?? r.F_ProjectCategory_Code ?? r.f_ProjectCategory_Code;
-    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
-    return '';
+    return gpaCodeStringOrEmpty(v);
 }
 
 function gpaResolvePoCodeFromRow(r) {
@@ -2016,10 +2232,10 @@ function gpaResolvePoCodeFromRow(r) {
 }
 
 function gpaResolvePoNoTextFromRow(r) {
-    let poNo = gpaPoNoFromRecord(r);
+    let poNo = gpaDisplayTextOrEmpty(gpaPoNoFromRecord(r));
     if (!poNo) {
-        const c = gpaResolvePoCodeFromRow(r);
-        if (c) poNo = gpaLookupPoNoLabel(c);
+        const c = gpaCodeStringOrEmpty(gpaResolvePoCodeFromRow(r));
+        if (c) poNo = gpaDisplayTextOrEmpty(gpaLookupPoNoLabel(c));
     }
     return poNo;
 }
@@ -2052,8 +2268,8 @@ function gpaResolvePaymentForFromMaster(master) {
 function gpaDdlCodeFromCacheItem(item, codeKeys, textKeys) {
     if (!item || typeof item !== 'object') return '';
     for (let i = 0; i < codeKeys.length; i++) {
-        const v = item[codeKeys[i]];
-        if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+        const code = gpaCodeStringOrEmpty(item[codeKeys[i]]);
+        if (code) return code;
     }
     return '';
 }
@@ -2074,7 +2290,7 @@ const GPA_CAT_TEXT_KEYS = ['CategoryName', 'categoryName', 'CategoryDesc', 'cate
 
 function gpaFillPoSelectOptions(sel, selectedPoNo) {
     if (!sel) return;
-    const savedPoNo = selectedPoNo !== undefined && selectedPoNo !== null ? String(selectedPoNo).trim() : '';
+    const savedPoNo = gpaDisplayTextOrEmpty(selectedPoNo);
     sel.innerHTML = '<option value="">-- PO No --</option>';
     (gpaPoListCache || []).forEach(po => {
         const opt = document.createElement('option');
@@ -2113,10 +2329,8 @@ function gpaFillPoSelectOptions(sel, selectedPoNo) {
 
 function gpaFillCategorySelectOptions(sel, selectedCategoryName, selectedCategoryCode) {
     if (!sel) return;
-    const savedName = selectedCategoryName !== undefined && selectedCategoryName !== null
-        ? String(selectedCategoryName).trim() : '';
-    const savedCode = selectedCategoryCode !== undefined && selectedCategoryCode !== null
-        ? String(selectedCategoryCode).trim() : '';
+    const savedName = gpaDisplayTextOrEmpty(selectedCategoryName);
+    const savedCode = gpaCodeStringOrEmpty(selectedCategoryCode);
     sel.innerHTML = '<option value="">-- Category --</option>';
     (gpaProjectCategoryCache || []).forEach(cat => {
         const opt = document.createElement('option');
@@ -2137,11 +2351,19 @@ function gpaFillCategorySelectOptions(sel, selectedCategoryName, selectedCategor
     if (savedName) sel.value = savedName;
 }
 
+function gpaSanitizeBillRowDropdownValues(tr) {
+    if (!tr) return;
+    tr.querySelectorAll('.inp-po-ddl, .inp-category-ddl, .inp-project-ddl, .inp-subproject-ddl').forEach(el => {
+        if (gpaIsBlankOrZeroCode(el.value)) el.value = '';
+    });
+}
+
 function initBillRowPoCategorySelects(tr) {
     const po = tr.querySelector('.inp-po-ddl');
     const cat = tr.querySelector('.inp-category-ddl');
     gpaFillPoSelectOptions(po, '', '');
     gpaFillCategorySelectOptions(cat, '', '');
+    gpaSanitizeBillRowDropdownValues(tr);
 }
 
 function gpaBindPoCategoryOnRow(tr, r, preserveCategory) {
@@ -2149,14 +2371,10 @@ function gpaBindPoCategoryOnRow(tr, r, preserveCategory) {
     const po = tr.querySelector('.inp-po-ddl');
     const cat = tr.querySelector('.inp-category-ddl');
     let poNo = gpaResolvePoNoTextFromRow(r);
-    if (!poNo) {
-        const c = gpaResolvePoCodeFromRow(r);
-        if (c) poNo = gpaLookupPoNoLabel(c);
-    }
-    let catName = gpaResolveCategoryNameFromRow(r);
+    let catName = gpaDisplayTextOrEmpty(gpaResolveCategoryNameFromRow(r));
     if (!catName) {
-        const c = gpaResolveCategoryCodeFromRow(r);
-        if (c) catName = gpaLookupCategoryLabel(c);
+        const c = gpaCodeStringOrEmpty(gpaResolveCategoryCodeFromRow(r));
+        if (c) catName = gpaDisplayTextOrEmpty(gpaLookupCategoryLabel(c));
     }
     if (preserveCategory && cat) {
         const existing = gpaCategoryNameFromSelect(cat);
@@ -2190,6 +2408,7 @@ function gpaPoNoTextFromSelectOption(sel) {
 
 function gpaPoNoFromSelect(sel) {
     if (!sel) return '';
+    if (gpaIsBlankOrZeroCode(sel.value)) return '';
     const poNo = gpaPoNoTextFromSelectOption(sel);
     if (poNo) return poNo;
     const val = parseInt(String(sel.value ?? '').trim(), 10);
@@ -2202,7 +2421,7 @@ function gpaPoNoFromSelect(sel) {
 
 function gpaCategoryNameFromSelect(sel) {
     if (!sel) return '';
-    return String(sel.value ?? '').trim();
+    return gpaDisplayTextOrEmpty(sel.value);
 }
 
 function gpaPoCodeFromPoNo(poNo) {
@@ -2256,23 +2475,23 @@ function gpaCatCodeFromSelect(sel) {
 }
 
 function gpaLookupPoNoLabel(code) {
-    if (code === undefined || code === null || `${code}`.trim() === '') return '';
+    if (gpaIsBlankOrZeroCode(code)) return '';
     const cs = String(code).trim();
     for (let i = 0; i < (gpaPoListCache || []).length; i++) {
         const po = gpaPoListCache[i];
         const c = gpaPoCodeFromRecord(po) || gpaDdlCodeFromCacheItem(po, GPA_PO_CODE_KEYS, GPA_PO_TEXT_KEYS);
-        if (`${c}` === cs) return gpaPoNoFromRecord(po) || cs;
+        if (`${c}` === cs) return gpaDisplayTextOrEmpty(gpaPoNoFromRecord(po)) || cs;
     }
     return cs;
 }
 
 function gpaLookupCategoryLabel(code) {
-    if (code === undefined || code === null || `${code}`.trim() === '') return '';
+    if (gpaIsBlankOrZeroCode(code)) return '';
     const cs = String(code).trim();
     for (let i = 0; i < (gpaProjectCategoryCache || []).length; i++) {
         const cat = gpaProjectCategoryCache[i];
         const c = gpaCategoryCodeFromRecord(cat) || gpaDdlCodeFromCacheItem(cat, GPA_CAT_CODE_KEYS, GPA_CAT_TEXT_KEYS);
-        if (`${c}` === cs) return gpaCategoryNameFromRecord(cat) || cs;
+        if (`${c}` === cs) return gpaDisplayTextOrEmpty(gpaCategoryNameFromRecord(cat)) || cs;
     }
     return cs;
 }
@@ -2304,6 +2523,7 @@ function gpaRefreshAllBillRowPoDropdowns(keepSaved) {
         if (!po) return;
         const saved = keepSaved === false ? '' : gpaPoNoFromSelect(po);
         gpaFillPoSelectOptions(po, saved);
+        gpaSanitizeBillRowDropdownValues(tr);
     });
 }
 
@@ -2402,6 +2622,7 @@ async function fillBillGridFromDetailRows(rows) {
         }
     }
     gpaRefreshAllBillRowPoDropdowns(true);
+    syncGpaProjectRequiredUI();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2565,6 +2786,7 @@ function addBillRows(count) {
         }
     }
     gpaRefreshAllBillRowPoDropdowns(true);
+    syncGpaProjectRequiredUI();
 }
 
 function initBillRowProjectSelects(tr) {
@@ -2576,7 +2798,8 @@ function initBillRowProjectSelects(tr) {
         const opt = document.createElement('option');
         const code = p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code
             ?? p.Project_Code ?? p.project_Code ?? p.F_ProjectMaster_Code ?? p.f_ProjectMaster_Code ?? '';
-        opt.value = code !== undefined && code !== null ? String(code) : '';
+        if (gpaIsBlankOrZeroCode(code)) return;
+        opt.value = String(code);
         opt.text = p.ProjectName ?? p.projectName ?? p.Name ?? p.ProjectDesp ?? p.projectDesp ?? opt.value;
         pj.appendChild(opt);
     });
@@ -2589,7 +2812,7 @@ async function fillSubProjectOptionsForRow(tr, projectCode) {
     const prev = sp.value;
     sp.innerHTML = '<option value="">-- Sub project --</option>';
     const pc = projectCode !== undefined && projectCode !== null ? String(projectCode).trim() : '';
-    if (!pc) return;
+    if (gpaIsBlankOrZeroCode(pc)) return;
     try {
         const subResult = await GRNPaymentApprovalService.GetSubProjectMasterList(pc);
         const subs = Array.isArray(subResult) ? subResult : normalizeApiRows(subResult);
@@ -2597,7 +2820,8 @@ async function fillSubProjectOptionsForRow(tr, projectCode) {
             const opt = document.createElement('option');
             const code = s.SubProjectMaster_Code ?? s.subProjectMaster_Code ?? s.Code ?? s.code
                 ?? s.SubProject_Code ?? s.subProject_Code ?? s.F_SubProjectMaster_Code ?? s.f_SubProjectMaster_Code ?? '';
-            opt.value = code !== undefined && code !== null ? String(code) : '';
+            if (gpaIsBlankOrZeroCode(code)) return;
+            opt.value = String(code);
             opt.text = s.SubProjectName ?? s.subProjectName ?? s.SubProjectDesp ?? s.subProjectDesp ?? s.Name ?? s.name ?? opt.value;
             sp.appendChild(opt);
         });
@@ -2623,11 +2847,12 @@ function resolveProjectMasterCodeFromRow(r) {
         ?? r.F_Project_Code ?? r.f_Project_Code
         ?? r.Project_Code ?? r.project_Code
         ?? r.ProjectMasterCode ?? r.projectMasterCode;
-    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+    const code = gpaCodeStringOrEmpty(v);
+    if (code) return code;
     const pm = r.ProjectMaster ?? r.projectMaster;
     if (pm !== undefined && pm !== null) {
         const s = String(pm).trim();
-        if (/^\d+$/.test(s)) return s;
+        if (/^\d+$/.test(s) && !gpaIsBlankOrZeroCode(s)) return s;
     }
     return '';
 }
@@ -2639,11 +2864,12 @@ function resolveSubProjectMasterCodeFromRow(r) {
         ?? r.F_SubProject_Code ?? r.f_SubProject_Code
         ?? r.SubProject_Code ?? r.subProject_Code
         ?? r.SubProjectMasterCode ?? r.subProjectMasterCode;
-    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+    const code = gpaCodeStringOrEmpty(v);
+    if (code) return code;
     const sm = r.SubProjectMaster ?? r.subProjectMaster;
     if (sm !== undefined && sm !== null) {
         const s = String(sm).trim();
-        if (/^\d+$/.test(s)) return s;
+        if (/^\d+$/.test(s) && !gpaIsBlankOrZeroCode(s)) return s;
     }
     return '';
 }
@@ -2763,6 +2989,7 @@ function bindBillRowProjectSubAsync(tr, r) {
             const opt = [...sp.options].find(o => String(o.text).trim() === sv.trim());
             if (opt) sp.value = opt.value;
         }
+        gpaSanitizeBillRowDropdownValues(tr);
     })();
 }
 
@@ -2920,9 +3147,31 @@ function gpaSelectedOptionText(selectEl) {
 function gpaDdlIntCode(selectEl) {
     if (!selectEl) return 0;
     const raw = String(selectEl.value ?? '').trim();
-    if (!raw) return 0;
+    if (!raw || gpaIsBlankOrZeroCode(raw)) return 0;
     const n = parseInt(raw, 10);
     return Number.isFinite(n) ? n : 0;
+}
+
+/** ERP unset FK codes are often 0 — treat as blank in UI (do not bind/show "0"). */
+function gpaIsBlankOrZeroCode(v) {
+    if (v === undefined || v === null) return true;
+    const s = String(v).trim();
+    if (s === '') return true;
+    if (s === '0') return true;
+    const n = parseInt(s, 10);
+    return Number.isFinite(n) && n <= 0;
+}
+
+function gpaCodeStringOrEmpty(v) {
+    if (gpaIsBlankOrZeroCode(v)) return '';
+    return String(v).trim();
+}
+
+function gpaDisplayTextOrEmpty(v) {
+    if (v === undefined || v === null) return '';
+    const s = String(v).trim();
+    if (!s || gpaIsBlankOrZeroCode(s)) return '';
+    return s;
 }
 
 function formatMoney(n) {
@@ -3970,6 +4219,7 @@ function collectPayload() {
         Narration: document.getElementById('txtNarration')?.value?.trim() ?? '',
         MarketingManMaster_Code: gpaNumOrZero(gpaTyGrnPaymentMasterMarketingManMasterCode()),
         PaymentFor: gpaPaymentForForSave(),
+        WorkTypeMaster_Code: gpaNumOrZero(gpaDdlIntCode(document.getElementById('ddlWorkType'))),
     }];
 
     const GRNPaymentDetails = [];
@@ -4055,7 +4305,7 @@ async function loadGRNPaymentApprovalByCode(Code) {
         await loadEmployeeList();
         await loadBankPaymentList();
         await loadGpaBankMasterList();
-        await Promise.all([loadGpaProjectListForGrid(), loadGpaProjectCategoryLists()]);
+        await Promise.all([loadGpaProjectListForGrid(), loadGpaProjectCategoryLists(), loadGpaWorkTypeList()]);
         const res = await GRNPaymentApprovalService.GetGRNPaymentApprovalByCode(codeNum);
         const root = peelGrnPaymentApiRoot(res);
         const master = firstMasterFromApi(root);
@@ -4176,6 +4426,7 @@ async function loadGRNPaymentApprovalByCode(Code) {
         const nar = document.getElementById('txtNarration');
         if (nar) nar.value = master?.Narration ?? master?.narration ?? '';
         gpaBindPaymentForOnMaster(master);
+        gpaBindWorkTypeOnMaster(master);
 
         hideGpaAddBillModalAndReset();
 
@@ -4202,6 +4453,7 @@ async function loadGRNPaymentApprovalByCode(Code) {
         const advEl = document.getElementById('txtFooterAdvance');
         if (advEl) delete advEl.dataset.advanceManual;
         recalcFooter();
+        syncGpaProjectRequiredUI();
         gpaShowFillGridCheckbox(false);
         syncGpaPartyEmployeeUI();
         await gpaSyncFooterAttachmentFromApis(master, codeNum);
@@ -4339,6 +4591,17 @@ function validateGRNPaymentApproval() {
     if (badPayVsPayable) {
         showToast('Payment amount cannot be greater than payable amount on any line.', 'warning');
         return false;
+    }
+    if (gpaWorkTypeRequiresProject()) {
+        let missingProject = false;
+        document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
+            const projCode = gpaDdlIntCode(tr.querySelector('.inp-project-ddl'));
+            if (!(projCode > 0)) missingProject = true;
+        });
+        if (missingProject) {
+            showToast('Work Type Goods/Services: select Project on each bill allocation row.', 'warning');
+            return false;
+        }
     }
     const dupIssue = findDuplicateBillAllocationIssue();
     if (dupIssue) {
@@ -4496,6 +4759,9 @@ function resetGRNPaymentApprovalForm() {
     if (nar) nar.value = '';
     const txtPf = document.getElementById('txtPaymentFor');
     if (txtPf) txtPf.value = '';
+    const ddlWorkType = document.getElementById('ddlWorkType');
+    if (ddlWorkType) ddlWorkType.value = '';
+    syncGpaProjectRequiredUI();
     const d1 = document.getElementById('dtPaymentDate');
     if (d1) d1.value = '';
     setTodayDates();
@@ -4720,7 +4986,7 @@ function gpaFindListRowForPrint(listResp, codeNum, master) {
     return all.length ? all[0] : null;
 }
 
-/** Prefer non-empty scalar fields from {@link GRNPaymentApprovalService.GetGRNPaymentApprovalList} row over GetByCode master. */
+/** Prefer non-empty scalar fields from GetList / GetGRNPaymentApprovalList row over GetByCode master. */
 function gpaOverlayMasterFromListRow(master, listRow) {
     if (!master || !listRow) return master;
     const m = Object.assign({}, master);
@@ -4728,7 +4994,7 @@ function gpaOverlayMasterFromListRow(master, listRow) {
     function setIf(targetKey, altKeys) {
         for (let i = 0; i < altKeys.length; i++) {
             const v = listRow[altKeys[i]];
-            if (v !== undefined && v !== null && String(v).trim() !== '') {
+            if (!gpaIsBlankPrintValue(v)) {
                 m[targetKey] = v;
                 return;
             }
@@ -4742,6 +5008,8 @@ function gpaOverlayMasterFromListRow(master, listRow) {
         setIf('VendorName', ['PartyName', 'VendorName', 'partyName', 'AccountName', 'party', 'Party', 'Party Name']);
     }
     setIf('RefNo', ['RefNo', 'refNo']);
+    setIf('WorkTypeDesp', ['WorkTypeDesp', 'workTypeDesp', 'WorkType', 'workType', 'WorkTypeName', 'workTypeName', 'Work Type', 'work type']);
+    setIf('WorkTypeMaster_Code', ['WorkTypeMaster_Code', 'workTypeMaster_Code']);
     setIf('EntryNo', ['EntryNo', 'entryNo']);
     setIf('EntryDate', ['EntryDate', 'entryDate', 'PaymentDate', 'paymentDate']);
     setIf('Amount', ['Amount', 'amount', 'HeaderAmount', 'headerAmount', 'PaymentAmount', 'paymentAmount']);
@@ -4755,8 +5023,14 @@ function gpaOverlayMasterFromListRow(master, listRow) {
     setIf('PONo', ['PONo', 'pONo', 'PoNO', 'PO_No', 'poNo', 'PurchaseOrderNo', 'purchaseOrderNo']);
     setIf('PODate', ['PODate', 'pODate', 'PO_Date', 'poDate', 'PurchaseOrderDate', 'purchaseOrderDate']);
     setIf('PurchaseOrderMaster_Code', ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code', 'PO_Code', 'po_Code']);
-    setIf('CategoryName', ['CategoryName', 'categoryName', 'ProjectCategoryName', 'projectCategoryName']);
+    setIf('CategoryName', ['CategoryName', 'categoryName', 'CategoryDesc', 'categoryDesc', 'ProjectCategoryName', 'projectCategoryName']);
     setIf('ProjectCategory_Code', ['ProjectCategory_Code', 'projectCategory_Code', 'Category_Code', 'category_Code']);
+    setIf('ProjectDesp', ['ProjectDesp', 'projectDesp', 'ProjectName', 'projectName', 'Project', 'project']);
+    setIf('SubProjectDesp', ['SubProjectDesp', 'subProjectDesp', 'SubProjectName', 'subProjectName', 'SubProject', 'subProject']);
+    setIf('SiteType', ['SiteType', 'siteType', 'SiteTypeName', 'siteTypeName']);
+    setIf('PhoneNo', ['PhoneNo', 'phoneNo', 'ContactNo', 'contactNo', 'Mobile', 'mobile', 'Phone', 'phone']);
+    setIf('IndustryType', ['IndustryType', 'industryType']);
+    setIf('TotalPOAmount', ['TotalPOAmount', 'totalPOAmount']);
     setIf('Status', ['Status', 'status', 'ApprovalStatus', 'approvalStatus', 'Approval_Status']);
     setIf('LevelDetails', ['LevelDetails', 'levelDetails']);
     setIf('TotalLevels', ['TotalLevels', 'totalLevels', 'MaxLevel', 'maxLevel']);
@@ -4800,8 +5074,25 @@ function gpaLookupEmployeeNameForPrint(master, listRow) {
     return '';
 }
 
-/** Party payment vs employee payment — drives Credit to / Vendor Type on voucher print. */
-function gpaResolvePrintCreditAndVendorType(master, listRow, siteBundle) {
+/** IndustryType from GetList / DDL_LIST — upper voucher row (Vendor Type / Industry Type). */
+function gpaPickIndustryTypeForPrint(master, listRow, listRows, siteBundle) {
+    const sources = [];
+    if (Array.isArray(listRows)) {
+        for (let i = 0; i < listRows.length; i++) sources.push(listRows[i]);
+    }
+    if (listRow) sources.push(listRow);
+    if (master) sources.push(master);
+    for (let j = 0; j < sources.length; j++) {
+        const v = sources[j].IndustryType ?? sources[j].industryType;
+        if (!gpaIsBlankPrintValue(v)) return String(v).trim();
+    }
+    const fromSite = siteBundle?.vendorType;
+    if (!gpaIsBlankPrintValue(fromSite)) return String(fromSite).trim();
+    return '';
+}
+
+/** Party payment vs employee payment — drives Credit to / Industry Type on voucher print. */
+function gpaResolvePrintCreditAndVendorType(master, listRow, siteBundle, listRows) {
     const isEmp = gpaMasterIsEmployeePayment(master) || gpaMasterIsEmployeePayment(listRow);
     let vendorType = String(siteBundle?.vendorType || '').trim();
     if (isEmp) {
@@ -4828,8 +5119,11 @@ function gpaResolvePrintCreditAndVendorType(master, listRow, siteBundle) {
         const hit = gpaListFullRows.find(function (r) { return r.Code == codeNum; });
         if (hit && hit['Party Name']) creditTo = String(hit['Party Name']).trim();
     }
-    /* Party-wise payment: Vendor Type = Party (not bill/industry type from site bundle). */
-    return { creditTo: creditTo || '', vendorType: 'Party' };
+    const industryType = gpaPickIndustryTypeForPrint(master, listRow, listRows, siteBundle);
+    if (gpaIsBlankPrintValue(industryType)) {
+        return { creditTo: creditTo || '', vendorType: 'Party' };
+    }
+    return { creditTo: creditTo || '', vendorType: industryType };
 }
 
 function gpaNumberToWords(amount) {
@@ -4923,27 +5217,112 @@ function gpaFindCachedListRowForPrint(codeNum) {
 function gpaFindAllCachedListRowsForPrint(codeNum) {
     if (!Number.isFinite(codeNum) || codeNum <= 0) return [];
     const out = [];
-    if (Array.isArray(gpaListSourceRows)) {
-        for (let i = 0; i < gpaListSourceRows.length; i++) {
-            const r = gpaListSourceRows[i];
+    if (Array.isArray(gpaGetListPrintRows)) {
+        for (let i = 0; i < gpaGetListPrintRows.length; i++) {
+            const r = gpaGetListPrintRows[i];
+            if (gpaListRowPkForPrint(r) === codeNum) out.push(r);
+        }
+    }
+    if (!out.length && Array.isArray(gpaListSourceRows)) {
+        for (let j = 0; j < gpaListSourceRows.length; j++) {
+            const r = gpaListSourceRows[j];
             if (gpaListRowPkForPrint(r) === codeNum) out.push(r);
         }
     }
     if (!out.length && Array.isArray(gpaListFullRows)) {
-        for (let j = 0; j < gpaListFullRows.length; j++) {
-            const row = gpaListFullRows[j];
+        for (let k = 0; k < gpaListFullRows.length; k++) {
+            const row = gpaListFullRows[k];
             if (parseInt(row.Code, 10) === codeNum && row._gpaRaw) out.push(row._gpaRaw);
         }
     }
     return out;
 }
 
+function gpaFindListRowForDetailLine(listRows, detailRow, index) {
+    if (!Array.isArray(listRows) || !listRows.length) return null;
+    if (listRows.length === 1) return listRows[0];
+    const po = gpaResolvePoNoTextFromRow(gpaEnrichDetailRowPoCategory(detailRow || {}));
+    if (po) {
+        for (let i = 0; i < listRows.length; i++) {
+            const lrPo = gpaResolvePoNoTextFromRow(gpaEnrichDetailRowPoCategory(listRows[i]));
+            if (lrPo && lrPo === po) return listRows[i];
+        }
+    }
+    return listRows[index] != null ? listRows[index] : listRows[0];
+}
+
+function gpaSetDetailIfBlank(out, key, value) {
+    if (!gpaIsBlankPrintValue(out[key])) return;
+    if (gpaIsBlankPrintValue(value)) return;
+    out[key] = value;
+}
+
+/** Overlay GetList / DDL_LIST row onto a detail line for print preview. */
+function gpaMergePrintDetailWithListRow(detail, listRow) {
+    if (!detail) return detail;
+    const out = Object.assign({}, detail);
+    if (!listRow || typeof listRow !== 'object') return gpaEnrichDetailRowPoCategory(out);
+    function pick() {
+        for (let i = 0; i < arguments.length; i++) {
+            const v = listRow[arguments[i]];
+            if (!gpaIsBlankPrintValue(v)) return v;
+        }
+        return '';
+    }
+    gpaSetDetailIfBlank(out, 'CategoryDesc', pick('CategoryDesc', 'categoryDesc'));
+    gpaSetDetailIfBlank(out, 'CategoryName', pick('CategoryName', 'categoryName', 'CategoryDesc', 'categoryDesc'));
+    gpaSetDetailIfBlank(out, 'ProjectDesp', pick('ProjectDesp', 'projectDesp', 'ProjectName', 'projectName', 'Project', 'project'));
+    gpaSetDetailIfBlank(out, 'SubProjectDesp', pick('SubProjectDesp', 'subProjectDesp', 'SubProjectName', 'subProjectName', 'SubProject', 'subProject'));
+    gpaSetDetailIfBlank(out, 'SiteType', pick('SiteType', 'siteType'));
+    gpaSetDetailIfBlank(out, 'IndustryType', pick('IndustryType', 'industryType'));
+    gpaSetDetailIfBlank(out, 'PhoneNo', pick('PhoneNo', 'phoneNo', 'ContactNo', 'contactNo', 'Mobile', 'mobile'));
+    gpaSetDetailIfBlank(out, 'TotalPOAmount', pick('TotalPOAmount', 'totalPOAmount'));
+    gpaSetDetailIfBlank(out, 'PaymentAmount', pick('PaymentAmount', 'paymentAmount', 'Amount', 'amount'));
+    gpaSetDetailIfBlank(out, 'PONo', pick('PONo', 'pONo', 'PoNO', 'PO_No', 'poNo'));
+    gpaSetDetailIfBlank(out, 'PODate', pick('PODate', 'pODate', 'PO_Date', 'poDate'));
+    gpaSetDetailIfBlank(out, 'AdvanceAmount', pick('AdvanceAmount', 'advanceAmount'));
+    return gpaEnrichDetailRowPoCategory(out);
+}
+
+function gpaBuildPrintDetailLineHtml(row, idx, listRows, siteFallback) {
+    const listRowForLine = gpaFindListRowForDetailLine(listRows, row, idx);
+    const mergedRow = gpaMergePrintDetailWithListRow(row, listRowForLine);
+    const sb = gpaMergeSiteBundlesForPrint(
+        gpaPickSiteBundleFromRow(mergedRow),
+        listRowForLine ? gpaPickSiteBundleFromRow(listRowForLine) : null,
+    );
+    if (!sb.project && siteFallback && siteFallback.project) sb.project = siteFallback.project;
+    if (!sb.site && siteFallback && siteFallback.site) sb.site = siteFallback.site;
+
+    const pay = mergedRow.TotalPOAmount ?? mergedRow.totalPOAmount
+        ?? mergedRow.PaymentAmount ?? mergedRow.paymentAmount ?? mergedRow['Payment Amount']
+        ?? mergedRow.Amount ?? mergedRow.amount ?? '';
+    const poLine = gpaResolvePoNoTextFromRow(gpaEnrichDetailRowPoCategory(mergedRow));
+    const catLine = gpaResolveCategoryNameFromRow(mergedRow);
+    const catDesc = String(mergedRow.CategoryDesc ?? mergedRow.categoryDesc ?? '').trim();
+
+    let catPart = '';
+    if (catLine) catPart += ' &mdash; Category: ' + gpaEscapeHtml(String(catLine));
+    if (catDesc && catDesc !== catLine) catPart += ' &mdash; Category Desc: ' + gpaEscapeHtml(catDesc);
+    else if (!catLine && catDesc) catPart += ' &mdash; Category Desc: ' + gpaEscapeHtml(catDesc);
+
+    return '<div style="margin-bottom:6px;">'
+        + '<b>Line ' + (idx + 1) + '</b>'
+        + (poLine ? ' &mdash; PO: ' + gpaEscapeHtml(String(poLine)) : '')
+        + catPart
+        + (pay !== '' && pay != null ? ' &mdash; PO Amount: &#8377;' + gpaFormatIndianCurrency(pay) : '')
+        + (sb.project ? ' &mdash; Project: ' + gpaEscapeHtml(String(sb.project)) : '')
+        + (sb.site ? ' &mdash; Sub Project: ' + gpaEscapeHtml(String(sb.site)) : '')
+        + '</div>';
+}
+
 function gpaBuildPrintDetailsFromListRows(listRows) {
     if (!Array.isArray(listRows) || !listRows.length) return [];
     const out = [];
     for (let i = 0; i < listRows.length; i++) {
-        const synth = gpaDetailRowFromCombinedRecord(listRows[i]);
-        if (synth) out.push(gpaEnrichDetailRowPoCategory(synth));
+        let synth = gpaDetailRowFromCombinedRecord(listRows[i]);
+        if (!synth) synth = { GRNPaymentMaster_Code: listRows[i].Code ?? listRows[i].code ?? 0 };
+        out.push(gpaMergePrintDetailWithListRow(synth, listRows[i]));
     }
     return out;
 }
@@ -4991,8 +5370,10 @@ function gpaPickSiteBundleFromRow(r) {
         project: r.ProjectDesp ?? r.projectDesp ?? r.ProjectName ?? r.projectName ?? r.Project ?? '',
         site: r.SiteName ?? r.siteName ?? r.SiteDesp ?? r.SubProjectDesp ?? r.subProjectDesp ?? r.SubProject ?? '',
         siteType: r.SiteType ?? r.siteType ?? r.SiteTypeName ?? '',
-        vendorType: r.VendorType ?? r.vendorType ?? r.PartyType
-            ?? r.IndustryType ?? r.industryType ?? '',
+        vendorType: (function () {
+            const v = r.VendorType ?? r.vendorType ?? r.PartyType ?? r.IndustryType ?? r.industryType ?? '';
+            return gpaIsBlankPrintValue(v) ? '' : String(v).trim();
+        })(),
         contact: r.ContactNo ?? r.contactNo ?? r.Mobile ?? r.mobile ?? r.Phone ?? r.phone
             ?? r.PhoneNo ?? r.phoneNo ?? '',
     };
@@ -5090,6 +5471,7 @@ function gpaPrintShowPpplLogo(companyName) {
     return n === 'PURSHOTAM PROFILES PVT.LTD.' || n.indexOf('PURSHOTAM PROFILES') === 0;
 }
 
+/** List print — preview: voucher only; print: voucher + print dialog. */
 function PrintGRNPaymentFromList(code, mode) {
     const codeNum = parseInt(code, 10);
     if (!Number.isFinite(codeNum) || codeNum <= 0) {
@@ -5097,7 +5479,8 @@ function PrintGRNPaymentFromList(code, mode) {
         return;
     }
     const listRaw = gpaFindCachedListRowForPrint(codeNum);
-    PrintGRNPaymentVoucher(codeNum, mode || 'preview', listRaw);
+    const m = mode === 'preview' ? 'preview' : 'print';
+    PrintGRNPaymentVoucher(codeNum, m, listRaw);
 }
 
 function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
@@ -5110,7 +5493,7 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
     Promise.all([
         GRNPaymentApprovalService.GetGRNPaymentApprovalByCode(codeNum),
         GRNPaymentApprovalService.GetCompany().catch(function () { return null; }),
-        GRNPaymentApprovalService.GetGRNPaymentApprovalList().catch(function () { return null; }),
+        GRNPaymentApprovalService.GetList().catch(function () { return null; }),
     ]).then(async function (results) {
         const res = results[0];
         const companyApi = results[1];
@@ -5139,7 +5522,13 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
             }
         }
         if (approvalCtx) master = gpaOverlayMasterFromListRow(master, approvalCtx);
-        if (listRow) master = gpaOverlayMasterFromListRow(master, listRow);
+        if (Array.isArray(listRows)) {
+            for (let li = 0; li < listRows.length; li++) {
+                master = gpaOverlayMasterFromListRow(master, listRows[li]);
+            }
+        } else if (listRow) {
+            master = gpaOverlayMasterFromListRow(master, listRow);
+        }
 
         const partyKey = master.AccountMaster_Code ?? master.accountMaster_Code
             ?? master.VendorMaster_Code ?? master.vendorMaster_Code ?? '';
@@ -5162,15 +5551,17 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
             console.warn('PrintGRNPaymentVoucher PO/category lists', e);
         }
 
-        let mergedDetails = (details || []).map(function (d) {
-            return gpaEnrichDetailRowPoCategory(mergeEditDetailWithBillLookup(d, billLookup));
+        let mergedDetails = (details || []).map(function (d, idx) {
+            const enriched = gpaEnrichDetailRowPoCategory(mergeEditDetailWithBillLookup(d, billLookup));
+            const lr = gpaFindListRowForDetailLine(listRows, enriched, idx);
+            return gpaMergePrintDetailWithListRow(enriched, lr);
         });
         if (!mergedDetails.length && listRows.length) {
             mergedDetails = gpaBuildPrintDetailsFromListRows(listRows);
         }
         if (!mergedDetails.length) {
             const synth = gpaDetailRowFromCombinedRecord(listRow) || gpaDetailRowFromCombinedRecord(master);
-            if (synth) mergedDetails = [gpaEnrichDetailRowPoCategory(synth)];
+            if (synth) mergedDetails = [gpaMergePrintDetailWithListRow(synth, listRow)];
         }
 
         const sessionCo = gpaSessionCompanyInfo();
@@ -5202,7 +5593,13 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
             amt = parseFloat(listRow.PaymentAmount ?? listRow.paymentAmount ?? listRow.Amount ?? listRow.amount ?? 0) || 0;
         }
         const narration = master.Narration ?? master.narration ?? '';
-        const advance = parseFloat(master.AdvanceAmount ?? master.advanceAmount ?? 0) || 0;
+        let advance = parseFloat(master.AdvanceAmount ?? master.advanceAmount ?? 0) || 0;
+        if (!advance && Array.isArray(listRows)) {
+            for (let ai = 0; ai < listRows.length; ai++) {
+                const adv = parseFloat(listRows[ai].AdvanceAmount ?? listRows[ai].advanceAmount ?? 0) || 0;
+                if (adv > 0) { advance = adv; break; }
+            }
+        }
         const paymentForDisp = gpaResolvePaymentForFromMaster(master);
 
         const isComplete = gpaIsPrintVoucherComplete(master, listRow, listRows);
@@ -5210,10 +5607,16 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
         const poNoRaw = String(poPair.poNo || '').trim();
         const poNoDisp = poNoRaw === '0' ? '' : poNoRaw;
         const poDateDisp = poPair.poDate ? formatGpaListDate(poPair.poDate) : '';
-        const site0 = gpaMergeSiteBundlesForPrint(
+        let site0 = gpaMergeSiteBundlesForPrint(
             mergedDetails.length ? gpaPickSiteBundleFromRow(mergedDetails[0]) : null,
             listRow ? gpaPickSiteBundleFromRow(listRow) : null,
         );
+        site0 = gpaMergeSiteBundlesForPrint(site0, gpaPickSiteBundleFromRow(master));
+        if (Array.isArray(listRows)) {
+            for (let si = 0; si < listRows.length; si++) {
+                site0 = gpaMergeSiteBundlesForPrint(site0, gpaPickSiteBundleFromRow(listRows[si]));
+            }
+        }
 
         const isEmpPrint = gpaMasterIsEmployeePayment(master) || gpaMasterIsEmployeePayment(listRow);
         if (isEmpPrint) {
@@ -5223,26 +5626,13 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
                 console.warn('PrintGRNPaymentVoucher employee list', e);
             }
         }
-        const printParty = gpaResolvePrintCreditAndVendorType(master, listRow, site0);
+        const printParty = gpaResolvePrintCreditAndVendorType(master, listRow, site0, listRows);
         const creditTo = printParty.creditTo;
         if (printParty.vendorType) site0.vendorType = printParty.vendorType;
 
         let detailsLines = '';
         mergedDetails.forEach(function (row, idx) {
-            const sb = gpaPickSiteBundleFromRow(row);
-            const billNo = row.BillNo ?? row.billNo ?? row.Name ?? row.name ?? '';
-            const pay = row.PaymentAmount ?? row.paymentAmount ?? row['Payment Amount'] ?? '';
-            const poLine = gpaResolvePoNoTextFromRow(gpaEnrichDetailRowPoCategory(row));
-            const catLine = gpaResolveCategoryNameFromRow(row);
-            detailsLines += '<div style="margin-bottom:6px;">'
-                + '<b>Line ' + (idx + 1) + '</b>'
-                + (billNo ? ' &mdash; Bill: ' + gpaEscapeHtml(String(billNo)) : '')
-                + (poLine ? ' &mdash; PO: ' + gpaEscapeHtml(String(poLine)) : '')
-                + (catLine ? ' &mdash; Category: ' + gpaEscapeHtml(String(catLine)) : '')
-                + (pay !== '' && pay != null ? ' &mdash; Paid: &#8377;' + gpaFormatIndianCurrency(pay) : '')
-                + (sb.project ? '<br><span>Project: ' + gpaEscapeHtml(String(sb.project)) + '</span>' : '')
-                + (sb.site ? '<br><span>Site: ' + gpaEscapeHtml(String(sb.site)) + '</span>' : '')
-                + '</div>';
+            detailsLines += gpaBuildPrintDetailLineHtml(row, idx, listRows, site0);
         });
         const amountFiguresBlock = amt > 0.005
             ? ('<div style="margin-top:10px;font-weight:700;">Amount (figures): &#8377; ' + gpaFormatIndianCurrency(amt) + '</div>'
@@ -5320,7 +5710,7 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
             + '<tr><td class="lbl">Project Name</td><td colspan="3">' + gpaEscapeHtml(String(site0.project || '')) + '</td></tr>'
             + '<tr><td class="lbl">Site Name</td><td colspan="3">' + gpaEscapeHtml(String(site0.site || '')) + '</td></tr>'
             + '<tr><td class="lbl">Site Type</td><td colspan="3">' + gpaEscapeHtml(String(site0.siteType || '')) + '</td></tr>'
-            + '<tr><td class="lbl">Vendor Type</td><td colspan="3">' + gpaEscapeHtml(String(site0.vendorType || '')) + '</td></tr>'
+            + '<tr><td class="lbl">Industry Type</td><td colspan="3">' + gpaEscapeHtml(String(site0.vendorType || 'Party')) + '</td></tr>'
             + '<tr><td class="lbl">Contact No</td><td colspan="3">' + gpaEscapeHtml(String(site0.contact || '')) + '</td></tr>'
             + '<tr><td class="lbl">Payment for</td><td colspan="3">' + gpaEscapeHtml(paymentForDisp || '—') + '</td></tr>'
             + '</table>'
@@ -5387,6 +5777,8 @@ window.onGpaAddBillModalProjectPick = onGpaAddBillModalProjectPick;
 window.onGpaAddBillModalSubPick = onGpaAddBillModalSubPick;
 window.onGpaAddBillModalPoChange = onGpaAddBillModalPoChange;
 window.syncRefNoRequiredUI = syncRefNoRequiredUI;
+window.onGpaWorkTypeChange = onGpaWorkTypeChange;
+window.syncGpaProjectRequiredUI = syncGpaProjectRequiredUI;
 window.onGpaFillGridChange = onGpaFillGridChange;
 window.onAddBillRowClick = onAddBillRowClick;
 window.removeGpaBillRow = removeGpaBillRow;
@@ -5408,6 +5800,7 @@ window.PrintGRNPaymentFromList = PrintGRNPaymentFromList;
 window.PrintGRNPaymentVoucher = PrintGRNPaymentVoucher;
 window.gpaMasterIsEmployeePayment = gpaMasterIsEmployeePayment;
 window.gpaLookupEmployeeNameForPrint = gpaLookupEmployeeNameForPrint;
+window.gpaPickIndustryTypeForPrint = gpaPickIndustryTypeForPrint;
 window.gpaResolvePrintCreditAndVendorType = gpaResolvePrintCreditAndVendorType;
 window.gpaPreloadEmployeeListForPrint = async function gpaPreloadEmployeeListForPrint() {
     if (!gpaEmployeeListCache || !gpaEmployeeListCache.length) {

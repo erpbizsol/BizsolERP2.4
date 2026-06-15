@@ -152,6 +152,13 @@ const GRNPaymentApprovalService = {
                 return value;
             });
     },
+    GetWorkType: function GetWorkType() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetWorkType`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
 };
 
 export { GRNPaymentApprovalService };
