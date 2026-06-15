@@ -596,11 +596,7 @@ function GetNestedMarketingManList() {
             });
             BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlAssignSalesman'));
             BindSelectList($('#ddlAssignTo')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })));
-            $('#ddlAssignTo').select2({
-                width: '-webkit-fill-available',
-                dropdownParent: $('#AssignModal')
-            });
-            BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlAssignTo'));
+            initAssignToSelect2();
             $("#ddlSalesPerson").trigger("change");
         } else {
             GetLeadMasterList($("#ddlSalesPerson").val());
@@ -1072,6 +1068,23 @@ function HideShowTab(TabNo, ele) {
         ele.classList.add('active');
     }
 }
+function initAssignToSelect2() {
+    var $ddl = $('#ddlAssignTo');
+    if ($ddl.data('select2')) {
+        $ddl.off('select2:open.enqAssignZ');
+        $ddl.select2('destroy');
+    }
+    $ddl.select2({
+        width: '-webkit-fill-available',
+        dropdownParent: $('#AssignModal .modal-content')
+    });
+    BizSolHelperFunction.attachSelect2ScrollPrevention($ddl);
+    $ddl.on('select2:open.enqAssignZ', function () {
+        $('#AssignModal .select2-container--open, #AssignModal .select2-dropdown').each(function () {
+            this.style.setProperty('z-index', '99999', 'important');
+        });
+    });
+}
 function SelectOptionByText(Id, FindText) {
     var dd = document.getElementById(Id);
     for (var i = 0; i < dd.options.length; i++) {
@@ -1079,6 +1092,10 @@ function SelectOptionByText(Id, FindText) {
             dd.selectedIndex = i;
             break;
         }
+    }
+    if (Id === 'ddlAssignTo') {
+        initAssignToSelect2();
+        return;
     }
     var $element = $('#' + Id);
     $element.select2({
@@ -1891,6 +1908,7 @@ function FollowUp(EnquiryMaster_Code) {
 
             });
             BizsolCustomFilterGrid.CreateDataTable("FollowUp-header", "FollowUp-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            applyFollowUpRemarksColumnWrap();
         }
         else {
             $("#tblFollowUp").hide();
@@ -2933,6 +2951,34 @@ function CloseEnquiryDetails() {
     $("#EnquiryDetailsModal").modal('hide');
 }
 
+const FOLLOW_UP_WRAP_COLUMN_KEYS = ["OURREMARKS", "CUSTOMERREMARKS"];
+
+/** Follow Up grid: column indices for remark columns that should wrap */
+function getFollowUpRemarksWrapColumnIndices() {
+    const headers = document.querySelectorAll("#FollowUp-header th");
+    const indices = [];
+    for (let i = 0; i < headers.length; i++) {
+        const t = (headers[i].textContent || "").replace(/\s+/g, "").toUpperCase();
+        if (FOLLOW_UP_WRAP_COLUMN_KEYS.includes(t)) indices.push(i);
+    }
+    return indices;
+}
+
+/** Follow Up grid: allow Our Remarks & Customer Remarks cells to wrap */
+function applyFollowUpRemarksColumnWrap() {
+    const wrapIndices = getFollowUpRemarksWrapColumnIndices();
+    const table = document.getElementById("FollowUp");
+    if (!table || wrapIndices.length === 0) return;
+    table.querySelectorAll("#FollowUp-header th").forEach(function (th, i) {
+        th.classList.toggle("enq-fu-col-wrap", wrapIndices.includes(i));
+    });
+    table.querySelectorAll("#FollowUp-body tr").forEach(function (row) {
+        row.querySelectorAll("td").forEach(function (td, i) {
+            td.classList.toggle("enq-fu-col-wrap", wrapIndices.includes(i));
+        });
+    });
+}
+
 /** Main enquiry list grid: find "Next Follow Up Date" column index from header row */
 function getEnquiryListNextFollowUpDateColumnIndex() {
     const headers = document.querySelectorAll("#table-header th");
@@ -3003,6 +3049,37 @@ function applyEnquiryListOverdueNextFollowUpRowHighlight() {
         }
     });
 }
+
+(function initFollowUpRemarksWrapObserver() {
+    var debounceTimer = null;
+    function scheduleWrap() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () {
+            if ($("#tblFollowUp").is(":visible")) {
+                applyFollowUpRemarksColumnWrap();
+            }
+        }, 50);
+    }
+    function attachObserver() {
+        var tbody = document.getElementById("FollowUp-body");
+        if (!tbody) {
+            setTimeout(attachObserver, 300);
+            return;
+        }
+        var observer = new MutationObserver(scheduleWrap);
+        observer.observe(tbody, { childList: true, subtree: true });
+        var thead = document.getElementById("FollowUp-header");
+        if (thead) {
+            var headerObserver = new MutationObserver(scheduleWrap);
+            headerObserver.observe(thead, { childList: true, subtree: true });
+        }
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", attachObserver);
+    } else {
+        attachObserver();
+    }
+})();
 
 (function initEnquiryListOverdueHighlightObserver() {
     var debounceTimer = null;

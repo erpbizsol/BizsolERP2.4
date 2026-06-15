@@ -197,7 +197,7 @@
         overflow: hidden;
         margin-bottom: 12px;
     }
-    .table-wrapper.enq-table-scroll { max-height: 440px; overflow-y: auto; }
+    .table-wrapper.enq-table-scroll { min-height: 300px; max-height: 440px; overflow-y: auto; }
     .enq-grid-wrap #table.table { margin-bottom: 0; }
 
     /* List grid — Rolling Plan Sheet style (#tblTable) */
@@ -728,6 +728,16 @@
         gap: 6px;
         white-space: nowrap;
     }
+    /* Follow Up grid — wrap long text in Our Remarks & Customer Remarks columns */
+    #dvFollowup #FollowUp th.enq-fu-col-wrap,
+    #dvFollowup #FollowUp td.enq-fu-col-wrap {
+        white-space: normal !important;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        min-width: 160px;
+        max-width: 320px;
+        vertical-align: top;
+    }
 
     /* Paginator — match enquiry accent (Filter.js buttons); compact height */
     #dvFollowup .paginator,
@@ -937,6 +947,8 @@
         padding: 8px 14px;
         background: #f8fafc;
         border-top: 1px solid #e2e8f0;
+        position: relative;
+        z-index: 1;
     }
     .enq-assign-modal .modal-footer .btn-enq-primary.enq-assign-footer-btn {
         padding: 5px 14px !important;
@@ -954,6 +966,8 @@
     }
     .enq-assign-modal #dvAssignDetailsWrap {
         margin-top: 0.65rem !important;
+        position: relative;
+        z-index: 1;
     }
     .enq-assign-modal #dvAssignDetailsWrap .paginator {
         margin-top: 4px !important;
@@ -962,14 +976,15 @@
     }
     .enq-assign-modal .enq-assign-select-wrap {
         position: relative;
-        z-index: 2;
+        z-index: 20;
     }
-    /* Select2 inside Bootstrap modal (dropdown appended to modal via JS dropdownParent) */
-    .enq-assign-modal .select2-container {
-        z-index: 2;
+    /* Select2 inside Bootstrap modal (dropdown appended to .modal-content via JS dropdownParent) */
+    .enq-assign-modal .select2-container--open {
+        z-index: 99999 !important;
     }
+    #AssignModal .select2-dropdown,
     .enq-assign-modal .select2-dropdown {
-        z-index: 1060 !important;
+        z-index: 99999 !important;
         border-color: #cbd5e1;
         border-radius: 8px;
     }

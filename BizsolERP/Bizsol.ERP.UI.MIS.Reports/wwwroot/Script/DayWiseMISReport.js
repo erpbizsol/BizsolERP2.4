@@ -423,6 +423,7 @@ function RenderSlittingSection(tableId, noDataId, data) {
     const sizeKey = findDataColumn(data, ['SizeDesp', 'Size Desp', 'SizeDescription']);
     const typeKey = findDataColumn(data, ['WeightType', 'Type']);
     const weightKey = findDataColumn(data, ['WeightMT', 'WeightMT.', 'Weight MT', 'Weight']);
+    const slitsKey = findDataColumn(data, ['NoOfSlits', 'NoOfSlit', 'NoofSlits', 'NoOfSlitting', 'Slits', 'No Of Slits']);
 
     // Fall back to flat table when the API does not send issue/receive rows
     if (!codeKey || !typeKey || !weightKey) {
@@ -440,7 +441,7 @@ function RenderSlittingSection(tableId, noDataId, data) {
 
     // Code is used for grouping only — not shown in the grid
     const issueCols = [shiftKey, sizeKey, weightKey].filter(Boolean);
-    const receiveCols = 2;
+    const receiveCols = 3;
 
     // Header band: Issue | Receive
     const bandTr = document.createElement('tr');
@@ -465,7 +466,7 @@ function RenderSlittingSection(tableId, noDataId, data) {
         th.textContent = slittingIssueColumnLabel(key, shiftKey, sizeKey, weightKey);
         subTr.appendChild(th);
     });
-    ['Weight MT', 'Size Desp'].forEach(function (label) {
+    ['Weight MT', 'No Of Slits', 'Size Desp'].forEach(function (label) {
         const th = document.createElement('th');
         th.className = 'mis-slit-subhead-receive';
         th.textContent = label;
@@ -527,6 +528,12 @@ function RenderSlittingSection(tableId, noDataId, data) {
             wtTd.textContent = receiveRow ? formatCellValue(receiveRow[weightKey], weightKey) : '';
             tr.appendChild(wtTd);
 
+            const slitsTd = document.createElement('td');
+            slitsTd.className = 'mis-slit-receive-col';
+            slitsTd.style.textAlign = 'right';
+            slitsTd.textContent = receiveRow && slitsKey ? formatCellValue(receiveRow[slitsKey], slitsKey) : '';
+            tr.appendChild(slitsTd);
+
             const sizeTd = document.createElement('td');
             sizeTd.className = 'mis-slit-receive-col mis-slit-size';
             sizeTd.textContent = receiveRow && sizeKey ? formatCellValue(receiveRow[sizeKey], sizeKey) : '';
@@ -569,6 +576,10 @@ function RenderSlittingSection(tableId, noDataId, data) {
     recvWtTd.textContent = formatTotalValue(weightKey, totalReceiveWeight);
     totalTr.appendChild(recvWtTd);
 
+    const recvSlitsTd = document.createElement('td');
+    recvSlitsTd.style.backgroundColor = '#f1f3f5';
+    totalTr.appendChild(recvSlitsTd);
+
     const recvSizeTd = document.createElement('td');
     recvSizeTd.style.backgroundColor = '#f1f3f5';
     totalTr.appendChild(recvSizeTd);
@@ -588,20 +599,21 @@ function buildSlittingBlock(title, data) {
     const sizeKey = findDataColumn(data, ['SizeDesp', 'Size Desp', 'SizeDescription']);
     const typeKey = findDataColumn(data, ['WeightType', 'Type']);
     const weightKey = findDataColumn(data, ['WeightMT', 'WeightMT.', 'Weight MT', 'Weight']);
+    const slitsKey = findDataColumn(data, ['NoOfSlits', 'NoOfSlit', 'NoofSlits', 'NoOfSlitting', 'Slits', 'No Of Slits']);
 
     if (!codeKey || !typeKey || !weightKey) {
         return buildFlatBlock(title, data);
     }
 
     const issueCols = [shiftKey, sizeKey, weightKey].filter(Boolean);
-    const cols = issueCols.length + 2;
+    const cols = issueCols.length + 3;
     const rows = [];
 
     rows.push([cell(title, { type: 'title', bold: true, align: 'center', colspan: cols })]);
 
     const bandRow = [
         cell('Issue', { type: 'band', bold: true, align: 'center', colspan: issueCols.length }),
-        cell('Receive', { type: 'band', bold: true, align: 'center', colspan: 2 })
+        cell('Receive', { type: 'band', bold: true, align: 'center', colspan: 3 })
     ];
     rows.push(bandRow);
 
@@ -610,6 +622,7 @@ function buildSlittingBlock(title, data) {
         return cell(label, { type: 'header', bold: true });
     }).concat([
         cell('Weight MT', { type: 'header', bold: true }),
+        cell('No Of Slits', { type: 'header', bold: true }),
         cell('Size Desp', { type: 'header', bold: true })
     ]);
     rows.push(subRow);
@@ -657,6 +670,7 @@ function buildSlittingBlock(title, data) {
             }
 
             row.push(cell(receiveRow ? formatCellValue(receiveRow[weightKey], weightKey) : '', { align: 'right' }));
+            row.push(cell(receiveRow && slitsKey ? formatCellValue(receiveRow[slitsKey], slitsKey) : '', { align: 'right' }));
             row.push(cell(receiveRow && sizeKey ? formatCellValue(receiveRow[sizeKey], sizeKey) : ''));
             rows.push(row);
         });
@@ -674,6 +688,7 @@ function buildSlittingBlock(title, data) {
         return cell('', { type: 'total' });
     }).concat([
         cell(formatTotalValue(weightKey, totalReceiveWeight), { type: 'total', bold: true, align: 'right' }),
+        cell('', { type: 'total' }),
         cell('', { type: 'total' })
     ]);
     rows.push(totalRow);
