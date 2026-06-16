@@ -1450,6 +1450,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initGpaVendorModalCloseHandler();
 
     if (gpaIsBankStatementEmbed() && gpaOpenNew) {
+        document.body.classList.add('gpa-bs-embed-page');
         await tryApplyBankStatementEmbedPrefill(true);
     }
 
@@ -2771,10 +2772,17 @@ async function fillBillGridFromDetailRows(rows) {
 // FLOAT BAR — sidebar margin (same logic as GRNService.syncFloatBarMargin)
 // ══════════════════════════════════════════════════════════════════════════════
 function syncFloatBarMargin() {
-    const sidebar = document.getElementById('modern-sidebar');
     const bar = document.getElementById('floatBar');
-    if (!sidebar || !bar || window.innerWidth <= 768) {
-        if (bar) bar.style.marginLeft = '';
+    if (!bar) return;
+    if (gpaIsBankStatementEmbed() || document.body.classList.contains('erp-embedded')) {
+        bar.style.marginLeft = '0';
+        bar.style.left = '0';
+        bar.style.right = '0';
+        return;
+    }
+    const sidebar = document.getElementById('modern-sidebar');
+    if (!sidebar || window.innerWidth <= 768) {
+        bar.style.marginLeft = '';
         return;
     }
     bar.style.marginLeft = sidebar.classList.contains('collapsed') ? '70px' : '280px';
@@ -4609,6 +4617,12 @@ function validateGRNPaymentApproval() {
         showToast('Please enter Amount.', 'warning');
         return false;
     }
+    const workTypeCode = gpaDdlIntCode(document.getElementById('ddlWorkType'));
+    if (!(workTypeCode > 0)) {
+        showToast('Please select Work Type.', 'warning');
+        document.getElementById('ddlWorkType')?.focus();
+        return false;
+    }
     if (refNoIsRequiredForCurrentMode()) {
         const ref = document.getElementById('txtRefNo')?.value?.trim() ?? '';
         if (!ref) {
@@ -4799,12 +4813,19 @@ function saveGRNPaymentApproval() {
                         showToast(flush.uploaded + ' pending attachment(s) uploaded.', 'success');
                     }
                 }
-                showToast(editMode ? 'Payment entry updated successfully.' : 'Payment entry saved successfully.', 'success');
+                const bsEmbCode = gpaGetEmbedBankStatementCode();
+                const fromBankStmt = bsEmbCode > 0 && gpaIsBankStatementEmbed();
+                showToast(
+                    editMode ? 'Payment entry updated successfully.'
+                        : (fromBankStmt
+                            ? 'Payment entry saved and bank line reconciled. Approval status unchanged.'
+                            : 'Payment entry saved successfully.'),
+                    'success'
+                );
                 const savedWasEdit = editMode;
                 updateGpaFloatModeBadge(savedWasEdit ? 'updated' : 'saved');
                 editMode = false;
-                const bsEmbCode = gpaGetEmbedBankStatementCode();
-                if (bsEmbCode > 0 && gpaIsBankStatementEmbed()) {
+                if (fromBankStmt) {
                     try {
                         window.parent.postMessage({
                             type: 'bizsol:bankStmtGrnSaved',
