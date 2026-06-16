@@ -18,6 +18,74 @@
         opacity: 1;
     }
 
+    /* ── Bank Statement iframe embed (?embedded=1&bankStatementCode=…) ── */
+    body.erp-embedded.gpa-bs-embed-page .modern-content {
+        padding: 0.5rem 0.65rem 5.5rem !important;
+        min-height: 100% !important;
+        overflow-x: hidden !important;
+    }
+    body.erp-embedded.gpa-bs-embed-page #divGPAList {
+        display: none !important;
+    }
+    body.erp-embedded.gpa-bs-embed-page #divGPAForm {
+        margin-top: 0 !important;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    body.erp-embedded.gpa-bs-embed-page .po-form-wrap {
+        padding-bottom: 4.5rem;
+    }
+    body.erp-embedded.gpa-bs-embed-page #floatBar.po-float-bar {
+        margin-left: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        padding: 8px 10px;
+        z-index: 1200;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    body.erp-embedded.gpa-bs-embed-page .po-float-bar-left {
+        display: none;
+    }
+    body.erp-embedded.gpa-bs-embed-page .po-float-bar-right {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    body.erp-embedded.gpa-bs-embed-page .gpa-bs-embed-hide {
+        display: none !important;
+    }
+    body.erp-embedded.gpa-bs-embed-page .gpa-hint-box-col {
+        display: none;
+    }
+    body.erp-embedded.gpa-bs-embed-page .po-step-body {
+        padding: 12px 10px;
+    }
+    body.erp-embedded.gpa-bs-embed-page .po-step-header {
+        padding: 10px 12px;
+    }
+    body.erp-embedded.gpa-bs-embed-page .items-desktop-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    @@media (min-width: 992px) {
+        body.erp-embedded.gpa-bs-embed-page .gpa-hint-box-col {
+            display: flex;
+        }
+    }
+    @@media (max-width: 576px) {
+        body.erp-embedded.gpa-bs-embed-page .btn-po-cancel,
+        body.erp-embedded.gpa-bs-embed-page .btn-po-save {
+            padding: 6px 14px;
+            font-size: 0.82rem;
+        }
+        body.erp-embedded.gpa-bs-embed-page #floatBar.po-float-bar {
+            padding: 6px 8px;
+        }
+    }
+
     /* ── Payment Entry — same visual system as GRN Service ── */
     .po-step-card {
         background: #fff;
@@ -935,8 +1003,8 @@
                     <input type="number" id="txtHeaderAmount" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off">
                 </div>
                 <div class="col-md-2">
-                    <label class="po-field-lbl d-block mb-1">Work Type</label>
-                    <select id="ddlWorkType" class="form-control form-control-sm" autocomplete="off" onchange="window.onGpaWorkTypeChange()">
+                    <label class="po-field-lbl d-block mb-1">Work Type <span class="req">*</span></label>
+                    <select id="ddlWorkType" class="form-control form-control-sm" autocomplete="off" required onchange="window.onGpaWorkTypeChange()">
                         <option value="">-- Select Work Type --</option>
                     </select>
                 </div>
@@ -944,7 +1012,7 @@
                     <label class="po-field-lbl d-block mb-1">Payment for</label>
                     <input type="text" id="txtPaymentFor" class="form-control form-control-sm" maxlength="100" autocomplete="off" placeholder="Payment for">
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
+                <div class="col-md-3 d-flex align-items-end gpa-hint-box-col">
                     <div class="gpa-hint-box w-100 mb-1">
                         <i class="fa fa-info-circle" style="color:#667eea;flex-shrink:0;"></i>
                         <span>Fill all working fields before save. Total payment + Advance / On account must not exceed Amount. Footer updates automatically unless you edit Advance.</span>
@@ -1117,7 +1185,7 @@
         <span class="po-mode-badge badge bg-success" id="gpaFloatModeBadge">NEW</span>
     </div>
     <div class="po-float-bar-right">
-        <button type="button" class="btn-po-cancel" onclick="window.cancelGRNPaymentApproval()">
+        <button type="button" class="btn-po-cancel gpa-bs-embed-hide" onclick="window.cancelGRNPaymentApproval()">
             <i class="fa fa-arrow-left me-1"></i> Back to List
         </button>
         <button type="button" class="btn-po-cancel" onclick="window.resetGRNPaymentApprovalForm()">
@@ -1276,10 +1344,13 @@
 <script>
     (function () {
         const sidebar = document.getElementById('modern-sidebar');
-      
         const bar = document.getElementById('floatBar');
         if (!sidebar || !bar) return;
         function syncMargin() {
+            if (document.body.classList.contains('erp-embedded')) {
+                bar.style.marginLeft = '0';
+                return;
+            }
             if (window.innerWidth <= 768) { bar.style.marginLeft = ''; return; }
             bar.style.marginLeft = sidebar.classList.contains('collapsed') ? '70px' : '280px';
         }

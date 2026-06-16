@@ -94,6 +94,12 @@ function FmtCurrency(val) {
     return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function parseGpaAmount(value) {
+    if (value === null || value === undefined || String(value).trim() === '') return NaN;
+    const n = parseFloat(String(value).replace(/,/g, ''));
+    return Number.isFinite(n) ? n : NaN;
+}
+
 function EscHtml(str) {
     if (!str && str !== 0) return '';
     return String(str)
@@ -182,9 +188,27 @@ function getEntryDate(p) {
 
 function getTotalAmount(p) {
     if (!p) return 0;
-    const v = p.TotalBillAmountManual ?? p.totalBillAmountManual ?? p.NetPayable ?? p.netPayable
-        ?? p.Amount ?? p.amount ?? p['Total Bill Amount'] ?? p['Total Amount'] ?? p.TotalAmount ?? 0;
-    return v;
+    const keys = [
+        'TotalBillAmountManual', 'totalBillAmountManual',
+        'NetPayable', 'netPayable',
+        'Amount', 'amount',
+        'Total Bill Amount', 'Total Amount',
+        'TotalAmount', 'totalAmount',
+        'TotalBillAmount', 'totalBillAmount',
+        'BillAmount', 'billAmount',
+        'GrandTotal', 'grandTotal',
+        'NetAmount', 'netAmount',
+        'Total', 'total',
+    ];
+    let zeroValue = null;
+    for (let i = 0; i < keys.length; i++) {
+        const v = p[keys[i]];
+        const n = parseGpaAmount(v);
+        if (isNaN(n)) continue;
+        if (n !== 0) return n;
+        if (zeroValue === null) zeroValue = n;
+    }
+    return zeroValue !== null ? zeroValue : 0;
 }
 
 function mrnProjectLabelFromRow(r) {
@@ -458,12 +482,24 @@ function allLevelsApprovedFromDetails(p) {
     return true;
 }
 
+function rawGpaStatusText(p) {
+    if (!p || typeof p !== 'object') return '';
+    const v = p.ApprovalStatus ?? p.Status ?? p.Approval_Status ?? p.Verified ?? p.verified
+        ?? p.IsRejected ?? p.isRejected ?? p.Rejected ?? p.rejected ?? '';
+    return v != null ? String(v).trim() : '';
+}
+
 function getApprovalStatus(p) {
-    const raw = (p.ApprovalStatus ?? p.Status ?? p.Approval_Status ?? '').toString().trim();
+    const raw = rawGpaStatusText(p);
     const upper = raw.toUpperCase();
     const lower = raw.toLowerCase();
+    if (raw === true || raw === 1) return 'Rejected';
+    if (p && (truthyFlagGpa(p.IsRejected) || truthyFlagGpa(p.isRejected) || truthyFlagGpa(p.Rejected) || truthyFlagGpa(p.rejected))) {
+        return 'Rejected';
+    }
     // MRN master: backend stores rejected as Status 'N' (not approved); 'R' / text also supported
-    if (upper === 'R' || upper === 'N' || lower === 'rejected') return 'Rejected';
+    if (upper === 'R' || upper === 'N' || lower === 'rejected' || lower === 'reject'
+        || lower.indexOf('reject') >= 0) return 'Rejected';
     if (upper === 'P' || raw === 'Y' || lower === 'approved') return 'Approved';
     if (allLevelsApprovedFromDetails(p)) return 'Approved';
     const cur = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 0, 10) || 0;
@@ -480,6 +516,10 @@ function getApprovalStatus(p) {
         return 'Approved';
     }
     return raw || 'Pending';
+}
+
+function getApprovalStatusKey(p) {
+    return getApprovalStatus(p).toLowerCase();
 }
 
 function getGpaCardLevelChipLabel(p) {
@@ -688,6 +728,98 @@ function mergeLevelDetailsLists(fromList, fromApi) {
     return [...map.keys()].sort(function (x, y) { return x - y; }).map(function (k) { return map.get(k); });
 }
 
+function unwrapMrnApprovalLevelsRoot(res) {
+    let root = res?.Data ?? res?.data ?? res?.Result ?? res?.result ?? res;
+    if (root && typeof root === 'object' && !Array.isArray(root)) {
+        const inner = root.Data ?? root.data ?? root.Result ?? root.result;
+        if (inner && typeof inner === 'object') root = inner;
+    }
+    return root;
+}
+
+function isMrnApprovalLevelRow(row) {
+    if (!row || typeof row !== 'object') return false;
+    return row.LevelNo != null || row.Level != null || row.LevelOrder != null
+        || row.ApprovalLevel_Code != null || row.MRNMasterLevel_Code != null
+        || row.LevelDesc != null || row.LevelDesp != null || row.LevelName != null
+        || row.ApproverName != null || row.UserName != null || row.ApprovedOn != null;
+}
+
+function extractMrnApprovalLevelRows(res) {
+    const root = unwrapMrnApprovalLevelsRoot(res);
+    if (Array.isArray(root)) return root.filter(isMrnApprovalLevelRow);
+    if (!root || typeof root !== 'object') return [];
+
+    const keys = [
+        'LevelDetails', 'levelDetails',
+        'MRNApprovallavels', 'mrnApprovallavels',
+        'MRNApprovalLevels', 'mrnApprovalLevels',
+        'MRNMasterLevelsApproval', 'mrnMasterLevelsApproval',
+        'MRNMasterLevelDetails', 'mrnMasterLevelDetails',
+        'ApprovalLevels', 'approvalLevels',
+        'Table', 'table',
+    ];
+    for (let i = 0; i < keys.length; i++) {
+        const arr = root[keys[i]];
+        if (Array.isArray(arr) && arr.length) return arr.filter(isMrnApprovalLevelRow);
+    }
+
+    const objKeys = Object.keys(root);
+    for (let i = 0; i < objKeys.length; i++) {
+        const arr = root[objKeys[i]];
+        if (Array.isArray(arr) && arr.length && isMrnApprovalLevelRow(arr[0])) {
+            return arr.filter(isMrnApprovalLevelRow);
+        }
+    }
+    return isMrnApprovalLevelRow(root) ? [root] : [];
+}
+
+function normalizeMrnApprovalLevelRows(rows) {
+    return (rows || []).map(function (row, idx) {
+        const p = { ...row };
+        let levelNo = parseInt(p.LevelNo ?? p.Level ?? p.LevelOrder ?? p.ApprovalLevelNo ?? p.SequenceNo ?? 0, 10);
+        if (!Number.isFinite(levelNo) || levelNo <= 0) levelNo = idx + 1;
+        p.LevelNo = levelNo;
+        p.LevelOrder = levelNo;
+        p.LevelDesc = pickLevelRowTitleText(p) || p.ApprovalLevelDesp || p.ApprovalLevelName || ('Level ' + levelNo);
+        p.ApproverName = p.ApproverName ?? p.UserName ?? p.UserDesp ?? p.UserMasterName ?? p.EmployeeName ?? '';
+        p.ApprovedOn = p.ApprovedOn ?? p.ApprovedON ?? p.Approved_Date ?? p.ApprovedDate ?? '';
+        p.Remarks = getLevelRowRemarks(p);
+        return p;
+    }).sort(function (a, b) { return levelNoFromRow(a) - levelNoFromRow(b); });
+}
+
+function applyMrnApprovalLevelsToPayment(levelResponse) {
+    const rows = normalizeMrnApprovalLevelRows(extractMrnApprovalLevelRows(levelResponse));
+    if (!rows.length || !G_CurrentPayment) return false;
+
+    const existing = parseLevelDetailsToArray(G_CurrentPayment.LevelDetails);
+    G_CurrentPayment.LevelDetails = mergeLevelDetailsLists(existing, rows);
+    G_CurrentPayment.TotalLevels = parseInt(G_CurrentPayment.TotalLevels ?? G_CurrentPayment.MaxLevel ?? 0, 10)
+        || G_CurrentPayment.LevelDetails.length;
+    G_CurrentPayment.MaxLevel = G_CurrentPayment.TotalLevels;
+
+    const rejected = G_CurrentPayment.LevelDetails.find(function (lvl) {
+        const st = String(lvl.Status ?? lvl.ApprovalStatus ?? '').trim().toLowerCase();
+        return st === 'r' || st === 'n' || st === 'rejected';
+    });
+    if (rejected) {
+        G_CurrentPayment.CurrentLevelNo = levelNoFromRow(rejected) || 1;
+        G_CurrentPayment.Status = 'Rejected';
+        return true;
+    }
+
+    const pending = G_CurrentPayment.LevelDetails.find(function (lvl) { return !levelRowIsApproved(lvl); });
+    if (pending) {
+        G_CurrentPayment.CurrentLevelNo = levelNoFromRow(pending) || 1;
+        G_CurrentPayment.Status = 'Pending';
+    } else {
+        G_CurrentPayment.CurrentLevelNo = G_CurrentPayment.TotalLevels + 1;
+        G_CurrentPayment.Status = 'Approved';
+    }
+    return true;
+}
+
 function NormalizePaymentList(list) {
     return (list || []).map(function (row) {
         const p = { ...row };
@@ -698,6 +830,41 @@ function NormalizePaymentList(list) {
         return p;
     });
 }
+
+function refreshPaymentListCardsAfterHydrate(seq) {
+    if (seq !== G_LoadPaymentListSeq) return;
+    RenderPaymentCards();
+    const searchEl = document.getElementById('gpaLstSearch');
+    FilterGpaCards(searchEl ? searchEl.value : '');
+    applyLandingPendingOnMeFilterIfNeeded();
+}
+
+function hydrateZeroAmountPaymentCards(seq) {
+    const rows = (G_PaymentListFull || []).filter(function (p) {
+        const code = getPaymentMasterCode(p);
+        return code > 0 && parseGpaAmount(getTotalAmount(p)) === 0;
+    });
+    if (!rows.length) return Promise.resolve([]);
+
+    return Promise.all(rows.map(function (payment) {
+        const code = getPaymentMasterCode(payment);
+        return MRNMasterApprovalService.GetMRNMasterDetail(code)
+            .then(function (res) {
+                if (seq !== G_LoadPaymentListSeq) return payment;
+                const merged = mergeDetailIntoPayment(res, payment);
+                Object.assign(payment, merged);
+                return payment;
+            })
+            .catch(function (err) {
+                console.warn('GetMRNMasterDetail amount hydrate failed', code, err);
+                return payment;
+            });
+    })).then(function (updated) {
+        refreshPaymentListCardsAfterHydrate(seq);
+        return updated;
+    });
+}
+
 function shouldApplyLandingPendingOnMe() {
     try {
         const v = sessionStorage.getItem(MRN_LANDING_PENDING_ON_ME_KEY);
@@ -707,11 +874,47 @@ function shouldApplyLandingPendingOnMe() {
     }
 }
 
+function mergePaymentListResponses(lists) {
+    const map = new Map();
+    (lists || []).forEach(function (list) {
+        normalizeListResponse(list).forEach(function (row) {
+            const code = getPaymentMasterCode(row);
+            const key = code > 0 ? ('code:' + code) : JSON.stringify(row);
+            const prev = map.get(key);
+            map.set(key, prev ? Object.assign({}, prev, row) : row);
+        });
+    });
+    return Array.from(map.values());
+}
+
+function markRowsRejected(data) {
+    return normalizeListResponse(data).map(function (row) {
+        return Object.assign({}, row, {
+            Status: 'Rejected',
+            ApprovalStatus: 'Rejected',
+        });
+    });
+}
+
+function fetchPaymentListForStatus(statusVal, fromDate, toDate) {
+    if (statusVal === 'R') {
+        return MRNMasterApprovalService.GetPendingMRNMasterList('R', fromDate, toDate)
+            .then(markRowsRejected);
+    }
+    if (statusVal === 'A') {
+        return Promise.all([
+            MRNMasterApprovalService.GetPendingMRNMasterList('A', fromDate, toDate),
+            MRNMasterApprovalService.GetPendingMRNMasterList('R', fromDate, toDate).then(markRowsRejected)
+        ]).then(mergePaymentListResponses);
+    }
+    return MRNMasterApprovalService.GetPendingMRNMasterList('A', fromDate, toDate);
+}
+
 function LoadPaymentList(options) {
     options = options || {};
     const seq = ++G_LoadPaymentListSeq;
     const landingPendingOnMe = shouldApplyLandingPendingOnMe();
-    // Opening from GRN list “Pending on me” tab: status All + show all cards; chip filter is optional.
+    // Opening from GRN list header tab lands on pending approval cards.
     const keepPendingOnMe = !!(options.preservePendingOnMe || G_OnlyPendingOnMe);
 
     if (landingPendingOnMe) {
@@ -740,11 +943,9 @@ function LoadPaymentList(options) {
     const container = document.getElementById('gpaPendingList');
     if (container) container.innerHTML = '';
 
-    // Always fetch ALL records from the API (Status='A') and apply status filtering
-    // entirely on the client side using getApprovalStatus(). This avoids any
-    // mismatch between the dropdown labels ('P'=Pending, 'Y'=Approved) and the
-    // underlying DB values ('P'=Approved/Posted, 'N'/'R'=Rejected, ''=Pending).
-    return MRNMasterApprovalService.GetPendingMRNMasterList('A', fromDate, toDate)
+    // Fetch all records for client-side filtering; include explicit rejected rows
+    // because some API versions do not include them in Status='A'.
+    return fetchPaymentListForStatus(statusVal, fromDate, toDate)
         .then(function (data) {
             if (seq !== G_LoadPaymentListSeq) return G_PaymentList;
             ShowGpaLoading(false);
@@ -755,11 +956,11 @@ function LoadPaymentList(options) {
             let list = fullList.slice();
             // Client-side status filter based on selected dropdown value
             if (statusVal === 'P') {
-                list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'pending'; });
+                list = list.filter(function (p) { return getApprovalStatusKey(p) === 'pending'; });
             } else if (statusVal === 'Y') {
-                list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'approved'; });
+                list = list.filter(function (p) { return getApprovalStatusKey(p) === 'approved'; });
             } else if (statusVal === 'R') {
-                list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'rejected'; });
+                list = list.filter(function (p) { return getApprovalStatusKey(p) === 'rejected'; });
             }
             // 'A' (All Status) — no filter, keep full list
 
@@ -769,6 +970,7 @@ function LoadPaymentList(options) {
             const searchEl = document.getElementById('gpaLstSearch');
             FilterGpaCards(searchEl ? searchEl.value : '');
             applyLandingPendingOnMeFilterIfNeeded();
+            hydrateZeroAmountPaymentCards(seq);
             return list;
         })
         .catch(function (err) {
@@ -802,12 +1004,12 @@ function UpdateGpaStatChips() {
     const rejectedCount = source.filter(function (p) {
         return getApprovalStatus(p).toLowerCase() === 'rejected';
     }).length;
+    let onMe = pendingOnly === 0 ? 0 : source.filter(paymentIsPendingOnMe).length;
     const elP = document.getElementById('gpaStatPending');
     const elO = document.getElementById('gpaStatProcessed');
-    if (elP) elP.textContent = String(pendingOnly);
+    if (elP) elP.textContent = String(onMe);
     if (elO) elO.textContent = String(approvedCount);
 
-    let onMe = pendingOnly === 0 ? 0 : source.filter(paymentIsPendingOnMe).length;
     const elOnMe = document.getElementById('gpaStatPendingOnMe');
     if (elOnMe) {
         elOnMe.textContent = String(onMe);
@@ -818,12 +1020,18 @@ function UpdateGpaStatChips() {
             .map(function (p) { return getPaymentMasterCode(p); })
             .map(function (c) { return parseInt(c, 10); })
             .filter(function (n) { return n > 0; });
+        const rejectedCodes = source
+            .filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'rejected'; })
+            .map(function (p) { return getPaymentMasterCode(p); })
+            .map(function (c) { return parseInt(c, 10); })
+            .filter(function (n) { return n > 0; });
         window.syncGrnListHeaderTabsFromApprovalChips({
             pending: pendingOnly,
             approved: approvedCount,
             rejected: rejectedCount,
             pendingOnMe: onMe,
             approvedCodes: approvedCodes,
+            rejectedCodes: rejectedCodes,
         });
     }
 }
@@ -901,10 +1109,10 @@ function refreshMrnApprovalListIfNeeded(forceReload) {
     return Promise.resolve(G_PaymentList);
 }
 
-/** Reset approval filters when opening from GRN list “Pending on me” tab. */
+/** Reset approval filters when opening from GRN list pending approval tab. */
 function prepareGpaPendingOnMeLanding() {
     const ddl = document.getElementById('gpaDdlStatus');
-    if (ddl) ddl.value = 'A';
+    if (ddl) ddl.value = 'P';
     const searchEl = document.getElementById('gpaLstSearch');
     if (searchEl) searchEl.value = '';
 }
