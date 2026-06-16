@@ -3,6 +3,27 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const BASE = () => UrlService.API_ENDPOINT_ProjectDetailDashboard;
 
+function getSessionUserAndGroup() {
+    let userCode = 0;
+    let groupCode = 0;
+    try {
+        const authRaw = sessionStorage.getItem('authKey');
+        if (authRaw) {
+            const auth = JSON.parse(authRaw);
+            if (auth && auth.UserMaster_Code != null) {
+                userCode = parseInt(auth.UserMaster_Code, 10) || 0;
+            }
+        }
+        const detailsRaw = sessionStorage.getItem('UserDetails');
+        if (detailsRaw) {
+            const details = JSON.parse(detailsRaw);
+            if (Array.isArray(details) && details[0] && details[0].GroupMaster_Code != null) {
+                groupCode = parseInt(details[0].GroupMaster_Code, 10) || 0;
+            }
+        }
+    } catch (e) { /* session optional */ }
+    return { userCode, groupCode };
+}
 
 const ProjectDetailDashboardService = {
 
@@ -20,7 +41,10 @@ const ProjectDetailDashboardService = {
 
     // GET api/ProjectDetailDashboard/GetDashboardSummary
     GetDashboardSummary: function GetDashboardSummary(projectCode, subProjectCode, fromDate, toDate) {
-        const url = `${BASE()}/GetDashboardSummary?ProjectMaster_Code=${projectCode}&SubProjectMaster_Code=${subProjectCode}&FromDate=${fromDate}&ToDate=${toDate}`;
+        const { userCode, groupCode } = getSessionUserAndGroup();
+        const url = `${BASE()}/GetDashboardSummary?ProjectMaster_Code=${projectCode}&SubProjectMaster_Code=${subProjectCode}` +
+            `&FromDate=${fromDate}&ToDate=${toDate}` +
+            `&UserMaster_Code=${encodeURIComponent(userCode)}&GroupMaster_Code=${encodeURIComponent(groupCode)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
