@@ -1,4 +1,5 @@
 import { ExpensesLedgerReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpensesLedgerReportService.js';
+import { LeadMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_LeadMasterService.js';
 
 /** Must match F_ReportConfiguration.ModuleDescription used by API (GetReportType + procedure lookup). */
 const MODULE_DESCRIPTION_FOR_REPORT_CONFIG = 'Expenses Ledger Report';
@@ -284,7 +285,7 @@ function loadDropdowns() {
         initSelect2('#ddlReportType');
     });
 
-    const pEmp = ExpensesLedgerReportService.GetEmployeeMasterList().then(function (response) {
+    const pEmp = ExpensesLedgerReportService.GetNestedMarketingManList().then(function (response) {
         const rows = mapDdLEmployees(asDdLArray(response));
         bindSelectList($('#ddlEmployee')[0], rows, 'Select');
         initSelect2('#ddlEmployee');

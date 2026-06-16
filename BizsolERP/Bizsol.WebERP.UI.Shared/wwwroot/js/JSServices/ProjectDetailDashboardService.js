@@ -43,8 +43,7 @@ const ProjectDetailDashboardService = {
     GetDashboardSummary: function GetDashboardSummary(projectCode, subProjectCode, fromDate, toDate) {
         const { userCode, groupCode } = getSessionUserAndGroup();
         const url = `${BASE()}/GetDashboardSummary?ProjectMaster_Code=${projectCode}&SubProjectMaster_Code=${subProjectCode}` +
-            `&FromDate=${fromDate}&ToDate=${toDate}` +
-            `&UserMaster_Code=${encodeURIComponent(userCode)}&GroupMaster_Code=${encodeURIComponent(groupCode)}`;
+            `&FromDate=${fromDate}&ToDate=${toDate}` +`&UserMaster_Code=${encodeURIComponent(userCode)}&GroupMaster_Code=${encodeURIComponent(groupCode)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
