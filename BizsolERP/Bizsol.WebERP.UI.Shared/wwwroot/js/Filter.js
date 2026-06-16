@@ -50,7 +50,7 @@ window.parseNumericCellForTotal = function parseNumericCellForTotal(raw) {
 };
 
 const BizsolCustomFilterGrid = {
-    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null, CommaColumns = null) {
+    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null, CommaColumns = null, GlobalSearch = false) {
         const columns = Object.keys(data[0]);
         const tableId = $('#' + bodyId).closest('table').attr('id');
         renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
@@ -68,6 +68,7 @@ const BizsolCustomFilterGrid = {
         window[`currentPage_${tableId}`] = 1;
         window[`itemsPerPage_${tableId}`] = 10;
         window[`Paginator_${tableId}`] = Paginator;
+        window[`globalSearch_${tableId}`] = !!GlobalSearch;
 
         // Add filtered class if any filter columns are defined
         const hasFilterColumns = (StringFilterColumn && StringFilterColumn.length > 0) ||
@@ -77,6 +78,17 @@ const BizsolCustomFilterGrid = {
 
         if (hasFilterColumns) {
             $('#' + bodyId).closest('.table-wrapper').addClass('filtered');
+        }
+
+        // Inject global search box above table if enabled
+        if (GlobalSearch) {
+            const placeholder = (typeof GlobalSearch === 'string' && GlobalSearch.trim() !== '')
+                ? GlobalSearch
+                : 'Search...';
+            createGlobalSearchBox(tableId, bodyId, placeholder);
+        } else {
+            // Remove any existing search box when re-initialising with search disabled
+            $('#global-search-wrap-' + tableId).remove();
         }
 
         if (Paginator) {
@@ -435,6 +447,14 @@ window.ClearFilter = function ClearFilter(bodyId) {
     const tableId = $('#' + bodyId).closest('table').attr('id');
     // Remove filtered class from table-wrapper
     //$('#' + bodyId).closest('.table-wrapper').removeClass('filtered');
+
+    // Also clear and hide the global search box if it exists
+    const $gsInput = $('#global-search-input-' + tableId);
+    if ($gsInput.length) {
+        $gsInput.val('');
+        $('#global-search-clear-' + tableId).hide();
+    }
+
     window[`filteredData_${tableId}`] = window[`filteredDataTemp_${tableId}`];
     renderTable(window[`filteredData_${tableId}`], bodyId);
     if (window[`Paginator_${tableId}`]) {
@@ -443,6 +463,87 @@ window.ClearFilter = function ClearFilter(bodyId) {
     }
     $("#" + tableId + " th span.filter-table-heading .fa-filter").remove();
 }
+// ─── GLOBAL SEARCH ──────────────────────────────────────────────────────────
+
+/**
+ * Injects a global full-text search box above the table-wrapper.
+ * @param {string} tableId
+ * @param {string} bodyId
+ * @param {string} placeholder  – text shown inside the input
+ */
+window.createGlobalSearchBox = function createGlobalSearchBox(tableId, bodyId, placeholder) {
+    // Remove any existing box so re-initialisation stays clean
+    $('#global-search-wrap-' + tableId).remove();
+
+    const html = `
+        <div id="global-search-wrap-${tableId}" class="bizsol-global-search-wrap">
+            <span class="bizsol-gs-icon"><i class="fa fa-search"></i></span>
+            <input  type="text"
+                    id="global-search-input-${tableId}"
+                    class="bizsol-global-search-input form-control"
+                    placeholder="${placeholder}"
+                    autocomplete="off" />
+            <span class="bizsol-gs-clear" id="global-search-clear-${tableId}" title="Clear search" style="display:none;">
+                <i class="fa fa-times-circle"></i>
+            </span>
+        </div>`;
+
+    // Prepend above the table-wrapper (or the table itself as fallback)
+    const $wrapper = $('#' + bodyId).closest('.table-wrapper');
+    if ($wrapper.length) {
+        $wrapper.before(html);
+    } else {
+        $('#' + bodyId).closest('table').before(html);
+    }
+
+    // Live-search on every keystroke
+    $('#global-search-input-' + tableId).on('input', function () {
+        const val = $(this).val();
+        $('#global-search-clear-' + tableId).toggle(val.length > 0);
+        applyGlobalSearch(tableId, bodyId);
+    });
+
+    // Clear button
+    $('#global-search-clear-' + tableId).on('click', function () {
+        $('#global-search-input-' + tableId).val('').trigger('input');
+    });
+};
+
+/**
+ * Filters the full data set against all visible columns and refreshes the grid.
+ * @param {string} tableId
+ * @param {string} bodyId
+ */
+window.applyGlobalSearch = function applyGlobalSearch(tableId, bodyId) {
+    const term = ($('#global-search-input-' + tableId).val() || '').toLowerCase().trim();
+    const fullData = window[`filteredDataTemp_${tableId}`] || [];
+    const hidden  = window[`hiddenColumns_${bodyId}`] || [];
+
+    let result;
+    if (!term) {
+        result = fullData;
+    } else {
+        result = fullData.filter(function (row) {
+            return Object.keys(row).some(function (key) {
+                if (hidden.includes(key)) return false;
+                const cell = row[key];
+                if (cell === null || cell === undefined) return false;
+                return String(cell).toLowerCase().includes(term);
+            });
+        });
+    }
+
+    window[`filteredData_${tableId}`] = result;
+    window[`currentPage_${tableId}`] = 1;
+
+    if (window[`Paginator_${tableId}`]) {
+        createPaginator(tableId, bodyId);
+        renderTableWithPagination(tableId, bodyId);
+    } else {
+        renderTable(result, bodyId);
+    }
+};
+
 window.applyStringFilters = function applyStringFilters(columnName, bodyId) {
     var column = columnName;
     var selectedValues = [];

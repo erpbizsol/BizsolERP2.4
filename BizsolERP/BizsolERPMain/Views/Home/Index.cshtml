@@ -1,14 +1,15 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var baseUrl = ViewBag.AppBaseURL as string
+        ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}";
 }
-
 <div class="erp-home-hero" id="erp-home-hero">
     <picture class="erp-home-picture">
         <source media="(max-width: 768px)"
-                srcset="/assets/images/home/bizsol-erp-home-mobile.png" />
+                srcset="@(baseUrl)/assets/images/home/bizsol-erp-home-mobile.png" />
         <img id="erp-home-img"
              class="erp-home-img"
-             src="/assets/images/home/bizsol-erp-home-desktop.png"
+             src="@(baseUrl)/assets/images/home/bizsol-erp-home-desktop.png"
              alt="BizSol ERP — Intelligent Business Management Platform" />
     </picture>
 </div>

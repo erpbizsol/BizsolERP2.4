@@ -1209,7 +1209,7 @@ window.ShowPOListGrid = function () {
                        ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;" title="Cancel PO" onclick="InitCancelPO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-ban"></i></button>` : ''}
                        ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:${((item.MailSendAfterAutoGenerate || item.mailSendAfterAutoGenerate || '').toUpperCase() === 'Y') ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#2563eb)'};color:#fff;border:none;" title="Send Email" onclick="SendMailPO('${item.Code}')"><i class="fa fa-envelope"></i></button>` : ''}`
         }));
-        BizsolCustomFilterGrid.CreateDataTable('tblPOListHeader', 'tblPOListBody', displayData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, [], hiddenColumns, columnAlignment, true, TotalColumns, null, commaColumns);
+        BizsolCustomFilterGrid.CreateDataTable('tblPOListHeader', 'tblPOListBody', displayData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, [], hiddenColumns, columnAlignment, true, TotalColumns, null, commaColumns, 'Search by PO No, Vendor, Project, Status...');
     }).catch(err => {
         toastr.error('Error loading PO list.');
         console.error(err);
@@ -1287,7 +1287,9 @@ function ResetPOForm() {
     $('#frmDdlSubProject').html('<option value="">-- Select Sub Project --</option>');
     $('#frmDdlWorkType').val('');
     $('#frmTxtOtherCharges1').val(0);
+    $('#frmTxtOtherChargesGSTRate1').val(0);
     $('#frmTxtOtherCharges2').val(0);
+    $('#frmTxtFreightGSTRate').val(0);
     $('#frmChkRoundOff').prop('checked', false);
     $('#tblPOItemsBody').html('');
     G_ItemRowCount = 0;
@@ -1493,6 +1495,9 @@ window.CalcTotals = function () {
 
     const otherCharges1 = parseFloat($('#frmTxtOtherCharges1').val()) || 0;
     const otherCharges2 = parseFloat($('#frmTxtOtherCharges2').val()) || 0;
+    const otherChargesGSTRate1 = parseFloat($('#frmTxtOtherChargesGSTRate1').val()) || 0;
+    const freightGSTRate = parseFloat($('#frmTxtFreightGSTRate').val()) || 0;
+    totalGST += (otherCharges1 * otherChargesGSTRate1 / 100) + (otherCharges2 * freightGSTRate / 100);
     let totalPO = taxableAmount + totalGST + otherCharges1 + otherCharges2;
 
     let roundOff = 0;
@@ -1534,6 +1539,8 @@ window.SavePO = function () {
     const totalPO = parseFloat($('#sumTotalPOAmount').text()) || 0;
     const freightAmt = parseFloat($('#frmTxtOtherCharges2').val()) || 0;
     const otherChargesAmt = parseFloat($('#frmTxtOtherCharges1').val()) || 0;
+    const otherChargesRate = parseFloat($('#frmTxtOtherChargesGSTRate1').val()) || 0;
+    const freightRate = parseFloat($('#frmTxtFreightGSTRate').val()) || 0;
 
     const transactions = [];
     let itemValid = true;
@@ -1622,8 +1629,10 @@ window.SavePO = function () {
             entryTaxRate: 0,
             entryTaxAmount: 0,
             freightAmount: freightAmt,
+            freightRate: freightRate,
             otherChargesDesp: $('#frmTxtOtherChargesLbl1').val(),
             otherChargesAmount: otherChargesAmt,
+            otherChargesRate: otherChargesRate,
             totalPOAmount: totalPO,
             remarks: $('#frmTxtTermsCondition').val(),
             poType: 'S',
@@ -1728,8 +1737,10 @@ function LoadPOForEdit(code) {
 
         $('#frmTxtOtherChargesLbl1').val(header.OtherChargesDesp || 'Other Charges');
         $('#frmTxtOtherCharges1').val(header.OtherChargesAmount || 0);
+        $('#frmTxtOtherChargesGSTRate1').val(header.OtherChargesRate || 0);
         $('#frmTxtOtherChargesLbl2').val('Freight');
         $('#frmTxtOtherCharges2').val(header.FreightAmount || 0);
+        $('#frmTxtFreightGSTRate').val(header.FreightRate || 0);
         $('#frmChkRoundOff').prop('checked', header.IsRoundOff === 'Y');
         if (G_SiteRepList.length > 0) {
             if (header.SiteRepresentativeMaster_Code) {
@@ -1925,8 +1936,8 @@ window.ViewPO = function (code) {
                         <tr><td class="fw-bold">Sub Project</td><td>${header.SubProjectName || '-'}</td></tr>` : ''}
                         <tr><td class="fw-bold">Company Info</td><td>${header.CompanyInfo || '-'}</td></tr>
                         <tr><td class="fw-bold">Taxable Amount</td><td class="text-end">${parseFloat(header.TotalAssValue || 0).toFixed(2)}</td></tr>
-                        <tr><td class="fw-bold">${header.OtherChargesDesp || 'Other Charges'}</td><td class="text-end">${parseFloat(header.OtherChargesAmount || 0).toFixed(2)}</td></tr>
-                        <tr><td class="fw-bold">Freight</td><td class="text-end">${parseFloat(header.FreightAmount || 0).toFixed(2)}</td></tr>
+                        <tr><td class="fw-bold">${(header.OtherChargesDesp || 'Other Charges') + (parseFloat(header.OtherChargesRate || 0) > 0 ? ' (' + parseFloat(header.OtherChargesRate).toFixed(2).replace(/\.00$/, '') + ' %)' : '')}</td><td class="text-end">${parseFloat(header.OtherChargesAmount || 0).toFixed(2)}</td></tr>
+                        <tr><td class="fw-bold">${'Freight' + (parseFloat(header.FreightRate || 0) > 0 ? ' (' + parseFloat(header.FreightRate).toFixed(2).replace(/\.00$/, '') + ' %)' : '')}</td><td class="text-end">${parseFloat(header.FreightAmount || 0).toFixed(2)}</td></tr>
                         <tr><td class="fw-bold">Total GST</td><td class="text-end">${parseFloat(header.TaxAmount || 0).toFixed(2)}</td></tr>
                         <tr><td class="fw-bold">Round Off</td><td class="text-end">${parseFloat(header.RoundOff || 0).toFixed(2)}</td></tr>
                         <tr style="background:#667eea;color:#fff;border-radius:6px;"><td class="fw-bold">Total PO Amount</td><td class="text-end fw-bold">${parseFloat(header.TotalPOAmount || 0).toFixed(2)}</td></tr>
@@ -2426,11 +2437,13 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
         const vIFSC    = vendorObj.IFSCCode         || vendorObj.IFSC           || '';
 
         // ── Amounts ──────────────────────────────────────────────────────────────────
-        const taxable   = parseFloat(header.TotalAssValue      || 0);
-        const freight   = parseFloat(header.FreightAmount      || 0);
-        const otherChg  = parseFloat(header.OtherChargesAmount || 0);
-        const otherLbl  = header.OtherChargesDesp || 'Other Charges';
-        const totalGST  = parseFloat(header.TaxAmount          || 0);
+        const taxable        = parseFloat(header.TotalAssValue      || 0);
+        const freight        = parseFloat(header.FreightAmount      || 0);
+        const freightGSTRate = parseFloat(header.FreightRate         || 0);
+        const otherChg       = parseFloat(header.OtherChargesAmount || 0);
+        const otherChgGSTRate= parseFloat(header.OtherChargesRate   || 0);
+        const otherLbl       = header.OtherChargesDesp || 'Other Charges';
+        const totalGST       = parseFloat(header.TaxAmount          || 0);
         const grandTot  = parseFloat(header.TotalPOAmount      || 0);
         const roundOff  = parseFloat(header.RoundOff           || 0);
         const subTotal  = taxable + freight + otherChg;
@@ -2506,10 +2519,13 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
                 + '</tr>';
         });
 
+        const freightLbl   = 'Freight'  + (freightGSTRate   > 0 ? ' (' + freightGSTRate.toFixed(2).replace(/\.00$/, '')   + ' %)' : '');
+        const otherChgLbl  = otherLbl  + (otherChgGSTRate  > 0 ? ' (' + otherChgGSTRate.toFixed(2).replace(/\.00$/, '')  + ' %)' : '');
+
         let totalsHtml = '';
-        totalsHtml += '<tr><td class="lbl">Total Amount Before Tax</td><td class="val">&#8377; ' + FormatIndianCurrency(taxable)  + '</td></tr>';
-        if (freight)  totalsHtml += '<tr><td class="lbl">Freight</td><td class="val">&#8377; ' + FormatIndianCurrency(freight)  + '</td></tr>';
-        if (otherChg) totalsHtml += '<tr><td class="lbl">' + otherLbl + '</td><td class="val">&#8377; ' + FormatIndianCurrency(otherChg) + '</td></tr>';
+        totalsHtml += '<tr><td class="lbl">Total Amount Before Tax</td><td class="val">&#8377; ' + FormatIndianCurrency(taxable) + '</td></tr>';
+        if (freight)  totalsHtml += '<tr><td class="lbl">' + freightLbl  + '</td><td class="val">&#8377; ' + FormatIndianCurrency(freight)  + '</td></tr>';
+        if (otherChg) totalsHtml += '<tr><td class="lbl">' + otherChgLbl + '</td><td class="val">&#8377; ' + FormatIndianCurrency(otherChg) + '</td></tr>';
         totalsHtml += '<tr><td class="lbl">Total Amount</td><td class="val">&#8377; ' + FormatIndianCurrency(subTotal) + '</td></tr>';
         totalsHtml += '<tr><td class="lbl">' + gstLabel + '</td><td class="val">&#8377; ' + FormatIndianCurrency(totalGST) + '</td></tr>';
         if (roundOff) totalsHtml += '<tr><td class="lbl">Round Off</td><td class="val">&#8377; ' + FormatIndianCurrency(roundOff) + '</td></tr>';
@@ -2637,11 +2653,11 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
         const stampUrlCEO     = _base + 'assets/images/PPPL_Stamp_CEO.jpeg';
         const stampUrlFinance = _base + 'assets/images/PPPL_Stamp_Finance.jpeg';
 
-        // ── Build one signature box — stamp shown when PO status is Approved ────
+        // ── Build one signature box — stamp shown only when PO is Approved ────────
         function BuildSigBox(labelTitle, stampImgUrl) {
             const stampHtml = isPoApproved
                 ? '<div class="sig-stamp-wrap">'
-                  + '<img class="sig-stamp" src="' + stampImgUrl + '" alt="Approved">'
+                  + '<img class="sig-stamp" src="' + stampImgUrl + '" alt="' + labelTitle + '">'
                   + '</div>'
                 : '<div class="sig-stamp-wrap"></div>';
             return stampHtml + '<div class="sig-title">' + labelTitle + '</div>';
@@ -2717,15 +2733,18 @@ function _BuildPOPrintHTML(res, includeGeneralTerms, pdfOpts) {
             + (forPdfExport ? '.pdf-export-body{background:#fff;margin:0;padding:4px 8px;overflow:hidden;}.po-pdf-root{max-width:794px;margin:0 auto;}.pdf-export-body .inv-text-box{margin:6px 0 4px;padding:6px 8px;font-size:8pt;line-height:1.5;}.pdf-export-body .sig-row{margin-top:8px;}.pdf-export-body .sig-box{min-height:120px;}.pdf-export-body .sig-stamp{width:82px;height:82px;}.pdf-export-body .gtc-para,.pdf-export-body .gtc-list,.pdf-export-body .gtc-sublist{line-height:1.5;margin-bottom:3px;}.pdf-export-body .gtc-heading{margin:7px 0 2px;}.pdf-export-body .gtc-section{padding:4px 2px;}' : '')
             + gtcCssOverride
 
-        const signatureHtml = isGoods
-            ? '<div class="sig-row">'
-                + '<div class="sig-box">' + BuildSigBox('Approved By Finance', stampUrlFinance) + '</div>'
-                + '<div class="sig-box">' + BuildSigBox('Approved By COO', stampUrlHOD) + '</div>'
-                + '<div class="sig-box">' + BuildSigBox('Approved By CEO', stampUrlCEO) + '</div>'
-            + '</div>'
-            : '<div class="sig-row">'
-                + '<div class="sig-box"><div class="sig-stamp-wrap"></div><div class="sig-title">To be accepted by Vendor</div></div>'
-                + '<div class="sig-box">' + BuildSigBox('Authorized signatory by Purshotam Profiles Pvt Ltd', stampUrlFinance) + '</div>'
+        // ── 3-box layout (Finance / COO / CEO) — kept for future use ────────────
+        // const signatureHtml = '<div class="sig-row">'
+        //     + '<div class="sig-box"><div class="sig-stamp-wrap"></div><div class="sig-title">To be accepted by Vendor</div></div>'
+        //     + '<div class="sig-box">' + BuildSigBox('Approved By Finance', stampUrlFinance) + '</div>'
+        //     + '<div class="sig-box">' + BuildSigBox('Approved By COO / HOD', stampUrlHOD) + '</div>'
+        //     + '<div class="sig-box">' + BuildSigBox('Approved By CEO', stampUrlCEO) + '</div>'
+        //     + '</div>';
+
+        // ── 2-box layout (Vendor acceptance + Authorized signatory) — all cases ─
+        const signatureHtml = '<div class="sig-row">'
+            + '<div class="sig-box"><div class="sig-stamp-wrap"></div><div class="sig-title">To be accepted by Vendor</div></div>'
+            + '<div class="sig-box">' + BuildSigBox('Authorized Signatory by Purshotam Profiles Pvt Ltd', stampUrlFinance) + '</div>'
             + '</div>';
 
         const mainBlock = ''
