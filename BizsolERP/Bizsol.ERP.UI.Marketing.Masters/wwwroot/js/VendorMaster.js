@@ -2,6 +2,7 @@ import { VendorMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
+import { CheckGSTNStatus } from '../../Bizsol.WebERP.UI.Shared/js/CheckGSTINStatus.js?v=20260615_3';
 
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
 var G_UserMasterCode = authKeyData.UserMaster_Code;
@@ -21,6 +22,7 @@ let G_VendorCityMasterList = [];
 let G_VendorSuppressCityAddressFill = false;
 /** When true, Nation/State change must not cascade-clear City/State (edit load / city-driven fill). */
 let G_VendorProgrammaticNationStateCity = false;
+let G_GSTINValidatedNo = "";
 
 /** DocumentMaster — same table key as other Account / party attachments (e.g. Lead). */
 var VM_ATTACHMENT_MASTER_TABLE = "AccountMaster";
@@ -819,6 +821,7 @@ $(document).ready(function () {
 
     $("#GSTNNo").on("input", function () {
         $(this).val($(this).val().toUpperCase());
+        resetGSTINValidationCheck();
         var val = $(this).val();
         if (!val) {
             $("#err_GSTNNo").hide();
@@ -831,6 +834,18 @@ $(document).ready(function () {
             }
         }
         updatePanRequiredUi();
+    });
+
+    $("#chkGSTINValidation").on("change", async function () {
+        if (!this.checked) {
+            resetGSTINValidationCheck();
+            return;
+        }
+
+        var isValid = await validateVendorGSTINStatus(true, true);
+        if (!isValid) {
+            $(this).prop("checked", false);
+        }
     });
 
     $("#PANNo").on("input", function () {
@@ -2348,6 +2363,188 @@ function validateGST(showError) {
     $("#err_GSTNNo").hide();
     $("#GSTNNo").removeClass("vm-input-error");
     return true;
+}
+
+function resetGSTINValidationCheck() {
+    G_GSTINValidatedNo = "";
+    $("#chkGSTINValidation").prop("checked", false);
+    setGSTINValidationStatus("", "");
+}
+
+function setGSTINValidationStatus(message, statusClass) {
+    $("#spGSTINValidationStatus")
+        .removeClass("is-success is-error")
+        .addClass(statusClass || "")
+        .text(message || "");
+}
+
+function getGSTINFromStatusResponse(statusResponse, fallbackGSTIN) {
+    if (!statusResponse) return fallbackGSTIN;
+
+    var details = statusResponse.EWBDetails || statusResponse.ewbDetails || {};
+    return (
+        details.gstin ||
+        details.GSTIN ||
+        statusResponse.GSTIN ||
+        statusResponse.GSTNNo ||
+        statusResponse.GSTNo ||
+        statusResponse.gstin ||
+        statusResponse.gstnNo ||
+        statusResponse.gstNo ||
+        fallbackGSTIN
+    );
+}
+
+function getGSTINStatusModel(response, fallbackGSTIN) {
+    var row = Array.isArray(response) ? response[0] : response;
+    if (!row) throw "GSTIN validation response not found.";
+
+    var isSuccess =
+        row.IsSuccess === true ||
+        String(row.IsSuccess || row.isSuccess || "").toLowerCase() === "true" ||
+        String(row.Status || row.status || "").toUpperCase() === "Y";
+
+    if (!isSuccess) {
+        throw row.ErrorMessage || row.errorMessage || row.ErrorCode || "GSTIN validation failed.";
+    }
+
+    var details = row.EWBDetails || row.ewbDetails;
+    if (!details) throw "GSTIN details not found in response.";
+
+    var gstin = details.gstin || details.GSTIN || row.GSTIN || fallbackGSTIN;
+    if (!isValidGstinFormat(String(gstin || "").toUpperCase())) {
+        throw "Invalid GSTIN response format.";
+    }
+
+    return {
+        gstin: String(gstin).toUpperCase(),
+        tradeName: details.tradeName || details.TradeName || "",
+        legalName: details.legalName || details.LegalName || "",
+        address1: details.address1 || details.Address1 || "",
+        address2: details.address2 || details.Address2 || "",
+        stateCode: details.stateCode || details.StateCode || "",
+        pinCode: details.pinCode || details.PinCode || "",
+        txpType: details.txpType || details.TxpType || "",
+        status: details.status || details.Status || "",
+        blkStatus: details.blkStatus || details.BlkStatus || "",
+        resstatus: details.resstatus || details.ResStatus || "",
+        errorCodes: details.errorCodes || details.ErrorCodes || "",
+        errorDesc: details.errorDesc || details.ErrorDesc || "",
+        raw: row
+    };
+}
+
+function ensureGSTINDetailsModal() {
+    if ($("#vmGSTINDetailsBackdrop").length) return;
+
+    $("body").append(
+        '<div id="vmGSTINDetailsBackdrop" class="vm-backdrop">' +
+            '<div class="vm-modal" style="max-width:760px;">' +
+                '<div class="vm-modal-header">' +
+                    '<div class="vm-modal-title"><i class="fas fa-receipt"></i><span>GSTIN Details</span></div>' +
+                    '<button type="button" class="vm-modal-close" id="vmGSTINDetailsClose" title="Close"><i class="fas fa-times"></i></button>' +
+                '</div>' +
+                '<div class="vm-modal-body">' +
+                    '<div id="vmGSTINDetailsContent" class="vm-form-grid"></div>' +
+                '</div>' +
+                '<div class="vm-modal-footer" style="justify-content:flex-end;">' +
+                    '<button type="button" class="vm-btn-cancel" id="vmGSTINDetailsOk"><i class="fas fa-check"></i> OK</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>'
+    );
+
+    $("#vmGSTINDetailsClose, #vmGSTINDetailsOk").on("click", function () {
+        $("#vmGSTINDetailsBackdrop").removeClass("show");
+    });
+}
+
+function gstDetailField(label, value) {
+    return (
+        '<div class="vm-form-group">' +
+            '<label>' + vmEscapeHtml(label) + '</label>' +
+            '<input type="text" class="vm-input" readonly value="' + vmEscapeHtml(value || "") + '" />' +
+        '</div>'
+    );
+}
+
+function showGSTINStatusModal(model) {
+    ensureGSTINDetailsModal();
+
+    var html = "";
+    html += gstDetailField("GSTIN", model.gstin);
+    html += gstDetailField("Trade Name", model.tradeName);
+    html += gstDetailField("Legal Name", model.legalName);
+    html += gstDetailField("Address 1", model.address1);
+    html += gstDetailField("Address 2", model.address2);
+    html += gstDetailField("State Code", model.stateCode);
+    html += gstDetailField("Pin Code", model.pinCode);
+    html += gstDetailField("Taxpayer Type", model.txpType);
+    html += gstDetailField("Status", model.status);
+    html += gstDetailField("Block Status", model.blkStatus);
+    html += gstDetailField("Response Status", model.resstatus);
+    if (model.errorCodes || model.errorDesc) {
+        html += gstDetailField("Error Codes", model.errorCodes);
+        html += gstDetailField("Error Description", model.errorDesc);
+    }
+
+    $("#vmGSTINDetailsContent").html(html);
+    $("#vmGSTINDetailsBackdrop").addClass("show");
+}
+
+function bindGSTINAddressToVendorForm(model) {
+    $("#Address1").val(model.address1 || "");
+    $("#Address2").val(model.address2 || "");
+    $("#PinCode").val(model.pinCode || "");
+}
+
+async function validateVendorGSTINStatus(showError, requireGST) {
+    var gstVal = ($("#GSTNNo").val() || "").trim().toUpperCase();
+
+    if (!gstVal) {
+        if (requireGST) {
+            $("#err_GSTNNo").html('<i class="fas fa-circle-exclamation"></i> Enter GST number for validation.');
+            $("#err_GSTNNo").css("display", "flex");
+            $("#GSTNNo").addClass("vm-input-error").focus();
+            if (showError) toastr.warning("Enter GST number for validation.");
+            return false;
+        }
+        return true;
+    }
+
+    if (!validateGST(showError)) return false;
+    if (G_GSTINValidatedNo === gstVal) return true;
+
+    try {
+        var accountDesp = "";
+        var configResponse = await VendorMasterService.GetGSTINStatus(accountDesp, gstVal);
+
+        if (!Array.isArray(configResponse) || configResponse.length === 0) {
+            throw "GST API configuration not found.";
+        }
+        var apiConfig = configResponse[0];
+
+        var response = await CheckGSTNStatus(apiConfig, gstVal, accountDesp);
+        var gstModel = getGSTINStatusModel(response, gstVal);
+
+        $("#err_GSTNNo").hide();
+        $("#GSTNNo").removeClass("vm-input-error");
+        bindGSTINAddressToVendorForm(gstModel);
+        showGSTINStatusModal(gstModel);
+        $("#chkGSTINValidation").prop("checked", true);
+        G_GSTINValidatedNo = gstModel.gstin;
+        setGSTINValidationStatus("GST validated", "is-success");
+        if (showError) toastr.success("GST validated successfully.");
+        return true;
+    } catch (err) {
+        console.error("GetGSTINStatus error:", err);
+        G_GSTINValidatedNo = "";
+        $("#chkGSTINValidation").prop("checked", false);
+        setGSTINValidationStatus("Validation failed", "is-error");
+        $("#GSTNNo").addClass("vm-input-error").focus();
+        if (showError) toastr.error(typeof err === "string" ? err : "GSTIN validation failed.");
+        return false;
+    }
 }
 /** Main vendor email — required + format on save; treatEmptyAsOk for live input (format only when non-empty). */
 function validateEmail(showError, treatEmptyAsOk) {

@@ -1,240 +1,825 @@
 @{
+
     Layout = "~/Views/Shared/_Layout.cshtml";
+
 }
 
+
+
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
+
 <link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
+
 <link href="~/_content/Bizsol.WebERP.UI.Shared/components/FilterSidePanelControl/FilterSidePanelControl.css" rel="stylesheet" />
-<style>
-    /* Prevent black screen overlay during zoom on mobile */
-    body {
-        -webkit-tap-highlight-color: transparent;
-    }
-
-    /* Ensure loader is properly styled and doesn't cause black screen */
-    .loader-wrapper, #loader {
-        z-index: 9998 !important;
-    }
-
-    /* Prevent loader from showing during zoom gestures */
-    body.zooming #loader {
-        visibility: hidden !important;
-        display: none !important;
-    }
-
-    /* Prevent any modal backdrops from interfering */
-    .modal-backdrop {
-        z-index: 9997 !important;
-    }
-
-    /* Use CSS class instead of inline style to avoid linter warnings and ensure consistent behavior */
-    .chart-scroll {
-        overflow-x: auto;
-        width: 100%;
-    }
-        /* force canvas to be block so min-width applies reliably */
-        .chart-scroll canvas {
-            display: block;
-        }
-    /* sizes used by the charts (adjust min-width to your desired scroll threshold) */
-    .chart-minwide-600 {
-        min-width: 600px;
-    }
-
-    .chart-minwide-800 {
-        min-width: 800px;
-    }
-
-    /* Table container styling */
-    .table-container {
-        max-height: 300px;
-        overflow-y: auto;
-        overflow-x: auto;
-        border: 1px solid #e6e6e6;
-    }
-
-    .top-value {
-        font-size: 34px;
-        letter-spacing: 1px;
-    }
-
-    /* Mobile-friendly tabs styling */
-    #financeDashboardTabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: thin;
-        border-bottom: 2px solid #dee2e6;
-        position: relative;
-        z-index: 1;
-    }
-    
-    /* Add padding to tab content on mobile to prevent filter button overlap */
-    @@media (max-width: 768px) {
-        .tab-content {
-            padding-bottom: 80px !important;
-        }
-    }
-    
-    @@media (max-width: 576px) {
-        .tab-content {
-            padding-bottom: 70px !important;
-        }
-    }
-
-        #financeDashboardTabs::-webkit-scrollbar {
-            height: 4px;
-        }
-
-        #financeDashboardTabs::-webkit-scrollbar-thumb {
-            background: #cbd5e0;
-            border-radius: 4px;
-        }
-
-        #financeDashboardTabs .nav-item {
-            flex-shrink: 0;
-        }
-
-        #financeDashboardTabs .nav-link {
-            white-space: nowrap;
-            border-radius: 8px 8px 0 0;
-            padding: 12px 20px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border: none;
-            margin-right: 4px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-            #financeDashboardTabs .nav-link i {
-                font-size: 16px;
-            }
-
-            #financeDashboardTabs .nav-link:not(.active) {
-                background-color: #f8f9fa;
-                color: #495057;
-            }
-
-                #financeDashboardTabs .nav-link:not(.active):hover {
-                    background-color: #e9ecef;
-                    color: #212529;
-                }
-
-            #financeDashboardTabs .nav-link.active {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
-            }
-
-    /* Mobile specific styles */
-    @@media (max-width: 768px) {
-        #financeDashboardTabs .nav-link {
-            font-size: 13px;
-            padding: 10px 16px;
-            gap: 6px;
-        }
-
-            #financeDashboardTabs .nav-link i {
-                font-size: 14px;
-            }
-
-        .top-value {
-            font-size: 24px;
-        }
-
-        .card-body h3, .card-body h5 {
-            font-size: 1.1rem;
-        }
-
-        .card-body h6 {
-            font-size: 0.85rem;
-        }
-        /* Reduce chart min-width on mobile for better fit */
-        .chart-minwide-800 {
-            min-width: 600px;
-        }
-
-        .chart-minwide-600 {
-            min-width: 450px;
-        }
-    }
-
-    @@media (max-width: 576px) {
-        #financeDashboardTabs {
-            border-bottom: 1px solid #dee2e6;
-        }
-
-            #financeDashboardTabs .nav-link {
-                font-size: 11px;
-                padding: 8px 12px;
-                margin-right: 2px;
-                gap: 4px;
-            }
-
-                #financeDashboardTabs .nav-link i {
-                    font-size: 13px;
-                }
-
-        .chart-minwide-800 {
-            min-width: 500px;
-        }
-
-        .chart-minwide-600 {
-            min-width: 400px;
-        }
-    }
-</style>
-
-<!-- FilterSidePanelControl Web Component - Provides floating button and side panel with all filters -->
-<filter-side-panel-control id="filterPanel"></filter-side-panel-control>
-
-
-<ul class="nav nav-tabs" id="financeDashboardTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">
-            <i class="fas fa-chart-line me-2"></i>Overview
-        </button>
-    </li>
-</ul>
-
-
-<!-- Report Date Range Display -->
-<div class="row mt-2 mb-2">
-    <div class="col-lg-12">
-        <div class="alert-warning text-center" role="alert" style="background-color:aquamarine; color:#fff; border:none;">
-            <h5 id="report-date-range" class="mb-0" style="font-weight:bold;"> Please select any account to see ledger from filter option </h5>
-        </div>
-    </div>
-</div>
-<div class="tab-content" id="financeDashboardTabsContent">
-    <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
-        <div class="row">
-           
-            <div class="table-wrapper mt-1">
-                <table id="tblLedgerData" class="table fixed-width-table">
-                    <thead id="tblLedgerDataHeader">
-                    </thead>
-                    <tbody id="tblLedgerDataBody">
-                    </tbody>
-                    <tfoot>
-                    </tfoot>
-                </table>
-                <div class="paginator" id="paginator-tblLedgerData">
-                </div>
-            </div>
-           
-
-        </div>
-    </div>
-</div>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
 
 
 
+<style>
+
+    body {
+
+        -webkit-tap-highlight-color: transparent;
+
+    }
+
+
+
+    .loader-wrapper, #loader {
+
+        z-index: 9998 !important;
+
+    }
+
+
+
+    body.zooming #loader {
+
+        visibility: hidden !important;
+
+        display: none !important;
+
+    }
+
+
+
+    .modal-backdrop {
+
+        z-index: 9997 !important;
+
+    }
+
+
+
+    /* ── Ledger page shell ── */
+
+    .ledger-page {
+
+        padding-bottom: 1rem;
+
+    }
+
+
+
+    /* Date / status banner */
+
+    .ledger-status-banner {
+
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        border-radius: 12px;
+
+        padding: 1rem 1.25rem;
+
+        color: #fff;
+
+        box-shadow: 0 4px 14px rgba(102, 126, 234, 0.25);
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 1rem;
+
+        margin-bottom: 1rem;
+
+    }
+
+
+
+        .ledger-status-banner__icon {
+
+            width: 44px;
+
+            height: 44px;
+
+            border-radius: 10px;
+
+            background: rgba(255, 255, 255, 0.18);
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            flex-shrink: 0;
+
+            font-size: 1.15rem;
+
+        }
+
+
+
+        .ledger-status-banner__text {
+
+            flex: 1;
+
+            min-width: 0;
+
+        }
+
+
+
+        .ledger-status-banner__title {
+
+            font-size: 0.72rem;
+
+            text-transform: uppercase;
+
+            letter-spacing: 0.06em;
+
+            opacity: 0.85;
+
+            margin-bottom: 0.15rem;
+
+        }
+
+
+
+        .ledger-status-banner__range {
+
+            font-size: 1rem;
+
+            font-weight: 600;
+
+            margin: 0;
+
+            line-height: 1.35;
+
+        }
+
+
+
+        .ledger-status-banner__hint {
+
+            font-size: 0.82rem;
+
+            opacity: 0.9;
+
+            margin: 0.2rem 0 0;
+
+        }
+
+
+
+        .ledger-status-banner.is-loaded {
+
+            background: linear-gradient(135deg, #0f766e 0%, #059669 100%);
+
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.22);
+
+        }
+
+
+
+    /* Main card */
+
+    .ledger-card {
+
+        background: #fff;
+
+        border: 1px solid #e8ecf1;
+
+        border-radius: 12px;
+
+        box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+
+        overflow: hidden;
+
+    }
+
+
+
+    .ledger-toolbar {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 1rem;
+
+        padding: 0.85rem 1.1rem;
+
+        background: #f8fafc;
+
+        border-bottom: 1px solid #e8ecf1;
+
+    }
+
+
+
+    .ledger-toolbar__section {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        align-items: center;
+
+        gap: 0.75rem;
+
+    }
+
+
+
+    .ledger-toolbar__label {
+
+        font-size: 0.72rem;
+
+        font-weight: 700;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.05em;
+
+        color: #64748b;
+
+        margin-right: 0.25rem;
+
+    }
+
+
+
+    .ledger-toggle-chip {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 0.4rem;
+
+        padding: 0.35rem 0.65rem;
+
+        background: #fff;
+
+        border: 1px solid #e2e8f0;
+
+        border-radius: 999px;
+
+        font-size: 0.82rem;
+
+        font-weight: 500;
+
+        color: #334155;
+
+        cursor: pointer;
+
+        transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+
+        user-select: none;
+
+        margin: 0;
+
+    }
+
+
+
+        .ledger-toggle-chip:hover {
+
+            border-color: #cbd5e1;
+
+            background: #f1f5f9;
+
+        }
+
+
+
+        .ledger-toggle-chip:has(input:checked) {
+
+            border-color: #667eea;
+
+            background: #eef2ff;
+
+            color: #4338ca;
+
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.12);
+
+        }
+
+
+
+        .ledger-toggle-chip input {
+
+            cursor: pointer;
+
+            margin: 0;
+
+        }
+
+
+
+    .ledger-actions {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        align-items: center;
+
+        gap: 0.5rem;
+
+    }
+
+
+
+    .ledger-btn {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 0.4rem;
+
+        padding: 0.45rem 0.95rem;
+
+        font-size: 0.8rem;
+
+        font-weight: 600;
+
+        letter-spacing: 0.02em;
+
+        border-radius: 8px;
+
+        border: 1px solid transparent;
+
+        transition: transform 0.12s, box-shadow 0.12s;
+
+    }
+
+
+
+        .ledger-btn:active {
+
+            transform: translateY(1px);
+
+        }
+
+
+
+    .ledger-btn--preview {
+
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        color: #fff;
+
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+
+    }
+
+
+
+        .ledger-btn--preview:hover {
+
+            color: #fff;
+
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.45);
+
+        }
+
+
+
+    /* Table area */
+
+    .ledger-table-wrap {
+
+        position: relative;
+
+        min-height: 320px;
+
+    }
+
+
+
+        .ledger-table-wrap .table-wrapper {
+
+            margin: 0;
+
+        }
+
+
+
+        .ledger-table-wrap .table-wrapper .table {
+
+            margin-bottom: 0;
+
+        }
+
+
+
+    /* Empty state */
+
+    .ledger-empty-state {
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        justify-content: center;
+
+        text-align: center;
+
+        padding: 3rem 1.5rem;
+
+        min-height: 280px;
+
+        color: #64748b;
+
+    }
+
+
+
+        .ledger-empty-state__icon {
+
+            width: 72px;
+
+            height: 72px;
+
+            border-radius: 50%;
+
+            background: linear-gradient(135deg, #eef2ff 0%, #f3e8ff 100%);
+
+            color: #667eea;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-size: 1.75rem;
+
+            margin-bottom: 1rem;
+
+        }
+
+
+
+        .ledger-empty-state__title {
+
+            font-size: 1.05rem;
+
+            font-weight: 600;
+
+            color: #334155;
+
+            margin-bottom: 0.35rem;
+
+        }
+
+
+
+        .ledger-empty-state__desc {
+
+            font-size: 0.88rem;
+
+            max-width: 360px;
+
+            line-height: 1.5;
+
+            margin-bottom: 1rem;
+
+        }
+
+
+
+        .ledger-empty-state__cta {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 0.4rem;
+
+            font-size: 0.85rem;
+
+            font-weight: 600;
+
+            color: #667eea;
+
+            background: #eef2ff;
+
+            border: 1px dashed #a5b4fc;
+
+            border-radius: 8px;
+
+            padding: 0.5rem 1rem;
+
+        }
+
+
+
+    .ledger-empty-state.is-hidden {
+
+        display: none;
+
+    }
+
+
+
+    .ledger-grid-area.is-hidden {
+
+        display: none;
+
+    }
+
+
+
+    /* Grid action links */
+
+    .ledger-action-link {
+
+        color: #4f46e5;
+
+        text-decoration: none;
+
+        font-weight: 600;
+
+        font-size: 0.82rem;
+
+        white-space: nowrap;
+
+    }
+
+
+
+        .ledger-action-link:hover {
+
+            color: #3730a3;
+
+            text-decoration: underline;
+
+        }
+
+
+
+    .ledger-action-link--attached {
+
+        display: inline-block;
+
+        background: #dcfce7;
+
+        color: #166534;
+
+        padding: 2px 8px;
+
+        border-radius: 4px;
+
+        border: 1px solid #86efac;
+
+    }
+
+
+
+    @@media (max-width: 768px) {
+
+        .ledger-toolbar {
+
+            flex-direction: column;
+
+            align-items: stretch;
+
+        }
+
+
+
+        .ledger-toolbar__section {
+
+            justify-content: flex-start;
+
+        }
+
+
+
+        .ledger-actions {
+
+            justify-content: flex-end;
+
+            padding-top: 0.5rem;
+
+            border-top: 1px solid #e8ecf1;
+
+        }
+
+
+
+        .tab-content {
+
+            padding-bottom: 80px !important;
+
+        }
+
+    }
+
+
+
+    @@media (max-width: 576px) {
+
+        .tab-content {
+
+            padding-bottom: 70px !important;
+
+        }
+
+
+
+        .ledger-status-banner {
+
+            flex-direction: column;
+
+            text-align: center;
+
+        }
+
+
+
+        .ledger-toggle-chip {
+
+            font-size: 0.78rem;
+
+        }
+
+    }
+
+</style>
+
+
+
+<filter-side-panel-control id="filterPanel"></filter-side-panel-control>
+
+
+
+<div class="ledger-page">
+
+
+
+    <!-- Status banner -->
+
+    <div class="ledger-status-banner" id="ledgerStatusBanner">
+
+        <div class="ledger-status-banner__icon">
+
+            <i class="fas fa-book-open"></i>
+
+        </div>
+
+        <div class="ledger-status-banner__text">
+
+            <div class="ledger-status-banner__title">Ledger Report</div>
+
+            <p class="ledger-status-banner__range" id="report-date-range">Please select an account to view ledger</p>
+
+            <p class="ledger-status-banner__hint" id="ledger-status-hint">
+
+                <i class="fas fa-filter me-1"></i>Use the filter button (top right) to choose account &amp; date range
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Main card -->
+
+    <div class="ledger-card">
+
+
+
+        <!-- Toolbar: column toggles + actions -->
+
+        <div class="ledger-toolbar">
+
+            <div class="ledger-toolbar__section">
+
+                <span class="ledger-toolbar__label">Display</span>
+
+                <label class="ledger-toggle-chip" for="showNarration">
+
+                    <input class="form-check-input ledger-col-toggle" type="checkbox" id="showNarration" />
+
+                    Narration
+
+                </label>
+
+                <label class="ledger-toggle-chip" for="showGSTNo">
+
+                    <input class="form-check-input ledger-col-toggle" type="checkbox" id="showGSTNo" />
+
+                    GSTN No
+
+                </label>
+
+                <label class="ledger-toggle-chip" for="showMonthTotal">
+
+                    <input class="form-check-input ledger-col-toggle" type="checkbox" id="showMonthTotal" />
+
+                    Month Total
+
+                </label>
+
+                <label class="ledger-toggle-chip" for="showRefNo">
+
+                    <input class="form-check-input ledger-col-toggle" type="checkbox" id="showRefNo" />
+
+                    Ref No
+
+                </label>
+
+            </div>
+
+            <div class="ledger-toolbar__section ledger-actions">
+
+                <button type="button" class="ledger-btn ledger-btn--preview" id="btnLedgerPreview" title="Preview Ledger Report">
+
+                    <i class="fa fa-eye"></i> Preview
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Table / empty state -->
+
+        <div class="ledger-table-wrap">
+
+            <div class="ledger-empty-state" id="ledgerEmptyState">
+
+                <div class="ledger-empty-state__icon">
+
+                    <i class="fas fa-table"></i>
+
+                </div>
+
+                <div class="ledger-empty-state__title">No ledger data yet</div>
+
+                <p class="ledger-empty-state__desc">
+
+                    Select one or more accounts and a date range from the filter panel, then click
+
+                    <strong>Apply Filters &amp; Show</strong> to load transactions here.
+
+                </p>
+
+                <span class="ledger-empty-state__cta">
+
+                    <i class="fas fa-sliders"></i> Open filters to get started
+
+                </span>
+
+            </div>
+
+
+
+            <div class="ledger-grid-area is-hidden" id="ledgerGridArea">
+
+                <div class="table-wrapper">
+
+                    <table id="tblLedgerData" class="table fixed-width-table">
+
+                        <thead id="tblLedgerDataHeader"></thead>
+
+                        <tbody id="tblLedgerDataBody"></tbody>
+
+                        <tfoot></tfoot>
+
+                    </table>
+
+                    <div class="paginator" id="paginator-tblLedgerData"></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+    </div>
+
+</div>
+
+
+
+<div id="DivLedgerAttachmentControlmodal"></div>
+
+
+
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js"></script>
+
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Finance.Reports/Script/LedgerNew.js"></script>
+
+
