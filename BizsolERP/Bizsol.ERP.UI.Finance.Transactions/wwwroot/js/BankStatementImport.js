@@ -297,7 +297,11 @@ function populateHistoryDetailLines(list) {
 }
 
 function closeImportBatchHistoryModal() {
-    $('#bsHistoryDetailBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    if (typeof hideBsBackdrop === 'function') {
+        hideBsBackdrop('#bsHistoryDetailBackdrop');
+    } else {
+        $('#bsHistoryDetailBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    }
     historyDetailBatchNo = '';
     $('#tblHistDetailBody').empty();
 }
@@ -308,7 +312,11 @@ function openImportBatchHistoryModal(summary) {
         return;
     }
     historyDetailBatchNo = summary.batchNo;
-    $('#bsHistoryDetailBackdrop').addClass('active').attr('aria-hidden', 'false');
+    if (typeof showBsBackdrop === 'function') {
+        showBsBackdrop('#bsHistoryDetailBackdrop');
+    } else {
+        $('#bsHistoryDetailBackdrop').addClass('active').attr('aria-hidden', 'false');
+    }
     renderHistoryDetailSummary(summary);
     $('#tblHistDetailBody').html(
         '<tr><td colspan="8" class="text-center py-3 text-muted">'
@@ -420,7 +428,11 @@ function BindEvents() {
     function closeImportModal() {
         var $b = $('#bsImportBackdrop');
         if ($b.length) {
-            $b.removeClass('active').attr('aria-hidden', 'true');
+            if (typeof hideBsBackdrop === 'function') {
+                hideBsBackdrop($b);
+            } else {
+                $b.removeClass('active').attr('aria-hidden', 'true');
+            }
         } else {
             window.location = baseUrl + '/FinanceTransactions/BankStatement/BankStatementList';
         }
@@ -1396,13 +1408,21 @@ window.ConfirmDeleteBatch = function (batchNo) {
     deleteBatchNo = batchNo;
     $('#lblDeleteBatchNo').text(batchNo);
     $('#reasonForDeleteInput').val('');
-    $('#bsDeleteBackdrop').addClass('active').attr('aria-hidden', 'false');
+    if (typeof showBsBackdrop === 'function') {
+        showBsBackdrop('#bsDeleteBackdrop');
+    } else {
+        $('#bsDeleteBackdrop').addClass('active').attr('aria-hidden', 'false');
+    }
     // Focus the reason input after a brief animation delay
     setTimeout(function () { $('#reasonForDeleteInput').focus(); }, 200);
 };
 
 function CloseDeleteModal() {
-    $('#bsDeleteBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    if (typeof hideBsBackdrop === 'function') {
+        hideBsBackdrop('#bsDeleteBackdrop');
+    } else {
+        $('#bsDeleteBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    }
     $('#reasonForDeleteInput').val('');
     deleteBatchNo = '';
 }
@@ -1454,11 +1474,19 @@ function ShowResultModal(result, isError) {
     $('#bsResSkipped').text(result.SkippedRecords || 0);
     $('#bsResFailed').text(result.FailedRecords  || 0);
     $('#bsResBatch').text(result.ImportBatchNo   || '—');
-    $('#bsResultBackdrop').addClass('active').attr('aria-hidden', 'false');
+    if (typeof showBsBackdrop === 'function') {
+        showBsBackdrop('#bsResultBackdrop');
+    } else {
+        $('#bsResultBackdrop').addClass('active').attr('aria-hidden', 'false');
+    }
 }
 
 function CloseResultModal() {
-    $('#bsResultBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    if (typeof hideBsBackdrop === 'function') {
+        hideBsBackdrop('#bsResultBackdrop');
+    } else {
+        $('#bsResultBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    }
     if (typeof window.refreshBankStatementList === 'function') {
         window.refreshBankStatementList();
     }

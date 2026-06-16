@@ -109,8 +109,8 @@ const BankStatementService = {
     },
 
     /**
-     * RECONCILE — optional grnPaymentMasterCode on query string maps to @GRNPaymentMaster_Code on SP RECONCILE.
-     * When GRN code is sent, SP sets IsManualReconciled = Y (manual reconcile from bank statement UI).
+     * RECONCILE + GRN: sets BankStatement.IsReconciled = C, updates GRN RefNo.
+     * GRNPaymentMaster.Status is not changed (approval level preserved).
      */
     ReconcileBankStatement: function ReconcileBankStatement(code, grnPaymentMasterCode) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));

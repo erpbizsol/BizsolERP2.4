@@ -216,7 +216,7 @@
                 </button>
             </div>
             <p class="small text-muted text-start mb-2">
-                Pending GRN payment entries (<strong>Status P</strong>) from the bank statement list API. Choose a row and click <strong>Reconcile</strong> to link it to this bank line.
+                Approved payment entries (<strong>Status P</strong>) ready for bank reconciliation. Choose a row and click <strong>Reconcile</strong> — the bank cheque/reference no. is copied to the payment entry.
             </p>
             <div id="tblBsPendingGrnLoad" class="text-center py-4 text-muted" style="display: none;">
                 <i class="fas fa-spinner fa-spin me-2" aria-hidden="true"></i>Loading…
@@ -246,8 +246,8 @@
                 <h2 id="bsGrnEmbedTitle" class="bs-import-modal-title">
                     <i class="fas fa-file-invoice-dollar me-2" aria-hidden="true"></i>Payment entry
                 </h2>
-                <p class="bs-import-modal-sub mb-0">
-                    The <strong>Payment Entry</strong> form opens here. Choose party, amount, and bills, then save. Close this window and refresh the bank statement list when done.
+                <p class="bs-import-modal-sub mb-0 d-none d-md-block">
+                    Fill in the payment entry and save — the bank line is reconciled (<strong>IsReconciled = C</strong>). Payment approval status is not changed.
                 </p>
             </div>
             <button type="button" id="btnCloseGrnPaymentEmbed" class="bs-import-modal-close" title="Close" aria-label="Close">
