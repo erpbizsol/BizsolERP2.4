@@ -421,8 +421,26 @@
     .pm-icon-btn.del:hover { background: rgba(239,68,68,.2); box-shadow: 0 4px 12px rgba(239,68,68,.22); }
 
     /* ── Modal ─────────────────────────────────────────────────── */
+    .pm-modal {
+        overflow: hidden !important;
+    }
+
+    html.spm-modal-open,
+    body.spm-modal-open {
+        overflow: hidden !important;
+        overscroll-behavior: none;
+    }
+
+    body.spm-modal-open #modern-content.modern-content {
+        overflow: hidden !important;
+    }
+
     .pm-modal .modal-dialog {
-        margin: auto;
+        margin: 1rem auto;
+        max-height: calc(100vh - 2rem);
+        max-height: calc(100dvh - 2rem);
+        display: flex;
+        flex-direction: column;
     }
 
     .pm-modal .modal-content {
@@ -430,6 +448,10 @@
         border: 1px solid var(--border-color);
         box-shadow: var(--shadow-xl);
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 2rem);
+        max-height: calc(100dvh - 2rem);
     }
 
     .pm-modal .modal-header {
@@ -440,6 +462,7 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        flex-shrink: 0;
     }
 
     .pm-modal-hdr-icon {
@@ -485,6 +508,11 @@
         padding: 22px 24px 14px;
         background: var(--light-bg);
         overflow-y: auto;
+        overflow-x: hidden;
+        flex: 1 1 auto;
+        min-height: 0;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
     }
 
     .pm-modal .modal-footer {
@@ -495,6 +523,7 @@
         align-items: center;
         gap: 10px;
         background: var(--white-bg);
+        flex-shrink: 0;
     }
 
     /* ── Form ──────────────────────────────────────────────────── */
@@ -829,9 +858,21 @@
         display: flex;
         gap: 6px;
         margin: 0 0 12px;
-        padding: 0;
+        padding: 0 0 2px;
         list-style: none;
         border-bottom: 2px solid var(--border-light);
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .pm-approval-level-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .pm-approval-level-tabs .nav-item {
+        flex-shrink: 0;
     }
 
     .pm-approval-level-tabs .nav-link {
@@ -845,6 +886,7 @@
         cursor: pointer;
         transition: color .15s, background .15s;
         letter-spacing: .02em;
+        white-space: nowrap;
     }
 
     .pm-approval-level-tabs .nav-link:hover {
@@ -885,12 +927,44 @@
         .pm-stat-chip { min-width: calc(50% - 7px); }
         .pm-form-grid { grid-template-columns: 1fr; }
         .pm-fg.span2, .pm-fg.span3 { grid-column: span 1; }
+        .pm-modal .modal-dialog {
+            margin: 0.5rem auto;
+            max-width: calc(100vw - 1rem) !important;
+            width: calc(100vw - 1rem);
+            max-height: calc(100dvh - 1rem);
+        }
+        .pm-modal .modal-content {
+            max-height: calc(100dvh - 1rem);
+            border-radius: 16px;
+        }
+        .pm-modal .modal-header {
+            padding: 14px 16px;
+        }
+        .pm-modal .modal-title {
+            font-size: 15px;
+        }
         .pm-modal .modal-body { padding: 14px 14px 10px; }
-        .pm-modal .modal-footer { flex-direction: column-reverse; align-items: stretch; }
+        .pm-modal .modal-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+            padding: 12px 14px;
+        }
         .pm-btn { width: 100%; justify-content: center; }
         .pm-card-toolbar { flex-direction: column; align-items: stretch; }
         .pm-search-wrap { max-width: 100%; }
         .pm-btn-new { width: 100%; justify-content: center; }
+        .pm-form-section { padding: 14px 14px 4px; }
+        .pm-approval-level-tabs .nav-link {
+            font-size: 11.5px;
+            padding: 7px 12px;
+        }
+        .pm-view-row {
+            flex-direction: column;
+            gap: 4px;
+        }
+        .pm-view-lbl {
+            min-width: 0;
+        }
     }
 </style>
 
@@ -981,7 +1055,7 @@
 ════════════════════════════════════════════════════════ -->
 <div class="modal fade pm-modal" id="dvSubProjectModal" tabindex="-1" role="dialog"
      aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width:780px;">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" style="max-width:min(780px, calc(100vw - 2rem));">
         <div class="modal-content">
 
             <div class="modal-header">
@@ -1211,7 +1285,7 @@
      VIEW MODAL
 ════════════════════════════════════════════════════════ -->
 <div class="modal fade pm-modal" id="dvSubProjectViewModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:560px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:min(560px, calc(100vw - 2rem));">
         <div class="modal-content">
 
             <div class="modal-header" style="background: var(--info-gradient);">

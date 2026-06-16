@@ -56,6 +56,21 @@ $(document).ready(function () {
     $('#bomSearch').on('input', function () {
         filterBOMs($(this).val().toLowerCase().trim());
     });
+
+    $('#dvBOMViewModal, #dvBOMCopyFromModal, #dvBomAmendmentHistoryModal, #dvBOMDeleteConfirmModal')
+        .on('shown.bs.modal', function () {
+            document.documentElement.classList.add('bom-modal-open');
+            document.body.classList.add('bom-modal-open');
+        })
+        .on('hidden.bs.modal', function () {
+            const anyOpen = $('#dvBOMViewModal, #dvBOMCopyFromModal, #dvBomAmendmentHistoryModal, #dvBOMDeleteConfirmModal')
+                .toArray()
+                .some(function (el) { return el.classList.contains('show'); });
+            if (!anyOpen) {
+                document.documentElement.classList.remove('bom-modal-open');
+                document.body.classList.remove('bom-modal-open');
+            }
+        });
 });
 function loadBOMList() {
     if (!BOMService || typeof BOMService.GetBOMList !== 'function') return;
@@ -90,6 +105,23 @@ function formatInrAmountNum(n, minDec, maxDec) {
 function formatInrQtyNum(n) {
     if (n == null || isNaN(n)) return '—';
     return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+}
+
+/** Base amount (qty × rate, before GST) for list / view — matches BOM summary "Amount" column. */
+function getBomListBaseAmount(item) {
+    if (!item) return 0;
+    const amountKeys = ['Amount', 'amount', 'BaseAmount', 'SumAmount', 'TotalBaseAmount'];
+    for (let i = 0; i < amountKeys.length; i++) {
+        const v = item[amountKeys[i]];
+        if (v != null && v !== '') {
+            const n = parseFloat(v);
+            if (!isNaN(n)) return n;
+        }
+    }
+    const total = parseFloat(item.TotalAmount || 0) || 0;
+    const gst = parseFloat(item.GSTAmount ?? item.GstAmount ?? item.TotalGSTAmount ?? item.GSTAmt ?? 0) || 0;
+    if (total && gst) return Math.max(0, total - gst);
+    return 0;
 }
 
 /** Indian numbering: amount in words after ₹ for BOM summary footer (no "Rupees" / "Only"). */
@@ -189,7 +221,7 @@ function bindBOMGrid(list) {
     if (!list || list.length === 0) {
         $tbody.append(`
             <tr>
-                <td colspan="6">
+                <td colspan="7">
                     <div class="pm-empty">
                         <div class="pm-empty-icon"><i class="fas fa-folder-open"></i></div>
                         <div class="pm-empty-title">No BOM records found</div>
@@ -197,17 +229,21 @@ function bindBOMGrid(list) {
                     </div>
                 </td>
             </tr>`);
+        $('#bomListGrandAmount').text('—');
         $('#bomListGrandTotal').text('—');
         return;
     }
 
+    let grandAmount = 0;
     let grandTotal = 0;
 
     list.forEach(function (item, index) {
         const projectName    = item.ProjectName || item.ProjectDesp || '';
         const subProjectName = item.SubProjectName || item.SubProjectDesp || '';
         const totalItems     = item.TotalItems  || 0;
+        const baseAmount     = getBomListBaseAmount(item);
         const totalAmount    = parseFloat(item.TotalAmount || 0);
+        grandAmount += baseAmount;
         grandTotal += totalAmount;
 
         const bomId    = item.ProjectMaster_Code || item.Code || 0;
@@ -219,7 +255,8 @@ function bindBOMGrid(list) {
                 <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis;">${escHtml(projectName)}</td>
                 <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis;">${escHtml(subProjectName)}</td>
                 <td class="center">${totalItems}</td>
-                <td class="right">${formatInrAmountNum(totalAmount, 2, 2)}</td>
+                <td class="right pm-budget">${formatInrAmountNum(baseAmount, 2, 2)}</td>
+                <td class="right pm-budget">${formatInrAmountNum(totalAmount, 2, 2)}</td>
                 <td class="center">
                     <div class="bom-actions">
                         <button type="button" class="bom-btn icon view js-bom-view" title="View">
@@ -239,6 +276,7 @@ function bindBOMGrid(list) {
             </tr>`);
     });
 
+    $('#bomListGrandAmount').text(formatInrAmountNum(grandAmount, 2, 2));
     $('#bomListGrandTotal').text(formatInrAmountNum(grandTotal, 2, 2));
 }
 function filterBOMs(query) {
@@ -478,6 +516,7 @@ function viewBOM(id, subId) {
     $('#viewBOMSubProjectName').text(row.SubProjectName || row.SubProjectDesp || '—');
     $('#viewBOMTotalItems').text(row.TotalItems || 0);
     $('#viewBOMTotalQty').text(row.TotalQty != null ? formatInrQtyNum(parseFloat(row.TotalQty)) : '—');
+    $('#viewBOMAmount').text(formatInrAmountNum(getBomListBaseAmount(row), 2, 2));
     $('#viewBOMTotalAmount').text(formatInrAmountNum(parseFloat(row.TotalAmount || 0), 2, 2));
 
     showModal('dvBOMViewModal');
@@ -1109,7 +1148,7 @@ function addNewBomRow() {
     const $tr = $(`
         <tr data-row-id="${rowId}" data-state="edit" data-detail-code="0" data-uom-code="0">
             <td class="center">${nextIndex}</td>
-            <td>
+            <td class="bom-col-category">
                 <select class="bom-select bom-project-category">
                     <option value="">Select</option>
                 </select>
@@ -1132,7 +1171,7 @@ function addNewBomRow() {
             <td class="bom-col-uom center">
                 <input type="text" class="bom-input bom-uom" readonly />
             </td>
-            <td>
+            <td class="bom-col-spec">
                 <input type="text" class="bom-input bom-item-spec" />
             </td>
             <td class="bom-col-tolerance">

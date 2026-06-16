@@ -344,9 +344,194 @@
         border-color: rgba(254, 215, 170, 0.95);
     }
     .pmr-page .ee-list-header .pmr-header-icon-btn--close:hover i { color: #9a3412 !important; }
+
+    .pmr-scroll-hint {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px 12px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #4338ca;
+        background: rgba(102, 126, 234, .08);
+        border-bottom: 1px solid rgba(102, 126, 234, .12);
+    }
+
     @@media (max-width: 991px) {
         .pmr-page .pmr-filter-row { grid-template-columns: 1fr; }
+        .pmr-page .pmr-filter-actions {
+            width: 100%;
+        }
+        .pmr-page .pmr-filter-actions .pmr-btn-show {
+            width: 100%;
+        }
     }
+
+    @@media (max-width: 768px) {
+        .pmr-page {
+            padding: 0 8px 16px;
+        }
+
+        .pmr-page .ee-list-header-top {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+
+        .pmr-page .ee-list-header-actions {
+            justify-content: flex-end;
+        }
+
+        .pmr-page .ee-list-header .pmr-header-icon-btn {
+            width: 42px;
+            min-width: 42px;
+            min-height: 42px !important;
+        }
+
+        .pmr-page .ee-list-filter-bar {
+            padding: 12px;
+        }
+
+        .pmr-scroll-hint {
+            display: flex;
+        }
+
+        .pmr-page .expense-entry-card {
+            overflow: visible;
+            border-radius: 12px;
+        }
+
+        .pmr-page .expense-entry-table-wrapper {
+            overflow-x: auto !important;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
+            max-height: calc(100dvh - 260px);
+        }
+
+        #tblPMR {
+            table-layout: auto !important;
+            width: max-content !important;
+            min-width: 1320px !important;
+        }
+
+        #tblPMR thead th {
+            white-space: nowrap !important;
+            word-break: keep-all !important;
+            line-height: 1.2 !important;
+            font-size: 0.62rem;
+            padding: 0.4rem 0.35rem;
+        }
+
+        #tblPMR thead th br {
+            display: none;
+        }
+
+        #tblPMR th.pmr-th-dim,
+        #tblPMR td.pmr-particulars-cell {
+            min-width: 130px;
+            width: auto;
+            max-width: none;
+            position: sticky;
+            left: 0;
+            z-index: 3;
+            background: inherit;
+            box-shadow: 4px 0 8px rgba(15, 23, 42, .06);
+        }
+
+        #tblPMR thead th.pmr-th-dim {
+            z-index: 6;
+            background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+        }
+
+        #tblPMR tbody tr:nth-child(even) td.pmr-particulars-cell {
+            background: var(--light-bg) !important;
+        }
+
+        #tblPMR tbody tr:nth-child(odd) td.pmr-particulars-cell {
+            background: #fff !important;
+        }
+
+        #tblPMR tr.row-total td.pmr-particulars-cell {
+            background: rgba(102, 126, 234, 0.12) !important;
+        }
+
+        #tblPMR thead th:first-child,
+        #tblPMR tbody td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 4;
+            min-width: 2.5rem;
+            background: inherit;
+            box-shadow: 4px 0 8px rgba(15, 23, 42, .06);
+        }
+
+        #tblPMR thead th:first-child {
+            z-index: 7;
+            background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+        }
+
+        #tblPMR thead th:nth-child(2),
+        #tblPMR tbody td:nth-child(2) {
+            left: 2.5rem;
+        }
+
+        #tblPMR thead th.num,
+        #tblPMR td.num {
+            min-width: 78px;
+            white-space: nowrap !important;
+            font-size: 0.72rem;
+            padding: 0.35rem 0.4rem !important;
+        }
+
+        #tblPMR .pmr-particulars-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 160px;
+        }
+
+        .pmr-tree-child-panel {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
+            max-width: 100%;
+        }
+
+        .pmr-nested-table {
+            min-width: 1280px !important;
+            width: max-content !important;
+            table-layout: auto !important;
+        }
+
+        .pmr-page .expense-entry-table-wrapper .pmr-nested-table thead th {
+            white-space: nowrap !important;
+            font-size: 0.62rem !important;
+        }
+
+        .pmr-page .expense-entry-table-wrapper .pmr-nested-table thead th br {
+            display: none;
+        }
+
+        .pmr-page .expense-entry-table-wrapper .pmr-nested-table thead th.num,
+        .pmr-page .expense-entry-table-wrapper .pmr-nested-table tbody td.num {
+            min-width: 78px;
+            white-space: nowrap !important;
+        }
+
+        .pmr-page .expense-entry-table-wrapper .pmr-nested-table th:nth-child(2),
+        .pmr-page .expense-entry-table-wrapper .pmr-nested-table td:nth-child(2) {
+            min-width: 120px;
+            white-space: nowrap !important;
+        }
+
+        .pmr-drill-crumb {
+            flex-wrap: wrap;
+            font-size: 0.75rem;
+        }
+    }
+
     @@media print {
         .no-print { display: none !important; }
         .expense-entry-table-wrapper { max-height: none !important; overflow: visible !important; }
@@ -421,6 +606,10 @@
     </div>
 
     <div class="expense-entry-card expense-entry-card-table ee-list-grid-wrap">
+        <div class="pmr-scroll-hint no-print">
+            <i class="fas fa-arrows-alt-h"></i>
+            <span>Swipe left / right to view all columns</span>
+        </div>
         <div class="expense-entry-table-wrapper pmr-table-wrap">
             <table id="tblPMR" class="table table-sm mb-0">
                 <thead>
