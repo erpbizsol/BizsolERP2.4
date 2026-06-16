@@ -1067,6 +1067,7 @@
     box-shadow: 0 24px 64px rgba(0, 0, 0, .22);
     width: min(1100px, 100%);
     max-width: 100%;
+    max-height: calc(100vh - 48px);
     display: flex;
     flex-direction: column;
     margin: 0 auto;
@@ -1136,35 +1137,44 @@
     z-index: 1080;
 }
 
-/* GRN Payment page inside bank statement (iframe — same shell idea as import wizard) */
+/* GRN Payment Entry — full-height iframe inside bank statement modal */
 .bs-grn-embed-backdrop {
     align-items: center;
     justify-content: center;
-    padding: 12px 10px 20px;
-    overflow-y: auto;
+    padding: 16px;
+    overflow: hidden;
     -webkit-overflow-scrolling: touch;
 }
 
 .bs-grn-embed-panel {
     background: var(--white-bg);
-    border-radius: 18px;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, .22);
-    width: min(1240px, 100%);
-    max-width: 100%;
-    height: min(90vh, 920px);
-    max-height: 100%;
+    border-radius: 16px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, .28);
+    width: min(96vw, 1320px);
+    height: min(92vh, 900px);
+    max-height: calc(100vh - 32px);
     display: flex;
     flex-direction: column;
     margin: 0 auto;
-    border: 1px solid var(--border-color, rgba(0, 0, 0, .06));
+    border: 1px solid var(--border-color, rgba(0, 0, 0, .08));
     overflow: hidden;
+}
+
+.bs-grn-embed-panel .bs-import-modal-head {
+    flex-shrink: 0;
+    padding: 14px 16px 12px;
+}
+
+.bs-grn-embed-panel .bs-import-modal-title {
+    font-size: 1.05rem;
 }
 
 .bs-grn-embed-body {
     flex: 1;
     min-height: 0;
     position: relative;
-    background: var(--light-bg, #f1f5f9);
+    background: #f8fafc;
+    overflow: hidden;
 }
 
 .bs-grn-embed-iframe {
@@ -1192,6 +1202,62 @@
 }
 
 .bs-backdrop.active { display: flex; }
+
+/* Full-viewport overlay when mounted on body (escapes #modern-content sidebar offset) */
+body > .bs-backdrop {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    margin: 0 !important;
+    z-index: 10050 !important;
+}
+
+body > #bsImportBackdrop.bs-import-modal-backdrop {
+    z-index: 10050 !important;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    overflow-y: auto;
+}
+
+body > #bsImportBackdrop .bs-import-modal-panel {
+    max-height: calc(100vh - 48px);
+    width: min(1100px, calc(100vw - 32px));
+}
+
+body > #bsHistoryDetailBackdrop,
+body > #bsResultBackdrop,
+body > #bsDeleteBackdrop {
+    z-index: 10060 !important;
+}
+
+body > #bsReconcileChoiceBackdrop,
+body > #bsReconConfirmBackdrop,
+body > #bsGrnAutoMatchConfirmBackdrop,
+body > #bsGrnUnreconcileDeleteBackdrop {
+    z-index: 10070 !important;
+}
+
+body > #bsGrnPaymentEmbedBackdrop {
+    z-index: 10080 !important;
+}
+
+body.bs-page-modal-open {
+    overflow: hidden !important;
+}
+
+body.bs-page-modal-open #modern-content.modern-content {
+    overflow: hidden !important;
+}
+
+body.bs-page-modal-open .modern-sidebar {
+    pointer-events: none;
+}
 
 /* ══════════════════════════════════════════════════════════════════════════════
    CONFIRM MODAL  (matches BOM delete modal look)
@@ -1477,4 +1543,49 @@
     .bs-confirm-modal,
     .bs-result-modal,
     .bs-history-detail-modal { padding: 22px 18px 18px; }
+
+    #bsStatementListPage.bs-page {
+        height: auto;
+        min-height: calc(100vh - 120px);
+        overflow: visible;
+        padding: 4px 8px 16px;
+    }
+
+    #bsStatementListPage.bs-page > #cardList.bs-card {
+        min-height: 280px;
+    }
+
+    #bsStatementListPage.bs-page #cardList .bs-table-wrapper {
+        max-height: min(55vh, 480px);
+    }
+
+    #cardFilters .bs-filter-btn-row {
+        justify-content: stretch;
+    }
+
+    #cardFilters .bs-filter-btn-row .bs-btn-primary,
+    #cardFilters .bs-filter-btn-row .bs-btn-ghost {
+        flex: 1 1 auto;
+    }
+
+    .bs-grn-embed-backdrop {
+        padding: 0;
+        align-items: stretch;
+    }
+
+    .bs-grn-embed-panel {
+        width: 100%;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        border: none;
+    }
+
+    .bs-grn-embed-panel .bs-import-modal-head {
+        padding: 10px 12px 8px;
+    }
+
+    .bs-list-opening-banner {
+        display: none !important;
+    }
 }

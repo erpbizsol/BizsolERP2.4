@@ -3,7 +3,7 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=14"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=20"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 
 <style>
@@ -119,11 +119,35 @@
         overflow-y: auto;
     }
 
+    /* BOM entry grid — no horizontal scroll; fit within card */
+    #dvBOMEntry .bom-entry-table-wrap {
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
     .bom-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 13.5px;
-        min-width: 920px;
+        min-width: 680px;
+    }
+
+    #tblBOM {
+        table-layout: fixed;
+        min-width: 0 !important;
+        font-size: 12.5px;
+    }
+
+    #tblBOM thead th {
+        padding: 9px 5px;
+        white-space: normal;
+        line-height: 1.25;
+        word-break: break-word;
+        font-size: 11px;
+    }
+
+    #tblBOM td {
+        padding: 6px 4px;
     }
 
     .bom-table thead {
@@ -323,9 +347,10 @@
             padding: 6px 8px;
             font-size: 12px;
         }
-        #tblBOMSummary thead th:nth-child(1) { width: 38%; }
-        #tblBOMSummary thead th:nth-child(2) { width: 31%; }
-        #tblBOMSummary thead th:nth-child(3) { width: 31%; }
+        #tblBOMSummary thead th:nth-child(1) { width: 28%; }
+        #tblBOMSummary thead th:nth-child(2) { width: 22%; }
+        #tblBOMSummary thead th:nth-child(3) { width: 25%; }
+        #tblBOMSummary thead th:nth-child(4) { width: 25%; }
     }
 
     .bom-actions {
@@ -757,6 +782,55 @@
         transition: all 0.18s; vertical-align: middle;
     }
     .item-add-btn:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(16,185,129,0.5); }
+
+  /* BOM entry grid — column width tuning (fits viewport, no horizontal scroll) */
+    #tblBOM col.bom-c-sno { width: 36px; }
+    #tblBOM col.bom-c-cat { width: 9%; }
+    #tblBOM col.bom-c-wt { width: 9%; }
+    #tblBOM col.bom-c-item { width: 16%; }
+    #tblBOM col.bom-c-uom { width: 72px; }
+    #tblBOM col.bom-c-spec { width: 9%; }
+    #tblBOM col.bom-c-num { width: 6.5%; }
+    #tblBOM col.bom-c-amt { width: 7.5%; }
+    #tblBOM col.bom-c-del { width: 34px; }
+
+    #tblBOM .bom-col-item-name { width: 16%; }
+    #tblBOM .bom-col-uom {
+        width: 72px;
+        min-width: 72px;
+        max-width: 72px;
+        text-align: center;
+    }
+    #tblBOM .bom-col-uom .bom-uom {
+        text-align: center;
+        padding: 6px 4px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+    #tblBOM .bom-col-tolerance,
+    #tblBOM .bom-col-rate-tol,
+    #tblBOM .bom-col-qty,
+    #tblBOM .bom-col-rate,
+    #tblBOM .bom-col-gst-pct {
+        width: 6.5%;
+    }
+    #tblBOM .bom-col-gst-amt,
+    #tblBOM .bom-col-total-amt,
+    #tblBOM .bom-col-amount {
+        width: 7.5%;
+    }
+    #tblBOM .bom-select {
+        font-size: 12px;
+        padding: 5px 6px;
+    }
+    #tblBOM .bom-input {
+        font-size: 12px;
+        padding: 5px 6px;
+    }
+    #tblBOM .bom-item {
+        min-width: 0;
+    }
 </style>
 
 <div class="bom-page" id="dvBOMGrid">
@@ -845,22 +919,42 @@
 
     <input type="hidden" id="hfBOMCode" value="0" />
 
-    <div class="bom-table-wrap">
+    <div class="bom-table-wrap bom-entry-table-wrap">
         <table class="bom-table" id="tblBOM">
+            <colgroup>
+                <col class="bom-c-sno" />
+                <col class="bom-c-cat" />
+                <col class="bom-c-wt" />
+                <col class="bom-c-item" />
+                <col class="bom-c-uom" />
+                <col class="bom-c-spec" />
+                <col class="bom-c-num" />
+                <col class="bom-c-num" />
+                <col class="bom-c-num" />
+                <col class="bom-c-num" />
+                <col class="bom-c-amt" />
+                <col class="bom-c-num" />
+                <col class="bom-c-amt" />
+                <col class="bom-c-amt" />
+                <col class="bom-c-del" />
+            </colgroup>
             <thead>
                 <tr>
-                    <th class="center" style="width:50px;">#</th>
-                    <th style="min-width:100px;">Prj Category</th>
-                    <th style="min-width:110px;">Work Type</th>
-                    <th style="min-width:150px;">Item Name</th>
-                    <th style="min-width:80px;">UOM</th>
-                    <th style="min-width:80px;">Item Specification</th>
-                    <th style="min-width:90px;" class="right">Tolerance</th>
-                    <th style="min-width:110px;" class="right">Qty Required</th>
-                    <th style="min-width:110px;" class="right">Rate Tol (%)</th>
-                    <th style="min-width:110px;" class="right">EST. Rate</th>
-                    <th style="min-width:120px;" class="right">Amount</th>
-                    <th style="width:40px;"></th>
+                    <th class="center">#</th>
+                    <th>Prj Category</th>
+                    <th>Work Type</th>
+                    <th class="bom-col-item-name">Item Name</th>
+                    <th class="bom-col-uom center">UOM</th>
+                    <th>Item Spec</th>
+                    <th class="bom-col-tolerance right">Tol</th>
+                    <th class="bom-col-qty right">Qty</th>
+                    <th class="bom-col-rate-tol right">Rate Tol(%)</th>
+                    <th class="bom-col-rate right">EST. Rate</th>
+                    <th class="bom-col-amount right">Amount</th>
+                    <th class="bom-col-gst-pct right">GST %</th>
+                    <th class="bom-col-gst-amt right">GST Amt</th>
+                    <th class="bom-col-total-amt right">Total Amt</th>
+                    <th class="center"></th>
                 </tr>
             </thead>
             <tbody>
@@ -880,6 +974,7 @@
                         <th>Prj Category</th>
                         <th class="right">Qty Required</th>
                         <th class="right">Amount</th>
+                        <th class="right">Total Amount</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -888,6 +983,7 @@
                         <td><strong>Grand Total</strong></td>
                         <td class="right" id="sumQtyRequired">—</td>
                         <td class="right" id="sumAmount">—</td>
+                        <td class="right" id="sumTotalAmount">—</td>
                     </tr>
                 </tfoot>
             </table>

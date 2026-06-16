@@ -13,6 +13,47 @@ var grnDeletePendingGrnCode = 0;
 var pendingBsGrnChoiceCode = 0;
 var pendingBsGrnEmbedCtx = null;
 
+/** Backdrops live in #modern-content (offset by sidebar); mount on body for full-viewport overlay. */
+var BS_BACKDROP_IDS = [
+    'bsImportBackdrop', 'bsGrnPaymentEmbedBackdrop', 'bsReconcileChoiceBackdrop',
+    'bsReconConfirmBackdrop', 'bsGrnAutoMatchConfirmBackdrop', 'bsGrnUnreconcileDeleteBackdrop',
+    'bsResultBackdrop', 'bsDeleteBackdrop', 'bsHistoryDetailBackdrop'
+];
+
+function mountBankStatementModalsToBody() {
+    BS_BACKDROP_IDS.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && el.parentNode !== document.body) {
+            document.body.appendChild(el);
+        }
+    });
+}
+
+function syncBankStatementModalScrollLock() {
+    var anyOpen = BS_BACKDROP_IDS.some(function (id) {
+        var el = document.getElementById(id);
+        return el && el.classList.contains('active');
+    });
+    document.body.classList.toggle('bs-page-modal-open', anyOpen);
+}
+
+function showBsBackdrop(sel) {
+    mountBankStatementModalsToBody();
+    var $el = sel instanceof jQuery ? sel : $(sel);
+    $el.addClass('active').attr('aria-hidden', 'false');
+    syncBankStatementModalScrollLock();
+}
+
+function hideBsBackdrop(sel) {
+    var $el = sel instanceof jQuery ? sel : $(sel);
+    $el.removeClass('active').attr('aria-hidden', 'true');
+    syncBankStatementModalScrollLock();
+}
+
+window.mountBankStatementModalsToBody = mountBankStatementModalsToBody;
+window.showBsBackdrop = showBsBackdrop;
+window.hideBsBackdrop = hideBsBackdrop;
+
 // ── Date helpers (same pattern as ProjectMaster) ──────────────────────────────
 function formatDate(date) {
     var day   = String(date.getDate()).padStart(2, '0');
@@ -122,8 +163,10 @@ function setDefaultFilterDates() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 function isRowReconciled(row) {
     var ir = row && row.IsReconciled;
-    return ir === 'Y' || ir === true || ir === 1
-        || (ir != null && String(ir).toUpperCase() === 'Y');
+    if (ir === true || ir === 1) return true;
+    if (ir == null || ir === '') return false;
+    var u = String(ir).trim().toUpperCase();
+    return u === 'Y' || u === 'C';
 }
 
 /** IsManualReconciled = Y from API (manual reconcile via No -> existing / new payment on this screen). */
@@ -162,6 +205,7 @@ function applyStatementFilter(list) {
 }
 
 $(document).ready(function () {
+    mountBankStatementModalsToBody();
     setDefaultFilterDates();
     $('#ddlFilterStatement').val('All');
     BindEvents();
@@ -285,7 +329,7 @@ function BindEvents() {
     $('#btnImportNew').on('click', function () {
         var $b = $('#bsImportBackdrop');
         if ($b.length) {
-            $b.addClass('active').attr('aria-hidden', 'false');
+            showBsBackdrop($b);
             setTimeout(function () { $('#btnRefreshHistory').trigger('click'); }, 0);
         } else {
             window.location = baseUrl + '/FinanceTransactions/BankStatement/BankStatementUpload';
@@ -306,7 +350,8 @@ function BindEvents() {
         e.preventDefault();
         var $b = $(this);
         var code = parseInt($b.attr('data-code') || '0', 10);
-        var isYes = $b.attr('data-recon') === 'Y';
+        var rc = String($b.attr('data-recon') || '').toUpperCase();
+        var isYes = rc === 'Y' || rc === 'C';
         if (!code) return;
         if (isYes) {
             /* Yes → unreconcile: show details when bank row is linked to GRNPaymentMaster_Code */
@@ -446,11 +491,11 @@ function BindEvents() {
 
 function openBankStmtReconcileChoiceModal() {
     resetBsReconcileChoiceModalUi();
-    $('#bsReconcileChoiceBackdrop').addClass('active').attr('aria-hidden', 'false');
+    showBsBackdrop('#bsReconcileChoiceBackdrop');
 }
 
 function closeBankStmtReconcileChoiceModal() {
-    $('#bsReconcileChoiceBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    hideBsBackdrop('#bsReconcileChoiceBackdrop');
     resetBsReconcileChoiceModalUi();
     pendingBsGrnChoiceCode = 0;
     pendingBsGrnEmbedCtx = null;
@@ -488,12 +533,12 @@ function openGrnPaymentEmbedModal(bankStatementCode, opts) {
         }
     }
     $('#iframeBankStmtGrnEmbed').attr('src', url);
-    $('#bsGrnPaymentEmbedBackdrop').addClass('active').attr('aria-hidden', 'false');
+    showBsBackdrop('#bsGrnPaymentEmbedBackdrop');
 }
 
 function closeGrnPaymentEmbedModal() {
     $('#iframeBankStmtGrnEmbed').attr('src', 'about:blank');
-    $('#bsGrnPaymentEmbedBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    hideBsBackdrop('#bsGrnPaymentEmbedBackdrop');
     try {
         sessionStorage.removeItem('BizsolBankStmtGrnEmbed');
     } catch (e) { /* ignore */ }
@@ -520,7 +565,8 @@ function linkBankStatementLineToGrnAndRefresh(bankStmtCode, grnPaymentMasterCode
 
     function finishOk(msg) {
         HideLoader && HideLoader();
-        toastr && toastr.success(msg || 'Bank line marked reconciled.');
+        var text = msg || 'Bank line reconciled.';
+        toastr && toastr.success(text, 'Reconciled');
         if (closeEmb) closeGrnPaymentEmbedModal();
         if (closeChoice) closeBankStmtReconcileChoiceModal();
         LoadStatements();
@@ -560,11 +606,11 @@ function onBankStmtGrnEmbedChildMessage(ev) {
 }
 
 function openGrnAutoMatchConfirmModal() {
-    $('#bsGrnAutoMatchConfirmBackdrop').addClass('active').attr('aria-hidden', 'false');
+    showBsBackdrop('#bsGrnAutoMatchConfirmBackdrop');
 }
 
 function closeGrnAutoMatchConfirmModal() {
-    $('#bsGrnAutoMatchConfirmBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    hideBsBackdrop('#bsGrnAutoMatchConfirmBackdrop');
 }
 
 function confirmGrnAutoMatchPending() {
@@ -903,7 +949,7 @@ function openReconConfirmModal(code, toYes, grnMasterCode) {
         $('#bsReconConfirmText').html(
             '<p class="text-muted mb-2">Loading payment details…</p>'
         );
-        $('#bsReconConfirmBackdrop').addClass('active').attr('aria-hidden', 'false');
+        showBsBackdrop('#bsReconConfirmBackdrop');
         GRNPaymentApprovalService.GetGRNPaymentApprovalByCode(grn)
             .then(function (res) {
                 var root = peelGrnRootForBs(res);
@@ -928,11 +974,11 @@ function openReconConfirmModal(code, toYes, grnMasterCode) {
         ? 'Mark this bank statement line as <strong>reconciled</strong>?'
         : 'Clear reconciliation for this line (set to <strong>Not reconciled</strong>)?';
     $('#bsReconConfirmText').html(msg);
-    $('#bsReconConfirmBackdrop').addClass('active').attr('aria-hidden', 'false');
+    showBsBackdrop('#bsReconConfirmBackdrop');
 }
 
 function closeReconConfirmModal() {
-    $('#bsReconConfirmBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    hideBsBackdrop('#bsReconConfirmBackdrop');
     reconPendingCode = 0;
     reconPendingToYes = false;
     reconPendingGrnMasterCode = 0;
@@ -947,11 +993,11 @@ function openGrnDeleteSecondModal(bankStmtCode, grnCode) {
         + '<p class="mb-2"><strong>Cancel</strong> does <em>not</em> delete the payment; it still sets this bank line to <strong>Not reconciled</strong> and clears the stored link.</p>'
         + '<p class="mb-0 text-danger small">Deletion cannot be undone.</p>'
     );
-    $('#bsGrnUnreconcileDeleteBackdrop').addClass('active').attr('aria-hidden', 'false');
+    showBsBackdrop('#bsGrnUnreconcileDeleteBackdrop');
 }
 
 function closeGrnDeleteSecondModal() {
-    $('#bsGrnUnreconcileDeleteBackdrop').removeClass('active').attr('aria-hidden', 'true');
+    hideBsBackdrop('#bsGrnUnreconcileDeleteBackdrop');
     grnDeletePendingBankCode = 0;
     grnDeletePendingGrnCode = 0;
 }
@@ -1264,8 +1310,7 @@ function LoadStatements() {
             $.each(computed, function (i, item) {
                 var row = item.row;
                 var ir = row.IsReconciled;
-                var reconY = ir === 'Y' || ir === true || ir === 1
-                    || (ir != null && String(ir).toUpperCase() === 'Y');
+                var reconY = isRowReconciled(row);
                 var storedClose = cleanAmount(row.ClosingBalance);
                 var storedR = roundMoney(storedClose);
                 var after = roundMoney(item.balanceAfter);
@@ -1301,7 +1346,7 @@ function LoadStatements() {
                         ? (depositBlocksUnreconcile
                             ? '<span class="bs-badge bs-badge--recon-yes bs-recon-yes--locked" title="Deposit lines cannot be unreconciled from here.">Yes</span>'
                             : '<button type="button" class="bs-recon-toggle bs-badge bs-badge--recon-yes" data-code="'
-                                + String(row.Code) + '" data-recon="Y" data-grn-master="' + String(grnMaster) + '" title="Unreconcile — clear reconciled for this line">Yes</button>')
+                                + String(row.Code) + '" data-recon="C" data-grn-master="' + String(grnMaster) + '" title="Unreconcile — clear reconciled for this line">Yes</button>')
                         : '<button type="button" class="bs-recon-toggle bs-badge bs-badge--recon-no" data-code="'
                             + String(row.Code) + '" data-recon="N" data-bs-withdraw="'
                             + (Number.isFinite(wAmt) ? String(wAmt) : '0') + '" data-bs-narr-enc="'

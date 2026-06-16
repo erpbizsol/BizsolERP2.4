@@ -15,6 +15,11 @@ let G_BOMHeader           = {};
 /** Last Copy From source — shown in modal until Save All. */
 let G_CopyFromSource        = { active: false, projectCode: 0, subProjectCode: 0, projectName: '', subProjectDesp: '' };
 
+const BOM_MAX_RATE    = 999999.99;
+const BOM_MAX_QTY     = 99999.99;
+const BOM_MAX_AMOUNT  = 99999999.99;
+const BOM_MAX_GST_PCT = 100;
+
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
@@ -304,18 +309,21 @@ function prepareAmendmentHistoryGridRows(rawRows) {
     });
     const orderedKeys = orderAmendmentHistoryColumns(Array.from(keySet));
 
-    const numericPivotNames = ['Amount', 'Qty Required', 'Rate', 'Tolerance', 'Rate Tolerance'];
+    const numericPivotNames = ['Amount', 'Qty Required', 'Rate', 'Tolerance', 'Rate Tolerance', 'GST Amount', 'Total Amount', 'GST %'];
 
     function formatAmendmentPivotNumber(columnName, raw) {
         if (raw === '' || raw === null || raw === undefined) return raw;
         const n = parseFloat(String(raw).replace(/,/g, '').trim());
         if (isNaN(n)) return raw;
         /* Large floats from SQL/JSON often stringify as 4e+007 — normalize to INR / qty display */
-        if (columnName === 'Amount' || columnName === 'Rate') {
+        if (columnName === 'Amount' || columnName === 'Rate' || columnName === 'GST Amount' || columnName === 'Total Amount') {
             return formatInrAmountNum(n, 2, 2);
         }
         if (columnName === 'Qty Required' || columnName === 'Tolerance' || columnName === 'Rate Tolerance') {
             return formatInrQtyNum(n);
+        }
+        if (columnName === 'GST %') {
+            return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
         return raw;
     }
@@ -416,7 +424,7 @@ function openBomAmendmentHistoryModal(projectMasterCode, subProjectMasterCode) {
             const DateFilterColumn = keys.indexOf('Amendment Date') >= 0 ? ['Amendment Date'] : [];
             const numericCandidates = ['Amendment No'];
             const pivotNumeric = keys.filter(function (k) {
-                return ['Amount', 'Rate', 'Qty Required', 'Tolerance', 'Rate Tolerance'].indexOf(k) >= 0;
+                return ['Amount', 'Rate', 'Qty Required', 'Tolerance', 'Rate Tolerance', 'GST Amount', 'Total Amount', 'GST %'].indexOf(k) >= 0;
             });
             const NumericFilterColumn = numericCandidates.concat(pivotNumeric).filter(function (k) {
                 return keys.indexOf(k) >= 0 && hiddenColumns.indexOf(k) < 0;
@@ -600,11 +608,14 @@ function applyBomDetailRows(detailRows) {
             if (d.ItemMaster_Code) {
                 var cachedUom = getUomTextFromCache(d.WorkTypeDesp || '', d.ItemMaster_Code);
                 var uomText   = d.UOM || cachedUom || '';
+                var gstForOpt = d.GSTRate != null ? d.GSTRate : (d.GSTPercent != null ? d.GSTPercent : 0);
 
                 $itemDdl.append(
                     `<option value="${d.ItemMaster_Code}"
                              data-uom="${escHtml(uomText)}"
-                             data-uom-code="${parseInt(d.UOMMaster_Code || 0, 10) || 0}">
+                             data-uom-code="${parseInt(d.UOMMaster_Code || 0, 10) || 0}"
+                             data-item-spec="${escHtml(d.ItemSpecificationDesp || '')}"
+                             data-gst-rate="${parseFloat(gstForOpt) || 0}">
                         ${escHtml(d.ItemName || '')}
                      </option>`
                 );
@@ -626,6 +637,19 @@ function applyBomDetailRows(detailRows) {
             } else {
                 $tr.find('.bom-amount').val('');
             }
+            const gstRate = d.GSTRate != null ? d.GSTRate : (d.GSTPercent != null ? d.GSTPercent : (d['GST %'] != null ? d['GST %'] : ''));
+            if (gstRate !== '' && gstRate != null) {
+                $tr.find('.bom-gst-pct').val(formatBomMoneyRaw(Number(gstRate).toFixed(2)));
+            } else {
+                $tr.find('.bom-gst-pct').val('');
+            }
+            /* TotalAmount is not stored — always derive GST Amount + Total from Amount & GSTRate */
+            recalcGstAndTotal($tr);
+
+            bindItemDropdownForRow($tr, {
+                preselectCode: d.ItemMaster_Code || 0,
+                preserveGst: true
+            });
         });
 
         prefetchUOMsForRows(detailRows);
@@ -939,6 +963,7 @@ function clearBomTableAndSummary() {
     $('#bomSummaryTotalsLine').empty();
     $('#sumQtyRequired').text('—');
     $('#sumAmount').text('—');
+    $('#sumTotalAmount').text('—');
     $('#dvBOMSummary').hide();
     G_BOMRows = [];
 }
@@ -954,9 +979,9 @@ function applyCopyFromResponse(detailRows) {
 function enableBomEntryRows() {
     $('#tblBOM tbody tr').each(function () {
         $(this).attr('data-state', 'edit');
-        $(this).find('.bom-input:not(.bom-uom):not(.bom-amount)').prop('readonly', false);
+        $(this).find('.bom-input:not(.bom-uom):not(.bom-amount):not(.bom-gst-amount):not(.bom-total-amount)').prop('readonly', false);
         $(this).find('.bom-select').prop('disabled', false);
-        $(this).find('.bom-uom, .bom-amount').prop('readonly', true);
+        $(this).find('.bom-uom, .bom-amount, .bom-gst-amount, .bom-total-amount').prop('readonly', true);
     });
 }
 
@@ -1070,6 +1095,7 @@ function resetBomForm() {
     $('#bomSummaryTotalsLine').empty();
     $('#sumQtyRequired').text('—');
     $('#sumAmount').text('—');
+    $('#sumTotalAmount').text('—');
     $('#dvBOMSummary').hide();
     $('#btnVerifyAllBomRows').hide().prop('disabled', false);
     $('#btnSaveAllBomRows').prop('disabled', false);
@@ -1093,7 +1119,7 @@ function addNewBomRow() {
                     <option value="">Select</option>
                 </select>
             </td>
-            <td>
+            <td class="bom-col-item-name">
                 <div style="display:flex;align-items:center;gap:4px;">
                     <select class="bom-select bom-item" style="flex:1;min-width:0;">
                         <option value="">Select</option>
@@ -1103,26 +1129,35 @@ function addNewBomRow() {
                     </button>
                 </div>
             </td>
-            <td>
+            <td class="bom-col-uom center">
                 <input type="text" class="bom-input bom-uom" readonly />
             </td>
             <td>
                 <input type="text" class="bom-input bom-item-spec" />
             </td>
-            <td>
+            <td class="bom-col-tolerance">
                 <input type="text" class="bom-input bom-tolerance right" />
             </td>
-            <td>
+            <td class="bom-col-qty">
                 <input type="text" class="bom-input bom-qty-required right" />
             </td>
-            <td>
+            <td class="bom-col-rate-tol">
                 <input type="text" class="bom-input bom-rate-tol right" />
             </td>
-            <td>
+            <td class="bom-col-rate">
                 <input type="text" class="bom-input bom-est-rate right" />
             </td>
-            <td>
+            <td class="bom-col-amount">
                 <input type="text" class="bom-input bom-amount right" readonly />
+            </td>
+            <td class="bom-col-gst-pct">
+                <input type="text" class="bom-input bom-gst-pct right" />
+            </td>
+            <td class="bom-col-gst-amt">
+                <input type="text" class="bom-input bom-gst-amount right" readonly />
+            </td>
+            <td class="bom-col-total-amt">
+                <input type="text" class="bom-input bom-total-amount right" readonly />
             </td>
             <td class="center">
                 <button type="button" class="bom-btn icon del js-bom-row-delete" title="Remove">
@@ -1180,15 +1215,112 @@ function setWorkTypeSilent($tr, workTypeCode, workTypeName) {
         }
     });
 }
-function bindItemDropdownForRow($tr) {
+function getItemGstRateFromMaster(item) {
+    if (!item) return 0;
+    const raw = item.GSTRate != null ? item.GSTRate
+        : (item.DutyValue != null ? item.DutyValue
+        : (item.GSTPercent != null ? item.GSTPercent : 0));
+    const n = parseFloat(raw);
+    return isNaN(n) ? 0 : n;
+}
+
+function findBomItemInCache(workTypeName, itemCode) {
+    const cacheKey = (workTypeName || '').trim().toUpperCase();
+    if (!cacheKey || !itemCode) return null;
+    const code = parseInt(itemCode, 10) || 0;
+    const items = G_ItemCacheByWorkType[cacheKey] || [];
+    return items.find(function (it) { return (it.Code || 0) === code; }) || null;
+}
+
+/**
+ * Apply item master fields to row (same pattern as PO Store OnItemChange).
+ * @param {jQuery} $tr
+ * @param {object|null} item - row from GetItemMasterList cache
+ * @param {object} options - { bindGstFromMaster: true }
+ */
+function applyItemMasterFieldsToRow($tr, item, options) {
+    options = options || {};
+    const bindGst = options.bindGstFromMaster !== false;
+
+    if (!item) {
+        $tr.find('.bom-uom').val('');
+        $tr.attr('data-uom-code', 0);
+        $tr.find('.bom-item-spec').val('');
+        if (bindGst) $tr.find('.bom-gst-pct').val('');
+        recalcGstAndTotal($tr);
+        refreshBOMSummary();
+        return;
+    }
+
+    const uom     = item.UOM || '';
+    const uomCode = parseInt(item.UOMMaster_Code || 0, 10) || 0;
+    const spec    = (item.ItemSpecification || item.ItemSpecificationDesp || '').trim();
+    const gstRate = getItemGstRateFromMaster(item);
+
+    $tr.attr('data-item-code', item.Code || 0);
+    $tr.find('.bom-uom').val(uom);
+    $tr.attr('data-uom-code', uomCode);
+    $tr.find('.bom-item-spec').val(spec);
+
+    if (bindGst) {
+        $tr.find('.bom-gst-pct').val(formatBomMoneyRaw(gstRate.toFixed(2)));
+    }
+
+    recalcGstAndTotal($tr);
+    refreshBOMSummary();
+}
+
+function onBomItemSelected($tr, options) {
+    options = options || {};
+    const $item    = $tr.find('.bom-item');
+    const itemCode = $item.val();
+
+    if (!itemCode) {
+        applyItemMasterFieldsToRow($tr, null, { bindGstFromMaster: true });
+        return;
+    }
+
+    const workTypeName = ($tr.find('.bom-work-type option:selected').data('worktype') || '').toString().trim();
+    const cachedItem   = findBomItemInCache(workTypeName, itemCode);
+
+    if (cachedItem) {
+        applyItemMasterFieldsToRow($tr, cachedItem, options);
+        return;
+    }
+
+    /* Fallback: single injected option (edit row before full list loads) */
+    const $opt    = $item.find('option:selected');
+    const uom     = $opt.attr('data-uom') || '';
+    const uomCode = parseInt($opt.attr('data-uom-code') || 0, 10) || 0;
+    const spec    = $opt.attr('data-item-spec') || '';
+    const gstRate = parseFloat($opt.attr('data-gst-rate') || 0) || 0;
+
+    $tr.attr('data-item-code', parseInt(itemCode, 10) || 0);
+    $tr.find('.bom-uom').val(uom);
+    $tr.attr('data-uom-code', uomCode);
+    $tr.find('.bom-item-spec').val(spec);
+
+    if (options.bindGstFromMaster !== false) {
+        $tr.find('.bom-gst-pct').val(formatBomMoneyRaw(gstRate.toFixed(2)));
+    }
+
+    recalcGstAndTotal($tr);
+    refreshBOMSummary();
+}
+
+function bindItemDropdownForRow($tr, options) {
+    options = options || {};
     const $wt          = $tr.find('.bom-work-type');
     const selectedCode = $wt.val();
     const workTypeName = ($wt.find('option:selected').data('worktype') || '').toString().trim();
 
     const $item = $tr.find('.bom-item');
+    const prevItemCode = options.preselectCode || $item.val();
     $item.empty().append('<option value="">Select</option>');
-    $tr.find('.bom-uom').val('');
-    $tr.attr('data-uom-code', 0);
+    if (!options.preserveFields) {
+        $tr.find('.bom-uom').val('');
+        $tr.attr('data-uom-code', 0);
+    }
 
     if (!selectedCode || !workTypeName) return;
 
@@ -1200,24 +1332,25 @@ function bindItemDropdownForRow($tr) {
             const name     = (it.ItemName || '').trim();
             const uom      = it.UOM || '';
             const uomCode  = parseInt(it.UOMMaster_Code || 0, 10) || 0;
-            const itemSpec = (it.ItemSpecification || '').trim();
+            const itemSpec = (it.ItemSpecification || it.ItemSpecificationDesp || '').trim();
+            const gstRate  = getItemGstRateFromMaster(it);
             $item.append(
-                `<option value="${itemCode}" data-uom="${escHtml(uom)}" data-uom-code="${uomCode}" data-item-spec="${escHtml(itemSpec)}">${escHtml(name)}</option>`
+                `<option value="${itemCode}" data-uom="${escHtml(uom)}" data-uom-code="${uomCode}" data-item-spec="${escHtml(itemSpec)}" data-gst-rate="${gstRate}">${escHtml(name)}</option>`
             );
         });
 
-        $item.off('change').on('change', function () {
-            const $opt    = $(this).find('option:selected');
-            const uom     = $opt.data('uom') || '';
-            const uomCode = parseInt($opt.data('uom-code') || 0, 10) || 0;
-            const spec    = $opt.data('item-spec') || '';
-            $tr.find('.bom-uom').val(uom);
-            $tr.attr('data-uom-code', uomCode);
-            $tr.find('.bom-item-spec').val(spec);
-            refreshBOMSummary();
+        $item.off('change.bomItem').on('change.bomItem', function () {
+            onBomItemSelected($tr, { bindGstFromMaster: true });
         });
 
-        if ($item.val()) $item.trigger('change');
+        if (prevItemCode) {
+            $item.val(String(prevItemCode));
+            if ($item.val()) {
+                onBomItemSelected($tr, {
+                    bindGstFromMaster: !options.preserveGst
+                });
+            }
+        }
     }
 
     if (G_ItemCacheByWorkType[cacheKey]) {
@@ -1299,23 +1432,41 @@ function applyUOMsFromCache(cacheKey) {
 
         var uom     = found.UOM || '';
         var uomCode = parseInt(found.UOMMaster_Code || 0, 10) || 0;
+        var gstRate = getItemGstRateFromMaster(found);
+        var itemSpec = (found.ItemSpecification || found.ItemSpecificationDesp || '').trim();
 
-        // Update the injected option so future item change-events carry correct UOM
         $tr.find('.bom-item option[value="' + itemCode + '"]')
             .attr('data-uom', uom)
-            .attr('data-uom-code', uomCode);
+            .attr('data-uom-code', uomCode)
+            .attr('data-item-spec', itemSpec)
+            .attr('data-gst-rate', gstRate);
 
-        // Fill the visible UOM field and row attribute
         $tr.find('.bom-uom').val(uom);
         $tr.attr('data-uom-code', uomCode);
+
+        if (!$tr.find('.bom-gst-pct').val()) {
+            $tr.find('.bom-gst-pct').val(formatBomMoneyRaw(gstRate.toFixed(2)));
+            recalcGstAndTotal($tr);
+        }
     });
     refreshBOMSummary();
 }
 function initRowEvents($tr) {
-    $tr.find('.bom-qty-required').on('input', function () { enforceNumeric(this, 3); recalcAmount($tr); });
-    $tr.find('.bom-est-rate').on('input', function () { formatBomMoneyInput(this); recalcAmount($tr); });
+    $tr.find('.bom-qty-required').on('input', function () {
+        enforceNumericWithMax(this, 2, BOM_MAX_QTY);
+        recalcAmount($tr);
+    });
+    $tr.find('.bom-est-rate').on('input', function () {
+        enforceBomRateInput(this);
+        recalcAmount($tr);
+    });
     $tr.find('.bom-tolerance').on('input',   function () { enforceNumeric(this, 3); refreshBOMSummary(); });
     $tr.find('.bom-rate-tol').on('input',    function () { enforceNumeric(this, 3); refreshBOMSummary(); });
+    $tr.find('.bom-gst-pct').on('input', function () {
+        enforceNumericWithMax(this, 2, BOM_MAX_GST_PCT);
+        recalcGstAndTotal($tr);
+        refreshBOMSummary();
+    });
 
     $tr.find('.js-bom-row-delete').on('click', function () { deleteBomRow($tr); });
 }
@@ -1348,7 +1499,10 @@ function buildRowPayload($tr) {
         QtyRequired       : parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0,
         RateTolerance     : parseFloat(($tr.find('.bom-rate-tol').val() || '0').replace(/,/g, '')) || 0,
         EstRate           : parseBomMoney($tr.find('.bom-est-rate').val()),
-        Amount            : parseBomMoney($tr.find('.bom-amount').val())
+        Amount            : parseBomMoney($tr.find('.bom-amount').val()),
+        GSTRate           : parseFloat(($tr.find('.bom-gst-pct').val() || '0').replace(/,/g, '')) || 0,
+        GSTAmount         : parseBomMoney($tr.find('.bom-gst-amount').val()),
+        TotalAmount       : getBomRowLineTotal($tr)
     };
 }
 function saveAllRows() {
@@ -1386,7 +1540,7 @@ function saveAllRows() {
         const limit = spRow ? (parseFloat(spRow.Budget || spRow.SubProjectBudget || 0) || 0) : 0;
         if (limit > 0) {
             let bomSum = 0;
-            payloads.forEach(function (p) { bomSum += parseFloat(p.Amount || 0) || 0; });
+            payloads.forEach(function (p) { bomSum += parseFloat(p.TotalAmount || p.Amount || 0) || 0; });
             if (bomSum > limit) {
                 toastr.warning(
                     'Total BOM amount (' + formatInrAmountNum(bomSum, 2, 2)
@@ -1429,6 +1583,8 @@ function saveAllRows() {
             QtyRequired                      : p.QtyRequired || 0,
             Rate                             : p.EstRate || 0,
             Amount                           : p.Amount || 0,
+            GSTRate                          : p.GSTRate || 0,
+            GSTAmount                        : p.GSTAmount || 0,
             ItemMaster_Code                  : p.ItemCode || 0,
             GodownMaster_Code                : 0,
             SubProjectDesp                   : subProjectDesp,
@@ -1541,6 +1697,22 @@ function validateRow($tr) {
     if (rateTol && !isValidNumber(rateTol)) { toastr.warning('Please enter valid Rate Tol (%).');     return false; }
     if (estRate && !isValidNumber(estRate)) { toastr.warning('Please enter valid Est. Rate.');        return false; }
 
+    const rateNum = parseBomMoney(estRate);
+    const qtyNum  = parseFloat((qty || '').toString().replace(/,/g, '')) || 0;
+    const amtNum  = parseBomMoney($tr.find('.bom-amount').val());
+    if (rateNum > BOM_MAX_RATE) {
+        toastr.warning('Est. Rate cannot exceed ' + BOM_MAX_RATE.toLocaleString('en-IN') + '.');
+        return false;
+    }
+    if (qtyNum > BOM_MAX_QTY) {
+        toastr.warning('Qty Required cannot exceed ' + BOM_MAX_QTY.toLocaleString('en-IN') + '.');
+        return false;
+    }
+    if (amtNum > BOM_MAX_AMOUNT) {
+        toastr.warning('Amount cannot exceed ' + BOM_MAX_AMOUNT.toLocaleString('en-IN') + '.');
+        return false;
+    }
+
     return true;
 }
 
@@ -1556,6 +1728,43 @@ function enforceNumeric(input, maxDecimals) {
     const p2 = v.split('.');
     if (p2[1]) v = p2[0] + '.' + p2[1].slice(0, maxDecimals);
     input.value = v;
+}
+
+function enforceNumericWithMax(input, maxDecimals, maxValue) {
+    enforceNumeric(input, maxDecimals);
+    if (!input.value) return;
+    const n = parseFloat(input.value);
+    if (!isNaN(n) && maxValue != null && n > maxValue) {
+        input.value = maxDecimals > 0 ? maxValue.toFixed(maxDecimals) : String(maxValue);
+    }
+}
+
+function enforceBomRateInput(input) {
+    formatBomMoneyInput(input);
+    const n = parseBomMoney(input.value);
+    if (n > BOM_MAX_RATE) {
+        input.value = formatBomMoneyRaw(BOM_MAX_RATE.toFixed(2));
+    }
+}
+
+function capBomMoneyAmount(n) {
+    const v = parseFloat(n);
+    if (isNaN(v)) return 0;
+    return Math.min(v, BOM_MAX_AMOUNT);
+}
+
+/** Base amount (Qty × Rate) without GST. */
+function getBomRowBaseAmount($tr) {
+    return parseBomMoney($tr.find('.bom-amount').val());
+}
+
+/** Line total = Total Amt field, or Amount + GST Amount when total not yet calculated. */
+function getBomRowLineTotal($tr) {
+    const totalFld = parseBomMoney($tr.find('.bom-total-amount').val());
+    if (totalFld > 0) return totalFld;
+    const amount = parseBomMoney($tr.find('.bom-amount').val());
+    const gstAmt = parseBomMoney($tr.find('.bom-gst-amount').val());
+    return capBomMoneyAmount(amount + gstAmt);
 }
 function getCategoryGroupKey($tr) {
     const code = ($tr.find('.bom-project-category').val() || '').trim();
@@ -1575,23 +1784,25 @@ function refreshBOMSummary() {
 
     $('#tblBOM tbody tr').each(function () {
         const $tr = $(this);
-        const qty  = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
-        const amt  = parseFloat(($tr.find('.bom-amount').val()       || '0').replace(/,/g, '')) || 0;
-        const item = $tr.find('.bom-item').val();
+        const qty       = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
+        const baseAmt   = getBomRowBaseAmount($tr);
+        const totalAmt  = getBomRowLineTotal($tr);
+        const item      = $tr.find('.bom-item').val();
 
-        if (!item && qty === 0 && amt === 0) return;
+        if (!item && qty === 0 && baseAmt === 0 && totalAmt === 0) return;
 
         const key = getCategoryGroupKey($tr);
         if (!groups[key]) {
-            groups[key] = { label: getCategoryLabelFromRow($tr), qty: 0, amount: 0 };
+            groups[key] = { label: getCategoryLabelFromRow($tr), qty: 0, amount: 0, totalAmount: 0 };
         }
         groups[key].qty += qty;
-        groups[key].amount += amt;
+        groups[key].amount += baseAmt;
+        groups[key].totalAmount += totalAmt;
     });
 
     const keys = Object.keys(groups).filter(function (k) {
         const g = groups[k];
-        return g.qty !== 0 || g.amount !== 0;
+        return g.qty !== 0 || g.amount !== 0 || g.totalAmount !== 0;
     });
     if (!keys.length) {
         $('#dvBOMSummary').hide();
@@ -1602,28 +1813,34 @@ function refreshBOMSummary() {
     const $tbody = $('#tblBOMSummary tbody');
     $tbody.empty();
 
-    let gQty = 0, gAmt = 0;
+    let gQty = 0, gBaseAmt = 0, gTotalAmt = 0;
 
     keys.sort().forEach(function (k) {
         const g = groups[k];
         gQty += g.qty;
-        gAmt += g.amount;
+        gBaseAmt += g.amount;
+        gTotalAmt += g.totalAmount;
 
         $tbody.append(`
             <tr>
                 <td><span class="uom-badge">${escHtml(g.label)}</span></td>
                 <td class="right">${formatInrQtyNum(g.qty)}</td>
-                <td class="right"><strong>${formatInrAmountNum(g.amount, 2, 2)}</strong></td>
+                <td class="right">${formatInrAmountNum(g.amount, 2, 2)}</td>
+                <td class="right"><strong>${formatInrAmountNum(g.totalAmount, 2, 2)}</strong></td>
             </tr>`);
     });
 
     $('#sumQtyRequired').text(formatInrQtyNum(gQty));
-    $('#sumAmount').text(formatInrAmountNum(gAmt, 2, 2));
+    $('#sumAmount').text(formatInrAmountNum(gBaseAmt, 2, 2));
+    $('#sumTotalAmount').text(formatInrAmountNum(gTotalAmt, 2, 2));
 
-    const amtFormatted = formatInrAmountNum(gAmt, 2, 2);
-    const wordsFormatted = inrAmountWordsRupeeSymbol(gAmt);
+    const amtFormatted = formatInrAmountNum(gTotalAmt, 2, 2);
+    const wordsFormatted = inrAmountWordsRupeeSymbol(gTotalAmt);
     $('#bomSummaryTotalsLine').html(
         '<div class="bom-summary-footer-qty">Total Qty: ' + escHtml(formatInrQtyNum(gQty)) + '</div>' +
+        '<div class="bom-summary-footer-row bom-summary-footer-total-amt">' +
+        '<span class="bom-summary-footer-label">Amount :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(formatInrAmountNum(gBaseAmt, 2, 2)) + '</span></div>' +
         '<div class="bom-summary-footer-row bom-summary-footer-total-amt">' +
         '<span class="bom-summary-footer-label">Total Amount :</span> ' +
         '<span class="bom-summary-footer-value">' + escHtml(amtFormatted) + '</span></div>' +
@@ -1637,13 +1854,31 @@ function refreshBOMSummary() {
 function recalcAmount($tr) {
     const qty  = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
     const rate = parseBomMoney($tr.find('.bom-est-rate').val());
-    const amt  = qty * rate;
+    const amt  = capBomMoneyAmount(qty * rate);
     if (isNaN(amt)) {
         $tr.find('.bom-amount').val('');
     } else {
         $tr.find('.bom-amount').val(formatBomMoneyRaw(amt.toFixed(2)));
     }
+    recalcGstAndTotal($tr);
     refreshBOMSummary();
+}
+
+function recalcGstAndTotal($tr) {
+    const amount = parseBomMoney($tr.find('.bom-amount').val());
+    const gstPct = parseFloat(($tr.find('.bom-gst-pct').val() || '0').replace(/,/g, '')) || 0;
+
+    if (!amount && !gstPct) {
+        $tr.find('.bom-gst-amount').val('');
+        $tr.find('.bom-total-amount').val('');
+        return;
+    }
+
+    const gstAmt   = capBomMoneyAmount(amount * gstPct / 100);
+    const totalAmt = capBomMoneyAmount(amount + gstAmt);
+
+    $tr.find('.bom-gst-amount').val(formatBomMoneyRaw(gstAmt.toFixed(2)));
+    $tr.find('.bom-total-amount').val(formatBomMoneyRaw(totalAmt.toFixed(2)));
 }
 function escHtml(str) {
     return String(str || '')
