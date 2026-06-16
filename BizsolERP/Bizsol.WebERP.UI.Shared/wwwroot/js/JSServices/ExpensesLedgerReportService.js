@@ -7,7 +7,6 @@ function getCrmReportsBase() {
     return String(crm).replace(/\/$/, '');
 }
 
-/** `{BASE}` — DDL actions; report data via `GetExpensesLedgerReport`; CRM area uses `ExpensesLedgerReport`. */
 function getExpenseLedgerDdLApiBase() {
     const stand =
         UrlService.API_ENDPOINT_ExpensesLedgerReport ||
@@ -19,11 +18,6 @@ function getExpenseLedgerDdLApiBase() {
     if (base !== '') return `${base}/ExpensesLedgerReport`;
     return '';
 }
-
-/**
- * Prefer standalone: `{base}/GetExpensesLedgerReport?...`
- * Fallback: `{CRMReports}/ExpensesLedgerReport?...`
- */
 function expenseLedgerReportUrl(queryStringLeadingQuestionOrEmpty) {
     const qs = queryStringLeadingQuestionOrEmpty || '';
     const standalone = getExpenseLedgerDdLApiBase();
@@ -90,11 +84,21 @@ const ExpensesLedgerReportService = {
         });
     },
 
-    GetEmployeeMasterList: function GetEmployeeMasterList() {
-        const url = ddlUrlWithMode('GetEmployeeMasterList', EXPENSE_LEDGER_DDL_MODE.EMPLOYEE);
-        return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
-            return value;
-        });
+    //GetEmployeeMasterList: function GetEmployeeMasterList() {
+    //    const url = ddlUrlWithMode('GetEmployeeMasterList', EXPENSE_LEDGER_DDL_MODE.EMPLOYEE);
+    //    return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
+    //        return value;
+    //    });
+    //},
+    GetNestedMarketingManList: function GetNestedMarketingManList() {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_SALESPERSON + `/GetNestedMarketingManList?UserMaster_Code=` + userMasterCode + `&MarketingManMaster_Code=0`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
     },
 
     GetProjectMasterList: function GetProjectMasterList() {
