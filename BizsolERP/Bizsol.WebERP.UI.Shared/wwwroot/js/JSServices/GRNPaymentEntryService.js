@@ -21,6 +21,15 @@ const GRNPaymentApprovalService = {
             });
     },
 
+    GetGRNPaymentlevelsapproval: function GetGRNPaymentlevelsapproval(Code) {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
+            `/GetGRNPaymentlevelsapproval?Code=${encodeURIComponent(Code || 0)}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
     SaveGRNPaymentApproval: function SaveGRNPaymentApproval(payload) {
         let json_data = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
         let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/SaveGRNPaymentApproval`;

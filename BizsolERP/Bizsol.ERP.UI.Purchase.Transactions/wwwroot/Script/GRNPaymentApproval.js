@@ -1029,7 +1029,7 @@ function NormalizePaymentList(list) {
 function LoadPaymentList() {
     const fromDate = document.getElementById('gpaFromDate')?.value || '';
     const toDate = document.getElementById('gpaToDate')?.value || '';
-    const statusVal = document.getElementById('gpaDdlStatus')?.value || 'A';
+    const statusVal = document.getElementById('gpaDdlStatus')?.value || 'P';
 
     G_OnlyPendingOnMe = false;
     syncGpaPendingOnMeChipActive();
@@ -2591,6 +2591,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     const isApprovalListPage = !!document.getElementById('gpaFromDate');
     if (!isApprovalListPage) return;
+
+    const statusEl = document.getElementById('gpaDdlStatus');
+    if (statusEl && (!statusEl.value || statusEl.value === 'A')) {
+        statusEl.value = 'P';
+    }
 
     InitDates()
         .then(function () {

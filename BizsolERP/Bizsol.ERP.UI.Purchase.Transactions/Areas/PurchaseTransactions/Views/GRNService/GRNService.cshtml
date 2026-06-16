@@ -1320,6 +1320,12 @@
     .gpa-stat-chip--onme-active .val { color: #fff; }
     .gpa-stat-chip--onme-active .lbl { color: #fff; }
 
+    .gpa-stat-chip--onme { border-color: rgba(167,139,250,0.7); cursor: pointer; }
+    .gpa-stat-chip--onme .val { color: #c4b5fd; }
+    .gpa-stat-chip--onme-active { background: rgba(167,139,250,0.22); border-color: #a78bfa; box-shadow: 0 0 0 2px rgba(167,139,250,0.45); }
+    .gpa-stat-chip--onme-active .val { color: #fff; }
+    .gpa-stat-chip--onme-active .lbl { color: #fff; }
+
     .gpa-filter-bar {
         background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
         padding: 14px 18px 10px; margin-bottom: 14px;
@@ -1544,7 +1550,7 @@
     <div class="po-list-header">
         <div class="po-list-header-left">
             <h5><i class="fa fa-receipt me-2"></i>GRN Service List</h5>
-            <small id="grnListHeaderHint">Goods Receipt Note — <strong>Pending</strong> / <strong>Approved</strong> / <strong>Reject</strong> filter this list (same page); <strong>Pending on me</strong> opens MRN approval queue for items awaiting you</small>
+            <small id="grnListHeaderHint">Goods Receipt Note — <strong>Pending</strong> / <strong>Approved</strong> / <strong>Reject</strong> filter this list (same page); <strong>Approval Pending</strong> opens pending MRN approval queue</small>
         </div>
         <div class="po-list-header-right">
             <div class="grn-verify-filter-tabs" id="grnVerifyFilterTabs" role="tablist" aria-label="GRN verify status">
@@ -1555,10 +1561,10 @@
                     <span class="grn-verify-filter-tab-lbl">Pending</span>
                 </button>
                 <button type="button" id="grnVerifyFilterTabPendingOnMe" class="grn-verify-filter-tab grn-verify-filter-tab--onme" role="button"
-                        title="Open MRN approval queue — items pending on you"
+                        title="Open pending MRN approval queue"
                         onclick="navigateToMRNMasterApprovalPendingOnMe()">
                     <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountPendingOnMe">—</span>
-                    <span class="grn-verify-filter-tab-lbl">Pending on me</span>
+                    <span class="grn-verify-filter-tab-lbl">Pending on Me</span>
                 </button>
                 <button type="button" id="grnVerifyFilterTabVerified" class="grn-verify-filter-tab grn-verify-filter-tab--y" role="tab"
                         aria-pressed="false" title="Show approved GRNs in this list"
@@ -1801,31 +1807,29 @@
                 <i class="fa fa-paperclip me-1"></i>Use <strong>Attachment</strong> on the bar below to add files (same as Payment Entry).
             </p>
             <div class="row g-2 mt-1">
+
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Total Bill Amount</label>
                     <input type="number" id="txtTotalBillAmountManual" class="form-control form-control-sm po-input-amount-right" placeholder="Total Bill Amount" autocomplete="off" min="0" step="any"
                            onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
                 </div>
                 <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Tds Amount</label>
-                    <input type="number" id="txtTDSAmount" class="form-control form-control-sm po-input-amount-right" placeholder="0.00" autocomplete="off" min="0" step="any"
-                           onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
-                </div>
-                <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Other Dedution <span class="req">*</span></label>
+                    <label class="po-field-lbl d-block mb-1">Dedution <span class="req">*</span></label>
                     <input type="number" id="txtDedution" class="form-control form-control-sm po-input-amount-right" placeholder="0.00" autocomplete="off" min="0" step="any"
                            onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
+
                 </div>
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Net Payable <span class="req">*</span></label>
                     <input type="text" id="txtNetPayable" class="form-control form-control-sm po-input-amount-right" placeholder="Net Payable" autocomplete="off" readonly>
+
                 </div>
             </div>
             <div class="row g-2 mt-1">
                 <div class="col-md-12">
-                    <label class="po-field-lbl d-block mb-1">Other Dedution Remark</label>
+                    <label class="po-field-lbl d-block mb-1">Dedution Remark</label>
                     <textarea id="txtDedutionRemark" class="form-control form-control-sm" rows="2"
-                              placeholder="Enter Other Dedution Remark..." maxlength="500"></textarea>
+                              placeholder="Enter Dedution Remark..." maxlength="500"></textarea>
                 </div>
             </div>
         </div>
@@ -1862,7 +1866,7 @@
 
 <!-- ══════════════════════════════════════════════════
      GRN APPROVAL VIEW  (embedded MRN Master Approval)
-     Hidden by default; shown when user clicks "Pending on me"
+     Hidden by default; shown when user clicks "Approval Pending"
 ═══════════════════════════════════════════════════ -->
 <div id="divGRNApprovalView" class="container-fluid mt-3" style="display:none;">
 

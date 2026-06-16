@@ -13,6 +13,14 @@ const GRNService = {
             });
     },
 
+    GetMRNApprovallavels: function GetMRNApprovallavels(Code) {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetMRNApprovallavels?Code=${encodeURIComponent(Code)}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
     SaveGRN: function SaveGRN(GRNRequestData) {
         let json_data = JSON.stringify(GRNRequestData, null, 2);
         let authKeyData = JSON.parse(sessionStorage.getItem('authKey'));

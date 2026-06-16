@@ -44,6 +44,8 @@ var grnRejectedCodesSet = {};
 
 /** Monotonic token — stale loadGRNList responses must not overwrite newer badge counts. */
 let grnListLoadSeq = 0;
+/** Pending-on-me count from MRN approval view; this is the source for the GRN list badge when available. */
+let grnApprovalPendingOnMeCount = null;
 
 /**
  * Single writer for GRN list header “Pending on me” badge (grnVerifyFilterCountPendingOnMe).
@@ -67,23 +69,13 @@ function readApprovalChipCount(chipId) {
     return Number.isFinite(n) ? Math.max(0, n) : null;
 }
 
-/** Sync GRN list header tab counts from embedded approval stat chips (inside = outside). */
+/** Sync GRN list status metadata from embedded approval view; list tab counts stay based on list rows. */
 function syncGrnListHeaderTabsFromApprovalChips(stats) {
     if (!stats || typeof stats !== "object") return;
-    var elP = document.getElementById("grnVerifyFilterCountPending");
-    var elV = document.getElementById("grnVerifyFilterCountVerified");
-    var elR = document.getElementById("grnVerifyFilterCountReject");
-    if (stats.pending !== undefined && stats.pending !== null && elP) {
-        elP.textContent = String(Math.max(0, parseInt(stats.pending, 10) || 0));
-    }
-    if (stats.approved !== undefined && stats.approved !== null && elV) {
-        elV.textContent = String(Math.max(0, parseInt(stats.approved, 10) || 0));
-    }
-    if (stats.rejected !== undefined && stats.rejected !== null && elR) {
-        elR.textContent = String(Math.max(0, parseInt(stats.rejected, 10) || 0));
-    }
+    var statusCodesChanged = false;
     if (stats.pendingOnMe !== undefined && stats.pendingOnMe !== null) {
-        setGrnListPendingOnMeBadge(stats.pendingOnMe);
+        var pendingOnMeCount = parseInt(stats.pendingOnMe, 10);
+        grnApprovalPendingOnMeCount = Number.isFinite(pendingOnMeCount) ? Math.max(0, pendingOnMeCount) : null;
     }
     if (Array.isArray(stats.approvedCodes)) {
         grnMrnApprovedCodeSet = new Set(
@@ -91,9 +83,21 @@ function syncGrnListHeaderTabsFromApprovalChips(stats) {
                 .map(function (c) { return parseInt(c, 10); })
                 .filter(function (n) { return n > 0; })
         );
-        if (grnListVerifiedFilter === "P") {
-            refreshGRNListGrid();
-        }
+        statusCodesChanged = true;
+    }
+    if (Array.isArray(stats.rejectedCodes)) {
+        grnRejectedCodesSet = {};
+        stats.rejectedCodes
+            .map(function (c) { return parseInt(c, 10); })
+            .filter(function (n) { return n > 0; })
+            .forEach(function (n) { grnRejectedCodesSet[n] = true; });
+        statusCodesChanged = true;
+    }
+    if ((grnMasterSourceRows || []).length > 0) {
+        updateGrnVerifyFilterTabCounts();
+        if (statusCodesChanged) refreshGRNListGrid();
+    } else if (grnApprovalPendingOnMeCount !== null) {
+        setGrnListPendingOnMeBadge(grnApprovalPendingOnMeCount);
     }
 }
 
@@ -266,6 +270,11 @@ function rowIsMrnApprovedGrn(item) {
 
 function rowIsRejectedGrn(item) {
     if (!item || typeof item !== "object") return false;
+    var rejectFlag = item.IsRejected ?? item.isRejected ?? item.Rejected ?? item.rejected
+        ?? item.Reject_IND ?? item.RejectInd ?? item.RejectedYN;
+    if (rejectFlag === true || rejectFlag === 1 || rejectFlag === "Y" || rejectFlag === "y" || String(rejectFlag).toLowerCase() === "true") {
+        return true;
+    }
     // Primary: same Verified field — API returns "Rejected" as the value
     var v =
         item.Verified !== undefined && item.Verified !== null
@@ -283,11 +292,38 @@ function rowIsRejectedGrn(item) {
                       : item.status;
     if (v !== undefined && v !== null && typeof v === "string") {
         var u = v.trim().toUpperCase();
-        if (u === "REJECTED" || u === "R") return true;
+        var low = v.trim().toLowerCase();
+        if (u === "REJECTED" || u === "REJECT" || u === "R" || u === "RECT" || u.indexOf("RECTIF") === 0 || low === "rejected" || low === "reject") return true;
     }
     // Secondary: check against codes fetched from MRN approval API
     var c = parseInt(item.Code ?? item.code ?? 0, 10);
     return !!(c && grnRejectedCodesSet[c]);
+}
+
+function normalizeGrnListStatusValue(value, yMeansApproved) {
+    if (value === undefined || value === null) return "";
+    var rawStr = String(value).trim();
+    var s = rawStr.toUpperCase();
+    var slow = rawStr.toLowerCase();
+
+    if (s === "R" || s === "REJECTED" || s === "REJECT" || s === "RECT" || s.indexOf("RECTIF") === 0 || slow === "rejected" || slow === "reject") {
+        return "R";
+    }
+    if (s === "P" || s === "APPROVED" || s === "APPROVE" || slow === "approved" || slow === "complete" || slow === "completed") {
+        return "P";
+    }
+    if (yMeansApproved && (s === "Y" || s === "YES" || s === "TRUE" || s === "1")) {
+        return "P";
+    }
+    if (
+        slow.indexOf("fully approved") >= 0 ||
+        slow.indexOf("final approved") >= 0 ||
+        slow.indexOf("all approved") >= 0 ||
+        (slow.indexOf("all levels") >= 0 && slow.indexOf("approved") >= 0)
+    ) {
+        return "P";
+    }
+    return "";
 }
 
 /**
@@ -301,16 +337,25 @@ function computeGrnListStatusCode(row) {
     // Primary: check Verified field with correct DB mapping
     var verifiedRaw = row.Verified ?? row.verified ?? row.IsVerified ?? row.isVerified ?? row.Verify ?? row.verify;
     if (verifiedRaw !== undefined && verifiedRaw !== null) {
-        var v = String(verifiedRaw).trim().toUpperCase();
-        if (v === "P") return "P";    // Approved / Posted
-        if (v === "R") return "R";    // Rejected
+        var verifiedStatus = normalizeGrnListStatusValue(verifiedRaw, false);
+        if (verifiedStatus === "P" || verifiedStatus === "R") return verifiedStatus;
         // 'Y' = entry saved but not yet approved → falls through to Pending
     }
 
-    // Fallback: MRN multi-level approval data (rejection or approval via approval API)
     if (rowIsRejectedGrn(row)) return "R";
+
+    var statusRaw =
+        row.Status ?? row.status ?? row.ApprovalStatus ?? row.approvalStatus ?? row.Approval_Status
+        ?? row.EntryStatus ?? row.entryStatus ?? row.RecordStatus ?? row.recordStatus
+        ?? row.Flag ?? row.flag ?? row.CodeStatus ?? row.codeStatus ?? row.MasterStatus ?? row.masterStatus;
+    var statusCode = normalizeGrnListStatusValue(statusRaw, true);
+    if (statusCode === "P" || statusCode === "R") return statusCode;
+
+    // Fallback: MRN multi-level approval data (rejection or approval via approval API)
     var code = parseInt(row.Code ?? row.code ?? 0, 10);
     if (rowIsMrnApprovedGrn(row) || (code > 0 && grnMrnApprovedCodeSet.has(code))) return "P";
+    var boolOk = row.IsApproved ?? row.isApproved ?? row.Approved ?? row.approved;
+    if (boolOk === true || boolOk === 1 || boolOk === "Y" || boolOk === "y") return "P";
     return "N";
 }
 
@@ -727,21 +772,10 @@ function updateGrnVerifyFilterTabCounts() {
         }
     }
     if (pending === 0) pendingOnMe = 0;
-    var chipPending = readApprovalChipCount("gpaStatPending");
-    var chipApproved = readApprovalChipCount("gpaStatProcessed");
-    var chipOnMe = readApprovalChipCount("gpaStatPendingOnMe");
-    if (elP) elP.textContent = String(chipPending !== null ? chipPending : pending);
-    if (elV) elV.textContent = String(chipApproved !== null ? chipApproved : verified);
+    if (elP) elP.textContent = String(pending);
+    if (elV) elV.textContent = String(verified);
     if (elR) elR.textContent = String(rejected);
-    // “Pending on me” must come from MRN approval API — GRN verify list has no reliable approver info.
-    if (chipOnMe !== null) {
-        setGrnListPendingOnMeBadge(chipOnMe);
-    } else if (chipPending !== null) {
-        setGrnListPendingOnMeBadge(0);
-    } else {
-        var elOM = document.getElementById("grnVerifyFilterCountPendingOnMe");
-        if (elOM) elOM.textContent = "—";
-    }
+    setGrnListPendingOnMeBadge(grnApprovalPendingOnMeCount !== null ? grnApprovalPendingOnMeCount : pendingOnMe);
 }
 
 function syncGrnVerifyFilterTabButtons() {
@@ -770,7 +804,7 @@ function navigateToMRNMasterApproval() {
         base + "PurchaseTransactions/GRNService/MRNMasterApproval?ModuleDesp=GRN%20Services";
 }
 
-/** Same session key as MRNMasterApproval.js — after redirect, approval list applies “Pending on me” filter */
+/** Same session key as MRNMasterApproval.js — after redirect, approval list applies pending approval filter */
 var GRN_MRN_APPROVAL_LANDING_PENDING_ON_ME_KEY = "bizsol_mrnLandingPendingOnMe";
 /** Same session key as MRNMasterApproval.js — reload approval cards after GRN save/update */
 var GRN_MRN_APPROVAL_REFRESH_KEY = "bizsol_mrnApprovalRefresh";
@@ -806,7 +840,7 @@ function navigateToMRNMasterApprovalPendingOnMe() {
         window.reloadMrnApprovalView({ pendingOnMe: true, forceRefreshDates: false });
     } else if (typeof window.LoadPaymentList === "function") {
         var ddl = document.getElementById("gpaDdlStatus");
-        if (ddl) ddl.value = "A";
+        if (ddl) ddl.value = "P";
         var searchEl = document.getElementById("gpaLstSearch");
         if (searchEl) searchEl.value = "";
         window.LoadPaymentList({});
@@ -2475,6 +2509,226 @@ function newGRN() {
     showFormView();
 }
 
+function grnApprovalEscHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function grnApprovalUnwrapRoot(res) {
+    let root = res?.Data ?? res?.data ?? res?.Result ?? res?.result ?? res;
+    if (root && typeof root === 'object' && !Array.isArray(root)) {
+        const inner = root.Data ?? root.data ?? root.Result ?? root.result;
+        if (inner && typeof inner === 'object') root = inner;
+    }
+    return root;
+}
+
+function grnApprovalIsLevelRow(row) {
+    if (!row || typeof row !== 'object') return false;
+    return row.LevelNo != null || row.Level != null || row.LevelOrder != null
+        || row.ApprovalLevel_Code != null || row.MRNMasterLevel_Code != null
+        || row.LevelDesc != null || row.LevelDesp != null || row.LevelName != null
+        || row.ApproverName != null || row.UserName != null || row.ApprovedOn != null;
+}
+
+function grnApprovalParseLevelDetails(value) {
+    if (Array.isArray(value)) return value;
+    if (value == null) return [];
+    if (typeof value === 'string') {
+        const text = value.trim();
+        if (!text) return [];
+        try {
+            const parsed = JSON.parse(text);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+    return [];
+}
+
+function grnApprovalExtractNestedLevelRows(root) {
+    if (!root || typeof root !== 'object') return [];
+    const keys = [
+        'LevelDetails', 'levelDetails',
+        'MRNApprovallavels', 'mrnApprovallavels',
+        'MRNApprovalLevels', 'mrnApprovalLevels',
+        'MRNMasterLevelsApproval', 'mrnMasterLevelsApproval',
+        'MRNMasterLevelDetails', 'mrnMasterLevelDetails',
+        'ApprovalLevels', 'approvalLevels',
+        'Table', 'table',
+    ];
+    for (let i = 0; i < keys.length; i++) {
+        const arr = grnApprovalParseLevelDetails(root[keys[i]]);
+        if (arr.length) return arr.filter(grnApprovalIsLevelRow);
+    }
+    return [];
+}
+
+function grnApprovalExtractLevelRows(res) {
+    const root = grnApprovalUnwrapRoot(res);
+    if (Array.isArray(root)) {
+        const directRows = root.filter(grnApprovalIsLevelRow);
+        if (directRows.length) return directRows;
+        for (let i = 0; i < root.length; i++) {
+            const nestedRows = grnApprovalExtractNestedLevelRows(root[i]);
+            if (nestedRows.length) return nestedRows;
+        }
+        return [];
+    }
+    if (!root || typeof root !== 'object') return [];
+
+    const nestedRows = grnApprovalExtractNestedLevelRows(root);
+    if (nestedRows.length) return nestedRows;
+
+    const objKeys = Object.keys(root);
+    for (let i = 0; i < objKeys.length; i++) {
+        const arr = root[objKeys[i]];
+        if (Array.isArray(arr) && arr.length && grnApprovalIsLevelRow(arr[0])) {
+            return arr.filter(grnApprovalIsLevelRow);
+        }
+    }
+    return grnApprovalIsLevelRow(root) ? [root] : [];
+}
+
+function grnApprovalLevelNo(row, index) {
+    const n = parseInt(row.LevelNo ?? row.Level ?? row.LevelOrder ?? row.ApprovalLevelNo ?? row.SequenceNo ?? 0, 10);
+    return Number.isFinite(n) && n > 0 ? n : index + 1;
+}
+
+function grnApprovalLevelTitle(row, levelNo) {
+    const title = row.Description ?? row.description ?? row.LevelDesc ?? row.LevelDesp
+        ?? row.LevelName ?? row.levelName ?? row.ApprovalLevelDesp ?? row.ApprovalLevelName;
+    const text = title != null ? String(title).trim() : '';
+    return text || ('Level ' + levelNo);
+}
+
+function grnApprovalLevelRemarks(row) {
+    const remarks = row.Remarks ?? row.Remark ?? row.ApprovalRemarks ?? row.LevelRemarks
+        ?? row.Comments ?? row.RejectionRemarks;
+    return remarks != null ? String(remarks).trim() : '';
+}
+
+function grnApprovalLevelApproved(row) {
+    const approvedOn = row.ApprovedOn ?? row.ApprovedON ?? row.Approved_Date ?? row.ApprovedDate ?? row.ApprovedOnDate;
+    if (approvedOn != null && String(approvedOn).trim() !== '') return true;
+    const status = String(row.Status ?? row.ApprovalStatus ?? row.IsApproved ?? '').trim().toLowerCase();
+    return status === 'y' || status === 'p' || status === 'approved' || status === '1' || status === 'true';
+}
+
+function grnApprovalLevelRejected(row) {
+    const status = String(row.Status ?? row.ApprovalStatus ?? '').trim().toLowerCase();
+    return status === 'r' || status === 'n' || status === 'rejected';
+}
+
+function grnApprovalFmtDate(value) {
+    if (value == null || String(value).trim() === '') return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return String(value);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function grnApprovalNormalizeRows(res) {
+    return grnApprovalExtractLevelRows(res).map(function (row, index) {
+        const levelNo = grnApprovalLevelNo(row, index);
+        return Object.assign({}, row, {
+            LevelNo: levelNo,
+            LevelOrder: levelNo,
+        });
+    }).sort(function (a, b) {
+        return grnApprovalLevelNo(a, 0) - grnApprovalLevelNo(b, 0);
+    });
+}
+
+function grnApprovalBuildStepperHtml(rows) {
+    if (!rows.length) {
+        return '<div class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">Approval levels not found.</div>';
+    }
+
+    const firstPending = rows.find(function (row) {
+        return !grnApprovalLevelApproved(row) && !grnApprovalLevelRejected(row);
+    });
+    const pendingNo = firstPending ? grnApprovalLevelNo(firstPending, 0) : 0;
+    let html = '<div class="gpa-detail-stepper">';
+
+    rows.forEach(function (row, index) {
+        const levelNo = grnApprovalLevelNo(row, index);
+        const approved = grnApprovalLevelApproved(row);
+        const rejected = grnApprovalLevelRejected(row);
+        const active = !approved && !rejected && pendingNo === levelNo;
+        const stepState = rejected ? 'rejected' : approved ? 'done' : active ? 'active' : 'pending';
+        const iconHtml = stepState === 'done' ? '<i class="fa fa-check"></i>'
+            : stepState === 'rejected' ? '<i class="fa fa-times"></i>'
+                : stepState === 'active' ? '<i class="fa fa-hourglass-half"></i>'
+                    : String(levelNo);
+        const badgeLabel = stepState === 'done' ? 'Approved'
+            : stepState === 'rejected' ? 'Rejected'
+                : stepState === 'active' ? 'Pending'
+                    : 'Waiting';
+        const approver = row.ApproverName ?? row.UserName ?? row.UserDesp ?? row.UserMasterName ?? row.EmployeeName ?? '';
+        const approvedOn = grnApprovalFmtDate(row.ApprovedOn ?? row.ApprovedON ?? row.Approved_Date ?? row.ApprovedDate ?? '');
+        const approverHtml = String(approver).trim() !== ''
+            ? '<div class="gpa-dstep-sub"><i class="fa fa-user me-1"></i>' + grnApprovalEscHtml(approver)
+                + (approvedOn ? ' - ' + grnApprovalEscHtml(approvedOn) : '') + '</div>'
+            : '';
+        const remarks = grnApprovalLevelRemarks(row);
+        const remarksHtml = remarks
+            ? '<div class="gpa-dstep-remarks"><i class="fa fa-comment me-1"></i>' + grnApprovalEscHtml(remarks) + '</div>'
+            : '';
+        const lineClass = stepState === 'done' ? 'gpa-dstep-line-done' : 'gpa-dstep-line-pending';
+
+        html += '<div class="gpa-dstep-item gpa-dstep-' + stepState + '">' +
+            '<div class="gpa-dstep-circle">' + iconHtml + '</div>' +
+            '<div class="gpa-dstep-body">' +
+            '<div class="gpa-dstep-title">' + grnApprovalEscHtml(grnApprovalLevelTitle(row, levelNo)) + '</div>' +
+            approverHtml +
+            remarksHtml +
+            '<div class="gpa-dstep-badge gpa-dstep-badge-' + stepState + '">' + badgeLabel + '</div>' +
+            '</div>' +
+            '</div>';
+
+        if (index < rows.length - 1) {
+            html += '<div class="gpa-dstep-line ' + lineClass + '"></div>';
+        }
+    });
+
+    html += '</div>';
+    return html;
+}
+
+function renderGRNApprovalLevelsInModal(rows) {
+    const html = grnApprovalBuildStepperHtml(rows || []);
+    $('#gpaModalApprovalStepper').html(html);
+    return html;
+}
+
+function bindMRNApprovalLevelsFromGRNService(code) {
+    const $stepper = $('#gpaModalApprovalStepper');
+    if ($stepper.length) {
+        $stepper.html('<div class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;"><i class="fa fa-spinner fa-spin me-1"></i>Loading approval levels...</div>');
+    }
+
+    return GRNService.GetMRNApprovallavels(code)
+        .then(function (res) {
+            const rows = grnApprovalNormalizeRows(res);
+            const html = renderGRNApprovalLevelsInModal(rows);
+            setTimeout(function () { $('#gpaModalApprovalStepper').html(html); }, 500);
+            setTimeout(function () { $('#gpaModalApprovalStepper').html(html); }, 1200);
+            return rows;
+        })
+        .catch(function (err) {
+            console.error('GetMRNApprovallavels', err);
+            if ($stepper.length) {
+                $stepper.html('<div class="text-center py-3" style="color:#ef4444;font-size:0.82rem;"><i class="fa fa-exclamation-triangle me-1"></i>Error loading approval levels.</div>');
+            }
+            return [];
+        });
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // VIEW GRN — open MRN approval detail modal (same as approval cards)
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2483,6 +2737,7 @@ function viewGRNFromList(code) {
     if (!Number.isFinite(codeNum) || codeNum <= 0) return;
     if (typeof window.OpenDetailModal === "function") {
         window.OpenDetailModal(codeNum, { viewOnly: true });
+        bindMRNApprovalLevelsFromGRNService(codeNum);
         return;
     }
     if (typeof toastr !== "undefined") {
