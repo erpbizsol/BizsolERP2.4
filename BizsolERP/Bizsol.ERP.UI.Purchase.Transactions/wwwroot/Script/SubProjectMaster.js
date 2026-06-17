@@ -127,6 +127,11 @@ $(document).ready(function () {
         }
     });
 
+    $('#dvSubProjectModal, #dvSubProjectViewModal').on('shown.bs.modal', function () {
+        document.documentElement.classList.add('spm-modal-open');
+        document.body.classList.add('spm-modal-open');
+    });
+
     $('#dvSubProjectModal').on('shown.bs.modal', function () {
         function finishGrnCheckAfterModalVisible() {
             refreshGRNCheckSelectPreserveSelection();
@@ -140,6 +145,13 @@ $(document).ready(function () {
                 .catch(function () {});
         }
         setTimeout(initActiveApprovalTabSelect2, 0);
+    });
+
+    $('#dvSubProjectModal, #dvSubProjectViewModal').on('hidden.bs.modal', function () {
+        if (!$('#dvSubProjectModal').hasClass('show') && !$('#dvSubProjectViewModal').hasClass('show')) {
+            document.documentElement.classList.remove('spm-modal-open');
+            document.body.classList.remove('spm-modal-open');
+        }
     });
 });
 

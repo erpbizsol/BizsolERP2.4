@@ -665,13 +665,193 @@
         box-shadow: 0 6px 20px rgba(239, 68, 68, 0.52);
     }
 
+    @@media (max-width: 768px) {
+        #CountryMasterPage {
+            height: auto;
+            min-height: calc(100dvh - 120px);
+            overflow: visible;
+            padding: 4px 8px 16px;
+        }
+
+        #countryListPanel {
+            overflow: visible;
+        }
+
+        .country-list-grid-wrap {
+            overflow: visible;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .country-po-list-header {
+            padding: 14px 16px 12px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .country-po-list-header .country-hero-icon {
+            width: 42px;
+            height: 42px;
+            font-size: 18px;
+        }
+
+        .country-po-list-header .country-hero-title {
+            font-size: 0.95rem;
+        }
+
+        .country-po-list-header .country-hero-sub {
+            font-size: 0.72rem;
+        }
+
+        .country-po-header-top {
+            gap: 10px;
+        }
+
+        .country-list-grid-wrap .pm-card-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 14px;
+            gap: 10px;
+        }
+
+        .pm-search-wrap {
+            max-width: 100%;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .master-scroll-hint {
+            display: flex;
+        }
+
+        .country-list-grid-wrap .pm-table-wrap {
+            overflow-x: auto !important;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
+            max-height: calc(100dvh - 340px);
+        }
+
+        #CountryMaster,
+        #CountryMaster.fixed-width-table {
+            min-width: 640px !important;
+            width: max-content;
+        }
+
+        #CountryMaster thead th,
+        #CountryMaster tbody td {
+            white-space: nowrap;
+        }
+
+        #CountryMaster thead th:last-child,
+        #CountryMaster tbody td:last-child {
+            position: sticky;
+            right: 0;
+            z-index: 2;
+            min-width: 118px;
+            box-shadow: -4px 0 10px rgba(15, 23, 42, .08);
+        }
+
+        #CountryMaster thead th:last-child {
+            z-index: 5;
+            background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+        }
+
+        #CountryMaster tbody td:last-child {
+            background: #fff !important;
+        }
+
+        #CountryMaster tbody tr:nth-child(even) td:last-child {
+            background: var(--light-bg) !important;
+        }
+
+        .pm-actions {
+            flex-wrap: nowrap;
+            gap: 4px;
+            min-width: 108px;
+        }
+
+        .pm-icon-btn {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+
+        .country-list-grid-wrap .paginator {
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px 10px;
+            padding: 12px 10px 14px;
+            font-size: 11px;
+        }
+
+        .country-list-grid-wrap .paginator button {
+            min-height: 32px;
+            padding: 4px 10px;
+        }
+
+        .country-list-grid-wrap .page-info,
+        .country-list-grid-wrap .page-size-select {
+            margin: 0 6px;
+        }
+
+        #countryDetailPanel .country-ci-po-list-header {
+            padding: 14px 16px 12px;
+        }
+
+        #countryDetailPanel .country-ci-po-header-top {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        #countryDetailPanel .country-ci-po-footer-right {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        #countryDetailPanel .country-ci-po-footer-right .country-ci-po-back-btn,
+        #countryDetailPanel .country-ci-po-footer-right .btn-country-save {
+            width: 100%;
+            justify-content: center;
+        }
+
+        #countryDetailPanel .country-ci-po-step-body {
+            padding: 16px 14px 20px;
+        }
+
+        .pm-modal .modal-dialog {
+            margin: 0.5rem auto;
+            max-width: calc(100vw - 1rem) !important;
+            width: calc(100vw - 1rem);
+        }
+
+        .pm-modal .modal-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .pm-modal .pm-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    .master-scroll-hint {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px 12px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--accent-primary, #667eea);
+        background: rgba(102, 126, 234, .08);
+        border-bottom: 1px solid rgba(102, 126, 234, .12);
+    }
+
     @@media (max-width: 600px) {
-        #CountryMasterPage { padding-left: 8px; padding-right: 8px; }
+        #CountryMasterPage { padding-left: 6px; padding-right: 6px; }
         .country-po-create-btn .country-po-create-label { display: none; }
         .country-po-create-btn { padding: 8px 12px; }
-        #countryDetailPanel .country-ci-po-footer-right { flex-direction: column; align-items: stretch; }
-        #countryDetailPanel .country-ci-po-footer-right .country-ci-po-back-btn,
-        #countryDetailPanel .country-ci-po-footer-right .btn-country-save { flex: 1; justify-content: center; }
     }
 </style>
 
@@ -703,6 +883,10 @@
                     <i class="fas fa-search"></i>
                     <input type="text" id="countrySearch" placeholder="Search by country name or code…" autocomplete="off" />
                 </div>
+            </div>
+            <div class="master-scroll-hint">
+                <i class="fas fa-arrows-alt-h"></i>
+                <span>Swipe to see all columns</span>
             </div>
             <div class="pm-table-wrap table-wrapper">
                 <table class="pm-table" id="CountryMaster">
