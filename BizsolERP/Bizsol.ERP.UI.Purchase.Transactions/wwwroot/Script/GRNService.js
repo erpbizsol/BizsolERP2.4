@@ -41,6 +41,8 @@ let grnMrnApprovedCodeSet = new Set();
 
 /** Codes of GRNs that are rejected in the MRN approval workflow — keyed by integer Code */
 var grnRejectedCodesSet = {};
+/** GRN list rows keyed by Code so View can reuse LevelDetails / CurrentLevelDesc labels. */
+let grnApprovalSourceRowByCode = {};
 
 /** Monotonic token — stale loadGRNList responses must not overwrite newer badge counts. */
 let grnListLoadSeq = 0;
@@ -642,6 +644,7 @@ async function grnSyncFooterAttachmentFromApis(master, masterCode) {
 function mapGRNRowsToGrid(rows) {
     return rows.map(function (item) {
         const code = item.Code ?? item.code ?? 0;
+        grnRememberApprovalSourceRow(item);
         const mrnRaw = item.MRNNo ?? item.mRNNo ?? item.GRNo ?? item.grnNo ?? 0;
         const enNum = parseInt(mrnRaw, 10) || 0;
         const rd = item.ReceiveDate ?? item.receiveDate ?? '';
@@ -2551,6 +2554,22 @@ function grnApprovalParseLevelDetails(value) {
     return [];
 }
 
+function grnApprovalSourceRowCode(row) {
+    if (!row || typeof row !== 'object') return 0;
+    const n = parseInt(row.Code ?? row.code ?? row.MRNMaster_Code ?? row.mrnMaster_Code ?? 0, 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function grnRememberApprovalSourceRow(row) {
+    const code = grnApprovalSourceRowCode(row);
+    if (code > 0) grnApprovalSourceRowByCode[code] = row;
+}
+
+function grnGetApprovalSourceRow(code) {
+    const n = parseInt(code, 10);
+    return Number.isFinite(n) && n > 0 ? grnApprovalSourceRowByCode[n] : null;
+}
+
 function grnApprovalExtractNestedLevelRows(root) {
     if (!root || typeof root !== 'object') return [];
     const keys = [
@@ -2601,10 +2620,16 @@ function grnApprovalLevelNo(row, index) {
 }
 
 function grnApprovalLevelTitle(row, levelNo) {
-    const title = row.Description ?? row.description ?? row.LevelDesc ?? row.LevelDesp
-        ?? row.LevelName ?? row.levelName ?? row.ApprovalLevelDesp ?? row.ApprovalLevelName;
+    const title = grnApprovalExplicitLevelTitle(row);
     const text = title != null ? String(title).trim() : '';
     return text || ('Level ' + levelNo);
+}
+
+function grnApprovalExplicitLevelTitle(row) {
+    if (!row || typeof row !== 'object') return '';
+    return row.Description ?? row.description ?? row.LevelDesc ?? row.levelDesc ?? row.LevelDesp
+        ?? row.levelDesp ?? row.LevelName ?? row.levelName ?? row.ApprovalLevelDesp
+        ?? row.approvalLevelDesp ?? row.ApprovalLevelName ?? row.approvalLevelName ?? '';
 }
 
 function grnApprovalLevelRemarks(row) {
@@ -2641,6 +2666,54 @@ function grnApprovalNormalizeRows(res) {
         });
     }).sort(function (a, b) {
         return grnApprovalLevelNo(a, 0) - grnApprovalLevelNo(b, 0);
+    });
+}
+
+function grnApprovalMergeRowsWithLabelFallback(apiRows, fallbackRows) {
+    const map = new Map();
+    (fallbackRows || []).forEach(function (row, index) {
+        const levelNo = grnApprovalLevelNo(row, index);
+        if (levelNo > 0) map.set(levelNo, Object.assign({}, row));
+    });
+
+    (apiRows || []).forEach(function (row, index) {
+        const levelNo = grnApprovalLevelNo(row, index);
+        if (levelNo < 1) return;
+        const fallback = map.get(levelNo) || {};
+        const merged = Object.assign({}, fallback, row);
+        if (!String(grnApprovalExplicitLevelTitle(row)).trim()) {
+            const fallbackTitle = grnApprovalExplicitLevelTitle(fallback);
+            if (String(fallbackTitle).trim()) merged.LevelDesc = fallbackTitle;
+        }
+        map.set(levelNo, merged);
+    });
+
+    return Array.from(map.keys()).sort(function (a, b) { return a - b; }).map(function (levelNo) {
+        return map.get(levelNo);
+    });
+}
+
+function grnApprovalCurrentLevelInfoText(sourceRow, rows) {
+    const source = sourceRow && typeof sourceRow === 'object' ? sourceRow : {};
+    const total = parseInt(source.TotalLevels ?? source.totalLevels ?? source.MaxLevel ?? source.maxLevel ?? (rows || []).length, 10) || (rows || []).length || 1;
+    const cur = parseInt(source.CurrentLevelNo ?? source.currentLevelNo ?? source.CurrentLevel ?? source.currentLevel ?? 1, 10) || 1;
+    const masterDesc = String(source.CurrentLevelDesc ?? source.currentLevelDesc ?? '').trim();
+    const currentRow = (rows || []).find(function (row, index) {
+        return grnApprovalLevelNo(row, index) === cur;
+    }) || {};
+    const label = masterDesc || String(grnApprovalExplicitLevelTitle(currentRow)).trim() || ('Level ' + cur);
+    return label + ' of ' + total;
+}
+
+function grnApprovalBindCurrentLevelInfo(sourceRow, rows) {
+    if (!sourceRow || typeof sourceRow !== 'object') return;
+    const text = grnApprovalCurrentLevelInfoText(sourceRow, rows);
+    $('#gpaModalHeader .gpa-info-item').each(function () {
+        const $item = $(this);
+        const label = String($item.find('.gpa-info-lbl').text() || '').trim();
+        if (label.indexOf('Current Level') !== -1) {
+            $item.find('.gpa-info-val').text(text);
+        }
     });
 }
 
@@ -2700,32 +2773,47 @@ function grnApprovalBuildStepperHtml(rows) {
     return html;
 }
 
-function renderGRNApprovalLevelsInModal(rows) {
+function renderGRNApprovalLevelsInModal(rows, sourceRow) {
     const html = grnApprovalBuildStepperHtml(rows || []);
     $('#gpaModalApprovalStepper').html(html);
+    if (sourceRow) grnApprovalBindCurrentLevelInfo(sourceRow, rows || []);
     return html;
 }
 
-function bindMRNApprovalLevelsFromGRNService(code) {
+function bindMRNApprovalLevelsFromGRNService(code, sourceRow) {
     const $stepper = $('#gpaModalApprovalStepper');
-    if ($stepper.length) {
+    const approvalSourceRow = sourceRow || grnGetApprovalSourceRow(code);
+    const fallbackRows = grnApprovalNormalizeRows(approvalSourceRow);
+
+    if (fallbackRows.length) {
+        renderGRNApprovalLevelsInModal(fallbackRows, approvalSourceRow);
+    } else if ($stepper.length) {
         $stepper.html('<div class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;"><i class="fa fa-spinner fa-spin me-1"></i>Loading approval levels...</div>');
     }
 
     return GRNService.GetMRNApprovallavels(code)
         .then(function (res) {
-            const rows = grnApprovalNormalizeRows(res);
-            const html = renderGRNApprovalLevelsInModal(rows);
-            setTimeout(function () { $('#gpaModalApprovalStepper').html(html); }, 500);
-            setTimeout(function () { $('#gpaModalApprovalStepper').html(html); }, 1200);
+            const apiRows = grnApprovalNormalizeRows(res);
+            const rows = grnApprovalMergeRowsWithLabelFallback(apiRows, fallbackRows);
+            const html = renderGRNApprovalLevelsInModal(rows, approvalSourceRow);
+            setTimeout(function () {
+                $('#gpaModalApprovalStepper').html(html);
+                grnApprovalBindCurrentLevelInfo(approvalSourceRow, rows);
+            }, 500);
+            setTimeout(function () {
+                $('#gpaModalApprovalStepper').html(html);
+                grnApprovalBindCurrentLevelInfo(approvalSourceRow, rows);
+            }, 1200);
             return rows;
         })
         .catch(function (err) {
             console.error('GetMRNApprovallavels', err);
-            if ($stepper.length) {
+            if (fallbackRows.length) {
+                renderGRNApprovalLevelsInModal(fallbackRows, approvalSourceRow);
+            } else if ($stepper.length) {
                 $stepper.html('<div class="text-center py-3" style="color:#ef4444;font-size:0.82rem;"><i class="fa fa-exclamation-triangle me-1"></i>Error loading approval levels.</div>');
             }
-            return [];
+            return fallbackRows;
         });
 }
 
@@ -2735,9 +2823,10 @@ function bindMRNApprovalLevelsFromGRNService(code) {
 function viewGRNFromList(code) {
     var codeNum = parseInt(code, 10);
     if (!Number.isFinite(codeNum) || codeNum <= 0) return;
+    var sourceRow = grnGetApprovalSourceRow(codeNum);
     if (typeof window.OpenDetailModal === "function") {
         window.OpenDetailModal(codeNum, { viewOnly: true });
-        bindMRNApprovalLevelsFromGRNService(codeNum);
+        bindMRNApprovalLevelsFromGRNService(codeNum, sourceRow);
         return;
     }
     if (typeof toastr !== "undefined") {
