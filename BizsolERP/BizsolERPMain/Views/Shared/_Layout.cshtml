@@ -1694,21 +1694,69 @@
             display: none !important;
         }
 
-        body.erp-embedded .modern-content {
-            position: static !important;
-            left: auto !important;
-            right: auto !important;
-            bottom: auto !important;
-            top: auto !important;
-            margin: 0 !important;
-            padding: 1rem !important;
-            min-height: 100vh;
-            overflow: visible !important;
+        body.erp-embedded,
+        html:has(body.erp-embedded) {
+            overflow: auto !important;
+            height: 100% !important;
         }
 
-        body.erp-embedded {
-            overflow: auto !important;
-            height: auto !important;
+        body.erp-embedded #layout-wrapper {
+            min-height: 100%;
+            width: 100%;
+        }
+
+        /* Must beat #modern-content.modern-content fixed + sidebar left offset */
+        body.erp-embedded #modern-content.modern-content,
+        body.erp-embedded .modern-sidebar.collapsed ~ #modern-content.modern-content,
+        body.erp-embedded:has(.modern-sidebar.collapsed) #modern-content.modern-content {
+            position: static !important;
+            top: auto !important;
+            left: 0 !important;
+            right: auto !important;
+            bottom: auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            padding: 0.75rem !important;
+            min-height: 100vh;
+            max-height: none !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            box-sizing: border-box !important;
+        }
+
+        body.erp-embedded #modern-content.modern-content > main {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        /* Pages with *-page-wrapper shells (Vendor Master, Item Master, etc.) */
+        body.erp-embedded:has([class$="-page-wrapper"]) #modern-content.modern-content {
+            padding: 0 !important;
+            min-height: 100dvh;
+            height: 100dvh;
+            overflow: hidden !important;
+        }
+
+        body.erp-embedded:has([class$="-page-wrapper"]) #modern-content.modern-content > main {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            height: 100%;
+        }
+
+        body.erp-embedded [class$="-page-wrapper"] {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            height: 100% !important;
+            max-height: 100dvh !important;
+            min-height: 0 !important;
+            box-sizing: border-box;
         }
 
         /* ERP Heading */
@@ -2395,6 +2443,8 @@
         document.addEventListener('show.bs.modal', function (e) {
             erpMoveModalToBody(e.target);
         }, true);
+
+        window.erpMoveModalToBody = erpMoveModalToBody;
 
         // Sidebar toggle
         document.getElementById('vertical-menu-btn').addEventListener('click', function() {
