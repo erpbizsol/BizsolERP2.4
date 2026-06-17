@@ -880,6 +880,8 @@ function mapGpaListRow(item) {
     const empRaw = item.Employee ?? item.employee ?? item.MarketingManMaster ?? item.marketingManMaster
         ?? item.MarketingManName ?? item.marketingManName ?? '';
     const employee = empRaw !== undefined && empRaw !== null ? String(empRaw).trim() : '';
+    const workType = item['Work Type'] ?? item.WorkType ?? item.workType
+        ?? item.WorkTypeName ?? item.workTypeName ?? item.WorkTypeDesp ?? item.workTypeDesp ?? '';
     const rawAmt = item.Amount ?? item.amount ?? item.HeaderAmount ?? item.headerAmount
         ?? item['Total Amount'] ?? item.TotalAmount ?? item.totalAmount ?? item.PaymentAmount ?? item.paymentAmount;
     const amt = rawAmt !== undefined && rawAmt !== null && rawAmt !== '' ? Number(rawAmt) : '';
@@ -907,6 +909,7 @@ function mapGpaListRow(item) {
         'Entry Date': formatGpaListDate(ed),
         'Party Name': party,
         Employee: employee,
+        'Work Type': workType,
         'Amount': amt,
         'Ref No': ref,
         Action: btns,
@@ -1124,6 +1127,7 @@ function gpaListEmptyTabPlaceholderRow() {
         'Entry Date': '',
         'Party Name': 'No payment entries in this status.',
         Employee: '',
+        'Work Type': '',
         'Amount': '',
         'Ref No': '',
         Action: '',
@@ -1154,7 +1158,7 @@ function updateGpaStatusTabStrip() {
 }
 
 function renderGpaListGridForActiveTab() {
-    const StringFilterColumn = ['Party Name', 'Employee', 'Ref No'];
+    const StringFilterColumn = ['Party Name', 'Employee', 'Work Type', 'Ref No'];
     const NumericFilterColumn = ['Entry No', 'Amount'];
     const DateFilterColumn = ['Entry Date'];
     const Button = false;
