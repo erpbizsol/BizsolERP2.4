@@ -3,7 +3,7 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=20"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=26"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 
 <style>
@@ -119,10 +119,11 @@
         overflow-y: auto;
     }
 
-    /* BOM entry grid — no horizontal scroll; fit within card */
+    /* BOM entry grid — horizontal scroll when needed; delete column stays visible */
     #dvBOMEntry .bom-entry-table-wrap {
-        overflow-x: hidden;
+        overflow-x: auto;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .bom-table {
@@ -134,15 +135,17 @@
 
     #tblBOM {
         table-layout: fixed;
-        min-width: 0 !important;
+        width: 100%;
+        min-width: 0;
         font-size: 12.5px;
     }
 
     #tblBOM thead th {
         padding: 9px 5px;
-        white-space: normal;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
         line-height: 1.25;
-        word-break: break-word;
         font-size: 11px;
     }
 
@@ -242,7 +245,7 @@
     #dvBOMSummary {
         margin-top: 18px;
         border-radius: 12px;
-        overflow: hidden;
+        overflow: visible;
         border: 1px solid var(--border-color);
         box-shadow: 0 2px 10px rgba(102,126,234,.08);
     }
@@ -259,40 +262,55 @@
     }
     .bom-summary-header i { font-size: 14px; }
     .bom-summary-table-wrap {
-        overflow-x: hidden !important;
-        overflow-y: visible !important;
-        max-height: none !important;
+        overflow-x: auto;
+        overflow-y: visible;
+        max-height: none;
+        -webkit-overflow-scrolling: touch;
     }
     #tblBOMSummary {
         margin: 0;
         border-radius: 0;
-        min-width: 0 !important;
+        min-width: 520px;
         width: 100%;
-        table-layout: fixed;
+        table-layout: auto;
     }
     #tblBOMSummary thead th {
         background: #5a5af0 !important;
         color: #fff !important;
         font-size: 12px;
         font-weight: 700;
-        padding: 8px 10px;
+        padding: 8px 12px;
         text-transform: uppercase;
         letter-spacing: .4px;
         border-bottom: 2px solid rgba(255,255,255,.2) !important;
+        white-space: nowrap;
     }
+    #tblBOMSummary thead th:nth-child(1) { min-width: 110px; }
+    #tblBOMSummary thead th:nth-child(2) { min-width: 110px; }
+    #tblBOMSummary thead th:nth-child(3) { min-width: 120px; }
+    #tblBOMSummary thead th:nth-child(4) { min-width: 130px; }
     #tblBOMSummary tbody td {
-        padding: 8px 10px;
+        padding: 8px 12px;
         font-size: 13px;
         border-bottom: 1px solid var(--border-light) !important;
+        white-space: nowrap;
+    }
+    #tblBOMSummary tbody td:nth-child(3),
+    #tblBOMSummary tbody td:nth-child(4),
+    #tblBOMSummary tfoot td:nth-child(3),
+    #tblBOMSummary tfoot td:nth-child(4) {
+        min-width: 120px;
+        padding-right: 14px;
     }
     #tblBOMSummary tbody tr:last-child td { border-bottom: none !important; }
     #tblBOMSummary tbody tr:hover { background: rgba(90,90,240,.06) !important; }
     #tblBOMSummary tfoot td {
-        padding: 8px 10px;
+        padding: 8px 12px;
         font-size: 13px;
         font-weight: 700;
         background: #f8f9fa !important;
         border-top: 2px solid var(--border-color) !important;
+        white-space: nowrap;
     }
     /* Footer under summary table: qty + labeled Total Amount (red) + Amount In Words (yellow) */
     .bom-summary-footer {
@@ -338,19 +356,55 @@
         font-weight: 700;
         letter-spacing: .3px;
     }
+
+    #tblBOMSummary col.bom-sum-col-cat   { width: 120px; min-width: 120px; }
+    #tblBOMSummary col.bom-sum-col-qty    { width: 120px; min-width: 120px; }
+    #tblBOMSummary col.bom-sum-col-amt    { width: 130px; min-width: 130px; }
+    #tblBOMSummary col.bom-sum-col-total  { width: 140px; min-width: 140px; }
     @@media (max-width: 768px) {
-        #dvBOMSummary { margin-top: 12px; }
+        #dvBOMSummary { margin-top: 12px; margin-left: 10px; margin-right: 10px; overflow: visible; }
         .bom-summary-header { padding: 8px 12px; font-size: 12px; }
+        .bom-summary-scroll-hint {
+            display: flex;
+        }
+        #dvBOMSummary .bom-summary-table-wrap {
+            overflow-x: auto !important;
+            overscroll-behavior-x: contain;
+        }
+        #tblBOMSummary {
+            min-width: 540px !important;
+            width: max-content !important;
+            table-layout: auto !important;
+        }
         #tblBOMSummary thead th,
         #tblBOMSummary tbody td,
         #tblBOMSummary tfoot td {
-            padding: 6px 8px;
+            padding: 8px 10px;
             font-size: 12px;
         }
-        #tblBOMSummary thead th:nth-child(1) { width: 28%; }
-        #tblBOMSummary thead th:nth-child(2) { width: 22%; }
-        #tblBOMSummary thead th:nth-child(3) { width: 25%; }
-        #tblBOMSummary thead th:nth-child(4) { width: 25%; }
+        #tblBOMSummary thead th:nth-child(4),
+        #tblBOMSummary tbody td:nth-child(4),
+        #tblBOMSummary tfoot td:nth-child(4) {
+            min-width: 136px;
+            padding-right: 16px;
+        }
+        .bom-summary-footer {
+            margin: 10px 12px 14px;
+            font-size: 12px;
+        }
+    }
+
+    .bom-summary-scroll-hint {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 6px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #0f766e;
+        background: rgba(23,162,184,.08);
+        border-bottom: 1px solid rgba(23,162,184,.15);
     }
 
     .bom-actions {
@@ -785,16 +839,61 @@
 
   /* BOM entry grid — column width tuning (fits viewport, no horizontal scroll) */
     #tblBOM col.bom-c-sno { width: 36px; }
-    #tblBOM col.bom-c-cat { width: 9%; }
-    #tblBOM col.bom-c-wt { width: 9%; }
-    #tblBOM col.bom-c-item { width: 16%; }
+    #tblBOM col.bom-c-cat { width: 6%; }
+    #tblBOM col.bom-c-wt { width: 8%; }
+    #tblBOM col.bom-c-item { width: 21%; }
     #tblBOM col.bom-c-uom { width: 72px; }
-    #tblBOM col.bom-c-spec { width: 9%; }
-    #tblBOM col.bom-c-num { width: 6.5%; }
-    #tblBOM col.bom-c-amt { width: 7.5%; }
-    #tblBOM col.bom-c-del { width: 34px; }
+    #tblBOM col.bom-c-spec { width: 12%; }
+    #tblBOM col.bom-c-tol,
+    #tblBOM col.bom-c-rate-tol {
+        width: 56px;
+        min-width: 56px;
+        max-width: 64px;
+    }
+    #tblBOM col.bom-c-qty { width: 6%; }
+    #tblBOM col.bom-c-rate { width: 7%; }
+    #tblBOM col.bom-c-gst-pct { width: 6%; }
+    #tblBOM col.bom-c-amt { width: 7%; }
+    #tblBOM col.bom-c-del { width: 42px; min-width: 42px; }
 
-    #tblBOM .bom-col-item-name { width: 16%; }
+    #tblBOM thead th:last-child,
+    #tblBOM tbody td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        min-width: 42px;
+        width: 42px;
+        box-shadow: -4px 0 10px rgba(15, 23, 42, .08);
+    }
+
+    #tblBOM thead th:last-child {
+        z-index: 6;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+
+    #tblBOM tbody td:last-child {
+        background: #fff !important;
+    }
+
+    #tblBOM tbody tr:nth-child(even) td:last-child {
+        background: var(--light-bg) !important;
+    }
+
+    #tblBOM tbody tr:hover td:last-child {
+        background: rgba(102,126,234,.07) !important;
+    }
+
+    #tblBOM .bom-col-category {
+        width: 6%;
+        max-width: 88px;
+    }
+    #tblBOM .bom-col-category .bom-select {
+        padding: 5px 4px;
+    }
+    #tblBOM .bom-col-item-name {
+        width: 21%;
+        min-width: 0;
+    }
     #tblBOM .bom-col-uom {
         width: 72px;
         min-width: 72px;
@@ -808,17 +907,34 @@
         font-weight: 600;
         letter-spacing: 0.02em;
     }
+    #tblBOM .bom-col-spec {
+        width: 12%;
+        min-width: 0;
+    }
     #tblBOM .bom-col-tolerance,
-    #tblBOM .bom-col-rate-tol,
+    #tblBOM .bom-col-rate-tol {
+        width: 56px;
+        min-width: 56px;
+        max-width: 64px;
+    }
+    #tblBOM thead th.bom-col-tolerance,
+    #tblBOM thead th.bom-col-rate-tol {
+        overflow: visible;
+        text-overflow: clip;
+    }
+    #tblBOM .bom-col-tolerance .bom-input,
+    #tblBOM .bom-col-rate-tol .bom-input {
+        padding: 5px 4px;
+    }
     #tblBOM .bom-col-qty,
     #tblBOM .bom-col-rate,
     #tblBOM .bom-col-gst-pct {
-        width: 6.5%;
+        width: 6%;
     }
     #tblBOM .bom-col-gst-amt,
     #tblBOM .bom-col-total-amt,
     #tblBOM .bom-col-amount {
-        width: 7.5%;
+        width: 7%;
     }
     #tblBOM .bom-select {
         font-size: 12px;
@@ -830,6 +946,501 @@
     }
     #tblBOM .bom-item {
         min-width: 0;
+    }
+
+    /* ── Modal (scroll inside, not page) ─────────────────────── */
+    .pm-modal {
+        overflow: hidden !important;
+    }
+
+    html.bom-modal-open,
+    body.bom-modal-open {
+        overflow: hidden !important;
+        overscroll-behavior: none;
+    }
+
+    body.bom-modal-open #modern-content.modern-content {
+        overflow: hidden !important;
+    }
+
+    .pm-modal .modal-dialog {
+        margin: 1rem auto;
+        max-height: calc(100dvh - 2rem);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pm-modal .modal-content {
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100dvh - 2rem);
+    }
+
+    .pm-modal .modal-header {
+        flex-shrink: 0;
+        border-bottom: none;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .pm-modal-hdr-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255,255,255,.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    .pm-modal .modal-title {
+        color: #fff;
+        font-weight: 700;
+        font-size: 17px;
+        flex: 1;
+        margin: 0;
+    }
+
+    .pm-close-btn {
+        background: rgba(255,255,255,.15);
+        border: none;
+        color: #fff;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background .15s;
+        outline: none;
+        flex-shrink: 0;
+    }
+
+    .pm-close-btn:hover { background: rgba(255,255,255,.28); }
+
+    .pm-modal .modal-body {
+        padding: 22px 24px 14px;
+        background: var(--light-bg);
+        overflow-y: auto;
+        overflow-x: hidden;
+        flex: 1 1 auto;
+        min-height: 0;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
+    .pm-modal .modal-footer {
+        border-top: 1px solid var(--border-color);
+        padding: 14px 24px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        background: var(--white-bg);
+        flex-shrink: 0;
+    }
+
+    .pm-form-section {
+        background: var(--white-bg);
+        border-radius: 14px;
+        border: 1px solid var(--border-color);
+        padding: 20px 20px 6px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .pm-form-section-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--accent-primary);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .pm-form-section-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border-color);
+    }
+
+    /* ── Attractive BOM view modal ───────────────────────────── */
+    .bom-view-modal-body {
+        padding: 0 !important;
+        background: var(--light-bg) !important;
+    }
+
+    .bom-view-hero {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 20px 22px;
+        background: linear-gradient(135deg, rgba(6,182,212,.12), rgba(102,126,234,.1));
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .bom-view-hero-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: var(--info-gradient);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+        box-shadow: 0 8px 24px rgba(6,182,212,.28);
+    }
+
+    .bom-view-hero-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--text-dark);
+        line-height: 1.3;
+        word-break: break-word;
+    }
+
+    .bom-view-hero-subtitle {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--accent-primary);
+        margin-top: 4px;
+        word-break: break-word;
+    }
+
+    .bom-view-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        padding: 18px 20px 20px;
+    }
+
+    .bom-view-stat {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--white-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 14px 14px;
+        box-shadow: var(--shadow-sm);
+        transition: transform .15s, box-shadow .15s;
+    }
+
+    .bom-view-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .bom-view-stat.bom-view-stat-wide {
+        grid-column: span 2;
+    }
+
+    .bom-view-stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+        color: #fff;
+    }
+
+    .bom-view-stat-icon.items { background: linear-gradient(135deg, #6366f1, #818cf8); }
+    .bom-view-stat-icon.qty   { background: linear-gradient(135deg, #0ea5e9, #38bdf8); }
+    .bom-view-stat-icon.amount { background: linear-gradient(135deg, #059669, #10b981); }
+    .bom-view-stat-icon.total  { background: linear-gradient(135deg, #dc2626, #ef4444); }
+
+    .bom-view-stat-val {
+        font-size: 17px;
+        font-weight: 800;
+        color: var(--text-dark);
+        line-height: 1.2;
+    }
+
+    .bom-view-stat-val.bom-view-amount-base {
+        color: #059669;
+    }
+
+    .bom-view-stat-val.bom-view-amount-total {
+        color: #dc2626;
+    }
+
+    .bom-view-stat-lbl {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin-top: 2px;
+    }
+
+    #tblBOMList {
+        min-width: 820px;
+    }
+
+    #tblBOMList .bom-actions {
+        flex-wrap: nowrap;
+        min-width: 148px;
+    }
+
+    /* BOM entry — mobile horizontal scroll (table keeps readable column widths) */
+    .bom-entry-scroll-hint {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px 12px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--accent-primary);
+        background: rgba(102,126,234,.08);
+        border-bottom: 1px solid rgba(102,126,234,.15);
+    }
+
+    .bom-entry-scroll-hint i {
+        font-size: 13px;
+    }
+
+    @@media (max-width: 768px) {
+        .bom-card-toolbar {
+            padding: 14px 14px 10px;
+        }
+
+        .bom-fg {
+            width: 100%;
+        }
+
+        .bom-view-stats {
+            grid-template-columns: 1fr;
+            padding: 14px;
+        }
+
+        .bom-view-stat.bom-view-stat-wide {
+            grid-column: span 1;
+        }
+
+        .bom-view-hero {
+            padding: 16px;
+        }
+
+        .pm-modal .modal-dialog {
+            margin: 0.5rem auto;
+            max-width: calc(100vw - 1rem) !important;
+            width: calc(100vw - 1rem);
+            max-height: calc(100dvh - 1rem);
+        }
+
+        .pm-modal .modal-content {
+            max-height: calc(100dvh - 1rem);
+            border-radius: 16px;
+        }
+
+        .pm-modal .modal-header {
+            padding: 14px 16px;
+        }
+
+        .pm-modal .modal-title {
+            font-size: 15px;
+        }
+
+        .pm-modal .modal-body {
+            padding: 14px;
+        }
+
+        .pm-modal .modal-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+            padding: 12px 14px;
+        }
+
+        .pm-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .pm-card-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pm-search-wrap {
+            max-width: 100%;
+        }
+
+        .pm-btn-new {
+            width: 100%;
+            justify-content: center;
+        }
+
+        #tblBOMList .bom-btn.icon {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+
+        #tblBOMList .bom-actions {
+            gap: 4px;
+            min-width: 128px;
+        }
+
+        #dvBOMEntry .bom-card-toolbar > div:last-child {
+            margin-left: 0 !important;
+            width: 100%;
+        }
+
+        #dvBOMEntry .bom-card-toolbar > div:last-child .bom-btn {
+            flex: 1 1 calc(50% - 5px);
+            justify-content: center;
+            min-width: 0;
+            font-size: 11.5px;
+            padding: 8px 10px;
+        }
+
+        #dvBOMEntry.bom-card {
+            overflow: visible;
+            border-radius: 16px;
+        }
+
+        .bom-entry-scroll-hint {
+            display: flex;
+        }
+
+        #dvBOMEntry .bom-entry-table-wrap {
+            overflow-x: auto !important;
+            overflow-y: auto;
+            max-height: calc(100dvh - 300px);
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
+            border-top: 1px solid var(--border-light);
+        }
+
+        #tblBOM {
+            table-layout: auto !important;
+            width: max-content !important;
+            min-width: 1340px !important;
+        }
+
+        #tblBOM col.bom-c-sno { width: 40px; }
+        #tblBOM col.bom-c-cat { width: 92px; }
+        #tblBOM col.bom-c-wt { width: 100px; }
+        #tblBOM col.bom-c-item { width: 228px; }
+        #tblBOM col.bom-c-uom { width: 72px; }
+        #tblBOM col.bom-c-spec { width: 140px; }
+        #tblBOM col.bom-c-tol,
+        #tblBOM col.bom-c-rate-tol {
+            width: 64px;
+            min-width: 64px;
+            max-width: 64px;
+        }
+        #tblBOM col.bom-c-qty { width: 80px; }
+        #tblBOM col.bom-c-rate { width: 88px; }
+        #tblBOM col.bom-c-gst-pct { width: 80px; }
+        #tblBOM col.bom-c-amt { width: 96px; }
+        #tblBOM col.bom-c-del { width: 44px; }
+
+        #tblBOM thead th {
+            white-space: nowrap !important;
+            word-break: keep-all !important;
+            overflow: visible;
+            text-overflow: clip;
+            padding: 10px 8px;
+            font-size: 10.5px;
+        }
+
+        #tblBOM td {
+            padding: 8px 6px;
+            vertical-align: middle;
+        }
+
+        #tblBOM .bom-col-category {
+            min-width: 92px;
+            width: 92px;
+        }
+
+        #tblBOM .bom-col-item-name {
+            min-width: 228px;
+            width: 228px;
+        }
+
+        #tblBOM .bom-col-spec {
+            min-width: 140px;
+            width: 140px;
+        }
+
+        #tblBOM .bom-col-tolerance,
+        #tblBOM .bom-col-rate-tol {
+            min-width: 64px;
+            width: 64px;
+            max-width: 64px;
+        }
+
+        #tblBOM .bom-col-qty,
+        #tblBOM .bom-col-rate,
+        #tblBOM .bom-col-gst-pct,
+        #tblBOM .bom-col-gst-amt,
+        #tblBOM .bom-col-total-amt,
+        #tblBOM .bom-col-amount {
+            min-width: 88px;
+            width: 88px;
+        }
+
+        #tblBOM .bom-col-amount,
+        #tblBOM .bom-col-gst-amt,
+        #tblBOM .bom-col-total-amt {
+            min-width: 96px;
+            width: 96px;
+        }
+
+        #tblBOM .bom-input,
+        #tblBOM .bom-select {
+            min-width: 72px;
+            font-size: 13px;
+            padding: 8px 6px;
+            min-height: 36px;
+        }
+
+        #tblBOM .bom-col-uom .bom-uom {
+            min-width: 56px;
+        }
+
+        #tblBOM .item-add-btn {
+            width: 30px;
+            height: 30px;
+            flex-shrink: 0;
+        }
+
+        #dvBOMSummary {
+            margin: 12px 10px 14px;
+            border-radius: 12px;
+            overflow: visible;
+        }
+
+        #dvBOMSummary .bom-summary-table-wrap {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #tblBOMSummary {
+            min-width: 540px !important;
+            width: max-content !important;
+        }
     }
 </style>
 
@@ -865,6 +1476,7 @@
                         <th style="min-width:220px;">Project Name</th>
                         <th style="min-width:220px;">Sub Project Name</th>
                         <th class="center" style="min-width:100px;">Total Items</th>
+                        <th class="right" style="min-width:120px;">Amount</th>
                         <th class="right" style="min-width:130px;">Total Amount</th>
                         <th class="center" style="min-width:168px;">Action</th>
                     </tr>
@@ -873,7 +1485,8 @@
                 <tfoot>
                     <tr>
                         <td colspan="4" style="text-align:right; font-weight:700; padding:8px 10px;">Grand Total</td>
-                        <td id="bomListGrandTotal" style="text-align:right; font-weight:700; padding:8px 10px;">—</td>
+                        <td id="bomListGrandAmount" class="right pm-budget" style="font-weight:700; padding:8px 10px;">—</td>
+                        <td id="bomListGrandTotal" class="right pm-budget" style="font-weight:700; padding:8px 10px;">—</td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -919,6 +1532,11 @@
 
     <input type="hidden" id="hfBOMCode" value="0" />
 
+    <div class="bom-entry-scroll-hint">
+        <i class="fas fa-arrows-alt-h"></i>
+        <span>Swipe left / right to view all columns</span>
+    </div>
+
     <div class="bom-table-wrap bom-entry-table-wrap">
         <table class="bom-table" id="tblBOM">
             <colgroup>
@@ -928,12 +1546,12 @@
                 <col class="bom-c-item" />
                 <col class="bom-c-uom" />
                 <col class="bom-c-spec" />
-                <col class="bom-c-num" />
-                <col class="bom-c-num" />
-                <col class="bom-c-num" />
-                <col class="bom-c-num" />
+                <col class="bom-c-tol" />
+                <col class="bom-c-qty" />
+                <col class="bom-c-rate-tol" />
+                <col class="bom-c-rate" />
                 <col class="bom-c-amt" />
-                <col class="bom-c-num" />
+                <col class="bom-c-gst-pct" />
                 <col class="bom-c-amt" />
                 <col class="bom-c-amt" />
                 <col class="bom-c-del" />
@@ -941,14 +1559,14 @@
             <thead>
                 <tr>
                     <th class="center">#</th>
-                    <th>Prj Category</th>
+                    <th class="bom-col-category">Prj Category</th>
                     <th>Work Type</th>
                     <th class="bom-col-item-name">Item Name</th>
                     <th class="bom-col-uom center">UOM</th>
-                    <th>Item Spec</th>
-                    <th class="bom-col-tolerance right">Tol</th>
+                    <th class="bom-col-spec">Item Spec</th>
+                    <th class="bom-col-tolerance right">Tol%</th>
                     <th class="bom-col-qty right">Qty</th>
-                    <th class="bom-col-rate-tol right">Rate Tol(%)</th>
+                    <th class="bom-col-rate-tol right">Rt Tol%</th>
                     <th class="bom-col-rate right">EST. Rate</th>
                     <th class="bom-col-amount right">Amount</th>
                     <th class="bom-col-gst-pct right">GST %</th>
@@ -967,8 +1585,18 @@
         <div class="bom-summary-header">
             <i class="fas fa-chart-bar"></i> BOM Summary by Prj Category
         </div>
+        <div class="bom-summary-scroll-hint">
+            <i class="fas fa-arrows-alt-h"></i>
+            <span>Swipe to see Total Amount</span>
+        </div>
         <div class="bom-table-wrap bom-summary-table-wrap" style="margin-top:0; border-radius:0; box-shadow:none; border:none;">
             <table class="bom-table" id="tblBOMSummary">
+                <colgroup>
+                    <col class="bom-sum-col-cat" />
+                    <col class="bom-sum-col-qty" />
+                    <col class="bom-sum-col-amt" />
+                    <col class="bom-sum-col-total" />
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Prj Category</th>
@@ -1043,7 +1671,7 @@
      VIEW BOM MODAL
 ════════════════════════════════════════════════════════ -->
 <div class="modal fade pm-modal" id="dvBOMViewModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:min(560px, calc(100vw - 2rem));">
         <div class="modal-content">
 
             <div class="modal-header" style="background: var(--info-gradient);">
@@ -1056,34 +1684,42 @@
                 </button>
             </div>
 
-            <div class="modal-body">
-                <div class="pm-form-section">
-                    <div class="pm-form-section-title">
-                        <i class="fas fa-info-circle"></i> Project Information
+            <div class="modal-body bom-view-modal-body">
+                <div class="bom-view-hero">
+                    <div class="bom-view-hero-icon"><i class="fas fa-clipboard-list"></i></div>
+                    <div class="bom-view-hero-text">
+                        <div class="bom-view-hero-title" id="viewBOMProjectName">—</div>
+                        <div class="bom-view-hero-subtitle" id="viewBOMSubProjectName">—</div>
                     </div>
-                    <div class="pm-view-row">
-                        <span class="pm-view-lbl">Project Name -</span>
-                        <span class="pm-view-val" id="viewBOMProjectName">—</span>
+                </div>
+                <div class="bom-view-stats">
+                    <div class="bom-view-stat">
+                        <div class="bom-view-stat-icon items"><i class="fas fa-cubes"></i></div>
+                        <div class="bom-view-stat-body">
+                            <div class="bom-view-stat-val" id="viewBOMTotalItems">—</div>
+                            <div class="bom-view-stat-lbl">Total Items</div>
+                        </div>
                     </div>
-                    <div class="pm-view-divider"></div>
-                    <div class="pm-view-row">
-                        <span class="pm-view-lbl">Sub Project Name -</span>
-                        <span class="pm-view-val" id="viewBOMSubProjectName">—</span>
+                    <div class="bom-view-stat">
+                        <div class="bom-view-stat-icon qty"><i class="fas fa-weight-hanging"></i></div>
+                        <div class="bom-view-stat-body">
+                            <div class="bom-view-stat-val" id="viewBOMTotalQty">—</div>
+                            <div class="bom-view-stat-lbl">Total Qty</div>
+                        </div>
                     </div>
-                    <div class="pm-view-divider"></div>
-                    <div class="pm-view-row">
-                        <span class="pm-view-lbl">Total Items -</span>
-                        <span class="pm-view-val" id="viewBOMTotalItems">—</span>
+                    <div class="bom-view-stat bom-view-stat-wide">
+                        <div class="bom-view-stat-icon amount"><i class="fas fa-rupee-sign"></i></div>
+                        <div class="bom-view-stat-body">
+                            <div class="bom-view-stat-val bom-view-amount-base" id="viewBOMAmount">—</div>
+                            <div class="bom-view-stat-lbl">Amount (before GST)</div>
+                        </div>
                     </div>
-                    <div class="pm-view-divider"></div>
-                    <div class="pm-view-row">
-                        <span class="pm-view-lbl">Total Qty -</span>
-                        <span class="pm-view-val" id="viewBOMTotalQty">—</span>
-                    </div>
-                    <div class="pm-view-divider"></div>
-                    <div class="pm-view-row">
-                        <span class="pm-view-lbl">Total Amount -</span>
-                        <span class="pm-view-val" id="viewBOMTotalAmount">—</span>
+                    <div class="bom-view-stat bom-view-stat-wide">
+                        <div class="bom-view-stat-icon total"><i class="fas fa-file-invoice-dollar"></i></div>
+                        <div class="bom-view-stat-body">
+                            <div class="bom-view-stat-val bom-view-amount-total" id="viewBOMTotalAmount">—</div>
+                            <div class="bom-view-stat-lbl">Total Amount (incl. GST)</div>
+                        </div>
                     </div>
                 </div>
             </div>

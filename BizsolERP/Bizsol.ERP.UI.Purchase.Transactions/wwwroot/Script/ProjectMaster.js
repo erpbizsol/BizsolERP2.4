@@ -293,6 +293,18 @@ $(document).ready(function () {
             applyProjectFilters();
         }
     });
+
+    $('#dvProjectModal, #dvProjectViewModal').on('shown.bs.modal', function () {
+        document.documentElement.classList.add('pm-modal-open');
+        document.body.classList.add('pm-modal-open');
+    });
+
+    $('#dvProjectModal, #dvProjectViewModal').on('hidden.bs.modal', function () {
+        if (!$('#dvProjectModal').hasClass('show') && !$('#dvProjectViewModal').hasClass('show')) {
+            document.documentElement.classList.remove('pm-modal-open');
+            document.body.classList.remove('pm-modal-open');
+        }
+    });
 });
 
 /* ── Financial year ──────────────────────────────────────── */

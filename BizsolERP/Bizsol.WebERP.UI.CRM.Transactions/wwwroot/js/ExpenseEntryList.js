@@ -139,18 +139,12 @@ $(document).ready(function () {
     $('#eeBtnCancelDelete').on('click', function () {
         $('#eeDeleteConfirmBackdrop').removeClass('show');
     });
+
+    BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnExpenseEntryConfig');
  });
 
 function applyEEListConfigVisibility() {
-    var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
-    var isAdmin = ObjUserDetails && ObjUserDetails[0] && ObjUserDetails[0].UserType === 'A';
-
-    // Settings / config icon: always shown to admins
-    if (isAdmin) {
-        $('#btnExpenseEntryConfig').prop('hidden', false);
-    } else {
-        $('#btnExpenseEntryConfig').prop('hidden', true);
-    }
+    BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnExpenseEntryConfig');
 
     // "Pending on Me" chip: only when level-verify is enabled
     if (G_EEL_LevelVerifyApplicable === 'Y') {
