@@ -1739,18 +1739,18 @@ function validateRow($tr) {
     const rateNum = parseBomMoney(estRate);
     const qtyNum  = parseFloat((qty || '').toString().replace(/,/g, '')) || 0;
     const amtNum  = parseBomMoney($tr.find('.bom-amount').val());
-    if (rateNum > BOM_MAX_RATE) {
-        toastr.warning('Est. Rate cannot exceed ' + BOM_MAX_RATE.toLocaleString('en-IN') + '.');
-        return false;
-    }
-    if (qtyNum > BOM_MAX_QTY) {
-        toastr.warning('Qty Required cannot exceed ' + BOM_MAX_QTY.toLocaleString('en-IN') + '.');
-        return false;
-    }
-    if (amtNum > BOM_MAX_AMOUNT) {
-        toastr.warning('Amount cannot exceed ' + BOM_MAX_AMOUNT.toLocaleString('en-IN') + '.');
-        return false;
-    }
+    //if (rateNum > BOM_MAX_RATE) {
+    //    toastr.warning('Est. Rate cannot exceed ' + BOM_MAX_RATE.toLocaleString('en-IN') + '.');
+    //    return false;
+    //}
+    //if (qtyNum > BOM_MAX_QTY) {
+    //    toastr.warning('Qty Required cannot exceed ' + BOM_MAX_QTY.toLocaleString('en-IN') + '.');
+    //    return false;
+    //}
+    //if (amtNum > BOM_MAX_AMOUNT) {
+    //    toastr.warning('Amount cannot exceed ' + BOM_MAX_AMOUNT.toLocaleString('en-IN') + '.');
+    //    return false;
+    //}
 
     return true;
 }
