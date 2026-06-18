@@ -55,6 +55,9 @@ let gpaListFullRows = [];
 let gpaListSourceRows = [];
 /** User/group-wise approval counts from GRN Payment Approval API; only Pending on me uses this. */
 let gpaListApprovalStatusCounts = null;
+/** Pending-on-me badge from GetPendingGRNPaymentList (same source as GRN Payment Approval page). */
+let gpaListPendingOnMeCount = null;
+const GPA_APPROVAL_PENDING_ON_ME_SESSION_KEY = 'bizsol_gpaApprovalPendingOnMeCount';
 /** Raw API rows from GetList (DDL_LIST) — print/preview site, PO, project fields. */
 let gpaGetListPrintRows = [];
 /** Edit/New form: master has attachment(s) or files on server — footer Attachment button green. */
@@ -571,30 +574,78 @@ function gpaListEntryIsPendingOnMe(row) {
     return gpaListEntryIsPendingOnMeFromRaw(raw || {});
 }
 
+function readStoredGpaApprovalPendingOnMeCount() {
+    try {
+        const raw = sessionStorage.getItem(GPA_APPROVAL_PENDING_ON_ME_SESSION_KEY);
+        if (raw === null || raw === undefined || String(raw).trim() === '') return null;
+        const n = parseInt(raw, 10);
+        return Number.isFinite(n) ? Math.max(0, n) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function setGpaListPendingOnMeBadge(count) {
+    const elOnMe = document.getElementById('gpaStatPendingOnMe');
+    if (!elOnMe) return;
+    if (count === null || count === undefined) {
+        elOnMe.textContent = '—';
+        return;
+    }
+    const n = parseInt(count, 10);
+    elOnMe.textContent = Number.isFinite(n) && n > 0 ? String(n) : '—';
+}
+
+/** Count pending rows from GetPendingGRNPaymentList — aligned with GRN Payment Approval header PENDING chip. */
+function countGpaPendingOnMeFromApprovalList(list) {
+    return (list || []).filter(function (r) {
+        return normalizeGpaListStatusCode(r) === 'U';
+    }).length;
+}
+
+function refreshGpaPendingOnMeBadgeFromApprovalApi(fromDate, toDate) {
+    const filters = getGpaListFilterValues();
+    const fd = fromDate || filters.FromDate || '';
+    const td = toDate || filters.ToDate || '';
+    return GRNPaymentLevelsApprovalService.GetPendingGRNPaymentList(fd, td, 'A')
+        .then(function (res) {
+            const rows = normalizeApiRows(res);
+            const count = countGpaPendingOnMeFromApprovalList(rows);
+            gpaListPendingOnMeCount = count;
+            try {
+                sessionStorage.setItem(GPA_APPROVAL_PENDING_ON_ME_SESSION_KEY, String(count));
+            } catch (e) { /* ignore */ }
+            setGpaListPendingOnMeBadge(count);
+            return count;
+        })
+        .catch(function () {
+            return null;
+        });
+}
+
 function updateGpaListStatChips() {
     const total = gpaListFullRows.length;
     let pending = 0;
     let approved = 0;
     let rejected = 0;
-    let pendingOnMe = 0;
     for (let i = 0; i < gpaListFullRows.length; i++) {
         const c = gpaListFullRows[i].StatusCode || 'U';
         if (c === 'P') approved++;
         else if (c === 'R') rejected++;
         else pending++;
-        if (gpaListEntryIsPendingOnMe(gpaListFullRows[i])) pendingOnMe++;
     }
     const fmt = (n) => (n > 0 ? String(n) : '—');
     const elTotal = document.getElementById('gpaStatTotal');
     const elPending = document.getElementById('gpaStatPending');
     const elApproved = document.getElementById('gpaStatApproved');
     const elRejected = document.getElementById('gpaStatRejected');
-    const elOnMe = document.getElementById('gpaStatPendingOnMe');
     if (elTotal) elTotal.textContent = total > 0 ? String(total) : '—';
     if (elPending) elPending.textContent = fmt(pending);
     if (elApproved) elApproved.textContent = fmt(approved);
     if (elRejected) elRejected.textContent = fmt(rejected);
-    if (elOnMe) elOnMe.textContent = fmt(pendingOnMe);
+    if (gpaListPendingOnMeCount !== null) {
+        setGpaListPendingOnMeBadge(gpaListPendingOnMeCount);
+    }
 }
 
 function formatGpaInputDate(d) {
@@ -1311,6 +1362,7 @@ function loadGRNPaymentApprovalList() {
             gpaListFullRows = raw.map(mapGpaListRow);
             await syncGpaListStatusFromApprovalApi(filters.FromDate, filters.ToDate, filters.Status);
             loadGpaGetListPrintCache();
+            refreshGpaPendingOnMeBadgeFromApprovalApi(filters.FromDate, filters.ToDate);
             if (gpaListFullRows.length === 0) {
                 if (typeof toastr !== 'undefined') toastr.warning('No payment entries found.');
                 $('#gpaListTable').hide();
@@ -1328,6 +1380,7 @@ function loadGRNPaymentApprovalList() {
             if (typeof toastr !== 'undefined') toastr.error('Failed to load payment list.');
             $('#gpaListTable').hide();
             updateGpaListStatChips();
+            refreshGpaPendingOnMeBadgeFromApprovalApi();
         });
 }
 
@@ -1461,6 +1514,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncGpaPartyEmployeeUI();
     setTodayDates();
     initGpaListFilters();
+    const storedPendingOnMe = readStoredGpaApprovalPendingOnMeCount();
+    if (storedPendingOnMe !== null) {
+        gpaListPendingOnMeCount = storedPendingOnMe;
+        setGpaListPendingOnMeBadge(storedPendingOnMe);
+    }
     await loadGpaStatusDropdown();
     await loadGRNPaymentApprovalList();
     let gpaOpenNew = false;
