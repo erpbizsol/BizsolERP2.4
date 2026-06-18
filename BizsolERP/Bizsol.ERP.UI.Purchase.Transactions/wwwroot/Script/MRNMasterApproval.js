@@ -5,6 +5,8 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 
 /** Set by GRNService.navigateToMRNMasterApprovalPendingOnMe before redirect */
 const MRN_LANDING_PENDING_ON_ME_KEY = 'bizsol_mrnLandingPendingOnMe';
+const MRN_LANDING_FROM_DATE_KEY = 'bizsol_mrnLandingFromDate';
+const MRN_LANDING_TO_DATE_KEY = 'bizsol_mrnLandingToDate';
 /** Set by GRNService.saveGRN after successful update — approval list reloads when view opens */
 const MRN_APPROVAL_REFRESH_KEY = 'bizsol_mrnApprovalRefresh';
 
@@ -24,12 +26,13 @@ function InitDates(forceRefresh) {
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const fromEl = document.getElementById('gpaFromDate');
     const toEl = document.getElementById('gpaToDate');
-    if (toEl) toEl.value = FmtDateInput(today);
+    const landedDates = applyLandingDatesFromGrnList();
+    if (toEl && !toEl.value) toEl.value = FmtDateInput(today);
 
     if (!fromEl) {
         return Promise.resolve();
     }
-    if (fromEl.value && !forceRefresh) {
+    if ((fromEl.value || landedDates) && !forceRefresh) {
         return Promise.resolve();
     }
 
@@ -141,25 +144,76 @@ function resolveMrnNoFromGrnList(p) {
     if (!p) return '';
     const code = getPaymentMasterCode(p);
     if (!code) return '';
+
+    if (typeof window.grnGetApprovalSourceRow === 'function') {
+        const remembered = window.grnGetApprovalSourceRow(code);
+        if (remembered) {
+            const mrn = getMrnNo(remembered);
+            if (mrn !== '—') return mrn;
+            const entry = getEntryNo(remembered);
+            if (entry && entry !== '—') return entry;
+        }
+    }
+
     const rows = window.grnMasterSourceRows;
-    if (!Array.isArray(rows) || !rows.length) return '';
-    const row = rows.find(function (r) {
-        const c = parseInt(r.Code ?? r.code ?? r.MRNMaster_Code ?? r.mRNMaster_Code ?? 0, 10);
-        return c === code;
-    });
-    if (!row) return '';
-    const mrn = getMrnNo(row);
-    return mrn !== '—' ? mrn : '';
+    if (Array.isArray(rows) && rows.length) {
+        const row = rows.find(function (r) {
+            const c = parseInt(r.Code ?? r.code ?? r.MRNMaster_Code ?? r.mRNMaster_Code ?? 0, 10);
+            return c === code;
+        });
+        if (row) {
+            const mrn = getMrnNo(row);
+            if (mrn !== '—') return mrn;
+            const entry = getEntryNo(row);
+            if (entry && entry !== '—') return entry;
+        }
+    }
+
+    const pool = (G_PaymentListFull && G_PaymentListFull.length) ? G_PaymentListFull : G_PaymentList;
+    if (Array.isArray(pool) && pool.length) {
+        const hit = pool.find(function (r) { return getPaymentMasterCode(r) === code; });
+        if (hit) {
+            const mrn = getMrnNo(hit);
+            if (mrn !== '—') return mrn;
+            const entry = getEntryNo(hit);
+            if (entry && entry !== '—') return entry;
+        }
+    }
+    return '';
+}
+
+/** Same resolution as GRN Service approval modal — MRNNo, then BillNo/EntryNo, then cached list rows. */
+function resolveMrnDisplayNumber(p) {
+    if (!p) return '—';
+    let mrn = getMrnNo(p);
+    if (mrn !== '—') return mrn;
+    const entry = getEntryNo(p);
+    if (entry && entry !== '—') return entry;
+    const fromList = resolveMrnNoFromGrnList(p);
+    if (fromList) return fromList;
+    const lines = p._detailLines;
+    if (Array.isArray(lines) && lines.length) {
+        const lineMrn = mrnPickRowField(lines[0], [
+            'MRNNo', 'mrnNo', 'GRNo', 'grnNo', 'BillNo', 'billNo', 'EntryNo', 'entryNo',
+        ]);
+        if (lineMrn !== '' && `${lineMrn}`.trim() !== '0') return String(lineMrn).trim();
+    }
+    return '—';
+}
+
+function bindMrnNoOntoPayment(p) {
+    if (!p || typeof p !== 'object') return p;
+    const no = resolveMrnDisplayNumber(p);
+    if (no !== '—') {
+        p.MRNNo = no;
+        p.mRNNo = no;
+    }
+    return p;
 }
 
 function enrichPaymentMrnNo(p) {
     if (!p || typeof p !== 'object') return p;
-    if (getMrnNo(p) !== '—') return p;
-    const fromList = resolveMrnNoFromGrnList(p);
-    if (!fromList) return p;
-    p.MRNNo = fromList;
-    p.mRNNo = fromList;
-    return p;
+    return bindMrnNoOntoPayment(p);
 }
 
 function enrichPaymentListMrnNos(list) {
@@ -167,13 +221,7 @@ function enrichPaymentListMrnNos(list) {
 }
 
 function formatMrnDisplayNo(p) {
-    if (!p) return '—';
-    let mrn = getMrnNo(p);
-    if (mrn === '—') {
-        const fromList = resolveMrnNoFromGrnList(p);
-        if (fromList) mrn = fromList;
-    }
-    return mrn !== '—' ? mrn : '—';
+    return resolveMrnDisplayNumber(p);
 }
 
 function getPartyName(p) {
@@ -324,12 +372,12 @@ function enrichMrnHeaderFromDetailLines(payment, lines) {
     if (!payment) return payment;
     if (Array.isArray(lines) && lines.length) payment._detailLines = lines;
 
-    const entryNo = getEntryNo(payment);
-    if (!entryNo || entryNo === '—') {
+    if (getMrnNo(payment) === '—') {
         const billNo = payment.BillNo ?? payment.billNo;
-        const mrnNo = payment.MRNNo ?? payment.mRNNo;
-        if (billNo != null && `${billNo}`.trim() !== '') payment.BillNo = billNo;
-        else if (mrnNo != null && `${mrnNo}`.trim() !== '') payment.MRNNo = mrnNo;
+        if (billNo != null && `${billNo}`.trim() !== '' && `${billNo}`.trim() !== '0') {
+            payment.MRNNo = billNo;
+            payment.mRNNo = billNo;
+        }
     }
 
     if (!getEntryDate(payment)) {
@@ -360,7 +408,7 @@ function enrichMrnHeaderFromDetailLines(payment, lines) {
         if (sub) payment.SubProject = sub;
     }
 
-    return payment;
+    return bindMrnNoOntoPayment(payment);
 }
 
 function mrnResolveLineAmount(row) {
@@ -896,56 +944,100 @@ function markRowsRejected(data) {
     });
 }
 
-function fetchPaymentListForStatus(statusVal, fromDate, toDate) {
-    if (statusVal === 'R') {
-        return MRNMasterApprovalService.GetPendingMRNMasterList('R', fromDate, toDate)
-            .then(markRowsRejected);
+function fetchMrnApprovalListAll(fromDate, toDate) {
+    return Promise.all([
+        MRNMasterApprovalService.GetPendingMRNMasterList('A', fromDate, toDate),
+        MRNMasterApprovalService.GetPendingMRNMasterList('R', fromDate, toDate).then(markRowsRejected)
+    ]).then(mergePaymentListResponses);
+}
+
+function resolveMrnStatusFilterKind(statusVal) {
+    const st = String(statusVal || '').trim().toUpperCase();
+    if (st === 'A' || st === '0') return 'all';
+    if (st === 'R') return 'rejected';
+    if (st === 'P') return 'approved';
+    if (st === 'Y' || st === 'U' || st === 'N') return 'pending';
+    const ddl = document.getElementById('gpaDdlStatus');
+    if (ddl && ddl.options) {
+        const opt = Array.from(ddl.options).find(function (o) { return String(o.value).trim().toUpperCase() === st; });
+        if (opt) {
+            const t = String(opt.text || '').trim().toLowerCase();
+            if (t.indexOf('pending') >= 0 && t.indexOf('on me') < 0) return 'pending';
+            if (t.indexOf('approved') >= 0) return 'approved';
+            if (t.indexOf('reject') >= 0) return 'rejected';
+            if (t.indexOf('all') >= 0) return 'all';
+        }
     }
-    if (statusVal === 'A') {
-        return Promise.all([
-            MRNMasterApprovalService.GetPendingMRNMasterList('A', fromDate, toDate),
-            MRNMasterApprovalService.GetPendingMRNMasterList('R', fromDate, toDate).then(markRowsRejected)
-        ]).then(mergePaymentListResponses);
+    return 'all';
+}
+
+function filterMrnPaymentListByStatus(list, statusVal) {
+    const kind = resolveMrnStatusFilterKind(statusVal);
+    if (kind === 'all') return list;
+    if (kind === 'pending') {
+        return list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'pending'; });
     }
-    return MRNMasterApprovalService.GetPendingMRNMasterList('A', fromDate, toDate);
+    if (kind === 'approved') {
+        return list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'approved'; });
+    }
+    if (kind === 'rejected') {
+        return list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'rejected'; });
+    }
+    return list;
+}
+
+function scrollToGpaFilterBar() {
+    const bar = document.querySelector('.gpa-filter-bar');
+    if (bar) bar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function ApplyGpaHeaderStatFilter(kind) {
+    const ddl = document.getElementById('gpaDdlStatus');
+    if (!ddl) return;
+    G_OnlyPendingOnMe = false;
+    syncGpaPendingOnMeChipActive();
+    if (kind === 'pending' && Array.from(ddl.options).some(function (o) { return o.value === 'Y'; })) {
+        ddl.value = 'Y';
+    } else if (kind === 'approved' && Array.from(ddl.options).some(function (o) { return o.value === 'P'; })) {
+        ddl.value = 'P';
+    }
+    scrollToGpaFilterBar();
+    LoadPaymentList();
 }
 
 function LoadPaymentList(options) {
     options = options || {};
     const seq = ++G_LoadPaymentListSeq;
-    const landingPendingOnMe = shouldApplyLandingPendingOnMe();
-    // Opening from GRN list header tab lands on pending approval cards.
-    const keepPendingOnMe = !!(options.preservePendingOnMe || G_OnlyPendingOnMe);
+    const landingPendingOnMe = !!(options.landingPendingOnMe || shouldApplyLandingPendingOnMe());
 
     if (landingPendingOnMe) {
         prepareGpaPendingOnMeLanding();
+        G_OnlyPendingOnMe = true;
+        syncGpaPendingOnMeChipActive();
         try {
             sessionStorage.removeItem(MRN_LANDING_PENDING_ON_ME_KEY);
         } catch (e) {
             /* ignore */
         }
-    }
-
-    if (keepPendingOnMe && !landingPendingOnMe) {
+    } else if (options.preservePendingOnMe) {
         G_OnlyPendingOnMe = true;
         syncGpaPendingOnMeChipActive();
-    } else if (!keepPendingOnMe || landingPendingOnMe) {
+    } else {
         G_OnlyPendingOnMe = false;
         syncGpaPendingOnMeChipActive();
     }
 
     const fromDate = document.getElementById('gpaFromDate')?.value || '';
     const toDate = document.getElementById('gpaToDate')?.value || '';
-    const statusVal = document.getElementById('gpaDdlStatus')?.value || 'A';
+    const statusVal = document.getElementById('gpaDdlStatus')?.value || 'Y';
 
     ShowGpaLoading(true);
     ShowGpaEmpty(false);
     const container = document.getElementById('gpaPendingList');
     if (container) container.innerHTML = '';
 
-    // Fetch all records for client-side filtering; include explicit rejected rows
-    // because some API versions do not include them in Status='A'.
-    return fetchPaymentListForStatus(statusVal, fromDate, toDate)
+    // Always fetch full list for date range; status dropdown filters client-side.
+    return fetchMrnApprovalListAll(fromDate, toDate)
         .then(function (data) {
             if (seq !== G_LoadPaymentListSeq) return G_PaymentList;
             ShowGpaLoading(false);
@@ -953,16 +1045,7 @@ function LoadPaymentList(options) {
             fullList = enrichPaymentListMrnNos(fullList);
             G_PaymentListFull = fullList;
 
-            let list = fullList.slice();
-            // Client-side status filter based on selected dropdown value
-            if (statusVal === 'P') {
-                list = list.filter(function (p) { return getApprovalStatusKey(p) === 'pending'; });
-            } else if (statusVal === 'Y') {
-                list = list.filter(function (p) { return getApprovalStatusKey(p) === 'approved'; });
-            } else if (statusVal === 'R') {
-                list = list.filter(function (p) { return getApprovalStatusKey(p) === 'rejected'; });
-            }
-            // 'A' (All Status) — no filter, keep full list
+            let list = filterMrnPaymentListByStatus(fullList.slice(), statusVal);
 
             G_PaymentList = list;
             UpdateGpaStatChips();
@@ -1004,15 +1087,20 @@ function UpdateGpaStatChips() {
     const rejectedCount = source.filter(function (p) {
         return getApprovalStatus(p).toLowerCase() === 'rejected';
     }).length;
-    let onMe = pendingOnly === 0 ? 0 : source.filter(paymentIsPendingOnMe).length;
+    const onMe = pendingOnly === 0 ? 0 : source.filter(paymentIsPendingOnMe).length;
     const elP = document.getElementById('gpaStatPending');
     const elO = document.getElementById('gpaStatProcessed');
-    if (elP) elP.textContent = String(onMe);
-    if (elO) elO.textContent = String(approvedCount);
+    if (elP) elP.textContent = pendingOnly > 0 ? String(pendingOnly) : (source.length ? '0' : '—');
+    if (elO) elO.textContent = approvedCount > 0 ? String(approvedCount) : (source.length ? '0' : '—');
 
     const elOnMe = document.getElementById('gpaStatPendingOnMe');
     if (elOnMe) {
-        elOnMe.textContent = String(onMe);
+        elOnMe.textContent = source.length === 0 ? '—' : String(onMe);
+    }
+    try {
+        sessionStorage.setItem('bizsol_grnApprovalPendingOnMeCount', String(pendingOnly));
+    } catch (e) {
+        /* ignore */
     }
     if (typeof window.syncGrnListHeaderTabsFromApprovalChips === 'function') {
         const approvedCodes = source
@@ -1029,7 +1117,7 @@ function UpdateGpaStatChips() {
             pending: pendingOnly,
             approved: approvedCount,
             rejected: rejectedCount,
-            pendingOnMe: onMe,
+            pendingOnMe: pendingOnly,
             approvedCodes: approvedCodes,
             rejectedCodes: rejectedCodes,
         });
@@ -1037,12 +1125,9 @@ function UpdateGpaStatChips() {
 }
 
 function countMrnPendingOnMeFromList(list) {
-    const rows = list || [];
-    const pendingOnly = rows.filter(function (p) {
+    return (list || []).filter(function (p) {
         return getApprovalStatus(p).toLowerCase() === 'pending';
     }).length;
-    if (pendingOnly === 0) return 0;
-    return rows.filter(paymentIsPendingOnMe).length;
 }
 
 function RenderPaymentCards() {
@@ -1073,17 +1158,10 @@ function applyLandingPendingOnMeFilterIfNeeded() {
 function reloadMrnApprovalView(options) {
     options = options || {};
     const landingOnMe = !!(options.pendingOnMe || shouldApplyLandingPendingOnMe());
-    if (landingOnMe) {
-        prepareGpaPendingOnMeLanding();
-        try {
-            sessionStorage.removeItem(MRN_LANDING_PENDING_ON_ME_KEY);
-        } catch (e) {
-            /* ignore */
-        }
-    }
     const refreshDates = !!options.forceRefreshDates;
     return InitDates(refreshDates).then(function () {
         return LoadPaymentList({
+            landingPendingOnMe: landingOnMe,
             preservePendingOnMe: !!(options.preservePendingOnMe && !landingOnMe),
         });
     });
@@ -1103,18 +1181,48 @@ function consumeMrnApprovalRefreshFlag() {
 function refreshMrnApprovalListIfNeeded(forceReload) {
     if (forceReload || consumeMrnApprovalRefreshFlag()) {
         return reloadMrnApprovalView({
-            pendingOnMe: shouldApplyLandingPendingOnMe() || G_OnlyPendingOnMe,
+            preservePendingOnMe: G_OnlyPendingOnMe,
         });
     }
     return Promise.resolve(G_PaymentList);
 }
 
+function applyLandingDatesFromGrnList() {
+    try {
+        const from = sessionStorage.getItem(MRN_LANDING_FROM_DATE_KEY);
+        const to = sessionStorage.getItem(MRN_LANDING_TO_DATE_KEY);
+        const fromEl = document.getElementById('gpaFromDate');
+        const toEl = document.getElementById('gpaToDate');
+        let applied = false;
+        if (from && fromEl) {
+            fromEl.value = from;
+            applied = true;
+            sessionStorage.removeItem(MRN_LANDING_FROM_DATE_KEY);
+        }
+        if (to && toEl) {
+            toEl.value = to;
+            applied = true;
+            sessionStorage.removeItem(MRN_LANDING_TO_DATE_KEY);
+        }
+        return applied;
+    } catch (e) {
+        return false;
+    }
+}
+
 /** Reset approval filters when opening from GRN list pending approval tab. */
 function prepareGpaPendingOnMeLanding() {
     const ddl = document.getElementById('gpaDdlStatus');
-    if (ddl) ddl.value = 'P';
+    if (ddl) {
+        if (typeof window.applyMrnApprovalDefaultPendingStatus === 'function') {
+            window.applyMrnApprovalDefaultPendingStatus(true);
+        } else if (Array.from(ddl.options).some(function (o) { return o.value === 'Y'; })) {
+            ddl.value = 'Y';
+        }
+    }
     const searchEl = document.getElementById('gpaLstSearch');
     if (searchEl) searchEl.value = '';
+    scrollToGpaFilterBar();
 }
 
 /** Back to GRN list — restore header chip counts (Approved etc.) from full approval data. */
@@ -1173,12 +1281,19 @@ function BuildPaymentCard(p) {
 
     const searchKey = (vendorPlain + ' ' + mrnPlain + ' ' + entryPlain).toLowerCase();
 
-    /* Icon buttons: Attachment only */
+    const hasAttach = mrnApprovalHasAttachmentYes(p);
+    const attachBg = hasAttach
+        ? 'linear-gradient(135deg,#16a34a,#15803d)'
+        : 'linear-gradient(135deg,#0ea5e9,#0284c7)';
+    const attachShadow = hasAttach
+        ? 'rgba(22,163,74,0.35)'
+        : 'rgba(14,165,233,0.35)';
+
     const iconBtns = `
         <div class="gpa-pay-card-print-btns">
-            <button type="button" class="btn-gpa-print-icon btn-gpa-print-attach"
-                    title="Attachments"
-                    onclick="if(typeof openGRNApprovalCardAttachment==='function')openGRNApprovalCardAttachment(${code})">
+            <button type="button" class="btn-gpa-print-icon"
+                    style="background:${attachBg};box-shadow:0 2px 8px ${attachShadow};"
+                    title="Attachments" onclick="OpenMRNApprovalCardAttachment(${code})">
                 <i class="fa fa-paperclip"></i>
             </button>
         </div>`;
@@ -1322,7 +1437,7 @@ function mergeDetailIntoPayment(root, basePayment) {
         enrichMrnHeaderFromDetailLines(p, lines);
     }
 
-    return p;
+    return bindMrnNoOntoPayment(p);
 }
 
 function extractDetailLines(root) {
@@ -1382,7 +1497,8 @@ function applyGpaModalActionButtons(payment) {
     var pend = getApprovalStatus(payment || G_CurrentPayment || {}).toLowerCase() === 'pending';
     $('#gpaBtnApproveAction').toggle(pend).prop('disabled', !pend);
     $('#gpaBtnRejectAction').toggle(pend).prop('disabled', !pend);
-    $('#btnGpaModalAttach').show().prop('disabled', false);
+    $('#btnGpaModalAttach').show().prop('disabled', false)
+        .toggleClass('gpa-attach-has-files', mrnApprovalHasAttachmentYes(payment || G_CurrentPayment));
 }
 
 function OpenDetailModal(paymentCode, options) {
@@ -1391,9 +1507,13 @@ function OpenDetailModal(paymentCode, options) {
     const code = parseInt(paymentCode, 10);
     if (!Number.isFinite(code) || code <= 0) return;
 
-    G_CurrentPayment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === code; }) || null;
+    G_CurrentPayment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === code; })
+        || (G_PaymentListFull || []).find(function (p) { return getPaymentMasterCode(p) === code; })
+        || null;
     if (!G_CurrentPayment) {
         G_CurrentPayment = { Code: code, MRNMaster_Code: code };
+    } else {
+        bindMrnNoOntoPayment(G_CurrentPayment);
     }
 
     const entryNo = formatMrnDisplayNo(G_CurrentPayment);
@@ -1717,6 +1837,74 @@ function ExecuteGpaApproval(paymentCode, levelCode, remarks, action) {
     //});
 }
 
+function mrnApprovalHasAttachmentYes(p) {
+    if (!p) return false;
+    const v = p.HasAttach ?? p.hasAttach ?? p.HasAttachment ?? p.hasAttachment ?? p['Has Attachment'];
+    const s = String(v || '').trim().toUpperCase();
+    return s === 'Y' || s === '1' || s === 'TRUE';
+}
+
+function getMrnApprovalAttachmentHostSelector() {
+    if (document.getElementById('MRNApproval_AttachmentControlmodal')) return '#MRNApproval_AttachmentControlmodal';
+    if (document.getElementById('GRNApproval_AttachmentControlmodal')) return '#GRNApproval_AttachmentControlmodal';
+    return '#GRNService_AttachmentControlmodal';
+}
+
+function bumpMrnApprovalAttachmentModalZIndex() {
+    document.addEventListener('shown.bs.modal', function handler(e) {
+        if (e && e.target && e.target.id === 'AttachmentControlmodal') {
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            if (backdrops.length) {
+                backdrops[backdrops.length - 1].style.zIndex = '1075';
+            }
+            document.removeEventListener('shown.bs.modal', handler);
+        }
+    });
+}
+
+function resolveMrnApprovalAttachmentContext(codeNum) {
+    const payment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === codeNum; })
+        || (G_PaymentListFull || []).find(function (p) { return getPaymentMasterCode(p) === codeNum; })
+        || (G_CurrentPayment && getPaymentMasterCode(G_CurrentPayment) === codeNum ? G_CurrentPayment : null);
+    const entryNoRaw = payment ? formatMrnDisplayNo(payment) : '';
+    const entryNo = parseInt(entryNoRaw, 10) || 0;
+    const entryDate = payment ? getEntryDate(payment) : '';
+    const rawDate = entryDate ? String(entryDate).substring(0, 10) : '';
+    return { entryNo: entryNo, entryDate: rawDate };
+}
+
+function InitMRNApprovalAttachmentControl(code, entryNo, entryDate) {
+    const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
+    const url = appBase + 'CustomControl/AttachmentControl';
+    $(getMrnApprovalAttachmentHostSelector()).load(url, {
+        MasterTableName: 'MRNMaster',
+        MasterTableCode: code,
+        DetailTableName: '',
+        DetailTableCode: 0,
+        EntryNo: parseInt(entryNo, 10) || 0,
+        EntryDate: entryDate || '',
+        Mode: 'all'
+    });
+    bumpMrnApprovalAttachmentModalZIndex();
+}
+
+function OpenMRNApprovalCardAttachment(code) {
+    const codeNum = parseInt(code, 10);
+    if (!Number.isFinite(codeNum) || codeNum <= 0) return;
+    const ctx = resolveMrnApprovalAttachmentContext(codeNum);
+    InitMRNApprovalAttachmentControl(codeNum, ctx.entryNo, ctx.entryDate);
+}
+
+function OpenMRNApprovalAttachmentFromModal() {
+    const code = parseInt($('#hfGpaPaymentCode').val() || '0', 10);
+    if (!code) {
+        if (typeof toastr !== 'undefined') toastr.warning('No MRN selected.');
+        return;
+    }
+    const ctx = resolveMrnApprovalAttachmentContext(code);
+    InitMRNApprovalAttachmentControl(code, ctx.entryNo, ctx.entryDate);
+}
+
 function LoadMrnAttachmentsInline(masterCode) {
     const wrap = document.getElementById('gpaModalAttachList');
     if (!wrap) return;
@@ -1830,7 +2018,16 @@ function NavigateToGRNServiceApprovalConfiguration() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    InitDates()
+    const statusBind = (typeof window.loadGrnApprovalStatusDropdown === 'function')
+        ? window.loadGrnApprovalStatusDropdown()
+        : Promise.resolve();
+    statusBind
+        .then(function () {
+            if (typeof window.applyMrnApprovalDefaultPendingStatus === 'function') {
+                window.applyMrnApprovalDefaultPendingStatus(true);
+            }
+            return InitDates();
+        })
         .then(function () {
             return reloadMrnApprovalView({});
         })
@@ -1843,6 +2040,13 @@ document.addEventListener('DOMContentLoaded', function () {
     if (searchEl) {
         searchEl.addEventListener('input', function () {
             FilterGpaCards(this.value);
+        });
+    }
+
+    const statusEl = document.getElementById('gpaDdlStatus');
+    if (statusEl) {
+        statusEl.addEventListener('change', function () {
+            LoadPaymentList();
         });
     }
 });
@@ -1863,5 +2067,10 @@ window.CloseConfirmModal = CloseConfirmModal;
 window.NavigateToGRNService = NavigateToGRNService;
 window.NavigateToGRNServiceApprovalConfiguration = NavigateToGRNServiceApprovalConfiguration;
 window.ToggleGpaPendingOnMeFilter = ToggleGpaPendingOnMeFilter;
+window.ApplyGpaHeaderStatFilter = ApplyGpaHeaderStatFilter;
 window.countMrnPendingOnMeFromList = countMrnPendingOnMeFromList;
 window.MrnApprovalDownloadAttachment = MrnApprovalDownloadAttachment;
+window.OpenMRNApprovalCardAttachment = OpenMRNApprovalCardAttachment;
+window.OpenMRNApprovalAttachmentFromModal = OpenMRNApprovalAttachmentFromModal;
+window.openGRNApprovalCardAttachment = OpenMRNApprovalCardAttachment;
+window.openGRNApprovalAttachment = OpenMRNApprovalAttachmentFromModal;

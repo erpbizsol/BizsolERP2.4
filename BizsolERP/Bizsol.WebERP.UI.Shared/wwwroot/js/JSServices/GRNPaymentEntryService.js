@@ -3,8 +3,10 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const GRNPaymentApprovalService = {
 
-    GetGRNPaymentApprovalList: function GetGRNPaymentApprovalList() {
-        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetGRNPaymentApprovalList`;
+    GetGRNPaymentApprovalList: function GetGRNPaymentApprovalList(Status, FromDate, ToDate) {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
+            `/GetGRNPaymentApprovalList?Status=${encodeURIComponent(Status || '0')}` +
+            `&FromDate=${encodeURIComponent(FromDate || '')}&ToDate=${encodeURIComponent(ToDate || '')}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
@@ -163,6 +165,13 @@ const GRNPaymentApprovalService = {
     },
     GetWorkType: function GetWorkType() {
         let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetWorkType`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+    LoadStatusDropdown: function LoadStatusDropdown() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/LoadStatusDropdown`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
