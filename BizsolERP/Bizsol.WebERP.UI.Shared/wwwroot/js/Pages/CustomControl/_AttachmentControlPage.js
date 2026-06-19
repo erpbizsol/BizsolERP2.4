@@ -3,6 +3,139 @@ import { AttachmentControlService } from '../../JSServices/_AttachmentControlSer
 // ── Temp queue: persists in module memory for masterCode=0 (new/unsaved) entries ──
 let _acTempQueue = []; // [{ file: File, particulars: string }]
 
+/** Visible attachment modal (handles duplicate id when prior instance was left in body). */
+function _acGetVisibleModalEl() {
+    const nodes = document.querySelectorAll('[id="AttachmentControlmodal"]');
+    for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].classList.contains('show')) return nodes[i];
+    }
+    return nodes.length ? nodes[nodes.length - 1] : null;
+}
+
+function _acCleanupModalArtifacts() {
+    const openModals = document.querySelectorAll('.modal.show');
+    if (openModals.length > 0) return;
+    document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+}
+
+/** Remove stale attachment modals left in document.body from prior opens. */
+function _acPurgeStaleModals(keepEl) {
+    document.querySelectorAll('[id="AttachmentControlmodal"]').forEach(function (el) {
+        if (keepEl && el === keepEl) return;
+        if (window.bootstrap && window.bootstrap.Modal) {
+            window.bootstrap.Modal.getInstance(el)?.dispose();
+        }
+        el.remove();
+    });
+    _acCleanupModalArtifacts();
+}
+
+function _acOnModalHidden(e) {
+    const modalEl = e && e.target ? e.target : null;
+    if (!modalEl || modalEl.id !== 'AttachmentControlmodal') return;
+    if (window.bootstrap && window.bootstrap.Modal) {
+        window.bootstrap.Modal.getInstance(modalEl)?.dispose();
+    }
+    modalEl.remove();
+    _acCleanupModalArtifacts();
+}
+
+function PrepareAttachmentControlModal() {
+    const modals = document.querySelectorAll('[id="AttachmentControlmodal"]');
+    const keepEl = modals.length ? modals[modals.length - 1] : null;
+    _acPurgeStaleModals(keepEl);
+}
+
+function DestroyAllAttachmentControlModals() {
+    _acPurgeStaleModals(null);
+}
+
+function Show_AttachmentControl() {
+    const modalEl = _acGetVisibleModalEl();
+    if (!modalEl) return;
+
+    _acPurgeStaleModals(modalEl);
+
+    if (typeof window.erpMoveModalToBody === 'function') {
+        window.erpMoveModalToBody(modalEl);
+    } else if (modalEl.parentElement !== document.body) {
+        document.body.appendChild(modalEl);
+    }
+
+    modalEl.removeEventListener('hidden.bs.modal', _acOnModalHidden);
+    modalEl.addEventListener('hidden.bs.modal', _acOnModalHidden);
+
+    try {
+        if (window.bootstrap && window.bootstrap.Modal) {
+            const existing = window.bootstrap.Modal.getInstance(modalEl);
+            if (existing) existing.dispose();
+            window.bootstrap.Modal.getOrCreateInstance(modalEl, {
+                backdrop: 'static',
+                keyboard: true,
+                focus: true
+            }).show();
+        } else if (typeof window.jQuery !== 'undefined') {
+            window.jQuery(modalEl).modal({ backdrop: 'static', keyboard: true });
+            window.jQuery(modalEl).modal('show');
+        }
+    } catch (err) {
+        console.warn('Show_AttachmentControl', err);
+    }
+}
+
+function Close_AttachmentControl() {
+    const modalEl = _acGetVisibleModalEl();
+    if (!modalEl) {
+        _acCleanupModalArtifacts();
+        return;
+    }
+    try {
+        if (window.bootstrap && window.bootstrap.Modal) {
+            const inst = window.bootstrap.Modal.getInstance(modalEl)
+                ?? window.bootstrap.Modal.getOrCreateInstance(modalEl);
+            inst.hide();
+            return;
+        }
+        if (typeof window.jQuery !== 'undefined') {
+            window.jQuery(modalEl).modal('hide');
+            return;
+        }
+    } catch (err) {
+        console.warn('Close_AttachmentControl', err);
+    }
+    modalEl.classList.remove('show');
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.style.display = 'none';
+    _acOnModalHidden({ target: modalEl });
+}
+
+function _acNotifySaveComplete() {
+    if (typeof window.toastr !== 'undefined') {
+        window.toastr.success('Upload saved.');
+    } else {
+        window.alert('Upload save..');
+    }
+}
+
+/** Restore modal interactivity after alert() / grid refresh (focus trap & backdrop). */
+function _acEnsureModalInteractive() {
+    const modalEl = _acGetVisibleModalEl();
+    if (!modalEl) return;
+    modalEl.style.pointerEvents = 'auto';
+    const z = parseInt(window.getComputedStyle(modalEl).zIndex || '1055', 10) || 1055;
+    modalEl.style.zIndex = String(z);
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    if (backdrops.length) {
+        backdrops[backdrops.length - 1].style.zIndex = String(z - 1);
+    }
+    if (document.body.classList.contains('modal-open') === false && modalEl.classList.contains('show')) {
+        document.body.classList.add('modal-open');
+    }
+}
+
 function _acIsTempMode() {
     return parseInt($('#hfMasterTableCode').val() ?? '0', 10) <= 0;
 }
@@ -254,14 +387,23 @@ function Delete_AttachmentControl(Code) {
         AttachmentControlService.DeleteImage(Code,"NA").then(
             function (response) {
                 if (response.Status === 'Y') {
-                    alert('Attachment deleted!');
+                    if (typeof window.toastr !== 'undefined') {
+                        window.toastr.success('Attachment deleted!');
+                    } else {
+                        alert('Attachment deleted!');
+                    }
                     GatAllAttachment().then(function (info) {
                         _acNotifyHostDataMutated('delete', info);
+                        setTimeout(_acEnsureModalInteractive, 0);
                     }).catch(function (err) {
                         console.warn('GatAllAttachment after delete', err);
                     });
                 } else {
-                    alert(response.Msg);
+                    if (typeof window.toastr !== 'undefined') {
+                        window.toastr.error(response.Msg);
+                    } else {
+                        alert(response.Msg);
+                    }
                 }
             }
         )
@@ -489,14 +631,17 @@ function Save_AttachmentControl() {
                     (response) => {
                         filesProcessed++
                         if (filesProcessed == fileListArry.length) {
-                            alert('Upload save..');
-                            GatAllAttachment().then(function (info) {
-                                _acNotifyHostDataMutated('save', info);
-                            }).catch(function (err) {
-                                console.warn('GatAllAttachment after save', err);
-                            });
                             fileList.innerHTML = '';
                             fileListArry = [];
+                            GatAllAttachment().then(function (info) {
+                                _acNotifyHostDataMutated('save', info);
+                                _acNotifySaveComplete();
+                                setTimeout(_acEnsureModalInteractive, 0);
+                            }).catch(function (err) {
+                                console.warn('GatAllAttachment after save', err);
+                                _acNotifySaveComplete();
+                                setTimeout(_acEnsureModalInteractive, 0);
+                            });
                         }
                     }
                 );
@@ -624,6 +769,11 @@ window.DeleteFile_AttachmentControl = DeleteFile_AttachmentControl;
 window.ViewFile_AttachmentControl = ViewFile_AttachmentControl;
 window.Save_AttachmentControl = Save_AttachmentControl;
 window.GatAllAttachment = GatAllAttachment;
+window.Show_AttachmentControl = Show_AttachmentControl;
+window.Close_AttachmentControl = Close_AttachmentControl;
+window.PrepareAttachmentControlModal = PrepareAttachmentControlModal;
+window.DestroyAllAttachmentControlModals = DestroyAllAttachmentControlModals;
+window.DestroyExistingAttachmentControlModal = DestroyAllAttachmentControlModals;
 window.RemoveTempQueue_AttachmentControl = RemoveTempQueue_AttachmentControl;
 window.FlushPendingAttachments = FlushPendingAttachments;
 window.ClearPendingAttachments_AttachmentControl = ClearPendingAttachments_AttachmentControl;

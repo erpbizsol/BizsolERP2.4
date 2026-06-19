@@ -13,6 +13,13 @@ const VendorMasterService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
 
+    GetGSTINStatus: function GetGSTINStatus(AccountDesp, GSTNNoToSearch) {
+        var URL = UrlService.API_ENDPOINT_VendorMaster +
+            `/GetGSTINStatus?AccountDesp=${encodeURIComponent(AccountDesp || "")}` +
+            `&GSTNNoToSearch=${encodeURIComponent(GSTNNoToSearch || "")}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
+
     SaveVendorMaster: function SaveVendorMaster(data) {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/SaveVendorMaster`;
         return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data)).then(function (value) { return value; });

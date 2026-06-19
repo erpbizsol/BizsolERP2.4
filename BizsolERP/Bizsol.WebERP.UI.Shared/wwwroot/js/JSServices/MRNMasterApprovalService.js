@@ -40,6 +40,12 @@ const MRNMasterApprovalService = {
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
+    GetMRNApprovallavels: function GetMRNApprovallavels(code) {
+        const mrnCode = encodeURIComponent(code);
+        const url = UrlService.API_ENDPOINT_GRNService + `/GetMRNApprovallavels?Code=${mrnCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
     ApproveMRNMaster: function ApproveMRNMaster(mrnMasterCode, levelCode, remarks) {
         const { userCode, groupCode } = getSessionUserAndGroup();
         const url = UrlService.API_ENDPOINT_MRNMasterLevelsApproval +

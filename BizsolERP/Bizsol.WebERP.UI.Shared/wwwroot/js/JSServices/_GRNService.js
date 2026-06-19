@@ -13,6 +13,14 @@ const GRNService = {
             });
     },
 
+    GetMRNApprovallavels: function GetMRNApprovallavels(Code) {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetMRNApprovallavels?Code=${encodeURIComponent(Code)}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
     SaveGRN: function SaveGRN(GRNRequestData) {
         let json_data = JSON.stringify(GRNRequestData, null, 2);
         let authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
@@ -82,8 +90,12 @@ const GRNService = {
             });
     },
 
-    GetGRNList: function GetGRNList() {
-        let url = UrlService.API_ENDPOINT_GRNService + `/GetGRNServiceList`;
+    GetGRNList: function GetGRNList(Status, FromDate, ToDate) {
+        const status = encodeURIComponent(Status != null && Status !== undefined ? String(Status) : '0');
+        const fromDate = encodeURIComponent(FromDate != null && FromDate !== undefined ? String(FromDate) : '');
+        const toDate = encodeURIComponent(ToDate != null && ToDate !== undefined ? String(ToDate) : '');
+        let url = UrlService.API_ENDPOINT_GRNService +
+            `/GetGRNServiceList?Status=${status}&FromDate=${fromDate}&ToDate=${toDate}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
@@ -111,6 +123,14 @@ const GRNService = {
     GetPendingPOStoreList: function GetPendingPOStoreList(Code) {
         const code = Code !== undefined && Code !== null ? String(Code).trim() : '';
         let url = UrlService.API_ENDPOINT_GRNService + `/GetPendingPOStoreList?Code=${encodeURIComponent(code || '0')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    LoadStatusDropdown: function LoadStatusDropdown() {
+        let url = UrlService.API_ENDPOINT_GRNService + `/LoadStatusDropdown`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;

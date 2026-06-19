@@ -7,6 +7,8 @@ let chartProjectSummary  = null;
 let chartBudgetLine      = null;
 let chartExpenseSummary  = null;
 
+let pddFilterPanel       = null;
+
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function FmtDateInput(d) {
@@ -109,86 +111,132 @@ function BindKpiNavigation() {
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 $(document).ready(function () {
-    InitDefaultDates();
-    BindFilterChange();
     BindKpiNavigation();
-    LoadProjectDropdown()
-        .then(function () {
-            // On page load with "All Projects" selected, also load all sub-projects
-            LoadSubProjectDropdown(0);
-            LoadDashboard();
-        })
-        .catch(function () { LoadDashboard(); });
+    MountFilterPanelToBody();
+    InitFilterSidePanelControl();
 });
 
-function InitDefaultDates() {
-    const today              = new Date();
-    const firstDayPrevMonth  = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    document.getElementById('pddFromDate').value = FmtDateInput(firstDayPrevMonth);
-    document.getElementById('pddToDate').value   = FmtDateInput(today);
+/** Filter panel on body so offcanvas opens correctly on mobile. */
+function MountFilterPanelToBody() {
+    const panel = document.getElementById('pddFilterPanel');
+    if (panel && panel.parentElement !== document.body) {
+        document.body.appendChild(panel);
+    }
 }
 
-// ── Project dropdown ─────────────────────────────────────────────────────────
-function LoadProjectDropdown() {
+function InitFilterSidePanelControl() {
+    pddFilterPanel = document.getElementById('pddFilterPanel');
+    if (!pddFilterPanel) return;
+
+    if (!customElements.get('filter-side-panel-control')) {
+        customElements.whenDefined('filter-side-panel-control').then(InitFilterSidePanelControl);
+        return;
+    }
+
+    pddFilterPanel.setFilters([
+        { id: 'dateRange', type: 'daterange', label: 'Date Range' },
+        { id: 'ddlProject', type: 'select', label: 'Project', data: [{ Code: '0', Desp: '-- All Projects --' }] },
+        { id: 'ddlSubProject', type: 'select', label: 'Sub Project', data: [{ Code: '0', Desp: '-- All Sub Projects --' }] },
+    ]);
+
+    pddFilterPanel.addEventListener('filtersapplied', function () {
+        LoadDashboard();
+    });
+
+    LoadProjectDropdownIntoFilter()
+        .then(function () {
+            BindProjectChangeInFilter();
+            return LoadSubProjectDropdownIntoFilter(0);
+        })
+        .then(function () {
+            return new Promise(function (resolve) {
+                setTimeout(function () {
+                    SetDefaultDateRangeInFilter();
+                    resolve();
+                }, 500);
+            });
+        })
+        .then(function () {
+            LoadDashboard();
+        })
+        .catch(function () {
+            LoadDashboard();
+        });
+}
+
+function SetDefaultDateRangeInFilter() {
+    const today             = new Date();
+    const firstDayPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const dateRangeEl       = pddFilterPanel?.shadowRoot?.getElementById('dateRange');
+    if (dateRangeEl && typeof dateRangeEl.setRange === 'function') {
+        dateRangeEl.setRange({
+            fromDate: FmtDateInput(firstDayPrevMonth),
+            toDate:   FmtDateInput(today),
+        });
+    }
+}
+
+function GetFilterParams() {
+    if (!pddFilterPanel) {
+        return { projectCode: 0, subProjectCode: 0, fromDate: '', toDate: '' };
+    }
+    const f = pddFilterPanel.getFilterValues();
+    return {
+        projectCode:    parseInt(f.ddlProject, 10) || 0,
+        subProjectCode: parseInt(f.ddlSubProject, 10) || 0,
+        fromDate:       f.dateRange?.fromDate || '',
+        toDate:         f.dateRange?.toDate || '',
+    };
+}
+
+function LoadProjectDropdownIntoFilter() {
     return ProjectDetailDashboardService.GetProjectList()
         .then(function (data) {
-            const ddl = document.getElementById('ddlProject');
-            ddl.innerHTML = '<option value="0">-- All Projects --</option>';
+            const items = [{ Code: '0', Desp: '-- All Projects --' }];
             (data || []).forEach(function (p) {
-                const opt = document.createElement('option');
-                opt.value       = p.Code ?? p.ProjectMaster_Code ?? p.code ?? 0;
-                opt.textContent = p.ProjectDesp ?? p.ProjectName ?? p.Desp ?? '';
-                ddl.appendChild(opt);
+                items.push({
+                    Code: String(p.Code ?? p.ProjectMaster_Code ?? p.code ?? 0),
+                    Desp: p.ProjectDesp ?? p.ProjectName ?? p.Desp ?? '',
+                });
             });
+            pddFilterPanel.updateFilterData('ddlProject', items);
         })
         .catch(function (err) {
             console.error('GetProjectList error:', err);
         });
 }
 
-// ── Load sub-project dropdown for a given project code (0 = All) ─────────────
-function LoadSubProjectDropdown(projectCode) {
-    const ddlSub = document.getElementById('ddlSubProject');
-    ddlSub.innerHTML = '<option value="0">-- All Sub Projects --</option>';
-    ddlSub.disabled  = true;
-
+function LoadSubProjectDropdownIntoFilter(projectCode) {
     return ProjectDetailDashboardService.GetSubProjectListByProject(projectCode)
         .then(function (data) {
+            const items = [{ Code: '0', Desp: '-- All Sub Projects --' }];
             (data || []).forEach(function (s) {
-                const opt = document.createElement('option');
-                opt.value       = s.Code ?? s.SubProjectMaster_Code ?? s.code ?? 0;
-                opt.textContent = s.SubProjectDesp ?? s.SubProjectName ?? s.Desp ?? '';
-                ddlSub.appendChild(opt);
+                items.push({
+                    Code: String(s.Code ?? s.SubProjectMaster_Code ?? s.code ?? 0),
+                    Desp: s.SubProjectDesp ?? s.SubProjectName ?? s.Desp ?? '',
+                });
             });
-            // Enable only if there are actual sub-projects to choose from
-            if (ddlSub.options.length > 1) ddlSub.disabled = false;
+            pddFilterPanel.updateFilterData('ddlSubProject', items);
         })
         .catch(function (err) {
             console.error('GetSubProjectListByProject error:', err);
-            ddlSub.disabled = false;
         });
 }
 
-// ── Project / Sub-project change → reload dashboard ─────────────────────────
-function BindFilterChange() {
-    document.getElementById('ddlProject').addEventListener('change', function () {
-        const projectCode = parseInt(this.value, 10) || 0;
-        LoadSubProjectDropdown(projectCode).then(function () {
-            LoadDashboard();
+function BindProjectChangeInFilter() {
+    setTimeout(function () {
+        const projectSel = pddFilterPanel?.shadowRoot?.getElementById('ddlProject');
+        if (!projectSel) return;
+        projectSel.addEventListener('change', function () {
+            const projectCode = parseInt(this.value, 10) || 0;
+            LoadSubProjectDropdownIntoFilter(projectCode);
         });
-    });
-
-    document.getElementById('ddlSubProject').addEventListener('change', function () {
-        LoadDashboard();
-    });
+    }, 100);
 }
 
 // ── Main loader ───────────────────────────────────────────────────────────────
 function LoadDashboard() {
-    const projectCode    = parseInt(document.getElementById('ddlProject').value, 10)    || 0;
-    const subProjectCode = parseInt(document.getElementById('ddlSubProject').value, 10) || 0;
-    const fromDate       = document.getElementById('pddFromDate').value;
-    const toDate         = document.getElementById('pddToDate').value;
+    const { projectCode, subProjectCode, fromDate, toDate } = GetFilterParams();
 
     if (!fromDate || !toDate) {
         toastr.warning('Please select From Date and To Date.');
@@ -230,11 +278,10 @@ function LoadDashboard() {
 
 // ── Reset ────────────────────────────────────────────────────────────────────
 function ResetDashboard() {
-    document.getElementById('ddlProject').value    = '0';
-    document.getElementById('ddlSubProject').innerHTML = '<option value="0">-- All Sub Projects --</option>';
-    document.getElementById('ddlSubProject').disabled  = true;
-    InitDefaultDates();
-    LoadSubProjectDropdown(0).then(function () {
+    SetDefaultDateRangeInFilter();
+    const projectSel = pddFilterPanel?.shadowRoot?.getElementById('ddlProject');
+    if (projectSel) projectSel.value = '0';
+    LoadSubProjectDropdownIntoFilter(0).then(function () {
         LoadDashboard();
     });
 }
@@ -568,5 +615,10 @@ function RenderExpenseSummary(data) {
 }
 
 // ── Expose to window (onclick in HTML) ───────────────────────────────────────
-window.LoadDashboard  = LoadDashboard;
-window.ResetDashboard = ResetDashboard;
+window.LoadDashboard       = LoadDashboard;
+window.ResetDashboard      = ResetDashboard;
+window.OpenPddFilterPanel  = function () {
+    if (pddFilterPanel && typeof pddFilterPanel.open === 'function') {
+        pddFilterPanel.open();
+    }
+};

@@ -732,6 +732,47 @@
         margin-left: 2px;
     }
 
+    .vm-gst-validate-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 18px;
+        font-size: 12px;
+    }
+
+    .vm-form-group .vm-checkbox-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        font-size: 12px;
+        font-weight: 600;
+        color: #4b5563;
+        letter-spacing: 0;
+        text-transform: none;
+        cursor: pointer;
+    }
+
+    .vm-checkbox-label input {
+        width: 14px;
+        height: 14px;
+        accent-color: #5b5ef4;
+        cursor: pointer;
+    }
+
+    .vm-gst-validation-status {
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .vm-gst-validation-status.is-success {
+        color: #16a34a;
+    }
+
+    .vm-gst-validation-status.is-error {
+        color: #ef4444;
+    }
+
     /* Add/Edit vendor modal: one visual system for text + all Select2 */
     #vendorDialogBackdrop {
         --vm-control-h: 42px;
@@ -2129,6 +2170,13 @@
                 <div class="vm-form-group">
                     <label for="GSTNNo">GST Number</label>
                     <input type="text" id="GSTNNo" class="vm-input" placeholder="e.g. 22AAAAA0000A1Z5" autocomplete="off" maxlength="15" style="text-transform:uppercase;" />
+                    <div class="vm-gst-validate-row">
+                        <label class="vm-checkbox-label" for="chkGSTINValidation">
+                            <input type="checkbox" id="chkGSTINValidation" />
+                            Validate GST
+                        </label>
+                        <span id="spGSTINValidationStatus" class="vm-gst-validation-status"></span>
+                    </div>
                     <span class="vm-err-text" id="err_GSTNNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid GST format.</span>
                 </div>
                 <div class="vm-form-group">

@@ -1151,14 +1151,83 @@
         opacity: 0.98;
     }
 
-    /* GRN list: Pending / Verified filter — same idea as Payment Entry status tabs */
-    #divGRNList .po-list-header {
+    /* GRN list — Payment Entry style header + stat chips */
+    #divGRNList .grn-list-top-panel {
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102,126,234,0.07);
+        margin-bottom: 14px;
+    }
+    #divGRNList .grn-list-top-panel .po-list-header {
+        border-radius: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 16px 22px 14px;
+    }
+    #divGRNList .po-header-top {
+        display: flex;
         align-items: center;
         justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 14px 16px;
-        padding: 16px 20px;
+        gap: 10px;
+        width: 100%;
     }
+    #divGRNList .po-stats-strip {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        flex-wrap: nowrap;
+        padding-bottom: 2px;
+    }
+    #divGRNList .po-stats-strip::-webkit-scrollbar { display: none; }
+    #divGRNList .po-stat-chip {
+        background: rgba(255,255,255,0.18);
+        border-radius: 10px;
+        padding: 5px 14px;
+        text-align: center;
+        min-width: 80px;
+        border: 1px solid rgba(255,255,255,0.2);
+        text-decoration: none;
+        color: inherit;
+    }
+    #divGRNList .po-stat-chip .val { font-size: 1.15rem; font-weight: 800; color: #fff; line-height: 1; }
+    #divGRNList .po-stat-chip .lbl {
+        font-size: 0.65rem;
+        color: rgba(255,255,255,0.8);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    #divGRNList .po-chip-link { transition: transform 0.18s ease, background 0.18s ease; cursor: pointer; pointer-events: auto; }
+    #divGRNList .po-chip-link:hover { background: rgba(255,255,255,0.32) !important; transform: scale(1.06); }
+    #divGRNList .po-stat-chip:not(.po-chip-link) { cursor: default; pointer-events: none; }
+    #divGRNList .grn-list-top-panel .po-filter-bar {
+        margin-bottom: 0;
+        border: none;
+        border-top: 1px solid #e8ecf4;
+        border-radius: 0;
+    }
+    #divGRNList .po-create-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255,255,255,0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 7px 16px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    #divGRNList .po-create-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+
+    /* legacy verify tabs — removed from markup */
     #divGRNList .po-list-header-left {
         flex: 0 1 auto;
         min-width: 160px;
@@ -1314,6 +1383,12 @@
     .gpa-stat-chip--pending .val { color: #fde047; }
     .gpa-stat-chip--approved { border-color: rgba(52,211,153,0.75); }
     .gpa-stat-chip--approved .val { color: #6ee7b7; }
+    .gpa-stat-chip--onme { border-color: rgba(167,139,250,0.7); cursor: pointer; }
+    .gpa-stat-chip--onme .val { color: #c4b5fd; }
+    .gpa-stat-chip--onme-active { background: rgba(167,139,250,0.22); border-color: #a78bfa; box-shadow: 0 0 0 2px rgba(167,139,250,0.45); }
+    .gpa-stat-chip--onme-active .val { color: #fff; }
+    .gpa-stat-chip--onme-active .lbl { color: #fff; }
+
     .gpa-stat-chip--onme { border-color: rgba(167,139,250,0.7); cursor: pointer; }
     .gpa-stat-chip--onme .val { color: #c4b5fd; }
     .gpa-stat-chip--onme-active { background: rgba(167,139,250,0.22); border-color: #a78bfa; box-shadow: 0 0 0 2px rgba(167,139,250,0.45); }
@@ -1540,43 +1615,66 @@
 
 <div id="divGRNList" class="container-fluid mt-3">
 
-    <!-- Header -->
-    <div class="po-list-header">
-        <div class="po-list-header-left">
-            <h5><i class="fa fa-receipt me-2"></i>GRN Service List</h5>
-            <small id="grnListHeaderHint">Goods Receipt Note — <strong>Pending</strong> / <strong>Approved</strong> / <strong>Reject</strong> filter this list (same page); <strong>Pending on me</strong> opens MRN approval queue for items awaiting you</small>
-        </div>
-        <div class="po-list-header-right">
-            <div class="grn-verify-filter-tabs" id="grnVerifyFilterTabs" role="tablist" aria-label="GRN verify status">
-                <button type="button" id="grnVerifyFilterTabPending" class="grn-verify-filter-tab grn-verify-filter-tab--n" role="tab"
-                        aria-pressed="false" title="Show unverified GRNs in this list"
-                        onclick="onGrnListVerifyFilterClick('N')">
-                    <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountPending">0</span>
-                    <span class="grn-verify-filter-tab-lbl">Pending</span>
-                </button>
-                <button type="button" id="grnVerifyFilterTabPendingOnMe" class="grn-verify-filter-tab grn-verify-filter-tab--onme" role="button"
-                        title="Open MRN approval queue — items pending on you"
-                        onclick="navigateToMRNMasterApprovalPendingOnMe()">
-                    <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountPendingOnMe">—</span>
-                    <span class="grn-verify-filter-tab-lbl">Pending on me</span>
-                </button>
-                <button type="button" id="grnVerifyFilterTabVerified" class="grn-verify-filter-tab grn-verify-filter-tab--y" role="tab"
-                        aria-pressed="false" title="Show approved GRNs in this list"
-                        onclick="onGrnListVerifyFilterClick('P')">
-                    <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountVerified">0</span>
-                    <span class="grn-verify-filter-tab-lbl">Approved</span>
-                </button>
-                <button type="button" id="grnVerifyFilterTabReject" class="grn-verify-filter-tab grn-verify-filter-tab--r" role="tab"
-                        aria-pressed="false" title="Show rejected GRNs in this list"
-                        onclick="onGrnListVerifyFilterClick('R')">
-                    <span class="grn-verify-filter-tab-count" id="grnVerifyFilterCountReject">0</span>
-                    <span class="grn-verify-filter-tab-lbl">Reject</span>
+    <div class="grn-list-top-panel">
+        <!-- Header + stat chips (Payment Entry layout) -->
+        <div class="po-list-header">
+            <div class="po-header-top">
+                <div>
+                    <h5><i class="fa fa-receipt me-2"></i>GRN Service List</h5>
+                    <small>Manage and track GRN service entries</small>
+                </div>
+                <button type="button" class="po-create-btn" onclick="newGRN()">
+                    <i class="fa fa-plus-circle"></i><span class="ms-1">New GRN</span>
                 </button>
             </div>
-            <div class="po-list-header-actions">
-                <button type="button" class="btn-po-save vm-btn-new" onclick="newGRN()">
-                    <i class="fa fa-plus me-1"></i> New GRN
-                </button>
+            <div class="po-stats-strip">
+                <div class="po-stat-chip">
+                    <div class="val" id="grnStatTotal">—</div>
+                    <div class="lbl">Total</div>
+                </div>
+                <div class="po-stat-chip" style="border:1.5px solid rgba(255,165,0,0.55);">
+                    <div class="val" id="grnStatPending" style="color:#ffd580;">—</div>
+                    <div class="lbl">Pending</div>
+                </div>
+                <a href="javascript:void(0)" onclick="navigateToMRNMasterApprovalPendingOnMe()"
+                   class="po-stat-chip po-chip-link" style="border:1.5px solid rgba(255,165,0,0.55);"
+                   title="Open pending MRN approval queue">
+                    <div class="val" id="grnStatPendingOnMe" style="color:#c7206d;">—</div>
+                    <div class="lbl">Pending on Me</div>
+                </a>
+                <div class="po-stat-chip" style="border:1.5px solid rgba(16,185,129,0.55);">
+                    <div class="val" id="grnStatApproved" style="color:#6ee7b7;">—</div>
+                    <div class="lbl">Approved</div>
+                </div>
+                <div class="po-stat-chip" style="border:1.5px solid rgba(248,113,113,0.55);">
+                    <div class="val" id="grnStatRejected" style="color:#fca5a5;">—</div>
+                    <div class="lbl">Rejected</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="po-filter-bar">
+            <div class="row align-items-end g-2">
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Status</label>
+                    <select id="lstDdlStatus" class="form-control form-control-sm form-select"></select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">From Date <span class="req">*</span></label>
+                    <input type="date" id="lstTxtFromDate" class="form-control form-control-sm" autocomplete="off" />
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">To Date <span class="req">*</span></label>
+                    <input type="date" id="lstTxtToDate" class="form-control form-control-sm" autocomplete="off" />
+                </div>
+                <div class="col-6 col-md-2 d-flex align-items-end pb-1">
+                    <button type="button" onclick="ShowGRNList()"
+                            style="background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;border-radius:9px;padding:7px 20px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(102,126,234,0.35);transition:all 0.2s;height:32px;white-space:nowrap;"
+                            onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+                        <i class="fa fa-search me-1"></i>Show
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1801,31 +1899,29 @@
                 <i class="fa fa-paperclip me-1"></i>Use <strong>Attachment</strong> on the bar below to add files (same as Payment Entry).
             </p>
             <div class="row g-2 mt-1">
+
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Total Bill Amount</label>
                     <input type="number" id="txtTotalBillAmountManual" class="form-control form-control-sm po-input-amount-right" placeholder="Total Bill Amount" autocomplete="off" min="0" step="any"
                            onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
                 </div>
                 <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Tds Amount</label>
-                    <input type="number" id="txtTDSAmount" class="form-control form-control-sm po-input-amount-right" placeholder="0.00" autocomplete="off" min="0" step="any"
-                           onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
-                </div>
-                <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Other Dedution <span class="req">*</span></label>
+                    <label class="po-field-lbl d-block mb-1">Dedution <span class="req">*</span></label>
                     <input type="number" id="txtDedution" class="form-control form-control-sm po-input-amount-right" placeholder="0.00" autocomplete="off" min="0" step="any"
                            onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
+
                 </div>
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Net Payable <span class="req">*</span></label>
                     <input type="text" id="txtNetPayable" class="form-control form-control-sm po-input-amount-right" placeholder="Net Payable" autocomplete="off" readonly>
+
                 </div>
             </div>
             <div class="row g-2 mt-1">
                 <div class="col-md-12">
-                    <label class="po-field-lbl d-block mb-1">Other Dedution Remark</label>
+                    <label class="po-field-lbl d-block mb-1">Dedution Remark</label>
                     <textarea id="txtDedutionRemark" class="form-control form-control-sm" rows="2"
-                              placeholder="Enter Other Dedution Remark..." maxlength="500"></textarea>
+                              placeholder="Enter Dedution Remark..." maxlength="500"></textarea>
                 </div>
             </div>
         </div>
@@ -1862,7 +1958,7 @@
 
 <!-- ══════════════════════════════════════════════════
      GRN APPROVAL VIEW  (embedded MRN Master Approval)
-     Hidden by default; shown when user clicks "Pending on me"
+     Hidden by default; shown when user clicks "Approval Pending"
 ═══════════════════════════════════════════════════ -->
 <div id="divGRNApprovalView" class="container-fluid mt-3" style="display:none;">
 
@@ -1906,12 +2002,7 @@
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label">Status</label>
-                <select id="gpaDdlStatus" class="form-control form-control-sm form-select">
-                    <option value="A">-- All Status --</option>
-                    <option value="P">Pending</option>
-                    <option value="Y">Approved</option>
-                    <option value="R">Rejected</option>
-                </select>
+                <select id="gpaDdlStatus" class="form-control form-control-sm form-select"></select>
             </div>
             <div class="col-6 col-md-2 d-flex align-items-end mb-2">
                 <button type="button" onclick="LoadPaymentList()" class="btn-gpa-search w-100">
@@ -2212,6 +2303,9 @@
         if (formEl) formEl.style.display = 'none';
         if (floatBar) floatBar.style.display = 'none';
         if (approvalEl) approvalEl.style.display = 'block';
+        if (typeof window.applyMrnApprovalDefaultPendingStatus === 'function') {
+            window.applyMrnApprovalDefaultPendingStatus(true);
+        }
         if (typeof window.reloadMrnApprovalView === 'function') {
             window.reloadMrnApprovalView({});
         } else if (typeof window.refreshMrnApprovalListIfNeeded === 'function') {

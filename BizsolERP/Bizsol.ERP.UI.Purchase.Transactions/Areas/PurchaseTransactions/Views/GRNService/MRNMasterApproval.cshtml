@@ -38,6 +38,9 @@
         border-radius: 12px;
         background: rgba(255, 255, 255, 0.14);
         border: 1.5px solid rgba(255, 255, 255, 0.32);
+        color: inherit;
+        font: inherit;
+        appearance: none;
         transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
     }
     .gpa-header .gpa-stat-chip .val { font-size: 1.15rem; font-weight: 800; line-height: 1.1; color: #fff; }
@@ -49,11 +52,14 @@
     .gpa-header .gpa-stat-chip--pending .val { color: #fde047; }
     .gpa-header .gpa-stat-chip--approved { border-color: rgba(52, 211, 153, 0.75); }
     .gpa-header .gpa-stat-chip--approved .val { color: #6ee7b7; }
-    .gpa-header .gpa-stat-chip--onme { border-color: rgba(167, 139, 250, 0.7); cursor: pointer; }
-    .gpa-header .gpa-stat-chip--onme .val { color: #c4b5fd; }
-    .gpa-header .gpa-stat-chip--onme-active { background: rgba(167,139,250,0.22); border-color: #a78bfa; box-shadow: 0 0 0 2px rgba(167,139,250,0.45); }
-    .gpa-header .gpa-stat-chip--onme-active .val { color: #fff; }
-    .gpa-header .gpa-stat-chip--onme-active .lbl { color: #fff; }
+    .gpa-header .gpa-stat-chip--clickable {
+        cursor: pointer;
+        transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    }
+    .gpa-header .gpa-stat-chip--clickable:hover {
+        background: rgba(255, 255, 255, 0.24);
+        transform: translateY(-1px);
+    }
     .gpa-filter-bar {
         background: #fff;
         border: 1px solid #e2e8f0;
@@ -167,7 +173,8 @@
     .gpa-pay-card-footer {
         padding: 8px 16px 12px;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
         gap: 8px;
         flex-wrap: wrap;
     }
@@ -315,6 +322,29 @@
         cursor:pointer; transition:all 0.2s;
     }
     .btn-gpa-reject-sm:hover { background:#e2e8f0; }
+    .gpa-pay-card-print-btns { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .btn-gpa-print-icon {
+        width:36px; height:32px; border:none; border-radius:8px;
+        display:inline-flex; align-items:center; justify-content:center;
+        cursor:pointer; font-size:0.85rem; color:#fff;
+        transition:transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-gpa-print-icon:hover { transform:translateY(-1px); color:#fff; }
+    .btn-gpa-modal-attach {
+        display:inline-flex; align-items:center; gap:5px;
+        border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(14,165,233,0.35);
+        transition:all 0.2s; cursor:pointer;
+        background:linear-gradient(135deg,#0ea5e9,#0284c7);
+    }
+    .btn-gpa-modal-attach:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(2,132,199,0.45); }
+    .btn-gpa-modal-attach.gpa-attach-has-files {
+        background:linear-gradient(135deg,#16a34a,#15803d);
+        box-shadow:0 3px 10px rgba(22,163,74,0.35);
+    }
+    .btn-gpa-modal-attach.gpa-attach-has-files:hover { box-shadow:0 5px 14px rgba(22,163,74,0.45); }
+    #AttachmentControlmodal { z-index:1080 !important; }
     .btn-gpa-back {
         display: inline-flex; align-items: center; gap: 6px;
         background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #667eea;
@@ -338,7 +368,8 @@
             width: 100%; justify-content: space-between;
         }
         .gpa-info-grid { grid-template-columns: repeat(2, 1fr); }
-        .gpa-pay-card-footer { justify-content: stretch; }
+        .gpa-pay-card-footer { justify-content: stretch; flex-direction: column; align-items: stretch; }
+        .gpa-pay-card-footer .gpa-pay-card-print-btns { width: 100%; justify-content: flex-start; }
         .gpa-pay-card-footer .btn-gpa-card-approve,
         .gpa-pay-card-footer .btn-gpa-card-view { width: 100%; justify-content: center; }
         .btn-gpa-approve, .btn-gpa-reject, .btn-gpa-close { padding: 9px 14px; font-size: 0.8rem; }
@@ -359,14 +390,16 @@
         <small>Review and approve GRN Service entries by approval level</small>
     </div>
     <div class="gpa-stat-chips flex-shrink-0">
-        <div class="gpa-stat-chip gpa-stat-chip--pending" title="Entries not fully approved">
+        <button type="button" class="gpa-stat-chip gpa-stat-chip--pending gpa-stat-chip--clickable"
+                title="Show pending approvals" onclick="ApplyGpaHeaderStatFilter('pending')">
             <div class="val" id="gpaStatPending">—</div>
             <div class="lbl">Pending</div>
-        </div>
-        <div class="gpa-stat-chip gpa-stat-chip--approved" title="Approved or otherwise completed in this list">
+        </button>
+        <button type="button" class="gpa-stat-chip gpa-stat-chip--approved gpa-stat-chip--clickable"
+                title="Show approved entries" onclick="ApplyGpaHeaderStatFilter('approved')">
             <div class="val" id="gpaStatProcessed">—</div>
             <div class="lbl">Approved</div>
-        </div>
+        </button>
         <a onclick="NavigateToGRNService()" class="btn-gpa-back" title="Back to GRN Service list">
             <i class="fa fa-arrow-left"></i>
             <span class="gpa-back-label">Back</span>
@@ -393,8 +426,8 @@
             <label class="form-label">Status</label>
             <select id="gpaDdlStatus" class="form-control form-control-sm form-select">
                 <option value="A">-- All Status --</option>
-                <option value="P">Pending</option>
-                <option value="Y">Approved</option>
+                <option value="Y"selected>Pending</option>
+                <option value="P">Approved</option>
                 <option value="R">Rejected</option>
             </select>
         </div>
@@ -487,6 +520,10 @@
                  style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;">
                 <input type="hidden" id="hfGpaPaymentCode" value="0" />
                 <input type="hidden" id="hfGpaLevelCode" value="0" />
+                <button type="button" id="btnGpaModalAttach" class="btn-gpa-modal-attach"
+                        onclick="OpenMRNApprovalAttachmentFromModal()" title="Attachments">
+                    <i class="fa fa-paperclip"></i>Attachment
+                </button>
                 <button type="button" id="gpaBtnRejectAction" class="btn-gpa-reject"
                         onclick="SubmitApproval('Reject')" style="display:none;">
                     <i class="fa fa-times"></i>Reject
@@ -523,3 +560,5 @@
         </div>
     </div>
 </div>
+
+<div id="MRNApproval_AttachmentControlmodal"></div>
