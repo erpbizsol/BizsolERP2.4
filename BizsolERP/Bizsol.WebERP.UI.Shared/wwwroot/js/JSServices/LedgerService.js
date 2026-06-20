@@ -33,25 +33,38 @@ const LedgerService = {
         );
     },
 
-    /** Open ledger Crystal report in preview (same pattern as VisitorEntry / PurchaseQualityCheck). */
-    PreviewLedgerReport: function PreviewLedgerReport(AccountCodes, FromDate, ToDate, options) {
+    _buildWebLedgerReportQuery: function _buildWebLedgerReportQuery(AccountCodes, FromDate, ToDate, options, extraParams) {
         const authKey = JSON.parse(sessionStorage.getItem('authKey') || '{}');
         const companyCode = authKey.CompanyCode || 0;
         const fd = formatLedgerDate(FromDate);
         const td = formatLedgerDate(ToDate);
         const opts = options || {};
         const yn = (v) => (v ? 'Y' : 'N');
+        const extra = extraParams || {};
 
-        const url = `${UrlService.API_ENDPOINT_CRYSTAL}/WebLedgerReport`
+        let qs = `${UrlService.API_ENDPOINT_CRYSTAL}/WebLedgerReport`
             + `?AccountCodes=${encodeURIComponent(AccountCodes)}`
             + `&FromDate=${encodeURIComponent(fd)}`
             + `&ToDate=${encodeURIComponent(td)}`
             + `&CompanyCode=${encodeURIComponent(companyCode)}`
             + `&ShowNarration=${yn(opts.showNarration)}`
+            + `&ShowEntryNo=${yn(opts.showEntryNo)}`
+            + `&ShowVoucherNo=${yn(opts.showVoucherNo)}`
+            + `&ShowBillNo=${yn(opts.showBillNo)}`
             + `&ShowGSTNo=${yn(opts.showGSTNo)}`
             + `&ShowMonthTotal=${yn(opts.showMonthTotal)}`
             + `&ShowRefNo=${yn(opts.showRefNo)}`;
 
+        Object.keys(extra).forEach(function (key) {
+            qs += `&${encodeURIComponent(key)}=${encodeURIComponent(extra[key])}`;
+        });
+
+        return qs;
+    },
+
+    /** Open ledger Crystal report in preview (same pattern as VisitorEntry / PurchaseQualityCheck). */
+    PreviewLedgerReport: function PreviewLedgerReport(AccountCodes, FromDate, ToDate, options) {
+        const url = LedgerService._buildWebLedgerReportQuery(AccountCodes, FromDate, ToDate, options);
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
             return value;
         });
@@ -59,24 +72,7 @@ const LedgerService = {
 
     /** Open ledger Crystal report for print. */
     PrintLedgerReport: function PrintLedgerReport(AccountCodes, FromDate, ToDate, options) {
-        const authKey = JSON.parse(sessionStorage.getItem('authKey') || '{}');
-        const companyCode = authKey.CompanyCode || 0;
-        const fd = formatLedgerDate(FromDate);
-        const td = formatLedgerDate(ToDate);
-        const opts = options || {};
-        const yn = (v) => (v ? 'Y' : 'N');
-
-        const url = `${UrlService.API_ENDPOINT_CRYSTAL}/WebLedgerReport`
-            + `?AccountCodes=${encodeURIComponent(AccountCodes)}`
-            + `&FromDate=${encodeURIComponent(fd)}`
-            + `&ToDate=${encodeURIComponent(td)}`
-            + `&CompanyCode=${encodeURIComponent(companyCode)}`
-            + `&ShowNarration=${yn(opts.showNarration)}`
-            + `&ShowGSTNo=${yn(opts.showGSTNo)}`
-            + `&ShowMonthTotal=${yn(opts.showMonthTotal)}`
-            + `&ShowRefNo=${yn(opts.showRefNo)}`
-            + `&IsPrint=Y`;
-
+        const url = LedgerService._buildWebLedgerReportQuery(AccountCodes, FromDate, ToDate, options, { IsPrint: 'Y' });
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
             return value;
         });

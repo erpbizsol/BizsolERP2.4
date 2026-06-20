@@ -25,13 +25,18 @@ template.innerHTML = `
 
 :host {
     display: block;
+    position: static;
+    width: 0;
+    height: 0;
+    overflow: visible;
+    z-index: 1056;
 }
 
 .filter-floating-btn {
     position: fixed;
     right: 20px;
-    top: 55px;
-    z-index: 1000;
+    top: calc(var(--fsp-top, 55px) + 12px);
+    z-index: 1056;
     width: 45px;
     height: 45px;
     border-radius: 50%;
@@ -51,22 +56,30 @@ template.innerHTML = `
     box-shadow: 0 4px 10px rgba(0,0,0,0.25);
 }
 
-.filter-floating-btn i {
+.filter-floating-btn i,
+.filter-floating-btn__icon {
     font-size: 18px;
+    width: 18px;
+    height: 18px;
+    display: block;
+    flex-shrink: 0;
 }
 
 .filter-offcanvas {
     position: fixed;
-    top: 0;
+    top: var(--fsp-top, 55px);
     right: -100%;
     width: 400px;
-    height: 100vh;
+    bottom: var(--fsp-bottom, 52px);
+    height: auto;
+    max-height: none;
     background: white;
     box-shadow: -2px 0 8px rgba(0,0,0,0.15);
     transition: right 0.3s ease;
-    z-index: 1055;
+    z-index: 1057;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .filter-offcanvas.show {
@@ -80,7 +93,7 @@ template.innerHTML = `
     width: 100vw;
     height: 100vh;
     background: rgba(0,0,0,0.5);
-    z-index: 1040;
+    z-index: 1056;
     display: none;
 }
 
@@ -95,6 +108,7 @@ template.innerHTML = `
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-shrink: 0;
 }
 
 .offcanvas-title {
@@ -120,7 +134,10 @@ template.innerHTML = `
 .offcanvas-body {
     padding: 20px;
     overflow-y: auto;
-    flex: 1;
+    overflow-x: hidden;
+    flex: 1 1 auto;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
 }
 
 .filter-group {
@@ -147,9 +164,12 @@ template.innerHTML = `
 }
 
 .filter-apply-btn-container {
+    flex-shrink: 0;
     padding: 15px 20px;
-    background: linear-gradient(to top, #ffffff 85%, rgba(255,255,255,0.95) 95%, transparent 100%);
+    padding-bottom: max(15px, env(safe-area-inset-bottom, 0px));
+    background: #fff;
     border-top: 1px solid #eee;
+    box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
 }
 
 .filter-apply-btn {
@@ -204,7 +224,7 @@ template.innerHTML = `
 }
 
 .multi-checkbox-list {
-    max-height: 150px;
+    max-height: min(220px, 32vh);
     overflow: auto;
     border: 1px solid #e6e6e6;
     padding: 6px;
@@ -225,24 +245,143 @@ template.innerHTML = `
     margin-right: 6px;
 }
 
+.search-select-root {
+    position: relative;
+    font-size: 13px;
+}
+
+.search-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    box-sizing: border-box;
+    min-height: 36px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-select-trigger:hover,
+.search-select-root.is-open .search-select-trigger {
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
+}
+
+.search-select-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #333;
+}
+
+.search-select-label.is-placeholder {
+    color: #999;
+}
+
+.search-select-trigger i {
+    font-size: 11px;
+    color: #888;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.search-select-root.is-open .search-select-trigger i {
+    transform: rotate(180deg);
+}
+
+.search-select-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 1060;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+}
+
+.search-select-search {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+}
+
+.search-select-search input {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.search-select-search input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
+}
+
+.search-select-list {
+    max-height: min(240px, 35vh);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.search-select-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #333;
+    line-height: 1.35;
+    transition: background 0.15s ease;
+}
+
+.search-select-option:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.search-select-option.is-selected {
+    background: rgba(102, 126, 234, 0.15);
+    font-weight: 600;
+    color: #5a67d8;
+}
+
+.search-select-empty {
+    padding: 12px;
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+}
+
 /* Mobile responsive adjustments */
 @media (max-width: 768px) {
     .filter-floating-btn {
         right: 16px;
         top: auto;
-        bottom: 24px;
+        bottom: calc(var(--fsp-bottom, 88px) + 12px);
         width: 50px;
         height: 50px;
-        z-index: 1040;
+        z-index: 1056;
     }
     
-    .filter-floating-btn i {
+    .filter-floating-btn i,
+    .filter-floating-btn__icon {
         font-size: 20px;
+        width: 20px;
+        height: 20px;
     }
     
     .filter-offcanvas {
         width: 90% !important;
         max-width: 380px;
+        bottom: var(--fsp-bottom, 88px);
     }
 }
 
@@ -250,13 +389,16 @@ template.innerHTML = `
 @media (max-width: 576px) {
     .filter-floating-btn {
         right: 12px;
-        bottom: 20px;
+        bottom: calc(var(--fsp-bottom, 88px) + 10px);
         width: 48px;
         height: 48px;
     }
     
-    .filter-floating-btn i {
+    .filter-floating-btn i,
+    .filter-floating-btn__icon {
         font-size: 18px;
+        width: 18px;
+        height: 18px;
     }
     
     .filter-offcanvas {
@@ -269,12 +411,15 @@ template.innerHTML = `
     .filter-floating-btn {
         width: 40px;
         height: 40px;
-        bottom: 16px;
+        bottom: calc(var(--fsp-bottom, 88px) + 8px);
         right: 12px;
     }
     
-    .filter-floating-btn i {
+    .filter-floating-btn i,
+    .filter-floating-btn__icon {
         font-size: 16px;
+        width: 16px;
+        height: 16px;
     }
 }
 </style>
@@ -336,6 +481,8 @@ class FilterSidePanelControl extends HTMLElement {
     }
     
     connectedCallback() {
+        this._portalToBody();
+
         // Check attributes
         const showButton = this.getAttribute('show-button');
         if (showButton !== null && showButton !== 'true') {
@@ -373,6 +520,13 @@ class FilterSidePanelControl extends HTMLElement {
         this._applyButton.addEventListener('click', this._handleApply);
         this._closeButton.addEventListener('click', this._closePanel);
         this._offcanvasBackdrop.addEventListener('click', this._handleBackdropClick);
+
+        this._syncPanelBounds();
+        this._boundsResizeHandler = () => this._syncPanelBounds();
+        window.addEventListener('resize', this._boundsResizeHandler);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', this._boundsResizeHandler);
+        }
         
         // IMPORTANT: Initialize automatic flatpickr cleanup handlers
         // This prevents black screen issues on mobile without requiring manual setup
@@ -399,6 +553,35 @@ class FilterSidePanelControl extends HTMLElement {
                 document.removeEventListener('click', this._cleanupHandlers.documentClick, true);
             }
         }
+        if (this._boundsResizeHandler) {
+            window.removeEventListener('resize', this._boundsResizeHandler);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', this._boundsResizeHandler);
+            }
+        }
+    }
+
+    _portalToBody() {
+        try {
+            if (document.body && this.parentElement !== document.body) {
+                document.body.appendChild(this);
+            }
+        } catch (e) {
+            console.warn('FilterSidePanelControl: could not portal to document.body', e);
+        }
+    }
+
+    _syncPanelBounds() {
+        const header = document.querySelector('header.modern-header');
+        const footer = document.querySelector('footer.modern-footer');
+        const mobileNav = document.querySelector('.mobile-bottom-nav');
+        const headerH = header ? Math.ceil(header.getBoundingClientRect().height) : 55;
+        let footerH = footer ? Math.ceil(footer.getBoundingClientRect().height) : 52;
+        if (mobileNav && window.getComputedStyle(mobileNav).display !== 'none') {
+            footerH += Math.ceil(mobileNav.getBoundingClientRect().height);
+        }
+        this.style.setProperty('--fsp-top', headerH + 'px');
+        this.style.setProperty('--fsp-bottom', footerH + 'px');
     }
     
     /**
@@ -471,8 +654,10 @@ class FilterSidePanelControl extends HTMLElement {
     
     _renderFloatingButton() {
         this._floatingButtonContainer.innerHTML = `
-            <button class="filter-floating-btn" type="button" title="Filters">
-                <i class="fa-solid fa-filter"></i>
+            <button class="filter-floating-btn" type="button" title="Filters" aria-label="Open filters">
+                <svg class="filter-floating-btn__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M3.9 54.9C10.5 40.9 24.6 32 40 32H472c15.4 0 29.5 8.9 36.1 22.9s4.6 30.5-5.2 42.5L320 320.9V448c0 12.1-6.8 23.2-17.7 28.6s-23.8 4.3-33.5-3.4l-64-48C206.9 419.8 200 409.4 200 398.1V320.9L5.2 97.5C-4.6 85.5-3.1 68.9 3.9 54.9z"/>
+                </svg>
             </button>
         `;
         const btn = this._floatingButtonContainer.querySelector('.filter-floating-btn');
@@ -484,6 +669,7 @@ class FilterSidePanelControl extends HTMLElement {
     _openPanel() {
         // Clean up any existing overlays before opening panel
         cleanupFlatpickrOverlay();
+        this._syncPanelBounds();
         
         this._offcanvasBackdrop.classList.add('show');
         this._offcanvasPanel.classList.add('show');
@@ -496,6 +682,12 @@ class FilterSidePanelControl extends HTMLElement {
     }
     
     _closePanel() {
+        this._shadow.querySelectorAll('.search-select-root.is-open').forEach(wrapper => {
+            if (typeof wrapper._forceClose === 'function') {
+                wrapper._forceClose();
+            }
+        });
+
         this._offcanvasBackdrop.classList.remove('show');
         this._offcanvasPanel.classList.remove('show');
         document.body.style.overflow = '';
@@ -690,19 +882,187 @@ class FilterSidePanelControl extends HTMLElement {
     }
     
     _renderSelectFilter(container, filter) {
-        const select = document.createElement('select');
-        select.id = filter.id;
-        select.className = 'form-control form-control-sm box_border';
-        
+        const wrapper = document.createElement('div');
+        wrapper.id = filter.id;
+        wrapper.className = 'search-select-root';
+
+        const placeholder = filter.placeholder || 'Select...';
         const data = filter.data || [];
+        const selectedValue = filter.selectedValue != null ? String(filter.selectedValue) : '';
+        const selectedItem = data.find(item => String(item.Code) === selectedValue)
+            || (selectedValue === '' && data.length > 0 ? data[0] : null);
+        const initialValue = selectedItem ? String(selectedItem.Code) : '';
+        const initialText = selectedItem ? selectedItem.Desp : '';
+
+        wrapper.innerHTML = `
+            <input type="hidden" id="${filter.id}_value" value="${escapeHtml(initialValue)}" />
+            <div class="search-select-trigger" role="combobox" aria-expanded="false" tabindex="0">
+                <span class="search-select-label ${selectedItem ? '' : 'is-placeholder'}">${escapeHtml(selectedItem ? initialText : placeholder)}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div class="search-select-dropdown" hidden>
+                <div class="search-select-search">
+                    <input type="text" placeholder="Search..." autocomplete="off" />
+                </div>
+                <div class="search-select-list"></div>
+            </div>
+        `;
+
+        container.appendChild(wrapper);
+        this._populateSearchSelectList(wrapper, filter);
+        this._attachSearchSelectEvents(wrapper, filter, placeholder);
+    }
+
+    _populateSearchSelectList(wrapper, filter) {
+        const listEl = wrapper.querySelector('.search-select-list');
+        const hiddenInput = wrapper.querySelector(`#${filter.id}_value`);
+        const selectedValue = hiddenInput ? hiddenInput.value : '';
+        const data = filter.data || [];
+
+        listEl.innerHTML = '';
+
+        if (data.length === 0) {
+            listEl.innerHTML = '<div class="search-select-empty">No options available</div>';
+            return;
+        }
+
         data.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.Code;
+            const option = document.createElement('div');
+            option.className = 'search-select-option';
+            option.dataset.value = item.Code;
+            option.dataset.text = item.Desp;
             option.textContent = item.Desp;
-            select.appendChild(option);
+            if (String(item.Code) === String(selectedValue)) {
+                option.classList.add('is-selected');
+            }
+            listEl.appendChild(option);
         });
-        
-        container.appendChild(select);
+    }
+
+    _attachSearchSelectEvents(wrapper, filter, placeholder) {
+        const trigger = wrapper.querySelector('.search-select-trigger');
+        const dropdown = wrapper.querySelector('.search-select-dropdown');
+        const searchInput = wrapper.querySelector('.search-select-search input');
+        const labelEl = wrapper.querySelector('.search-select-label');
+        const hiddenInput = wrapper.querySelector(`#${filter.id}_value`);
+        const listEl = wrapper.querySelector('.search-select-list');
+
+        const closeDropdown = () => {
+            wrapper.classList.remove('is-open');
+            dropdown.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+            if (wrapper._closeOnOutside) {
+                this._shadow.removeEventListener('click', wrapper._closeOnOutside);
+                document.removeEventListener('click', wrapper._closeOnOutside);
+                wrapper._closeOnOutside = null;
+            }
+        };
+
+        const filterOptions = (term) => {
+            const normalizedTerm = term.trim().toLowerCase();
+            const options = listEl.querySelectorAll('.search-select-option');
+            let visibleCount = 0;
+
+            options.forEach(option => {
+                const text = (option.dataset.text || '').toLowerCase();
+                const isVisible = normalizedTerm === '' || text.includes(normalizedTerm);
+                option.style.display = isVisible ? '' : 'none';
+                if (isVisible) visibleCount++;
+            });
+
+            let emptyEl = listEl.querySelector('.search-select-empty');
+            if (visibleCount === 0) {
+                if (!emptyEl) {
+                    emptyEl = document.createElement('div');
+                    emptyEl.className = 'search-select-empty';
+                    emptyEl.textContent = 'No matches found';
+                    listEl.appendChild(emptyEl);
+                }
+                emptyEl.style.display = '';
+            } else if (emptyEl) {
+                emptyEl.style.display = 'none';
+            }
+        };
+
+        const selectOption = (option) => {
+            hiddenInput.value = option.dataset.value;
+            labelEl.textContent = option.dataset.text;
+            labelEl.classList.remove('is-placeholder');
+            listEl.querySelectorAll('.search-select-option').forEach(item => item.classList.remove('is-selected'));
+            option.classList.add('is-selected');
+            closeDropdown();
+        };
+
+        const openDropdown = () => {
+            this._shadow.querySelectorAll('.search-select-root.is-open').forEach(openWrapper => {
+                if (openWrapper !== wrapper && typeof openWrapper._forceClose === 'function') {
+                    openWrapper._forceClose();
+                }
+            });
+
+            wrapper.classList.add('is-open');
+            dropdown.hidden = false;
+            trigger.setAttribute('aria-expanded', 'true');
+            searchInput.value = '';
+            filterOptions('');
+
+            wrapper._closeOnOutside = (e) => {
+                if (!wrapper.contains(e.target)) {
+                    closeDropdown();
+                }
+            };
+            setTimeout(() => {
+                this._shadow.addEventListener('click', wrapper._closeOnOutside);
+                document.addEventListener('click', wrapper._closeOnOutside);
+                searchInput.focus();
+            }, 0);
+        };
+
+        wrapper._forceClose = closeDropdown;
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (wrapper.classList.contains('is-open')) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        trigger.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (wrapper.classList.contains('is-open')) {
+                    closeDropdown();
+                } else {
+                    openDropdown();
+                }
+            } else if (e.key === 'Escape') {
+                closeDropdown();
+            }
+        });
+
+        searchInput.addEventListener('input', (e) => filterOptions(e.target.value));
+        searchInput.addEventListener('click', (e) => e.stopPropagation());
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDropdown();
+            }
+        });
+
+        listEl.addEventListener('click', (e) => {
+            const option = e.target.closest('.search-select-option');
+            if (option && option.style.display !== 'none') {
+                selectOption(option);
+            }
+        });
+
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+
+        if (!hiddenInput.value && (filter.data || []).length === 0) {
+            labelEl.textContent = placeholder;
+            labelEl.classList.add('is-placeholder');
+        }
     }
     
     _renderTextFilter(container, filter) {
@@ -785,9 +1145,9 @@ class FilterSidePanelControl extends HTMLElement {
                     break;
                     
                 case 'select':
-                    const selectEl = this._shadow.getElementById(filter.id);
-                    if (selectEl) {
-                        values[filter.id] = selectEl.value;
+                    const hiddenSelectValue = this._shadow.getElementById(`${filter.id}_value`);
+                    if (hiddenSelectValue) {
+                        values[filter.id] = hiddenSelectValue.value;
                         console.log(`Select value for ${filter.id}:`, values[filter.id]);
                     }
                     break;
@@ -826,7 +1186,13 @@ class FilterSidePanelControl extends HTMLElement {
             return;
         }
         
+        const existingValueEl = this._shadow.getElementById(`${filterId}_value`);
+        const preservedValue = existingValueEl ? existingValueEl.value : null;
+
         filter.data = data;
+        if (preservedValue) {
+            filter.selectedValue = preservedValue;
+        }
         
         // Re-render only this filter
         const filterGroup = this._shadow.getElementById(`filter-group-${filterId}`);
