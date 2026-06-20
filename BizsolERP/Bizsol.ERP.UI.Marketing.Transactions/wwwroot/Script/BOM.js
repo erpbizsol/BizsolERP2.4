@@ -282,7 +282,9 @@ function bindBOMGrid(list) {
 function filterBOMs(query) {
     if (!query) { bindBOMGrid(G_BOMList); return; }
     const filtered = (G_BOMList || []).filter(function (item) {
-        return (item.ProjectName || item.ProjectDesp || '').toLowerCase().includes(query);
+        const projectName = (item.ProjectName || item.ProjectDesp || '').toLowerCase();
+        const subProjectName = (item.SubProjectName || item.SubProjectDesp || '').toLowerCase();
+        return projectName.includes(query) || subProjectName.includes(query);
     });
     bindBOMGrid(filtered);
 }
