@@ -1172,6 +1172,11 @@ function UpdateGpaStatChips() {
     if (elOnMe) {
         elOnMe.textContent = source.length === 0 ? '—' : String(onMe);
     }
+    try {
+        sessionStorage.setItem('bizsol_gpaApprovalPendingOnMeCount', String(pending));
+    } catch (e) {
+        /* ignore */
+    }
 }
 
 function RenderPaymentCards() {
