@@ -1912,6 +1912,12 @@
 
                 </div>
                 <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">TDS Amount</label>
+                    <input type="number" id="txtTDSAmount" class="form-control form-control-sm po-input-amount-right" placeholder="0.00" autocomplete="off" min="0" step="any"
+                           onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
+
+                </div>
+                <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Net Payable <span class="req">*</span></label>
                     <input type="text" id="txtNetPayable" class="form-control form-control-sm po-input-amount-right" placeholder="Net Payable" autocomplete="off" readonly>
 
