@@ -413,7 +413,14 @@ function getFreqDateMode(freqCode) {
         .toLowerCase();
     if (!s) return 'date';
     if (s.indexOf('daily') >= 0) return 'none';
-    if (s.indexOf('as and when') >= 0 || s.indexOf('when required') >= 0) return 'none';
+    if (
+        s.indexOf('as and when') >= 0 ||
+        s.indexOf('as & when') >= 0 ||
+        s.indexOf('when required') >= 0 ||
+        s.indexOf('when req') >= 0
+    ) {
+        return 'none';
+    }
     if (s.indexOf('week') >= 0) return 'weekday';
     if (s.indexOf('quarter') >= 0) return 'date';
     if (s.indexOf('half') >= 0 && s.indexOf('year') >= 0) return 'date';
@@ -423,8 +430,29 @@ function getFreqDateMode(freqCode) {
     return 'date';
 }
 
+/** Normalize monthly day values (1–31) whether stored as "5", "05", or yyyy-mm-dd. */
+function normalizeMonthDay(val) {
+    var text = String(val || '').trim();
+    if (!text) return '';
+    if (/^\d{1,2}$/.test(text)) {
+        var n = parseInt(text, 10);
+        return n >= 1 && n <= 31 ? String(n) : '';
+    }
+    if (text.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(text)) {
+        var day = parseInt(text.substring(8, 10), 10);
+        return day >= 1 && day <= 31 ? String(day) : '';
+    }
+    return '';
+}
+
+function isSameMonthDay(selectedVal, optionVal) {
+    var a = parseInt(normalizeMonthDay(selectedVal) || '0', 10);
+    var b = parseInt(normalizeMonthDay(optionVal) || '0', 10);
+    return a > 0 && a === b;
+}
+
 function buildFixedDateOptions(count, labels, selectedVal) {
-    var sel = String(selectedVal || '').trim();
+    var sel = normalizeMonthDay(selectedVal) || String(selectedVal || '').trim();
     var opts = '<option value="">-- Date --</option>';
     for (var i = 0; i < count; i++) {
         var val = labels && labels[i] != null ? String(labels[i]) : String(i + 1);
@@ -433,7 +461,7 @@ function buildFixedDateOptions(count, labels, selectedVal) {
             '<option value="' +
             escapeHtml(val) +
             '"' +
-            (sel === val || sel === label ? ' selected' : '') +
+            (isSameMonthDay(sel, val) || sel === label ? ' selected' : '') +
             '>' +
             escapeHtml(label) +
             '</option>';
@@ -653,14 +681,8 @@ function buildTaskDateCell(mode, dateVal) {
         return '<input type="text" class="tlm-task-date" data-date-mode="none" value="" placeholder="—" disabled />';
     }
     if (mode === 'month') {
-        var selDay = '';
-        if (/^\d{1,2}$/.test(raw)) selDay = String(parseInt(raw, 10)).padStart(2, '0');
-        else if (raw.length >= 10) selDay = raw.substring(8, 10);
-        var dayOpts = buildFixedDateOptions(
-            31,
-            null,
-            selDay
-        );
+        var selDay = normalizeMonthDay(raw);
+        var dayOpts = buildFixedDateOptions(31, null, selDay);
         return '<select class="tlm-task-date" data-date-mode="month">' + dayOpts + '</select>';
     }
     if (mode === 'weekday') {
@@ -725,7 +747,7 @@ function readTaskRowDate($tr) {
     if (mode === 'none') return '';
     if (mode === 'month') {
         if (!raw) return '';
-        return raw;
+        return normalizeMonthDay(raw) || raw;
     }
     if (mode === 'weekday') {
         if (raw === '') return '';
@@ -756,11 +778,21 @@ function findTaskDateCellTd($tr) {
 }
 
 function rebuildRowDateCell($tr) {
+    var idx = parseInt($tr.attr('data-row-idx'), 10);
+    if (isFinite(idx) && G_TLM_TaskRows[idx]) {
+        G_TLM_TaskRows[idx].Date = readTaskRowDate($tr);
+    }
     var freqCode = $tr.find('.tlm-task-freq').val() || '';
     var mode = getFreqDateMode(freqCode);
-    var currentDate = readTaskRowDate($tr);
+    var currentDate =
+        isFinite(idx) && G_TLM_TaskRows[idx] && G_TLM_TaskRows[idx].Date
+            ? G_TLM_TaskRows[idx].Date
+            : readTaskRowDate($tr);
     findTaskDateCellTd($tr).html(buildTaskDateCell(mode, currentDate));
     applyTaskRowDateField($tr);
+    if (isFinite(idx) && G_TLM_TaskRows[idx]) {
+        G_TLM_TaskRows[idx].Date = readTaskRowDate($tr);
+    }
     updateDateColumnHeader();
 }
 
@@ -1375,9 +1407,16 @@ function refreshTaskGridIfDetailOpen() {
     if (!$('#tlmDetailPanel').is(':visible') || !G_TLM_TaskRows.length) return;
     syncTaskRowsFromDom();
     G_TLM_TaskRows = G_TLM_TaskRows.map(function (row) {
-        return newTaskRow(row);
+        var refreshed = newTaskRow(row);
+        return Object.assign({}, refreshed, {
+            _existingRow: row._existingRow,
+            _fromCopy: row._fromCopy,
+            _editSnapshot: row._editSnapshot,
+            _dirty: row._dirty,
+        });
     });
     renderTaskGrid();
+    rebaselineEditSnapshots();
 }
 
 function applyFreqList(rows) {
@@ -1741,6 +1780,10 @@ function normalizeTaskDateForBind(rawDate, dateMode) {
         return iso || (text.length >= 10 ? text.substring(0, 10) : text);
     }
 
+    if (dateMode === 'month') {
+        return normalizeMonthDay(text) || text;
+    }
+
     return text;
 }
 
@@ -1891,7 +1934,7 @@ function findDuplicateTaskInRows(rows) {
 }
 
 function findDuplicateTaskAgainstSaved(rows, emp, finYear) {
-    var excludeCodes = getTaskRowExcludeCodes(rows);
+    var excludeCodes = getTaskRowExcludeCodes(G_TLM_TaskRows.length ? G_TLM_TaskRows : rows);
     var savedKeys = getSavedTaskKeys(emp, finYear, excludeCodes);
     for (var i = 0; i < rows.length; i++) {
         var task = (rows[i].Task || '').trim();
@@ -1909,11 +1952,84 @@ function isTaskListEditSaveMode() {
     return headerCode > 0 && G_TLM_DetailMode === 'edit';
 }
 
-function shouldSkipExistingTasksOnSave() {
-    return G_TLM_SkipExistingTasksOnSave || isTaskListEditSaveMode();
+function normalizeRowDateForCompare(freqCode, dateVal) {
+    var mode = getFreqDateMode(freqCode);
+    var date = dateVal != null ? String(dateVal).trim() : '';
+    if (mode === 'none') return '';
+    if (mode === 'month') return normalizeMonthDay(date) || date;
+    if (mode === 'weekday') {
+        if (!date) return '';
+        var byVal = TLM_WEEKDAYS.find(function (x) {
+            return x.value === date;
+        });
+        if (byVal) return byVal.label;
+        var byLabel = TLM_WEEKDAYS.find(function (x) {
+            return x.label.toLowerCase() === date.toLowerCase();
+        });
+        return byLabel ? byLabel.label : date;
+    }
+    if (mode === 'quarter' || mode === 'halfyear' || mode === 'yearly') {
+        var parsed = parsePeriodDateStorage(date);
+        return serializePeriodDateMap(parsed.map || {}) || date;
+    }
+    if (isIsoDate(date)) return date;
+    return toBindableIsoDate(date) || date;
 }
 
-/** Copy/Edit: skip tasks already in DB; save only newly added rows. */
+function isExistingEditRow(row) {
+    return !!(row && (row._existingRow || parseRowCode(row) > 0));
+}
+
+function markTaskRowDirty($trOrIdx) {
+    if (G_TLM_DetailMode === 'view') return;
+    var idx =
+        typeof $trOrIdx === 'number'
+            ? $trOrIdx
+            : parseInt($($trOrIdx).closest('tr').attr('data-row-idx'), 10);
+    if (!isFinite(idx) || !G_TLM_TaskRows[idx]) return;
+    G_TLM_TaskRows[idx]._dirty = true;
+}
+
+/** After grid render/normalize, store baseline for change detection (edit mode). */
+function rebaselineEditSnapshots() {
+    if (!isTaskListEditSaveMode()) return;
+    syncTaskRowsFromDom();
+    G_TLM_TaskRows.forEach(function (row) {
+        if (isExistingEditRow(row) && !row._dirty) {
+            row._existingRow = true;
+            row._editSnapshot = snapshotTaskRowForEdit(row);
+        }
+    });
+}
+
+function snapshotTaskRowForEdit(row) {
+    var freqCode = row.FrequencyMaster_Code != null ? String(row.FrequencyMaster_Code) : '';
+    return {
+        Code: parseRowCode(row),
+        Task: normalizeTaskKey(row.Task),
+        Active: normalizeActiveFlag(row.Active),
+        FrequencyMaster_Code: freqCode,
+        Date: normalizeRowDateForCompare(freqCode, row.Date),
+    };
+}
+
+function hasExistingRowEditableChanges(row) {
+    if (!row) return false;
+    if (row._dirty) return true;
+    if (!row._editSnapshot) return isExistingEditRow(row);
+    var freqCode = row.FrequencyMaster_Code != null ? String(row.FrequencyMaster_Code) : '';
+    var snap = row._editSnapshot;
+    if (normalizeTaskKey(row.Task) !== snap.Task) return true;
+    if (String(freqCode) !== String(snap.FrequencyMaster_Code || '')) return true;
+    if (normalizeActiveFlag(row.Active) !== snap.Active) return true;
+    return normalizeRowDateForCompare(freqCode, row.Date) !== snap.Date;
+}
+
+function shouldSkipExistingTasksOnSave() {
+    return G_TLM_SkipExistingTasksOnSave;
+}
+
+/** Edit: save all existing rows + new rows. Copy: skip rows already in DB. */
 function getRowsToSaveForCurrentForm() {
     syncTaskRowsFromDom();
     var emp = getDetailEmployeeCode();
@@ -1928,7 +2044,7 @@ function getRowsToSaveForCurrentForm() {
         if (!key) return false;
 
         if (isEditSave) {
-            if (row._existingRow) return false;
+            if (isExistingEditRow(row)) return true;
             if (savedKeys[key]) return false;
             return true;
         }
@@ -2173,6 +2289,63 @@ function warnDuplicateTaskInput($input) {
     }
 }
 
+function removeTaskFromCaches(transCode) {
+    var code = parseInt(transCode, 10) || 0;
+    if (!code) return;
+    G_TLM_TransactionRows = (G_TLM_TransactionRows || []).filter(function (r) {
+        return parseRowCode(r) !== code;
+    });
+}
+
+function parseDeleteApiResult(res) {
+    var root = firstRecord(res);
+    if (!root || typeof root !== 'object') root = res || {};
+    var statusVal = root.Status != null ? root.Status : root.status;
+    var msgVal = String(root.Msg || root.msg || root.Message || root.message || '').trim();
+    return {
+        ok: statusVal === 'Y' || statusVal === true,
+        msg: msgVal,
+    };
+}
+
+function deleteTaskTransactionRow(transCode, reason) {
+    return TaskListMasterService.DeleteTaskListMaster(transCode, reason || 'Removed from task list').then(function (res) {
+        return parseDeleteApiResult(res);
+    });
+}
+
+function removeTaskGridRow(idx) {
+    syncTaskRowsFromDom();
+    if (!isFinite(idx) || idx < 0 || idx >= G_TLM_TaskRows.length) return;
+
+    var row = G_TLM_TaskRows[idx];
+    var transCode = parseRowCode(row);
+
+    function finishRemove() {
+        G_TLM_TaskRows.splice(idx, 1);
+        if (transCode) removeTaskFromCaches(transCode);
+        renderTaskGrid();
+    }
+
+    if (!transCode) {
+        finishRemove();
+        return;
+    }
+
+    deleteTaskTransactionRow(transCode)
+        .then(function (parsed) {
+            if (parsed.ok) {
+                finishRemove();
+                if (typeof toastr !== 'undefined') toastr.success(parsed.msg || 'Task deleted.');
+            } else if (typeof toastr !== 'undefined') {
+                toastr.error(parsed.msg || 'Delete failed.');
+            }
+        })
+        .catch(function () {
+            if (typeof toastr !== 'undefined') toastr.error('Delete request failed.');
+        });
+}
+
 function syncTaskRowsFromDom() {
     var rows = [];
     $('#tbodyTaskEntry tr').each(function (domIdx) {
@@ -2182,13 +2355,15 @@ function syncTaskRowsFromDom() {
         var idx = isFinite(idxAttr) ? idxAttr : domIdx;
         var existing = G_TLM_TaskRows[idx] || newTaskRow();
         var freqCode = $tr.find('.tlm-task-freq').val() || resolveFreqCode(existing);
-        rows.push({
-            Code: parseRowCode(existing),
-            Task: ($tr.find('.tlm-task-name').val() || '').trim(),
-            FrequencyMaster_Code: freqCode,
-            Active: $tr.find('.tlm-task-status').val() || 'Y',
-            Date: readTaskRowDate($tr),
-        });
+        rows.push(
+            Object.assign({}, existing, {
+                Code: parseRowCode(existing),
+                Task: ($tr.find('.tlm-task-name').val() || '').trim(),
+                FrequencyMaster_Code: freqCode,
+                Active: $tr.find('.tlm-task-status').val() || 'Y',
+                Date: readTaskRowDate($tr),
+            })
+        );
     });
     G_TLM_TaskRows = rows;
 }
@@ -2457,9 +2632,11 @@ function applyRecordsToForm(rows, headerOverride) {
             var transCode = parseRowCode(r);
             if (transCode) row.Code = transCode;
             row._existingRow = true;
+            row._dirty = false;
             return row;
         });
         renderTaskGrid();
+        rebaselineEditSnapshots();
         bindEmployeeDropdown(G_TLM_UserList, emp, header);
     });
 }
@@ -2533,7 +2710,7 @@ function validateTaskRows(rowsOptional) {
     var emp = getDetailEmployeeCode();
     var finYear = ($('#txtFinYear').val() || getFinancialYear()).trim();
 
-    var gridDup = findDuplicateTaskInRows(rows);
+    var gridDup = findDuplicateTaskInRows(G_TLM_TaskRows);
     if (gridDup) {
         if (typeof toastr !== 'undefined') {
             toastr.warning(
@@ -2650,6 +2827,9 @@ async function saveTaskRowsSequentially(rows, index, skippedExistingCount) {
         }
         var savedCode = parsed.code || parseRowCode(row);
         row.Code = savedCode;
+        row._existingRow = true;
+        row._dirty = false;
+        row._editSnapshot = snapshotTaskRowForEdit(row);
         addSavedTaskToSourceRows(row, savedCode);
         savedCount += 1;
     }
@@ -2662,7 +2842,7 @@ async function saveTaskRowsSequentially(rows, index, skippedExistingCount) {
                 savedCount + ' task(s) saved. ' + skippedExisting + ' existing task(s) skipped.'
             );
         } else if (savedCount) {
-            toastr.success('Saved successfully.');
+            toastr.success(isTaskListEditSaveMode() ? 'Changes saved successfully.' : 'Saved successfully.');
         } else if (skippedExisting) {
             toastr.warning('All tasks already exist for this employee and fin year. Nothing new to save.');
         }
@@ -2672,13 +2852,13 @@ async function saveTaskRowsSequentially(rows, index, skippedExistingCount) {
 
 function saveTaskList() {
     var currentCode = parseInt($('#hfTaskListMaster_Code').val() || '0', 10) || 0;
-    //var optionName = currentCode > 0 ? 'Edit' : 'New';
+    var optionName = currentCode > 0 ? 'Edit' : 'New';
 
-    //MenuService.CheckModuleOptionRight(TLM_MODULE_NAME, optionName, 'Y', getFinancialYear()).then(function (response) {
-    //    if (!response || response.CheckModuleOptionRight === 'N') {
-    //        if (typeof toastr !== 'undefined') toastr.error((response && response.Msg) || 'Permission denied.');
-    //        return;
-    //    }
+    MenuService.CheckModuleOptionRight(TLM_MODULE_NAME, optionName, 'Y', getFinancialYear()).then(function (response) {
+        if (!response || response.CheckModuleOptionRight === 'N') {
+            if (typeof toastr !== 'undefined') toastr.error((response && response.Msg) || 'Permission denied.');
+            return;
+        }
 
         var emp = getDetailEmployeeCode();
         if (!emp) {
@@ -2690,7 +2870,7 @@ function saveTaskList() {
         }
 
         saveTaskListWithFreshData();
-    /*});*/
+    });
 }
 
 function saveTaskListWithFreshData() {
@@ -2720,8 +2900,8 @@ function saveTaskListWithFreshData() {
 
             if (!rowsToSave.length) {
                 if (typeof toastr !== 'undefined') {
-                    if (skippedExisting && isTaskListEditSaveMode()) {
-                        toastr.warning('No new task to save. Use Add Task and enter a new task name.');
+                    if (isTaskListEditSaveMode()) {
+                        toastr.warning('Please add at least one task with a name to save.');
                     } else if (skippedExisting) {
                         toastr.warning(
                             'All tasks already exist for this employee and fin year. Add a new task to save.'
@@ -2870,38 +3050,38 @@ function openDetailForLoad(code, mode) {
 }
 
 function TLM_OpenView(code) {
-    //MenuService.CheckModuleOptionRight(TLM_MODULE_NAME, 'View', 'Y', getFinancialYear()).then(function (response) {
-    //    if (!response || response.CheckModuleOptionRight === 'N') {
-    //        if (typeof toastr !== 'undefined') toastr.error((response && response.Msg) || 'Permission denied.');
-    //        return;
-    //    }
+    MenuService.CheckModuleOptionRight(TLM_MODULE_NAME, 'View', 'Y', getFinancialYear()).then(function (response) {
+        if (!response || response.CheckModuleOptionRight === 'N') {
+            if (typeof toastr !== 'undefined') toastr.error((response && response.Msg) || 'Permission denied.');
+            return;
+        }
         openDetailForLoad(code, 'view');
-   /* });*/
+    });
 }
 
 function TLM_OpenEdit(code) {
-    //MenuService.CheckModuleOptionRight(TLM_MODULE_NAME, 'Edit', 'Y', getFinancialYear()).then(function (response) {
-    //    if (!response || response.CheckModuleOptionRight === 'N') {
-    //        if (typeof toastr !== 'undefined') toastr.error((response && response.Msg) || 'Permission denied.');
-    //        return;
-    //    }
+    MenuService.CheckModuleOptionRight(TLM_MODULE_NAME, 'Edit', 'Y', getFinancialYear()).then(function (response) {
+        if (!response || response.CheckModuleOptionRight === 'N') {
+            if (typeof toastr !== 'undefined') toastr.error((response && response.Msg) || 'Permission denied.');
+            return;
+        }
         openDetailForLoad(code, 'edit');
-    /*});*/
+    });
 }
 
 function TLM_OpenDelete(code) {
-    //MenuService.CheckModuleOptionRight(TLM_MODULE_NAME, 'Delete', 'Y', getFinancialYear()).then(function (response) {
-    //    if (!response || response.CheckModuleOptionRight === 'N') {
-    //        if (typeof toastr !== 'undefined') toastr.error((response && response.Msg) || 'Permission denied.');
-    //        return;
-    //    }
+    MenuService.CheckModuleOptionRight(TLM_MODULE_NAME, 'Delete', 'Y', getFinancialYear()).then(function (response) {
+        if (!response || response.CheckModuleOptionRight === 'N') {
+            if (typeof toastr !== 'undefined') toastr.error((response && response.Msg) || 'Permission denied.');
+            return;
+        }
         $('#hfTaskListDeleteCode').val(code);
         $('#txtTaskListDeleteRemark').val('');
         showModal('dvTaskListDeleteModal');
         setTimeout(function () {
             $('#txtTaskListDeleteRemark').focus();
         }, 300);
-    /*});*/
+    });
 }
 
 function confirmTaskListDelete() {
@@ -2951,11 +3131,11 @@ $(document).ready(function () {
     });
 
     $('#btnCreateTaskList').on('click', function () {
-        //MenuService.CheckModuleOptionRight(TLM_MODULE_NAME, 'New', 'Y', getFinancialYear()).then(function (response) {
-        //    if (!response || response.CheckModuleOptionRight === 'N') {
-        //        if (typeof toastr !== 'undefined') toastr.error((response && response.Msg) || 'Permission denied.');
-        //        return;
-        //    }
+        MenuService.CheckModuleOptionRight(TLM_MODULE_NAME, 'New', 'Y', getFinancialYear()).then(function (response) {
+            if (!response || response.CheckModuleOptionRight === 'N') {
+                if (typeof toastr !== 'undefined') toastr.error((response && response.Msg) || 'Permission denied.');
+                return;
+            }
             initDetailLookups('').then(function () {
                 $('#hfTaskListMaster_Code').val('0');
                 try {
@@ -2968,7 +3148,7 @@ $(document).ready(function () {
                 renderTaskGrid();
                 showDetailPanel('new');
             });
-       /* });*/
+        });
     });
 
     $('#btnBackToTaskList').on('click', showListPanel);
@@ -3002,15 +3182,40 @@ $(document).ready(function () {
         warnDuplicateTaskInput($(this));
     });
 
+    $(document).on('input change', '.tlm-task-name', function () {
+        markTaskRowDirty($(this).closest('tr'));
+    });
+
+    $(document).on('change', '.tlm-task-status', function () {
+        if (G_TLM_DetailMode === 'view') return;
+        var $tr = $(this).closest('tr');
+        var idx = parseInt($tr.attr('data-row-idx'), 10);
+        if (!isFinite(idx) || !G_TLM_TaskRows[idx]) return;
+        G_TLM_TaskRows[idx].Active = normalizeActiveFlag($(this).val() || 'Y');
+        markTaskRowDirty(idx);
+    });
+
     $(document).on('change', '.tlm-task-freq', function () {
         if (G_TLM_DetailMode === 'view') return;
-        rebuildRowDateCell($(this).closest('tr'));
+        var $tr = $(this).closest('tr');
+        rebuildRowDateCell($tr);
+        markTaskRowDirty($tr);
+    });
+
+    $(document).on('change', '.tlm-task-date', function () {
+        if (G_TLM_DetailMode === 'view') return;
+        var $tr = $(this).closest('tr');
+        var idx = parseInt($tr.attr('data-row-idx'), 10);
+        if (!isFinite(idx) || !G_TLM_TaskRows[idx]) return;
+        G_TLM_TaskRows[idx].Date = readTaskRowDate($tr);
+        markTaskRowDirty(idx);
     });
 
     $(document).on('change', '.tlm-period-slot', function () {
         if (G_TLM_DetailMode === 'view') return;
         var $wrap = $(this).closest('.tlm-period-date-wrap');
         loadPeriodSlotIntoPicker($wrap, $(this).val() || '');
+        markTaskRowDirty($(this).closest('tr'));
     });
 
     $(document).on('change', '.tlm-period-picker', function () {
@@ -3018,14 +3223,13 @@ $(document).ready(function () {
         var $wrap = $(this).closest('.tlm-period-date-wrap');
         syncPeriodPickerToWrap($wrap);
         refreshPeriodSlotCheckmarks($wrap);
+        markTaskRowDirty($(this).closest('tr'));
     });
 
     $(document).on('click', '.tlm-btn-remove-row', function () {
         if (G_TLM_DetailMode === 'view') return;
-        syncTaskRowsFromDom();
         var idx = parseInt($(this).closest('tr').attr('data-row-idx'), 10);
-        if (isFinite(idx)) G_TLM_TaskRows.splice(idx, 1);
-        renderTaskGrid();
+        removeTaskGridRow(idx);
     });
 
     var searchTimer;

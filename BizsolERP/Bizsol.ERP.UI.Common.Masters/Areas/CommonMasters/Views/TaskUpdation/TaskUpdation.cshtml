@@ -154,6 +154,12 @@
     transition: box-shadow .2s, transform .15s;
     backdrop-filter: blur(4px);
 }
+.tu-date-picker:disabled {
+    opacity: 0.85;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
 .tu-user-select { min-width: 180px; }
 .tu-user-select:focus,
 .tu-date-picker:focus { box-shadow: 0 0 0 3px rgba(255,255,255,.45); transform: translateY(-1px); }
