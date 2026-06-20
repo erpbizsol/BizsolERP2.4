@@ -163,6 +163,18 @@ const GRNPaymentApprovalService = {
                 return value;
             });
     },
+    /** Party + PO wise payment history (GETGRNPAYMENTHISTORY). POCode 0 = all POs for party. */
+    GetPartyPoHistory: function GetPartyPoHistory(POCode, PartyCode) {
+        const party = PartyCode !== undefined && PartyCode !== null ? String(PartyCode).trim() : '0';
+        const po = POCode !== undefined && POCode !== null ? String(POCode).trim() : '0';
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
+            `/GetPartyPoHistory?POCode=${encodeURIComponent(po || '0')}` +
+            `&PartyCode=${encodeURIComponent(party || '0')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
     GetWorkType: function GetWorkType() {
         let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetWorkType`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)

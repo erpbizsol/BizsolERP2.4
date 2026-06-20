@@ -2644,6 +2644,7 @@ function OpenGpaApprovalHistory() {
 
 function CloseGpaApprovalHistoryModal() {
     G_GpaHistoryState = null;
+    if (typeof window !== 'undefined') window.__gpaPoHistoryState = null;
     $('#modalGpaHistory').modal('hide');
 }
 
