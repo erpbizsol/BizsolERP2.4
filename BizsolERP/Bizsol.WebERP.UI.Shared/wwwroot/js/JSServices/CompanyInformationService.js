@@ -38,6 +38,16 @@ const CompanyInformationService = {
     },
 
     /**
+     * Maps to GetCompanyInfo — current session company details for reports/print.
+     */
+    GetCompanyInfo: function GetCompanyInfo() {
+        const URL = UrlService.API_ENDPOINT_CompanyInformation + '/GetCompanyInfo';
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
+    /**
      * Maps to GetCompanyParameterByCode — Mode GETBYCODE
      */
     GetCompanyParameterByCode: function GetCompanyParameterByCode(code) {

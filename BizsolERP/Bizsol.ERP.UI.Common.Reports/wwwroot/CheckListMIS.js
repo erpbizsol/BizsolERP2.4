@@ -377,7 +377,7 @@ function bindReportTypeDropdown() {
 
 function loadReportTypeDropdown() {
     var moduleDesc = moduleDescriptionForReportConfig();
-    return CheckListMISService.GetReportType(moduleDesc)
+    return CheckListMISService.GetReportTypelist(moduleDesc)
         .then(function (response) {
             var rows = asReportTypeArray(response);
             var parsed = parseReportTypesFromApi(rows);

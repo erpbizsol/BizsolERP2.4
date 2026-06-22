@@ -2493,6 +2493,16 @@ function showGSTINStatusModal(model) {
 }
 
 function bindGSTINAddressToVendorForm(model) {
+    var vendorName = (model.tradeName || model.legalName || "").trim();
+    if (vendorName) {
+        $("#AccountDesp").val(vendorName);
+        $("#AccountDesp").data("vm-had-chars", true);
+        $("#err_AccountDesp").hide();
+        $("#AccountDesp").removeClass("vm-input-error");
+        if (G_BillNameSyncedWithVendorName) {
+            $("#BillName").val(vendorName);
+        }
+    }
     $("#Address1").val(model.address1 || "");
     $("#Address2").val(model.address2 || "");
     $("#PinCode").val(model.pinCode || "");

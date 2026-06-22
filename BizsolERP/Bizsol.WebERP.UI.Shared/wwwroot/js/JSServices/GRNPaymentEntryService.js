@@ -3,8 +3,10 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const GRNPaymentApprovalService = {
 
-    GetGRNPaymentApprovalList: function GetGRNPaymentApprovalList() {
-        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetGRNPaymentApprovalList`;
+    GetGRNPaymentApprovalList: function GetGRNPaymentApprovalList(Status, FromDate, ToDate) {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
+            `/GetGRNPaymentApprovalList?Status=${encodeURIComponent(Status || '0')}` +
+            `&FromDate=${encodeURIComponent(FromDate || '')}&ToDate=${encodeURIComponent(ToDate || '')}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;
@@ -161,8 +163,27 @@ const GRNPaymentApprovalService = {
                 return value;
             });
     },
+    /** Party + PO wise payment history (GETGRNPAYMENTHISTORY). POCode 0 = all POs for party. */
+    GetPartyPoHistory: function GetPartyPoHistory(POCode, PartyCode) {
+        const party = PartyCode !== undefined && PartyCode !== null ? String(PartyCode).trim() : '0';
+        const po = POCode !== undefined && POCode !== null ? String(POCode).trim() : '0';
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
+            `/GetPartyPoHistory?POCode=${encodeURIComponent(po || '0')}` +
+            `&PartyCode=${encodeURIComponent(party || '0')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
     GetWorkType: function GetWorkType() {
         let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetWorkType`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+    LoadStatusDropdown: function LoadStatusDropdown() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/LoadStatusDropdown`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;

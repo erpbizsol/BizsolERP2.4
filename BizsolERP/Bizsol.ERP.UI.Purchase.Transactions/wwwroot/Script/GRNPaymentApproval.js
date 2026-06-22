@@ -5,8 +5,11 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 
 let G_PaymentList = [];
+/** Full API list before status dropdown filter — used for header stat chips. */
+let G_PaymentListFull = [];
 let G_CurrentPayment = null;
 let G_GpaHistoryState = null;
+let G_GpaWorkTypeList = [];
 /** When true, card list shows only entries pending approval on the current user (see paymentIsPendingOnMe). */
 let G_OnlyPendingOnMe = false;
 
@@ -259,6 +262,65 @@ function getPaymentForDisplay(p) {
     const v = p.PaymentFor ?? p.paymentFor ?? p.PaymentForName ?? p.paymentForName ?? '';
     const s = String(v ?? '').trim();
     return s || '—';
+}
+
+function gpaWorkTypeCodeFromRow(row) {
+    const raw = row?.WorkTypeMaster_Code ?? row?.workTypeMaster_Code
+        ?? row?.WorkTypeMasterCode ?? row?.workTypeMasterCode
+        ?? row?.WorkType_Code ?? row?.workType_Code ?? row?.Code ?? row?.code;
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function gpaWorkTypeNameFromRow(row) {
+    if (!row || typeof row !== 'object') return '';
+    const v = row.WorkTypeDesp ?? row.workTypeDesp ?? row.WorkTypDesp ?? row.workTypDesp
+        ?? row.WorkTypeName ?? row.workTypeName
+        ?? row.WorkType ?? row.workType ?? row.Name ?? row.name ?? row['Work Type'] ?? '';
+    return String(v ?? '').trim();
+}
+
+function gpaWorkTypeNameFromCode(code) {
+    const n = parseInt(code, 10);
+    if (!Number.isFinite(n) || n <= 0) return '';
+    const hit = (G_GpaWorkTypeList || []).find(function (row) {
+        return gpaWorkTypeCodeFromRow(row) === n;
+    });
+    return gpaWorkTypeNameFromRow(hit);
+}
+
+function gpaNormalizeWorkTypeRows(res) {
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res?.WorkTypeList)) return res.WorkTypeList;
+    if (Array.isArray(res?.workTypeList)) return res.workTypeList;
+    const data = res?.Data ?? res?.data;
+    if (data && typeof data === 'object') return gpaNormalizeWorkTypeRows(data);
+    return normalizeGpaModalApiRows(res);
+}
+
+function getWorkTypeDisplay(p) {
+    if (!p) return '—';
+    const v = p['Work Type'] ?? p.WorkType ?? p.workType
+        ?? p.WorkTypeName ?? p.workTypeName ?? p.WorkTypeDesp ?? p.workTypeDesp ?? '';
+    const s = String(v ?? '').trim();
+    if (s && !/^\d+$/.test(s)) return s;
+    const code = p.WorkTypeMaster_Code ?? p.workTypeMaster_Code
+        ?? p.WorkTypeMasterCode ?? p.workTypeMasterCode
+        ?? p.WorkType_Code ?? p.workType_Code ?? (s && /^\d+$/.test(s) ? s : '');
+    return gpaWorkTypeNameFromCode(code) || '—';
+}
+
+function loadGpaApprovalWorkTypes() {
+    if (G_GpaWorkTypeList.length) return Promise.resolve(G_GpaWorkTypeList);
+    return GRNPaymentEntryDataService.GetWorkType()
+        .then(function (res) {
+            G_GpaWorkTypeList = gpaNormalizeWorkTypeRows(res);
+            return G_GpaWorkTypeList;
+        })
+        .catch(function (err) {
+            console.warn('GetWorkType', err);
+            return [];
+        });
 }
 
 function peelEntryPaymentApiRoot(res) {
@@ -1026,10 +1088,28 @@ function NormalizePaymentList(list) {
     });
 }
 
+function filterGpaPaymentListByStatus(list, statusVal) {
+    const st = String(statusVal || 'U').trim().toUpperCase();
+    if (st === 'A' || st === '0') return list;
+    if (st === 'U') {
+        return list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'pending'; });
+    }
+    if (st === 'P' || st === 'Y') {
+        return list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'approved'; });
+    }
+    if (st === 'R') {
+        return list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'rejected'; });
+    }
+    if (st === 'H') {
+        return list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'hold'; });
+    }
+    return list;
+}
+
 function LoadPaymentList() {
     const fromDate = document.getElementById('gpaFromDate')?.value || '';
     const toDate = document.getElementById('gpaToDate')?.value || '';
-    const statusVal = document.getElementById('gpaDdlStatus')?.value || 'P';
+    const statusVal = document.getElementById('gpaDdlStatus')?.value || 'U';
 
     G_OnlyPendingOnMe = false;
     syncGpaPendingOnMeChipActive();
@@ -1051,19 +1131,10 @@ function LoadPaymentList() {
                 window.G_PaymentPendingListRaw = list.map(function (r) { return Object.assign({}, r); });
             }
 
-            // Client-side status filter based on selected dropdown value
-            if (statusVal === 'P') {
-                list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'pending'; });
-            } else if (statusVal === 'Y') {
-                list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'approved'; });
-            } else if (statusVal === 'R') {
-                list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'rejected'; });
-            } else if (statusVal === 'H') {
-                list = list.filter(function (p) { return getApprovalStatus(p).toLowerCase() === 'hold'; });
-            }
-            // 'A' (All Status) — no filter, keep full list
+            G_PaymentListFull = NormalizePaymentList(list).map(gpaPreparePaymentForDisplay);
+            list = filterGpaPaymentListByStatus(G_PaymentListFull, statusVal);
 
-            G_PaymentList = NormalizePaymentList(list).map(gpaPreparePaymentForDisplay);
+            G_PaymentList = list;
             if (typeof window !== 'undefined') window.G_PaymentList = G_PaymentList;
             UpdateGpaStatChips();
             RenderPaymentCards();
@@ -1074,6 +1145,7 @@ function LoadPaymentList() {
             console.error('LoadPaymentList', err);
             ShowGpaLoading(false);
             G_PaymentList = [];
+            G_PaymentListFull = [];
             if (container) container.innerHTML = '';
             ShowGpaEmpty(true);
             if (typeof toastr !== 'undefined') {
@@ -1083,19 +1155,27 @@ function LoadPaymentList() {
 }
 
 function UpdateGpaStatChips() {
-    const pending = G_PaymentList.filter(function (p) {
-        return getApprovalStatus(p).toLowerCase() !== 'approved';
+    const source = G_PaymentListFull.length ? G_PaymentListFull : G_PaymentList;
+    const pending = source.filter(function (p) {
+        return getApprovalStatus(p).toLowerCase() === 'pending';
     }).length;
-    const other = G_PaymentList.length - pending;
+    const approved = source.filter(function (p) {
+        return getApprovalStatus(p).toLowerCase() === 'approved';
+    }).length;
     const elP = document.getElementById('gpaStatPending');
     const elO = document.getElementById('gpaStatProcessed');
-    if (elP) elP.textContent = pending > 0 ? String(pending) : (G_PaymentList.length ? '0' : '—');
-    if (elO) elO.textContent = other > 0 ? String(other) : '—';
+    if (elP) elP.textContent = pending > 0 ? String(pending) : (source.length ? '0' : '—');
+    if (elO) elO.textContent = approved > 0 ? String(approved) : (source.length ? '0' : '—');
 
-    const onMe = G_PaymentList.filter(paymentIsPendingOnMe).length;
+    const onMe = source.filter(paymentIsPendingOnMe).length;
     const elOnMe = document.getElementById('gpaStatPendingOnMe');
     if (elOnMe) {
-        elOnMe.textContent = G_PaymentList.length === 0 ? '—' : String(onMe);
+        elOnMe.textContent = source.length === 0 ? '—' : String(onMe);
+    }
+    try {
+        sessionStorage.setItem('bizsol_gpaApprovalPendingOnMeCount', String(pending));
+    } catch (e) {
+        /* ignore */
     }
 }
 
@@ -1490,6 +1570,7 @@ function OpenDetailModal(paymentCode) {
                         GRNPaymentEntryDataService.GetGRNPaymentApprovalByCode(code).catch(function () { return null; }),
                         GRNPaymentEntryDataService.GetProjectMasterList().catch(function () { return null; }),
                         GRNPaymentApprovalService.GetPendingGRNPaymentList('2020-01-01', '2099-12-31', 'A').catch(function () { return null; }),
+                        loadGpaApprovalWorkTypes(),
                     ]);
                     const res = results[0];
                     const entryRes = results[1];
@@ -1541,6 +1622,7 @@ function paintModalFromPayment(po) {
     const status = EscHtml(getApprovalStatus(prepared));
 
     const paymentFor = EscHtml(getPaymentForDisplay(prepared));
+    const workType = EscHtml(getWorkTypeDisplay(prepared));
 
     $('#gpaModalHeader').html(
         '<div class="gpa-info-grid">' +
@@ -1551,6 +1633,7 @@ function paintModalFromPayment(po) {
             BuildGpaInfoItem('Payment for', paymentFor, 'fa-tags') +
             BuildGpaInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
             BuildGpaInfoItem('Status', status, 'fa-info-circle') +
+            BuildGpaInfoItem('Work Type', workType, 'fa-briefcase') +
         '</div>'
     );
 
@@ -1976,6 +2059,7 @@ function PrintGPAVoucher(code, mode) {
         preloadEmp,
         GRNPaymentEntryDataService.GetGRNPaymentApprovalByCode(codeNum).catch(function () { return null; }),
         GRNPaymentApprovalService.GetGRNPaymentDetail(codeNum).catch(function () { return null; }),
+        loadGpaApprovalWorkTypes(),
     ]).then(function (bundle) {
             const entryRes = bundle[1];
             const res = bundle[2];
@@ -2071,6 +2155,7 @@ function PrintGPAVoucher(code, mode) {
                 master.PaymentFor ?? master.paymentFor ?? master.PaymentForName ?? master.paymentForName
                 ?? master.ProjectCategory ?? master.projectCategory ?? ''
             );
+            const workType = getWorkTypeDisplay(master);
 
             let detailsLines = '';
             (details || []).forEach(function (row, idx) {
@@ -2130,6 +2215,7 @@ function PrintGPAVoucher(code, mode) {
                 + '<tr><td class="lbl">Credit to</td><td colspan="3">' + gpaEscH(creditTo) + '</td></tr>'
                 + '<tr><td class="lbl">Industry Type</td><td colspan="3">' + gpaEscH(vendorTypePrint || 'Party') + '</td></tr>'
                 + '<tr><td class="lbl">Payment for</td><td colspan="3">' + gpaEscH(paymentFor || '—') + '</td></tr>'
+                + '<tr><td class="lbl">Work Type</td><td colspan="3">' + gpaEscH(workType || '—') + '</td></tr>'
                 + '</table>'
                 + '<div style="border:1px solid #000;border-top:none;padding:4px 8px;font-weight:700;font-size:9.5pt;">Details</div>'
                 + '<div class="pv-details">' + detailsBlock + '</div>'
@@ -2558,6 +2644,7 @@ function OpenGpaApprovalHistory() {
 
 function CloseGpaApprovalHistoryModal() {
     G_GpaHistoryState = null;
+    if (typeof window !== 'undefined') window.__gpaPoHistoryState = null;
     $('#modalGpaHistory').modal('hide');
 }
 
@@ -2594,7 +2681,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const statusEl = document.getElementById('gpaDdlStatus');
     if (statusEl && (!statusEl.value || statusEl.value === 'A')) {
-        statusEl.value = 'P';
+        statusEl.value = 'U';
     }
 
     InitDates()

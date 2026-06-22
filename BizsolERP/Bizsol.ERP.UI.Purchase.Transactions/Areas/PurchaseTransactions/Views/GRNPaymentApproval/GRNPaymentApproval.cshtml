@@ -45,6 +45,23 @@
         flex-wrap: wrap;
         gap: 8px;
     }
+     .btn-gpa-history {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#6366f1,#4f46e5);
+        border:none; color:#fff; border-radius:9px; padding:9px 18px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(99,102,241,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-history:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(99,102,241,0.5); color:#fff; }
+    .btn-gpa-reject {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#dc2626,#ef4444);
+        border:none; color:#fff; border-radius:9px; padding:9px 22px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(220,38,38,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }`
     body.erp-embedded.gpa-bs-embed-page .po-float-bar-left {
         display: none;
     }
@@ -344,186 +361,108 @@
         .po-float-bar-right { width: 100%; justify-content: flex-end; gap: 8px; }
         .po-form-wrap { padding-bottom: 150px; }
     }
-    /* ── LIST: title + status tabs + actions in one purple header ── */
+    /* ── LIST: PO Store style header + stat chips ── */
     .po-list-header {
-        background: linear-gradient(130deg, #5b5ef4 0%, #8b5cf6 55%, #a855f7 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 14px 14px 0 0;
-        padding: 16px 20px;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .po-header-top {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 14px 16px;
+        gap: 10px;
+        width: 100%;
     }
-    /* Tabs + GRN/New ek saath — beech mein bada gap nahi */
-    .po-list-header-right {
+    .po-stats-strip {
         display: flex;
+        gap: 8px;
         align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        flex: 0 1 auto;
-        min-width: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        flex-wrap: nowrap;
+        padding-bottom: 2px;
     }
-    .po-list-header-left {
-        flex: 0 1 auto;
-        min-width: 160px;
+    .po-stats-strip::-webkit-scrollbar { display: none; }
+    .po-stat-chip {
+        background: rgba(255,255,255,0.18);
+        border-radius: 10px;
+        padding: 5px 14px;
+        text-align: center;
+        min-width: 80px;
+        border: 1px solid rgba(255,255,255,0.2);
+        text-decoration: none;
+        color: inherit;
+    }
+    .po-stat-chip .val { font-size: 1.15rem; font-weight: 800; color: #fff; line-height: 1; }
+    .po-stat-chip .lbl {
+        font-size: 0.65rem;
+        color: rgba(255,255,255,0.8);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .po-chip-link { transition: transform 0.18s ease, background 0.18s ease; cursor: pointer; pointer-events: auto; }
+    .po-chip-link:hover { background: rgba(255,255,255,0.32) !important; transform: scale(1.06); }
+    .po-stat-chip:not(.po-chip-link) { cursor: default; pointer-events: none; }
+    .po-filter-bar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        padding: 14px 18px 10px;
+        margin-bottom: 14px;
+    }
+    #divGPAList {
+        padding: 0;
+        margin-top: 0.75rem;
+    }
+    #divGPAList .gpa-list-top-panel {
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102,126,234,0.07);
+    }
+    #divGPAList .gpa-list-top-panel .po-list-header {
+        border-radius: 0;
+    }
+    #divGPAList .gpa-list-top-panel .po-filter-bar {
+        margin-bottom: 0;
+        border: none;
+        border-top: 1px solid #e8ecf4;
+        border-radius: 0;
+    }
+    .po-create-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255,255,255,0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+        white-space: nowrap;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+        line-height: 1;
+        text-decoration: none;
+        font-size: 0.85rem;
+    }
+    .po-create-btn:hover { background: #f0f4ff; border-color: #667eea; color: #667eea; }
+    @@media (max-width: 480px) {
+        .po-stat-chip { min-width: 62px; padding: 4px 8px; }
+        .po-stat-chip .val { font-size: 1rem; }
+        .po-stat-chip .lbl { font-size: 0.6rem; }
     }
     .po-list-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
     .po-list-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; margin-top: 2px; }
-    .po-list-header-actions {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        flex: 0 0 auto;
-    }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: stretch;
-        justify-content: flex-start;
-        gap: 8px;
-        flex: 0 0 auto;
-        padding: 0;
-        margin: 0;
-        background: transparent;
-        border: none;
-        min-width: 0;
-    }
-
-        #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab {
-            flex: 0 0 auto;
-            box-sizing: border-box;
-            width: 118px;
-            min-width: 118px;
-            max-width: 118px;
-            padding: 8px 6px 10px;
-            border: 1.5px solid rgba(255, 255, 255, 0.5);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.12);
-            cursor: pointer;
-            font-size: 0.62rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            color: rgba(255, 255, 255, 0.98);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            min-height: 52px;
-            transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
-        }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab:hover {
-        background: rgba(255,255,255,0.22);
-        border-color: rgba(255,255,255,0.72);
-        color: #fff;
-    }
-    /* Active: same glass style as others — thoda zyada highlight, solid white block nahi */
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active {
-        background: rgba(255, 255, 255, 0.34);
-        border-color: rgba(255, 255, 255, 0.95);
-        color: #fff;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
-    }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab:focus-visible {
-        outline: 2px solid #fff;
-        outline-offset: 2px;
-    }
-    #divGPAList .po-list-header .gpa-status-tab-lbl {
-        color: inherit;
-        font-size: 0.6rem;
-        line-height: 1.2;
-        text-align: center;
-    }
-    /* Count colours — Pending / Approved / Rejected; active par bhi same accent (tabs ek jaisa family) */
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--u .gpa-status-tab-count { color: #fde047; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--p .gpa-status-tab-count { color: #6ee7b7; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--r .gpa-status-tab-count { color: #fca5a5; }
-    #divGPAList .po-list-header .gpa-status-tab-count {
-        font-size: 1rem;
-        font-weight: 800;
-        line-height: 1.1;
-    }
-    /* Pending on me — same card as GRN Payment Approval header (gold border, magenta count) */
-    #divGPAList .po-list-header .gpa-list-chip-onme {
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        min-height: 52px;
-        min-width: 100px;
-        max-width: 132px;
-        padding: 8px 12px;
-        margin: 0;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.14);
-        border: 1.5px solid rgba(251, 191, 36, 0.9);
-        cursor: pointer;
-        font-family: inherit;
-        color: inherit;
-        text-decoration: none;
-        transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
-        height: auto !important;
-        line-height: normal !important;
-        font-size: inherit !important;
-        -webkit-appearance: none;
-        appearance: none;
-        flex: 0 0 auto;
-    }
-    #divGPAList .po-list-header .gpa-list-chip-onme:hover {
-        background: rgba(255, 255, 255, 0.28);
-        transform: scale(1.04);
-    }
-    #divGPAList .po-list-header .gpa-list-chip-onme--active {
-        background: rgba(255, 255, 255, 0.32);
-        border-color: #fde68a;
-        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.16);
-    }
-    #divGPAList .po-list-header .gpa-list-chip-onme-val {
-        font-size: 1.15rem;
-        font-weight: 800;
-        line-height: 1.1;
-        color: #c7206d;
-    }
-    #divGPAList .po-list-header .gpa-list-chip-onme-lbl {
-        font-size: 0.62rem;
-        font-weight: 700;
-        color: rgba(255, 255, 255, 0.95);
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        line-height: 1.2;
-    }
-    #divGPAList .po-list-header .gpa-list-chip-onme:focus-visible {
-        outline: 2px solid #fff;
-        outline-offset: 2px;
-    }
-    @@media (max-width: 992px) {
-        .po-list-header-left {
-            order: 1;
-            flex-basis: 100%;
-        }
-        .po-list-header-right {
-            order: 2;
-            width: 100%;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        #divGPAList .po-list-header .gpa-status-tabs--in-header {
-            justify-content: center;
-            flex: 1 1 auto;
-        }
-        .po-list-header-actions {
-            width: auto;
-            justify-content: center;
-            margin-left: 0;
-        }
-    }
     #divGPAList .po-grid-wrap {
         display: flex;
         flex-direction: column;
@@ -532,6 +471,7 @@
         border: 1px solid #e2e8f0;
         box-shadow: 0 2px 12px rgba(102,126,234,0.07);
         overflow: visible;
+        margin-top: 14px;
         margin-bottom: 8px;
     }
     #divGPAList .table-wrapper.po-table-scroll {
@@ -548,36 +488,6 @@
         position: sticky;
         top: 0;
         z-index: 2;
-    }
-    /* New — full pill button (height, padding, flex) */
-    .po-list-header-actions .vm-btn-new {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        min-height: 40px;
-        padding: 0 20px;
-        background: rgba(255, 255, 255, 0.22);
-        border: 1.5px solid rgba(255, 255, 255, 0.65);
-        color: #fff !important;
-        border-radius: 10px;
-        font-size: 0.88rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: background 0.14s, border-color 0.14s, transform 0.14s, box-shadow 0.14s;
-        text-decoration: none !important;
-        box-sizing: border-box;
-        line-height: 1.2;
-        white-space: nowrap;
-        -webkit-tap-highlight-color: transparent;
-        font-family: inherit;
-    }
-    .po-list-header-actions .vm-btn-new:hover {
-        background: rgba(255, 255, 255, 0.34);
-        border-color: rgba(255, 255, 255, 0.95);
-        color: #fff !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     }
     .im-btn-edit {
         display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
@@ -884,43 +794,306 @@
         .gpa-pay-card-footer { flex-direction: column; align-items: stretch; }
         .gpa-pay-card-print-btns { width: 100%; justify-content: flex-start; }
     }
+
+    /* ── Party / PO History modal — green theme (matches GRN Service history) ── */
+    .gpa-history-summary {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    @@media (max-width: 992px) {
+        .gpa-history-summary { grid-template-columns: repeat(2, 1fr); }
+    }
+    @@media (max-width: 576px) {
+        .gpa-history-summary { grid-template-columns: 1fr; }
+    }
+    .gpa-history-card {
+        border-radius: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .gpa-history-card-lbl {
+        font-size: 0.68rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
+    }
+    .gpa-history-card-val {
+        font-size: 0.95rem; font-weight: 800; line-height: 1.3;
+    }
+    .gpa-history-card--po {
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        border: 1px solid #93c5fd;
+    }
+    .gpa-history-card--po .gpa-history-card-lbl { color: #1d4ed8; }
+    .gpa-history-card--po .gpa-history-card-val { color: #1e3a8a; }
+    .gpa-history-card--grn {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border: 1px solid #86efac;
+    }
+    .gpa-history-card--grn .gpa-history-card-lbl { color: #166534; }
+    .gpa-history-card--grn .gpa-history-card-val { color: #15803d; }
+    .gpa-history-card--payment {
+        background: linear-gradient(135deg, #faf5ff, #f3e8ff);
+        border: 1px solid #d8b4fe;
+    }
+    .gpa-history-card--payment .gpa-history-card-lbl { color: #7c3aed; }
+    .gpa-history-card--payment .gpa-history-card-val { color: #6d28d9; }
+    .gpa-history-card--balance {
+        background: linear-gradient(135deg, #fff7ed, #ffedd5);
+        border: 1px solid #fdba74;
+    }
+    .gpa-history-card--balance .gpa-history-card-lbl { color: #c2410c; }
+    .gpa-history-card--balance .gpa-history-card-val { color: #ea580c; }
+    .gpa-history-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 14px;
+        margin-bottom: 14px;
+        padding: 12px 14px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        font-size: 0.82rem; color: #475569;
+        align-items: end;
+    }
+    .gpa-history-meta strong { color: #166534; font-size: 0.88rem; }
+    .gpa-history-filter-lbl {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #166534;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+    .gpa-history-filter-select {
+        width: 100%;
+        font-size: 0.82rem;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 6px 10px;
+        background: #fff;
+        color: #1e293b;
+    }
+    .gpa-history-filter-select:disabled {
+        background: #f8fafc;
+        color: #94a3b8;
+    }
+    @@media (max-width: 768px) {
+        .gpa-history-meta { grid-template-columns: 1fr; }
+    }
+    .gpa-history-table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+    .gpa-history-table thead tr th {
+        background: #f0fdf4; color: #166534;
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        text-align: center; vertical-align: middle;
+        padding: 10px 10px; white-space: nowrap;
+        border-bottom: 2px solid #bbf7d0;
+    }
+    #modalGpaHistory .gpa-history-table thead tr th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f0fdf4;
+        box-shadow: 0 2px 0 #bbf7d0;
+    }
+    .gpa-history-table tbody tr td {
+        padding: 9px 10px; vertical-align: middle;
+        border-bottom: 1px solid #f3f4f6; font-size: 0.78rem; color: #374151;
+    }
+    .gpa-history-table tbody tr:hover td { background: #f0fdf4; }
+    .gpa-history-type {
+        display: inline-block; font-size: 0.68rem; font-weight: 700;
+        padding: 2px 8px; border-radius: 20px;
+    }
+    .gpa-history-type-po { background: #dbeafe; color: #1d4ed8; }
+    .gpa-history-type-grn { background: #d1fae5; color: #047857; }
+    .gpa-history-type-payment { background: #ede9fe; color: #6d28d9; }
+    #modalGpaHistory .modal-dialog {
+        max-width: 880px;
+        margin: 1.5rem auto;
+        max-height: calc(100vh - 2rem);
+    }
+    #modalGpaHistory .modal-content {
+        border-radius: 18px;
+        border: none;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 2rem);
+    }
+    #modalGpaHistory .gpa-history-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px 16px;
+        border: none;
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        color: #fff;
+    }
+    #modalGpaHistory .gpa-history-modal-header .modal-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    #modalGpaHistory .gpa-history-modal-close {
+        background: rgba(255, 255, 255, 0.18);
+        border: none;
+        color: #fff;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.15s;
+        flex-shrink: 0;
+    }
+    #modalGpaHistory .gpa-history-modal-close:hover { background: rgba(255, 255, 255, 0.32); }
+    #modalGpaHistory .gpa-history-modal-body {
+        padding: 16px 18px;
+        background: #fff;
+        flex: 1 1 auto;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+    #modalGpaHistory .gpa-history-modal-footer {
+        padding: 14px 22px;
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        justify-content: flex-end;
+        flex-shrink: 0;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    #modalGpaHistory .gpa-history-meta,
+    #modalGpaHistory .gpa-history-summary,
+    #modalGpaHistory .gpa-history-table-section > .gpa-items-title {
+        flex-shrink: 0;
+    }
+    #modalGpaHistory .gpa-history-table-section {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+    #modalGpaHistory .gpa-history-table-scroll-wrap {
+        flex: 1 1 auto;
+        overflow: auto;
+        min-height: 140px;
+        max-height: min(380px, calc(100vh - 430px));
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+    #modalGpaHistory .gpa-items-title {
+        color: #166534;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 10px;
+    }
+    .btn-gpa-close {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none; color: #fff; border-radius: 9px; padding: 9px 20px;
+        font-size: 0.85rem; font-weight: 700;
+        box-shadow: 0 3px 12px rgba(245, 158, 11, 0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-gpa-close:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 16px rgba(245, 158, 11, 0.5);
+        color: #fff;
+    }
+    .btn-gpa-copy-narration {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none; color: #fff; border-radius: 9px; padding: 9px 18px;
+        font-size: 0.85rem; font-weight: 700;
+        box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-gpa-copy-narration:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 16px rgba(16, 185, 129, 0.5);
+        color: #fff;
+    }
+    .btn-gpa-copy-narration:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
 </style>
 
-<!-- ── LIST VIEW ───────────────────────────────── -->
-<div id="divGPAList" class="container-fluid mt-3">
-    <div class="po-list-header">
-        <div class="po-list-header-left">
-            <h5><i class="fa fa-money-check-alt me-2"></i>Payment Entry List</h5>
-            <small>Payment Entry — filter by approval status</small>
-        </div>
-        <div class="po-list-header-right">
-            <div class="gpa-status-tabs gpa-status-tabs--in-header" id="gpaStatusTabs" role="tablist" aria-label="Payment entry status">
-                <button type="button" class="gpa-status-tab gpa-status-tab--u is-active" role="tab" data-gpa-status="U" aria-selected="true"
-                        onclick="window.onGpaListStatusTabClick('U')">
-                    <span class="gpa-status-tab-count" id="gpaTabCountU">0</span>
-                    <span class="gpa-status-tab-lbl">Pending</span>
+<!-- ── LIST VIEW (PO Store layout) ─────────────── -->
+<div id="divGPAList">
+    <div class="gpa-list-top-panel">
+        <div class="po-list-header">
+            <div class="po-header-top">
+                <div>
+                    <h5><i class="fa fa-money-check-alt me-2"></i>Payment Entry List</h5>
+                    <small>Manage and track payment entries</small>
+                </div>
+                <button type="button" class="po-create-btn" onclick="window.newGRNPaymentApproval()">
+                    <i class="fa fa-plus-circle"></i><span class="ms-1">New</span>
                 </button>
-                <button type="button" class="gpa-status-tab gpa-status-tab--p" role="tab" data-gpa-status="P" aria-selected="false"
-                        onclick="window.onGpaListStatusTabClick('P')">
-                    <span class="gpa-status-tab-count" id="gpaTabCountP">0</span>
-                    <span class="gpa-status-tab-lbl">Approved</span>
-                </button>
-                <button type="button" class="gpa-status-tab gpa-status-tab--r" role="tab" data-gpa-status="R" aria-selected="false"
-                        onclick="window.onGpaListStatusTabClick('R')">
-                    <span class="gpa-status-tab-count" id="gpaTabCountR">0</span>
-                    <span class="gpa-status-tab-lbl">Rejected</span>
-                </button>
-                <a href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
-                   class="gpa-list-chip-onme" id="gpaListChipPendingOnMe"
-                   title="Open GRN payment approvals">
-                    <span class="gpa-list-chip-onme-val" id="gpaListCountPendingOnMe">—</span>
-                    <span class="gpa-list-chip-onme-lbl">Pending on me</span>
-                </a>
             </div>
-            <div class="po-list-header-actions">
-                <button type="button" class="vm-btn-new" onclick="window.newGRNPaymentApproval()">
-                    <i class="fa fa-plus" aria-hidden="true"></i><span>New</span>
-                </button>
+            <div class="po-stats-strip">
+                <div class="po-stat-chip">
+                    <div class="val" id="gpaStatTotal">—</div>
+                    <div class="lbl">Total</div>
+                </div>
+                <div class="po-stat-chip" style="border:1.5px solid rgba(255,165,0,0.55);">
+                    <div class="val" id="gpaStatPending" style="color:#ffd580;">—</div>
+                    <div class="lbl">Pending</div>
+                </div>
+                <a href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
+                   class="po-stat-chip po-chip-link" style="border:1.5px solid rgba(255,165,0,0.55);"
+                   title="Open GRN payment approvals pending on me">
+                    <div class="val" id="gpaStatPendingOnMe" style="color:#c7206d;">—</div>
+                    <div class="lbl">Pending on Me</div>
+                </a>
+                <div class="po-stat-chip" style="border:1.5px solid rgba(16,185,129,0.55);">
+                    <div class="val" id="gpaStatApproved" style="color:#6ee7b7;">—</div>
+                    <div class="lbl">Approved</div>
+                </div>
+                <div class="po-stat-chip" style="border:1.5px solid rgba(248,113,113,0.55);">
+                    <div class="val" id="gpaStatRejected" style="color:#fca5a5;">—</div>
+                    <div class="lbl">Rejected</div>
+                </div>
+            </div>
+        </div>
+        <div class="po-filter-bar">
+            <div class="row align-items-end g-2">
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Status</label>
+                    <select id="lstDdlStatus" class="form-control form-control-sm form-select"></select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">From Date <span class="req">*</span></label>
+                    <input type="date" id="lstTxtFromDate" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">To Date <span class="req">*</span></label>
+                    <input type="date" id="lstTxtToDate" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-2 d-flex align-items-end pb-1">
+                    <button type="button" onclick="window.ShowGRNPaymentApprovalList()"
+                            style="background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;border-radius:9px;padding:7px 20px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(102,126,234,0.35);transition:all 0.2s;height:32px;white-space:nowrap;"
+                            onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+                        <i class="fa fa-search me-1"></i>Show
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1191,6 +1364,9 @@
         <button type="button" class="btn-po-cancel" onclick="window.resetGRNPaymentApprovalForm()">
             <i class="fa fa-undo me-1"></i> Reset
         </button>
+        <button type="button" id="gpaBtnHistoryAction" class="btn-gpa-history" onclick="OpenApprovalHistory()" title="Party / Project history">
+                <i class="fa fa-history"></i>History
+          </button>
         <div class="gpa-attach-btn-wrap">
             <button type="button" id="btnGpaFooterAttach" class="btn-po-cancel btn-gpa-footer-attach" onclick="window.openGpaAttachmentControl()" title="Attachments">
                 <i class="fa fa-paperclip me-1"></i> Attachment
@@ -1200,6 +1376,72 @@
         <button type="button" class="btn-po-save" onclick="window.saveGRNPaymentApproval()">
             <i class="fa fa-save me-1"></i> Save
         </button>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGpaHistory" tabindex="-1" role="dialog"
+     aria-hidden="true" style="z-index:1070;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header gpa-history-modal-header">
+                <h5 class="modal-title mb-0">
+                    <i class="fa fa-history me-2"></i>Party / PO History
+                </h5>
+                <button type="button" class="gpa-history-modal-close" data-bs-dismiss="modal"
+                        aria-label="Close" onclick="CloseGpaApprovalHistoryModal()" title="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body gpa-history-modal-body">
+                <div id="gpaHistoryMeta" class="gpa-history-meta">
+                    <div id="gpaHistoryPartyWrap">
+                        <span class="gpa-history-filter-lbl">Party</span>
+                        <strong id="gpaHistoryPartyName">—</strong>
+                    </div>
+                    <div>
+                        <label class="gpa-history-filter-lbl" for="gpaHistDdlPO">PO No</label>
+                        <select id="gpaHistDdlPO" class="gpa-history-filter-select form-select form-select-sm"></select>
+                    </div>
+                </div>
+                <div id="gpaHistorySummary" class="gpa-history-summary"></div>
+                <div class="gpa-history-table-section">
+                    <div class="gpa-items-title">Transaction History</div>
+                    <div id="gpaHistoryLoading" style="display:none;text-align:center;padding:24px;color:#64748b;">
+                        <i class="fa fa-spinner fa-spin me-2"></i>Loading history…
+                    </div>
+                    <div id="gpaHistoryEmpty" style="display:none;text-align:center;padding:24px;color:#94a3b8;font-size:0.85rem;">
+                        No history found for the selected party and PO.
+                    </div>
+                    <div class="gpa-history-table-scroll-wrap" id="gpaHistoryTableWrap" style="display:none;">
+                        <table class="gpa-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Doc No</th>
+                                    <th>Date</th>
+                                    <th>Bill No</th>
+                                    <th>PO No</th>
+                                    <th>Project</th>
+                                    <th>Sub Project</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gpaHistoryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer gpa-history-modal-footer">
+                <button type="button" id="gpaBtnCopyNarration" class="btn-gpa-copy-narration"
+                        onclick="window.copyGpaHistoryNarrationToForm()" disabled title="Copy narration to payment entry">
+                    <i class="fa fa-copy"></i>Copy Narration
+                </button>
+                <button type="button" class="btn-gpa-close" onclick="CloseGpaApprovalHistoryModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 

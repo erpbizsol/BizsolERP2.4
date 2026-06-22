@@ -75,6 +75,58 @@ function todayIso() {
     return toIso(new Date());
 }
 
+function isSunday(d) {
+    return d.getDay() === 0;
+}
+
+/** Snap Sunday back to Saturday (Sunday is not a plan/report day). */
+function nearestWorkingDay(d) {
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    while (isSunday(x)) {
+        x.setDate(x.getDate() - 1);
+    }
+    return x;
+}
+
+/** Whether the user may tick a checkbox on this plan date. */
+function canEditPlanDate(iso, serverEnabled) {
+    if (!serverEnabled || isSunday(new Date(parseInt(iso.slice(0, 4), 10), parseInt(iso.slice(5, 7), 10) - 1, parseInt(iso.slice(8, 10), 10)))) {
+        return false;
+    }
+    if (isAdminUser()) {
+        return iso <= todayIso();
+    }
+    return iso === todayIso();
+}
+
+/** Non-admin users always view today; only admin may pick another plan date. */
+function getViewDateIso() {
+    if (isAdminUser()) {
+        return toIso(G_TU_BaseDate);
+    }
+    return todayIso();
+}
+
+function initDatePickerControl() {
+    var $picker = $('#tuDatePicker');
+    $picker.attr('max', todayIso());
+
+    if (isAdminUser()) {
+        G_TU_BaseDate = nearestWorkingDay(G_TU_BaseDate);
+        $picker.prop('disabled', false);
+        $picker.val(toIso(G_TU_BaseDate));
+        $picker.attr('title', 'Pick a plan date (Sunday excluded)');
+        return;
+    }
+
+    var now = new Date();
+    now.setHours(0, 0, 0, 0);
+    G_TU_BaseDate = now;
+    $picker.val(todayIso());
+    $picker.prop('disabled', true);
+    $picker.attr('title', 'Only admin can change the plan date');
+}
+
 function unwrapApiList(payload) {
     if (!payload) return [];
     if (Array.isArray(payload)) {
@@ -228,15 +280,18 @@ function renderCalendar() {
     $head.html(monthRow + dayRow);
 
     if (!G_TU_Tasks.length) {
+        var emptyMsg = isSunday(dates[0])
+            ? 'No tasks on Sunday.'
+            : 'No tasks assigned to you.';
         $body.html(
             '<tr><td class="tu-empty" colspan="' + (dates.length + 3) + '">' +
-            '<i class="fas fa-inbox"></i>No tasks assigned to you.</td></tr>'
+            '<i class="fas fa-inbox"></i>' + emptyMsg + '</td></tr>'
         );
         updateStats([], toIso(dates[0]));
         return;
     }
 
-    var selectedIso = toIso(dates[0]);
+    var selectedIso = getViewDateIso();
     updateStats(G_TU_Tasks, selectedIso);
 
     var bodyHtml = '';
@@ -251,10 +306,10 @@ function renderCalendar() {
             var iso = toIso(d);
             var cell = task.cells[iso] || {};
             var isPast = iso < today;
-            // The server decides whether a cell is editable based on the task's
-            // frequency + assigned date (e.g. monthly recurs on the same day each
-            // month). Honour that flag instead of blanket-locking past dates.
-            var enabled = cell.IsEnabled != null ? cell.IsEnabled : !isPast;
+            // Server decides due/enabled by frequency; client applies role rules:
+            // admin may update any past/current plan date; users only today.
+            var serverEnabled = cell.IsEnabled != null ? cell.IsEnabled : !isPast;
+            var enabled = canEditPlanDate(iso, serverEnabled);
             var done = !!cell.IsDone;
 
             var cls = 'tu-day-cell';
@@ -287,7 +342,7 @@ function loadCalendar() {
 
     if (typeof ShowLoader === 'function') ShowLoader();
 
-    return TaskUpdationService.GetTaskListByEmp(userCode, toIso(G_TU_BaseDate))
+    return TaskUpdationService.GetTaskListByEmp(userCode, getViewDateIso())
         .then(function (res) {
             G_TU_Rows = unwrapApiList(res);
             G_TU_Tasks = pivotRows(G_TU_Rows);
@@ -349,8 +404,27 @@ function onToggleStatus($chk) {
     var taskCode = parseInt($tr.attr('data-task-code') || '0', 10) || 0;
     var date = $chk.attr('data-date');
     var isDone = $chk.is(':checked') ? 'Y' : 'N';
+    var today = todayIso();
 
     if (!taskCode || !date) return;
+
+    if (isSunday(new Date(parseInt(date.slice(0, 4), 10), parseInt(date.slice(5, 7), 10) - 1, parseInt(date.slice(8, 10), 10)))) {
+        $chk.prop('checked', isDone !== 'Y');
+        if (typeof toastr !== 'undefined') toastr.warning('Sunday is not included in the task report.');
+        return;
+    }
+
+    if (!isAdminUser() && date !== today) {
+        $chk.prop('checked', isDone !== 'Y');
+        if (typeof toastr !== 'undefined') toastr.warning('You can only update today\'s tasks.');
+        return;
+    }
+
+    if (isAdminUser() && date > today) {
+        $chk.prop('checked', isDone !== 'Y');
+        if (typeof toastr !== 'undefined') toastr.warning('Future dates cannot be updated.');
+        return;
+    }
 
     $chk.prop('disabled', true);
     TaskUpdationService.SaveTaskUpdation({
@@ -382,7 +456,9 @@ function onToggleStatus($chk) {
             if (typeof toastr !== 'undefined') toastr.error('Save request failed.');
         })
         .finally(function () {
-            $chk.prop('disabled', false);
+            if (canEditPlanDate(date, true)) {
+                $chk.prop('disabled', false);
+            }
         });
 }
 
@@ -399,10 +475,8 @@ $(document).ready(function () {
     var name = authUserName();
     $('#tuEmpName').html('<i class="fas fa-user me-1"></i> ' + escapeHtml(name || ('User #' + authUserCode())));
 
-    // Date picker: cannot pick a future date; defaults to today.
-    var $picker = $('#tuDatePicker');
-    $picker.attr('max', todayIso());
-    $picker.val(toIso(G_TU_BaseDate));
+    // Date picker: admin can change plan date; normal users locked to today.
+    initDatePickerControl();
 
     // Admins can pick any user (dropdown enabled); normal users are locked to themselves.
     if (isAdminUser()) {
@@ -413,7 +487,11 @@ $(document).ready(function () {
 
     loadCalendar();
 
-    $picker.on('change', function () {
+    $('#tuDatePicker').on('change', function () {
+        if (!isAdminUser()) {
+            initDatePickerControl();
+            return;
+        }
         var val = $(this).val();
         if (!val) return;
         // Guard against any manually typed future date.
@@ -423,7 +501,14 @@ $(document).ready(function () {
             if (typeof toastr !== 'undefined') toastr.warning('Future dates are not allowed.');
         }
         var parts = val.split('-');
-        G_TU_BaseDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        var picked = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        if (isSunday(picked)) {
+            picked = nearestWorkingDay(picked);
+            val = toIso(picked);
+            $(this).val(val);
+            if (typeof toastr !== 'undefined') toastr.warning('Sunday is not included in the task report.');
+        }
+        G_TU_BaseDate = picked;
         loadCalendar();
     });
 

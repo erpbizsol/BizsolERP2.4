@@ -6,6 +6,71 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockAgeingReport.js"></script>
 <style>
+    /* Table area fills remaining viewport; rows scroll inside the grid */
+    body.sar-report-page #modern-content.modern-content > main {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sar-page {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        gap: 0.5rem;
+    }
+
+    #sar-filter-card {
+        flex-shrink: 0;
+    }
+
+    #sar-filter-card .card-body {
+        padding: 0.75rem 1rem;
+    }
+
+    #StockAgeingReportTableCard.sar-table-section {
+        flex: 1 1 auto;
+        min-height: 350px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        margin-bottom: 0;
+    }
+
+    #StockAgeingReportTableCard.sar-table-section > .card-body,
+    #StockAgeingReportTableCard.sar-table-section {
+        padding: 0;
+    }
+
+    #StockAgeingReportTableCard .sar-table-scroll {
+        flex: 1 1 auto;
+        min-height: 350px;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        background: #fff;
+    }
+
+    #StockAgeingReportTableCard .sar-table-scroll.table-wrapper.filtered {
+        min-height: 350px;
+    }
+
+    #StockAgeingReportTableCard .paginator {
+        flex-shrink: 0;
+        margin-top: 0;
+    }
+
+    #StockWithChart.sar-chart-section {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
     #StockAgeingReport tfoot th,
     #StockAgeingReport tfoot td {
         color: #fff !important;
@@ -112,19 +177,6 @@
         white-space: nowrap;
     }
 
-    /* ── Stock Ageing report grid: scrollable body, sticky header ── */
-    #StockAgeingReportTableCard .sar-table-scroll {
-        max-height: calc(100vh - 280px);
-        min-height: 220px;
-        overflow: auto;
-        -webkit-overflow-scrolling: touch;
-        border: 1px solid #dee2e6;
-        border-radius: 0.375rem;
-        background: #fff;
-    }
-    #StockAgeingReportTableCard .sar-table-scroll.table-wrapper.filtered {
-        min-height: 220px;
-    }
     #StockAgeingReport thead th {
         position: sticky;
         top: 0;
@@ -151,7 +203,11 @@
         z-index: 45;
     }
 </style>
-<div class="card">
+<script>
+    document.body.classList.add('sar-report-page');
+</script>
+<div class="sar-page">
+<div class="card" id="sar-filter-card">
     <div class="card-body">
         <div class="row">
             <div class="col-md-3">
@@ -197,26 +253,22 @@
         </div>
     </div>
 </div>
-<div class="row">
-    <div class="col-sm-12">
-        <div class="card" id="StockAgeingReportTableCard">
-            <div class="table-wrapper sar-table-scroll">
-                <table id="StockAgeingReport" class="fixed-width-table table table-bordered table-sm mb-0">
-                    <thead id="table-head-StockAgeingReport">
-                    </thead>
-                    <tbody id="table-body-StockAgeingReport">
-                    </tbody>
-                    <tfoot id="table-foot-StockAgeingReport">
-                    </tfoot>
-                </table>
-            </div>
-            <div class="paginator px-2 py-2 border-top bg-light" id="paginator-StockAgeingReport">
-            </div>
-        </div>
+<div class="card sar-table-section" id="StockAgeingReportTableCard">
+    <div class="table-wrapper sar-table-scroll" id="sarTableWrapper">
+        <table id="StockAgeingReport" class="fixed-width-table table table-bordered table-sm mb-0">
+            <thead id="table-head-StockAgeingReport">
+            </thead>
+            <tbody id="table-body-StockAgeingReport">
+            </tbody>
+            <tfoot id="table-foot-StockAgeingReport">
+            </tfoot>
+        </table>
+    </div>
+    <div class="paginator px-2 py-2 border-top bg-light" id="paginator-StockAgeingReport">
     </div>
 </div>
 <!-- Stock With Chart section (shown only when Report Option = Stock With Chart) -->
-<div id="StockWithChart" style="display:none;">
+<div id="StockWithChart" class="sar-chart-section" style="display:none;">
     <div class="row g-3 mb-3">
         <div class="col-12">
             <div class="swc-chart-card">
@@ -271,6 +323,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
