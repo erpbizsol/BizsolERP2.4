@@ -322,6 +322,65 @@
     .doe-page #PaymentHistory tbody tr:hover {
         background: rgba(102, 126, 234, 0.07) !important;
     }
+    .doe-page #tblorderbooking tbody tr.row-not-transferred,
+    .doe-page #tblorderbooking tbody tr.row-not-transferred:nth-child(even) {
+        background-color: #fff3cd !important;
+        border: 3px solid #f59e0b !important;
+    }
+    .doe-page #tblorderbooking tbody tr.row-not-transferred:hover {
+        background-color: #fde68a !important;
+    }
+    .doe-page #tblorderbooking tbody tr.row-verified-locked {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    .doe-page #tblorderbooking tbody tr.row-verified-locked .btn-check-stock {
+        pointer-events: auto;
+        opacity: 1;
+        cursor: pointer;
+    }
+    .doe-page #tblorderbooking tbody tr.row-verified-locked.row-not-transferred {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .btn-check-stock {
+        font-size: 0.72rem;
+        padding: 4px 10px;
+        white-space: nowrap;
+        display: inline-flex !important;
+        align-items: center;
+        gap: 4px;
+        line-height: 1.4;
+        opacity: 1 !important;
+        visibility: visible !important;
+        background: #2563eb !important;
+        color: #fff !important;
+        border: 1px solid #1d4ed8 !important;
+        border-radius: 6px;
+        cursor: pointer;
+        min-width: 96px;
+        justify-content: center;
+    }
+    .btn-check-stock:disabled {
+        opacity: 0.85 !important;
+        cursor: wait !important;
+    }
+    .doe-page #tblorderbooking tbody td.td-to-be-transferred {
+        min-width: 115px;
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+    .doe-page #tblorderbooking tbody td.td-to-be-transferred input[name="txtToBeTransferred"] {
+        position: absolute !important;
+        width: 0 !important;
+        height: 0 !important;
+        opacity: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        pointer-events: none !important;
+    }
     .doe-page #tblorderbooking tfoot tr#trTotal {
         background: #f5f3ff;
         font-weight: 700;
@@ -469,14 +528,32 @@
         -moz-appearance: textfield;
     }
     @@media (max-width: 576px) {
+        .doe-tab-bar {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #myTab.nav-tabs {
+            flex-wrap: nowrap;
+            min-height: auto;
+            padding: 6px 8px 0;
+            width: max-content;
+            min-width: 100%;
+        }
         #myTab .nav-item {
-            flex: 1;
+            flex: 0 0 auto;
             min-width: 0;
         }
         #myTab .nav-link {
-            width: 100%;
+            width: auto;
+            height: auto;
+            min-height: 36px;
+            font-size: 0.7rem;
+            padding: 6px 10px !important;
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+        #myTab .nav-link i {
             font-size: 0.75rem;
-            padding: 0 8px !important;
         }
         #myTab .nav-link.active {
             color: #fff !important;
@@ -798,6 +875,7 @@
                             <th class="lead-text width_cust digit13" role="columnheader">Price List</th>
                             <th class="lead-text width_cust digit10" role="columnheader">Remarks</th>
                             <th class="lead-text width_cust" role="columnheader">Delete</th>
+                            <th class="lead-text width_cust" role="columnheader">To Be Transferred</th>
                         </tr>
                     </thead>
                     <tbody id="Orderdata" role="rowgroup"></tbody>
@@ -828,6 +906,7 @@
                             <td style="text-align: right;"></td>
                             <td style="text-align: right;" class="font-weight-bold" id="txtDiscountTotal_AfterRate"></td>
                             <td style="text-align: right;" class="font-weight-bold" id="txtAmountTotal"></td>
+                            <td style="text-align: right;"></td>
                             <td style="text-align: right;"></td>
                             <td style="text-align: right;"></td>
                             <td style="text-align: right;"></td>
@@ -1051,6 +1130,31 @@
                 </table>
             </div>
             <div class="modal-footer"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Check Stock & Mark Transfer Confirmation Modal -->
+<div class="modal fade" id="checkStockTransferModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;">
+                <h5 class="modal-title"><i class="fa fa-cubes me-2"></i>Stock Available — Mark to Transfer?</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close" onclick="$('#checkStockTransferModal').modal('hide');"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p id="checkStockTransferMsg" class="mb-1" style="font-size:0.97rem;"></p>
+                <input type="hidden" id="hdnCheckStockRowNo" value="" />
+                <input type="hidden" id="hdnCheckStockBalQty" value="" />
+            </div>
+            <div class="modal-footer">
+                <a class="btn btn-success" id="btnConfirmTransfer" onclick="ConfirmMarkToTransfer();">
+                    <i class="fa fa-check me-1"></i> Yes, Mark as To Be Transferred
+                </a>
+                <a class="btn btn-secondary" data-bs-dismiss="modal" onclick="$('#checkStockTransferModal').modal('hide');">
+                    No
+                </a>
+            </div>
         </div>
     </div>
 </div>

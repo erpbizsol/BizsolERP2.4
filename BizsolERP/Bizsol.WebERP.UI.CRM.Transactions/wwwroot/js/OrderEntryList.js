@@ -223,6 +223,66 @@ function convertDateFormat(dateString) {
     const monthAbbreviation = monthNames[parseInt(month, 10) - 1];
     return `${day}-${monthAbbreviation}-${year}`;
 }
+function getTransferredStatusValue(item) {
+    if (!item || typeof item !== 'object') return '';
+    if (item['Transferred Status'] != null && String(item['Transferred Status']).trim() !== '') {
+        return String(item['Transferred Status']).trim();
+    }
+    const key = Object.keys(item).find(function (k) {
+        return k.replace(/\s+/g, ' ').trim().toLowerCase() === 'transferred status';
+    });
+    return key ? String(item[key]).trim() : '';
+}
+function getTransferredStatusRowClassFromText(status) {
+    if (!status) return '';
+    const lower = status.toLowerCase();
+    if (lower.includes('partially')) {
+        return 'oel-row-partial';
+    }
+    if (lower === 'transferred' || (lower.includes('transferred') && !lower.includes('not'))) {
+        return 'oel-row-transferred';
+    }
+    return '';
+}
+function getTransferredStatusRowClass(item) {
+    return getTransferredStatusRowClassFromText(getTransferredStatusValue(item));
+}
+function isOrderEditAllowed(item) {
+    if (item.Status === 'UnVerified') return true;
+    const status = getTransferredStatusValue(item).toLowerCase();
+    if (status.includes('partially')) return true;
+    if (status.includes('not')) return true;
+    return false;
+}
+function applyOrderListTransferredRowColors() {
+    const $table = $('#OrderList');
+    if (!$table.length) return;
+
+    let transferredColIndex = -1;
+    $table.find('#table-header th').each(function (i) {
+        const heading = ($(this).find('.filter-table-heading').text() || $(this).text()).replace(/\s+/g, ' ').trim().toLowerCase();
+        if (heading === 'transferred status') {
+            transferredColIndex = i;
+            return false;
+        }
+    });
+
+    $table.find('#table-body tr').each(function () {
+        const $tr = $(this);
+        if ($tr.hasClass('total-row') || $tr.hasClass('grand-total-row')) return;
+
+        let rowClass = '';
+        if (transferredColIndex >= 0) {
+            const status = $tr.find('td').eq(transferredColIndex).text().replace(/\s+/g, ' ').trim();
+            rowClass = getTransferredStatusRowClassFromText(status);
+        }
+
+        $tr.removeClass('oel-row-transferred oel-row-partial');
+        if (rowClass) {
+            $tr.addClass(rowClass);
+        }
+    });
+}
 function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
     OrderEntryListService.GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus).then(function (response) {
         if (response && Array.isArray(response) && response.length > 0) {
@@ -233,7 +293,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Code", "VisitMaster_Code", "Verified On", "Verified By", "Verified", "Closed", "OtherCharges", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "VerifiedOn", "Order Type", "Total Amount"];
+            const hiddenColumns = ["Code", "VisitMaster_Code", "Verified On", "Verified By", "Verified", "Closed", "OtherCharges", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "VerifiedOn", "Order Type", "Total Amount", "__bizsolRowClass"];
             const ColumnAlignment = {
                 "Basic Rate": 'right',
                 "Amount": 'right',
@@ -349,7 +409,8 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             //    hiddenColumns.push("Dispatched Qty PC");
             //}
             const updatedResponse = response.map(item => {
-                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.Status !== 'UnVerified' ? 'disabled' : ''} onclick="openEditVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-pencil"></i></button>
+                const editDisabled = isOrderEditAllowed(item) ? '' : 'disabled';
+                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${editDisabled} onclick="openEditVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-pencil"></i></button>
                 <button class="btn btn-info icon-height mb-1" title="View" onclick="openViewVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-eye"></i></button>
                 <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.Status !== 'UnVerified' ? 'disabled' : ''} onclick="Delete('${item.Code}')"><i class="fa fa-times"></i></button>`;
 
@@ -372,7 +433,8 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                     ...item,
                     Action: buttonsHTML,
                     Status: td_StatusBtn,
-                    Remarks: remarksWithTooltip, 
+                    Remarks: remarksWithTooltip,
+                    __bizsolRowClass: getTransferredStatusRowClass(item),
                 };
             });
 
@@ -381,6 +443,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             ColumnAlignment['Qty ' + QtyPCHeader] = 'right';
 
             BizsolCustomFilterGrid.CreateDataTable("table-header","table-body",updatedResponse,button,showButtons,stringFilterColumn,numericFilterColumn,dateFilterColumn,stringDoubleFilterColumn,hiddenColumns,ColumnAlignment);
+            applyOrderListTransferredRowColors();
             updateFooter(response); 
 
             var columnsToRemoveForPrint = ["Code", "VisitMaster_Code", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "Verified By", "Verified On", "Order Type", "Action", "Verified", "Closed", "Total Amount", "Total Order Qty PC", "Total Order Qty MR","Total Order Qty","OtherCharges"];
@@ -781,3 +844,4 @@ window.DeleteModal = DeleteModal;
 window.CloseModal = CloseModal;
 window.GetFixedParameterConfiguration = GetFixedParameterConfiguration;
 window.ShowOrderList = ShowOrderList;
+window.applyOrderListTransferredRowColors = applyOrderListTransferredRowColors;
