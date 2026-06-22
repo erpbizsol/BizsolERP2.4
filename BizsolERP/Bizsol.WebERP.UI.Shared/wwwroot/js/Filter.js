@@ -1024,6 +1024,9 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
         $body.find("td").removeClass("vm-cell-action");
         $body.find(".vm-action-btns").closest("td").addClass("vm-cell-action");
     }
+    if (tableId === "OrderList" && typeof window.applyOrderListTransferredRowColors === "function") {
+        window.applyOrderListTransferredRowColors();
+    }
 }
 window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
     const totalColumns = window[`totalColumns_${bodyId}`];
