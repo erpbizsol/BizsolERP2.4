@@ -9,12 +9,15 @@ var CM_MODULE_DESCRIPTION_FOR_REPORT_CONFIG = 'Checklist MIS Report';
 
 var CM_REPORT_TYPES_DEFAULT = [
     { code: 'GETMIS', label: 'Check List MIS Score', showChart: true },
+    { code: 'GETSUMMARY', label: 'CHECK LIST REPORT', showChart: false },
     { code: 'GETDETAIL', label: 'Task Wise Detail', showChart: false },
 ];
 var CM_REPORT_TYPES = CM_REPORT_TYPES_DEFAULT.slice();
 
 /* ───────────────────────── state ───────────────────────── */
 var G_CM_BaseDate = new Date();
+var G_CM_FromDate = '';
+var G_CM_ToDate = '';
 var G_CM_Rows = [];
 var G_CM_Filtered = [];
 var G_CM_Page = 1;
@@ -22,6 +25,7 @@ var G_CM_PageSize = 10;
 var G_CM_UserMap = {};
 var G_CM_UserList = [];
 var G_CM_ReportMode = 'GETMIS';
+var G_CM_SummaryVm = null;
 
 var DONUT_COLORS = [
     '#2563eb', '#7c3aed', '#0ea5e9', '#ef4444', '#f59e0b',
@@ -238,6 +242,123 @@ function normalizeDetailRow(r) {
     };
 }
 
+function normalizeSummaryHeader(r) {
+    return {
+        UserMaster_Code: num(prop(r, ['UserMaster_Code', 'userMaster_Code', 'Code', 'code'])),
+        EmployeeName: String(prop(r, ['EmployeeName', 'employeeName', 'DoerName', 'doerName', 'UserName', 'userName']) || '').trim(),
+        Department: String(prop(r, ['Department', 'department', 'DepartmentName', 'departmentName']) || '').trim(),
+        WeekPeriod: String(prop(r, ['WeekPeriod', 'weekPeriod', 'MISPeriod', 'misPeriod']) || ''),
+        ReportTitle: String(prop(r, ['ReportTitle', 'reportTitle']) || 'Weekly Checklist Report'),
+    };
+}
+
+function normalizeSummaryCategory(r) {
+    return {
+        TaskCategory: String(prop(r, ['TaskCategory', 'taskCategory']) || ''),
+        TotalTasks: num(prop(r, ['TotalTasks', 'totalTasks'])),
+        Completed: num(prop(r, ['Completed', 'completed'])),
+        Pending: num(prop(r, ['Pending', 'pending'])),
+        ScorePct: num(prop(r, ['ScorePct', 'scorePct', 'ScorePercent', 'scorePercent'])),
+    };
+}
+
+function normalizeSummaryOverall(r) {
+    return {
+        TotalAssigned: num(prop(r, ['TotalAssigned', 'totalAssigned'])),
+        TotalCompleted: num(prop(r, ['TotalCompleted', 'totalCompleted'])),
+        TotalPending: num(prop(r, ['TotalPending', 'totalPending'])),
+        WeeklyPerformanceScore: num(prop(r, ['WeeklyPerformanceScore', 'weeklyPerformanceScore'])),
+        PerformanceStatus: String(prop(r, ['PerformanceStatus', 'performanceStatus']) || ''),
+    };
+}
+
+function unwrapSummaryPayload(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return { header: null, categories: [], overall: null };
+    }
+    if (payload.Header || payload.Categories || payload.Overall) {
+        var headerRows = unwrapApiList(payload.Header || payload.header);
+        var catRows = unwrapApiList(payload.Categories || payload.categories);
+        var overallRows = unwrapApiList(payload.Overall || payload.overall);
+        return {
+            header: headerRows.length ? normalizeSummaryHeader(headerRows[0]) : null,
+            categories: catRows.map(normalizeSummaryCategory),
+            overall: overallRows.length ? normalizeSummaryOverall(overallRows[0]) : null,
+        };
+    }
+    if (Array.isArray(payload)) {
+        if (payload.length && payload[0] && (payload[0].Header || payload[0].Categories)) {
+            return unwrapSummaryPayload(payload[0]);
+        }
+    }
+    return { header: null, categories: [], overall: null };
+}
+
+function performanceStatusEmoji(status) {
+    var s = String(status || '').toLowerCase();
+    if (s.indexOf('excellent') >= 0) return '🏆';
+    if (s.indexOf('good') >= 0) return '🏆';
+    if (s.indexOf('average') >= 0) return '📊';
+    return '⚠️';
+}
+
+function renderWhatsAppSummary() {
+    var $card = $('#cmWhatsAppCard');
+    if (!isWhatsAppSummaryMode()) return;
+
+    var vm = G_CM_SummaryVm;
+    if (!vm || !vm.header) {
+        $card.html('<div class="cm-wa-empty"><i class="fas fa-user-check"></i> Select a user and date range to view the weekly checklist report.</div>');
+        return;
+    }
+
+    var h = vm.header;
+    var cats = vm.categories || [];
+    var o = vm.overall || {};
+    var empName = h.EmployeeName || resolveDoerName({ UserMaster_Code: h.UserMaster_Code, DoerName: h.EmployeeName }) || '—';
+    var dept = h.Department || '—';
+    var week = h.WeekPeriod || $('#cmPeriodBanner').text() || '—';
+
+    var rowsHtml = '';
+    if (!cats.length) {
+        rowsHtml = '<tr><td colspan="5" class="cm-wa-empty">No tasks for this period.</td></tr>';
+    } else {
+        cats.forEach(function (c) {
+            rowsHtml += '<tr>' +
+                '<td>' + escapeHtml(c.TaskCategory) + '</td>' +
+                '<td>' + c.TotalTasks + '</td>' +
+                '<td>' + c.Completed + '</td>' +
+                '<td>' + c.Pending + '</td>' +
+                '<td>' + c.ScorePct + '%</td>' +
+                '</tr>';
+        });
+    }
+
+    $card.html(
+        '<div class="cm-wa-title">Weekly Checklist Performance Report</div>' +
+        '<div class="cm-wa-subtitle">WhatsApp Format – User Wise Score Report</div>' +
+        '<div class="cm-wa-subtitle">' + escapeHtml(h.ReportTitle || 'Weekly Checklist Report') + '</div>' +
+        '<div class="cm-wa-meta">' +
+        '<div><strong>Week:</strong> ' + escapeHtml(week) + '</div>' +
+        '<div><strong>Employee:</strong> ' + escapeHtml(empName) + '</div>' +
+        '<div><strong>Department:</strong> ' + escapeHtml(dept) + '</div>' +
+        '</div>' +
+        '<div class="cm-wa-section">📋 TASK PERFORMANCE SUMMARY</div>' +
+        '<table class="cm-wa-table">' +
+        '<thead><tr>' +
+        '<th>Task Category</th><th>Total Tasks</th><th>Completed</th><th>Pending</th><th>Score %</th>' +
+        '</tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
+        '<div class="cm-wa-section">✅ OVERALL PERFORMANCE</div>' +
+        '<ul class="cm-wa-overall">' +
+        '<li><strong>Total Assigned Tasks:</strong> ' + (o.TotalAssigned || 0) + '</li>' +
+        '<li><strong>Total Completed:</strong> ' + (o.TotalCompleted || 0) + '</li>' +
+        '<li><strong>Total Pending:</strong> ' + (o.TotalPending || 0) + '</li>' +
+        '<li><strong>Weekly Performance Score:</strong> ' + (o.WeeklyPerformanceScore || 0) + '%</li>' +
+        '<li><strong>Performance Status:</strong> ' + performanceStatusEmoji(o.PerformanceStatus) + ' ' + escapeHtml(o.PerformanceStatus || '—') + '</li>' +
+        '</ul>'
+    );
+}
+
 function weekRange(baseDate) {
     var d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
     var dow = d.getDay();
@@ -260,6 +381,48 @@ function periodLabelFor(baseDate) {
     return ddmmyyyy(r.start) + ' - ' + ddmmyyyy(r.end);
 }
 
+function parseIsoDate(iso) {
+    if (!iso) return null;
+    var parts = String(iso).split('-');
+    if (parts.length !== 3) return null;
+    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+}
+
+function initDefaultDateRange() {
+    var r = weekRange(new Date());
+    G_CM_FromDate = toIso(r.start);
+    G_CM_ToDate = toIso(r.end);
+    var today = toIso(new Date());
+    $('#cmFromDate').val(G_CM_FromDate).attr('max', today);
+    $('#cmToDate').val(G_CM_ToDate).attr('max', today);
+}
+
+function selectedDateRange() {
+    var fromDate = $('#cmFromDate').val() || G_CM_FromDate;
+    var toDate = $('#cmToDate').val() || G_CM_ToDate;
+    return { fromDate: fromDate, toDate: toDate };
+}
+
+function isValidDateRange(fromDate, toDate) {
+    return fromDate && toDate && fromDate <= toDate;
+}
+
+function selectedReportTypeLabel() {
+    var cfg = currentReportType();
+    return cfg && cfg.label ? cfg.label : 'Check List MIS SCORE';
+}
+
+function updatePeriodBanner() {
+    var range = selectedDateRange();
+    var start = parseIsoDate(range.fromDate);
+    var end = parseIsoDate(range.toDate);
+    if (start && end) {
+        $('#cmPeriodBanner').text(ddmmyyyy(start) + ' - ' + ddmmyyyy(end));
+    } else {
+        $('#cmPeriodBanner').text(periodLabelFor(G_CM_BaseDate));
+    }
+}
+
 function reportTypeLabel(row) {
     return String(
         prop(row, ['DisplayName', 'displayName', 'Desp', 'desp', 'FieldValue', 'fieldValue']) || ''
@@ -277,6 +440,9 @@ function reportTypeMode(row, label) {
         if (/^GET/i.test(mode)) return mode;
     }
     var low = String(label || reportTypeLabel(row)).toLowerCase();
+    if (low.indexOf('check list report') >= 0 || low.indexOf('whatsapp') >= 0 || low.indexOf('weekly checklist') >= 0) {
+        return 'GETSUMMARY';
+    }
     if (low.indexOf('detail') >= 0 || low.indexOf('task wise') >= 0) return 'GETDETAIL';
     if (low) return 'GETMIS';
     return '';
@@ -325,6 +491,10 @@ function currentReportType() {
 
 function isSummaryMode() {
     return G_CM_ReportMode === 'GETMIS';
+}
+
+function isWhatsAppSummaryMode() {
+    return G_CM_ReportMode === 'GETSUMMARY';
 }
 
 function colCount() {
@@ -407,7 +577,9 @@ function mergeUsersFromReportRows(rows) {
 }
 
 function loadDoersFromMIS() {
-    return CheckListMISService.GetCheckListMIS(toIso(G_CM_BaseDate), 0, 'GETMIS')
+    var range = selectedDateRange();
+    if (!isValidDateRange(range.fromDate, range.toDate)) return Promise.resolve(null);
+    return CheckListMISService.GetCheckListMIS('Check List MIS SCORE', 0, range.fromDate, range.toDate)
         .then(function (res) {
             mergeUsersFromReportRows(unwrapApiList(res).map(normalizeSummaryRow));
         })
@@ -453,10 +625,23 @@ function bindUserDropdown() {
 
 function updateLayoutForReportType() {
     var cfg = currentReportType();
-    if (cfg.showChart) {
+    var waMode = isWhatsAppSummaryMode();
+    var $body = $('.cm-body');
+
+    if (waMode) {
+        $body.addClass('cm-whatsapp-mode');
+        $('#cmSendWhatsApp').show();
+        $('.cm-subbar .cm-week-note').text('WhatsApp Format – User Wise Score Report');
+    } else {
+        $body.removeClass('cm-whatsapp-mode');
+        $('#cmSendWhatsApp').hide();
+        $('.cm-subbar .cm-week-note').text('Check List MIS Score, EM Weekly day Monday!!');
+    }
+
+    if (cfg.showChart && !waMode) {
         $('.cm-chart-side').removeClass('cm-hidden');
         $('.cm-grid-side').removeClass('cm-full');
-    } else {
+    } else if (!waMode) {
         $('.cm-chart-side').addClass('cm-hidden');
         $('.cm-grid-side').addClass('cm-full');
     }
@@ -617,24 +802,62 @@ function selectedUserCode() {
 /* ───────────────────────── data load ───────────────────────── */
 function loadMIS(refreshUsers) {
     if (typeof ShowLoader === 'function') ShowLoader();
-    $('#cmPeriodBanner').text(periodLabelFor(G_CM_BaseDate));
+    updatePeriodBanner();
     updateLayoutForReportType();
 
     var userCode = selectedUserCode();
+    var range = selectedDateRange();
+    var reportType = selectedReportTypeLabel();
+
+    if (!isValidDateRange(range.fromDate, range.toDate)) {
+        if (typeof HideLoader === 'function') HideLoader();
+        if (typeof toastr !== 'undefined') toastr.warning('From Date must be less than or equal to To Date.');
+        return Promise.resolve();
+    }
+
+    if (isWhatsAppSummaryMode() && !userCode) {
+        if (typeof HideLoader === 'function') HideLoader();
+        G_CM_SummaryVm = null;
+        G_CM_Rows = [];
+        applyFilter();
+        renderWhatsAppSummary();
+        if (typeof toastr !== 'undefined') toastr.warning('Please select a user for CHECK LIST REPORT.');
+        return Promise.resolve();
+    }
+
+    G_CM_FromDate = range.fromDate;
+    G_CM_ToDate = range.toDate;
     var userPromise = refreshUsers ? refreshUserDropdown() : Promise.resolve();
 
     return userPromise
         .then(function () {
-            return CheckListMISService.GetCheckListMIS(toIso(G_CM_BaseDate), userCode, G_CM_ReportMode);
+            return CheckListMISService.GetCheckListMIS(reportType, userCode, range.fromDate, range.toDate, G_CM_ReportMode);
         })
         .then(function (res) {
+            if (isWhatsAppSummaryMode()) {
+                G_CM_SummaryVm = unwrapSummaryPayload(res);
+                if (!G_CM_SummaryVm.header && unwrapApiList(res).length) {
+                    G_CM_SummaryVm = {
+                        header: normalizeSummaryHeader(unwrapApiList(res)[0]),
+                        categories: unwrapApiList(res).slice(1).map(normalizeSummaryCategory),
+                        overall: null,
+                    };
+                }
+                G_CM_Rows = [];
+                renderWhatsAppSummary();
+                applyFilter();
+                return;
+            }
+            G_CM_SummaryVm = null;
             var normalizer = isSummaryMode() ? normalizeSummaryRow : normalizeDetailRow;
             G_CM_Rows = unwrapApiList(res).map(normalizer);
             applyFilter();
         })
         .catch(function () {
             G_CM_Rows = [];
+            G_CM_SummaryVm = null;
             applyFilter();
+            renderWhatsAppSummary();
             if (typeof toastr !== 'undefined') toastr.error('Could not load Checklist MIS report.');
         })
         .finally(function () {
@@ -694,6 +917,10 @@ function buildPdfTableBody(rows) {
 }
 
 function buildPdfDocumentDefinition() {
+    if (isWhatsAppSummaryMode() && G_CM_SummaryVm && G_CM_SummaryVm.header) {
+        return buildWhatsAppPdfDocumentDefinition(G_CM_SummaryVm);
+    }
+
     var reportLabel = $('#cmReportType option:selected').text() || 'Checklist MIS Report';
     var userLabel = $('#cmUserFilter option:selected').text() || 'All Users';
     var period = $('#cmPeriodBanner').text() || periodLabelFor(G_CM_BaseDate);
@@ -775,8 +1002,176 @@ function buildPdfDocumentDefinition() {
     };
 }
 
+function buildWhatsAppPdfDocumentDefinition(vm) {
+    var h = vm.header || {};
+    var cats = vm.categories || [];
+    var o = vm.overall || {};
+    var empName = h.EmployeeName || '—';
+    var tableBody = [
+        [
+            { text: 'Task Category', style: 'waTableHeader' },
+            { text: 'Total Tasks', style: 'waTableHeader' },
+            { text: 'Completed', style: 'waTableHeader' },
+            { text: 'Pending', style: 'waTableHeader' },
+            { text: 'Score %', style: 'waTableHeader' },
+        ],
+    ];
+    cats.forEach(function (c) {
+        tableBody.push([
+            { text: c.TaskCategory || '', color: '#ffffff' },
+            { text: String(c.TotalTasks), alignment: 'center', color: '#ffffff' },
+            { text: String(c.Completed), alignment: 'center', color: '#ffffff' },
+            { text: String(c.Pending), alignment: 'center', color: '#ffffff' },
+            { text: String(c.ScorePct) + '%', alignment: 'center', color: '#ffffff' },
+        ]);
+    });
+
+    return {
+        pageSize: 'A4',
+        pageMargins: [36, 36, 36, 36],
+        background: function () {
+            return { canvas: [{ type: 'rect', x: 0, y: 0, w: 595.28, h: 841.89, color: '#000000' }] };
+        },
+        content: [
+            { text: 'Weekly Checklist Performance Report', style: 'waTitle' },
+            { text: 'WhatsApp Format – User Wise Score Report', style: 'waSub' },
+            { text: h.ReportTitle || 'Weekly Checklist Report', style: 'waSub', margin: [0, 0, 0, 10] },
+            { text: 'Week: ' + (h.WeekPeriod || ''), style: 'waMeta' },
+            { text: 'Employee: ' + empName, style: 'waMeta' },
+            { text: 'Department: ' + (h.Department || '—'), style: 'waMeta', margin: [0, 0, 0, 14] },
+            { text: 'TASK PERFORMANCE SUMMARY', style: 'waSection' },
+            {
+                table: {
+                    headerRows: 1,
+                    widths: ['*', 70, 70, 70, 55],
+                    body: tableBody,
+                },
+                layout: {
+                    hLineWidth: function () { return 0.8; },
+                    vLineWidth: function () { return 0.8; },
+                    hLineColor: function () { return '#374151'; },
+                    vLineColor: function () { return '#374151'; },
+                    fillColor: function (rowIndex) { return rowIndex === 0 ? '#111827' : '#000000'; },
+                },
+                margin: [0, 4, 0, 14],
+            },
+            { text: 'OVERALL PERFORMANCE', style: 'waSection' },
+            { text: 'Total Assigned Tasks: ' + (o.TotalAssigned || 0), style: 'waMeta' },
+            { text: 'Total Completed: ' + (o.TotalCompleted || 0), style: 'waMeta' },
+            { text: 'Total Pending: ' + (o.TotalPending || 0), style: 'waMeta' },
+            { text: 'Weekly Performance Score: ' + (o.WeeklyPerformanceScore || 0) + '%', style: 'waMeta' },
+            { text: 'Performance Status: ' + (o.PerformanceStatus || '—'), style: 'waMeta' },
+        ],
+        styles: {
+            waTitle: { fontSize: 18, bold: true, color: '#ffffff' },
+            waSub: { fontSize: 10, color: '#d1d5db' },
+            waMeta: { fontSize: 10, color: '#f3f4f6', margin: [0, 2, 0, 0] },
+            waSection: { fontSize: 11, bold: true, color: '#ffffff', margin: [0, 8, 0, 4] },
+            waTableHeader: { fontSize: 9, bold: true, color: '#ffffff', alignment: 'center' },
+        },
+        defaultStyle: { fontSize: 9, color: '#ffffff' },
+    };
+}
+
+function getSummaryPdfBase64() {
+    return new Promise(function (resolve, reject) {
+        if (!G_CM_SummaryVm || !G_CM_SummaryVm.header) {
+            reject(new Error('No summary data to export.'));
+            return;
+        }
+        var pdfMake = getPdfMake();
+        if (!pdfMake || typeof pdfMake.createPdf !== 'function') {
+            reject(new Error('PDF library is not loaded. Please refresh the page.'));
+            return;
+        }
+        try {
+            pdfMake.createPdf(buildWhatsAppPdfDocumentDefinition(G_CM_SummaryVm)).getBase64(resolve);
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
+function extractUploadedFileLink(response) {
+    if (response == null) return '';
+    var text = String(response).trim().replace(/^["']|["']$/g, '');
+    if (!text) return '';
+    var httpMatch = text.match(/https?:\/\/[^\s"'<>\\]+/i);
+    if (httpMatch) return httpMatch[0];
+    if (text.charAt(0) === '/') return 'http://web.bizsol.in' + text;
+    return text;
+}
+
+function getWhatsAppExportFileName() {
+    var userLabel = ($('#cmUserFilter option:selected').text() || 'User').replace(/[^\w\-]+/g, '_');
+    var period = ($('#cmPeriodBanner').text() || '').replace(/[^\w\-]+/g, '_');
+    return 'WeeklyChecklistReport_' + userLabel + '_' + period;
+}
+
+function sendWhatsApp() {
+    if (!isWhatsAppSummaryMode()) {
+        if (typeof toastr !== 'undefined') toastr.warning('Send WhatsApp is available for CHECK LIST REPORT only.');
+        return;
+    }
+    if (!G_CM_SummaryVm || !G_CM_SummaryVm.header) {
+        if (typeof toastr !== 'undefined') toastr.warning('No data to send. Select user and load report first.');
+        return;
+    }
+    var userCode = selectedUserCode();
+    if (!userCode) {
+        if (typeof toastr !== 'undefined') toastr.warning('Please select a user.');
+        return;
+    }
+
+    var $btn = $('#cmSendWhatsApp');
+    $btn.prop('disabled', true);
+    if (typeof ShowLoader === 'function') ShowLoader();
+
+    var fileExtension = '.pdf';
+    var fileName = getWhatsAppExportFileName().replace(/\.pdf$/i, '');
+    var reportType = selectedReportTypeLabel();
+
+    getSummaryPdfBase64()
+        .then(function (base64) {
+            return CheckListMISService.UploadWhatsappFile(fileName, fileExtension, base64);
+        })
+        .then(function (response) {
+            var link = extractUploadedFileLink(response);
+            if (!link) {
+                if (typeof toastr !== 'undefined') toastr.error('File uploaded but no link was returned.');
+                return null;
+            }
+            return CheckListMISService.SendWhatsappToUser(reportType, link, userCode);
+        })
+        .then(function (result) {
+            if (!result) return;
+            var row = Array.isArray(result) ? result[0] : result;
+            var status = row && (row.Status != null ? row.Status : row.status);
+            var message = row && (row.Message != null ? row.Message : row.message);
+            if (status === 'Y') {
+                if (typeof toastr !== 'undefined') toastr.success(message || 'WhatsApp sent successfully.');
+            } else {
+                if (typeof toastr !== 'undefined') toastr.error(message || 'Unable to send WhatsApp.');
+            }
+        })
+        .catch(function (err) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error(err && err.message ? err.message : 'Unable to send report on WhatsApp.');
+            }
+        })
+        .finally(function () {
+            $btn.prop('disabled', false);
+            if (typeof HideLoader === 'function') HideLoader();
+        });
+}
+
 function exportPdf() {
-    if (!G_CM_Filtered.length) {
+    if (isWhatsAppSummaryMode()) {
+        if (!G_CM_SummaryVm || !G_CM_SummaryVm.header) {
+            if (typeof toastr !== 'undefined') toastr.warning('No data to export.');
+            return;
+        }
+    } else if (!G_CM_Filtered.length) {
         if (typeof toastr !== 'undefined') toastr.warning('No data to export.');
         return;
     }
@@ -788,7 +1183,9 @@ function exportPdf() {
     try {
         var d = new Date();
         var stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        var fileName = 'CheckListMIS_' + G_CM_ReportMode + '_' + stamp + '.pdf';
+        var fileName = isWhatsAppSummaryMode()
+            ? getWhatsAppExportFileName() + '.pdf'
+            : 'CheckListMIS_' + G_CM_ReportMode + '_' + stamp + '.pdf';
         pdfMake.createPdf(buildPdfDocumentDefinition()).download(fileName);
         if (typeof toastr !== 'undefined') toastr.success('PDF download started.');
     } catch (err) {
@@ -806,10 +1203,8 @@ $(document).ready(function () {
         $('#ERPHeading').text('Checklist MIS Report');
     }
 
-    var $picker = $('#cmWeekPicker');
-    $picker.attr('max', toIso(new Date()));
-    $picker.val(toIso(G_CM_BaseDate));
-    $('#cmPeriodBanner').text(periodLabelFor(G_CM_BaseDate));
+    initDefaultDateRange();
+    updatePeriodBanner();
 
     loadReportTypeDropdown()
         .then(function () {
@@ -828,11 +1223,15 @@ $(document).ready(function () {
         loadMIS();
     });
 
-    $picker.on('change', function () {
-        var val = $(this).val();
-        if (!val) return;
-        var parts = val.split('-');
-        G_CM_BaseDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    $('#cmFromDate, #cmToDate').on('change', function () {
+        var range = selectedDateRange();
+        if (!isValidDateRange(range.fromDate, range.toDate)) {
+            if (typeof toastr !== 'undefined') toastr.warning('From Date must be less than or equal to To Date.');
+            return;
+        }
+        G_CM_FromDate = range.fromDate;
+        G_CM_ToDate = range.toDate;
+        updatePeriodBanner();
         loadMIS(true);
     });
 
@@ -840,7 +1239,8 @@ $(document).ready(function () {
         var defaultMode = (CM_REPORT_TYPES[0] && CM_REPORT_TYPES[0].code) || 'GETMIS';
         G_CM_ReportMode = defaultMode;
         G_CM_BaseDate = new Date();
-        $picker.val(toIso(G_CM_BaseDate));
+        initDefaultDateRange();
+        updatePeriodBanner();
         $('#cmReportType').val(defaultMode);
         $('#cmUserFilter').val('0');
         if ($('#cmReportType').hasClass('select2-hidden-accessible')) {
@@ -851,6 +1251,10 @@ $(document).ready(function () {
 
     $('#cmExportPdf').on('click', function () {
         exportPdf();
+    });
+
+    $('#cmSendWhatsApp').on('click', function () {
+        sendWhatsApp();
     });
 
     $(document).on('click', '#cmPrev', function () {
