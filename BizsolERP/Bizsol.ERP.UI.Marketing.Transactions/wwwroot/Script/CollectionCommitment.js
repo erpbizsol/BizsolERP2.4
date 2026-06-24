@@ -128,7 +128,7 @@ function CollectionCommitmentTableShow() {
                     let collectedAmount = parseFloat(item['Collected Amount']) || 0;
                     let balanceAmount = commitmentAmount - collectedAmount;
 
-                    let inputAmount = `<input type="text" class="tblAmount box_border form-control form-control-sm" style="width:100px;text-align:right" value="${commitmentAmount}" oninput="CollectionCommitment_validateDecimalInput(this)" maxlength="10" autocomplete="off" />`;
+                    let inputAmount = `<input type="text" class="tblAmount box_border form-control form-control-sm" style="width:100px;text-align:right" value="${commitmentAmount}" data-original-amount="${commitmentAmount}" oninput="CollectionCommitment_validateDecimalInput(this)" maxlength="10" autocomplete="off" />`;
                     let BalanceAmount = balanceAmount.toFixed(2);
                     let buttonsHTML = "";
 
@@ -182,25 +182,42 @@ function BindSelectList(element, list) {
     });
     element.innerHTML = option;
 }
+function getCommitmentAmountValue(amount) {
+    let value = parseFloat(amount);
+    return isNaN(value) ? 0 : value;
+}
+
+function isCommitmentAmountChanged(originalAmount, currentAmount) {
+    return getCommitmentAmountValue(originalAmount).toFixed(3) !== getCommitmentAmountValue(currentAmount).toFixed(3);
+}
+
 function UpdateCommitmentAmount() {
     let updateCommitmentDate = $('#txtCommitmentdate').val();
     let payloadCommitment = [];
 
     $('#tablebody-CollectionCommitment tr').each(function () {
         let row = $(this);
-
+        let input = row.find('input.tblAmount');
         let PartyMaster_Code = parseInt(row.find('td').first().text().trim());
-        let TargetedAmount = parseFloat(row.find('input.tblAmount').val());
+        let TargetedAmount = getCommitmentAmountValue(input.val());
+        let originalAmount = getCommitmentAmountValue(input.data('original-amount'));
 
-    if (!isNaN(PartyMaster_Code) && TargetedAmount > 0) {
-        payloadCommitment.push({
-            partyMaster_Code: PartyMaster_Code,
-            targetedAmount: TargetedAmount
-        });
-    }
+        if (!isNaN(PartyMaster_Code) && TargetedAmount > 0 && isCommitmentAmountChanged(originalAmount, TargetedAmount)) {
+            payloadCommitment.push({
+                partyMaster_Code: PartyMaster_Code,
+                targetedAmount: TargetedAmount
+            });
+        }
     });
-    console.log(payloadCommitment);
+
+    if (payloadCommitment.length === 0) {
+        toastr.warning('No changes to save.');
+        return;
+    }
+
+    Showloader();
     CollectionCommitmentService.SaveCollectionCommitment(updateCommitmentDate, JSON.stringify(payloadCommitment)).then(function (response) {
+            HideLoader();
             if (response.Status === 'Y') {
                 toastr.success(response.Msg);
                 CollectionCommitmentTableShow();
@@ -209,6 +226,7 @@ function UpdateCommitmentAmount() {
             }
         })
         .catch(function (error) {
+            HideLoader();
             console.log(error.Msg);
         });
 }
