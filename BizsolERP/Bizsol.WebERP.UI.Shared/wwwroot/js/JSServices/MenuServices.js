@@ -52,6 +52,15 @@ const MenuService = {
             }
         );
     },
+    GetIsUserMarkDayAttendance: function GetIsUserMarkDayAttendance() {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+       const url = `${UrlService.ERP_SIDE_MENU}/GetIsUserMarkDayAttendance?UserMaster_Code=${userCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { MenuService }

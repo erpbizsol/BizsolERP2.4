@@ -71,9 +71,19 @@ function bindMenu() {
                 MenuService.GetFavouriteMenus(_menuUserID).then(function (favs) {
                     _favouriteMenuCodes = (favs || []).map(function (f) { return f.MenuCode; });
                     renderFullMenu(value, baseUrl);
+                    MenuService.GetIsUserMarkDayAttendance().then(function (res) {
+                        var isMarked = (Array.isArray(res) && res.length > 0) ? res[0].IsUserMarkDayAttendance
+                            : (res && res.IsUserMarkDayAttendance ? res.IsUserMarkDayAttendance : '');
+                        BizSolHelperFunction.checkAttendanceAndShowModal(value, isMarked);
+                    }).catch(function () { });
                 }).catch(function () {
                     _favouriteMenuCodes = [];
                     renderFullMenu(value, baseUrl);
+                    MenuService.GetIsUserMarkDayAttendance().then(function (res) {
+                        var isMarked = (Array.isArray(res) && res.length > 0) ? res[0].IsUserMarkDayAttendance
+                            : (res && res.IsUserMarkDayAttendance ? res.IsUserMarkDayAttendance : '');
+                        BizSolHelperFunction.checkAttendanceAndShowModal(value, isMarked);
+                    }).catch(function () { });
                 });
             });
         });
