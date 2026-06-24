@@ -91,7 +91,7 @@
 }
 #CheckListMISPage .select2-container { min-width: 210px; }
 .cm-actions { display: flex; align-items: flex-end; gap: 8px; }
-.cm-btn-pdf, .cm-btn-reset {
+.cm-btn-pdf, .cm-btn-reset, .cm-btn-whatsapp {
     border: none; cursor: pointer; height: 38px;
     border-radius: 12px; padding: 0 16px; font-size: .82rem; font-weight: 700;
     box-shadow: 0 4px 14px rgba(0,0,0,.14); transition: transform .15s, box-shadow .15s;
@@ -101,6 +101,11 @@
     background: #fef2f2; color: #b91c1c;
 }
 .cm-btn-pdf:hover { transform: translateY(-1px); background: #fee2e2; }
+.cm-btn-whatsapp {
+    background: #dcfce7; color: #15803d;
+}
+.cm-btn-whatsapp:hover { transform: translateY(-1px); background: #bbf7d0; }
+.cm-btn-whatsapp:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 .cm-btn-reset {
     background: #fff; color: #1d4ed8;
 }
@@ -189,6 +194,43 @@ table.cm-table tbody tr:hover td { background: #eff6ff; }
 .cm-leg-name { flex: 1; font-size: 12px; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cm-leg-val { font-size: 12px; font-weight: 800; color: #b91c1c; }
 
+/* ── WhatsApp weekly summary report ── */
+.cm-body.cm-whatsapp-mode .cm-grid-side,
+.cm-body.cm-whatsapp-mode .cm-chart-side { display: none !important; }
+.cm-wa-panel {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 20px;
+    background: #eef2ff;
+}
+.cm-body.cm-whatsapp-mode .cm-wa-panel { display: flex; justify-content: center; align-items: flex-start; }
+.cm-wa-card {
+    width: 100%;
+    max-width: 720px;
+    background: #000;
+    color: #fff;
+    border-radius: 16px;
+    padding: 28px 32px 32px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.35);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.cm-wa-title { font-size: 1.45rem; font-weight: 800; margin: 0 0 6px; }
+.cm-wa-subtitle { font-size: .88rem; color: #d1d5db; margin-bottom: 4px; }
+.cm-wa-meta { font-size: .84rem; color: #e5e7eb; line-height: 1.7; margin: 14px 0 22px; }
+.cm-wa-section { font-size: .95rem; font-weight: 800; margin: 18px 0 10px; letter-spacing: .02em; }
+.cm-wa-table { width: 100%; border-collapse: collapse; font-size: .82rem; margin-bottom: 8px; }
+.cm-wa-table th, .cm-wa-table td {
+    border: 1px solid #374151;
+    padding: 10px 8px;
+    text-align: center;
+}
+.cm-wa-table th { background: #111827; font-weight: 700; }
+.cm-wa-table td:first-child, .cm-wa-table th:first-child { text-align: left; }
+.cm-wa-overall { list-style: disc; padding-left: 22px; margin: 8px 0 0; font-size: .84rem; line-height: 1.85; color: #f3f4f6; }
+.cm-wa-empty { text-align: center; color: #9ca3af; padding: 40px 16px; font-size: .9rem; }
+
 @@media (max-width: 900px) {
     .cm-body { flex-direction: column; }
     .cm-chart-side { max-width: none; border-left: none; border-top: 1px solid #e8edf5; }
@@ -221,11 +263,16 @@ table.cm-table tbody tr:hover td { background: #eff6ff; }
                     </select>
                 </div>
                 <div class="cm-filter-group">
-                    <span class="cm-filter-label"><i class="fas fa-calendar-day"></i> Week Date</span>
-                    <input type="date" class="cm-date" id="cmWeekPicker" title="Pick any day of the week" />
+                    <span class="cm-filter-label"><i class="fas fa-calendar-day"></i> From Date</span>
+                    <input type="date" class="cm-date" id="cmFromDate" title="From Date" />
+                </div>
+                <div class="cm-filter-group">
+                    <span class="cm-filter-label"><i class="fas fa-calendar-day"></i> To Date</span>
+                    <input type="date" class="cm-date" id="cmToDate" title="To Date" />
                 </div>
                 <div class="cm-actions">
                     <button class="cm-btn-pdf" id="cmExportPdf" title="Download PDF"><i class="fas fa-file-pdf"></i>&nbsp;PDF</button>
+                    <button class="cm-btn-whatsapp" id="cmSendWhatsApp" title="Generate PDF and send on WhatsApp" style="display:none;"><i class="fab fa-whatsapp"></i>&nbsp;Send WhatsApp</button>
                     <button class="cm-btn-reset" id="cmResetFilter"><i class="fas fa-rotate-left"></i>&nbsp;Reset</button>
                 </div>
             </div>
@@ -259,6 +306,13 @@ table.cm-table tbody tr:hover td { background: #eff6ff; }
                 <div class="cm-chart-title">This week's count of tasks not completed on time</div>
                 <div class="cm-donut" id="cmDonut"></div>
                 <div class="cm-legend" id="cmDonutLegend"></div>
+            </div>
+
+            <!-- WhatsApp weekly summary -->
+            <div class="cm-wa-panel" id="cmWhatsAppPanel">
+                <div class="cm-wa-card" id="cmWhatsAppCard">
+                    <div class="cm-wa-empty"><i class="fas fa-spinner fa-spin"></i> Loading summary…</div>
+                </div>
             </div>
         </div>
 
