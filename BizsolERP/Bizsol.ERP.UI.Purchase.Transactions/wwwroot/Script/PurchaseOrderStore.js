@@ -1450,6 +1450,16 @@ window.CalcRowValue = function (rowId) {
     const againstProject = $('#frmChkAgainstProject').is(':checked');
     if (againstProject) {
         const tol = GetRowToleranceInfo(rowId);
+        if (tol.tolOnQty === 'Y')
+        {
+
+            if (tol.baseQty == 0) {
+                toastr.warning('You use all BOM Qty. Please increase Qty in BOM first to make PO.');
+            }
+            if (tol.baseQty < 0) {
+                toastr.warning('BOM Qty is ' + tol.baseQty + '. Please increase Qty in BOM first to make PO.');
+            }
+        }
         if (tol.tolOnQty === 'Y' && tol.maxQty > 0 && qty > tol.maxQty) {
             const qtyMsg = tol.qtyTol > 0
                 ? 'Qty exceeds the ' + tol.qtyTol + '% tolerance. Maximum allowed Qty is ' + tol.maxQty + '.'
@@ -1556,8 +1566,25 @@ window.SavePO = function () {
 
         if (!itemCode) { toastr.warning('Please select item in all rows.'); itemValid = false; return false; }
         if (qty <= 0) { toastr.warning('Qty must be greater than 0 for all items.'); itemValid = false; return false; }
+        if (rate <= 0) { toastr.warning('rate must be greater than 0 for all items.'); itemValid = false; return false; }
+
         if (agaistProject === 'Y') {
             const saveTol = GetRowToleranceInfo(rowId);
+            if (saveTol.tolOnQty === 'Y')
+            {
+                if (saveTol.baseQty == 0) {
+                    const itemName = $(`#frmDdlItem_${rowId} option:selected`).text().trim();
+                    const itemLabel = itemName ? ' (' + itemName + ')' : '';
+                    toastr.warning('Row ' + rowId + itemLabel + ':You use All BOM Qty. Please increase Qty in BOM first to make PO.');
+                    itemValid = false; return false;
+                }
+                if (saveTol.baseQty < 0) {
+                    const itemName = $(`#frmDdlItem_${rowId} option:selected`).text().trim();
+                    const itemLabel = itemName ? ' (' + itemName + ')' : '';
+                    toastr.warning('Row ' + rowId + itemLabel + ': BOM Qty is ' + saveTol.baseQty + '. Please increase Qty in BOM first to make PO.');
+                    itemValid = false; return false;
+                }
+            }
             if (saveTol.tolOnQty === 'Y' && saveTol.maxQty > 0 && qty > saveTol.maxQty) {
                 const saveQtyMsg = saveTol.qtyTol > 0
                     ? 'Row ' + rowId + ': Qty ' + qty + ' exceeds the ' + saveTol.qtyTol + '% tolerance. Maximum allowed: ' + saveTol.maxQty + '.'
