@@ -1,20 +1,19 @@
-﻿import { BizSolHelperFunction } from '../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { BizSolHelperFunction } from '../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { CheckListMISService } from '../Bizsol.WebERP.UI.Shared/js/JSServices/CheckListMISService.js';
 import { TaskListMasterService } from '../Bizsol.WebERP.UI.Shared/js/JSServices/TaskListMasterService.js';
 import { UserMasterService } from '../Bizsol.WebERP.UI.Shared/js/JSServices/_UserMasterService.js';
 
-/* ───────────────────────── config ───────────────────────── */
+/* ------------------------- config ------------------------- */
 /** Must match F_ReportConfiguration.ModuleDescription used by GetReportType API. */
 var CM_MODULE_DESCRIPTION_FOR_REPORT_CONFIG = 'Checklist MIS Report';
 
 var CM_REPORT_TYPES_DEFAULT = [
     { code: 'GETMIS', label: 'Check List MIS Score', showChart: true },
     { code: 'GETSUMMARY', label: 'CHECK LIST REPORT', showChart: false },
-    { code: 'GETDETAIL', label: 'Task Wise Detail', showChart: false },
 ];
 var CM_REPORT_TYPES = CM_REPORT_TYPES_DEFAULT.slice();
 
-/* ───────────────────────── state ───────────────────────── */
+/* ------------------------- state ------------------------- */
 var G_CM_BaseDate = new Date();
 var G_CM_FromDate = '';
 var G_CM_ToDate = '';
@@ -37,7 +36,7 @@ var PDF_NAVY = '#16284d';
 var PDF_HEADER_FILL = '#1b2c52';
 var PDF_BORDER = '#c8d0dd';
 
-/* ───────────────────────── helpers ───────────────────────── */
+/* ------------------------- helpers ------------------------- */
 function toIso(d) {
     var m = String(d.getMonth() + 1).padStart(2, '0');
     var day = String(d.getDate()).padStart(2, '0');
@@ -272,34 +271,165 @@ function normalizeSummaryOverall(r) {
     };
 }
 
+function summaryRowLooksLikeHeader(row) {
+    return prop(row, ['EmployeeName', 'employeeName', 'DoerName', 'doerName', 'WeekPeriod', 'weekPeriod', 'MISPeriod', 'misPeriod', 'ReportTitle', 'reportTitle']) != null;
+}
+
+function summaryRowLooksLikeCategory(row) {
+    return prop(row, ['TaskCategory', 'taskCategory']) != null;
+}
+
+function summaryRowLooksLikeOverall(row) {
+    return prop(row, ['WeeklyPerformanceScore', 'weeklyPerformanceScore', 'PerformanceStatus', 'performanceStatus']) != null
+        || (prop(row, ['TotalAssigned', 'totalAssigned']) != null && !summaryRowLooksLikeCategory(row));
+}
+
+function summaryRowLooksLikeMisRow(row) {
+    return prop(row, ['WorkToBeAccomplished', 'workToBeAccomplished']) != null
+        || (prop(row, ['Accomplished', 'accomplished']) != null && prop(row, ['NotDone', 'notDone']) != null);
+}
+
+function buildOverallFromMisRow(row) {
+    var total = num(prop(row, ['WorkToBeAccomplished', 'workToBeAccomplished']));
+    var completed = num(prop(row, ['Accomplished', 'accomplished']));
+    var pending = num(prop(row, ['NotDone', 'notDone']));
+    if (!pending && total > 0) pending = Math.max(total - completed, 0);
+    var score = total > 0 ? Math.round(completed * 100 / total) : 0;
+    var status = 'No Tasks';
+    if (total > 0) {
+        if (score >= 90) status = 'Excellent';
+        else if (score >= 80) status = 'Good';
+        else if (score >= 70) status = 'Average';
+        else status = 'Needs Improvement';
+    }
+    return {
+        TotalAssigned: total,
+        TotalCompleted: completed,
+        TotalPending: pending,
+        WeeklyPerformanceScore: score,
+        PerformanceStatus: status,
+    };
+}
+
+function buildCategoriesFromMisRow(row, overall) {
+    if (!overall || overall.TotalAssigned <= 0) return [];
+    return [{
+        TaskCategory: 'All Tasks',
+        TotalTasks: overall.TotalAssigned,
+        Completed: overall.TotalCompleted,
+        Pending: overall.TotalPending,
+        ScorePct: overall.WeeklyPerformanceScore,
+    }];
+}
+
+function buildSummaryVmFromRows(rows) {
+    var list = Array.isArray(rows) ? rows : [];
+    if (!list.length) {
+        return { header: null, categories: [], overall: null };
+    }
+    var header = null;
+    var categories = [];
+    var overall = null;
+    list.forEach(function (row) {
+        if (!header && summaryRowLooksLikeHeader(row)) {
+            header = normalizeSummaryHeader(row);
+            return;
+        }
+        if (summaryRowLooksLikeCategory(row)) {
+            categories.push(normalizeSummaryCategory(row));
+            return;
+        }
+        if (summaryRowLooksLikeOverall(row)) {
+            overall = normalizeSummaryOverall(row);
+        }
+    });
+    if (!header && list.length) {
+        header = normalizeSummaryHeader(list[0]);
+    }
+    if (!overall) {
+        var misRow = null;
+        for (var i = 0; i < list.length; i++) {
+            if (summaryRowLooksLikeMisRow(list[i])) {
+                misRow = list[i];
+                break;
+            }
+        }
+        if (misRow) {
+            overall = buildOverallFromMisRow(misRow);
+            if (!header) header = normalizeSummaryHeader(misRow);
+            if (!categories.length) categories = buildCategoriesFromMisRow(misRow, overall);
+        }
+    }
+    return { header: header, categories: categories, overall: overall };
+}
+
+function summaryListFromPayload(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    if (value.$values && Array.isArray(value.$values)) return value.$values;
+    if (typeof value === 'object') return [value];
+    return [];
+}
+
 function unwrapSummaryPayload(payload) {
     if (!payload || typeof payload !== 'object') {
         return { header: null, categories: [], overall: null };
     }
-    if (payload.Header || payload.Categories || payload.Overall) {
-        var headerRows = unwrapApiList(payload.Header || payload.header);
-        var catRows = unwrapApiList(payload.Categories || payload.categories);
-        var overallRows = unwrapApiList(payload.Overall || payload.overall);
-        return {
+    var status = prop(payload, ['Status', 'status']);
+    if (status === 'N') {
+        var msg = prop(payload, ['Msg', 'msg', 'Message', 'message']);
+        if (msg && typeof toastr !== 'undefined') toastr.warning(msg);
+        return { header: null, categories: [], overall: null };
+    }
+    if (payload.Header || payload.header || payload.Categories || payload.categories || payload.Overall || payload.overall) {
+        var headerRows = summaryListFromPayload(payload.Header || payload.header);
+        var catRows = summaryListFromPayload(payload.Categories || payload.categories);
+        var overallRows = summaryListFromPayload(payload.Overall || payload.overall);
+        if (!headerRows.length) headerRows = unwrapApiList(payload.Header || payload.header);
+        if (!catRows.length) catRows = unwrapApiList(payload.Categories || payload.categories);
+        if (!overallRows.length) overallRows = unwrapApiList(payload.Overall || payload.overall);
+        var vm = {
             header: headerRows.length ? normalizeSummaryHeader(headerRows[0]) : null,
             categories: catRows.map(normalizeSummaryCategory),
             overall: overallRows.length ? normalizeSummaryOverall(overallRows[0]) : null,
         };
+        if (vm.header && !vm.overall) {
+            vm.overall = {
+                TotalAssigned: 0,
+                TotalCompleted: 0,
+                TotalPending: 0,
+                WeeklyPerformanceScore: 0,
+                PerformanceStatus: vm.categories.length ? '' : 'No Tasks',
+            };
+        }
+        return vm;
+    }
+    var flat = unwrapApiList(payload);
+    if (flat.length) {
+        return buildSummaryVmFromRows(flat);
     }
     if (Array.isArray(payload)) {
-        if (payload.length && payload[0] && (payload[0].Header || payload[0].Categories)) {
+        if (payload.length && payload[0] && (payload[0].Header || payload[0].Categories || payload[0].header || payload[0].categories)) {
             return unwrapSummaryPayload(payload[0]);
         }
+        return buildSummaryVmFromRows(payload);
     }
     return { header: null, categories: [], overall: null };
 }
 
 function performanceStatusEmoji(status) {
     var s = String(status || '').toLowerCase();
-    if (s.indexOf('excellent') >= 0) return '🏆';
-    if (s.indexOf('good') >= 0) return '🏆';
-    if (s.indexOf('average') >= 0) return '📊';
-    return '⚠️';
+    if (s.indexOf('excellent') >= 0) return '\uD83C\uDFC6';
+    if (s.indexOf('good') >= 0) return '\uD83D\uDC4D';
+    if (s.indexOf('average') >= 0) return '\uD83D\uDCCA';
+    if (s.indexOf('needs') >= 0) return '\u26A0\uFE0F';
+    if (s.indexOf('no task') >= 0) return '\u2796';
+    return '\uD83D\uDCCB';
+}
+
+function displayOrDash(val) {
+    var s = String(val == null ? '' : val).trim();
+    return s || '-';
 }
 
 function renderWhatsAppSummary() {
@@ -315,9 +445,18 @@ function renderWhatsAppSummary() {
     var h = vm.header;
     var cats = vm.categories || [];
     var o = vm.overall || {};
-    var empName = h.EmployeeName || resolveDoerName({ UserMaster_Code: h.UserMaster_Code, DoerName: h.EmployeeName }) || '—';
-    var dept = h.Department || '—';
-    var week = h.WeekPeriod || $('#cmPeriodBanner').text() || '—';
+    if (!o.PerformanceStatus && !cats.length && (o.TotalAssigned || 0) === 0) {
+        o = {
+            TotalAssigned: 0,
+            TotalCompleted: 0,
+            TotalPending: 0,
+            WeeklyPerformanceScore: 0,
+            PerformanceStatus: 'No Tasks',
+        };
+    }
+    var empName = displayOrDash(h.EmployeeName || resolveDoerName({ UserMaster_Code: h.UserMaster_Code, DoerName: h.EmployeeName }));
+    var dept = displayOrDash(h.Department);
+    var week = displayOrDash(h.WeekPeriod || $('#cmPeriodBanner').text());
 
     var rowsHtml = '';
     if (!cats.length) {
@@ -334,27 +473,29 @@ function renderWhatsAppSummary() {
         });
     }
 
+    $card.css({ background: '#ffffff', color: '#0f172a' });
+    $('#cmWhatsAppPanel').css('background', '#ffffff');
     $card.html(
         '<div class="cm-wa-title">Weekly Checklist Performance Report</div>' +
-        '<div class="cm-wa-subtitle">WhatsApp Format – User Wise Score Report</div>' +
+        '<div class="cm-wa-subtitle">WhatsApp Format - User Wise Score Report</div>' +
         '<div class="cm-wa-subtitle">' + escapeHtml(h.ReportTitle || 'Weekly Checklist Report') + '</div>' +
         '<div class="cm-wa-meta">' +
         '<div><strong>Week:</strong> ' + escapeHtml(week) + '</div>' +
         '<div><strong>Employee:</strong> ' + escapeHtml(empName) + '</div>' +
         '<div><strong>Department:</strong> ' + escapeHtml(dept) + '</div>' +
         '</div>' +
-        '<div class="cm-wa-section">📋 TASK PERFORMANCE SUMMARY</div>' +
+        '<div class="cm-wa-section">\uD83D\uDCCB TASK PERFORMANCE SUMMARY</div>' +
         '<table class="cm-wa-table">' +
         '<thead><tr>' +
         '<th>Task Category</th><th>Total Tasks</th><th>Completed</th><th>Pending</th><th>Score %</th>' +
         '</tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
-        '<div class="cm-wa-section">✅ OVERALL PERFORMANCE</div>' +
+        '<div class="cm-wa-section">\u2705 OVERALL PERFORMANCE</div>' +
         '<ul class="cm-wa-overall">' +
         '<li><strong>Total Assigned Tasks:</strong> ' + (o.TotalAssigned || 0) + '</li>' +
         '<li><strong>Total Completed:</strong> ' + (o.TotalCompleted || 0) + '</li>' +
         '<li><strong>Total Pending:</strong> ' + (o.TotalPending || 0) + '</li>' +
         '<li><strong>Weekly Performance Score:</strong> ' + (o.WeeklyPerformanceScore || 0) + '%</li>' +
-        '<li><strong>Performance Status:</strong> ' + performanceStatusEmoji(o.PerformanceStatus) + ' ' + escapeHtml(o.PerformanceStatus || '—') + '</li>' +
+        '<li><strong>Performance Status:</strong> ' + performanceStatusEmoji(o.PerformanceStatus) + ' ' + escapeHtml(displayOrDash(o.PerformanceStatus)) + '</li>' +
         '</ul>'
     );
 }
@@ -429,7 +570,7 @@ function reportTypeLabel(row) {
     ).trim();
 }
 
-/** Map F_ReportConfiguration row → USP_WebAPI_CheckListMIS @Mode (GETMIS / GETDETAIL). */
+/** Map F_ReportConfiguration row ? USP_WebAPI_CheckListMIS @Mode (GETMIS / GETDETAIL). */
 function reportTypeMode(row, label) {
     var explicit = prop(row, [
         'ReportMode', 'reportMode', 'Mode', 'mode',
@@ -463,13 +604,19 @@ function showChartForMode(mode) {
     return String(mode || '').toUpperCase() === 'GETMIS';
 }
 
+function isExcludedReportType(code, label) {
+    if (String(code || '').toUpperCase() === 'GETDETAIL') return true;
+    var low = String(label || '').toLowerCase();
+    return low.indexOf('task wise detail') >= 0;
+}
+
 function parseReportTypesFromApi(rows) {
     var parsed = [];
     (rows || []).forEach(function (row) {
         var label = reportTypeLabel(row);
         if (!label) return;
         var code = reportTypeMode(row, label);
-        if (!code) return;
+        if (!code || isExcludedReportType(code, label)) return;
         parsed.push({ code: code, label: label, showChart: showChartForMode(code) });
     });
     return parsed;
@@ -513,7 +660,7 @@ function initCmSelect2(selector, placeholder) {
     destroyCmSelect2($el);
     $el.select2({
         width: 'style',
-        placeholder: placeholder || 'Select…',
+        placeholder: placeholder || 'Select�',
         minimumResultsForSearch: 0,
         dropdownParent: $('#CheckListMISPage'),
     });
@@ -552,9 +699,7 @@ function loadReportTypeDropdown() {
             var rows = asReportTypeArray(response);
             var parsed = parseReportTypesFromApi(rows);
             CM_REPORT_TYPES = parsed.length ? parsed : CM_REPORT_TYPES_DEFAULT.slice();
-            if (!parsed.length && typeof toastr !== 'undefined') {
-                toastr.warning('No report types from API — using defaults.');
-            }
+            
             bindReportTypeDropdown();
         })
         .catch(function (err) {
@@ -579,7 +724,7 @@ function mergeUsersFromReportRows(rows) {
 function loadDoersFromMIS() {
     var range = selectedDateRange();
     if (!isValidDateRange(range.fromDate, range.toDate)) return Promise.resolve(null);
-    return CheckListMISService.GetCheckListMIS('Check List MIS SCORE', 0, range.fromDate, range.toDate)
+    return CheckListMISService.GetCheckListMIS('Check List MIS SCORE', 0, range.fromDate, range.toDate, 'GETMIS')
         .then(function (res) {
             mergeUsersFromReportRows(unwrapApiList(res).map(normalizeSummaryRow));
         })
@@ -630,11 +775,14 @@ function updateLayoutForReportType() {
 
     if (waMode) {
         $body.addClass('cm-whatsapp-mode');
+        $('#cmWhatsAppPanel, #cmWhatsAppCard').css({ background: '#ffffff', color: '#0f172a' });
         $('#cmSendWhatsApp').show();
-        $('.cm-subbar .cm-week-note').text('WhatsApp Format – User Wise Score Report');
+        $('#cmWhatsAppPanel').show();
+        $('.cm-subbar .cm-week-note').text('WhatsApp Format - User Wise Score Report');
     } else {
         $body.removeClass('cm-whatsapp-mode');
         $('#cmSendWhatsApp').hide();
+        $('#cmWhatsAppPanel').hide();
         $('.cm-subbar .cm-week-note').text('Check List MIS Score, EM Weekly day Monday!!');
     }
 
@@ -676,7 +824,7 @@ function renderTableHead() {
     $('#cmTableHead').html(html);
 }
 
-/* ───────────────────────── donut chart ───────────────────────── */
+/* ------------------------- donut chart ------------------------- */
 function renderDonut() {
     var $wrap = $('#cmDonut');
     var $legend = $('#cmDonutLegend');
@@ -735,7 +883,7 @@ function renderDonut() {
     );
 }
 
-/* ───────────────────────── grid ───────────────────────── */
+/* ------------------------- grid ------------------------- */
 function renderGrid() {
     renderTableHead();
     var $body = $('#cmTableBody');
@@ -799,7 +947,7 @@ function selectedUserCode() {
     return parseInt($('#cmUserFilter').val(), 10) || 0;
 }
 
-/* ───────────────────────── data load ───────────────────────── */
+/* ------------------------- data load ------------------------- */
 function loadMIS(refreshUsers) {
     if (typeof ShowLoader === 'function') ShowLoader();
     updatePeriodBanner();
@@ -831,18 +979,16 @@ function loadMIS(refreshUsers) {
 
     return userPromise
         .then(function () {
+            if (isWhatsAppSummaryMode()) {
+                return CheckListMISService.GetCheckListSummary(
+                    reportType, userCode, range.fromDate, range.toDate, G_CM_ReportMode
+                );
+            }
             return CheckListMISService.GetCheckListMIS(reportType, userCode, range.fromDate, range.toDate, G_CM_ReportMode);
         })
         .then(function (res) {
             if (isWhatsAppSummaryMode()) {
                 G_CM_SummaryVm = unwrapSummaryPayload(res);
-                if (!G_CM_SummaryVm.header && unwrapApiList(res).length) {
-                    G_CM_SummaryVm = {
-                        header: normalizeSummaryHeader(unwrapApiList(res)[0]),
-                        categories: unwrapApiList(res).slice(1).map(normalizeSummaryCategory),
-                        overall: null,
-                    };
-                }
                 G_CM_Rows = [];
                 renderWhatsAppSummary();
                 applyFilter();
@@ -865,7 +1011,7 @@ function loadMIS(refreshUsers) {
         });
 }
 
-/* ───────────────────────── PDF export ───────────────────────── */
+/* ------------------------- PDF export ------------------------- */
 function getPdfMake() {
     return window.pdfMake || window.pdfmake || null;
 }
@@ -1006,7 +1152,16 @@ function buildWhatsAppPdfDocumentDefinition(vm) {
     var h = vm.header || {};
     var cats = vm.categories || [];
     var o = vm.overall || {};
-    var empName = h.EmployeeName || '—';
+    if (!o.PerformanceStatus && !cats.length && (o.TotalAssigned || 0) === 0) {
+        o = {
+            TotalAssigned: 0,
+            TotalCompleted: 0,
+            TotalPending: 0,
+            WeeklyPerformanceScore: 0,
+            PerformanceStatus: 'No Tasks',
+        };
+    }
+    var empName = h.EmployeeName || '�';
     var tableBody = [
         [
             { text: 'Task Category', style: 'waTableHeader' },
@@ -1018,11 +1173,11 @@ function buildWhatsAppPdfDocumentDefinition(vm) {
     ];
     cats.forEach(function (c) {
         tableBody.push([
-            { text: c.TaskCategory || '', color: '#ffffff' },
-            { text: String(c.TotalTasks), alignment: 'center', color: '#ffffff' },
-            { text: String(c.Completed), alignment: 'center', color: '#ffffff' },
-            { text: String(c.Pending), alignment: 'center', color: '#ffffff' },
-            { text: String(c.ScorePct) + '%', alignment: 'center', color: '#ffffff' },
+            { text: c.TaskCategory || '', color: '#334155' },
+            { text: String(c.TotalTasks), alignment: 'center', color: '#334155' },
+            { text: String(c.Completed), alignment: 'center', color: '#334155' },
+            { text: String(c.Pending), alignment: 'center', color: '#334155' },
+            { text: String(c.ScorePct) + '%', alignment: 'center', color: '#334155' },
         ]);
     });
 
@@ -1030,16 +1185,16 @@ function buildWhatsAppPdfDocumentDefinition(vm) {
         pageSize: 'A4',
         pageMargins: [36, 36, 36, 36],
         background: function () {
-            return { canvas: [{ type: 'rect', x: 0, y: 0, w: 595.28, h: 841.89, color: '#000000' }] };
+            return { canvas: [{ type: 'rect', x: 0, y: 0, w: 595.28, h: 841.89, color: '#ffffff' }] };
         },
         content: [
             { text: 'Weekly Checklist Performance Report', style: 'waTitle' },
-            { text: 'WhatsApp Format – User Wise Score Report', style: 'waSub' },
+            { text: 'WhatsApp Format - User Wise Score Report', style: 'waSub' },
             { text: h.ReportTitle || 'Weekly Checklist Report', style: 'waSub', margin: [0, 0, 0, 10] },
             { text: 'Week: ' + (h.WeekPeriod || ''), style: 'waMeta' },
             { text: 'Employee: ' + empName, style: 'waMeta' },
-            { text: 'Department: ' + (h.Department || '—'), style: 'waMeta', margin: [0, 0, 0, 14] },
-            { text: 'TASK PERFORMANCE SUMMARY', style: 'waSection' },
+            { text: 'Department: ' + (h.Department || '�'), style: 'waMeta', margin: [0, 0, 0, 14] },
+            { text: '\uD83D\uDCCB TASK PERFORMANCE SUMMARY', style: 'waSection' },
             {
                 table: {
                     headerRows: 1,
@@ -1049,27 +1204,27 @@ function buildWhatsAppPdfDocumentDefinition(vm) {
                 layout: {
                     hLineWidth: function () { return 0.8; },
                     vLineWidth: function () { return 0.8; },
-                    hLineColor: function () { return '#374151'; },
-                    vLineColor: function () { return '#374151'; },
-                    fillColor: function (rowIndex) { return rowIndex === 0 ? '#111827' : '#000000'; },
+                    hLineColor: function () { return '#e2e8f0'; },
+                    vLineColor: function () { return '#e2e8f0'; },
+                    fillColor: function (rowIndex) { return rowIndex === 0 ? '#eff6ff' : '#ffffff'; },
                 },
                 margin: [0, 4, 0, 14],
             },
-            { text: 'OVERALL PERFORMANCE', style: 'waSection' },
-            { text: 'Total Assigned Tasks: ' + (o.TotalAssigned || 0), style: 'waMeta' },
-            { text: 'Total Completed: ' + (o.TotalCompleted || 0), style: 'waMeta' },
-            { text: 'Total Pending: ' + (o.TotalPending || 0), style: 'waMeta' },
-            { text: 'Weekly Performance Score: ' + (o.WeeklyPerformanceScore || 0) + '%', style: 'waMeta' },
-            { text: 'Performance Status: ' + (o.PerformanceStatus || '—'), style: 'waMeta' },
+            { text: '\u2705 OVERALL PERFORMANCE', style: 'waSection' },
+            { text: '\u2022 Total Assigned Tasks : ' + (o.TotalAssigned || 0), style: 'waMeta' },
+            { text: '\u2022 Total Completed : ' + (o.TotalCompleted || 0), style: 'waMeta' },
+            { text: '\u2022 Total Pending : ' + (o.TotalPending || 0), style: 'waMeta' },
+            { text: '\u2022 Weekly Performance Score : ' + (o.WeeklyPerformanceScore || 0) + '%', style: 'waMetaItalic' },
+            { text: 'Performance Status: ' + (o.PerformanceStatus || '�'), style: 'waMeta' },
         ],
         styles: {
-            waTitle: { fontSize: 18, bold: true, color: '#ffffff' },
-            waSub: { fontSize: 10, color: '#d1d5db' },
-            waMeta: { fontSize: 10, color: '#f3f4f6', margin: [0, 2, 0, 0] },
-            waSection: { fontSize: 11, bold: true, color: '#ffffff', margin: [0, 8, 0, 4] },
-            waTableHeader: { fontSize: 9, bold: true, color: '#ffffff', alignment: 'center' },
+            waTitle: { fontSize: 18, bold: true, color: '#0f172a' },
+            waSub: { fontSize: 10, color: '#64748b' },
+            waMeta: { fontSize: 10, color: '#334155', margin: [0, 2, 0, 0] },
+            waSection: { fontSize: 11, bold: true, color: '#0f172a', margin: [0, 8, 0, 4] },
+            waTableHeader: { fontSize: 9, bold: true, color: '#1e293b', alignment: 'center' },
         },
-        defaultStyle: { fontSize: 9, color: '#ffffff' },
+        defaultStyle: { fontSize: 9, color: '#334155' },
     };
 }
 
@@ -1096,6 +1251,19 @@ function extractUploadedFileLink(response) {
     if (response == null) return '';
     var text = String(response).trim().replace(/^["']|["']$/g, '');
     if (!text) return '';
+
+    /* BizSol upload API: {"messages":[{"path":"https://web.bizsol.in/ERP/WhatsApp/....pdf"}],"meta":{...}} */
+    try {
+        var json = typeof response === 'object' ? response : JSON.parse(text);
+        if (json && json.messages && json.messages.length > 0) {
+            var msgPath = json.messages[0].path || json.messages[0].Path || json.messages[0].link || json.messages[0].Link;
+            if (msgPath) return String(msgPath).trim();
+        }
+        if (json && (json.path || json.Path || json.link || json.Link)) {
+            return String(json.path || json.Path || json.link || json.Link).trim();
+        }
+    } catch (e) { /* plain text / URL response */ }
+
     var httpMatch = text.match(/https?:\/\/[^\s"'<>\\]+/i);
     if (httpMatch) return httpMatch[0];
     if (text.charAt(0) === '/') return 'http://web.bizsol.in' + text;
@@ -1103,9 +1271,9 @@ function extractUploadedFileLink(response) {
 }
 
 function getWhatsAppExportFileName() {
-    var userLabel = ($('#cmUserFilter option:selected').text() || 'User').replace(/[^\w\-]+/g, '_');
-    var period = ($('#cmPeriodBanner').text() || '').replace(/[^\w\-]+/g, '_');
-    return 'WeeklyChecklistReport_' + userLabel + '_' + period;
+    var userLabel = ($('#cmUserFilter option:selected').text() || 'User').replace(/[^\w\-]+/g, '');
+    var period = ($('#cmPeriodBanner').text() || '').replace(/[^\w\-]+/g, '');
+    return 'WeeklyChecklistReport_' + userLabel + '' + period;
 }
 
 function sendWhatsApp() {
@@ -1118,10 +1286,26 @@ function sendWhatsApp() {
         return;
     }
     var userCode = selectedUserCode();
+
     if (!userCode) {
+
         if (typeof toastr !== 'undefined') toastr.warning('Please select a user.');
+
         return;
+
     }
+
+    var range = selectedDateRange();
+
+    if (!isValidDateRange(range.fromDate, range.toDate)) {
+
+        if (typeof toastr !== 'undefined') toastr.warning('Please select a valid date range.');
+
+        return;
+
+    }
+
+
 
     var $btn = $('#cmSendWhatsApp');
     $btn.prop('disabled', true);
@@ -1141,13 +1325,13 @@ function sendWhatsApp() {
                 if (typeof toastr !== 'undefined') toastr.error('File uploaded but no link was returned.');
                 return null;
             }
-            return CheckListMISService.SendWhatsappToUser(reportType, link, userCode);
+            return CheckListMISService.SendWhatsappToUser(reportType, link, userCode, range.fromDate, range.toDate);
         })
         .then(function (result) {
             if (!result) return;
             var row = Array.isArray(result) ? result[0] : result;
             var status = row && (row.Status != null ? row.Status : row.status);
-            var message = row && (row.Message != null ? row.Message : row.message);
+            var message = row && (row.Message != null ? row.Message : row.message || row.Msg || row.msg);
             if (status === 'Y') {
                 if (typeof toastr !== 'undefined') toastr.success(message || 'WhatsApp sent successfully.');
             } else {
@@ -1194,7 +1378,7 @@ function exportPdf() {
     }
 }
 
-/* ───────────────────────── bootstrap ───────────────────────── */
+/* ------------------------- bootstrap ------------------------- */
 $(document).ready(function () {
     var moduleDesp = decodeURI(BizSolHelperFunction.getUrlVars()['ModuleDesp'] || '');
     if (moduleDesp && moduleDesp !== 'undefined' && moduleDesp.trim() !== '') {

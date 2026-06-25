@@ -2,6 +2,7 @@
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const CheckListMISService = {
+    
     GetReportTypelist: function GetReportTypelist(ModuleDesc) {
         var module = encodeURIComponent(ModuleDesc || 'Check List MIS SCORE');
         var URL = UrlService.API_ENDPOINT_CHECKLIST_MIS + '/GetReportType?ModuleDesc=' + module;
@@ -12,11 +13,25 @@ const CheckListMISService = {
 
     GetCheckListMIS: function GetCheckListMIS(ReportType, UserMasterCode, FromDate, ToDate, Mode) {
         var URL = UrlService.API_ENDPOINT_CHECKLIST_MIS
-            + '/GetCheckListMIS?ReportType=' + encodeURIComponent(ReportType || 'Check List MIS SCORE')
+            + '/GetCheckListMIS?ReportType=' + encodeURIComponent(ReportType || '')
+            + '&UserMasterCode=' + encodeURIComponent(UserMasterCode || 0)
+            + '&FromDate=' + encodeURIComponent(FromDate || '')
+            + '&ToDate=' + encodeURIComponent(ToDate || '');
+        if (Mode) {
+            URL += '&Mode=' + encodeURIComponent(Mode);
+        }
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
+    GetCheckListSummary: function GetCheckListSummary(ReportType, UserMasterCode, FromDate, ToDate, Mode) {
+        var URL = UrlService.API_ENDPOINT_CHECKLIST_MIS
+            + '/GetCheckListSummary?ReportType=' + encodeURIComponent(ReportType || '')
             + '&UserMasterCode=' + encodeURIComponent(UserMasterCode || 0)
             + '&FromDate=' + encodeURIComponent(FromDate || '')
             + '&ToDate=' + encodeURIComponent(ToDate || '')
-            + '&Mode=' + encodeURIComponent(Mode || '');
+            + '&Mode=' + encodeURIComponent(Mode || 'GETSUMMARY');
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
@@ -29,11 +44,14 @@ const CheckListMISService = {
         });
     },
 
-    SendWhatsappToUser: function SendWhatsappToUser(reportType, link, userMasterCode) {
+    SendWhatsappToUser: function SendWhatsappToUser(ReportType, Link, UserMasterCode, FromDate, ToDate, Mode) {
         var URL = UrlService.API_ENDPOINT_CHECKLIST_MIS
-            + '/SendWhatsappToUser?ReportType=' + encodeURIComponent(reportType || '')
-            + '&Link=' + encodeURIComponent(link || '')
-            + '&UserMasterCode=' + encodeURIComponent(userMasterCode ?? 0);
+            + '/SendWhatsappToUser?ReportType=' + encodeURIComponent(ReportType || '')
+            + '&Link=' + encodeURIComponent(Link || '')
+            + '&UserMasterCode=' + encodeURIComponent(UserMasterCode || 0)
+            + '&FromDate=' + encodeURIComponent(FromDate || '')
+            + '&ToDate=' + encodeURIComponent(ToDate || '')
+            + '&Mode=' + encodeURIComponent(Mode || 'SENDWHATSAPP');
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
@@ -58,15 +76,12 @@ const CheckListMISService = {
                     resolve(response);
                 },
                 error: function (xhr, status, error) {
-                    var msg = (xhr && xhr.responseText) ? xhr.responseText.trim() : '';
-                    if (!msg) {
-                        msg = status + ': ' + error;
-                    }
-                    reject(new Error(msg));
+                    reject(new Error(status + ': ' + error));
                 },
             });
         });
     },
+
 };
 
 export { CheckListMISService };

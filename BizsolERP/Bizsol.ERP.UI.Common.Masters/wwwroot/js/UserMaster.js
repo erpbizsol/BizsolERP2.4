@@ -29,11 +29,137 @@ function getUserCode() {
     } catch (e) { return 0; }
 }
 
+function getUserDetailsRow() {
+    try {
+        var details = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        return Array.isArray(details) && details[0] ? details[0] : null;
+    } catch (e) { return null; }
+}
+
+function getUserType() {
+    var row = getUserDetailsRow();
+    return row ? String(row.UserType || '').toUpperCase() : '';
+}
+
+function isLoggedInBizSolUser() {
+    var row = getUserDetailsRow();
+    if (!row) return false;
+    var v = String(row.IsBizSolUser || '').trim().toUpperCase();
+    return v === 'Y' || v === 'YES';
+}
+
+/** Show BIZSOL User only when logged-in UserType = A and IsBizSolUser = Y (hide for U/N and all other cases). */
+function canShowBizsolUserOption() {
+    return getUserType() === 'A' && isLoggedInBizSolUser();
+}
+
+function updateBizsolUserVisibility() {
+    var show = canShowBizsolUserOption();
+    $('#wrapBizsolUser')
+        .toggleClass('is-visible', show)
+        .css('display', show ? 'flex' : 'none');
+    $('#wrapAttendanceMandatoryInCRM')
+        .toggleClass('is-visible', show)
+        .css('display', show ? 'flex' : 'none');
+    if (!show) {
+        $('#chkBizsolUser').prop('checked', false);
+        $('#chkAttendanceMandatoryInCRM').prop('checked', false);
+    }
+}
+
+function resolveAttendanceMandatoryInCRMForSave() {
+    if (canShowBizsolUserOption()) {
+        return $('#chkAttendanceMandatoryInCRM').prop('checked') ? 'Y' : 'N';
+    }
+    if (U_EditRow && U_EditRow.AttendanceMandatoryInCRM != null) {
+        return String(U_EditRow.AttendanceMandatoryInCRM).trim().toUpperCase() === 'Y' ? 'Y' : 'N';
+    }
+    return 'N';
+}
+
+function resolveIsBizSolUserForSave() {
+    if (canShowBizsolUserOption()) {
+        return $('#chkBizsolUser').prop('checked') ? 'Y' : 'N';
+    }
+    if (U_EditRow && U_EditRow.IsBizSolUser != null) {
+        return String(U_EditRow.IsBizSolUser).toUpperCase() === 'Y' ? 'Y' : 'N';
+    }
+    return 'N';
+}
+
+function isAdminUser() {
+    return getUserType() === 'A';
+}
+
+/** Admin → 0 (all users); regular user → own UserMaster_Code. */
+function resolveUserMasterListFilterCode() {
+    if (isAdminUser()) return 0;
+    return getUserCode();
+}
+
+function updateUserMasterPageAccess() {
+    var admin = isAdminUser();
+    $('#btnNewUser').toggle(admin);
+}
+
+function buildUserMasterRowActions(code) {
+    var c = code != null ? code : 0;
+    var html = '<button class="im-btn-view" title="View" onclick="ViewUser(' + c + ')"><i class="fas fa-eye"></i></button>' +
+        '<button class="im-btn-edit" title="Edit" onclick="EditUser(' + c + ')"><i class="fas fa-pen"></i></button>';
+    if (isAdminUser()) {
+        html += '<button class="im-btn-delete" title="Delete" onclick="ConfirmDelete(' + c + ')"><i class="fas fa-trash-can"></i></button>';
+    }
+    return html;
+}
+
+function canAccessUserMasterRecord(code) {
+    if (isAdminUser()) return true;
+    var c = parseInt(code, 10);
+    return !isNaN(c) && c > 0 && c === getUserCode();
+}
+
+/** Non-admin editing own profile: User ID, User Name, Group Name are read-only. */
+function shouldLockRestrictedUserFields() {
+    return !isAdminUser() && U_EditCode > 0;
+}
+
+function updateUserFormFieldLocks() {
+    var lock = shouldLockRestrictedUserFields();
+    $('#txtUserID, #txtUserName')
+        .prop('readonly', lock)
+        .toggleClass('im-input-locked', lock);
+    $('#ddlGroupName')
+        .prop('disabled', lock)
+        .toggleClass('im-input-locked', lock);
+}
+
+function applyRestrictedFieldsForSelfServiceSave(row) {
+    if (isAdminUser() || !U_EditRow || U_EditCode <= 0) return row;
+    row.UserID = U_EditRow.UserID || row.UserID;
+    row.UserName = U_EditRow.UserName || row.UserName;
+    if (U_EditRow.GroupMaster_Code != null && U_EditRow.GroupMaster_Code !== '') {
+        row.GroupMaster_Code = parseInt(U_EditRow.GroupMaster_Code, 10) || row.GroupMaster_Code;
+    }
+    return row;
+}
+
 /* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
+    updateBizsolUserVisibility();
+    updateUserMasterPageAccess();
+    /* UserDetails loads async from menu — re-check once session is ready. */
+    var _bizsolVisAttempts = 0;
+    var _bizsolVisTimer = setInterval(function () {
+        _bizsolVisAttempts++;
+        if (getUserDetailsRow() || _bizsolVisAttempts >= 24) {
+            clearInterval(_bizsolVisTimer);
+            updateBizsolUserVisibility();
+            updateUserMasterPageAccess();
+        }
+    }, 250);
     GetUserMasterList();
     LoadDropdowns();
 
@@ -418,7 +544,8 @@ function subProjectNamesDisplayFromCodes(arr) {
    LOAD LIST
 ══════════════════════════════════════════ */
 function GetUserMasterList() {
-    UserMasterService.GetUserMasterList().then(function (response) {
+    var filterCode = resolveUserMasterListFilterCode();
+    UserMasterService.GetUserMasterList(filterCode).then(function (response) {
         var rows = [];
         if (Array.isArray(response))             rows = response;
         else if (Array.isArray(response.data))   rows = response.data;
@@ -441,10 +568,7 @@ function GetUserMasterList() {
             var row  = Object.assign({}, item);
             var code = row.Code != null ? row.Code : 0;
 
-            row.Action =
-                '<button class="im-btn-view"   title="View"   onclick="ViewUser('    + code + ')"><i class="fas fa-eye"></i></button>' +
-                '<button class="im-btn-edit"   title="Edit"   onclick="EditUser('    + code + ')"><i class="fas fa-pen"></i></button>' +
-                '<button class="im-btn-delete" title="Delete" onclick="ConfirmDelete(' + code + ')"><i class="fas fa-trash-can"></i></button>';
+            row.Action = buildUserMasterRowActions(code);
             return row;
         });
 
@@ -496,12 +620,19 @@ function LoadDropdowns() {
    OPEN NEW
 ══════════════════════════════════════════ */
 function OpenNewUser() {
+    if (!isAdminUser()) {
+        toastr.warning('Only admin users can add new users.');
+        return;
+    }
     U_EditCode = 0;
     U_EditRow = null;
     ClearForm();
+    updateBizsolUserVisibility();
     $('#formModalTitle').text('Add New User');
     $('#btnSaveText').text('Save User');
     $('#userDialogBackdrop').addClass('show');
+    updateBizsolUserVisibility();
+    updateUserFormFieldLocks();
     /* Subproject list + Select2 only after user picks Default Company (change → loadSubProjects…). */
     setTimeout(function () { $('#txtUserID').focus(); }, 140);
 }
@@ -510,8 +641,13 @@ function OpenNewUser() {
    EDIT
 ══════════════════════════════════════════ */
 function EditUser(code) {
+    if (!canAccessUserMasterRecord(code)) {
+        toastr.warning('You can only edit your own user profile.');
+        return;
+    }
     U_EditCode = code;
     ClearForm();
+    updateBizsolUserVisibility();
     $('#formModalTitle').text('Edit User');
     $('#btnSaveText').text('Update User');
 
@@ -524,6 +660,8 @@ function EditUser(code) {
         var companyCode = String($('#ddlDefaultCompany').val() || '').trim();
         loadSubProjectsForUserMaster(companyCode);
         $('#userDialogBackdrop').addClass('show');
+        updateBizsolUserVisibility();
+        updateUserFormFieldLocks();
     }).catch(function () { toastr.error('Error loading user. Please try again.'); });
 }
 
@@ -531,6 +669,10 @@ function EditUser(code) {
    VIEW
 ══════════════════════════════════════════ */
 function ViewUser(code) {
+    if (!canAccessUserMasterRecord(code)) {
+        toastr.warning('You can only view your own user profile.');
+        return;
+    }
     U_ViewCode = code;
     UserMasterService.GetUserMasterByCode(code).then(function (res) {
         var row = pickEntity(res);
@@ -630,7 +772,8 @@ function BuildPayload() {
         Password:               $('#txtPassword').val().trim(),
         GroupMaster_Code:       parseInt($('#ddlGroupName').val()) || 0,
         FixedParameter_Code:    companyKey,
-        IsBizSolUser:           $('#chkBizsolUser').prop('checked') ? 'Y' : 'N',
+        IsBizSolUser:           resolveIsBizSolUserForSave(),
+        AttendanceMandatoryInCRM: resolveAttendanceMandatoryInCRMForSave(),
         UserMobileNo:           $('#txtMobileNo').val(),
         Status:                 statusChar,
         Statuss:                statusChar,
@@ -650,13 +793,16 @@ function BuildPayload() {
     row.GroupMaster_Code = parseInt($('#ddlGroupName').val()) || 0;
     row.FixedParameter_Code = companyKey;
     row.CompanyCode = companyKey;
-    row.IsBizSolUser = $('#chkBizsolUser').prop('checked') ? 'Y' : 'N';
+    row.IsBizSolUser = resolveIsBizSolUserForSave();
+    row.AttendanceMandatoryInCRM = resolveAttendanceMandatoryInCRMForSave();
     row.UserMobileNo = $('#txtMobileNo').val();
     row.Status = statusChar;
     row.Statuss = statusChar;
     row.UserCode = sessionUser;
     row.UserMaster_Code = sessionUser;
     row.SubProjectMasterDetails = buildSubProjectMasterDetailsPayload();
+
+    row = applyRestrictedFieldsForSelfServiceSave(row);
 
     return row;
 }
@@ -665,6 +811,10 @@ function BuildPayload() {
    DELETE
 ══════════════════════════════════════════ */
 function ConfirmDelete(code) {
+    if (!isAdminUser()) {
+        toastr.warning('Only admin users can delete users.');
+        return;
+    }
     U_EditCode = code;
     $('#reasonForDeleteInput').val('');
     $('#deleteConfirmBackdrop').addClass('show');
@@ -758,7 +908,13 @@ function PopulateForm(d) {
     $('#ddlGroupName').val(d.GroupMaster_Code != null && d.GroupMaster_Code !== '' ? String(d.GroupMaster_Code) : '');
     $('#txtPassword').val('');
     $('#ddlDefaultCompany').val(d.FixedParameter_Code != null && d.FixedParameter_Code !== '' ? String(d.FixedParameter_Code) : '');
-    $('#chkBizsolUser').prop('checked', d.IsBizSolUser === 'Y');
+    if (canShowBizsolUserOption()) {
+        $('#chkBizsolUser').prop('checked', d.IsBizSolUser === 'Y');
+        $('#chkAttendanceMandatoryInCRM').prop('checked', String(d.AttendanceMandatoryInCRM || '').trim().toUpperCase() === 'Y');
+    } else {
+        $('#chkBizsolUser').prop('checked', false);
+        $('#chkAttendanceMandatoryInCRM').prop('checked', false);
+    }
     SetStatus(d.Status === 'A' ? 'Active' : 'Inactive');
 
     var spArr = subProjectCodesArrayFromUserRow(d);
@@ -776,10 +932,12 @@ function clearUserFormFieldsOnly() {
     $('#ddlGroupName').val('').removeClass('im-input-error');
     $('#ddlDefaultCompany').val('');
     $('#chkBizsolUser').prop('checked', false);
+    $('#chkAttendanceMandatoryInCRM').prop('checked', false);
     SetStatus('Active');
     G_UserModalSubProjectPendingCodes = null;
     resetUserSubProjectDropdownToEmpty();
     $('.im-err-text').hide();
+    updateUserFormFieldLocks();
 }
 
 function ClearForm() {

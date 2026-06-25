@@ -1,8 +1,12 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
+<script>
+    window.UPLOAD_WHATSAPP_URL = '@Url.Action("UploadWhatsappFile", "CheckListMIS", new { area = "CommonReports" })';
+</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/libs/pdfmake/build/pdfmake.min.js"></script>
+<script src="~/assets/libs/pdfmake/build/vfs_fonts.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Reports/CheckListMIS.js"></script>
 
 
@@ -194,42 +198,63 @@ table.cm-table tbody tr:hover td { background: #eff6ff; }
 .cm-leg-name { flex: 1; font-size: 12px; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cm-leg-val { font-size: 12px; font-weight: 800; color: #b91c1c; }
 
-/* ── WhatsApp weekly summary report ── */
+/* WhatsApp weekly summary preview */
 .cm-body.cm-whatsapp-mode .cm-grid-side,
 .cm-body.cm-whatsapp-mode .cm-chart-side { display: none !important; }
-.cm-wa-panel {
+#CheckListMISPage .cm-whatsapp-panel {
     display: none;
     flex: 1;
     min-height: 0;
     overflow: auto;
-    padding: 20px;
-    background: #eef2ff;
+    padding: 24px;
+    background: #ffffff !important;
+    justify-content: center;
+    align-items: flex-start;
 }
-.cm-body.cm-whatsapp-mode .cm-wa-panel { display: flex; justify-content: center; align-items: flex-start; }
-.cm-wa-card {
+.cm-body.cm-whatsapp-mode .cm-whatsapp-panel { display: flex; }
+#CheckListMISPage .cm-wa-card {
     width: 100%;
-    max-width: 720px;
-    background: #000;
-    color: #fff;
-    border-radius: 16px;
-    padding: 28px 32px 32px;
-    box-shadow: 0 24px 60px rgba(0,0,0,.35);
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    max-width: 520px;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-radius: 12px;
+    padding: 28px 26px 32px;
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: 0 8px 32px rgba(15,23,42,.08);
+    border: 1px solid #e2e8f0;
 }
-.cm-wa-title { font-size: 1.45rem; font-weight: 800; margin: 0 0 6px; }
-.cm-wa-subtitle { font-size: .88rem; color: #d1d5db; margin-bottom: 4px; }
-.cm-wa-meta { font-size: .84rem; color: #e5e7eb; line-height: 1.7; margin: 14px 0 22px; }
-.cm-wa-section { font-size: .95rem; font-weight: 800; margin: 18px 0 10px; letter-spacing: .02em; }
-.cm-wa-table { width: 100%; border-collapse: collapse; font-size: .82rem; margin-bottom: 8px; }
-.cm-wa-table th, .cm-wa-table td {
-    border: 1px solid #374151;
-    padding: 10px 8px;
+#CheckListMISPage .cm-wa-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; color: #0f172a !important; }
+#CheckListMISPage .cm-wa-subtitle { font-size: .78rem; color: #64748b !important; margin-bottom: 2px; }
+#CheckListMISPage .cm-wa-meta { margin: 14px 0 18px; color: #334155 !important; font-size: .82rem; }
+#CheckListMISPage .cm-wa-meta div { margin-bottom: 4px; }
+#CheckListMISPage .cm-wa-section {
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin: 16px 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #0f172a !important;
+}
+#CheckListMISPage .cm-wa-table { width: 100%; border-collapse: collapse; font-size: .78rem; margin-bottom: 4px; background: #ffffff !important; }
+#CheckListMISPage .cm-wa-table th,
+#CheckListMISPage .cm-wa-table td {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 7px 6px;
     text-align: center;
+    color: #334155 !important;
+    background: #ffffff !important;
 }
-.cm-wa-table th { background: #111827; font-weight: 700; }
-.cm-wa-table td:first-child, .cm-wa-table th:first-child { text-align: left; }
-.cm-wa-overall { list-style: disc; padding-left: 22px; margin: 8px 0 0; font-size: .84rem; line-height: 1.85; color: #f3f4f6; }
-.cm-wa-empty { text-align: center; color: #9ca3af; padding: 40px 16px; font-size: .9rem; }
+#CheckListMISPage .cm-wa-table th:first-child,
+#CheckListMISPage .cm-wa-table td:first-child { text-align: left; }
+#CheckListMISPage .cm-wa-table th { font-weight: 700; color: #1e293b !important; background: #eff6ff !important; }
+#CheckListMISPage .cm-wa-overall { list-style: disc; padding-left: 18px; margin: 8px 0 0; color: #334155 !important; font-size: .82rem; }
+.cm-wa-overall li { margin-bottom: 4px; }
+.cm-wa-empty { text-align: center; color: #9ca3af; padding: 48px 16px; font-size: .9rem; }
+.cm-wa-empty i { display: block; font-size: 2rem; margin-bottom: 10px; color: #6b7280; }
+#cmSendWhatsApp { display: none; }
 
 @@media (max-width: 900px) {
     .cm-body { flex-direction: column; }
@@ -272,7 +297,7 @@ table.cm-table tbody tr:hover td { background: #eff6ff; }
                 </div>
                 <div class="cm-actions">
                     <button class="cm-btn-pdf" id="cmExportPdf" title="Download PDF"><i class="fas fa-file-pdf"></i>&nbsp;PDF</button>
-                    <button class="cm-btn-whatsapp" id="cmSendWhatsApp" title="Generate PDF and send on WhatsApp" style="display:none;"><i class="fab fa-whatsapp"></i>&nbsp;Send WhatsApp</button>
+                    <button class="cm-btn-whatsapp" id="cmSendWhatsApp" title="Send on WhatsApp"><i class="fab fa-whatsapp"></i>&nbsp;WhatsApp</button>
                     <button class="cm-btn-reset" id="cmResetFilter"><i class="fas fa-rotate-left"></i>&nbsp;Reset</button>
                 </div>
             </div>
@@ -308,10 +333,10 @@ table.cm-table tbody tr:hover td { background: #eff6ff; }
                 <div class="cm-legend" id="cmDonutLegend"></div>
             </div>
 
-            <!-- WhatsApp weekly summary -->
-            <div class="cm-wa-panel" id="cmWhatsAppPanel">
+            <!-- WhatsApp format preview -->
+            <div class="cm-whatsapp-panel" id="cmWhatsAppPanel">
                 <div class="cm-wa-card" id="cmWhatsAppCard">
-                    <div class="cm-wa-empty"><i class="fas fa-spinner fa-spin"></i> Loading summary…</div>
+                    <div class="cm-wa-empty"><i class="fas fa-user-check"></i> Select a user and date range to view the weekly checklist report.</div>
                 </div>
             </div>
         </div>

@@ -1,10 +1,15 @@
 import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
+
+
 const UserMasterService = {
 
-    GetUserMasterList: function () {
-        var URL = UrlService.API_ENDPOINT_USERMASTER + '/GetUserMasterList';
+    GetUserMasterList: function (UserMaster_Code) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        var userMasterCode = authKeyData.UserMaster_Code || 0;
+       
+        var URL = UrlService.API_ENDPOINT_USERMASTER + '/GetUserMasterList?UserMaster_Code=' + encodeURIComponent(userMasterCode);
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
 
