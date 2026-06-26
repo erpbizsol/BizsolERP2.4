@@ -1,5 +1,6 @@
 ﻿export const promiseAjaxCallApi = {
-    CallAPI: function CallAPI(callMethod, URl, Data) {
+    CallAPI: function CallAPI(callMethod, URl, Data, options) {
+        options = options || {};
         return new Promise(function (resolve, reject) {
             $.ajax({
                 url: URl,
@@ -16,9 +17,10 @@
                 error: function (xhr, status, error) {
                     const errorMessage = `${status}: ${error}`;
 
-                    // alert('Data Error: ' + errorMessage);
-                    toastr.error('Data Error : ' + errorMessage + ' ON API:' + new URL(URl).pathname);
-                    reject(errorMessage); // Important to reject the Promise
+                    if (!options.suppressErrorToast) {
+                        toastr.error('Data Error : ' + errorMessage + ' ON API:' + new URL(URl).pathname);
+                    }
+                    reject({ message: errorMessage, xhr: xhr, status: status });
                     HideLoader();
                 }
             });
