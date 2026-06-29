@@ -3,10 +3,14 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const GRNPaymentApprovalService = {
 
-    GetGRNPaymentApprovalList: function GetGRNPaymentApprovalList(Status, FromDate, ToDate) {
+    GetGRNPaymentApprovalList: function GetGRNPaymentApprovalList(Status, FromDate, ToDate, BankMaster_Code) {
+        const bankCode = BankMaster_Code !== undefined && BankMaster_Code !== null
+            ? String(BankMaster_Code).trim()
+            : '0';
         let url = UrlService.API_ENDPOINT_GRNPaymentEntry +
             `/GetGRNPaymentApprovalList?Status=${encodeURIComponent(Status || '0')}` +
-            `&FromDate=${encodeURIComponent(FromDate || '')}&ToDate=${encodeURIComponent(ToDate || '')}`;
+            `&FromDate=${encodeURIComponent(FromDate || '')}&ToDate=${encodeURIComponent(ToDate || '')}` +
+            `&BankMaster_Code=${encodeURIComponent(bankCode || '0')}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
             .then(function (value) {
                 return value;

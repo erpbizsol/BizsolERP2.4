@@ -194,6 +194,16 @@ tbody tr:hover td { color: #1e1b4b; }
 }
 .im-input:focus { border-color: #5b5ef4; box-shadow: 0 0 0 3px rgba(91,94,244,0.12); background: #fff; }
 .im-input.im-input-error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.10); }
+.im-input.im-input-locked,
+select.im-input.im-input-locked {
+    background: #eef0f4 !important;
+    color: #6b7280;
+    cursor: not-allowed;
+    border-color: #d8dce8;
+    box-shadow: none;
+}
+.im-input.im-input-locked:focus { border-color: #d8dce8; box-shadow: none; background: #eef0f4 !important; }
+select.im-input.im-input-locked { opacity: 0.92; pointer-events: none; }
 select.im-input {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 11px center;
@@ -296,6 +306,14 @@ select.im-input {
 .um-radio-option.inactive-opt { border-color: #f59e0b; background: #fef3c7; color: #d97706; }
 .um-divider-v {
     width: 1px; height: 22px; background: #e5e7f0; flex-shrink: 0;
+}
+.um-bizsol-wrap {
+    display: none;
+    align-items: center;
+    gap: 22px;
+}
+.um-bizsol-wrap.is-visible {
+    display: flex;
 }
 
 /* ── Contact Grid ── */
@@ -780,7 +798,7 @@ select.im-input {
                     <div class="im-header-sub">Manage users, access rights &amp; permissions</div>
                 </div>
             </div>
-            <button type="button" class="im-btn-new" onclick="OpenNewUser()">
+            <button type="button" class="im-btn-new" id="btnNewUser" onclick="OpenNewUser()">
                 <i class="fas fa-plus"></i>
                 <span>New User</span>
             </button>
@@ -849,13 +867,15 @@ select.im-input {
 
             <!-- ── Section: Status & Options ── -->
             <div class="um-flags-row">
-                <!-- BIZSOL USER -->
-                <label class="um-check-label">
-                    <input type="checkbox" id="chkBizsolUser" />
-                    <i class="fas fa-building" style="color:#5b5ef4;font-size:13px;"></i>
-                    BIZSOL User
-                </label>
-                <div class="um-divider-v"></div>
+                <!-- BIZSOL USER (Admin + BizSol user only) -->
+                <div id="wrapBizsolUser" class="um-bizsol-wrap" style="display:none;">
+                    <label class="um-check-label">
+                        <input type="checkbox" id="chkBizsolUser" />
+                        <i class="fas fa-building" style="color:#5b5ef4;font-size:13px;"></i>
+                        BIZSOL User
+                    </label>
+                    <div class="um-divider-v"></div>
+                </div>
 
                 <!-- Active / Inactive -->
                 <div style="display:flex;align-items:center;gap:6px;">
@@ -870,6 +890,15 @@ select.im-input {
                     </label>
                 </div>
                 <div class="um-divider-v"></div>
+
+                <!-- Attendance Mandatory In CRM (Admin + BizSol user — always visible with BIZSOL User) -->
+                <div id="wrapAttendanceMandatoryInCRM" class="um-bizsol-wrap" style="display:none;">
+                    <label class="um-check-label">
+                        <input type="checkbox" id="chkAttendanceMandatoryInCRM" />
+                        <i class="fas fa-calendar-check" style="color:#0891b2;font-size:13px;"></i>
+                        Attendance Mandatory In CRM
+                    </label>
+                </div>
 
             </div>
 

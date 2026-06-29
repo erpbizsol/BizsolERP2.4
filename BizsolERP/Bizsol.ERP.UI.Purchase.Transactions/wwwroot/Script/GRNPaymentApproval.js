@@ -2148,7 +2148,9 @@ function PrintGPAVoucher(code, mode) {
                 ?? base?.AdvanceAmount ?? base?.advanceAmount ?? 0
             ).replace(/,/g, '')) || 0;
             const printAmt = advanceAmt > 0 ? advanceAmt : amt;
-         const narration = String(master.Narration ?? master.narration ?? '');
+         const narration = typeof window.gpaResolvePrintNarration === 'function'
+            ? window.gpaResolvePrintNarration(master, base ? [base] : [])
+            : String(master.Narration ?? master.narration ?? '').trim();
          const ContactNo = String(master.PhoneNo ?? master.PhoneNo ?? '');
             const bankName = String(master.BankName ?? master.bankName ?? '');
             const paymentFor = String(
@@ -2174,11 +2176,13 @@ function PrintGPAVoucher(code, mode) {
                     + (site ? ' &mdash; Sub Project: ' + gpaEscH(String(site)) : '')
                     + '</div>';
             });
-            const detailsBlock =
-                (narration ? '<div style="margin-bottom:8px;"><b>Narration:</b><br>' + gpaEscH(narration) + '</div>' : '')
-                + (detailsLines || '<span style="color:#666;">—</span>')
-                + '<div style="margin-top:10px;font-weight:700;">Amount (figures): &#8377; ' + gpaFmtIndian(printAmt) + '</div>'
-                + '<div style="margin-top:4px;font-size:9pt;">Amount (words): ' + gpaNumToWords(Math.round(printAmt)) + '</div>';
+            const detailsBlock = typeof window.gpaBuildPrintDetailsBlock === 'function'
+                ? window.gpaBuildPrintDetailsBlock(narration, detailsLines, printAmt, 0)
+                : ((narration
+                    ? ('<div class="pv-narration-box">' + gpaEscH(narration) + '</div>')
+                    : (detailsLines || '<span style="color:#666;">—</span>'))
+                + '<div class="pv-amount-block" style="margin-top:10px;font-weight:700;">Amount (figures): &#8377; ' + gpaFmtIndian(printAmt) + '</div>'
+                + '<div style="margin-top:4px;font-size:9pt;">Amount (words): ' + gpaNumToWords(Math.round(printAmt)) + '</div>');
 
             const css = '@page{size:A4 portrait;margin:10mm 12mm 14mm 12mm;}'
                 + '*{box-sizing:border-box;margin:0;padding:0;}'
@@ -2194,6 +2198,8 @@ function PrintGPAVoucher(code, mode) {
                 + 'table.pv-t td{border:1px solid #000;padding:6px 8px;font-size:9.5pt;vertical-align:top;}'
                 + 'table.pv-t td.lbl{font-weight:700;width:22%;background:#fafafa;}'
                 + '.pv-details{min-height:120px;border:1px solid #000;border-top:none;padding:8px;font-size:9.5pt;}'
+                + '.pv-narration-box{border:none;border-bottom:1px solid #000;padding:8px 10px;margin:0 -8px;min-height:44px;white-space:pre-wrap;line-height:1.45;font-size:9.5pt;background:#fff;}'
+                + '.pv-amount-block{padding-top:2px;}'
                 + '.pv-sig{display:flex;margin-top:14px;gap:8px;}'
                 + '.pv-sig > div{flex:1;border:1px solid #000;min-height:72px;padding:6px;text-align:center;font-weight:700;font-size:9pt;}';
 
