@@ -1099,7 +1099,15 @@ function confirmReconPending() {
         });
 }
 
-/** Bank → account → date → record code (stable list order: line-wise running is correct). */
+/** Bank → account → date → import line seq (Remarks) → record code (stable list order: line-wise running is correct). */
+function readImportLineSeq(row) {
+    if (!row) return null;
+    var r = row.Remarks != null ? row.Remarks : (row.remarks != null ? row.remarks : '');
+    if (r == null || r === '') return null;
+    var m = String(r).trim().match(/^(\d{1,8})$/);
+    return m ? parseInt(m[1], 10) : null;
+}
+
 function sortStatementRows(list) {
     return list.map(function (row, origIdx) {
         return { row: row, origIdx: origIdx, iso: ConvertToIsoDate(row.TxnDate) };
@@ -1118,6 +1126,11 @@ function sortStatementRows(list) {
         if (!b.iso) return -1;
         var c = a.iso.localeCompare(b.iso);
         if (c !== 0) return c;
+        var la = readImportLineSeq(a.row);
+        var lb = readImportLineSeq(b.row);
+        if (la != null && lb != null && la !== lb) return la - lb;
+        if (la != null && lb == null) return -1;
+        if (la == null && lb != null) return 1;
         var ca = parseInt(a.row.Code, 10) || 0;
         var cb = parseInt(b.row.Code, 10) || 0;
         if (ca !== cb) return ca - cb;
@@ -1172,6 +1185,9 @@ function computeBalances(sortedItems, seedClosingByAcct) {
         }
 
         var balanceAfter = roundMoney(op + dep - w);
+        var storedClose = cleanAmount(row.ClosingBalance);
+        var storedR = roundMoney(storedClose);
+        if (!isNaN(storedR) && isFinite(storedR)) balanceAfter = storedR;
         lastClosing = balanceAfter;
         out.push({
             row: row,

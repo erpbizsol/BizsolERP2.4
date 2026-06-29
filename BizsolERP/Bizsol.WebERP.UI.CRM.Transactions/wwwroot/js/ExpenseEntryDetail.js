@@ -595,6 +595,7 @@ function appendNewExpenseEntryRow() {
 var MarketingPersonName = param_MarketingMan_Name;
 var MarketingManMaster_Code = 0;
 var G_EeClosingBalanceRequestId = 0;
+var G_EeVerifyButtonRequestId = 0;
 
 function applyClosingBalanceFieldVisibility() {
     $('#eeClosingBalWrap').show();
@@ -785,9 +786,54 @@ $(document).ready(function () {
     $('#eeBtnConfirmCancel').on('click', function () { ApplyAmountExceedResponse(false); });
     $('#eeBtnConfirmProceed').on('click', function () { ApplyAmountExceedResponse(true); });
 
+    $('#btnVerify').hide();
     DisableControls();
-    ValidateMarketingPersonSenior();
 });
+
+async function applyVerifyButtonVisibility() {
+    const reqId = ++G_EeVerifyButtonRequestId;
+    const $btn = $('#btnVerify');
+    $btn.hide().prop('disabled', true);
+
+    if (param_Mode === 'View') {
+        return;
+    }
+
+    let hasVerifyRight = false;
+    try {
+        const respCheck = await CheckRight('Verify');
+        if (reqId !== G_EeVerifyButtonRequestId) return;
+        hasVerifyRight = !(respCheck && respCheck.CheckModuleOptionRight === 'N');
+    } catch (err) {
+        if (reqId !== G_EeVerifyButtonRequestId) return;
+        return;
+    }
+
+    if (!hasVerifyRight) {
+        return;
+    }
+
+    const masterCode = parseInt(param_ExpenseEntryMaster_Code, 10) || 0;
+    if (masterCode === 0) {
+        if (reqId !== G_EeVerifyButtonRequestId) return;
+        $btn.show().prop('disabled', true);
+        return;
+    }
+
+    let seniorValid = false;
+    try {
+        const response = await ExpenseEntryService.ExpenseEntry_ValidateMarketingPersonSenior(masterCode);
+        if (reqId !== G_EeVerifyButtonRequestId) return;
+        if (response && response.length > 0 && response[0].Valid === 'Y') {
+            seniorValid = true;
+        }
+    } catch (err) {
+        if (reqId !== G_EeVerifyButtonRequestId) return;
+        seniorValid = false;
+    }
+
+    $btn.show().prop('disabled', !seniorValid);
+}
 
 function DisableControls() {
     if (param_Mode == 'View') {
@@ -796,11 +842,9 @@ function DisableControls() {
         $("#btnBack").prop("disabled", false);
         $("#btnExpenseEntryMasterAttach").prop("disabled", false);
         $("#btnSubmit").hide();
-        $("#btnVerify").hide();
         $("#btnNewRow").hide();
     } else {
         $("#btnSubmit").show();
-        $("#btnVerify").show();
         $("#btnNewRow").show();
         $("#btnExpenseEntryMasterAttach").prop("disabled", false);
     }
@@ -817,6 +861,7 @@ function DisableControls() {
         $("#btnNewRow").prop("disabled", G_ExpenseHeadOptions.length === 0);
     }
     applyApprovedAmountInputState();
+    applyVerifyButtonVisibility();
 }
 function PopulateExpenseHeadDetails(Code) {
     refreshApprovedAmountInputDisabledAttr();
@@ -1535,26 +1580,6 @@ function convertDateFormat1(dateString) {
     const monthAbbreviation = monthNames[parseInt(month) - 1];
     return `${day}-${monthAbbreviation}-${year}`;
 }
-function ValidateMarketingPersonSenior() {
-ExpenseEntryService.ExpenseEntry_ValidateMarketingPersonSenior(param_ExpenseEntryMaster_Code).then(function (response) {
-    if (parseInt(param_ExpenseEntryMaster_Code) === 0) {
-        $('#btnVerify').prop('disabled', true);
-        return;
-    }
-
-    if (response && response.length > 0) {
-        if (response[0].Valid == "Y") {
-            $('#btnVerify').prop('disabled', false);
-        } else {
-            $('#btnVerify').prop('disabled', true);
-        }
-    }
-    if (param_Mode == 'View' && param_ExpenseEntryMaster_Code > 0) {
-        $("#btnVerify").prop("disabled", true);
-    }
-});
-}
-
 window.ViewAttachment = ViewAttachment;
 window.openExpenseEntryMasterAttachmentControl = openExpenseEntryMasterAttachmentControl;
 window.CalculateApprovedAmount = CalculateApprovedAmount;

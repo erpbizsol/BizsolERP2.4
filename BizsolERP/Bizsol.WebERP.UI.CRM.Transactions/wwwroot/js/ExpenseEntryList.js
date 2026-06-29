@@ -1,5 +1,8 @@
 import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
 import { ExpenseEntryLevelsApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryLevelsApprovalService.js';
+import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
+import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
@@ -9,6 +12,7 @@ function CheckRight(optionName) {
     const FinYear = BizSolHelperFunction.getFinancialYear();
     return MenuService.CheckModuleOptionRight(ModuleName, optionName, 'Y', FinYear);
 }
+var G_EEL_ConfigBtnRequestId = 0;
 var G_EEL_LevelVerifyApplicable = 'N';
 /** Cached list rows keyed by Code — used by approval-flow modal (avoids wrong DOM column reads). */
 var G_EE_ListRowCache = {};
@@ -33,6 +37,7 @@ const Indx_Tbl = {
 
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Entry");
+    $('#btnExpenseEntryConfig').hide();
 
     DatePicker();
     renderInitialEmptyExpenseTable();
@@ -105,10 +110,19 @@ $(document).ready(function () {
         CreateNew(0);
     });
     
-    $('#btnExpenseEntryConfig').click(function (e) {
-
+    $('#btnExpenseEntryConfig').click(async function (e) {
+        const FinYear = BizSolHelperFunction.getFinancialYear();
+        try {
+            const resp = await MenuService.CheckModuleOptionRight('Expense Head Master', 'View', 'Y', FinYear);
+            if (resp && resp.CheckModuleOptionRight === 'N') {
+                toastr.error(resp.Msg);
+                return;
+            }
+        } catch (err) {
+            toastr.error('Could not verify access rights.');
+            return;
+        }
         window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseHeadMaster";
-
     });
 
     $('#eeStatCardPendingOnMe').on('click', function () {
@@ -140,11 +154,28 @@ $(document).ready(function () {
         $('#eeDeleteConfirmBackdrop').removeClass('show');
     });
 
-    BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnExpenseEntryConfig');
- });
+    applyExpenseEntryConfigButtonVisibility();
+});
+
+async function applyExpenseEntryConfigButtonVisibility() {
+    const reqId = ++G_EEL_ConfigBtnRequestId;
+    const $btn = $('#btnExpenseEntryConfig');
+    $btn.hide();
+    try {
+        const FinYear = BizSolHelperFunction.getFinancialYear();
+        const resp = await MenuService.CheckModuleOptionRight('Expense Head Master', 'View', 'N', FinYear);
+        if (reqId !== G_EEL_ConfigBtnRequestId) return;
+        if (resp && resp.CheckModuleOptionRight === 'Y') {
+            $btn.show();
+        }
+    } catch (err) {
+        if (reqId !== G_EEL_ConfigBtnRequestId) return;
+        $btn.hide();
+    }
+}
 
 function applyEEListConfigVisibility() {
-    BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnExpenseEntryConfig');
+    applyExpenseEntryConfigButtonVisibility();
 
     // "Pending on Me" chip: only when level-verify is enabled
     if (G_EEL_LevelVerifyApplicable === 'Y') {
@@ -440,32 +471,43 @@ function GetExpenseEntryList(opts){
         if (filtered && filtered.length > 0) {
             const StringFilterColumn = ["Person Name"];
             const NumericFilterColumn = ["Entry No"];
-            const DateFilterColumn = ["Entry Date","From Date","To Date","Approved On"];
+            const DateFilterColumn = ["Entry Date","From Date","To Date"];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code","MarketingManMaster_Code","VerifyStatus"];
+            const hiddenColumns = ["Code","MarketingManMaster_Code","VerifyStatus","Approved By","Approved On"];
             const ColumnAlignment = {
                 "Entry No": "right",
                 "Entry Date": "center",
                 "From Date": "center",
                 "To Date": "center",
-                "Approved On": "center",
+                "Total Days": "right",
+                "Allow Amount": "right",
                 "Expended Amount": "right",
                 "Approved Amount": "right",
                 "Deduction": "right"
             };
-            const totalApprovedAmount=["Approved Amount","Deduction","Expended Amount"];
+            const totalApprovedAmount=["Allow Amount","Approved Amount","Deduction","Expended Amount"];
             G_EE_ListRowCache = {};
             const updatedResponse = filtered.map(item => {
                 G_EE_ListRowCache[item.Code] = { ...item };
+                const statusText = (item.Status || '').trim();
+                const entryNo = item['Entry No'] != null ? String(item['Entry No']) : '';
+                const entryDateIso = eeListEntryDateParamForAttachmentControl(item['Entry Date'] ?? item.EntryDate);
+                const hasAttach = eeListHasAttachmentYes(item);
+                const attachBg = hasAttach
+                    ? 'linear-gradient(135deg,#16a34a,#15803d)'
+                    : 'linear-gradient(135deg,#0ea5e9,#0284c7)';
                 let approvalFlowBtn = '';
-                if (G_EEL_LevelVerifyApplicable === 'Y') {
-                    approvalFlowBtn = `<button class="btn icon-height mb-1 ee-btn-view-approval" title="View Approval Flow" onclick="ViewApprovalFlowData(${item.Code},this)"><i class="fa fa-layer-group"></i></button>`;
+                if (G_EEL_LevelVerifyApplicable === 'Y' || (statusText && statusText !== 'Unverified')) {
+                    approvalFlowBtn = `<button class="btn icon-height mb-1 ms-1 ee-btn-view-approval" title="View Approval Flow" onclick="ViewApprovalFlowData(${item.Code},this)"><i class="fa fa-layer-group"></i></button>`;
                 }
-                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.Status !== 'Unverified' ? 'disabled' : ''} onclick="EditData(${item.Code},this)"><i class="fa fa-pencil"></i></button>
-                <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.VerifyStatus === 'Y' ? 'disabled' : ''} onclick="DeleteData('${item.Code}',this)"><i class="fa fa-times"></i></button>
-                <button class="btn btn-info icon-height mb-1" title="View" onclick="ViewData(${item.Code},this)"><i class="fa fa-eye"></i></button>
+                let buttonsHTML = `<button class="btn btn-info icon-height mb-1" title="View" onclick="ViewData(${item.Code},this)"><i class="fa fa-eye"></i></button>
+                <button class="btn btn-primary icon-height mb-1 ms-1" title="Edit" ${statusText !== 'Unverified' ? 'disabled' : ''} onclick="EditData(${item.Code},this)"><i class="fa fa-pencil"></i></button>
+                <button class="btn btn-danger icon-height mb-1 ms-1" title="Delete" ${item.VerifyStatus === 'Y' ? 'disabled' : ''} onclick="DeleteData('${item.Code}',this)"><i class="fa fa-times"></i></button>
+                <button class="btn btn-secondary icon-height mb-1 ms-1" title="Print Preview" onclick="PrintExpenseEntry(${item.Code},'preview')"><i class="fa fa-search-plus"></i></button>
+                <button class="btn btn-dark icon-height mb-1 ms-1" title="Print" onclick="PrintExpenseEntry(${item.Code},'print')"><i class="fa fa-print"></i></button>
+                <button class="btn icon-height mb-1 ms-1" title="Attachments" style="background:${attachBg};color:#fff;border:none;" onclick="openEEListAttachmentControl(${item.Code},'${eeEscHtmlAttr(entryNo)}','${eeEscHtmlAttr(entryDateIso)}')"><i class="fa fa-paperclip"></i></button>
                 ${approvalFlowBtn}`;
 
                 var td_StatusBtn = '';
@@ -1462,7 +1504,7 @@ function eeListRenderHistoryModalBody(rows) {
     const $body = $('#eeListHistoryModalBody');
     if (!rows || rows.length === 0) {
         $body.html(
-            '<tr><td colspan="4" class="text-center py-4" style="color:#0e7499;font-size:0.82rem;">' +
+            '<tr><td colspan="5" class="text-center py-4" style="color:#0e7499;font-size:0.82rem;">' +
             '<i class="fa fa-inbox me-1"></i>No approval history for this line.</td></tr>'
         );
         return;
@@ -1471,11 +1513,13 @@ function eeListRenderHistoryModalBody(rows) {
     rows.forEach(function (row, idx) {
         const level = eeListEscHtml(eeListHistoryTextFromRow(row, ['Level', 'LevelDesc', 'LevelDesp', 'Level Name', 'Level Description'])
             || ('L' + (row.ExpenseEntryApprovalConfiguration_Code || row.LevelCode || '')));
+        const approvedBy = eeListEscHtml(eeListDisplayApprovedBy(eeListHistoryTextFromRow(row, ['Approved By', 'ApprovedBy', 'Approved By Name', 'ApprovedByName'])));
         const oldAmt = eeListFmtCurrency(eeListNumFromRow(row, ['Old Approved Amount', 'OldApprovedAmount', 'Old Approved', 'OldApproved']));
         const newAmt = eeListFmtCurrency(eeListNumFromRow(row, ['New Approved Amount', 'NewApprovedAmount', 'New Approved', 'NewApproved']));
         html += '<tr>' +
             '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
             '<td style="font-weight:600;">' + (level || '—') + '</td>' +
+            '<td>' + (approvedBy || '—') + '</td>' +
             '<td class="text-end">' + oldAmt + '</td>' +
             '<td class="text-end" style="font-weight:700;color:#0891b2;">' + newAmt + '</td>' +
             '</tr>';
@@ -1507,7 +1551,7 @@ function OpenEeListLineHistory(detailCode) {
         'ExpenseEntryDetail_Code: ' + dc + (lineLabel ? ' · ' + lineLabel : '')
     );
     $('#eeListHistoryModalBody').html(
-        '<tr><td colspan="4" class="text-center py-3" style="color:#0e7499;font-size:0.82rem;">' +
+        '<tr><td colspan="5" class="text-center py-3" style="color:#0e7499;font-size:0.82rem;">' +
         '<i class="fa fa-spinner fa-spin me-1"></i>Loading…</td></tr>'
     );
 
@@ -1520,7 +1564,7 @@ function OpenEeListLineHistory(detailCode) {
         })
         .catch(function () {
             $('#eeListHistoryModalBody').html(
-                '<tr><td colspan="4" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<tr><td colspan="5" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
                 '<i class="fa fa-exclamation-triangle me-1"></i>Unable to load history.</td></tr>'
             );
             toastr.error('Error loading approval history for this line.');
@@ -1593,61 +1637,563 @@ function renderExpenseEntryApprovalFlowModal(entry, detailLines) {
 }
 
 function ViewApprovalFlowData(Code, x) {
-    CheckRight('View').then(function (respCheck) {
-        if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
-            toastr.error(respCheck.Msg);
-            return;
-        }
-        const code = parseInt(Code, 10);
-        if (!Number.isFinite(code) || code <= 0) return;
+    const code = parseInt(Code, 10);
+    if (!Number.isFinite(code) || code <= 0) return;
 
-        const cached = G_EE_ListRowCache[code] || {};
-        const baseEntry = {
-            ...cached,
-            Code: code,
-            _listStatus: cached.Status || ''
-        };
+    const cached = G_EE_ListRowCache[code] || {};
+    const baseEntry = {
+        ...cached,
+        Code: code,
+        _listStatus: cached.Status || ''
+    };
 
-        $('#eeApprovalFlowModalTitle').html('<i class="fa fa-file-invoice-dollar me-2"></i>Expense Entry Details');
-        $('#eeApprovalFlowModalBody').html(
-            '<div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading approval flow…</div>'
-        );
-        $('#eeApprovalFlowModal').modal({ backdrop: 'static' });
-        $('#eeApprovalFlowModal').modal('show');
+    $('#eeApprovalFlowModalTitle').html('<i class="fa fa-file-invoice-dollar me-2"></i>Expense Entry Details');
+    $('#eeApprovalFlowModalBody').html(
+        '<div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading approval flow…</div>'
+    );
+    $('#eeApprovalFlowModal').modal({ backdrop: 'static' });
+    $('#eeApprovalFlowModal').modal('show');
 
-        ExpenseEntryLevelsApprovalService.GetExpenseEntryApprovalDetail(code)
-            .then(function (res) {
-                return eeListFetchApprovalMetaEntry(code).then(function (approvalMeta) {
-                    const metaEntry = approvalMeta || {};
-                    const baseWithMeta = {
-                        ...baseEntry,
-                        ...metaEntry,
-                        Code: code,
-                        _listStatus: baseEntry._listStatus || metaEntry.Status || metaEntry.ApprovalStatus || ''
-                    };
-                    if (metaEntry.LevelDetails && metaEntry.LevelDetails.length) {
-                        baseWithMeta.LevelDetails = metaEntry.LevelDetails;
-                    }
-                    const entry = eeListMergeDetailIntoEntry(res, baseWithMeta);
-                    const detailLines = eeListExtractDetailLines(res);
-                    return eeListEnrichEntryAndLinesFromShowData(entry, code, detailLines).then(function (pack) {
-                        return eeListApplyCalculatedAllowedAmounts(pack.entry, pack.lines).then(function (enriched) {
-                            pack.entry._detailLines = enriched;
-                            renderExpenseEntryApprovalFlowModal(pack.entry, enriched);
-                        });
+    ExpenseEntryLevelsApprovalService.GetExpenseEntryApprovalDetail(code)
+        .then(function (res) {
+            return eeListFetchApprovalMetaEntry(code).then(function (approvalMeta) {
+                const metaEntry = approvalMeta || {};
+                const baseWithMeta = {
+                    ...baseEntry,
+                    ...metaEntry,
+                    Code: code,
+                    _listStatus: baseEntry._listStatus || metaEntry.Status || metaEntry.ApprovalStatus || ''
+                };
+                if (metaEntry.LevelDetails && metaEntry.LevelDetails.length) {
+                    baseWithMeta.LevelDetails = metaEntry.LevelDetails;
+                }
+                const entry = eeListMergeDetailIntoEntry(res, baseWithMeta);
+                const detailLines = eeListExtractDetailLines(res);
+                return eeListEnrichEntryAndLinesFromShowData(entry, code, detailLines).then(function (pack) {
+                    return eeListApplyCalculatedAllowedAmounts(pack.entry, pack.lines).then(function (enriched) {
+                        pack.entry._detailLines = enriched;
+                        renderExpenseEntryApprovalFlowModal(pack.entry, enriched);
                     });
                 });
-            })
-            .catch(function () {
-                $('#eeApprovalFlowModalBody').html(
-                    '<div class="text-center py-4 text-danger"><i class="fa fa-exclamation-triangle me-2"></i>Failed to load approval flow.</div>'
-                );
             });
-    });
+        })
+        .catch(function () {
+            $('#eeApprovalFlowModalBody').html(
+                '<div class="text-center py-4 text-danger"><i class="fa fa-exclamation-triangle me-2"></i>Failed to load approval flow.</div>'
+            );
+        });
 }
 
 function closeExpenseEntryApprovalFlowModal() {
     $('#eeApprovalFlowModal').modal('hide');
+}
+
+function eeListHasAttachmentYes(entry) {
+    const v = entry.HasAttach != null ? entry.HasAttach
+        : entry.hasAttach != null ? entry.hasAttach
+            : entry.HasAttachment != null ? entry.HasAttachment
+                : entry.hasAttachment;
+    return String(v || '').trim().toUpperCase() === 'Y';
+}
+
+function eeListEntryDateParamForAttachmentControl(raw) {
+    if (raw == null || raw === '') return '';
+    const iso = toIsoDateStr(String(raw).trim());
+    if (!iso) return '';
+    const dt = new Date(iso);
+    return !isNaN(dt.getTime()) ? dt.toISOString() : '';
+}
+
+function eeListNormalizeAttachmentApiResponse(response) {
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
+
+function eeListClearAttachmentAggregateMode() {
+    window._eeListAttachmentAggregateMasterCode = 0;
+    window._eeListAttachmentDetailCodes = null;
+}
+
+function eeListFetchMergedExpenseEntryAttachments(masterCode, detailCodes, origGet) {
+    const mc = parseInt(masterCode, 10) || 0;
+    const tasks = [
+        origGet.call(AttachmentControlService, 'ExpenseEntryMaster', mc, '', 0)
+    ];
+    const lineSeen = new Set();
+    (detailCodes || []).forEach(function (dc) {
+        const code = parseInt(dc, 10) || 0;
+        if (code <= 0 || lineSeen.has(code)) return;
+        lineSeen.add(code);
+        tasks.push(origGet.call(AttachmentControlService, 'ExpenseEntryMaster', mc, 'ExpenseEntryDetail', code));
+    });
+    return Promise.all(tasks).then(function (results) {
+        const merged = [];
+        const docSeen = new Set();
+        results.forEach(function (resp) {
+            eeListNormalizeAttachmentApiResponse(resp).forEach(function (item) {
+                if (!item || typeof item !== 'object') return;
+                const docCode = parseInt(item.Code ?? item.code, 10) || 0;
+                if (docCode > 0) {
+                    if (docSeen.has(docCode)) return;
+                    docSeen.add(docCode);
+                }
+                merged.push(item);
+            });
+        });
+        return merged;
+    });
+}
+
+function eeListPatchAttachmentService() {
+    if (AttachmentControlService._eeListGetFilesPatched) return;
+    const prevGet = AttachmentControlService.GetAttachmentUploadFiles;
+    AttachmentControlService.GetAttachmentUploadFiles = function (masterTableName, masterTableCode, detailTableName, detailTableCode) {
+        const mc = parseInt(masterTableCode, 10) || 0;
+        const aggMc = parseInt(window._eeListAttachmentAggregateMasterCode || '0', 10);
+        const dName = detailTableName == null || detailTableName === undefined ? '' : String(detailTableName).trim();
+        const dCode = parseInt(detailTableCode, 10) || 0;
+        if (masterTableName === 'ExpenseEntryMaster' && aggMc > 0 && mc === aggMc && !dName && dCode === 0) {
+            return eeListFetchMergedExpenseEntryAttachments(mc, window._eeListAttachmentDetailCodes || [], prevGet);
+        }
+        return Promise.resolve(prevGet.call(AttachmentControlService, masterTableName, masterTableCode, detailTableName, detailTableCode))
+            .then(eeListNormalizeAttachmentApiResponse);
+    };
+    AttachmentControlService._eeListGetFilesPatched = true;
+}
+
+function eeListCollectDetailCodesFromApi(person, masterCode) {
+    if (!person || !masterCode) return Promise.resolve([]);
+    return ExpenseEntryService.GetExpenseEntryDetails(person, masterCode).then(function (resp) {
+        const lines = (resp && resp.ExpenseEntryDetail) ? resp.ExpenseEntryDetail : [];
+        const seen = new Set();
+        const out = [];
+        lines.forEach(function (row) {
+            const dc = eeListDetailLineCodeFromRow(row, masterCode);
+            if (dc > 0 && !seen.has(dc)) {
+                seen.add(dc);
+                out.push(dc);
+            }
+        });
+        return out;
+    }).catch(function () {
+        return [];
+    });
+}
+
+function InitEEListAttachmentControl(masterCode, entryNo, entryDate) {
+    eeListPatchAttachmentService();
+    const url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
+    $('#ExpenseEntryList_AttachmentControlmodal').load(url, {
+        MasterTableName: 'ExpenseEntryMaster',
+        MasterTableCode: parseInt(masterCode, 10) || 0,
+        DetailTableName: '',
+        DetailTableCode: 0,
+        EntryNo: parseInt(entryNo, 10) || 0,
+        EntryDate: entryDate || '',
+        Mode: 'view'
+    }, function () {
+        $(document).off('hidden.bs.modal.eeListAttachAgg', '#AttachmentControlmodal')
+            .on('hidden.bs.modal.eeListAttachAgg', '#AttachmentControlmodal', function () {
+                eeListClearAttachmentAggregateMode();
+            });
+    });
+}
+
+function openEEListAttachmentControl(code, entryNo, entryDate) {
+    const masterCode = parseInt(code, 10) || 0;
+    if (masterCode <= 0) {
+        toastr.warning('Invalid record. Cannot open attachments.');
+        return;
+    }
+    const cached = G_EE_ListRowCache[masterCode] || {};
+    const person = cached['Person Name'] || cached.PersonName || '';
+    eeListCollectDetailCodesFromApi(person, masterCode).then(function (detailCodes) {
+        window._eeListAttachmentAggregateMasterCode = masterCode;
+        window._eeListAttachmentDetailCodes = detailCodes;
+        InitEEListAttachmentControl(masterCode, entryNo, entryDate);
+    });
+}
+
+function eeListGetCompanyInfo() {
+    try {
+        const ud = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        if (ud && ud[0]) return ud[0];
+    } catch (e) { /* ignore */ }
+    return {};
+}
+
+function eeListResolveProjectName(projectList, code) {
+    const n = parseInt(code, 10) || 0;
+    if (n <= 0) return '—';
+    const hit = (projectList || []).find(function (p) { return parseInt(p.Code, 10) === n; });
+    if (!hit) return '—';
+    return (hit.ProjectDesp || hit.ProjectName || hit.Name || '—').trim() || '—';
+}
+
+function eeListResolveSubProjectName(subProjectList, code) {
+    const n = parseInt(code, 10) || 0;
+    if (n <= 0) return '—';
+    const hit = (subProjectList || []).find(function (p) { return parseInt(p.Code, 10) === n; });
+    if (!hit) return '—';
+    return (hit.SubProjectDesp || hit.SubProjectName || hit.Name || '—').trim() || '—';
+}
+
+function eeListFmtPrintCurrency(val) {
+    const n = parseFloat(val);
+    if (isNaN(n)) return '0.00';
+    return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function eeListFmtPrintDate(raw) {
+    if (!raw) return '';
+    const s = String(raw).trim();
+    if (/^\d{2}-\d{2}-\d{4}$/.test(s)) {
+        const p = s.split('-');
+        return p[0] + '/' + p[1] + '/' + p[2];
+    }
+    const formatted = eeListFmtDateDisplay(s);
+    return formatted || s;
+}
+
+/** Same asset paths as PurchaseOrderStore print/preview — replace files under wwwroot/assets/images/ to update. */
+function eeListGetPrintAssetBase() {
+    return (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
+}
+
+function eeListGetPrintLogoUrl() {
+    return eeListGetPrintAssetBase() + 'assets/images/pppllog.jpeg';
+}
+
+function eeListGetPrintStampAccountsUrl() {
+    return eeListGetPrintAssetBase() + 'assets/images/PPPL_Stamp_Finance.jpeg';
+}
+
+function eeListGetPrintStampManagementUrl() {
+    return eeListGetPrintAssetBase() + 'assets/images/PPPL_Stamp_HODA.jpeg';
+}
+
+function eeListBuildExpensePrintSigBox(labelTitle, stampImgUrl, showStamp) {
+    const stampInner = showStamp
+        ? '<img class="sig-stamp" src="' + stampImgUrl + '" alt="' + eeListEscHtml(labelTitle) + '">'
+        : '<span class="sig-name">Name &amp; Signature with Date</span>';
+    return '<div class="sig-box">'
+        + '<div class="sig-stamp-wrap">' + stampInner + '</div>'
+        + '<div class="sig-title">' + eeListEscHtml(labelTitle) + '</div>'
+        + '</div>';
+}
+
+/** Stamps on print/preview only when expense entry is fully verified (same idea as PO approved stamp). */
+function eeListIsExpenseEntryVerifiedForPrint(listEntry, master, statusText) {
+    const st = (statusText || '').toString().trim().toLowerCase();
+    if (st === 'verified' || st === 'approved') return true;
+    const rawStatus = (listEntry._listStatus ?? listEntry.Status ?? master.Status ?? '').toString().trim().toLowerCase();
+    if (rawStatus === 'verified' || rawStatus === 'approved') return true;
+    const verifyStatus = (listEntry.VerifyStatus ?? master.VerifyStatus ?? '').toString().trim().toUpperCase();
+    return verifyStatus === 'Y';
+}
+
+function eeListFormatIndianCurrency(num) {
+    const n = parseFloat(num || 0);
+    if (isNaN(n)) return '0.00';
+    const parts = n.toFixed(2).split('.');
+    const intPart = parts[0];
+    const decPart = parts[1];
+    const lastThree = intPart.slice(-3);
+    const remaining = intPart.slice(0, -3);
+    const formatted = remaining.length > 0
+        ? remaining.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree
+        : lastThree;
+    return formatted + '.' + decPart;
+}
+
+function eeListNumberToWords(amount) {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+        'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+        'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    function twoD(n) {
+        if (n < 20) return ones[n];
+        return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+    }
+    function threeD(n) {
+        if (n >= 100) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + twoD(n % 100) : '');
+        return twoD(n);
+    }
+    let n = Math.floor(Math.abs(amount));
+    if (n === 0) return 'Zero Rupees Only';
+    let w = '';
+    if (n >= 10000000) { w += threeD(Math.floor(n / 10000000)) + ' Crore '; n %= 10000000; }
+    if (n >= 100000) { w += twoD(Math.floor(n / 100000)) + ' Lakh '; n %= 100000; }
+    if (n >= 1000) { w += twoD(Math.floor(n / 1000)) + ' Thousand '; n %= 1000; }
+    if (n >= 100) { w += ones[Math.floor(n / 100)] + ' Hundred '; n %= 100; }
+    if (n > 0) { w += twoD(n); }
+    return w.trim() + ' Rupees Only';
+}
+
+function _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList, subProjectList) {
+    const company = eeListGetCompanyInfo();
+    const companyName = (company.CompanyName || company.CompanyNameForShow || 'PURSHOTAM PROFILES PVT.LTD.').trim();
+    const companyAliasName = (company.CompanyAliasName || companyName || 'PURSHOTAM PROFILES PVT.LTD.').trim();
+    const companyAddr = (company.CompanyAddress || '').trim();
+    const companyPhone = company.PhoneNo || company.CompanyPhone || '';
+    const companyEmail = company.Email || company.CompanyEmail || '';
+    const companyWeb = company.Website || company.CompanyWebsite || '';
+    const companyGST = company.GSTIN || company.CompanyGSTIN || '';
+
+    const personName = listEntry['Person Name'] || listEntry.PersonName || master.PersonName || '';
+    const fromDate = eeListFmtPrintDate(listEntry['From Date'] || listEntry.FromDate || master.FromDate);
+    const toDate = eeListFmtPrintDate(listEntry['To Date'] || listEntry.ToDate || master.ToDate);
+    const periodText = (fromDate && toDate) ? (fromDate + '  to  ' + toDate) : (fromDate || toDate || '');
+    const totalDays = eeListCalcTotalDaysFromEntry(Object.assign({}, listEntry, master)) || listEntry['Total Days'] || master.TotalDays || '';
+    const entryDate = eeListFmtPrintDate(listEntry['Entry Date'] || listEntry.EntryDate || master.EntryDate);
+    const statusText = eeListGetListStatus(Object.assign({}, listEntry, { _listStatus: listEntry.Status || master.Status }));
+    const approvedBy = eeListDisplayApprovedBy(listEntry['Approved By'] || listEntry.ApprovedBy || master.ApprovedBy);
+    const entryNo = listEntry['Entry No'] || listEntry.EntryNo || master.EntryNo || '';
+    const docTitle = 'PERSONAL EMPLOYEE EXPENSE REPORT';
+
+    let designation = '';
+    let department = '';
+    const lines = (detailLines || []).filter(function (row) {
+        return eeListNumFromRow(row, ['Expense Amount', 'ExpendedAmount', 'Expended Amount']) > 0
+            || !!(row['Expense Head'] || row.ExpenseHead);
+    });
+
+    if (lines.length > 0) {
+        designation = String(lines[0]['Designation Name'] || lines[0].DesignationName || '').trim();
+        department = String(lines[0].Department || lines[0]['Department Name'] || '').trim();
+    }
+
+    let detailRowsHtml = '';
+    let grandExpended = 0;
+    let grandApproved = 0;
+    lines.forEach(function (row, idx) {
+        const pm = row.ProjectMaster_Code != null ? row.ProjectMaster_Code : 0;
+        const spm = row.SubProjectMaster_Code != null ? row.SubProjectMaster_Code : 0;
+        const projectName = String(row['Project Name'] || row.ProjectName || eeListResolveProjectName(projectList, pm)).trim();
+        const siteName = String(row['Sub Project Name'] || row.SubProjectName || eeListResolveSubProjectName(subProjectList, spm)).trim();
+        const expenseType = String(row['Expense Head'] || row.ExpenseHead || row.ExpenseDesp || '').trim();
+        const expended = eeListNumFromRow(row, ['Expense Amount', 'ExpendedAmount', 'Expended Amount']);
+        const approved = eeListNumFromRow(row, ['Approved Amount', 'Approved', 'ApprovedAmount']);
+        grandExpended += expended;
+        grandApproved += approved > 0 ? approved : expended;
+        detailRowsHtml += '<tr>'
+            + '<td class="tc">' + (idx + 1) + '</td>'
+            + '<td>' + eeListEscHtml(projectName) + '</td>'
+            + '<td>' + eeListEscHtml(siteName) + '</td>'
+            + '<td>' + eeListEscHtml(expenseType) + '</td>'
+            + '<td class="tr">&#8377;' + eeListFormatIndianCurrency(expended) + '</td>'
+            + '</tr>';
+    });
+
+    if (!detailRowsHtml) {
+        detailRowsHtml = '<tr><td class="tc">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+    }
+
+    const listApproved = eeListNumFromRow(listEntry, ['Approved Amount', 'ApprovedAmount']);
+    const listExpended = eeListNumFromRow(listEntry, ['Expended Amount', 'ExpendedAmount']);
+    if (listApproved > 0) grandApproved = listApproved;
+    if (listExpended > 0 && grandExpended === 0) grandExpended = listExpended;
+    const grandTotal = grandApproved > 0 ? grandApproved : grandExpended;
+    const amtWords = eeListNumberToWords(Math.round(grandTotal));
+
+    let hdrContact = '';
+    if (companyPhone) hdrContact += '&#9990;&nbsp;' + eeListEscHtml(companyPhone) + '<br>';
+    if (companyEmail) hdrContact += '&#9993;&nbsp;' + eeListEscHtml(companyEmail) + '<br>';
+    if (companyWeb) hdrContact += '&#127760;&nbsp;' + eeListEscHtml(companyWeb) + '<br>';
+    if (companyGST) hdrContact += 'GSTIN:&nbsp;' + eeListEscHtml(companyGST);
+
+    const _base = eeListGetPrintAssetBase();
+    const logoUrl = eeListGetPrintLogoUrl();
+    const stampUrlAccounts = eeListGetPrintStampAccountsUrl();
+    const stampUrlManagement = eeListGetPrintStampManagementUrl();
+
+    let employeeHtml = '<div class="info-name">' + eeListEscHtml(personName || '-') + '</div>';
+    if (department) employeeHtml += '<div class="info-field"><b>Department : </b>' + eeListEscHtml(department) + '</div>';
+    if (periodText) employeeHtml += '<div class="info-field"><b>Expense Period : </b>' + eeListEscHtml(periodText) + '</div>';
+
+    let designationHtml = '';
+    if (designation) designationHtml += '<div class="info-field"><b>Designation : </b>' + eeListEscHtml(designation) + '</div>';
+    designationHtml += '<div class="info-field"><b>Submitted Date : </b>' + eeListEscHtml(entryDate || '-') + '</div>';
+    designationHtml += '<div class="info-field"><b>Approval Status : </b>' + eeListEscHtml(statusText || '-') + '</div>';
+    if (approvedBy && approvedBy !== '—') {
+        designationHtml += '<div class="info-field"><b>Approved By : </b>' + eeListEscHtml(approvedBy) + '</div>';
+    }
+
+    const sectionBand = periodText
+        ? '&#9679; EXPENSE PERIOD : ' + eeListEscHtml(periodText.toUpperCase()) + (personName ? ' &mdash; ' + eeListEscHtml(personName.toUpperCase()) : '')
+        : 'EXPENSE DETAILS';
+
+    let totalsHtml = '';
+    totalsHtml += '<tr><td class="lbl">Total Expended Amount</td><td class="val">&#8377; ' + eeListFormatIndianCurrency(grandExpended) + '</td></tr>';
+    if (grandApproved > 0 && Math.abs(grandApproved - grandExpended) > 0.009) {
+        totalsHtml += '<tr><td class="lbl">Total Approved Amount</td><td class="val">&#8377; ' + eeListFormatIndianCurrency(grandApproved) + '</td></tr>';
+    }
+    totalsHtml += '<tr class="grand"><td class="lbl">Total</td><td class="val">&#8377; ' + eeListFormatIndianCurrency(grandTotal) + '</td></tr>';
+
+    const showStamps = eeListIsExpenseEntryVerifiedForPrint(listEntry, master, statusText);
+    const signatureHtml = '<div class="sig-row">'
+        + eeListBuildExpensePrintSigBox('Verified By / Accounts', stampUrlAccounts, showStamps)
+        + eeListBuildExpensePrintSigBox('Approved By / Management', stampUrlManagement, showStamps)
+        + '</div>';
+
+    const css = '@page{size:A4 portrait;margin:8mm 10mm 10mm 10mm;}'
+        + '*{box-sizing:border-box;margin:0;padding:0;}'
+        + 'body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;color:#000;background:#fff;}'
+        + '.no-print{margin-bottom:5mm;}'
+        + '@media print{.no-print{display:none!important;}}'
+        + '.po-hdr{display:flex;align-items:flex-start;padding-bottom:5px;border-bottom:2.5px solid #000;margin-bottom:5px;}'
+        + '.hdr-co{flex:1;}'
+        + '.hdr-name{font-size:15pt;font-weight:800;color:#000;letter-spacing:0.3px;line-height:1.2;}'
+        + '.hdr-tag{font-size:9pt;color:#000;letter-spacing:1px;margin-top:1px;font-weight:700;}'
+        + '.hdr-contact{text-align:right;font-size:8pt;color:#000;line-height:1.75;min-width:155px;font-weight:600;}'
+        + '.po-title{text-align:center;font-size:10pt;font-weight:800;border:2px solid #000;color:#000;padding:3px 0;margin:4px 0;letter-spacing:1.5px;}'
+        + '.info-row{display:flex;border:1px solid #000;margin-bottom:4px;}'
+        + '.info-cell{flex:1;padding:4px 7px;font-size:8.5pt;}'
+        + '.info-cell+.info-cell{border-left:1px solid #000;}'
+        + '.info-cell.full{flex:unset;width:100%;}'
+        + '.info-label{font-weight:800;font-size:8pt;color:#000;border-bottom:1px dashed #555;padding-bottom:2px;margin-bottom:3px;}'
+        + '.info-name{font-weight:800;font-size:9pt;margin-bottom:2px;color:#000;}'
+        + '.info-field{font-size:8.5pt;margin-bottom:1px;color:#000;font-weight:600;}'
+        + '.sec-band{border-top:2.5px solid #000;border-bottom:2.5px solid #000;font-weight:800;font-size:9.5pt;padding:4px 8px;margin:5px 0 4px;letter-spacing:0.6px;color:#000;text-transform:uppercase;}'
+        + 'table.items{width:100%;border-collapse:collapse;}'
+        + 'table.items th{background:#fff;color:#000;padding:5px;font-size:9pt;font-weight:800;border:1.5px solid #000;text-align:center;}'
+        + 'table.items td{padding:4px 5px;font-size:9pt;color:#000;font-weight:600;border:1px solid #555;vertical-align:top;}'
+        + '.tc{text-align:center;}.tr{text-align:right;}'
+        + '.tot-wrap{display:flex;justify-content:flex-end;margin-top:5px;}'
+        + 'table.totals{border-collapse:collapse;min-width:290px;}'
+        + 'table.totals td{padding:3px 8px;font-size:9pt;border:1px solid #555;color:#000;}'
+        + 'table.totals .lbl{font-weight:700;color:#000;}'
+        + 'table.totals .val{text-align:right;min-width:100px;font-weight:700;color:#000;}'
+        + 'table.totals tr.grand td{border:1.5px solid #000;border-top:2px solid #000;font-weight:800;color:#000;}'
+        + '.words-box{border:1.5px solid #555;padding:5px 9px;margin:5px 0;font-size:9pt;font-weight:600;color:#000;}'
+        + '.inv-text-box{border:1px solid #555;padding:7px 10px 9px;margin:8px 0 6px;font-size:8.5pt;color:#000;font-weight:600;line-height:1.6;}'
+        + '.inv-text-box .inv-title{font-weight:800;text-decoration:underline;margin-bottom:5px;font-size:9pt;}'
+        + '.inv-text-box .inv-list{margin:0;padding:0;list-style:none;}'
+        + '.inv-text-box .inv-list li{padding:1px 0 1px 28px;text-indent:-28px;}'
+        + '.sig-row{display:flex;gap:0;margin-top:12px;border:1.5px solid #000;}'
+        + '.sig-box{flex:1;border-right:1.5px solid #000;display:flex;flex-direction:column;justify-content:flex-end;min-height:160px;min-width:0;}'
+        + '.sig-box:last-child{border-right:none;}'
+        + '.sig-title{font-weight:800;font-size:8.5pt;color:#000;text-align:center;padding:5px 4px;border-top:1.5px solid #000;letter-spacing:0.02em;}'
+        + '.sig-name{font-size:7.5pt;color:#000;font-weight:600;}'
+        + '.sig-stamp-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 2px;}'
+        + '.sig-stamp{width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 4px;opacity:0.88;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+        + '.page-wrap{width:100%;border-collapse:collapse;border-spacing:0;}'
+        + '.page-footer-cell{padding:0;}'
+        + '.page-body-cell{padding:0;vertical-align:top;}'
+        + '.print-footer{width:100%;}'
+        + '.print-footer-addr{text-align:center;font-family:Georgia,"Times New Roman",Times,serif;font-size:8.5pt;color:#6d7d92;line-height:1.45;padding:6px 8px 4px;}'
+        + '.print-footer-strip{height:22px;width:100%;background:linear-gradient(102deg,#d4c6e6 0%,#d4c6e6 44.5%,#ffffff 44.5%,#ffffff 47.2%,#d8dce2 47.2%,#d8dce2 100%);-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+        + '.hdr-logo{width:65px;height:65px;object-fit:contain;margin-right:14px;flex-shrink:0;}'
+        + '.hdr-left{display:flex;align-items:center;flex:1;}'
+        + '.wm-logo{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background:url(' + logoUrl + ') no-repeat center;background-size:contain;opacity:0.07;pointer-events:none;z-index:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}';
+
+    const coreInner = ''
+        + '<div class="po-hdr">'
+        + '<div class="hdr-left"><img class="hdr-logo" src="' + logoUrl + '" alt="Logo">'
+        + '<div class="hdr-co"><div class="hdr-name">' + eeListEscHtml(companyAliasName) + '</div>'
+        + '<div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
+        + '<div class="hdr-contact">' + hdrContact + '</div>'
+        + '</div>'
+        + '<div class="po-title">' + docTitle + '</div>'
+        + '<div class="info-row">'
+        + '<div class="info-cell">'
+        + '<div class="info-field"><b>Date : </b>' + eeListEscHtml(entryDate || '-') + '</div>'
+        + '<div class="info-field"><b>Expense Period : </b>' + eeListEscHtml(periodText || '-') + '</div>'
+        + '</div>'
+        + '<div class="info-cell" style="text-align:right;">'
+        + '<div class="info-field"><b>Entry No : </b>' + eeListEscHtml(entryNo) + '</div>'
+        + '<div class="info-field"><b>Total Days : </b>' + eeListEscHtml(totalDays) + '</div>'
+        + '<div class="info-field"><b>Status : </b>' + eeListEscHtml(statusText || '-') + '</div>'
+        + '</div></div>'
+        + '<div class="info-row">'
+        + '<div class="info-cell"><div class="info-label">Employee Details :</div>' + employeeHtml + '</div>'
+        + '<div class="info-cell"><div class="info-label">Employee Information :</div>' + designationHtml + '</div>'
+        + '</div>'
+        + '<div class="sec-band">' + sectionBand + '</div>'
+        + '<table class="items"><thead><tr>'
+        + '<th style="width:28px;">S.No</th>'
+        + '<th>Project name</th>'
+        + '<th>Site name</th>'
+        + '<th>Expense type</th>'
+        + '<th style="width:90px;">Expended Amount</th>'
+        + '</tr></thead><tbody>' + detailRowsHtml + '</tbody></table>'
+        + '<div class="tot-wrap"><table class="totals"><tbody>' + totalsHtml + '</tbody></table></div>'
+        + '<div class="words-box"><b>Amount in Word : </b>' + eeListEscHtml(amtWords) + '</div>'
+        + '<div class="pdf-keep-together pdf-footer-block">'
+        + '<div class="inv-text-box">'
+        + '<div class="inv-title">NOTE: The following details are essential to process this expense report for payment purpose.</div>'
+        + '<ul class="inv-list">'
+        + '<li>i)&nbsp;&nbsp;&nbsp;&nbsp;Employee name and designation.</li>'
+        + '<li>ii)&nbsp;&nbsp;&nbsp;Expense period and entry number.</li>'
+        + '<li>iii)&nbsp;&nbsp;Project / site name and expense type.</li>'
+        + '<li>iv)&nbsp;&nbsp;&nbsp;Supporting bills / invoices must be attached.</li>'
+        + '</ul>'
+        + '</div>'
+        + signatureHtml
+        + '</div>';
+
+    const docPageTitle = docTitle + (entryNo ? ' - ' + entryNo : '');
+
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + eeListEscHtml(docPageTitle) + '</title><style>' + css + '</style></head><body>'
+        + '<div class="no-print" style="display:flex;gap:8px;padding:3px 0 6px;">'
+        + '<button onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">&#128438;&nbsp;Print</button>'
+        + '<button onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">&#10005;&nbsp;Close</button>'
+        + '</div>'
+        + '<div class="wm-logo"></div>'
+        + '<table class="page-wrap">'
+        + '<tfoot><tr><td class="page-footer-cell">'
+        + (companyAddr
+            ? '<div class="print-footer"><div class="print-footer-addr">&#9679;&nbsp;' + eeListEscHtml(companyAddr) + '</div><div class="print-footer-strip"></div></div>'
+            : '<div class="print-footer"><div class="print-footer-strip"></div></div>')
+        + '</td></tr></tfoot>'
+        + '<tbody><tr><td class="page-body-cell">' + coreInner + '</td></tr></tbody></table>'
+        + '</body></html>';
+}
+
+function _DoPrintExpenseEntry(code, mode) {
+    const masterCode = parseInt(code, 10) || 0;
+    if (masterCode <= 0) {
+        toastr.warning('Invalid expense entry.');
+        return;
+    }
+    const listEntry = G_EE_ListRowCache[masterCode] || {};
+    const person = listEntry['Person Name'] || listEntry.PersonName || '';
+    if (!person) {
+        toastr.error('Person name not found for this entry.');
+        return;
+    }
+
+    Promise.all([
+        ProjectMasterService.GetProjectList(),
+        SubProjectMasterService.GetSubProjectList(),
+        ExpenseEntryService.GetExpenseEntryDetails(person, masterCode)
+    ]).then(function (results) {
+        const projectList = Array.isArray(results[0]) ? results[0] : [];
+        const subProjectList = Array.isArray(results[1]) ? results[1] : [];
+        const resp = results[2] || {};
+        const master = (resp.ExpenseEntryMaster && resp.ExpenseEntryMaster[0]) ? resp.ExpenseEntryMaster[0] : {};
+        const detailLines = resp.ExpenseEntryDetail || [];
+        const html = _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList, subProjectList);
+        const win = window.open('', '_blank');
+        if (!win) {
+            toastr.warning('Please allow popups for this site to use the print feature.');
+            return;
+        }
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+        if (mode === 'print') {
+            setTimeout(function () { win.focus(); win.print(); }, 600);
+        }
+    }).catch(function () {
+        toastr.error('Error loading expense entry for print.');
+    });
+}
+
+function PrintExpenseEntry(code, mode) {
+    _DoPrintExpenseEntry(code, mode);
 }
 
 window.GetExpenseEntryList = GetExpenseEntryList;
@@ -1661,3 +2207,5 @@ window.ViewApprovalFlowData = ViewApprovalFlowData;
 window.closeExpenseEntryApprovalFlowModal = closeExpenseEntryApprovalFlowModal;
 window.OpenEeListLineHistory = OpenEeListLineHistory;
 window.CloseEeListLineHistoryModal = CloseEeListLineHistoryModal;
+window.openEEListAttachmentControl = openEEListAttachmentControl;
+window.PrintExpenseEntry = PrintExpenseEntry;
