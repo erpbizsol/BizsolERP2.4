@@ -103,7 +103,9 @@ function GetItemMasterList() {
             });
 
             BizsolCustomFilterGrid.CreateDataTable(
-                "ItemMaster-header", "ItemMaster-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment
+                "ItemMaster-header", "ItemMaster-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment,
+                true, null, null, null,
+                "Search by Item Code, Name, UOM, Type, Group..."
             );
 
         } else {
