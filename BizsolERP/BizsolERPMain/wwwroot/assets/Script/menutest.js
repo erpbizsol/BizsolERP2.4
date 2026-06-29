@@ -28,42 +28,19 @@ function bindMenu() {
 
             _menuUserID = UserDetailsobj[0].UserID;
 
-            // ── Solar Home Button & Logo setup ───────────────────────────────
-            var baseUrlForHome = sessionStorage.getItem('AppBaseURL') || '';
-            var companyNameForBtn = (UserDetailsobj[0].CompanyNameForShow || '').toLowerCase();
-            var isSolar = companyNameForBtn.includes('solar');
-            var targetUrl = isSolar
-                ? baseUrlForHome + '/CRMTransactions/ProjectDetail/ProjectDetailDashboard'
-                : baseUrlForHome + '/';
-            var targetTitle = isSolar ? 'Project Dashboard' : 'Home';
-
-            var solarHomeBtn = document.getElementById('solarHomeBtn');
-            if (solarHomeBtn) {
-                solarHomeBtn.title = targetTitle;
-                solarHomeBtn.setAttribute('aria-label', targetTitle);
-                solarHomeBtn.href = targetUrl;
-            }
-
-            var appLogoBtn = document.getElementById('appLogoBtn');
-            if (appLogoBtn) {
-                appLogoBtn.title = targetTitle;
-                appLogoBtn.setAttribute('aria-label', targetTitle);
-                appLogoBtn.href = targetUrl;
-            }
-
-            // Auto-redirect to dashboard on login for Solar company
-            if (isSolar) {
-                var currentPath = window.location.pathname;
-                var isHomePage = currentPath === '/' || currentPath.toLowerCase() == '/erp25/' || currentPath === '' ||
-                    currentPath.toLowerCase() === '/home' ||
-                    currentPath.toLowerCase() === '/home/index';
-                if (isHomePage) {
-                    window.location.href = targetUrl;
+            applyUserHomeRedirection(sessionStorage.getItem('AppBaseURL') || '', _menuUserID).then(function (didRedirect) {
+                if (didRedirect) {
                     return;
                 }
-            }
-            // ─────────────────────────────────────────────────────────────────
+                loadMenuAfterUserDetails(baseUrl);
+            }).catch(function () {
+                setHomeButtonTargets(buildHomeTargetUrl(sessionStorage.getItem('AppBaseURL') || '', ''), 'Home');
+                loadMenuAfterUserDetails(baseUrl);
+            });
+        });
+}
 
+function loadMenuAfterUserDetails(baseUrl) {
             MenuService.GetMenuList(_menuUserID).then(function (value) {
                 _menuAllItems = value;
 
@@ -71,12 +48,181 @@ function bindMenu() {
                 MenuService.GetFavouriteMenus(_menuUserID).then(function (favs) {
                     _favouriteMenuCodes = (favs || []).map(function (f) { return f.MenuCode; });
                     renderFullMenu(value, baseUrl);
+                    MenuService.GetIsUserMarkDayAttendance().then(function (res) {
+                        var isMarked = (Array.isArray(res) && res.length > 0) ? res[0].IsUserMarkDayAttendance
+                            : (res && res.IsUserMarkDayAttendance ? res.IsUserMarkDayAttendance : '');
+                        BizSolHelperFunction.checkAttendanceAndShowModal(value, isMarked);
+                    }).catch(function () { });
                 }).catch(function () {
                     _favouriteMenuCodes = [];
                     renderFullMenu(value, baseUrl);
+                    MenuService.GetIsUserMarkDayAttendance().then(function (res) {
+                        var isMarked = (Array.isArray(res) && res.length > 0) ? res[0].IsUserMarkDayAttendance
+                            : (res && res.IsUserMarkDayAttendance ? res.IsUserMarkDayAttendance : '');
+                        BizSolHelperFunction.checkAttendanceAndShowModal(value, isMarked);
+                    }).catch(function () { });
                 });
             });
-        });
+}
+
+function extractUserDefaultHomeUrl(res) {
+    if (!res) return '';
+    if (typeof res === 'string') return res.trim();
+    if (Array.isArray(res) && res.length > 0) {
+        var row = res[0];
+        return String(
+            row.UserDefultHomeURL || row.userDefultHomeURL ||
+            row.UserDefaultHomeURL || row.userDefaultHomeURL || ''
+        ).trim();
+    }
+    if (typeof res === 'object') {
+        return String(
+            res.UserDefultHomeURL || res.userDefultHomeURL ||
+            res.UserDefaultHomeURL || res.userDefaultHomeURL || ''
+        ).trim();
+    }
+    return '';
+}
+
+function getNormalizedAppBaseUrl(baseUrl) {
+    var appBase = (baseUrl || sessionStorage.getItem('AppBaseURL') || '').trim();
+    if (!appBase) {
+        appBase = window.location.origin;
+    }
+    try {
+        var parsed = new URL(appBase, window.location.href);
+        appBase = parsed.origin + parsed.pathname.replace(/\/+$/, '');
+    } catch (e) {
+        appBase = appBase.replace(/\/+$/, '');
+    }
+
+    var basePath = '';
+    try {
+        basePath = new URL(appBase, window.location.href).pathname.replace(/\/+$/, '');
+    } catch (e) { }
+
+    // Session AppBaseURL may be origin-only on some servers; infer virtual folder from current path.
+    if (!basePath) {
+        var inferred = inferPathBaseFromCurrentLocation();
+        if (inferred) {
+            appBase = window.location.origin + inferred;
+        }
+    }
+
+    return appBase;
+}
+
+function inferPathBaseFromCurrentLocation() {
+    var path = window.location.pathname.replace(/\/+$/, '') || '/';
+    var lower = path.toLowerCase();
+
+    if (lower === '/' || lower === '') return '';
+
+    if (lower.endsWith('/home/index')) {
+        return path.slice(0, -('/home/index'.length)).replace(/\/+$/, '');
+    }
+    if (lower.endsWith('/home')) {
+        return path.slice(0, -('/home'.length)).replace(/\/+$/, '');
+    }
+
+    var segments = path.split('/').filter(Boolean);
+    if (segments.length === 1) {
+        return '/' + segments[0];
+    }
+
+    return '';
+}
+
+function getAppPathBase(baseUrl) {
+    try {
+        return new URL(getNormalizedAppBaseUrl(baseUrl), window.location.href)
+            .pathname.replace(/\/+$/, '') || '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function buildHomeTargetUrl(baseUrl, userHomeUrl) {
+    var url = (userHomeUrl || '').trim();
+    var appBase = getNormalizedAppBaseUrl(baseUrl);
+
+    if (!url) {
+        return appBase + '/';
+    }
+
+    if (/^https?:\/\//i.test(url)) {
+        return url;
+    }
+
+    var pathBase = getAppPathBase(appBase);
+    var pathBaseLower = pathBase.toLowerCase();
+
+    // Normalize to a relative app path (no leading slash).
+    url = url.replace(/^\/+/, '');
+
+    // Avoid /erp25/erp25/... when DB value already includes the virtual folder.
+    if (pathBaseLower) {
+        var virtualPrefix = pathBaseLower.replace(/^\/+/, '') + '/';
+        if (url.toLowerCase().indexOf(virtualPrefix) === 0) {
+            url = url.substring(virtualPrefix.length);
+        }
+    }
+
+    try {
+        return new URL(url, appBase + '/').href;
+    } catch (e) {
+        return appBase + '/' + url;
+    }
+}
+
+function isDefaultLandingPage() {
+    var pathBase = getAppPathBase('').toLowerCase();
+    var currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+
+    var landingPaths = ['/', '/home', '/home/index'];
+    if (pathBase) {
+        landingPaths.push(pathBase, pathBase + '/home', pathBase + '/home/index');
+    }
+
+    return landingPaths.indexOf(currentPath) !== -1;
+}
+
+function setHomeButtonTargets(targetUrl, targetTitle) {
+    var solarHomeBtn = document.getElementById('solarHomeBtn');
+    if (solarHomeBtn) {
+        solarHomeBtn.title = targetTitle;
+        solarHomeBtn.setAttribute('aria-label', targetTitle);
+        solarHomeBtn.href = targetUrl;
+    }
+
+    var appLogoBtn = document.getElementById('appLogoBtn');
+    if (appLogoBtn) {
+        appLogoBtn.title = targetTitle;
+        appLogoBtn.setAttribute('aria-label', targetTitle);
+        appLogoBtn.href = targetUrl;
+    }
+}
+
+function applyUserHomeRedirection(baseUrlForHome, userID) {
+    var defaultHomeUrl = buildHomeTargetUrl(baseUrlForHome, '');
+
+    return MenuService.GetUserDefaultHomeURL(userID).then(function (res) {
+        var userHomeUrl = extractUserDefaultHomeUrl(res);
+        var hasCustomHome = userHomeUrl !== '';
+        var targetUrl = hasCustomHome ? buildHomeTargetUrl(baseUrlForHome, userHomeUrl) : defaultHomeUrl;
+        var targetTitle = 'Home';
+
+        setHomeButtonTargets(targetUrl, targetTitle);
+
+        if (hasCustomHome && isDefaultLandingPage()) {
+            window.location.href = targetUrl;
+            return true;
+        }
+        return false;
+    }).catch(function () {
+        setHomeButtonTargets(defaultHomeUrl, 'Home');
+        return false;
+    });
 }
 
 function renderFullMenu(value, baseUrl) {

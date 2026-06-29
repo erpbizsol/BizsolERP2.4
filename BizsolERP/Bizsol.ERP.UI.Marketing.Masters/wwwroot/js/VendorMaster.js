@@ -1384,7 +1384,12 @@ function refreshVendorMasterGrid() {
         DateFilterColumn,
         StringdoubleFilterColumn,
         hiddenColumns,
-        ColumnAlignment
+        ColumnAlignment,
+        true,
+        null,
+        null,
+        null,
+        "Search by Vendor Code, Name, GSTN, City, State..."
     );
     syncVendorStatChipClasses();
 }

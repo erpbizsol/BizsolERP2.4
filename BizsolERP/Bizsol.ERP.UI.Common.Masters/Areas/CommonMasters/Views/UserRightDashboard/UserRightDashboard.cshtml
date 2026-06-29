@@ -119,20 +119,17 @@
 }
 .urd-filter-group { display:flex; flex-direction:column; gap:8px; min-width: 0; }
 .urd-filter-group-company {
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px 14px;
-    align-self: center;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    align-self: stretch;
 }
 .urd-filter-group-company .urd-select {
-    /* flex: 1 1 160px; */
-    min-width: 150px;
-    /* width: auto; */
+    width: 100%;
+    min-width: 0;
     max-width: 100%;
-    margin-top: -200px;
 }
-.urd-filter-group-company .urd-filter-label { flex-shrink: 0; margin: 0;  margin-top: -255px;}
+.urd-filter-group-company .urd-filter-label { flex-shrink: 0; margin: 0; }
 
 .urd-filter-group-wide { min-width: 0; }
 .urd-group-panel {
@@ -221,6 +218,158 @@
     color: #94a3b8;
     padding: 14px 12px;
     text-align: center;
+}
+.urd-user-panel {
+    margin-top: 12px;
+    border-top: 1px dashed rgba(99, 102, 241, 0.22);
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.72) 0%, rgba(248,250,252,.95) 100%);
+    border-radius: 12px;
+    padding: 12px 10px 10px;
+    margin-left: -2px;
+    margin-right: -2px;
+}
+.urd-user-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6366f1;
+}
+.urd-user-panel-header > span:first-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+.urd-user-count {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(124, 58, 237, 0.12));
+    color: #4338ca;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 10px;
+    font-weight: 800;
+    border: 1px solid rgba(99, 102, 241, 0.14);
+    min-width: 28px;
+    text-align: center;
+}
+.urd-user-list-scroll {
+    max-height: 168px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 1.5px solid #e0e7ff;
+    border-radius: 12px;
+    background: #fff;
+    padding: 4px 0;
+    box-shadow: inset 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+.urd-user-list-scroll::-webkit-scrollbar { width: 7px; }
+.urd-user-list-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #c7d2fe, #a5b4fc);
+    border-radius: 8px;
+}
+.urd-user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin: 2px 6px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    color: #334155;
+    transition: background 0.14s, transform 0.14s;
+}
+.urd-user-row:hover {
+    background: linear-gradient(90deg, #f5f3ff, #faf5ff);
+    transform: translateX(2px);
+}
+.urd-user-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(145deg, #eef2ff, #e0e7ff);
+    color: #6366f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+}
+.urd-user-meta { flex: 1; min-width: 0; }
+.urd-user-name {
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #1e293b;
+    letter-spacing: -0.01em;
+}
+.urd-user-group {
+    font-size: 10px;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+.urd-user-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #94a3b8;
+    padding: 18px 14px;
+    text-align: center;
+    line-height: 1.45;
+}
+.urd-user-empty > i {
+    font-size: 22px;
+    color: #c7d2fe;
+}
+.urd-user-loading > i { color: #818cf8; font-size: 18px; }
+.urd-user-idle > i { color: #a5b4fc; }
+.urd-user-error > i { color: #fca5a5; font-size: 24px; }
+.urd-user-error-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #64748b;
+}
+.urd-user-error-text {
+    font-size: 11px;
+    color: #94a3b8;
+    max-width: 240px;
+    line-height: 1.5;
+}
+.urd-user-retry-btn {
+    margin-top: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1.5px solid #e0e7ff;
+    background: #fff;
+    color: #6366f1;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.14s, border-color 0.14s, transform 0.14s;
+}
+.urd-user-retry-btn:hover {
+    background: #f5f3ff;
+    border-color: #c7d2fe;
+    transform: translateY(-1px);
 }
 .urd-filter-hint {
     display: flex;
@@ -634,7 +783,19 @@
                         <button type="button" class="urd-link-btn" id="urdGroupClear">Clear</button>
                     </div>
                     <div id="urdGroupCheckboxes" class="urd-group-check-scroll" role="group" aria-label="Filter by group"></div>
-                    <span class="urd-filter-hint"><i class="fas fa-lightbulb"></i><span><strong>No checkbox</strong> = show all group columns. Tick one or more groups to show only those columns in the grid.</span></span>
+                    <div id="urdUserPanel" class="urd-user-panel">
+                        <div class="urd-user-panel-header">
+                            <span><i class="fas fa-user"></i> Users</span>
+                            <span class="urd-user-count" id="urdUserCount">—</span>
+                        </div>
+                        <div id="urdUserList" class="urd-user-list-scroll" aria-live="polite">
+                            <div class="urd-user-empty urd-user-idle">
+                                <i class="fas fa-users"></i>
+                                <span>Tick a group to preview users, or leave none selected for all users.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="urd-filter-hint"><i class="fas fa-lightbulb"></i><span><strong>No checkbox</strong> = show all group columns and all users. Tick one or more groups to filter columns and users.</span></span>
                 </div>
             </div>
 

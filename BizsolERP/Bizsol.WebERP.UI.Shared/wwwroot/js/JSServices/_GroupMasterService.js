@@ -17,7 +17,6 @@ const GroupMasterService = {
         var URL = UrlService.API_ENDPOINT_GROUPMASTER + '/SaveGroupMaster';
         return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data));
     },
-
     DeleteGroupMaster: function (Code, ReasonForDelete) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
         var userMasterCode = authKeyData.UserMaster_Code || 0;

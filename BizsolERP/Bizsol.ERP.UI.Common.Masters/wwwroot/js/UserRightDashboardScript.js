@@ -13,6 +13,13 @@ var _dashboardRes       = null;
 /** Caches last API JSON by CompanyCode|GroupCode (request param). Saves repeat calls when only group checkboxes change. */
 var _urdApiResponseCache = { key: '', payload: null, ts: 0 };
 var URD_API_CACHE_MS = 90000;
+var _urdUserListCache = { key: '', rows: null, ts: 0 };
+var URD_USER_CACHE_MS = 60000;
+var _urdMetaLoaded = false;
+/** In-flight user-list request — abort when a newer filter is applied. */
+var _urdUserListReq = null;
+var _urdUserDebounceTimer = null;
+var URD_USER_DEBOUNCE_MS = 200;
 
 // Fixed SP columns — everything else is a group column
 var FIXED_COLS = ['+/-', 'lavel', 'rowadded', 'rowaddedcount', 'code', 'mastercode', 'sortorder', 'moduletype', 'module'];
@@ -46,6 +53,55 @@ function rowSig(r) {
     return String(toParentKey(gp(r, 'Code'))) + '::' +
         String(toParentKey(gp(r, 'MasterCode'))) + '::' +
         (parseInt(gp(r, 'Lavel'), 10) || 0);
+}
+
+/**
+ * Bind key: same MasterCode + ModuleType + Module label = one row under that parent.
+ * Omits Lavel/Code so API duplicates (Level3 + Level4, different Code) collapse to one.
+ */
+function rowBindSig(r) {
+    var master = toParentKey(gp(r, 'MasterCode'));
+    var mod    = normalizeGroupKey(String(gp(r, 'Module') || '').trim());
+    var mtype  = String(gp(r, 'ModuleType') || '').trim().toUpperCase();
+    return String(master) + '::' + mtype + '::' + mod;
+}
+
+/** Drop duplicate rows — keep first by SortOrder under same MasterCode bind key. */
+function dedupeApiRows(arr) {
+    var seenCode = {};
+    var seenBind = {};
+    var out = [];
+    sortRowsByHierarchy(arr || []).forEach(function (r) {
+        var sig = rowSig(r);
+        var bind = rowBindSig(r);
+        if (seenCode[sig] || seenBind[bind]) return;
+        seenCode[sig] = true;
+        seenBind[bind] = true;
+        out.push(r);
+    });
+    return out;
+}
+
+function markRowSeen(r, visited, visitedBind) {
+    visited[rowSig(r)] = true;
+    visitedBind[rowBindSig(r)] = true;
+}
+
+function isRowSeen(r, visited, visitedBind) {
+    return !!(visited[rowSig(r)] || visitedBind[rowBindSig(r)]);
+}
+
+/** One row per MasterCode + module label among direct siblings. */
+function dedupeSiblingRows(rows) {
+    var seenBind = {};
+    var out = [];
+    sortRowsByHierarchy(rows || []).forEach(function (r) {
+        var bind = rowBindSig(r);
+        if (seenBind[bind]) return;
+        seenBind[bind] = true;
+        out.push(r);
+    });
+    return out;
 }
 
 function sortRowsByHierarchy(arr) {
@@ -125,68 +181,101 @@ function getGroupCodeFromMap(gName) {
 ═══════════════════════════════════════════════════ */
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
-    LoadCompanies();
-    LoadGroups();
+    LoadInitialData();
     $('#btnGo').on('click', LoadDashboard);
     $('#urdGroupSelectAll').on('click', function (e) {
         e.preventDefault();
         $('#urdGroupCheckboxes .urd-group-cb').prop('checked', true);
+        LoadGroupUsers(getSelectedGroupCodesFromUi());
     });
     $('#urdGroupClear').on('click', function (e) {
         e.preventDefault();
         $('#urdGroupCheckboxes .urd-group-cb').prop('checked', false);
+        LoadGroupUsers(null);
+    });
+    $(document).on('change', '#urdGroupCheckboxes .urd-group-cb', function () {
+        ScheduleLoadGroupUsers(getSelectedGroupCodesFromUi());
+    });
+    $(document).on('click', '#urdUserRetry', function (e) {
+        e.preventDefault();
+        LoadGroupUsers(getSelectedGroupCodesFromUi(), { notifyOnFail: true });
     });
 });
 
 /* ═══════════════════════════════════════════════════
-   LOAD DROPDOWNS
+   LOAD DROPDOWNS — parallel fetch for faster page open
 ═══════════════════════════════════════════════════ */
-function LoadCompanies() {
-    UserRightDashboardService.GetCompanyMasterList()
-        .then(function (res) {
-            var rows = extractArray(res);
-            var $sel = $('#ddlCompany').empty().append('<option value="0">— Select Company —</option>');
-            rows.forEach(function (c) {
-                $sel.append($('<option>').val(c.Code || c.CompanyCode).text(c.CompanyName || c.Name || c.CompanyCode));
-            });
+function LoadInitialData() {
+    if (_urdMetaLoaded) return;
+
+    Promise.all([
+        UserRightDashboardService.GetCompanyMasterList(),
+        UserRightDashboardService.GetGroupMasterList()
+    ])
+        .then(function (results) {
+            _urdMetaLoaded = true;
+            RenderCompanyDropdown(extractArray(results[0]));
+            RenderGroupCheckboxes(extractArray(results[1]));
+            ShowUserListIdle();
         })
-        .catch(function () { toastr.error('Failed to load companies.'); });
+        .catch(function () {
+            toastr.error('Failed to load company or group list.');
+            RenderCompanyDropdown([]);
+            $('#urdGroupCheckboxes').html('<div class="urd-group-empty">Failed to load groups.</div>');
+            ShowUserListIdle();
+        });
 }
 
-function LoadGroups() {
+function RenderCompanyDropdown(rows) {
+    var $sel = $('#ddlCompany').empty().append('<option value="0">— Select Company —</option>');
+    rows.forEach(function (c) {
+        $sel.append($('<option>').val(c.Code || c.CompanyCode).text(c.CompanyName || c.Name || c.CompanyCode));
+    });
+}
+
+function RenderGroupCheckboxes(rows) {
     _groupMap = {};
     var $box = $('#urdGroupCheckboxes');
-    UserRightDashboardService.GetGroupMasterList()
-        .then(function (res) {
-            var rows = extractArray(res);
-            $box.empty();
-            if (!rows.length) {
-                $box.append('<div class="urd-group-empty">No groups found.</div>');
-                return;
-            }
-            rows.forEach(function (g, idx) {
-                var code = g.Code || g.GroupCode;
-                var name = g.GroupName || g.Name;
-                _groupMap[name] = code;
-                var id = 'urdGcb_' + idx + '_' + String(code).replace(/[^\w-]/g, '_');
-                var $cb = $('<input type="checkbox" class="urd-group-cb">')
-                    .attr('id', id)
-                    .val(code);
-                var $row = $('<label class="urd-group-check-row">')
-                    .attr('for', id)
-                    .append($cb)
-                    .append($('<span class="urd-group-check-text">').text(name));
-                $box.append($row);
-            });
-        })
-        .catch(function () { toastr.error('Failed to load groups.'); });
+    $box.empty();
+
+    if (!rows.length) {
+        $box.append('<div class="urd-group-empty">No groups found.</div>');
+        return;
+    }
+
+    var frag = document.createDocumentFragment();
+    rows.forEach(function (g, idx) {
+        var code = g.Code || g.GroupCode;
+        var name = g.GroupName || g.Name;
+        _groupMap[name] = code;
+        var id = 'urdGcb_' + idx + '_' + String(code).replace(/[^\w-]/g, '_');
+
+        var $cb = $('<input type="checkbox" class="urd-group-cb">').attr('id', id).val(code);
+        var $row = $('<label class="urd-group-check-row">')
+            .attr('for', id)
+            .append($cb)
+            .append($('<span class="urd-group-check-text">').text(name));
+
+        frag.appendChild($row[0]);
+    });
+    $box[0].appendChild(frag);
+}
+
+function ScheduleLoadGroupUsers(selectedCodes) {
+    clearTimeout(_urdUserDebounceTimer);
+    _urdUserDebounceTimer = setTimeout(function () {
+        LoadGroupUsers(selectedCodes);
+    }, URD_USER_DEBOUNCE_MS);
+}
+
+function userListCacheKey(codesParam) {
+    return codesParam === '' ? '__all__' : codesParam;
 }
 
 /**
  * Checkbox list #urdGroupCheckboxes:
- * • None checked → null → GroupCode 0, every group column.
- * • One code checked → API that group only (when server supports it).
- * • Several checked → GroupCode 0 + client column filter.
+ * • None checked → null → all group columns + all users.
+ * • One or more checked → filter columns (client) and users (API comma list).
  */
 function getSelectedGroupCodesFromUi() {
     var nums = [];
@@ -197,10 +286,108 @@ function getSelectedGroupCodesFromUi() {
     return nums.length ? nums : null;
 }
 
+/** API param: '' = all users; '1,5' = users in groups 1 or 5 */
+function buildGroupCodesParam(selectedCodes) {
+    if (!selectedCodes || !selectedCodes.length) return '';
+    return selectedCodes.join(',');
+}
+
 function resolveRequestGroupCode(selectedCodes) {
     if (!selectedCodes || !selectedCodes.length) return 0;
     if (selectedCodes.length === 1) return selectedCodes[0];
     return 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   GROUP USERS (GetGroupUserList — USP_WebAPI_GroupMaster LOCATE)
+═══════════════════════════════════════════════════ */
+function LoadGroupUsers(selectedCodes, options) {
+    options = options || {};
+    var codesParam = buildGroupCodesParam(selectedCodes);
+    var cacheKey = userListCacheKey(codesParam);
+    var now = Date.now();
+    var $list = $('#urdUserList');
+
+    if (_urdUserListCache.key === cacheKey && _urdUserListCache.rows &&
+        (now - _urdUserListCache.ts) < URD_USER_CACHE_MS) {
+        RenderUserList(_urdUserListCache.rows, selectedCodes);
+        return;
+    }
+
+    if (_urdUserListReq && _urdUserListReq.readyState !== 4) {
+        _urdUserListReq.abort();
+    }
+
+    $list.html(
+        '<div class="urd-user-empty urd-user-loading">' +
+        '<i class="fas fa-circle-notch fa-spin"></i>' +
+        '<span>Loading users…</span></div>');
+
+    _urdUserListReq = UserRightDashboardService.GetGroupUserList(codesParam);
+    _urdUserListReq
+        .done(function (res) {
+            var rows = extractArray(res);
+            _urdUserListCache = { key: cacheKey, rows: rows, ts: Date.now() };
+            RenderUserList(rows, selectedCodes);
+        })
+        .fail(function (jqXHR, textStatus) {
+            if (textStatus === 'abort') return;
+            RenderUserListError();
+            if (options.notifyOnFail) {
+                toastr.warning('Could not load users. Check that GetGroupUserList is deployed on the API.');
+            }
+        });
+}
+
+function ShowUserListIdle() {
+    $('#urdUserCount').text('—');
+    $('#urdUserList').html(
+        '<div class="urd-user-empty urd-user-idle">' +
+        '<i class="fas fa-users"></i>' +
+        '<span>Tick a group to preview users, or leave none selected for all users.</span></div>');
+}
+
+function RenderUserListError() {
+    $('#urdUserCount').text('—');
+    $('#urdUserList').html(
+        '<div class="urd-user-empty urd-user-error">' +
+        '<i class="fas fa-plug-circle-xmark"></i>' +
+        '<div class="urd-user-error-title">User preview unavailable</div>' +
+        '<div class="urd-user-error-text">' +
+        'GetGroupUserList is not responding. You can still select a company and load the dashboard.</div>' +
+        '<button type="button" class="urd-user-retry-btn" id="urdUserRetry">' +
+        '<i class="fas fa-rotate-right"></i> Retry</button></div>');
+}
+
+function RenderUserList(rows, selectedCodes) {
+    var $list = $('#urdUserList');
+    $('#urdUserCount').text(String(rows.length));
+
+    if (!rows.length) {
+        var msg = selectedCodes && selectedCodes.length
+            ? 'No users found for the selected group(s).'
+            : 'No active users found.';
+        $list.html(
+            '<div class="urd-user-empty urd-user-idle">' +
+            '<i class="fas fa-user-slash"></i>' +
+            '<span>' + escHtml(msg) + '</span></div>');
+        return;
+    }
+
+    var html = '';
+    rows.forEach(function (u) {
+        var name = u.UserName || u.userName || u.UserID || u.userID || '—';
+        var uid  = u.UserID || u.userID || '';
+        var grp  = u.GroupName || u.groupName || '';
+        html +=
+            '<div class="urd-user-row">' +
+            '<span class="urd-user-icon"><i class="fas fa-user"></i></span>' +
+            '<span class="urd-user-meta">' +
+            '<div class="urd-user-name">' + escHtml(name) + '</div>' +
+            (grp ? '<div class="urd-user-group">' + escHtml(grp) + (uid ? ' · ' + escHtml(uid) : '') + '</div>' : '') +
+            '</span></div>';
+    });
+    $list.html(html);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -224,6 +411,7 @@ function LoadDashboard() {
         (now - _urdApiResponseCache.ts) < URD_API_CACHE_MS) {
         _dashboardRes = _urdApiResponseCache.payload;
         _collapsedRows = {};
+        LoadGroupUsers(selectedCodes);
         requestAnimationFrame(function () {
             RenderDashboard(_urdApiResponseCache.payload, selectedCodes);
         });
@@ -231,6 +419,7 @@ function LoadDashboard() {
     }
 
     SetLoadingState(true);
+    LoadGroupUsers(selectedCodes);
 
     UserRightDashboardService.GetUserRightDashboard(_currentCompanyCode, _currentGroupCode)
         .then(function (res) {
@@ -352,11 +541,11 @@ function RenderDashboard(res, selectedGroupCodes) {
     var srNo = 0;
 
     var childCountByParent = {};
-    [level2, level3, level4].forEach(function (arr) {
-        (arr || []).forEach(function (r) {
-            var pk = toParentKey(gp(r, 'MasterCode'));
+    mergedRows.forEach(function (r) {
+        var pk = toParentKey(gp(r, 'MasterCode'));
+        if (pk !== 0 && pk !== '0' && pk !== '') {
             childCountByParent[pk] = (childCountByParent[pk] || 0) + 1;
-        });
+        }
     });
 
     var frag = document.createDocumentFragment();
@@ -451,7 +640,10 @@ function RenderDashboard(res, selectedGroupCodes) {
      reused the same Code).
 ═══════════════════════════════════════════════════ */
 function BuildMergedRows(level1, level2, level3, level4) {
-    var all = [].concat(level1 || [], level2 || [], level3 || [], level4 || []);
+    var l1Rows = dedupeApiRows(level1 || []);
+    var deeper = dedupeApiRows([].concat(level2 || [], level3 || [], level4 || []));
+    var all = l1Rows.concat(deeper);
+
     var byParent = {};
     all.forEach(function (r) {
         var p = toParentKey(gp(r, 'MasterCode'));
@@ -459,34 +651,34 @@ function BuildMergedRows(level1, level2, level3, level4) {
         byParent[p].push(r);
     });
     Object.keys(byParent).forEach(function (k) {
+        byParent[k] = dedupeSiblingRows(byParent[k]);
         byParent[k] = sortRowsByHierarchy(byParent[k]);
     });
 
     var rootCodes = {};
-    (level1 || []).forEach(function (l) {
+    l1Rows.forEach(function (l) {
         rootCodes[toParentKey(gp(l, 'Code'))] = true;
     });
 
     var rows = [];
     var visited = {};
+    var visitedBind = {};
 
     function walkChildren(parentRow) {
         var ck = toParentKey(gp(parentRow, 'Code'));
         (byParent[ck] || []).forEach(function (ch) {
             var chCode = toParentKey(gp(ch, 'Code'));
             if (rootCodes[chCode]) return;
-            var s = rowSig(ch);
-            if (visited[s]) return;
-            visited[s] = true;
+            if (isRowSeen(ch, visited, visitedBind)) return;
+            markRowSeen(ch, visited, visitedBind);
             rows.push(ch);
             walkChildren(ch);
         });
     }
 
-    sortRowsByHierarchy(level1 || []).forEach(function (l1) {
-        var s = rowSig(l1);
-        if (visited[s]) return;
-        visited[s] = true;
+    sortRowsByHierarchy(l1Rows).forEach(function (l1) {
+        if (isRowSeen(l1, visited, visitedBind)) return;
+        markRowSeen(l1, visited, visitedBind);
         rows.push(l1);
         walkChildren(l1);
     });

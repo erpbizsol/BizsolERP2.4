@@ -52,6 +52,24 @@ const MenuService = {
             }
         );
     },
+    GetIsUserMarkDayAttendance: function GetIsUserMarkDayAttendance() {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+       const url = `${UrlService.ERP_SIDE_MENU}/GetIsUserMarkDayAttendance?UserMaster_Code=${userCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetUserDefaultHomeURL: function GetUserDefaultHomeURL(UserID) {
+        let companycode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
+        const url = `${UrlService.ERP_SIDE_MENU}/GetUserDefaultHomeURL?UserID=${UserID}&CompanyCode=${companycode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { MenuService }

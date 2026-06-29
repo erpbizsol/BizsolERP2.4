@@ -14,6 +14,24 @@ const UserRightDashboardService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
 
+    /**
+     * Users for selected group(s). Comma-separated codes; empty = all active users.
+     * Uses quiet AJAX — never shows global toastr (optional preview panel).
+     */
+    GetGroupUserList: function (groupMasterCodes) {
+        var codes = (groupMasterCodes === undefined || groupMasterCodes === null)
+            ? ''
+            : String(groupMasterCodes).trim();
+        var URL = UrlService.API_ENDPOINT_USERRIGHTDASHBOARD +
+            '/GetGroupUserList?GroupMaster_Codes=' + encodeURIComponent(codes);
+        return $.ajax({
+            url: URL,
+            method: 'GET',
+            contentType: 'application/json',
+            dataType: 'json'
+        });
+    },
+
     GetUserRightDashboard: function (CompanyCode, GroupCode) {
         var URL = UrlService.API_ENDPOINT_USERRIGHTDASHBOARD +
             '/GetUserRightDashboard?CompanyCode=' + encodeURIComponent(CompanyCode) +

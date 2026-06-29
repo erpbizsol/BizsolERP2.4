@@ -1,0 +1,467 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/SalesPersonDashboard.js"></script>
+
+<style>
+    .spd-wrap {
+        background: #eef0f3;
+        min-height: calc(100vh - 120px);
+        padding: 8px;
+    }
+
+    .spd-card {
+        background: #fff;
+        border-radius: 8px;
+        border: 1px solid #dde1e6;
+        overflow: hidden;
+    }
+
+    /* ── Tab bar ── */
+    .spd-tabs {
+        display: flex;
+        border-bottom: 1px solid #dde1e6;
+        background: #f5f6f8;
+    }
+
+    .spd-tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px 8px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #222;
+        background: #eceef1;
+        border: none;
+        border-right: 1px solid #dde1e6;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+    }
+
+    .spd-tab:last-child {
+        border-right: none;
+    }
+
+    .spd-tab.active {
+        background: #f58220;
+        color: #fff;
+    }
+
+    .spd-tab-hidden {
+        display: none !important;
+    }
+
+    .spd-tab-panel {
+        display: none;
+        padding: 10px;
+    }
+
+    .spd-tab-panel.active {
+        display: block;
+    }
+
+    /* ── Activity panels (DAY / MONTH) ── */
+    .spd-activity-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .spd-activity-panel {
+        display: flex;
+        background: #fff;
+        border: 1px solid #d8dce2;
+        border-radius: 4px;
+        overflow: hidden;
+        min-height: 130px;
+    }
+
+    .spd-activity-panel.day-panel .spd-period-bar {
+        background: #f58220;
+        order: 0;
+    }
+
+    .spd-activity-panel.month-panel .spd-period-bar {
+        background: #9b7bb8;
+        order: 2;
+    }
+
+    .spd-activity-panel.month-panel .spd-activity-grid {
+        order: 1;
+    }
+
+    .spd-period-bar {
+        width: 34px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.95rem;
+        letter-spacing: 0.08em;
+    }
+
+    .spd-activity-grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 80px 90px;
+        align-content: start;
+    }
+
+    .spd-activity-grid .spd-grid-head {
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 8px 10px;
+        border-bottom: 1px solid #e0e4ea;
+        border-left: 1px solid #e0e4ea;
+    }
+
+    .spd-activity-panel.day-panel .spd-grid-head.count-head,
+    .spd-activity-panel.day-panel .spd-grid-head.total-head {
+        color: #c0392b;
+    }
+
+    .spd-activity-panel.month-panel .spd-grid-head.count-head,
+    .spd-activity-panel.month-panel .spd-grid-head.total-head {
+        color: #666;
+    }
+
+    .spd-activity-row {
+        display: contents;
+    }
+
+    .spd-metric-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        border-bottom: 1px solid #eceff3;
+    }
+
+    .spd-metric-bar {
+        width: 5px;
+        height: 22px;
+        border-radius: 2px;
+        flex-shrink: 0;
+    }
+
+    .spd-metric-label.sales { color: #2e8b3c; }
+    .spd-metric-label.sales .spd-metric-bar { background: #2e8b3c; }
+    .spd-metric-label.receipt { color: #d4a017; }
+    .spd-metric-label.receipt .spd-metric-bar { background: #d4a017; }
+    .spd-metric-label.visit { color: #2563eb; }
+    .spd-metric-label.visit .spd-metric-bar { background: #2563eb; }
+
+    .spd-metric-value {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 1px solid #eceff3;
+        border-left: 1px solid #e0e4ea;
+    }
+
+    /* ── Performance chart ── */
+    .spd-chart-panel {
+        background: #f8f9fb;
+        border: 1px solid #e2e6ea;
+        border-radius: 6px;
+        padding: 16px 12px 12px;
+        min-height: 280px;
+    }
+
+    .spd-chart-title {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #555;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+
+    .spd-perf-kpi {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        font-size: 0.8rem;
+        color: #555;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+
+    .spd-perf-kpi strong {
+        color: #f58220;
+    }
+
+    .spd-chart-wrap {
+        position: relative;
+        height: 260px;
+    }
+
+    .spd-chart-legend {
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+        margin-top: 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .spd-chart-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .spd-legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        display: inline-block;
+    }
+
+    .spd-legend-dot.day { background: #f58220; }
+    .spd-legend-dot.month { background: #9b7bb8; }
+
+    /* ── Payment summary (donut + bars) ── */
+    .spd-payment-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        padding: 24px 16px;
+        background: #f3f4f6;
+        border: 1px solid #e2e6ea;
+        border-radius: 6px;
+        min-height: 220px;
+        flex-wrap: wrap;
+    }
+
+    .spd-donut-wrap {
+        position: relative;
+        width: 160px;
+        height: 160px;
+        flex-shrink: 0;
+    }
+
+    .spd-donut-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #333;
+        pointer-events: none;
+    }
+
+    .spd-payment-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 36px;
+        height: 160px;
+    }
+
+    .spd-pay-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+
+    .spd-pay-value {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #333;
+        line-height: 1;
+    }
+
+    .spd-pay-bar {
+        width: 28px;
+        border-radius: 4px 4px 0 0;
+        min-height: 8px;
+        transition: height 0.4s ease;
+    }
+
+    .spd-pay-bar.payment {
+        background: #b0b0b0;
+    }
+
+    .spd-pay-bar.achieved {
+        background: #2e8b3c;
+    }
+
+    .spd-pay-label {
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .spd-pay-label.payment { color: #888; }
+    .spd-pay-label.achieved { color: #2e8b3c; }
+
+    .spd-empty-msg {
+        text-align: center;
+        padding: 30px 16px;
+        color: #888;
+        font-size: 0.88rem;
+    }
+
+    .spd-loader-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(255,255,255,0.55);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .spd-loader-overlay.show {
+        display: flex;
+    }
+
+    @@media (max-width: 576px) {
+        .spd-activity-grid {
+            grid-template-columns: 1fr 60px 72px;
+        }
+
+        .spd-tab {
+            font-size: 0.78rem;
+            padding: 9px 4px;
+        }
+
+        .spd-payment-panel {
+            gap: 16px;
+            padding: 16px 10px;
+        }
+
+        .spd-payment-bars {
+            gap: 24px;
+        }
+
+        .spd-chart-wrap {
+            height: 220px;
+        }
+    }
+</style>
+
+<div class="spd-wrap">
+    <div class="spd-card">
+        <div class="spd-tabs" role="tablist">
+            <button type="button" class="spd-tab active" data-tab="activity">Activity Summary</button>
+            @* Performance tab — hidden temporarily; enable when ready *@
+            <button type="button" class="spd-tab spd-tab-hidden" data-tab="performance" hidden>Performance</button>
+            <button type="button" class="spd-tab" data-tab="payment">Payment Summary</button>
+        </div>
+
+        <!-- Activity Summary -->
+        <div id="panelActivity" class="spd-tab-panel active">
+            <div class="spd-activity-stack">
+                <!-- DAY -->
+                <div class="spd-activity-panel day-panel">
+                    <div class="spd-period-bar">DAY</div>
+                    <div class="spd-activity-grid" id="gridDay">
+                        <div class="spd-grid-head"></div>
+                        <div class="spd-grid-head count-head">Count</div>
+                        <div class="spd-grid-head total-head">Total</div>
+                        <div class="spd-activity-row">
+                            <div class="spd-metric-label sales"><span class="spd-metric-bar"></span>Sales</div>
+                            <div class="spd-metric-value" id="daySalesCount">0</div>
+                            <div class="spd-metric-value" id="daySalesTotal">0.0</div>
+                        </div>
+                        <div class="spd-activity-row">
+                            <div class="spd-metric-label receipt"><span class="spd-metric-bar"></span>Receipt</div>
+                            <div class="spd-metric-value" id="dayReceiptCount">0</div>
+                            <div class="spd-metric-value" id="dayReceiptTotal">0.0</div>
+                        </div>
+                        <div class="spd-activity-row">
+                            <div class="spd-metric-label visit"><span class="spd-metric-bar"></span>Visit</div>
+                            <div class="spd-metric-value" id="dayVisitCount">0</div>
+                            <div class="spd-metric-value" id="dayVisitTotal">0.0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MONTH -->
+                <div class="spd-activity-panel month-panel">
+                    <div class="spd-activity-grid" id="gridMonth">
+                        <div class="spd-grid-head"></div>
+                        <div class="spd-grid-head count-head">Count</div>
+                        <div class="spd-grid-head total-head">Total</div>
+                        <div class="spd-activity-row">
+                            <div class="spd-metric-label sales"><span class="spd-metric-bar"></span>Sales</div>
+                            <div class="spd-metric-value" id="monthSalesCount">0</div>
+                            <div class="spd-metric-value" id="monthSalesTotal">0.0</div>
+                        </div>
+                        <div class="spd-activity-row">
+                            <div class="spd-metric-label receipt"><span class="spd-metric-bar"></span>Receipt</div>
+                            <div class="spd-metric-value" id="monthReceiptCount">0</div>
+                            <div class="spd-metric-value" id="monthReceiptTotal">0.0</div>
+                        </div>
+                        <div class="spd-activity-row">
+                            <div class="spd-metric-label visit"><span class="spd-metric-bar"></span>Visit</div>
+                            <div class="spd-metric-value" id="monthVisitCount">0</div>
+                            <div class="spd-metric-value" id="monthVisitTotal">0.0</div>
+                        </div>
+                    </div>
+                    <div class="spd-period-bar">MONTH</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance (hidden temporarily) -->
+        <div id="panelPerformance" class="spd-tab-panel spd-tab-hidden" hidden>
+            <div class="spd-chart-panel">
+                <div class="spd-chart-title">Target vs Achievement</div>
+                <div class="spd-perf-kpi">
+                    <span>Day Achievement: <strong id="perfDayPct">0.0%</strong></span>
+                    <span>Month Achievement: <strong id="perfMonthPct">0.0%</strong></span>
+                </div>
+                <div class="spd-chart-wrap">
+                    <canvas id="chartPerformance"></canvas>
+                </div>
+                <div class="spd-chart-legend">
+                    <span><i class="spd-legend-dot day"></i> Day</span>
+                    <span><i class="spd-legend-dot month"></i> Month</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Summary -->
+        <div id="panelPayment" class="spd-tab-panel">
+            <div class="spd-payment-panel" id="paymentSummaryContainer">
+                <div class="spd-donut-wrap">
+                    <canvas id="chartPaymentDonut"></canvas>
+                    <div class="spd-donut-center" id="paymentPercentText">0.0 %</div>
+                </div>
+                <div class="spd-payment-bars">
+                    <div class="spd-pay-col">
+                        <div class="spd-pay-value" id="paymentTargetValue">0</div>
+                        <div class="spd-pay-bar payment" id="paymentTargetBar" style="height:8px"></div>
+                        <div class="spd-pay-label payment">Payment</div>
+                    </div>
+                    <div class="spd-pay-col">
+                        <div class="spd-pay-value" id="paymentAchievedValue">0</div>
+                        <div class="spd-pay-bar achieved" id="paymentAchievedBar" style="height:8px"></div>
+                        <div class="spd-pay-label achieved">Achieved</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="spd-loader-overlay" id="spdLoader">
+    <div><i class="bx bx-loader bx-spin font-size-24"></i></div>
+</div>
