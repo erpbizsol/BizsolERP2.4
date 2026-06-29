@@ -169,6 +169,7 @@ let UrlService = {
     API_ENDPOINT_ProjectDetailDashboard: `${environment.BASE_URL}/ProjectDetail`,
     API_ENDPOINT_SalesPersonTargetAchievement: `${environment.BASE_URL}/SalesPersonTargetAchievement`,
     API_ENDPOINT_SalesPersonTargetAchievementReport: `${environment.BASE_URL}/SalesPersonTargetAchievementReport`,
+    API_ENDPOINT_SalesPersonDashboard: `${environment.BASE_URL}/SalesPersonDashboard`,
 }
 
 export { UrlService  }
