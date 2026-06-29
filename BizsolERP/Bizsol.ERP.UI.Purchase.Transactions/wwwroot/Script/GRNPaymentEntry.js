@@ -79,6 +79,8 @@ let gpaProjectCategoryCache = [];
 let gpaWorkTypeListCache = [];
 /** Cached from GetMarketingManMaster — employee dropdown. */
 let gpaEmployeeListCache = [];
+/** Cached from GetBankList — list grid bank name lookup. */
+let gpaBankListCache = [];
 
 const BS_EMBED_STORAGE_KEY = 'BizsolBankStmtGrnEmbed';
 
@@ -1073,9 +1075,11 @@ function initGpaListFilters() {
     const fromEl = document.getElementById('lstTxtFromDate');
     const toEl = document.getElementById('lstTxtToDate');
     const statusEl = document.getElementById('lstDdlStatus');
+    const bankEl = document.getElementById('lstDdlBankName');
     if (toEl && !toEl.value) toEl.value = formatGpaInputDate(today);
     if (fromEl && !fromEl.value) fromEl.value = formatGpaInputDate(getGpaFinancialYearStartDate(today));
     if (statusEl && statusEl.value === '') statusEl.value = '0';
+    if (bankEl && bankEl.value === '') bankEl.value = '0';
 }
 
 /** Bind list Status filter from LoadStatusDropdown API (Code / Name). */
@@ -1103,11 +1107,38 @@ function loadGpaStatusDropdown() {
         });
 }
 
+/** Bind list Bank Name filter from GetBankList API (Code / BankName). */
+function loadGpaListBankDropdown() {
+    const bankEl = document.getElementById('lstDdlBankName');
+    if (!bankEl) return Promise.resolve();
+    const prev = (bankEl.value || '0').trim();
+    return GRNPaymentApprovalService.GetBankList()
+        .then(function (response) {
+            const rows = normalizeGpaBankListRows(response);
+            gpaBankListCache = rows;
+            let html = '<option value="0">-- All Banks --</option>';
+            rows.forEach(function (b) {
+                const code = String(b.Code ?? b.BankMaster_Code ?? b.code ?? b.bankMaster_Code ?? '').trim();
+                const name = String((b.BankName ?? b.bankName ?? b.Name ?? b.name ?? code).trim() || code);
+                if (!code) return;
+                html += `<option value="${code}">${name}</option>`;
+            });
+            bankEl.innerHTML = html;
+            const hasPrev = Array.from(bankEl.options).some(function (o) { return o.value === prev; });
+            bankEl.value = hasPrev ? prev : '0';
+        })
+        .catch(function () {
+            bankEl.innerHTML = '<option value="0">-- All Banks --</option>';
+            bankEl.value = '0';
+        });
+}
+
 function getGpaListFilterValues() {
     return {
         FromDate: ($('#lstTxtFromDate').val() || '').trim(),
         ToDate: ($('#lstTxtToDate').val() || '').trim(),
         Status: ($('#lstDdlStatus').val() || '0').trim(),
+        BankMaster_Code: ($('#lstDdlBankName').val() || '0').trim(),
     };
 }
 
@@ -1380,6 +1411,32 @@ async function viewGRNPaymentEntry(code) {
     editGRNPaymentApproval(codeNum);
 }
 
+function gpaBankNameFromCode(bankCode) {
+    const c = String(bankCode ?? '').trim();
+    if (!c || c === '0') return '';
+    const hit = (gpaBankListCache || []).find(function (b) {
+        const bc = String(b.Code ?? b.BankMaster_Code ?? b.code ?? b.bankMaster_Code ?? '').trim();
+        return bc === c;
+    });
+    if (hit) return String(hit.BankName ?? hit.bankName ?? hit.Name ?? hit.name ?? '').trim();
+    const ddl = document.getElementById('lstDdlBankName') || document.getElementById('ddlBankName');
+    if (ddl) {
+        for (let i = 0; i < ddl.options.length; i++) {
+            if (ddl.options[i].value === c) return String(ddl.options[i].text || '').trim();
+        }
+    }
+    return '';
+}
+
+function gpaBankNameFromListItem(item) {
+    if (!item || typeof item !== 'object') return '';
+    const direct = item.BankName ?? item.bankName ?? item['Bank Name'] ?? '';
+    if (String(direct ?? '').trim()) return String(direct).trim();
+    const code = item.BankMaster_Code ?? item.bankMaster_Code
+        ?? item.F_BankMaster_Code ?? item.f_BankMaster_Code ?? '';
+    return gpaBankNameFromCode(code);
+}
+
 function mapGpaListRow(item) {
     const code = item.Code ?? item.code ?? 0;
     const entryNo = item.EntryNo ?? item.entryNo ?? item['Entry No'] ?? item['PO No'] ?? item.PONo ?? item.pONo ?? '';
@@ -1387,6 +1444,7 @@ function mapGpaListRow(item) {
         ?? item['Entry Date'] ?? item['PO Date'] ?? item.PODate ?? item.pODate;
     const party = item.PartyName ?? item.VendorName ?? item.AccountName ?? item.partyName
         ?? item.Party ?? item.party ?? item['Party Name'] ?? '';
+    const bankName = gpaBankNameFromListItem(item);
     const empRaw = item.Employee ?? item.employee ?? item.MarketingManMaster ?? item.marketingManMaster
         ?? item.MarketingManName ?? item.marketingManName ?? '';
     const employee = empRaw !== undefined && empRaw !== null ? String(empRaw).trim() : '';
@@ -1418,6 +1476,7 @@ function mapGpaListRow(item) {
         'Entry No': entryNo,
         'Entry Date': formatGpaListDate(ed),
         'Party Name': party,
+        'Bank Name': bankName,
         Employee: employee,
         'Work Type': workType,
         'Amount': amt,
@@ -1636,7 +1695,8 @@ function gpaListEmptyTabPlaceholderRow() {
         'Entry No': '',
         'Entry Date': '',
         'Party Name': 'No payment entries in this status.',
-        Employee: '',
+        'Bank Name':'',
+         Employee: '',
         'Work Type': '',
         'Amount': '',
         'Ref No': '',
@@ -1647,7 +1707,7 @@ function gpaListEmptyTabPlaceholderRow() {
 }
 
 function renderGpaListGrid() {
-    const StringFilterColumn = ['Party Name', 'Employee', 'Work Type', 'Ref No'];
+    const StringFilterColumn = ['Party Name', 'Employee',"Bank Name", 'Work Type', 'Ref No'];
     const NumericFilterColumn = ['Entry No', 'Amount'];
     const DateFilterColumn = ['Entry Date'];
     const Button = false;
@@ -1684,7 +1744,7 @@ function renderGpaListGrid() {
         null,
         null,
         ['Amount'],
-        'Search by Entry No, Party, Employee, Work Type...'
+        'Search by Entry No, Party, Bank, Employee, Work Type...'
     );
 }
 
@@ -1720,9 +1780,10 @@ function gpaCopyApprovalStatusMeta(target, source) {
     });
 }
 
-async function syncGpaListStatusFromApprovalApi(FromDate, ToDate, Status) {
+async function syncGpaListStatusFromApprovalApi(FromDate, ToDate, Status, BankMaster_Code) {
     try {
-        const response = await GRNPaymentApprovalService.GetGRNPaymentApprovalList('0', FromDate, ToDate);
+        const bankCode = BankMaster_Code ?? getGpaListFilterValues().BankMaster_Code ?? '0';
+        const response = await GRNPaymentApprovalService.GetGRNPaymentApprovalList('0', FromDate, ToDate, bankCode);
         const approvalRows = normalizeApiRows(response);
         if (!approvalRows.length) {
             gpaListApprovalStatusCounts = { U: 0, P: 0, R: 0 };
@@ -1765,11 +1826,15 @@ function loadGRNPaymentApprovalList() {
     const filters = getGpaListFilterValues();
     if (!validateGpaListFilters(filters)) return Promise.resolve();
 
-    return GRNPaymentApprovalService.GetGRNPaymentApprovalList(filters.Status, filters.FromDate, filters.ToDate).then(async function (response) {
+    return GRNPaymentApprovalService.GetGRNPaymentApprovalList(
+        filters.Status, filters.FromDate, filters.ToDate, filters.BankMaster_Code
+    ).then(async function (response) {
             const raw = normalizeApiRows(response);
             gpaListSourceRows = raw;
             gpaListFullRows = raw.map(mapGpaListRow);
-            await syncGpaListStatusFromApprovalApi(filters.FromDate, filters.ToDate, filters.Status);
+            await syncGpaListStatusFromApprovalApi(
+                filters.FromDate, filters.ToDate, filters.Status, filters.BankMaster_Code
+            );
             loadGpaGetListPrintCache();
             refreshGpaPendingOnMeBadgeFromApprovalApi(filters.FromDate, filters.ToDate);
             if (gpaListFullRows.length === 0) {
@@ -1929,6 +1994,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setGpaListPendingOnMeBadge(storedPendingOnMe);
     }
     await loadGpaStatusDropdown();
+    await loadGpaListBankDropdown();
     await loadGRNPaymentApprovalList();
     let gpaOpenNew = false;
     try {
@@ -2444,6 +2510,7 @@ async function loadGpaBankMasterList() {
     try {
         const result = await GRNPaymentApprovalService.GetBankList();
         const rows = normalizeGpaBankListRows(result);
+        gpaBankListCache = rows;
         ddl.innerHTML = '<option value="">-- Select Bank --</option>';
         rows.forEach(b => {
             const opt = document.createElement('option');
@@ -6137,6 +6204,39 @@ function gpaPrintShowPpplLogo(companyName) {
     return n === 'PURSHOTAM PROFILES PVT.LTD.' || n.indexOf('PURSHOTAM PROFILES') === 0;
 }
 
+/** Narration for print — master, list rows, then live form field (preview before save). */
+function gpaResolvePrintNarration(master, listRows) {
+    const sources = [];
+    if (master && typeof master === 'object') sources.push(master);
+    if (Array.isArray(listRows)) sources.push.apply(sources, listRows);
+    for (let i = 0; i < sources.length; i++) {
+        const n = String(sources[i].Narration ?? sources[i].narration ?? '').trim();
+        if (n) return n;
+    }
+    const narEl = document.getElementById('txtNarration');
+    if (narEl) {
+        const live = String(narEl.value || '').trim();
+        if (live) return live;
+    }
+    return '';
+}
+
+/** Details box — narration in its own bordered cell; otherwise PO / project line breakdown. */
+function gpaBuildPrintDetailsBlock(narration, detailsLines, amt, advance) {
+    const narrationTrim = String(narration || '').trim();
+    const body = narrationTrim
+        ? ('<div class="pv-narration-box">' + gpaEscapeHtml(narrationTrim) + '</div>')
+        : (detailsLines || '<span style="color:#666;">—</span>');
+    const amountFiguresBlock = amt > 0.005
+        ? ('<div class="pv-amount-block" style="margin-top:10px;font-weight:700;">Amount (figures): &#8377; ' + gpaFormatIndianCurrency(amt) + '</div>'
+            + '<div style="margin-top:4px;font-size:9pt;">Amount (words): ' + gpaNumberToWords(Math.round(amt)) + '</div>')
+        : '';
+    const advanceBlock = advance > 0.005
+        ? '<div style="margin-top:4px;">Advance / adjustment: &#8377; ' + gpaFormatIndianCurrency(advance) + '</div>'
+        : '';
+    return body + amountFiguresBlock + advanceBlock;
+}
+
 /** List print — preview: voucher only; print: voucher + print dialog. */
 function PrintGRNPaymentFromList(code, mode) {
     const codeNum = parseInt(code, 10);
@@ -6261,7 +6361,7 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
         if (!amt && listRow) {
             amt = parseFloat(listRow.PaymentAmount ?? listRow.paymentAmount ?? listRow.Amount ?? listRow.amount ?? 0) || 0;
         }
-        const narration = master.Narration ?? master.narration ?? '';
+        const narration = gpaResolvePrintNarration(master, listRows);
         let advance = parseFloat(master.AdvanceAmount ?? master.advanceAmount ?? 0) || 0;
         if (!advance && Array.isArray(listRows)) {
             for (let ai = 0; ai < listRows.length; ai++) {
@@ -6304,15 +6404,7 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
         mergedDetails.forEach(function (row, idx) {
             detailsLines += gpaBuildPrintDetailLineHtml(row, idx, listRows, site0);
         });
-        const amountFiguresBlock = amt > 0.005
-            ? ('<div style="margin-top:10px;font-weight:700;">Amount (figures): &#8377; ' + gpaFormatIndianCurrency(amt) + '</div>'
-                + '<div style="margin-top:4px;font-size:9pt;">Amount (words): ' + gpaNumberToWords(Math.round(amt)) + '</div>')
-            : '';
-        const detailsBlock = ''
-            + (narration ? '<div style="margin-bottom:8px;"><b>Narration:</b><br>' + gpaEscapeHtml(String(narration)) + '</div>' : '')
-            + (detailsLines || '<span style="color:#666;">—</span>')
-            + amountFiguresBlock
-            + (advance > 0.005 ? '<div style="margin-top:4px;">Advance / adjustment: &#8377; ' + gpaFormatIndianCurrency(advance) + '</div>' : '');
+        const detailsBlock = gpaBuildPrintDetailsBlock(narration, detailsLines, amt, advance);
 
         const _base = gpaPrintAssetBaseUrl();
         const logoUrl = _base + 'assets/images/pppllog.jpeg';
@@ -6337,6 +6429,8 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
             + 'table.pv-t td{border:1px solid #000;padding:6px 8px;font-size:9.5pt;vertical-align:top;}'
             + 'table.pv-t td.lbl{font-weight:700;width:22%;background:#fafafa;}'
             + '.pv-details{min-height:120px;border:1px solid #000;border-top:none;padding:8px;font-size:9.5pt;}'
+            + '.pv-narration-box{border:none;border-bottom:1px solid #000;padding:8px 10px;margin:0 -8px;min-height:44px;white-space:pre-wrap;line-height:1.45;font-size:9.5pt;background:#fff;}'
+            + '.pv-amount-block{padding-top:2px;}'
             + '.pv-sig{display:flex;margin-top:14px;gap:8px;}'
             + '.pv-sig > div{flex:1;border:1px solid #000;min-height:100px;padding:6px;text-align:center;font-weight:700;font-size:9pt;display:flex;flex-direction:column;justify-content:flex-end;}'
             + '.pv-sig-stamp{width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 4px;opacity:0.88;-webkit-print-color-adjust:exact;print-color-adjust:exact;}';
@@ -6478,6 +6572,8 @@ window.gpaPreloadEmployeeListForPrint = async function gpaPreloadEmployeeListFor
 window.gpaPeelGrnPaymentApiRoot = peelGrnPaymentApiRoot;
 window.gpaFirstMasterFromApi = firstMasterFromApi;
 window.gpaExtractGRNPaymentDetails = extractGRNPaymentDetailsArray;
+window.gpaResolvePrintNarration = gpaResolvePrintNarration;
+window.gpaBuildPrintDetailsBlock = gpaBuildPrintDetailsBlock;
 window.gpaOverlayMasterFromListRow = gpaOverlayMasterFromListRow;
 window.gpaResolvePoNoTextFromRow = gpaResolvePoNoTextFromRow;
 window.gpaEnrichDetailRowPoCategory = gpaEnrichDetailRowPoCategory;
