@@ -320,6 +320,58 @@ function parseAmountForSum(v) {
     return Number.isNaN(n) ? 0 : n;
 }
 
+function selectedFilterProjectText() {
+    const v = $('#ddlProject option:selected').val();
+    const t = String($('#ddlProject option:selected').text() || '').trim();
+    if (!v || v === '0' || v === 'All' || t === 'All') return '';
+    return t;
+}
+
+function selectedFilterSubProjectText() {
+    const v = $('#ddlSubProject option:selected').val();
+    const t = String($('#ddlSubProject option:selected').text() || '').trim();
+    if (!v || v === '0' || v === 'All' || t === 'All') return '';
+    return t;
+}
+
+function ledgerRowProjectName(row) {
+    const fromRow = String(
+        firstNonEmpty(row, [
+            'Project',
+            'project',
+            'ProjectName',
+            'projectName',
+            'ProjectDesp',
+            'projectDesp',
+            'ProjectDescription',
+            'projectDescription',
+        ])
+    ).trim();
+    if (fromRow) return fromRow;
+    const kind = ledgerParticularsRowKind(String(row.Particulars || ''));
+    if (kind === 'opening' || kind === 'closing') return selectedFilterProjectText();
+    return '';
+}
+
+function ledgerRowSubProjectName(row) {
+    const fromRow = String(
+        firstNonEmpty(row, [
+            'SubProject',
+            'subProject',
+            'SubProjectName',
+            'subProjectName',
+            'SubProjectDesp',
+            'subProjectDesp',
+            'Sub Proj',
+            'subProj',
+        ])
+    ).trim();
+    if (fromRow) return fromRow;
+    const kind = ledgerParticularsRowKind(String(row.Particulars || ''));
+    if (kind === 'opening' || kind === 'closing') return selectedFilterSubProjectText();
+    return '';
+}
+
 /** Match API variants: Opening, Closing, Closing balance, etc. */
 function ledgerParticularsRowKind(particulars) {
     const s = String(particulars == null ? '' : particulars).trim().toLowerCase();
@@ -415,6 +467,8 @@ function appendLedgerRow($body, row) {
     tr.append($('<td/>').text(row['S.No'] != null ? row['S.No'] : ''));
     tr.append($('<td/>').text(row.Date != null ? row.Date : ''));
     tr.append($('<td/>').text(p));
+    tr.append($('<td/>').text(ledgerRowProjectName(row)));
+    tr.append($('<td/>').text(ledgerRowSubProjectName(row)));
 
     const pay = formatAmount(row.Payment);
     const exp = formatAmount(row.Expenses);
@@ -540,12 +594,15 @@ function populateExportTable(data) {
     $h.empty();
     $b.empty();
     if (!data.length) return;
-    const headers = ['S.No', 'Date', 'Particulars', 'Payment', 'Expenses', 'Balance', 'DrCr'];
+    const headers = ['S.No', 'Date', 'Particulars', 'Project', 'SubProject', 'Payment', 'Expenses', 'Balance', 'DrCr'];
     headers.forEach((h) => $h.append($('<th/>').text(h)));
     data.forEach(function (item) {
         const tr = $('<tr/>');
         headers.forEach(function (h) {
-            let cellVal = item[h] != null ? item[h] : '';
+            let cellVal = '';
+            if (h === 'Project') cellVal = ledgerRowProjectName(item);
+            else if (h === 'SubProject') cellVal = ledgerRowSubProjectName(item);
+            else if (item[h] != null) cellVal = item[h];
             if (h === 'Payment' || h === 'Expenses' || h === 'Balance') cellVal = formatAmount(cellVal);
             tr.append($('<td/>').text(cellVal));
         });

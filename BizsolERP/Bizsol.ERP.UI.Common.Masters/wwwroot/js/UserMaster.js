@@ -576,7 +576,9 @@ function GetUserMasterList() {
             'UserMaster-header', 'UserMaster-body',
             updatedResponse, false, [],
             StringFilterColumn, NumericFilterColumn, DateFilterColumn,
-            [], hiddenColumns, ColumnAlignment
+            [], hiddenColumns, ColumnAlignment,
+            true, null, null, null,
+            'Search by User ID, Name, Group, Email, Mobile, Status...'
         );
     }).catch(function () {
         toastr.error('Failed to load user list.');
