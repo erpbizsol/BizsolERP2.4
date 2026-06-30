@@ -553,10 +553,16 @@ function fetchReport() {
     }
     const fromDate = convertDateFormat($('#txtdateFrom').val());
     const toDate = convertDateFormat($('#txtdateTo').val());
-    const emp =
-        $('#ddlEmployee option:selected').val() === '0' || $('#ddlEmployee option:selected').val() === 'All'
-            ? 0
-            : parseInt($('#ddlEmployee option:selected').val(), 10) || 0;
+    const empRaw = ($('#ddlEmployee').val() || '').toString().trim();
+    if (!empRaw || empRaw === '0' || empRaw === 'All') {
+        toastr.warning('Select employee.');
+        return;
+    }
+    const emp = parseInt(empRaw, 10) || 0;
+    if (emp <= 0) {
+        toastr.warning('Select employee.');
+        return;
+    }
     const proj =
         $('#ddlProject option:selected').val() === '0' || $('#ddlProject option:selected').val() === 'All'
             ? 0

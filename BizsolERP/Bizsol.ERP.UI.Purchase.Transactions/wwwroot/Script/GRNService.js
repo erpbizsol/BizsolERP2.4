@@ -679,6 +679,10 @@ function mapGRNRowsToGrid(rows) {
         var btns =
             '<button type="button" class="im-btn-view" title="View" onclick="viewGRNFromList(' + code + ')">' +
             '<i class="fa fa-eye"></i></button>' +
+            '<button type="button" class="im-btn-print-preview" title="Print Preview" onclick="PrintGRNServiceFromList(' + code + ',\'preview\')">' +
+            '<i class="fa fa-search-plus"></i></button>' +
+            '<button type="button" class="im-btn-print" title="Print" onclick="PrintGRNServiceFromList(' + code + ',\'print\')">' +
+            '<i class="fa fa-print"></i></button>' +
             '<button class="im-btn-edit" title="Edit" onclick="editGRN(' + code + ')">' +
             '<i class="fas fa-pen"></i></button>' +
             '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="openGrnServiceListAttachmentControl(' + code + ',' + enNum + ',\'' + rawRdStr + '\')">' +
@@ -713,7 +717,7 @@ function getGRNListHiddenColumns() {
 
 function getGRNListColumnAlignment() {
     return {
-        Action: "center;min-width:280px;white-space:nowrap;",
+        Action: "center;min-width:360px;white-space:nowrap;",
     };
 }
 
@@ -2965,6 +2969,688 @@ function bindMRNApprovalLevelsFromGRNService(code, sourceRow) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// GRN SERVICE PRINT PREVIEW (GetCompany + GetGRNList)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function grnPrintEscHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function grnPrintFmtDate(val) {
+    if (!val) return '';
+    const dt = new Date(val);
+    if (isNaN(dt.getTime())) {
+        const s = String(val).substring(0, 10);
+        if (s.length >= 10) {
+            const p = s.split('-');
+            if (p.length === 3) return p[2] + '/' + p[1] + '/' + p[0];
+        }
+        return String(val);
+    }
+    return dt.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function grnPrintFmtCurrency(num) {
+    const n = parseFloat(num || 0);
+    if (isNaN(n)) return '0.00';
+    const parts = n.toFixed(2).split('.');
+    const intPart = parts[0];
+    const lastThree = intPart.slice(-3);
+    const remaining = intPart.slice(0, -3);
+    const formatted = remaining.length > 0
+        ? remaining.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree
+        : lastThree;
+    return formatted + '.' + parts[1];
+}
+
+function grnPrintNumToWords(amount) {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+        'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+        'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    function twoD(n) {
+        if (n < 20) return ones[n];
+        return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+    }
+    function threeD(n) {
+        if (n >= 100) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + twoD(n % 100) : '');
+        return twoD(n);
+    }
+    let n = Math.floor(Math.abs(amount));
+    if (n === 0) return 'Zero Rupees Only';
+    let w = '';
+    if (n >= 10000000) { w += threeD(Math.floor(n / 10000000)) + ' Crore '; n %= 10000000; }
+    if (n >= 100000) { w += twoD(Math.floor(n / 100000)) + ' Lakh '; n %= 100000; }
+    if (n >= 1000) { w += twoD(Math.floor(n / 1000)) + ' Thousand '; n %= 1000; }
+    if (n >= 100) { w += ones[Math.floor(n / 100)] + ' Hundred '; n %= 100; }
+    if (n > 0) { w += twoD(n); }
+    return w.trim() + ' Rupees Only';
+}
+
+function grnPrintAssetBaseUrl() {
+    return (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
+}
+
+function grnPrintStampUrls() {
+    const base = grnPrintAssetBaseUrl();
+    return {
+        verified: base + 'assets/images/PPPL_Stamp_Finance.jpeg',
+        approved: base + 'assets/images/PPPL_Stamp_HODA.jpeg',
+    };
+}
+
+function grnPrintStampImgHtml(src, alt) {
+    return '<img class="grn-sig-stamp" src="' + String(src || '') + '" alt="' + grnPrintEscHtml(alt) + '">';
+}
+
+function grnCompanyFromGetCompanyApi(resp) {
+    if (resp == null) {
+        return { companyName: '', companyAddr: '', companyTag: '' };
+    }
+    let row = null;
+    const rows = normalizeApiRows(resp);
+    if (rows.length && rows[0]) row = rows[0];
+    if (!row) {
+        const o = resp.Data ?? resp.data ?? resp;
+        if (o && typeof o === 'object' && !Array.isArray(o)) row = o;
+    }
+    row = row || {};
+    const phone = String(row.OfficePhones1 ?? row.officePhones1 ?? '').trim();
+    const web = String(row.WebSite ?? row.webSite ?? row.Website ?? row.website ?? '').trim();
+    let tagFromApi = phone && web ? phone + ' · ' + web : (phone || web);
+    const branchTag = String(row.BranchName ?? row.branchName ?? row.CompanyTagLine ?? row.TagLine ?? row.tagLine ?? '').trim();
+    return {
+        companyName: String(row.CompanyName ?? row.companyName ?? row.CompanyInfo ?? row.Name ?? row.name ?? '').trim(),
+        companyAddr: String(
+            row.OfficeAddress1 ?? row.officeAddress1
+            ?? row.CompanyAddress ?? row.companyAddress ?? row.Address ?? row.address ?? ''
+        ).trim(),
+        companyTag: String(row.TagLine ?? row.tagLine ?? row.CompanyTagLine ?? '').trim()
+            || ((tagFromApi && branchTag) ? (tagFromApi + ' · ' + branchTag) : (tagFromApi || branchTag)),
+    };
+}
+
+function grnPrintSessionCompany() {
+    let companyName = '', companyAddr = '', companyTag = '';
+    try {
+        const ud = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        if (ud && ud[0]) {
+            companyName = ud[0].CompanyName || ud[0].CompanyNameForShow || '';
+            companyAddr = ud[0].CompanyAddress || '';
+            companyTag = ud[0].BranchName || ud[0].CompanyTagLine || ud[0].TagLine || '';
+        }
+    } catch (e) { /* ignore */ }
+    return { companyName, companyAddr, companyTag };
+}
+
+function grnMergePrintCompanyInfo(sessionCo, apiCo) {
+    const s = sessionCo || {};
+    const a = apiCo || {};
+    return {
+        companyName: a.companyName || s.companyName || '',
+        companyAddr: a.companyAddr || s.companyAddr || '',
+        companyTag: a.companyTag || s.companyTag || '',
+    };
+}
+
+function grnPrintShowPpplLogo(companyName) {
+    const n = String(companyName || '').trim().toUpperCase();
+    return n.indexOf('PURSHOTAM') >= 0 || n.indexOf('SOLAR') >= 0 || n.indexOf('PPPL') >= 0;
+}
+
+function grnFindListRowForPrint(codeNum) {
+    const rows = grnMasterSourceRows || [];
+    for (let i = 0; i < rows.length; i++) {
+        const c = parseInt(rows[i].Code ?? rows[i].code ?? 0, 10);
+        if (c === codeNum) return rows[i];
+    }
+    return grnGetApprovalSourceRow(codeNum) || null;
+}
+
+function grnPrintStatusLabel(listRow) {
+    const st = computeGrnListStatusCode(listRow || {});
+    if (st === 'P') return 'Approved';
+    if (st === 'R') return 'Rejected';
+    if (rowIsVerifiedGrn(listRow)) return 'Verified';
+    return 'Pending';
+}
+
+/** MRNMaster.Code on GET_GRNLIST rows (SP alias: Code). */
+function grnPrintRowMasterCode(r) {
+    if (!r || typeof r !== 'object') return 0;
+    return parseInt(
+        r.MRNMaster_Code ?? r.mRNMaster_Code ?? r.MRNMasterCode ?? r.Code ?? r.code ?? 0,
+        10
+    ) || 0;
+}
+
+function grnPrintRowLooksLikeDetail(r) {
+    if (!r || typeof r !== 'object') return false;
+    return r.ItemName != null || r.itemName != null
+        || r.ProjectDesp != null || r.projectDesp != null
+        || r.PONo != null || r.poNo != null
+        || r.Amount != null || r.amount != null;
+}
+
+/** Unwrap GetGRNList / GET_GRNLIST API payload (Code, BillNo, ProjectDesp, ItemName, …). */
+function normalizeGrnPrintListRows(result) {
+    if (!result) return [];
+    if (Array.isArray(result)) return result;
+
+    const directKeys = [
+        'GRNList', 'grnList', 'GRNServiceList', 'grnServiceList',
+        'Data', 'data', 'Table', 'table', 'Result', 'result',
+        'Items', 'items', 'List', 'list', 'Rows', 'rows',
+    ];
+    for (let i = 0; i < directKeys.length; i++) {
+        const k = directKeys[i];
+        if (Array.isArray(result[k]) && result[k].length) return result[k];
+    }
+
+    if (result.Data != null || result.data != null) {
+        const datum = result.Data ?? result.data;
+        if (Array.isArray(datum)) return datum;
+        if (datum && typeof datum === 'object') {
+            const inner = normalizeGrnPrintListRows(datum);
+            if (inner.length) return inner;
+        }
+    }
+
+    if (typeof result === 'object') {
+        const vals = Object.values(result);
+        for (let j = 0; j < vals.length; j++) {
+            const v = vals[j];
+            if (Array.isArray(v) && v.length && grnPrintRowLooksLikeDetail(v[0])) return v;
+        }
+        for (let k = 0; k < vals.length; k++) {
+            const v = vals[k];
+            if (v && typeof v === 'object' && !Array.isArray(v)) {
+                const nested = normalizeGrnPrintListRows(v);
+                if (nested.length) return nested;
+            }
+        }
+    }
+
+    return normalizeApiRows(result);
+}
+
+function grnFilterPrintDetailRows(allRows, codeNum, listRow) {
+    if (!Array.isArray(allRows) || !allRows.length) return [];
+
+    let filtered = allRows.filter(function (r) {
+        return grnPrintRowMasterCode(r) === codeNum;
+    });
+
+    const billNo = listRow?.BillNo ?? listRow?.billNo ?? listRow?.['Bill No'];
+    if (!filtered.length && billNo != null && billNo !== '') {
+        filtered = allRows.filter(function (r) {
+            return String(r.BillNo ?? r.billNo ?? '') === String(billNo);
+        });
+    }
+
+    if (!filtered.length && listRow) {
+        const proj = grnPickPrintField(listRow, ['ProjectDesp', 'projectDesp', 'Project', 'project']);
+        const site = grnPickPrintField(listRow, ['SubProjectDesp', 'subProjectDesp', 'Sub Project', 'SiteName', 'siteName']);
+        if (proj || site) {
+            filtered = allRows.filter(function (r) {
+                const rp = grnPickPrintField(r, ['ProjectDesp', 'projectDesp', 'ProjectName', 'projectName']);
+                const rs = grnPickPrintField(r, ['SubProjectDesp', 'subProjectDesp', 'SiteName', 'siteName']);
+                return (!proj || rp === proj) && (!site || rs === site);
+            });
+        }
+    }
+
+    return filtered;
+}
+
+function grnPrintProjectSiteKeys() {
+    return {
+        project: ['ProjectDesp', 'projectDesp', 'ProjectName', 'projectName', 'Project', 'project'],
+        site: ['SubProjectDesp', 'subProjectDesp', 'SiteName', 'siteName', 'Sub Project', 'Site', 'site'],
+    };
+}
+
+/** Ensure every print line has Project / Site — from row, else list row / master. */
+function grnStampPrintDetailProjectSite(detailRows, listRow, masterRow) {
+    const keys = grnPrintProjectSiteKeys();
+    const projFallback = grnPickPrintField(listRow, keys.project)
+        || grnPickPrintField(masterRow, keys.project);
+    const siteFallback = grnPickPrintField(listRow, keys.site)
+        || grnPickPrintField(masterRow, keys.site);
+    if (!Array.isArray(detailRows)) return [];
+    return detailRows.map(function (row) {
+        const out = Object.assign({}, row);
+        if (!grnPickPrintField(out, keys.project) && projFallback) {
+            out.ProjectDesp = projFallback;
+        }
+        if (!grnPickPrintField(out, keys.site) && siteFallback) {
+            out.SubProjectDesp = siteFallback;
+        }
+        return out;
+    });
+}
+
+/** Fallback when GetGRNList is empty — map GetGRNServiceByCode detail to print rows. */
+function grnPrintDetailsFromGetByCode(resp, codeNum, listRow) {
+    if (!resp || typeof resp !== 'object') return { master: {}, rows: [] };
+    const master = (resp.GRNServiceList ?? resp.grnServiceList)?.[0] ?? resp.Master ?? resp.master ?? {};
+    const items = resp.GRNServiceDetail ?? resp.grnServiceDetail ?? resp.Detail ?? resp.detail ?? [];
+    if (!Array.isArray(items)) return { master: master, rows: [] };
+    const keys = grnPrintProjectSiteKeys();
+    const projFallback = grnPickPrintField(listRow, keys.project)
+        || grnPickPrintField(master, keys.project);
+    const siteFallback = grnPickPrintField(listRow, keys.site)
+        || grnPickPrintField(master, keys.site);
+    const rows = items.map(function (item) {
+        return Object.assign({}, item, {
+            Code: codeNum,
+            MRNMaster_Code: codeNum,
+            ProjectDesp: grnPickPrintField(item, keys.project) || projFallback,
+            SubProjectDesp: grnPickPrintField(item, keys.site) || siteFallback,
+            BillNo: master.BillNo ?? master.billNo ?? item.BillNo ?? item.billNo,
+            BillDate: master.BillDate ?? master.billDate ?? item.BillDate ?? item.billDate,
+            SiteType: master.SiteType ?? master.siteType ?? item.SiteType ?? item.siteType ?? 'PPA',
+            PONo: item.PONo ?? item.poNo ?? item.PoNO ?? item.PurchaseOrderMaster_Code ?? item.purchaseOrderMaster_Code ?? '',
+            PODate: item.PODate ?? item.poDate ?? '',
+            ItemName: item.ItemName ?? item.itemName ?? '',
+            Amount: item.Amount ?? item.amount ?? 0,
+        });
+    });
+    return { master: master, rows: rows };
+}
+
+function grnMergeListRowForPrint(listRow, masterFromApi) {
+    const out = Object.assign({}, listRow || {}, masterFromApi || {});
+    const keys = grnPrintProjectSiteKeys();
+    if (!grnPickPrintField(out, keys.project)) {
+        const p = grnPickPrintField(masterFromApi, keys.project);
+        if (p) out.ProjectDesp = p;
+    }
+    if (!grnPickPrintField(out, keys.site)) {
+        const s = grnPickPrintField(masterFromApi, keys.site);
+        if (s) out.SubProjectDesp = s;
+    }
+    if (!grnPickPrintField(out, ['MRNNo', 'mRNNo', 'GRNo', 'MRN No'])) {
+        const mrn = masterFromApi?.MRNNo ?? masterFromApi?.mRNNo;
+        if (mrn != null && mrn !== '') out.MRNNo = mrn;
+    }
+    if (!grnPickPrintField(out, ['AccountDesp', 'PartyName', 'Party Name'])) {
+        const party = masterFromApi?.AccountDesp ?? masterFromApi?.accountDesp;
+        if (party) out.AccountDesp = party;
+    }
+    return out;
+}
+
+function grnPickPrintField(row, keys) {
+    if (!row || typeof row !== 'object') return '';
+    for (let i = 0; i < keys.length; i++) {
+        const v = row[keys[i]];
+        if (v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim().toLowerCase() !== 'null') {
+            return String(v).trim();
+        }
+    }
+    return '';
+}
+
+function grnPrintMrnNo(listRow, codeNum) {
+    const mrn = grnPickPrintField(listRow, ['MRNNo', 'mRNNo', 'GRNo', 'grnNo', 'MRN No', 'GRN No']);
+    if (mrn) return mrn;
+    const codeAsMrn = parseInt(codeNum, 10);
+    return codeAsMrn > 0 ? String(codeAsMrn) : '';
+}
+
+function grnEnrichListRowFromPrintDetails(listRow, detailRows) {
+    const out = Object.assign({}, listRow || {});
+    const first = (detailRows && detailRows[0]) ? detailRows[0] : null;
+    if (!first) return out;
+    const fillIfEmpty = function (key, val) {
+        if (val === undefined || val === null || String(val).trim() === '' || String(val).trim().toLowerCase() === 'null') return;
+        if (!grnPickPrintField(out, [key])) out[key] = val;
+    };
+    fillIfEmpty('ProjectDesp', first.ProjectDesp ?? first.projectDesp);
+    fillIfEmpty('SubProjectDesp', first.SubProjectDesp ?? first.subProjectDesp);
+    fillIfEmpty('SiteType', first.SiteType ?? first.siteType);
+    fillIfEmpty('IndustryType', first.IndustryType ?? first.industryType);
+    fillIfEmpty('PhoneNo', first.PhoneNo ?? first.phoneNo);
+    fillIfEmpty('BillNo', first.BillNo ?? first.billNo);
+    fillIfEmpty('BillDate', first.BillDate ?? first.billDate);
+    fillIfEmpty('ReceiveDate', first.ReceiveDate ?? first.receiveDate);
+    fillIfEmpty('AccountDesp', first.AccountDesp ?? first.accountDesp ?? first.PartyName ?? first.partyName);
+    fillIfEmpty('MRNNo', first.MRNNo ?? first.mRNNo ?? first.GRNo);
+    return out;
+}
+
+function grnPrintReportCss() {
+    return '@page{size:A4 portrait;margin:10mm 12mm 14mm 12mm;}'
+        + '*{box-sizing:border-box;margin:0;padding:0;}'
+        + 'body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#000;background:#fff;}'
+        + '.no-print{margin-bottom:5mm;}'
+        + '@media print{.no-print{display:none!important;}.grn-print-page{page-break-after:always;}.grn-print-page:last-child{page-break-after:auto;}}'
+        + '.grn-wrap{max-width:780px;margin:0 auto 14px;border:2px solid #000;padding:12px 14px;}'
+        + '.grn-hdr{display:flex;align-items:flex-start;margin-bottom:10px;}'
+        + '.grn-hdr--no-logo .grn-hdr-body{width:100%;}'
+        + '.grn-logo{width:62px;height:62px;object-fit:contain;margin-right:12px;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+        + '.grn-hdr-body{flex:1;text-align:center;}'
+        + '.grn-co{font-size:14pt;font-weight:800;margin-bottom:2px;text-transform:uppercase;}'
+        + '.grn-tag{font-size:8.5pt;margin-bottom:4px;letter-spacing:0.04em;}'
+        + '.grn-addr{font-size:9pt;margin-bottom:4px;line-height:1.35;}'
+        + '.grn-title{text-align:center;font-weight:800;font-size:11pt;border:1px solid #000;padding:5px;margin:0 0 12px;letter-spacing:0.04em;text-transform:uppercase;}'
+        + 'table.grn-meta{width:100%;border-collapse:collapse;margin-bottom:10px;}'
+        + 'table.grn-meta td{border:1px solid #000;padding:5px 8px;font-size:9.5pt;vertical-align:top;width:50%;}'
+        + 'table.grn-meta td.lbl{font-weight:700;width:38%;background:#fafafa;}'
+        + '.grn-split{display:flex;border:1px solid #000;margin-bottom:10px;}'
+        + '.grn-split > div{flex:1;padding:8px 10px;font-size:9.5pt;}'
+        + '.grn-split > div:first-child{border-right:1px solid #000;}'
+        + '.grn-split-lbl{font-weight:700;margin-bottom:4px;}'
+        + '.grn-split-name{font-weight:800;font-size:10.5pt;margin-bottom:4px;text-transform:uppercase;}'
+        + '.grn-period-bar{background:#1e293b;color:#fff;font-weight:700;font-size:9pt;padding:6px 10px;margin-bottom:0;text-transform:uppercase;letter-spacing:0.03em;}'
+        + 'table.grn-items{width:100%;border-collapse:collapse;margin-bottom:0;}'
+        + 'table.grn-items th,table.grn-items td{border:1px solid #000;padding:6px 8px;font-size:9pt;vertical-align:top;}'
+        + 'table.grn-items th{background:#1e293b;color:#fff;font-weight:700;text-align:center;}'
+        + '.grn-totals{border:1px solid #000;border-top:none;padding:8px 10px;text-align:right;font-size:9.5pt;}'
+        + '.grn-totals .total-line{font-weight:800;font-size:10.5pt;margin-top:4px;}'
+        + '.grn-words{margin:10px 0;font-size:9.5pt;font-weight:600;}'
+        + '.grn-note{border:1px solid #000;padding:8px 10px;font-size:8.5pt;margin-bottom:10px;line-height:1.45;}'
+        + '.grn-note b{display:block;margin-bottom:4px;text-transform:uppercase;font-size:9pt;}'
+        + '.grn-sig{display:flex;margin-top:14px;gap:8px;}'
+        + '.grn-sig > div{flex:1;border:1px solid #000;min-height:100px;padding:6px;text-align:center;font-weight:700;font-size:9pt;display:flex;flex-direction:column;justify-content:flex-end;}'
+        + '.grn-sig-stamp{width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 4px;opacity:0.88;-webkit-print-color-adjust:exact;print-color-adjust:exact;}';
+}
+
+function grnPrintCodeFromListRow(row) {
+    return parseInt(
+        row?.Code ?? row?.code ?? row?.MRNMaster_Code ?? row?.mRNMaster_Code ?? 0,
+        10
+    ) || 0;
+}
+
+function grnBuildPrintCompanyHeaderHtml(companyInfo) {
+    const { companyName, companyAddr, companyTag } = companyInfo || {};
+    const base = grnPrintAssetBaseUrl();
+    const logoUrl = base + 'assets/images/pppllog.jpeg';
+    const showLogo = grnPrintShowPpplLogo(companyName);
+    const addrLine = companyAddr
+        ? (String(companyAddr).trim().toLowerCase().indexOf('address:') === 0
+            ? String(companyAddr).trim()
+            : 'Address: ' + String(companyAddr).trim())
+        : '';
+
+    const headerBody = '<div class="grn-hdr-body">'
+        + '<div class="grn-co">' + grnPrintEscHtml(companyName || 'Company Name') + '</div>'
+        + (companyTag ? '<div class="grn-tag">' + grnPrintEscHtml(companyTag) + '</div>' : '')
+        + (addrLine ? '<div class="grn-addr">' + grnPrintEscHtml(addrLine) + '</div>' : '')
+        + '</div>';
+
+    if (showLogo) {
+        return '<div class="grn-hdr">'
+            + '<img class="grn-logo" src="' + logoUrl + '" alt="Logo">'
+            + headerBody
+            + '</div>';
+    }
+    return '<div class="grn-hdr grn-hdr--no-logo">' + headerBody + '</div>';
+}
+
+function grnResolvePrintCompanyInfo() {
+    return GRNService.GetCompany().catch(function () { return null; }).then(function (companyApi) {
+        return grnMergePrintCompanyInfo(
+            grnPrintSessionCompany(),
+            companyApi ? grnCompanyFromGetCompanyApi(companyApi) : null
+        );
+    });
+}
+
+/** Report body — includes company logo / name / address header. */
+function grnBuildPrintReportInnerHtml(listRow, detailRows, codeNum, companyInfo) {
+    detailRows = grnStampPrintDetailProjectSite(detailRows, listRow, null);
+    listRow = grnEnrichListRowFromPrintDetails(listRow, detailRows);
+    const stamps = grnPrintStampUrls();
+
+    const mrnNo = grnPrintMrnNo(listRow, codeNum);
+    const billNo = grnPickPrintField(listRow, ['BillNo', 'billNo', 'Bill No']);
+    const billDate = grnPrintFmtDate(listRow?.BillDate ?? listRow?.billDate ?? listRow?.['Bill Date']);
+    const recvDate = grnPrintFmtDate(listRow?.ReceiveDate ?? listRow?.receiveDate ?? listRow?.['Receive Date']);
+    const partyName = grnPickPrintField(listRow, ['AccountDesp', 'accountDesp', 'PartyName', 'partyName', 'Party Name', 'VendorName', 'vendorName']);
+    const projectHdr = grnPickPrintField(listRow, grnPrintProjectSiteKeys().project);
+    const siteHdr = grnPickPrintField(listRow, grnPrintProjectSiteKeys().site);
+    const siteTypeHdr = grnPickPrintField(listRow, ['SiteType', 'siteType']);
+    const industryType = grnPickPrintField(listRow, ['IndustryType', 'industryType']);
+    const phoneNo = grnPickPrintField(listRow, ['PhoneNo', 'phoneNo', 'ContactNo', 'contactNo']);
+    const statusLbl = grnPrintStatusLabel(listRow);
+    const verifiedBy = grnPickPrintField(listRow, ['VerifiedByName', 'verifiedByName', 'VerifiedByDesp', 'VerifiedBy', 'verifiedBy']);
+    const remarks = grnPickPrintField(listRow, ['Remarks', 'remarks', 'Remark', 'remark']);
+    const today = grnPrintFmtDate(new Date());
+
+    let totalAmt = 0;
+    let tableRows = '';
+    (detailRows || []).forEach(function (row, idx) {
+        const psKeys = grnPrintProjectSiteKeys();
+        let proj = grnPickPrintField(row, psKeys.project);
+        let site = grnPickPrintField(row, psKeys.site);
+        if (!proj) proj = projectHdr;
+        if (!site) site = siteHdr;
+        const item = grnPickPrintField(row, ['ItemName', 'itemName', 'Item', 'item']);
+        const poNo = grnPickPrintField(row, ['PONo', 'poNo', 'PoNO']);
+        const poDate = grnPrintFmtDate(row.PODate ?? row.poDate);
+        const amt = parseFloat(row.Amount ?? row.amount ?? 0) || 0;
+        totalAmt += amt;
+        tableRows += '<tr>'
+            + '<td style="text-align:center;">' + (idx + 1) + '</td>'
+            + '<td>' + grnPrintEscHtml(proj) + '</td>'
+            + '<td>' + grnPrintEscHtml(site) + '</td>'
+            + '<td>' + grnPrintEscHtml(item) + '</td>'
+            + '<td>' + grnPrintEscHtml(poNo) + (poDate ? '<br><small>' + grnPrintEscHtml(poDate) + '</small>' : '') + '</td>'
+            + '<td style="text-align:right;">&#8377;' + grnPrintFmtCurrency(amt) + '</td>'
+            + '</tr>';
+    });
+    if (!tableRows) {
+        tableRows = '<tr><td colspan="6" style="text-align:center;padding:12px;color:#666;">No line items found.</td></tr>';
+    }
+
+    if (!totalAmt) {
+        const net = parseFloat(listRow?.NetPayable ?? listRow?.netPayable ?? listRow?.TotalBillAmountManual ?? 0) || 0;
+        if (net > 0) totalAmt = net;
+    }
+
+    const periodBar = (recvDate || billDate ? (recvDate || billDate) : today)
+        + (partyName ? ' — ' + partyName.toUpperCase() : '');
+
+    const isApproved = statusLbl === 'Approved' || statusLbl === 'Verified';
+
+    return '<div class="grn-wrap">'
+        + grnBuildPrintCompanyHeaderHtml(companyInfo)
+        + '<div class="grn-title">GRN Service Report</div>'
+        + '<table class="grn-meta" role="presentation"><tr>'
+        + '<td><table role="presentation" style="width:100%;border:none;border-collapse:collapse;">'
+        + '<tr><td class="lbl" style="border:none;width:38%;">Date</td><td style="border:none;">' + grnPrintEscHtml(today) + '</td></tr>'
+        + '<tr><td class="lbl" style="border:none;">Bill Date</td><td style="border:none;">' + grnPrintEscHtml(billDate || '—') + '</td></tr>'
+        + '<tr><td class="lbl" style="border:none;">Receive Date</td><td style="border:none;">' + grnPrintEscHtml(recvDate || '—') + '</td></tr>'
+        + '</table></td>'
+        + '<td><table role="presentation" style="width:100%;border:none;border-collapse:collapse;">'
+        + '<tr><td class="lbl" style="border:none;width:38%;">MRN No</td><td style="border:none;">' + grnPrintEscHtml(mrnNo || '—') + '</td></tr>'
+        + '<tr><td class="lbl" style="border:none;">Bill No</td><td style="border:none;">' + grnPrintEscHtml(billNo || '—') + '</td></tr>'
+        + '<tr><td class="lbl" style="border:none;">Status</td><td style="border:none;">' + grnPrintEscHtml(statusLbl) + '</td></tr>'
+        + '</table></td>'
+        + '</tr></table>'
+        + '<div class="grn-split">'
+        + '<div><div class="grn-split-lbl">Vendor / Party Details :</div>'
+        + '<div class="grn-split-name">' + grnPrintEscHtml(partyName || '—') + '</div>'
+        + (projectHdr ? '<div>Project : ' + grnPrintEscHtml(projectHdr) + '</div>' : '')
+        + (siteHdr ? '<div>Site : ' + grnPrintEscHtml(siteHdr) + '</div>' : '')
+        + '</div>'
+        + '<div><div class="grn-split-lbl">GRN Information :</div>'
+        + (siteTypeHdr ? '<div>Site Type : ' + grnPrintEscHtml(siteTypeHdr) + '</div>' : '')
+        + (industryType ? '<div>Industry Type : ' + grnPrintEscHtml(industryType) + '</div>' : '')
+        + (phoneNo ? '<div>Contact No : ' + grnPrintEscHtml(phoneNo) + '</div>' : '')
+        + (verifiedBy ? '<div>Verified By : ' + grnPrintEscHtml(verifiedBy) + '</div>' : '')
+        + '</div></div>'
+        + '<div class="grn-period-bar">GRN Period : ' + grnPrintEscHtml(periodBar) + '</div>'
+        + '<table class="grn-items"><thead><tr>'
+        + '<th style="width:40px;">S.No</th>'
+        + '<th>Project name</th>'
+        + '<th>Site name</th>'
+        + '<th>Item / Service</th>'
+        + '<th style="width:110px;">PO No.</th>'
+        + '<th style="width:110px;">Amount</th>'
+        + '</tr></thead><tbody>' + tableRows + '</tbody></table>'
+        + '<div class="grn-totals">'
+        + '<div>Total Amount : &#8377;' + grnPrintFmtCurrency(totalAmt) + '</div>'
+        + '<div class="total-line">Total : &#8377;' + grnPrintFmtCurrency(totalAmt) + '</div>'
+        + '</div>'
+        + '<div class="grn-words">Amount In Word : ' + grnPrintEscHtml(grnPrintNumToWords(Math.round(totalAmt))) + '</div>'
+        + (remarks ? '<div class="grn-note"><b>Remark</b>' + grnPrintEscHtml(remarks) + '</div>' : '')
+        + '<div class="grn-note"><b>Note:</b> The following details are essential to process this GRN for payment purpose.'
+        + '<br>i) Vendor / party name and bill details.'
+        + '<br>ii) Receive date, bill number and MRN number.'
+        + '<br>iii) Project / site name, PO number and item details.'
+        + '<br>iv) Supporting bills / invoices must be attached.</div>'
+        + '<div class="grn-sig">'
+        + '<div>' + (isApproved ? grnPrintStampImgHtml(stamps.verified, 'Verified') : '') + 'Verified By / Accounts</div>'
+        + '<div>' + (isApproved ? grnPrintStampImgHtml(stamps.approved, 'Approved') : '') + 'Approved By / Management</div>'
+        + '</div>'
+        + '</div>';
+}
+
+function grnBuildPrintReportDocument(pagesHtml, docTitle) {
+    const css = grnPrintReportCss();
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + grnPrintEscHtml(docTitle || 'GRN Service Report') + '</title><style>' + css + '</style></head><body>'
+        + '<div class="no-print" style="display:flex;gap:8px;padding:3px 0 8px;">'
+        + '<button type="button" onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">&#128438;&nbsp;Print</button>'
+        + '<button type="button" onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">&#10005;&nbsp;Close</button>'
+        + '</div>'
+        + pagesHtml
+        + '</body></html>';
+}
+
+function grnBuildPrintReportHtml(listRow, detailRows, codeNum, companyInfo) {
+    return grnBuildPrintReportDocument(
+        grnBuildPrintReportInnerHtml(listRow, detailRows, codeNum, companyInfo),
+        'GRN Service Report'
+    );
+}
+
+function grnResolvePrintDataForCode(codeNum, listRow, detailAll) {
+    let detailRows = grnFilterPrintDetailRows(detailAll, codeNum, listRow);
+    if (detailRows.length) {
+        return Promise.resolve({
+            listRow: listRow,
+            detailRows: grnStampPrintDetailProjectSite(detailRows, listRow, null),
+        });
+    }
+    return GRNService.GetGRNByCode(codeNum).catch(function () { return null; }).then(function (byCodeResp) {
+        const mapped = grnPrintDetailsFromGetByCode(byCodeResp, codeNum, listRow);
+        return {
+            listRow: grnMergeListRowForPrint(listRow, mapped.master),
+            detailRows: mapped.rows,
+        };
+    });
+}
+
+function grnOpenPrintWindow(html, mode) {
+    const win = window.open('', '_blank', 'width=920,height=760,scrollbars=yes,resizable=yes');
+    if (!win) {
+        if (typeof toastr !== 'undefined') toastr.warning('Please allow popups for this site to use the print feature.');
+        return;
+    }
+    win.document.write(html);
+    win.document.close();
+    if (mode === 'print') {
+        setTimeout(function () { win.focus(); win.print(); }, 600);
+    }
+}
+
+function PrintGRNServiceReport(code, mode, listRowOverride) {
+    const codeNum = parseInt(code, 10);
+    if (!Number.isFinite(codeNum) || codeNum <= 0) {
+        if (typeof toastr !== 'undefined') toastr.warning('Invalid GRN entry.');
+        return;
+    }
+    const listRow = listRowOverride || grnFindListRowForPrint(codeNum) || {};
+
+    Promise.all([
+        grnResolvePrintCompanyInfo(),
+        GRNService.GetGRNPrintList().catch(function () { return null; }),
+    ]).then(function (results) {
+        const companyInfo = results[0];
+        const printApi = results[1];
+        const detailAll = normalizeGrnPrintListRows(printApi);
+        return grnResolvePrintDataForCode(codeNum, listRow, detailAll).then(function (resolved) {
+            return { resolved: resolved, companyInfo: companyInfo };
+        });
+    }).then(function (payload) {
+        const html = grnBuildPrintReportHtml(
+            payload.resolved.listRow,
+            payload.resolved.detailRows,
+            codeNum,
+            payload.companyInfo
+        );
+        grnOpenPrintWindow(html, mode || 'preview');
+    }).catch(function (err) {
+        console.error('PrintGRNServiceReport', err);
+        if (typeof toastr !== 'undefined') toastr.error('Failed to load GRN print data.');
+    });
+}
+
+/** Same GRN Service Report for each visible approval/list row. */
+function PrintGRNServiceReportBatch(listRows, mode) {
+    const rows = (listRows || []).filter(function (r) { return grnPrintCodeFromListRow(r) > 0; });
+    if (!rows.length) {
+        if (typeof toastr !== 'undefined') toastr.warning('No GRN records to print.');
+        return;
+    }
+
+    Promise.all([
+        grnResolvePrintCompanyInfo(),
+        GRNService.GetGRNPrintList().catch(function () { return null; }),
+    ]).then(function (results) {
+        const companyInfo = results[0];
+        const detailAll = normalizeGrnPrintListRows(results[1]);
+        let chain = Promise.resolve('');
+        rows.forEach(function (row) {
+            chain = chain.then(function (pagesHtml) {
+                const codeNum = grnPrintCodeFromListRow(row);
+                return grnResolvePrintDataForCode(codeNum, row, detailAll).then(function (resolved) {
+                    const page = '<div class="grn-print-page">'
+                        + grnBuildPrintReportInnerHtml(resolved.listRow, resolved.detailRows, codeNum, companyInfo)
+                        + '</div>';
+                    return pagesHtml + page;
+                });
+            });
+        });
+        return chain;
+    }).then(function (pagesHtml) {
+        const html = grnBuildPrintReportDocument(pagesHtml, 'GRN Service Report');
+        grnOpenPrintWindow(html, mode || 'preview');
+    }).catch(function (err) {
+        console.error('PrintGRNServiceReportBatch', err);
+        if (typeof toastr !== 'undefined') toastr.error('Failed to load GRN print data.');
+    });
+}
+
+function PrintGRNServiceFromList(code, mode, listRowOverride) {
+    const codeNum = parseInt(code, 10);
+    let listRow = listRowOverride || grnGetApprovalSourceRow(codeNum);
+    if (!listRow && typeof window.mrnGetCurrentPaymentForPrint === 'function') {
+        listRow = window.mrnGetCurrentPaymentForPrint(codeNum);
+    }
+    PrintGRNServiceReport(codeNum, mode || 'preview', listRow);
+}
+
+function PrintGRNServiceFromDetail(mode) {
+    const code = parseInt(document.getElementById('hfGpaPaymentCode')?.value || '0', 10);
+    if (!code) {
+        if (typeof toastr !== 'undefined') toastr.warning('No GRN selected.');
+        return;
+    }
+    let listRow = grnGetApprovalSourceRow(code);
+    if (!listRow && typeof window.mrnGetCurrentPaymentForPrint === 'function') {
+        listRow = window.mrnGetCurrentPaymentForPrint(code);
+    }
+    PrintGRNServiceReport(code, mode || 'preview', listRow);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // VIEW GRN — open MRN approval detail modal (same as approval cards)
 // ══════════════════════════════════════════════════════════════════════════════
 function viewGRNFromList(code) {
@@ -3693,6 +4379,10 @@ function getFinancialYear() {
 }
 window.showApprovalView     = showApprovalView;
 window.newGRN               = newGRN;
+window.PrintGRNServiceFromList = PrintGRNServiceFromList;
+window.PrintGRNServiceFromDetail = PrintGRNServiceFromDetail;
+window.PrintGRNServiceReport = PrintGRNServiceReport;
+window.PrintGRNServiceReportBatch = PrintGRNServiceReportBatch;
 window.viewGRNFromList      = viewGRNFromList;
 window.editGRN              = editGRN;
 window.confirmDeleteGRN     = confirmDeleteGRN;
