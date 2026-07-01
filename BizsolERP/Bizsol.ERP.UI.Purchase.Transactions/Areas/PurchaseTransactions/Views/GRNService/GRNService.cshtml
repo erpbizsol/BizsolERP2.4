@@ -2381,38 +2381,15 @@
 
     /** Open attachment control from within the Approval modal */
     window.openGRNApprovalAttachment = function () {
-        var code = parseInt(document.getElementById('hfGpaPaymentCode')?.value || '0', 10) || 0;
-        if (!code) { return; }
-        if (typeof window.InitAttachmentControl === 'function') {
-            window.InitAttachmentControl('MRNMaster', code, '', 0, 0, '', 'all', '');
-            /* When the attachment modal shows, push its backdrop above the approval modal */
-            document.addEventListener('shown.bs.modal', function _bumpAttach(e) {
-                if (e && e.target && e.target.id === 'AttachmentControlmodal') {
-                    var backdrops = document.querySelectorAll('.modal-backdrop');
-                    if (backdrops.length) {
-                        backdrops[backdrops.length - 1].style.zIndex = '1075';
-                    }
-                    document.removeEventListener('shown.bs.modal', _bumpAttach);
-                }
-            });
+        if (typeof window.OpenMRNApprovalAttachmentFromModal === 'function') {
+            window.OpenMRNApprovalAttachmentFromModal();
         }
     };
 
     /** Card-level Attachment (called from card paperclip icon button) */
     window.openGRNApprovalCardAttachment = function (code) {
-        var c = parseInt(code, 10) || 0;
-        if (!c) return;
-        if (typeof window.InitAttachmentControl === 'function') {
-            window.InitAttachmentControl('MRNMaster', c, '', 0, 0, '', 'all', '');
-            document.addEventListener('shown.bs.modal', function _bumpAttachCard(e) {
-                if (e && e.target && e.target.id === 'AttachmentControlmodal') {
-                    var backdrops = document.querySelectorAll('.modal-backdrop');
-                    if (backdrops.length) {
-                        backdrops[backdrops.length - 1].style.zIndex = '1075';
-                    }
-                    document.removeEventListener('shown.bs.modal', _bumpAttachCard);
-                }
-            });
+        if (typeof window.OpenMRNApprovalCardAttachment === 'function') {
+            window.OpenMRNApprovalCardAttachment(code);
         }
     };
 </script>
