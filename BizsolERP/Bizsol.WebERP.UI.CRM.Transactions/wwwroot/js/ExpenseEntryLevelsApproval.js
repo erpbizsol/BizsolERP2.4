@@ -1416,11 +1416,18 @@ function eeaHistoryTextFromRow(row, keys) {
     return '';
 }
 
+function eeaDisplayApprovedBy(raw) {
+    if (raw == null || raw === '' || raw === '—') return '';
+    const s = String(raw).trim();
+    if (/^\d+$/.test(s)) return '';
+    return s;
+}
+
 function RenderEeaHistoryModalBody(rows) {
     const $body = $('#eeaHistoryModalBody');
     if (!rows || rows.length === 0) {
         $body.html(
-            '<tr><td colspan="4" class="text-center py-4" style="color:#0e7499;font-size:0.82rem;">' +
+            '<tr><td colspan="5" class="text-center py-4" style="color:#0e7499;font-size:0.82rem;">' +
             '<i class="fa fa-inbox me-1"></i>No approval history for this line.</td></tr>'
         );
         return;
@@ -1429,11 +1436,13 @@ function RenderEeaHistoryModalBody(rows) {
     rows.forEach(function (row, idx) {
         const level = EscHtml(eeaHistoryTextFromRow(row, ['Level', 'LevelDesc', 'LevelDesp', 'Level Name', 'Level Description'])
             || ('L' + (row.ExpenseEntryApprovalConfiguration_Code || row.LevelCode || '')));
+        const approvedBy = EscHtml(eeaDisplayApprovedBy(eeaHistoryTextFromRow(row, ['Approved By', 'ApprovedBy', 'Approved By Name', 'ApprovedByName'])));
         const oldAmt = FmtCurrency(eeaNumFromRow(row, ['Old Approved Amount', 'OldApprovedAmount', 'Old Approved', 'OldApproved']));
         const newAmt = FmtCurrency(eeaNumFromRow(row, ['New Approved Amount', 'NewApprovedAmount', 'New Approved', 'NewApproved']));
         html += '<tr>' +
             '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
             '<td style="font-weight:600;">' + (level || '—') + '</td>' +
+            '<td>' + (approvedBy || '—') + '</td>' +
             '<td class="text-end">' + oldAmt + '</td>' +
             '<td class="text-end" style="font-weight:700;color:#0891b2;">' + newAmt + '</td>' +
             '</tr>';
@@ -1464,7 +1473,7 @@ function OpenEeaLineHistory(detailCode) {
         'ExpenseEntryDetail_Code: ' + dc + (lineLabel ? ' · ' + lineLabel : '')
     );
     $('#eeaHistoryModalBody').html(
-        '<tr><td colspan="4" class="text-center py-3" style="color:#0e7499;font-size:0.82rem;">' +
+        '<tr><td colspan="5" class="text-center py-3" style="color:#0e7499;font-size:0.82rem;">' +
         '<i class="fa fa-spinner fa-spin me-1"></i>Loading…</td></tr>'
     );
 
@@ -1478,7 +1487,7 @@ function OpenEeaLineHistory(detailCode) {
         .catch(function (err) {
             console.error('GetExpenseEntryApprovalHistory', err);
             $('#eeaHistoryModalBody').html(
-                '<tr><td colspan="4" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<tr><td colspan="5" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
                 '<i class="fa fa-exclamation-triangle me-1"></i>Unable to load history.</td></tr>'
             );
             if (typeof toastr !== 'undefined') {
