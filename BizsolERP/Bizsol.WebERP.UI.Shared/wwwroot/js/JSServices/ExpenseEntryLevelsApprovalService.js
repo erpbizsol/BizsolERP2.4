@@ -40,6 +40,14 @@ const ExpenseEntryLevelsApprovalService = {
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
+    /** Approval flow for any user (no pending-list / approver-rights filter). */
+    GetExpenseEntryApprovalFlow: function GetExpenseEntryApprovalFlow(expenseEntryMasterCode) {
+        const code = encodeURIComponent(expenseEntryMasterCode);
+        const url = UrlService.API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL +
+            `/GetExpenseEntryApprovalFlow?ExpenseEntryMaster_Code=${code}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
     GetExpenseEntryApprovalHistory: function GetExpenseEntryApprovalHistory(expenseEntryDetailCode) {
         const code = encodeURIComponent(expenseEntryDetailCode);
         const url = UrlService.API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL +
