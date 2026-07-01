@@ -3,6 +3,7 @@ import { ExpenseEntryLevelsApprovalService } from '../../Bizsol.WebERP.UI.Shared
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
+import { GRNPaymentApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GRNPaymentEntryService.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
@@ -945,8 +946,23 @@ function eeListFindApprovalEntryInList(data, code) {
     }) || null;
 }
 
-/** Same LevelDetails source as ExpenseEntryLevelsApproval list cards. */
-function eeListFetchApprovalMetaEntry(code) {
+function eeListNormalizeApprovalFlowResponse(data, code) {
+    if (data == null) return null;
+    if (Array.isArray(data)) {
+        const hit = data.find(function (row) { return eeListGetExpenseMasterCode(row) === code; });
+        return eeListNormalizeApprovalEntry(hit || data[0] || null);
+    }
+    if (typeof data === 'object') {
+        const nested = data.Data ?? data.data ?? data.Result ?? data.result;
+        if (nested != null && nested !== data) {
+            return eeListNormalizeApprovalFlowResponse(nested, code);
+        }
+        return eeListNormalizeApprovalEntry(data);
+    }
+    return null;
+}
+
+function eeListFetchApprovalMetaFromPendingList(code) {
     const fd = listDateToIso($('#txtFromDate').val());
     const td = listDateToIso($('#txtToDate').val());
     const tryFetch = function (status) {
@@ -964,6 +980,21 @@ function eeListFetchApprovalMetaEntry(code) {
             });
         })
         .catch(function () { return null; });
+}
+
+/** LevelDetails for approval-flow modal — visible to all users, not only approvers/admins. */
+function eeListFetchApprovalMetaEntry(code) {
+    return ExpenseEntryLevelsApprovalService.GetExpenseEntryApprovalFlow(code)
+        .then(function (data) {
+            const row = eeListNormalizeApprovalFlowResponse(data, code);
+            if (row && eeListParseLevelDetails(row.LevelDetails).length > 0) {
+                return row;
+            }
+            return eeListFetchApprovalMetaFromPendingList(code);
+        })
+        .catch(function () {
+            return eeListFetchApprovalMetaFromPendingList(code);
+        });
 }
 
 function eeListLevelNoFromRow(r) {
@@ -1591,8 +1622,6 @@ function renderExpenseEntryApprovalFlowModal(entry, detailLines) {
     const approvedAmt = eeListFmtCurrency(eeListGetApprovedAmount(entry, detailLines));
     const deduction = eeListFmtCurrency(eeListGetDeduction(entry, detailLines));
     const status = eeListEscHtml(eeListGetListStatus(entry));
-    const approvedBy = eeListEscHtml(eeListDisplayApprovedBy(entry['Approved By'] ?? entry.ApprovedBy));
-    const approvedOn = eeListEscHtml(eeListDisplayDate(entry['Approved On'] ?? entry.ApprovedOn));
 
     $('#eeApprovalFlowModalBody').html(
         '<div class="row g-2 mb-3">' +
@@ -1611,8 +1640,6 @@ function renderExpenseEntryApprovalFlowModal(entry, detailLines) {
                     '<tr><td class="fw-bold">Approved Amount</td><td class="text-end">' + approvedAmt + '</td></tr>' +
                     '<tr><td class="fw-bold">Deduction</td><td class="text-end">' + deduction + '</td></tr>' +
                     '<tr><td class="fw-bold">Status</td><td>' + status + '</td></tr>' +
-                    '<tr><td class="fw-bold">Approved By</td><td>' + approvedBy + '</td></tr>' +
-                    '<tr><td class="fw-bold">Approved On</td><td>' + approvedOn + '</td></tr>' +
                 '</table>' +
             '</div>' +
         '</div>' +
@@ -1666,6 +1693,17 @@ function ViewApprovalFlowData(Code, x) {
                 };
                 if (metaEntry.LevelDetails && metaEntry.LevelDetails.length) {
                     baseWithMeta.LevelDetails = metaEntry.LevelDetails;
+                } else if (eeListParseLevelDetails(baseEntry.LevelDetails).length > 0) {
+                    baseWithMeta.LevelDetails = baseEntry.LevelDetails;
+                }
+                if (metaEntry.TotalLevels != null && metaEntry.TotalLevels !== '') {
+                    baseWithMeta.TotalLevels = metaEntry.TotalLevels;
+                }
+                if (metaEntry.CurrentLevelNo != null && metaEntry.CurrentLevelNo !== '') {
+                    baseWithMeta.CurrentLevelNo = metaEntry.CurrentLevelNo;
+                }
+                if (metaEntry.CurrentLevelDesc) {
+                    baseWithMeta.CurrentLevelDesc = metaEntry.CurrentLevelDesc;
                 }
                 const entry = eeListMergeDetailIntoEntry(res, baseWithMeta);
                 const detailLines = eeListExtractDetailLines(res);
@@ -1824,6 +1862,89 @@ function eeListGetCompanyInfo() {
     return {};
 }
 
+function eeListNormalizeApiRows(result) {
+    if (Array.isArray(result)) return result;
+    const datum = result?.Data ?? result?.data;
+    if (datum != null && typeof datum === 'object' && !Array.isArray(datum)) {
+        const inner = eeListNormalizeApiRows(datum);
+        if (inner.length) return inner;
+    }
+    if (Array.isArray(result?.Table)) return result.Table;
+    if (Array.isArray(result?.Data)) return result.Data;
+    if (Array.isArray(result?.data)) return result.data;
+    return [];
+}
+
+function eeListSessionPrintCompany() {
+    const ud = eeListGetCompanyInfo();
+    return {
+        companyName: String(ud.CompanyName || ud.CompanyNameForShow || '').trim(),
+        companyAliasName: String(ud.CompanyAliasName || ud.CompanyName || ud.CompanyNameForShow || '').trim(),
+        companyAddr: String(ud.CompanyAddress || '').trim(),
+        companyPhone: String(ud.PhoneNo || ud.CompanyPhone || '').trim(),
+        companyEmail: String(ud.Email || ud.CompanyEmail || '').trim(),
+        companyWeb: String(ud.Website || ud.CompanyWebsite || '').trim(),
+        companyGST: String(ud.GSTIN || ud.CompanyGSTIN || '').trim(),
+        companyTag: String(ud.BranchName || ud.CompanyTagLine || ud.TagLine || '').trim(),
+    };
+}
+
+/** Map {@link GRNPaymentApprovalService.GetCompany} response for print header (same as GRN Payment Entry). */
+function eeListCompanyFromGetCompanyApi(resp) {
+    if (resp == null) {
+        return { companyName: '', companyAliasName: '', companyAddr: '', companyPhone: '', companyEmail: '', companyWeb: '', companyGST: '', companyTag: '' };
+    }
+    let row = null;
+    const rows = eeListNormalizeApiRows(resp);
+    if (rows.length && rows[0]) row = rows[0];
+    if (!row) {
+        const o = resp.Data ?? resp.data ?? resp;
+        if (o && typeof o === 'object' && !Array.isArray(o)) {
+            if (o.CompanyName != null || o.companyName != null
+                || o.CompanyInfo != null || o.Name != null || o.name != null
+                || o.OfficeAddress1 != null || o.officeAddress1 != null
+                || o.GSTNo != null || o.gSTNo != null) {
+                row = o;
+            }
+        }
+    }
+    row = row || {};
+    const phone = String(row.OfficePhones1 ?? row.officePhones1 ?? row.PhoneNo ?? row.phoneNo ?? '').trim();
+    const web = String(row.WebSite ?? row.webSite ?? row.Website ?? row.website ?? '').trim();
+    const companyName = String(row.CompanyName ?? row.companyName ?? row.CompanyInfo ?? row.Name ?? row.name ?? '').trim();
+    const companyAlias = String(row.CompanyAliasName ?? row.companyAliasName ?? companyName).trim();
+    return {
+        companyName: companyName,
+        companyAliasName: companyAlias || companyName,
+        companyAddr: String(
+            row.OfficeAddress1 ?? row.officeAddress1
+            ?? row.CompanyAddress ?? row.companyAddress ?? row.Address ?? row.address ?? ''
+        ).trim(),
+        companyPhone: phone,
+        companyEmail: String(row.Email ?? row.email ?? row.CompanyEmail ?? row.companyEmail ?? '').trim(),
+        companyWeb: web,
+        companyGST: String(
+            row.GSTNo ?? row.gstNo ?? row.GSTIN ?? row.gstin ?? row.CompanyGSTIN ?? row.companyGSTIN ?? ''
+        ).trim(),
+        companyTag: String(row.BranchName ?? row.branchName ?? row.CompanyTagLine ?? row.TagLine ?? row.tagLine ?? '').trim(),
+    };
+}
+
+function eeListMergePrintCompanyInfo(sessionCo, apiCo) {
+    const a = apiCo || {};
+    const s = sessionCo || {};
+    return {
+        companyName: (a.companyName || s.companyName || '').trim(),
+        companyAliasName: (a.companyAliasName || s.companyAliasName || a.companyName || s.companyName || '').trim(),
+        companyAddr: (a.companyAddr || s.companyAddr || '').trim(),
+        companyPhone: (a.companyPhone || s.companyPhone || '').trim(),
+        companyEmail: (a.companyEmail || s.companyEmail || '').trim(),
+        companyWeb: (a.companyWeb || s.companyWeb || '').trim(),
+        companyGST: (a.companyGST || s.companyGST || '').trim(),
+        companyTag: (a.companyTag || s.companyTag || '').trim(),
+    };
+}
+
 function eeListResolveProjectName(projectList, code) {
     const n = parseInt(code, 10) || 0;
     if (n <= 0) return '—';
@@ -1932,15 +2053,16 @@ function eeListNumberToWords(amount) {
     return w.trim() + ' Rupees Only';
 }
 
-function _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList, subProjectList) {
-    const company = eeListGetCompanyInfo();
-    const companyName = (company.CompanyName || company.CompanyNameForShow || 'PURSHOTAM PROFILES PVT.LTD.').trim();
-    const companyAliasName = (company.CompanyAliasName || companyName || 'PURSHOTAM PROFILES PVT.LTD.').trim();
-    const companyAddr = (company.CompanyAddress || '').trim();
-    const companyPhone = company.PhoneNo || company.CompanyPhone || '';
-    const companyEmail = company.Email || company.CompanyEmail || '';
-    const companyWeb = company.Website || company.CompanyWebsite || '';
-    const companyGST = company.GSTIN || company.CompanyGSTIN || '';
+function _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList, subProjectList, printCompany) {
+    const co = printCompany || eeListMergePrintCompanyInfo(eeListSessionPrintCompany(), null);
+    const companyName = co.companyName || co.companyAliasName || '';
+    const companyAliasName = co.companyAliasName || co.companyName || '';
+    const companyAddr = co.companyAddr || '';
+    const companyPhone = co.companyPhone || '';
+    const companyEmail = co.companyEmail || '';
+    const companyWeb = co.companyWeb || '';
+    const companyGST = co.companyGST || '';
+    const companyTag = co.companyTag || '';
 
     const personName = listEntry['Person Name'] || listEntry.PersonName || master.PersonName || '';
     const fromDate = eeListFmtPrintDate(listEntry['From Date'] || listEntry.FromDate || master.FromDate);
@@ -1995,6 +2117,7 @@ function _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList
     const listExpended = eeListNumFromRow(listEntry, ['Expended Amount', 'ExpendedAmount']);
     if (listApproved > 0) grandApproved = listApproved;
     if (listExpended > 0 && grandExpended === 0) grandExpended = listExpended;
+    const deduction = eeListGetDeduction(listEntry, lines);
     const grandTotal = grandApproved > 0 ? grandApproved : grandExpended;
     const amtWords = eeListNumberToWords(Math.round(grandTotal));
 
@@ -2027,7 +2150,8 @@ function _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList
 
     let totalsHtml = '';
     totalsHtml += '<tr><td class="lbl">Total Expended Amount</td><td class="val">&#8377; ' + eeListFormatIndianCurrency(grandExpended) + '</td></tr>';
-    if (grandApproved > 0 && Math.abs(grandApproved - grandExpended) > 0.009) {
+    totalsHtml += '<tr><td class="lbl">Deduction</td><td class="val">&#8377; ' + eeListFormatIndianCurrency(deduction) + '</td></tr>';
+    if (grandApproved > 0) {
         totalsHtml += '<tr><td class="lbl">Total Approved Amount</td><td class="val">&#8377; ' + eeListFormatIndianCurrency(grandApproved) + '</td></tr>';
     }
     totalsHtml += '<tr class="grand"><td class="lbl">Total</td><td class="val">&#8377; ' + eeListFormatIndianCurrency(grandTotal) + '</td></tr>';
@@ -2092,8 +2216,9 @@ function _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList
     const coreInner = ''
         + '<div class="po-hdr">'
         + '<div class="hdr-left"><img class="hdr-logo" src="' + logoUrl + '" alt="Logo">'
-        + '<div class="hdr-co"><div class="hdr-name">' + eeListEscHtml(companyAliasName) + '</div>'
-        + '<div class="hdr-tag">OPTIMISING STRUCTURAL SOLUTIONS</div></div></div>'
+        + '<div class="hdr-co"><div class="hdr-name">' + eeListEscHtml(companyAliasName || companyName || '—') + '</div>'
+        + (companyTag ? '<div class="hdr-tag">' + eeListEscHtml(companyTag) + '</div>' : '')
+        + '</div></div>'
         + '<div class="hdr-contact">' + hdrContact + '</div>'
         + '</div>'
         + '<div class="po-title">' + docTitle + '</div>'
@@ -2168,14 +2293,20 @@ function _DoPrintExpenseEntry(code, mode) {
     Promise.all([
         ProjectMasterService.GetProjectList(),
         SubProjectMasterService.GetSubProjectList(),
-        ExpenseEntryService.GetExpenseEntryDetails(person, masterCode)
+        ExpenseEntryService.GetExpenseEntryDetails(person, masterCode),
+        GRNPaymentApprovalService.GetCompany().catch(function () { return null; })
     ]).then(function (results) {
         const projectList = Array.isArray(results[0]) ? results[0] : [];
         const subProjectList = Array.isArray(results[1]) ? results[1] : [];
         const resp = results[2] || {};
+        const companyApi = results[3];
+        const printCompany = eeListMergePrintCompanyInfo(
+            eeListSessionPrintCompany(),
+            companyApi ? eeListCompanyFromGetCompanyApi(companyApi) : null
+        );
         const master = (resp.ExpenseEntryMaster && resp.ExpenseEntryMaster[0]) ? resp.ExpenseEntryMaster[0] : {};
         const detailLines = resp.ExpenseEntryDetail || [];
-        const html = _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList, subProjectList);
+        const html = _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList, subProjectList, printCompany);
         const win = window.open('', '_blank');
         if (!win) {
             toastr.warning('Please allow popups for this site to use the print feature.');
