@@ -2087,7 +2087,7 @@
                 background: var(--accent-secondary);
             }
 
-        /* ERP Home — full-bleed hero image (no side gaps, no crop) */
+        /* ERP Home — full-bleed hero image, always shows full image on every device */
         body.erp-home-page {
             --erp-home-top: 55px;
             --erp-home-bottom: 3.25rem;
@@ -2131,20 +2131,25 @@
             right: 0;
             bottom: var(--erp-home-bottom);
             overflow: hidden;
-            background-color: #eef2f7;
+            background-color: #0d1b2e;
             z-index: 0;
             box-sizing: border-box;
             transition: left 0.3s ease;
         }
 
+        /* picture: absolute fill — guarantees 100% coverage on every device */
         .erp-home-picture {
-            display: none;
-            width: 100%;
-            height: 100%;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             margin: 0;
             padding: 0;
         }
 
+        /* img fills its absolutely-positioned picture parent */
         .erp-home-hero .erp-home-img {
             display: block !important;
             border: 0;
@@ -2153,31 +2158,17 @@
             width: 100% !important;
             height: 100% !important;
             max-width: none !important;
-            object-fit: cover !important;
+            max-height: none !important;
+            /* landscape (desktop): fill stretches to cover with no bars */
+            object-fit: fill !important;
             object-position: center center;
         }
 
-        @@media (min-width: 769px) {
-            .erp-home-hero {
-                bottom: auto;
-                height: auto;
-                max-height: calc(100dvh - var(--erp-home-top) - var(--erp-home-bottom));
-                overflow: hidden;
-                background-image: none;
-            }
-
-            .erp-home-picture {
-                display: block;
-                width: 100%;
-                height: auto;
-            }
-
+        /* portrait devices: fill stretches the square image to fill — no bars, no cropping */
+        @@media (orientation: portrait) {
             .erp-home-hero .erp-home-img {
-                width: 100% !important;
-                height: auto !important;
-                max-width: 100% !important;
                 object-fit: fill !important;
-                display: block !important;
+                object-position: center center;
             }
         }
 
@@ -2189,16 +2180,6 @@
 
             body.erp-home-page:has(.modern-sidebar.collapsed) {
                 --erp-home-left-offset: 0;
-            }
-
-            .erp-home-hero {
-                background-image: none;
-            }
-
-            .erp-home-picture {
-                display: flex;
-                align-items: stretch;
-                justify-content: stretch;
             }
         }
     </style>
