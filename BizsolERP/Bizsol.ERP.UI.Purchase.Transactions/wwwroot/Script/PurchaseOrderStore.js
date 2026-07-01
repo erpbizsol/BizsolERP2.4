@@ -568,6 +568,36 @@ function SyncFloatBarMargin() {
 
 // ─── PO STAT COUNTS (Pending on Me / Approved) ──────────────────────────────
 
+function poStoreNormStatus(item) {
+    return String(item && item.Status || '').trim().toLowerCase();
+}
+
+function poStoreStatusMatches(status, keys) {
+    const s = String(status || '').trim().toLowerCase();
+    return keys.some(function (k) {
+        if (k === 'hold') return s === 'hold' || s === 'on hold';
+        if (k === 'reject') return s === 'reject' || s === 'rejected';
+        if (k === 'cancelled') return s === 'cancelled' || s === 'canceled';
+        return s === k;
+    });
+}
+
+function UpdatePOStoreStatChips(list) {
+    const rows = list || [];
+    const fmt = function (n) { return n > 0 ? String(n) : '—'; };
+    const pendingCount   = rows.filter(i => poStoreStatusMatches(poStoreNormStatus(i), ['pending'])).length;
+    const approvedCount  = rows.filter(i => poStoreStatusMatches(poStoreNormStatus(i), ['approved'])).length;
+    const rejectedCount  = rows.filter(i => poStoreStatusMatches(poStoreNormStatus(i), ['reject'])).length;
+    const cancelledCount = rows.filter(i => poStoreStatusMatches(poStoreNormStatus(i), ['cancelled'])).length;
+    const holdCount      = rows.filter(i => poStoreStatusMatches(poStoreNormStatus(i), ['hold'])).length;
+    $('#statTotalPO').text(rows.length > 0 ? String(rows.length) : '—');
+    $('#statPendingPO').text(fmt(pendingCount));
+    $('#statApprovedPO').text(fmt(approvedCount));
+    $('#statRejectedPO').text(fmt(rejectedCount));
+    $('#statCancelledPO').text(fmt(cancelledCount));
+    $('#statHoldPO').text(fmt(holdCount));
+}
+
 function LoadPOStatCounts() {
     // Pending On Me = POs awaiting the current user's approval
     PurchaseOrderStoreService.GetPendingPOStoreList().then(function (data) {
@@ -1168,11 +1198,7 @@ window.ShowPOListGrid = function () {
 
     PurchaseOrderStoreService.GetPurchaseOrderStoreList(status, fromDate, toDate).then(function (data) {
         G_POStoreList = data || [];
-        $('#statTotalPO').text(G_POStoreList.length || '—');
-        const pendingCount  = G_POStoreList.filter(i => (i.Status || '').toLowerCase() === 'pending').length;
-        const approvedCount = G_POStoreList.filter(i => (i.Status || '').toLowerCase() === 'approved').length;
-        $('#statPendingPO').text(pendingCount  > 0 ? pendingCount  : '—');
-        $('#statApprovedPO').text(approvedCount > 0 ? approvedCount : '—');
+        UpdatePOStoreStatChips(G_POStoreList);
         if (G_POStoreList.length === 0) {
             $('#tblPOListHeader').html('');
             $('#tblPOListBody').html('<tr><td colspan="10" class="text-center text-muted py-4"><i class="fa fa-inbox fa-2x d-block mb-2 text-muted"></i>No records found for the selected period.</td></tr>');
@@ -1201,7 +1227,7 @@ window.ShowPOListGrid = function () {
             'Total Amount': parseFloat(item.TotalPOAmount || item.Total_Amount || 0),
             'Status': item.Status || '',
             'Action': `<button class="btn btn-info icon-height mb-1" title="View" onclick="ViewPO('${item.Code}')"><i class="fa fa-eye"></i></button>
-                       <button class="btn btn-warning icon-height mb-1 ms-1" title="Edit" onclick="OpenPOForm('Edit','${item.Code}')"><i class="fa fa-edit"></i></button>
+                       <button class="btn btn-warning icon-height mb-1 ms-1" title="Edit" onclick="OpenPOForm('Edit','${item.Code}','${(item.Status || '').replace(/'/g, '')}')"><i class="fa fa-edit"></i></button>
                        <button class="btn btn-danger icon-height mb-1 ms-1" title="Delete" onclick="InitDeletePO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-trash"></i></button>
                        <button class="btn btn-secondary icon-height mb-1 ms-1" title="Print Preview" onclick="PrintPO('${item.Code}','preview')"><i class="fa fa-search-plus"></i></button>
                        <button class="btn btn-dark icon-height mb-1 ms-1" title="Print" onclick="PrintPO('${item.Code}','print')"><i class="fa fa-print"></i></button>
@@ -1218,9 +1244,17 @@ window.ShowPOListGrid = function () {
 
 // ─── OPEN / CLOSE FORM ───────────────────────────────────────────────────────
 
-window.OpenPOForm = function (mode, code) {
+function getPOEditOptionName(status) {
+    const st = String(status || '').trim().toLowerCase();
+    return st === 'approved' ? 'Edit After Verification' : 'Edit';
+}
+
+window.OpenPOForm = function (mode, code, statusHint) {
     const ModuleName = $('#ERPHeading').text().trim();
-    const OptionName = mode;
+    let OptionName = mode;
+    if (mode === 'Edit') {
+        OptionName = getPOEditOptionName(statusHint);
+    }
     const ShowMsg = 'Y';
     const FinYear = BizSolHelperFunction.getFinancialYear();
 
@@ -1833,27 +1867,28 @@ function BuildApprovalFlowHTML(steps) {
         const status   = (step.ApprovalStatus || '').trim().toLowerCase();
         const approved = status === 'approved';
         const rejected = status === 'rejected';
+        const onHold   = status === 'hold' || status === 'on hold';
 
         // ── circle colours ────────────────────────────────────────────────────
-        const circleBg  = approved ? '#1a9e5c' : rejected ? '#e53935' : '#e0e0e0';
-        const circleBdr = approved ? '#1a9e5c' : rejected ? '#e53935' : '#bdbdbd';
-        const circleIcon = rejected ? 'fa-times' : 'fa-check';
-        const iconClr    = (approved || rejected) ? '#fff' : '#aaaaaa';
+        const circleBg  = approved ? '#1a9e5c' : rejected ? '#e53935' : onHold ? '#ea580c' : '#e0e0e0';
+        const circleBdr = approved ? '#1a9e5c' : rejected ? '#e53935' : onHold ? '#ea580c' : '#bdbdbd';
+        const circleIcon = rejected ? 'fa-times' : onHold ? 'fa-pause' : approved ? 'fa-check' : 'fa-hourglass-half';
+        const iconClr    = (approved || rejected || onHold) ? '#fff' : '#aaaaaa';
 
         // ── badge ─────────────────────────────────────────────────────────────
-        const badgeBg  = approved ? '#d4f5e2' : rejected ? '#fde8e8' : '#f0f0f0';
-        const badgeClr = approved ? '#1a9e5c' : rejected ? '#e53935' : '#aaaaaa';
-        const badgeTxt = approved ? 'Approved' : rejected ? 'Rejected' : 'Pending';
+        const badgeBg  = approved ? '#d4f5e2' : rejected ? '#fde8e8' : onHold ? '#ffedd5' : '#f0f0f0';
+        const badgeClr = approved ? '#1a9e5c' : rejected ? '#e53935' : onHold ? '#ea580c' : '#aaaaaa';
+        const badgeTxt = approved ? 'Approved' : rejected ? 'Rejected' : onHold ? 'On Hold' : 'Pending';
 
         // ── approver name ─────────────────────────────────────────────────────
-        const nameHtml = (approved || rejected) && step.ApproverName && step.ApproverName.trim() !== ''
+        const nameHtml = (approved || rejected || onHold) && step.ApproverName && step.ApproverName.trim() !== ''
             ? '<div style="font-size:10px;color:#333;font-weight:600;margin-top:4px;text-align:center;max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + step.ApproverName + '">'
               + '<i class="fa fa-user" style="font-size:9px;margin-right:2px;color:' + circleBg + ';"></i>' + step.ApproverName
               + '</div>'
             : '';
 
         // ── approved / action date ────────────────────────────────────────────
-        const dateStr  = ((approved || rejected) && step.ApprovedOn && step.ApprovedOn.trim() !== '') ? FmtApprovedOnDisplay(step.ApprovedOn) : '';
+        const dateStr  = ((approved || rejected || onHold) && step.ApprovedOn && step.ApprovedOn.trim() !== '') ? FmtApprovedOnDisplay(step.ApprovedOn) : '';
         const dateHtml = dateStr
             ? '<div style="font-size:10px;color:#888;margin-top:2px;text-align:center;white-space:nowrap;">'
               + '<i class="fa fa-calendar-check" style="font-size:9px;margin-right:2px;"></i>' + dateStr

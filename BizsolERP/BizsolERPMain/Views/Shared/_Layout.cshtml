@@ -2137,7 +2137,25 @@
             transition: left 0.3s ease;
         }
 
-        /* picture: absolute fill — guarantees 100% coverage on every device */
+        /* Blurred backdrop: fills any empty space with a soft blur of the same image.
+           Extends 8% beyond container edges so blur doesn't show hard borders.
+           overflow:hidden on the parent clips it cleanly. */
+        .erp-home-hero::before {
+            content: '';
+            position: absolute;
+            inset: -8%;
+            background: url('/assets/images/home/bizsol-erp-home-desktop.png') center / cover no-repeat;
+            filter: blur(18px) brightness(0.75);
+            z-index: 0;
+        }
+
+        @@media (orientation: portrait) {
+            .erp-home-hero::before {
+                background-image: url('/assets/images/home/bizsol-erp-home-square.png');
+            }
+        }
+
+        /* picture sits above the blurred backdrop */
         .erp-home-picture {
             display: block;
             position: absolute;
@@ -2147,9 +2165,10 @@
             bottom: 0;
             margin: 0;
             padding: 0;
+            z-index: 1;
         }
 
-        /* img fills its absolutely-positioned picture parent */
+        /* Desktop / landscape: fill stretches the landscape image to cover exactly — no bars */
         .erp-home-hero .erp-home-img {
             display: block !important;
             border: 0;
@@ -2159,16 +2178,16 @@
             height: 100% !important;
             max-width: none !important;
             max-height: none !important;
-            /* landscape (desktop): fill stretches to cover with no bars */
             object-fit: fill !important;
             object-position: center center;
+            background: transparent;
         }
 
-        /* portrait devices: fill stretches the square image to fill — no bars, no cropping */
+        /* Mobile / portrait: contain shows full image without stretch;
+           blurred ::before backdrop fills the empty space around it */
         @@media (orientation: portrait) {
             .erp-home-hero .erp-home-img {
-                object-fit: fill !important;
-                object-position: center center;
+                object-fit: contain !important;
             }
         }
 
