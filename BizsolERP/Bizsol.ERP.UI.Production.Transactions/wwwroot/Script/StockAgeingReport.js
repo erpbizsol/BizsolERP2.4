@@ -430,7 +430,7 @@ $(document).ready(function () {
     });
 
     $("#btnStockAgeingReportShow").click(function () {
-        if (isStockAgeingFifo()) {
+        if (isFifoStockAgeingReport()) {
             const ageingParam = G_AgeingParameter?.AgeingParameters ?? '';
             if (ageingParam) {
                 GetStockAgeingReportList();
@@ -746,6 +746,61 @@ function isStockAgeingFifo() {
     return reportOption && reportOption.toString().trim() === 'Stock Ageing (FIFO)';
 }
 
+function isStockAgeingFifoWithSeparateParameters() {
+    const reportOption = $('#ddlReportOption').val();
+    return reportOption &&
+        reportOption.toString().trim() === 'Stock Ageing (FIFO) With Separate Parameters';
+}
+
+function isFifoStockAgeingReport() {
+    return isStockAgeingFifo() || isStockAgeingFifoWithSeparateParameters();
+}
+
+function inferFifoStringFilterColumns(sampleRow, bucketKeys, hasTotal) {
+    if (!sampleRow || typeof sampleRow !== 'object') {
+        return ['Item Name', 'SizeDesp'];
+    }
+
+    const exclude = new Set([...bucketKeys, 'Code', 'ItemMaster_Code']);
+    if (hasTotal) {
+        exclude.add('Total');
+    }
+
+    const stringCols = [];
+    Object.keys(sampleRow).forEach(function (k) {
+        if (exclude.has(k)) {
+            return;
+        }
+        const trimmed = String(k).trim();
+        if (trimmed === 'Total' || bucketKeys.some(function (b) { return String(b).trim() === trimmed; })) {
+            return;
+        }
+        const val = sampleRow[k];
+        if (val === undefined || val === null || val === '') {
+            stringCols.push(k);
+            return;
+        }
+        const num = parseFloat(val);
+        if (isNaN(num) || String(val).trim() !== String(num)) {
+            stringCols.push(k);
+        }
+    });
+
+    if (stringCols.length === 0) {
+        return ['Item Name', 'SizeDesp'];
+    }
+
+    const itemNameIdx = stringCols.indexOf('Item Name');
+    if (itemNameIdx > 0) {
+        stringCols.splice(itemNameIdx, 1);
+        stringCols.unshift('Item Name');
+    } else if (itemNameIdx === -1 && sampleRow['Item Name'] !== undefined) {
+        stringCols.unshift('Item Name');
+    }
+
+    return stringCols;
+}
+
 function normalizeStockAgeingApiResponse(response) {
     if (Array.isArray(response)) {
         return response;
@@ -806,7 +861,7 @@ function validateAndBuildStockAgeingReportPayload() {
             return null;
         }
     }
-    if (isStockAgeingFifo()) {
+    if (isFifoStockAgeingReport()) {
         const ageingParam = G_AgeingParameter?.AgeingParameters ?? '';
         if (!ageingParam) {
             toastr.error('Please select ageing parameter.');
@@ -885,9 +940,11 @@ function prepareStockAgeingReportRows(response, reportOption) {
         return { rows: [], gridConfig: null };
     }
 
-    if (reportOption == 'Stock Ageing (FIFO)') {
+    if (reportOption === 'Stock Ageing (FIFO)' ||
+        reportOption === 'Stock Ageing (FIFO) With Separate Parameters') {
         const fifoCols = buildFifoStockAgeingGridColumnConfig(rows[0]);
         const hasTotal = fifoRowHasTotalProperty(rows[0]);
+        const stringFilterColumn = inferFifoStringFilterColumns(rows[0], fifoCols.bucketKeys, hasTotal);
         rows = rows.map(function (item) {
             normalizeFifoRowKeysInPlace(item, fifoCols.bucketKeys, hasTotal);
             formatFifoStockAgeingNumericCells(item, fifoCols.bucketKeys, hasTotal);
@@ -896,7 +953,7 @@ function prepareStockAgeingReportRows(response, reportOption) {
         return {
             rows: rows,
             gridConfig: {
-                stringFilterColumn: ['Item Name', 'SizeDesp'],
+                stringFilterColumn: stringFilterColumn,
                 numericFilterColumn: fifoCols.numericFilterColumn,
                 columnAlignment: fifoCols.columnAlignment,
                 totalColKeys: fifoCols.totalColKeys

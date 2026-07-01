@@ -9,6 +9,8 @@ var deleteBatchNo = '';
 var historyDetailBatchNo = '';
 /** Full grid from the last successful parse (incl. header/metadata) — used to re-check bank / account on import. */
 var lastParsedFullRows = null;
+/** Opening balance from statement footer/summary (e.g. HDFC "Opening Balance" row), when present. */
+var parsedStatementOpeningBalance = null;
 
 /** Stale preview fetch guard (column map / bank changes while API in flight). */
 var previewOccupiedFetchSeq = 0;
@@ -219,6 +221,14 @@ function normalizeStatementListForModal(data) {
     return [];
 }
 
+function readImportLineSeq(row) {
+    if (!row) return null;
+    var r = row.Remarks != null ? row.Remarks : (row.remarks != null ? row.remarks : '');
+    if (r == null || r === '') return null;
+    var m = String(r).trim().match(/^(\d{1,8})$/);
+    return m ? parseInt(m[1], 10) : null;
+}
+
 function sortRowsForHistoryModal(list) {
     return list.slice().sort(function (a, b) {
         var ia = ConvertToIsoDate(a.TxnDate);
@@ -228,6 +238,11 @@ function sortRowsForHistoryModal(list) {
             if (c !== 0) return c;
         } else if (ia) return -1;
         else if (ib) return 1;
+        var sa = readImportLineSeq(a);
+        var sb = readImportLineSeq(b);
+        if (sa != null && sb != null && sa !== sb) return sa - sb;
+        if (sa != null && sb == null) return -1;
+        if (sa == null && sb != null) return 1;
         var ca = parseInt(a.Code, 10) || 0;
         var cb = parseInt(b.Code, 10) || 0;
         return ca - cb;
@@ -573,7 +588,8 @@ function ParseExcelFile(file) {
                 return;
             }
             var ws = wb.Sheets[wb.SheetNames[0]];
-            var rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+            /* raw:true keeps numeric cell precision (e.g. opening balance .97) instead of Excel display rounding. */
+            var rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: true });
             FinalizeStatementParse(rows);
         } catch (ex) {
             HideLoader && HideLoader();
@@ -601,6 +617,7 @@ function NormalizeStatementGrid(rows) {
                 var pad = function (n) { return String(n).padStart(2, '0'); };
                 return pad(d) + '/' + pad(mo) + '/' + String(y).slice(-2);
             }
+            if (typeof cell === 'number' && isFinite(cell)) return String(cell);
             return String(cell).trim();
         });
     });
@@ -691,6 +708,41 @@ function ValidateStatementIdentity(rows) {
     return true;
 }
 
+function parseAmountFromCell(cell) {
+    if (cell == null || cell === '') return NaN;
+    if (typeof cell === 'number' && isFinite(cell)) return roundMoney(cell);
+    var n = parseFloat(CleanAmount(String(cell)));
+    return isFinite(n) && !isNaN(n) ? roundMoney(n) : NaN;
+}
+
+/** Scan footer/summary rows for "Opening Balance" (HDFC and similar exports). */
+function extractStatementSummaryOpening(rows) {
+    if (!rows || !rows.length) return null;
+    var scanFrom = Math.max(0, rows.length - 30);
+    for (var i = rows.length - 1; i >= scanFrom; i--) {
+        var row = rows[i];
+        if (!row) continue;
+        for (var j = 0; j < row.length; j++) {
+            var raw = row[j];
+            if (raw == null || raw === '') continue;
+            var s = typeof raw === 'number' ? String(raw) : String(raw).replace(/\u00A0/g, ' ').trim();
+            var lower = s.toLowerCase().replace(/\s+/g, ' ');
+            if (lower.indexOf('opening') < 0 || lower.indexOf('bal') < 0) continue;
+            var inline = s.match(/opening\s*bal(?:ance)?[^0-9\-]*([\d,]+\.?\d*)/i);
+            if (inline) {
+                var inlineAmt = parseAmountFromCell(inline[1]);
+                if (isFinite(inlineAmt) && !isNaN(inlineAmt)) return inlineAmt;
+            }
+            for (var k = 0; k < row.length; k++) {
+                if (k === j) continue;
+                var amt = parseAmountFromCell(row[k]);
+                if (isFinite(amt) && !isNaN(amt) && amt !== 0) return amt;
+            }
+        }
+    }
+    return null;
+}
+
 function FinalizeStatementParse(rawRows) {
     HideLoader && HideLoader();
     try {
@@ -704,6 +756,7 @@ function FinalizeStatementParse(rawRows) {
         if (!ValidateStatementIdentity(rows)) return;
 
         lastParsedFullRows = rows;
+        parsedStatementOpeningBalance = extractStatementSummaryOpening(rows);
 
         var headerIdx = FindHeaderRow(rows);
         fileHeaders = rows[headerIdx];
@@ -1184,16 +1237,8 @@ function DoImport() {
 
     var indices = [];
     checked.each(function () { indices.push(parseInt($(this).data('idx'), 10)); });
-    indices.sort(function (a, b) {
-        var ma = MapRow(parsedRows[a]);
-        var mb = MapRow(parsedRows[b]);
-        var ia = resolveStatementTxnIso(ma);
-        var ib = resolveStatementTxnIso(mb);
-        if (!ia && !ib) return a - b;
-        if (!ia) return 1;
-        if (!ib) return -1;
-        return ia.localeCompare(ib) || (a - b);
-    });
+    /* Preserve file row order — running balance depends on bank statement sequence, not date sort. */
+    indices.sort(function (a, b) { return a - b; });
 
     var rows = [];
     var lastClosing = null;
@@ -1214,15 +1259,20 @@ function DoImport() {
 
         var lineOp;
         if (lastClosing === null) {
-            var opRaw = parseFloat(mapped.OpeningBalance);
-            if (!isNaN(opRaw) && isFinite(opRaw)) {
-                lineOp = roundMoney(opRaw);
+            if (rows.length === 0 && parsedStatementOpeningBalance != null
+                && isFinite(parsedStatementOpeningBalance) && !isNaN(parsedStatementOpeningBalance)) {
+                lineOp = roundMoney(parsedStatementOpeningBalance);
             } else {
-                lineOp = NaN;
-            }
-            if (isNaN(lineOp)) {
-                var cl0 = parseFloat(mapped.ClosingBalance);
-                lineOp = !isNaN(cl0) && isFinite(cl0) ? roundMoney(cl0 - dep + w) : 0;
+                var opRaw = parseFloat(mapped.OpeningBalance);
+                if (!isNaN(opRaw) && isFinite(opRaw)) {
+                    lineOp = roundMoney(opRaw);
+                } else {
+                    lineOp = NaN;
+                }
+                if (isNaN(lineOp)) {
+                    var cl0 = parseFloat(mapped.ClosingBalance);
+                    lineOp = !isNaN(cl0) && isFinite(cl0) ? roundMoney(cl0 - dep + w) : 0;
+                }
             }
         } else {
             lineOp = roundMoney(lastClosing);
@@ -1252,9 +1302,9 @@ function DoImport() {
             BalanceType:     (mapped.BalanceType || '').substring(0, 2),
             ImportBatchNo:   batchNo,
             UserID:          0,
-            Remarks:         '',
+            Remarks:         String(idx + 1).padStart(8, '0'),
             GRNPaymentMaster_Code: 0,
-            ServiceTaxNo:    String(roundMoney(lineOp)),
+            ServiceTaxNo:    formatMoneyFixed2(lineOp),
             IsReconciled:    dep > 0 ? 'Y' : 'N'
         });
     }
@@ -1384,6 +1434,7 @@ function ResetPreview() {
     fileHeaders   = [];
     columnMappers = {};
     lastParsedFullRows = null;
+    parsedStatementOpeningBalance = null;
     $('#divColumnMapping').hide();
     $('#tblPreviewBody').empty();
     $('#chkSelectAll').prop({ checked: false, indeterminate: false });
@@ -1637,6 +1688,13 @@ function roundMoney(n) {
     var x = typeof n === 'number' ? n : parseFloat(String(n == null ? '' : n).replace(/,/g, '').trim(), 10);
     if (!isFinite(x) || isNaN(x)) return 0;
     return Math.round(x * 100) / 100;
+}
+
+/** Persist opening / line balance with exactly 2 decimal places (e.g. 36238872.97 not 36238873). */
+function formatMoneyFixed2(n) {
+    var r = roundMoney(n);
+    if (!isFinite(r) || isNaN(r)) return '0.00';
+    return r.toFixed(2);
 }
 
 function FormatAmount(val) {
