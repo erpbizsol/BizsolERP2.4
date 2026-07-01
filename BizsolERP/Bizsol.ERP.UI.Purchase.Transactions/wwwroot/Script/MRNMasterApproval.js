@@ -1,4 +1,5 @@
 import { MRNMasterApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MRNMasterApprovalService.js';
+import { GRNService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNService.js';
 import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
@@ -1140,7 +1141,12 @@ function RenderPaymentCards() {
         return;
     }
     ShowGpaEmpty(false);
-    container.innerHTML = list.map(function (p) { return BuildPaymentCard(p); }).join('');
+    container.innerHTML = list.map(function (p) {
+        if (typeof window.grnRememberApprovalSourceRow === 'function') {
+            window.grnRememberApprovalSourceRow(mapApprovalRowForGrnPrint(p));
+        }
+        return BuildPaymentCard(p);
+    }).join('');
 }
 
 function ToggleGpaPendingOnMeFilter() {
@@ -1291,6 +1297,17 @@ function BuildPaymentCard(p) {
 
     const iconBtns = `
         <div class="gpa-pay-card-print-btns">
+            ${typeof window.PrintGRNServiceFromApproval === 'function'
+        ? `<button type="button" class="btn-gpa-print-icon btn-gpa-print-prev" title="Print Preview"
+                    onclick="PrintGRNServiceFromApproval(${code},'preview')"><i class="fa fa-search-plus"></i></button>
+               <button type="button" class="btn-gpa-print-icon btn-gpa-print-go" title="Print"
+                    onclick="PrintGRNServiceFromApproval(${code},'print')"><i class="fa fa-print"></i></button>`
+        : (typeof window.PrintGRNServiceFromList === 'function'
+            ? `<button type="button" class="btn-gpa-print-icon btn-gpa-print-prev" title="Print Preview"
+                        onclick="PrintGRNServiceFromList(${code},'preview')"><i class="fa fa-search-plus"></i></button>
+                   <button type="button" class="btn-gpa-print-icon btn-gpa-print-go" title="Print"
+                        onclick="PrintGRNServiceFromList(${code},'print')"><i class="fa fa-print"></i></button>`
+            : '')}
             <button type="button" class="btn-gpa-print-icon"
                     style="background:${attachBg};box-shadow:0 2px 8px ${attachShadow};"
                     title="Attachments" onclick="OpenMRNApprovalCardAttachment(${code})">
@@ -2055,6 +2072,87 @@ window.addEventListener('pageshow', function () {
     refreshMrnApprovalListIfNeeded(false);
 });
 
+// ── GRN Approval print (same headerless GRN Service Report as GRN list) ─────
+function getVisibleApprovalRowsForPrint() {
+    const base = getFilteredPaymentListForRender();
+    const q = (document.getElementById('gpaLstSearch')?.value || '').toLowerCase().trim();
+    if (!q) return base.slice();
+    return base.filter(function (p) {
+        const key = (
+            String(formatMrnDisplayNo(p)) + ' ' +
+            String(getPartyName(p)) + ' ' +
+            String(getEntryNo(p)) + ' ' +
+            String(getProject(p)) + ' ' +
+            String(getSubProject(p))
+        ).toLowerCase();
+        return key.indexOf(q) >= 0;
+    });
+}
+
+function mapApprovalRowForGrnPrint(p) {
+    const code = getPaymentMasterCode(p);
+    const entryNo = getEntryNo(p);
+    const amt = getTotalAmount(p);
+    return Object.assign({}, p, {
+        Code: code,
+        MRNMaster_Code: code,
+        BillNo: p.BillNo ?? p.billNo ?? (entryNo !== '—' ? entryNo : undefined),
+        BillDate: p.BillDate ?? p.billDate,
+        ReceiveDate: getEntryDate(p) || p.ReceiveDate || p.receiveDate,
+        AccountDesp: getPartyName(p),
+        ProjectDesp: getProject(p) || mrnProjectLabelFromPayment(p),
+        SubProjectDesp: getSubProject(p) || mrnSubProjectLabelFromPayment(p),
+        NetPayable: amt,
+        TotalBillAmountManual: amt,
+    });
+}
+
+function mrnFindPaymentForPrint(code) {
+    const codeNum = parseInt(code, 10);
+    if (!Number.isFinite(codeNum) || codeNum <= 0) return null;
+    if (G_CurrentPayment && getPaymentMasterCode(G_CurrentPayment) === codeNum) {
+        return G_CurrentPayment;
+    }
+    const pool = (G_PaymentList && G_PaymentList.length) ? G_PaymentList : G_PaymentListFull;
+    if (Array.isArray(pool)) {
+        const hit = pool.find(function (p) { return getPaymentMasterCode(p) === codeNum; });
+        if (hit) return hit;
+    }
+    return null;
+}
+
+function mrnGetCurrentPaymentForPrint(code) {
+    const p = mrnFindPaymentForPrint(code);
+    return p ? mapApprovalRowForGrnPrint(p) : null;
+}
+
+function PrintGRNServiceFromApproval(code, mode) {
+    const codeNum = parseInt(code, 10);
+    if (!Number.isFinite(codeNum) || codeNum <= 0) {
+        if (typeof toastr !== 'undefined') toastr.warning('Invalid GRN entry.');
+        return;
+    }
+    const listRow = mrnGetCurrentPaymentForPrint(codeNum);
+    if (typeof window.PrintGRNServiceReport === 'function') {
+        window.PrintGRNServiceReport(codeNum, mode || 'preview', listRow);
+        return;
+    }
+    if (typeof toastr !== 'undefined') toastr.error('GRN print module is not loaded.');
+}
+
+function PrintGRNApprovalList(mode) {
+    const rows = getVisibleApprovalRowsForPrint().map(mapApprovalRowForGrnPrint);
+    if (!rows.length) {
+        if (typeof toastr !== 'undefined') toastr.warning('No GRN approval records to print for the current filters.');
+        return;
+    }
+    if (typeof window.PrintGRNServiceReportBatch === 'function') {
+        window.PrintGRNServiceReportBatch(rows, mode || 'preview');
+        return;
+    }
+    if (typeof toastr !== 'undefined') toastr.error('GRN print module is not loaded.');
+}
+
 window.LoadPaymentList = LoadPaymentList;
 window.refreshMrnApprovalListIfNeeded = refreshMrnApprovalListIfNeeded;
 window.reloadMrnApprovalView = reloadMrnApprovalView;
@@ -2074,3 +2172,6 @@ window.OpenMRNApprovalCardAttachment = OpenMRNApprovalCardAttachment;
 window.OpenMRNApprovalAttachmentFromModal = OpenMRNApprovalAttachmentFromModal;
 window.openGRNApprovalCardAttachment = OpenMRNApprovalCardAttachment;
 window.openGRNApprovalAttachment = OpenMRNApprovalAttachmentFromModal;
+window.PrintGRNApprovalList = PrintGRNApprovalList;
+window.PrintGRNServiceFromApproval = PrintGRNServiceFromApproval;
+window.mrnGetCurrentPaymentForPrint = mrnGetCurrentPaymentForPrint;
