@@ -137,6 +137,23 @@ const GRNService = {
             });
     },
 
+    GetCompany: function GetCompany() {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetCompany`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    /** Print report line items — GET_GRNLIST / GetGRNList (returns all rows; filter by MRN Code on client). */
+    GetGRNPrintList: function GetGRNPrintList() {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetGRNList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
 }
 
 export { GRNService }

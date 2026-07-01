@@ -2,6 +2,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNService.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/MRNMasterApproval.js"></script>
 
 
@@ -330,6 +331,14 @@
         transition:transform 0.15s, box-shadow 0.15s;
     }
     .btn-gpa-print-icon:hover { transform:translateY(-1px); color:#fff; }
+    .btn-gpa-print-prev { background:#64748b; box-shadow:0 2px 8px rgba(100,116,139,0.35); }
+    .btn-gpa-print-go { background:#1e293b; box-shadow:0 2px 8px rgba(30,41,59,0.35); }
+    .btn-gpa-modal-preview, .btn-gpa-modal-print {
+        display:inline-flex; align-items:center; gap:5px; border:none; color:#fff;
+        border-radius:9px; padding:9px 16px; font-size:0.85rem; font-weight:700; cursor:pointer;
+    }
+    .btn-gpa-modal-preview { background:#64748b; }
+    .btn-gpa-modal-print { background:#1e293b; }
     .btn-gpa-modal-attach {
         display:inline-flex; align-items:center; gap:5px;
         border:none; color:#fff; border-radius:9px; padding:9px 16px;
@@ -517,12 +526,20 @@
             </div>
 
             <div class="modal-footer"
-                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;">
+                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
                 <input type="hidden" id="hfGpaPaymentCode" value="0" />
                 <input type="hidden" id="hfGpaLevelCode" value="0" />
                 <button type="button" id="btnGpaModalAttach" class="btn-gpa-modal-attach"
                         onclick="OpenMRNApprovalAttachmentFromModal()" title="Attachments">
                     <i class="fa fa-paperclip"></i>Attachment
+                </button>
+                <button type="button" class="btn-gpa-modal-preview"
+                        onclick="PrintGRNServiceFromDetail('preview')" title="Print Preview">
+                    <i class="fa fa-search-plus"></i>Preview
+                </button>
+                <button type="button" class="btn-gpa-modal-print"
+                        onclick="PrintGRNServiceFromDetail('print')" title="Print">
+                    <i class="fa fa-print"></i>Print
                 </button>
                 <button type="button" id="gpaBtnRejectAction" class="btn-gpa-reject"
                         onclick="SubmitApproval('Reject')" style="display:none;">
