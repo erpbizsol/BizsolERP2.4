@@ -2126,10 +2126,10 @@
 
         .erp-home-hero {
             position: fixed;
-            top: var(--erp-home-top);
-            left: var(--erp-home-left-offset);
+            top: var(--erp-home-top, 55px);
+            left: var(--erp-home-left-offset, var(--sidebar-width, 280px));
             right: 0;
-            bottom: var(--erp-home-bottom);
+            bottom: var(--erp-home-bottom, 3.25rem);
             overflow: hidden;
             background-color: #0d1b2e;
             z-index: 0;
