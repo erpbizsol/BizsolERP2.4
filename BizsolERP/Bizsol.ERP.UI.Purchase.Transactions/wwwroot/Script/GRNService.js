@@ -30,6 +30,7 @@ let editCode          = 0;
 
 let grnVerifyPendingCode = 0;
 let grnHasVerifyRight = false;
+let grnHasEditAfterVerificationRight = false;
 let grnMasterSourceRows = [];
 /** Edit/New form: master already has attachment(s) — footer Attachment button green with list/API */
 let grnFormHasAttachmentYes = false;
@@ -256,6 +257,43 @@ function resolveGRNVerifyRight() {
         })
         .catch(function () {
             grnHasVerifyRight = false;
+        });
+}
+
+function resolveGrnEditAfterVerificationRight() {
+    var FinYear = getFinancialYear();
+    return MenuService.CheckModuleOptionRight("GRN Services", "Edit After Verification", "N", FinYear)
+        .then(function (response) {
+            grnHasEditAfterVerificationRight = response && response.CheckModuleOptionRight === "Y";
+        })
+        .catch(function () {
+            grnHasEditAfterVerificationRight = false;
+        });
+}
+
+/** Verified (Y) or fully approved — edit blocked unless user has Edit After Verification right. */
+function grnIsVerifiedOrApprovedForEditBlock(item) {
+    if (!item || typeof item !== "object") return false;
+    if (rowIsVerifiedGrn(item)) return true;
+    return computeGrnListStatusCode(item) === "P";
+}
+
+function grnIsVerifiedOrApprovedForEditBlockByCode(codeNum) {
+    const n = parseInt(codeNum, 10);
+    if (!Number.isFinite(n) || n <= 0) return false;
+    const raw = grnGetListRowRawByCode(n);
+    if (raw) return grnIsVerifiedOrApprovedForEditBlock(raw);
+    return n > 0 && grnMrnApprovedCodeSet.has(n);
+}
+
+function checkGrnEditAfterVerificationRight(showMsg) {
+    var FinYear = getFinancialYear();
+    return MenuService.CheckModuleOptionRight("GRN Services", "Edit After Verification", showMsg || "N", FinYear)
+        .then(function (response) {
+            return !!(response && response.CheckModuleOptionRight === "Y");
+        })
+        .catch(function () {
+            return false;
         });
 }
 
@@ -672,10 +710,12 @@ function mapGRNRowsToGrid(rows) {
         grnRememberApprovalSourceRow(item);
         const mrnRaw = item.MRNNo ?? item.mRNNo ?? item.GRNo ?? item.grnNo ?? 0;
         const enNum = parseInt(mrnRaw, 10) || 0;
-        const rd = item.ReceiveDate ?? item.receiveDate ?? '';
-        const rawRdStr = rd ? String(rd).substring(0, 10) : '';
+        const attachBillDate = grnResolveAttachmentEntryDate(item, '');
         const hasAttachmentYes = grnListRowHasAttachmentYes(item);
         const attachBtnClass = hasAttachmentYes ? "im-btn-attach im-btn-attach--has-attachment" : "im-btn-attach";
+        const editBtn =
+            '<button class="im-btn-edit" title="Edit" onclick="editGRN(' + code + ')">' +
+            '<i class="fas fa-pen"></i></button>';
         var btns =
             '<button type="button" class="im-btn-view" title="View" onclick="viewGRNFromList(' + code + ')">' +
             '<i class="fa fa-eye"></i></button>' +
@@ -683,9 +723,8 @@ function mapGRNRowsToGrid(rows) {
             '<i class="fa fa-search-plus"></i></button>' +
             '<button type="button" class="im-btn-print" title="Print" onclick="PrintGRNServiceFromList(' + code + ',\'print\')">' +
             '<i class="fa fa-print"></i></button>' +
-            '<button class="im-btn-edit" title="Edit" onclick="editGRN(' + code + ')">' +
-            '<i class="fas fa-pen"></i></button>' +
-            '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="openGrnServiceListAttachmentControl(' + code + ',' + enNum + ',\'' + rawRdStr + '\')">' +
+            editBtn +
+            '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="openGrnServiceListAttachmentControl(' + code + ',' + enNum + ',\'' + attachBillDate + '\')">' +
             '<i class="fas fa-paperclip"></i></button>' +
             '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
             '<i class="fas fa-trash-can"></i></button>';
@@ -956,7 +995,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadBankList(),
         initProjectDropdownEmpty(),
     ]);
-    await resolveGRNVerifyRight();
+    await Promise.all([
+        resolveGRNVerifyRight(),
+        resolveGrnEditAfterVerificationRight(),
+    ]);
     initGrnListFilters();
     await loadGrnListStatusDropdown();
     await loadGRNList();
@@ -2453,8 +2495,13 @@ function calcTotal() {
     const el = document.getElementById('txtTotalAmount');
     if (el) el.value = total.toFixed(2);
 
+    // Grid footer = sum of line amounts; Total Bill Amount = manual master field (TotalBillAmountManual).
+    // Only auto-fill manual total on new entry when the field is still empty/zero.
     const elManual = document.getElementById('txtTotalBillAmountManual');
-    if (elManual) elManual.value = total.toFixed(2);
+    if (elManual) {
+        const manualVal = parseFloat(elManual.value) || 0;
+        if (manualVal === 0 && total > 0) elManual.value = total.toFixed(2);
+    }
     calcNetPayable();
 }
 
@@ -2653,6 +2700,74 @@ function toInputDate(val) {
     const d = new Date(val);
     if (isNaN(d.getTime())) return '';
     return d.toISOString().split('T')[0];
+}
+
+function grnLocalYmdFromDate(d) {
+    if (!d || Number.isNaN(d.getTime())) return '';
+    return d.getFullYear() + '-'
+        + String(d.getMonth() + 1).padStart(2, '0') + '-'
+        + String(d.getDate()).padStart(2, '0');
+}
+
+function grnBillDateRawFromRow(item) {
+    if (!item || typeof item !== 'object') return '';
+    return item.BillDate ?? item.billDate ?? item['Bill Date']
+        ?? item.ReceiveDate ?? item.receiveDate ?? '';
+}
+
+function grnFormatDateInput(val) {
+    if (val === undefined || val === null || val === '') return '';
+    const s = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const dmY = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmY) {
+        return dmY[3] + '-' + dmY[2].padStart(2, '0') + '-' + dmY[1].padStart(2, '0');
+    }
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return grnLocalYmdFromDate(d);
+    return '';
+}
+
+function grnGetListRowRawByCode(codeNum) {
+    const rows = grnMasterSourceRows || [];
+    for (let i = 0; i < rows.length; i++) {
+        const c = parseInt(rows[i].Code ?? rows[i].code ?? 0, 10);
+        if (c === codeNum) return rows[i];
+    }
+    return grnGetApprovalSourceRow(codeNum) || null;
+}
+
+function grnGetListStatusCodeByCode(codeNum) {
+    const n = parseInt(codeNum, 10);
+    if (!Number.isFinite(n) || n <= 0) return "N";
+    const raw = grnGetListRowRawByCode(n);
+    if (raw) return computeGrnListStatusCode(raw);
+    return n > 0 && grnMrnApprovedCodeSet.has(n) ? "P" : "N";
+}
+
+function grnIsApprovedGrnItem(item) {
+    return grnIsVerifiedOrApprovedForEditBlock(item);
+}
+
+function grnIsApprovedGrn(codeNum) {
+    return grnIsVerifiedOrApprovedForEditBlockByCode(codeNum);
+}
+
+/** yyyy-mm-dd for attachment control — same source as list "Bill Date" column. */
+function grnResolveAttachmentEntryDate(codeOrRow, hint) {
+    let raw = hint;
+    if (raw === undefined || raw === null || String(raw).trim() === '') {
+        if (codeOrRow && typeof codeOrRow === 'object') {
+            raw = grnBillDateRawFromRow(codeOrRow);
+        } else {
+            const codeNum = parseInt(codeOrRow, 10);
+            if (Number.isFinite(codeNum) && codeNum > 0) {
+                const listRow = grnGetListRowRawByCode(codeNum);
+                if (listRow) raw = grnBillDateRawFromRow(listRow);
+            }
+        }
+    }
+    return grnFormatDateInput(raw);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3131,7 +3246,11 @@ function grnPrintRowLooksLikeDetail(r) {
     return r.ItemName != null || r.itemName != null
         || r.ProjectDesp != null || r.projectDesp != null
         || r.PONo != null || r.poNo != null
-        || r.Amount != null || r.amount != null;
+        || r.Amount != null || r.amount != null
+        || r.UOM != null || r.uom != null
+        || r.QtyBill != null || r.qtyBill != null
+        || r.QtyMT != null || r.qtyMT != null
+        || r.Rate != null || r.rate != null;
 }
 
 /** Unwrap GetGRNList / GET_GRNLIST API payload (Code, BillNo, ProjectDesp, ItemName, …). */
@@ -3251,14 +3370,32 @@ function grnPrintDetailsFromGetByCode(resp, codeNum, listRow) {
             SubProjectDesp: grnPickPrintField(item, keys.site) || siteFallback,
             BillNo: master.BillNo ?? master.billNo ?? item.BillNo ?? item.billNo,
             BillDate: master.BillDate ?? master.billDate ?? item.BillDate ?? item.billDate,
+            ReceiveDate: master.ReceiveDate ?? master.receiveDate ?? item.ReceiveDate ?? item.receiveDate,
             SiteType: master.SiteType ?? master.siteType ?? item.SiteType ?? item.siteType ?? 'PPA',
+            AccountDesp: master.AccountDesp ?? master.accountDesp ?? item.AccountDesp ?? item.accountDesp,
+            PhoneNo: master.PhoneNo ?? master.phoneNo ?? item.PhoneNo ?? item.phoneNo,
+            IndustryType: master.IndustryType ?? master.industryType ?? item.IndustryType ?? item.industryType,
+            TransporterName: master.TransporterName ?? master.transporterName ?? '',
+            Deduction: master.Deduction ?? master.deduction ?? master.Dedution ?? master.dedution,
+            DeductionRemark: master.DeductionRemark ?? master.deductionRemark ?? master.DedutionRemark ?? master.dedutionRemark,
+            NetPayable: master.NetPayable ?? master.netPayable,
+            TotalBillAmountManual: master.TotalBillAmountManual ?? master.totalBillAmountManual,
+            TDSAmount: master.TDSAmount ?? master.tdsAmount,
+            Remark: master.Remarks ?? master.remarks ?? master.Remark ?? master.remark,
             PONo: item.PONo ?? item.poNo ?? item.PoNO ?? item.PurchaseOrderMaster_Code ?? item.purchaseOrderMaster_Code ?? '',
             PODate: item.PODate ?? item.poDate ?? '',
             ItemName: item.ItemName ?? item.itemName ?? '',
+            UOM: item.UOM ?? item.uom ?? item.Uom ?? '',
+            BillQty: item.QtyBill ?? item.qtyBill ?? item.BillQty ?? item.billQty,
+            AcceptQty: item.GRNRejectedQty ?? item.grnRejectedQty ?? item.AcceptQty ?? item.acceptQty ?? item.QtyMT ?? item.qtyMT,
+            RejectQty: item.RejectedQtyBill ?? item.rejectedQtyBill,
+            ShortageQty: item.SortageQty ?? item.sortageQty ?? item.ShortageQty ?? item.shortageQty,
+            Rate: item.Rate ?? item.rate ?? 0,
             Amount: item.Amount ?? item.amount ?? 0,
+            Remarks: item.Remarks ?? item.remarks ?? item.LineRemarks ?? item.lineRemarks ?? '',
         });
     });
-    return { master: master, rows: rows };
+    return { master: master, rows: rows.map(grnNormalizePrintDetailRow) };
 }
 
 function grnMergeListRowForPrint(listRow, masterFromApi) {
@@ -3279,6 +3416,43 @@ function grnMergeListRowForPrint(listRow, masterFromApi) {
     if (!grnPickPrintField(out, ['AccountDesp', 'PartyName', 'Party Name'])) {
         const party = masterFromApi?.AccountDesp ?? masterFromApi?.accountDesp;
         if (party) out.AccountDesp = party;
+    }
+    if (!grnPickPrintField(out, ['TransporterName', 'transporterName'])) {
+        const tr = masterFromApi?.TransporterName ?? masterFromApi?.transporterName;
+        if (tr) out.TransporterName = tr;
+    }
+    if (!grnPickPrintField(out, ['NetPayable', 'netPayable'])) {
+        const net = masterFromApi?.NetPayable ?? masterFromApi?.netPayable;
+        const bill = parseFloat(masterFromApi?.TotalBillAmountManual ?? masterFromApi?.totalBillAmountManual ?? out.TotalBillAmountManual ?? out.totalBillAmountManual ?? 0) || 0;
+        const ded = parseFloat(masterFromApi?.Dedution ?? masterFromApi?.dedution ?? masterFromApi?.Deduction ?? masterFromApi?.deduction ?? 0) || 0;
+        const tds = parseFloat(masterFromApi?.TDSAmount ?? masterFromApi?.tdsAmount ?? 0) || 0;
+        if (bill > 0) {
+            out.NetPayable = Math.max(0, bill - tds - ded);
+        } else if (net != null && net !== '') {
+            out.NetPayable = net;
+        }
+    } else {
+        const bill = grnPrintDetailNum(out, ['TotalBillAmountManual', 'totalBillAmountManual']);
+        if (bill > 0) {
+            const ded = grnPrintDetailNum(out, ['Deduction', 'deduction', 'Dedution', 'dedution']);
+            const tds = grnPrintDetailNum(out, ['TDSAmount', 'tdsAmount']);
+            out.NetPayable = Math.max(0, bill - tds - ded);
+        }
+    }
+    if (out.TotalBillAmountManual == null || out.TotalBillAmountManual === '') {
+        const bill = masterFromApi?.TotalBillAmountManual ?? masterFromApi?.totalBillAmountManual;
+        if (bill != null && bill !== '') out.TotalBillAmountManual = bill;
+    }
+    if (!grnPrintDetailNum(out, ['Deduction', 'deduction', 'Dedution', 'dedution'])) {
+        const ded = masterFromApi?.Dedution ?? masterFromApi?.dedution ?? masterFromApi?.Deduction ?? masterFromApi?.deduction;
+        if (ded != null && ded !== '') {
+            out.Dedution = ded;
+            out.Deduction = ded;
+        }
+    }
+    if (!grnPrintDetailNum(out, ['TDSAmount', 'tdsAmount'])) {
+        const tds = masterFromApi?.TDSAmount ?? masterFromApi?.tdsAmount;
+        if (tds != null && tds !== '') out.TDSAmount = tds;
     }
     return out;
 }
@@ -3304,11 +3478,19 @@ function grnPrintMrnNo(listRow, codeNum) {
 function grnEnrichListRowFromPrintDetails(listRow, detailRows) {
     const out = Object.assign({}, listRow || {});
     const first = (detailRows && detailRows[0]) ? detailRows[0] : null;
-    if (!first) return out;
+    const pickDetailNum = function (keys) {
+        let best = 0;
+        (detailRows || []).forEach(function (row) {
+            const n = grnPrintDetailNum(row, keys);
+            if (n > best) best = n;
+        });
+        return best;
+    };
     const fillIfEmpty = function (key, val) {
         if (val === undefined || val === null || String(val).trim() === '' || String(val).trim().toLowerCase() === 'null') return;
         if (!grnPickPrintField(out, [key])) out[key] = val;
     };
+    if (!first) return out;
     fillIfEmpty('ProjectDesp', first.ProjectDesp ?? first.projectDesp);
     fillIfEmpty('SubProjectDesp', first.SubProjectDesp ?? first.subProjectDesp);
     fillIfEmpty('SiteType', first.SiteType ?? first.siteType);
@@ -3319,44 +3501,372 @@ function grnEnrichListRowFromPrintDetails(listRow, detailRows) {
     fillIfEmpty('ReceiveDate', first.ReceiveDate ?? first.receiveDate);
     fillIfEmpty('AccountDesp', first.AccountDesp ?? first.accountDesp ?? first.PartyName ?? first.partyName);
     fillIfEmpty('MRNNo', first.MRNNo ?? first.mRNNo ?? first.GRNo);
+    fillIfEmpty('TransporterName', first.TransporterName ?? first.transporterName);
+    fillIfEmpty('Deduction', first.Deduction ?? first.deduction ?? first.Dedution ?? first.dedution);
+    fillIfEmpty('DeductionRemark', first.DeductionRemark ?? first.deductionRemark ?? first.DedutionRemark ?? first.dedutionRemark);
+    const manualBill = pickDetailNum(['TotalBillAmountManual', 'totalBillAmountManual']);
+    if (manualBill > 0) fillIfEmpty('TotalBillAmountManual', manualBill);
+    const tdsAmt = pickDetailNum(['TDSAmount', 'tdsAmount']);
+    if (tdsAmt > 0) fillIfEmpty('TDSAmount', tdsAmt);
+    const dedAmt = pickDetailNum(['Deduction', 'deduction', 'Dedution', 'dedution']);
+    if (dedAmt > 0) {
+        fillIfEmpty('Deduction', dedAmt);
+        fillIfEmpty('Dedution', dedAmt);
+    }
     return out;
 }
 
+/** Map API / form row to GRN ITEM DETAILS grid columns (same as itemTbody). */
+function grnNormalizePrintDetailRow(row) {
+    if (!row || typeof row !== 'object') return {};
+    const billQty = grnPrintDetailNum(row, ['QtyBill', 'qtyBill', 'BillQty', 'billQty']);
+    const acceptQty = grnPrintDetailNum(row, ['GRNRejectedQty', 'grnRejectedQty', 'AcceptQty', 'acceptQty', 'QtyMT', 'qtyMT']);
+    const rejectQty = grnPrintDetailNum(row, ['RejectedQtyBill', 'rejectedQtyBill']);
+    let shortage = grnPrintDetailNum(row, ['SortageQty', 'sortageQty', 'ShortageQty', 'shortageQty', 'Shortage', 'shortage']);
+    if (!shortage && (billQty || acceptQty || rejectQty)) {
+        shortage = Math.max(0, billQty - acceptQty - rejectQty);
+    }
+    const rate = grnPrintDetailNum(row, ['Rate', 'rate']);
+    let amt = grnPrintDetailNum(row, ['Amount', 'amount']);
+    if (!amt && rate && acceptQty) {
+        amt = rate * acceptQty;
+    } else if (!amt && rate && billQty) {
+        amt = rate * billQty;
+    }
+    return Object.assign({}, row, {
+        BillQty: billQty,
+        AcceptQty: acceptQty,
+        RejectQty: rejectQty,
+        ShortageQty: shortage,
+        Rate: rate,
+        Amount: amt,
+        ItemName: grnPickPrintField(row, ['ItemName', 'itemName', 'Item', 'item']),
+        UOM: grnPickPrintField(row, ['UOM', 'uom', 'Uom']),
+        PONo: grnPickPrintField(row, ['PONo', 'poNo', 'PoNO']),
+        PODate: row.PODate ?? row.poDate,
+        Remarks: grnPickPrintField(row, ['Remarks', 'remarks', 'LineRemarks', 'lineRemarks', 'Remark', 'remark']),
+    });
+}
+
+function grnNormalizePrintDetailRows(rows) {
+    if (!Array.isArray(rows)) return [];
+    return rows.map(grnNormalizePrintDetailRow);
+}
+
+function grnPrintOpenFormCode() {
+    const hdn = parseInt(document.getElementById('hdnMRNMasterCode')?.value || '0', 10);
+    const edit = parseInt(typeof editCode !== 'undefined' ? editCode : 0, 10);
+    return hdn > 0 ? hdn : (edit > 0 ? edit : 0);
+}
+
+function grnIsFormViewVisible() {
+    const formEl = document.getElementById('divGRNForm');
+    if (!formEl) return !!document.getElementById('itemTbody');
+    const style = window.getComputedStyle(formEl);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+}
+
+/** Read GRN ITEM DETAILS grid when printing the record open in the form. */
+function grnPrintDetailsFromFormGrid(codeNum) {
+    if (grnPrintOpenFormCode() !== codeNum) return null;
+    if (!grnIsFormViewVisible()) return null;
+    const tbody = document.getElementById('itemTbody');
+    if (!tbody || !tbody.rows.length) return null;
+
+    const rows = [];
+    Array.from(tbody.rows).forEach(function (tr) {
+        const poSel = tr.querySelector('.po-select');
+        const itemSel = tr.querySelector('.item-select');
+        const poOpt = poSel?.selectedOptions?.[0];
+        const itemOpt = itemSel?.selectedOptions?.[0];
+        const billQty = parseFloat(tr.querySelector('.bill-qty')?.value) || 0;
+        const acceptQty = parseFloat(tr.querySelector('.accept-qty')?.value) || 0;
+        const rejectQty = parseFloat(tr.querySelector('.reject-qty')?.value) || 0;
+        let shortage = parseFloat(tr.querySelector('.shortage-qty')?.value);
+        if (isNaN(shortage)) shortage = Math.max(0, billQty - acceptQty - rejectQty);
+
+        rows.push(grnNormalizePrintDetailRow({
+            PONo: (poOpt?.text || poSel?.value || '').trim(),
+            ItemName: (itemOpt?.text || itemSel?.value || '').trim(),
+            UOM: tr.querySelector('.uom-cell')?.value || itemOpt?.dataset?.uom || '',
+            QtyBill: billQty,
+            GRNRejectedQty: acceptQty,
+            RejectedQtyBill: rejectQty,
+            SortageQty: shortage,
+            Rate: parseFloat(tr.querySelector('.rate')?.value) || 0,
+            Amount: parseFloat(tr.querySelector('.amount')?.value) || 0,
+            Remarks: tr.querySelector('.row-remark')?.value || '',
+        }));
+    });
+    return rows.length ? rows : null;
+}
+
+function grnPrintListRowFromForm(codeNum) {
+    if (grnPrintOpenFormCode() !== codeNum || !grnIsFormViewVisible()) return null;
+    const ddlParty = document.getElementById('ddlPartyName');
+    const partyOpt = ddlParty?.selectedOptions?.[0];
+    const totalBill = parseFloat(document.getElementById('txtTotalBillAmountManual')?.value) || 0;
+    const tds = parseFloat(document.getElementById('txtTDSAmount')?.value) || 0;
+    const deduct = parseFloat(document.getElementById('txtDedution')?.value) || 0;
+    const netPayable = totalBill > 0
+        ? Math.max(0, totalBill - tds - deduct)
+        : (parseFloat(document.getElementById('txtNetPayable')?.value) || 0);
+    return {
+        BillNo: document.getElementById('txtBillNo')?.value || '',
+        BillDate: document.getElementById('dtBillDate')?.value || '',
+        ReceiveDate: document.getElementById('dtRecvDate')?.value || '',
+        MRNNo: document.getElementById('txtGRNNo')?.value || '',
+        AccountDesp: partyOpt?.text || '',
+        Remarks: document.getElementById('txtRemark')?.value || '',
+        TotalBillAmountManual: totalBill,
+        Dedution: deduct,
+        Deduction: deduct,
+        DedutionRemark: document.getElementById('txtDedutionRemark')?.value || '',
+        TDSAmount: tds,
+        NetPayable: netPayable,
+    };
+}
+
+function grnPrintFmtGridQty(num) {
+    const n = parseFloat(num);
+    if (isNaN(n)) return '';
+    if (Math.abs(n - Math.round(n)) < 0.0001) return String(Math.round(n));
+    return n.toFixed(3);
+}
+
+function grnPrintFmtGridRate(num) {
+    const n = parseFloat(num);
+    if (isNaN(n)) return '';
+    return n.toFixed(2);
+}
+
+function grnPrintFmtQty(num) {
+    const n = parseFloat(num);
+    if (isNaN(n)) return '';
+    return n.toFixed(3);
+}
+
+function grnPrintFmtRate(num) {
+    const n = parseFloat(num);
+    if (isNaN(n)) return '';
+    return n.toFixed(3);
+}
+
+function grnPrintFmtDiscount(num) {
+    const n = parseFloat(num);
+    if (isNaN(n) || n === 0) return '0.00000';
+    return n.toFixed(5);
+}
+
+function grnPrintDetailNum(row, keys) {
+    for (let i = 0; i < keys.length; i++) {
+        const v = row[keys[i]];
+        if (v !== undefined && v !== null && v !== '' && String(v).trim().toLowerCase() !== 'null') {
+            const n = parseFloat(String(v).replace(/,/g, ''));
+            if (!isNaN(n)) return n;
+        }
+    }
+    return 0;
+}
+
+function grnPrintBuildSupplierAddressHtml(listRow) {
+    let partyName = grnPickPrintField(listRow, ['AccountDesp', 'accountDesp', 'PartyName', 'partyName', 'Party Name', 'VendorName', 'vendorName']);
+    if (!partyName) {
+        partyName = grnPickPrintField(listRow, ['IndustryType', 'industryType']);
+    }
+    const addr = grnPickPrintField(listRow, ['AccountAddress', 'accountAddress', 'PartyAddress', 'partyAddress', 'Address', 'address']);
+    const projectHdr = grnPickPrintField(listRow, grnPrintProjectSiteKeys().project);
+    const siteHdr = grnPickPrintField(listRow, grnPrintProjectSiteKeys().site);
+    const phoneNo = grnPickPrintField(listRow, ['PhoneNo', 'phoneNo', 'ContactNo', 'contactNo']);
+    const lines = [];
+    if (partyName) lines.push('<div class="grn-sup-name">' + grnPrintEscHtml(partyName) + '</div>');
+    if (addr) {
+        String(addr).split(/\r?\n/).forEach(function (ln) {
+            const t = String(ln || '').trim();
+            if (t) lines.push('<div>' + grnPrintEscHtml(t) + '</div>');
+        });
+    }
+    if (projectHdr) lines.push('<div>' + grnPrintEscHtml(projectHdr) + '</div>');
+    if (siteHdr) lines.push('<div>' + grnPrintEscHtml(siteHdr) + '</div>');
+    if (phoneNo) lines.push('<div>Ph : ' + grnPrintEscHtml(phoneNo) + '</div>');
+    if (!lines.length) lines.push('<div>&nbsp;</div>');
+    return lines.join('');
+}
+
+function grnPrintBuildMetaRowHtml(label, value) {
+    return '<tr><td class="grn-meta-lbl">' + grnPrintEscHtml(label) + '</td>'
+        + '<td class="grn-meta-val">' + grnPrintEscHtml(value || '') + '</td></tr>';
+}
+
+function grnPrintGroupDetailRowsByPo(detailRows) {
+    const groups = [];
+    const map = {};
+    (detailRows || []).forEach(function (row) {
+        const poNo = grnPickPrintField(row, ['PONo', 'poNo', 'PoNO']) || '—';
+        if (!map[poNo]) {
+            map[poNo] = {
+                poNo: poNo,
+                poDate: grnPrintFmtDate(row.PODate ?? row.poDate),
+                rows: [],
+            };
+            groups.push(map[poNo]);
+        }
+        map[poNo].rows.push(row);
+    });
+    return groups;
+}
+
+/** Item table — same columns as GRN ITEM DETAILS grid on form. */
+function grnPrintBuildItemTableRowsHtml(detailRows) {
+    const COL_COUNT = 10;
+    const MIN_ROWS = 14;
+    let sno = 0;
+    let totalAmt = 0;
+    let html = '';
+    const normalized = grnNormalizePrintDetailRows(detailRows);
+    const groups = grnPrintGroupDetailRowsByPo(normalized);
+
+    groups.forEach(function (grp) {
+        let poHdr = 'Pur. Order No. ' + grnPrintEscHtml(grp.poNo);
+        if (grp.poDate) poHdr += ' &nbsp;&nbsp; PO Date : ' + grnPrintEscHtml(grp.poDate);
+        html += '<tr class="grn-po-row"><td colspan="' + COL_COUNT + '">' + poHdr + '</td></tr>';
+        grp.rows.forEach(function (row) {
+            sno += 1;
+            const item = row.ItemName || grnPickPrintField(row, ['ItemName', 'itemName']);
+            const uom = row.UOM || grnPickPrintField(row, ['UOM', 'uom']);
+            const billQty = row.BillQty ?? 0;
+            const acceptQty = row.AcceptQty ?? 0;
+            const rejectQty = row.RejectQty ?? 0;
+            const shortage = row.ShortageQty ?? 0;
+            const rate = row.Rate ?? 0;
+            const amt = row.Amount ?? 0;
+            const lineRemarks = row.Remarks || '';
+            totalAmt += amt;
+            html += '<tr>'
+                + '<td class="grn-tc">' + sno + '</td>'
+                + '<td class="grn-tl">' + grnPrintEscHtml(item) + '</td>'
+                + '<td class="grn-tc">' + grnPrintEscHtml(uom) + '</td>'
+                + '<td class="grn-tr">' + grnPrintFmtGridQty(billQty) + '</td>'
+                + '<td class="grn-tr">' + grnPrintFmtGridQty(acceptQty) + '</td>'
+                + '<td class="grn-tr">' + grnPrintFmtGridQty(rejectQty) + '</td>'
+                + '<td class="grn-tr">' + grnPrintFmtGridQty(shortage) + '</td>'
+                + '<td class="grn-tr">' + grnPrintFmtGridRate(rate) + '</td>'
+                + '<td class="grn-tr">' + (amt ? grnPrintFmtCurrency(amt) : '') + '</td>'
+                + '<td class="grn-tl">' + grnPrintEscHtml(lineRemarks) + '</td>'
+                + '</tr>';
+        });
+    });
+
+    if (!html) {
+        html = '<tr><td colspan="' + COL_COUNT + '" class="grn-tc" style="padding:10px;color:#666;">No line items found.</td></tr>';
+    }
+
+    const usedRows = sno + groups.length;
+    for (let i = usedRows; i < MIN_ROWS; i++) {
+        html += '<tr class="grn-empty-row">';
+        for (let c = 0; c < COL_COUNT; c++) html += '<td>&nbsp;</td>';
+        html += '</tr>';
+    }
+
+    return { html: html, totalAmt: totalAmt, lineCount: sno, colCount: COL_COUNT };
+}
+
+function grnResolvePrintTotals(listRow, lineTotal) {
+    const deduction = grnPrintDetailNum(listRow, ['Deduction', 'deduction', 'Dedution', 'dedution']);
+    const tdsAmount = grnPrintDetailNum(listRow, ['TDSAmount', 'tdsAmount']);
+    const manualTotal = grnPrintDetailNum(listRow, ['TotalBillAmountManual', 'totalBillAmountManual']);
+    const totalBillAmt = manualTotal || lineTotal || 0;
+
+    // Net Payable must follow Total Bill Amount (manual), not line sum or stale stored NetPayable.
+    let netPayable = 0;
+    if (totalBillAmt > 0) {
+        netPayable = Math.max(0, totalBillAmt - tdsAmount - deduction);
+    } else {
+        netPayable = grnPrintDetailNum(listRow, ['NetPayable', 'netPayable']);
+        if (!netPayable && lineTotal) {
+            netPayable = Math.max(0, lineTotal - tdsAmount - deduction);
+        }
+    }
+
+    return {
+        lineTotalAmt: lineTotal || 0,
+        totalBillAmt: totalBillAmt,
+        deduction: deduction,
+        tdsAmount: tdsAmount,
+        netPayable: netPayable,
+    };
+}
+
+function grnPrintBuildSummaryFooterHtml(colCount, totals, masterRemark) {
+    const totalBillAmt = totals.totalBillAmt || 0;
+    const wordsLine = '<strong>Total Amount Rs:</strong> '
+        + grnPrintEscHtml(grnPrintFmtCurrency(Math.round(totalBillAmt)));
+
+    const summaryParts = [
+        '<strong>Deduction :</strong> Rs ' + grnPrintFmtCurrency(totals.deduction || 0),
+        '<strong>TDS Amount :</strong> Rs ' + grnPrintFmtCurrency(totals.tdsAmount || 0),
+        '<strong>Net Payable :</strong> Rs ' + grnPrintFmtCurrency(totals.netPayable || 0),
+    ];
+    const summaryLine = '<div class="grn-summary-line">' + summaryParts.join(' &nbsp;&nbsp; ') + '</div>';
+
+    const dedRem = grnPickPrintField(masterRemark, ['DeductionRemark', 'deductionRemark', 'DedutionRemark', 'dedutionRemark']);
+    const dedRemLine = dedRem
+        ? '<div class="grn-summary-line"><strong>Deduction Remark :</strong> ' + grnPrintEscHtml(dedRem) + '</div>'
+        : '';
+
+    return '<table class="grn-items" role="presentation">'
+        + '<tr class="grn-words-row"><td colspan="' + colCount + '">' + wordsLine + '</td></tr>'
+        + '<tr class="grn-summary-row"><td colspan="' + colCount + '">' + summaryLine + dedRemLine + '</td></tr>'
+        + '<tr class="grn-remarks-row"><td colspan="' + colCount + '"><strong>Remarks :</strong> '
+        + grnPrintEscHtml(grnPickPrintField(masterRemark, ['Remarks', 'remarks', 'Remark', 'remark']))
+        + '</td></tr></table>';
+}
+
 function grnPrintReportCss() {
-    return '@page{size:A4 portrait;margin:10mm 12mm 14mm 12mm;}'
+    return '@page{size:A4 portrait;margin:8mm 10mm 12mm 10mm;}'
         + '*{box-sizing:border-box;margin:0;padding:0;}'
-        + 'body{font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#000;background:#fff;}'
+        + 'body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;color:#000;background:#fff;}'
         + '.no-print{margin-bottom:5mm;}'
         + '@media print{.no-print{display:none!important;}.grn-print-page{page-break-after:always;}.grn-print-page:last-child{page-break-after:auto;}}'
-        + '.grn-wrap{max-width:780px;margin:0 auto 14px;border:2px solid #000;padding:12px 14px;}'
-        + '.grn-hdr{display:flex;align-items:flex-start;margin-bottom:10px;}'
-        + '.grn-hdr--no-logo .grn-hdr-body{width:100%;}'
-        + '.grn-logo{width:62px;height:62px;object-fit:contain;margin-right:12px;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
-        + '.grn-hdr-body{flex:1;text-align:center;}'
-        + '.grn-co{font-size:14pt;font-weight:800;margin-bottom:2px;text-transform:uppercase;}'
-        + '.grn-tag{font-size:8.5pt;margin-bottom:4px;letter-spacing:0.04em;}'
-        + '.grn-addr{font-size:9pt;margin-bottom:4px;line-height:1.35;}'
-        + '.grn-title{text-align:center;font-weight:800;font-size:11pt;border:1px solid #000;padding:5px;margin:0 0 12px;letter-spacing:0.04em;text-transform:uppercase;}'
-        + 'table.grn-meta{width:100%;border-collapse:collapse;margin-bottom:10px;}'
-        + 'table.grn-meta td{border:1px solid #000;padding:5px 8px;font-size:9.5pt;vertical-align:top;width:50%;}'
-        + 'table.grn-meta td.lbl{font-weight:700;width:38%;background:#fafafa;}'
-        + '.grn-split{display:flex;border:1px solid #000;margin-bottom:10px;}'
-        + '.grn-split > div{flex:1;padding:8px 10px;font-size:9.5pt;}'
-        + '.grn-split > div:first-child{border-right:1px solid #000;}'
-        + '.grn-split-lbl{font-weight:700;margin-bottom:4px;}'
-        + '.grn-split-name{font-weight:800;font-size:10.5pt;margin-bottom:4px;text-transform:uppercase;}'
-        + '.grn-period-bar{background:#1e293b;color:#fff;font-weight:700;font-size:9pt;padding:6px 10px;margin-bottom:0;text-transform:uppercase;letter-spacing:0.03em;}'
-        + 'table.grn-items{width:100%;border-collapse:collapse;margin-bottom:0;}'
-        + 'table.grn-items th,table.grn-items td{border:1px solid #000;padding:6px 8px;font-size:9pt;vertical-align:top;}'
-        + 'table.grn-items th{background:#1e293b;color:#fff;font-weight:700;text-align:center;}'
-        + '.grn-totals{border:1px solid #000;border-top:none;padding:8px 10px;text-align:right;font-size:9.5pt;}'
-        + '.grn-totals .total-line{font-weight:800;font-size:10.5pt;margin-top:4px;}'
-        + '.grn-words{margin:10px 0;font-size:9.5pt;font-weight:600;}'
-        + '.grn-note{border:1px solid #000;padding:8px 10px;font-size:8.5pt;margin-bottom:10px;line-height:1.45;}'
-        + '.grn-note b{display:block;margin-bottom:4px;text-transform:uppercase;font-size:9pt;}'
-        + '.grn-sig{display:flex;margin-top:14px;gap:8px;}'
-        + '.grn-sig > div{flex:1;border:1px solid #000;min-height:100px;padding:6px;text-align:center;font-weight:700;font-size:9pt;display:flex;flex-direction:column;justify-content:flex-end;}'
-        + '.grn-sig-stamp{width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 4px;opacity:0.88;-webkit-print-color-adjust:exact;print-color-adjust:exact;}';
+        + '.grn-wrap{max-width:800px;margin:0 auto 14px;padding:0;}'
+        + '.grn-co-hdr{text-align:center;margin-bottom:8px;line-height:1.35;}'
+        + '.grn-co-name{font-size:15pt;font-weight:800;text-transform:uppercase;margin-bottom:3px;}'
+        + '.grn-co-addr{font-size:9pt;margin-bottom:2px;}'
+        + '.grn-co-ph{font-size:9pt;margin-bottom:2px;}'
+        + '.grn-doc-box{border:1px solid #000;}'
+        + '.grn-doc-top{display:flex;border-bottom:1px solid #000;min-height:34px;align-items:center;}'
+        + '.grn-doc-top > div{padding:5px 8px;font-size:9.5pt;}'
+        + '.grn-doc-top-left{flex:1;border-right:1px solid #000;}'
+        + '.grn-doc-top-center{flex:1.2;text-align:center;font-weight:800;font-size:11pt;border-right:1px solid #000;}'
+        + '.grn-doc-top-right{flex:1;text-align:right;}'
+        + '.grn-doc-body{display:flex;}'
+        + '.grn-doc-body > div{flex:1;padding:8px 10px;font-size:9pt;vertical-align:top;min-height:120px;}'
+        + '.grn-doc-body-left{border-right:1px solid #000;}'
+        + '.grn-sup-lbl{font-weight:700;text-decoration:underline;margin-bottom:6px;}'
+        + '.grn-sup-name{font-weight:700;margin-bottom:3px;text-transform:uppercase;}'
+        + 'table.grn-meta-mini{width:100%;border-collapse:collapse;}'
+        + 'table.grn-meta-mini td{padding:2px 0;font-size:9pt;vertical-align:top;}'
+        + '.grn-meta-lbl{width:42%;font-weight:700;padding-right:6px;}'
+        + '.grn-meta-val{width:58%;}'
+        + 'table.grn-items{width:100%;border-collapse:collapse;table-layout:fixed;}'
+        + 'table.grn-items th,table.grn-items td{border:1px solid #000;padding:4px 3px;font-size:8pt;vertical-align:top;word-wrap:break-word;}'
+        + 'table.grn-items th{font-weight:700;text-align:center;font-size:7.5pt;line-height:1.2;}'
+        + '.grn-tc{text-align:center;}'
+        + '.grn-tr{text-align:right;}'
+        + '.grn-tl{text-align:left;}'
+        + '.grn-po-row td{font-weight:700;font-size:8.5pt;padding:5px 6px;}'
+        + '.grn-empty-row td{height:22px;}'
+        + '.grn-total-row td{font-weight:800;font-size:9pt;padding:6px 4px;}'
+        + '.grn-total-label{text-align:right;padding-right:8px;}'
+        + '.grn-words-row td{border:1px solid #000;border-top:none;padding:6px 8px;font-size:9pt;}'
+        + '.grn-summary-row td{border:1px solid #000;border-top:none;padding:6px 8px;font-size:9pt;}'
+        + '.grn-summary-line{margin-top:2px;line-height:1.45;}'
+        + '.grn-summary-line:first-child{margin-top:0;}'
+        + '.grn-remarks-row td{border:1px solid #000;border-top:none;padding:6px 8px;font-size:9pt;min-height:28px;}'
+        + '.grn-sig-wrap{border:1px solid #000;border-top:none;padding:8px 10px 6px;}'
+        + '.grn-sig-for{text-align:right;font-weight:700;font-size:9pt;margin-bottom:28px;}'
+        + '.grn-sig-row{display:flex;justify-content:space-between;gap:6px;}'
+        + '.grn-sig-row > div{flex:1;text-align:center;font-weight:700;font-size:8.5pt;padding-top:24px;border-top:1px solid #000;margin-top:4px;}';
 }
 
 function grnPrintCodeFromListRow(row) {
@@ -3368,28 +3878,13 @@ function grnPrintCodeFromListRow(row) {
 
 function grnBuildPrintCompanyHeaderHtml(companyInfo) {
     const { companyName, companyAddr, companyTag } = companyInfo || {};
-    const base = grnPrintAssetBaseUrl();
-    const logoUrl = base + 'assets/images/pppllog.jpeg';
-    const showLogo = grnPrintShowPpplLogo(companyName);
-    const addrLine = companyAddr
-        ? (String(companyAddr).trim().toLowerCase().indexOf('address:') === 0
-            ? String(companyAddr).trim()
-            : 'Address: ' + String(companyAddr).trim())
-        : '';
-
-    const headerBody = '<div class="grn-hdr-body">'
-        + '<div class="grn-co">' + grnPrintEscHtml(companyName || 'Company Name') + '</div>'
-        + (companyTag ? '<div class="grn-tag">' + grnPrintEscHtml(companyTag) + '</div>' : '')
-        + (addrLine ? '<div class="grn-addr">' + grnPrintEscHtml(addrLine) + '</div>' : '')
+    const addrLine = String(companyAddr || '').trim();
+    const phoneLine = String(companyTag || '').trim();
+    return '<div class="grn-co-hdr">'
+        + '<div class="grn-co-name">' + grnPrintEscHtml(companyName || 'Company Name') + '</div>'
+        + (addrLine ? '<div class="grn-co-addr">' + grnPrintEscHtml(addrLine) + '</div>' : '')
+        + (phoneLine ? '<div class="grn-co-ph">Ph : ' + grnPrintEscHtml(phoneLine) + '</div>' : '')
         + '</div>';
-
-    if (showLogo) {
-        return '<div class="grn-hdr">'
-            + '<img class="grn-logo" src="' + logoUrl + '" alt="Logo">'
-            + headerBody
-            + '</div>';
-    }
-    return '<div class="grn-hdr grn-hdr--no-logo">' + headerBody + '</div>';
 }
 
 function grnResolvePrintCompanyInfo() {
@@ -3401,120 +3896,81 @@ function grnResolvePrintCompanyInfo() {
     });
 }
 
-/** Report body — includes company logo / name / address header. */
+/** Goods Receipt Note print body — backend GetGRNList / GetGRNByCode data. */
 function grnBuildPrintReportInnerHtml(listRow, detailRows, codeNum, companyInfo) {
     detailRows = grnStampPrintDetailProjectSite(detailRows, listRow, null);
     listRow = grnEnrichListRowFromPrintDetails(listRow, detailRows);
-    const stamps = grnPrintStampUrls();
 
+    const companyName = (companyInfo && companyInfo.companyName) || '';
     const mrnNo = grnPrintMrnNo(listRow, codeNum);
     const billNo = grnPickPrintField(listRow, ['BillNo', 'billNo', 'Bill No']);
     const billDate = grnPrintFmtDate(listRow?.BillDate ?? listRow?.billDate ?? listRow?.['Bill Date']);
-    const recvDate = grnPrintFmtDate(listRow?.ReceiveDate ?? listRow?.receiveDate ?? listRow?.['Receive Date']);
-    const partyName = grnPickPrintField(listRow, ['AccountDesp', 'accountDesp', 'PartyName', 'partyName', 'Party Name', 'VendorName', 'vendorName']);
-    const projectHdr = grnPickPrintField(listRow, grnPrintProjectSiteKeys().project);
-    const siteHdr = grnPickPrintField(listRow, grnPrintProjectSiteKeys().site);
-    const siteTypeHdr = grnPickPrintField(listRow, ['SiteType', 'siteType']);
-    const industryType = grnPickPrintField(listRow, ['IndustryType', 'industryType']);
-    const phoneNo = grnPickPrintField(listRow, ['PhoneNo', 'phoneNo', 'ContactNo', 'contactNo']);
-    const statusLbl = grnPrintStatusLabel(listRow);
-    const verifiedBy = grnPickPrintField(listRow, ['VerifiedByName', 'verifiedByName', 'VerifiedByDesp', 'VerifiedBy', 'verifiedBy']);
+    const docDate = grnPrintFmtDate(new Date());
     const remarks = grnPickPrintField(listRow, ['Remarks', 'remarks', 'Remark', 'remark']);
-    const today = grnPrintFmtDate(new Date());
+    const preparedBy = grnPickPrintField(listRow, ['PreparedByName', 'preparedByName', 'PreparedBy', 'preparedBy', 'CreatedByName', 'createdByName']);
 
-    let totalAmt = 0;
-    let tableRows = '';
-    (detailRows || []).forEach(function (row, idx) {
-        const psKeys = grnPrintProjectSiteKeys();
-        let proj = grnPickPrintField(row, psKeys.project);
-        let site = grnPickPrintField(row, psKeys.site);
-        if (!proj) proj = projectHdr;
-        if (!site) site = siteHdr;
-        const item = grnPickPrintField(row, ['ItemName', 'itemName', 'Item', 'item']);
-        const poNo = grnPickPrintField(row, ['PONo', 'poNo', 'PoNO']);
-        const poDate = grnPrintFmtDate(row.PODate ?? row.poDate);
-        const amt = parseFloat(row.Amount ?? row.amount ?? 0) || 0;
-        totalAmt += amt;
-        tableRows += '<tr>'
-            + '<td style="text-align:center;">' + (idx + 1) + '</td>'
-            + '<td>' + grnPrintEscHtml(proj) + '</td>'
-            + '<td>' + grnPrintEscHtml(site) + '</td>'
-            + '<td>' + grnPrintEscHtml(item) + '</td>'
-            + '<td>' + grnPrintEscHtml(poNo) + (poDate ? '<br><small>' + grnPrintEscHtml(poDate) + '</small>' : '') + '</td>'
-            + '<td style="text-align:right;">&#8377;' + grnPrintFmtCurrency(amt) + '</td>'
-            + '</tr>';
-    });
-    if (!tableRows) {
-        tableRows = '<tr><td colspan="6" style="text-align:center;padding:12px;color:#666;">No line items found.</td></tr>';
-    }
+    const tableBuilt = grnPrintBuildItemTableRowsHtml(detailRows);
+    const colCount = tableBuilt.colCount || 10;
+    const totals = grnResolvePrintTotals(listRow, tableBuilt.totalAmt);
+    const tableFooterAmt = totals.lineTotalAmt || tableBuilt.totalAmt || 0;
 
-    if (!totalAmt) {
-        const net = parseFloat(listRow?.NetPayable ?? listRow?.netPayable ?? listRow?.TotalBillAmountManual ?? 0) || 0;
-        if (net > 0) totalAmt = net;
-    }
+    const metaRight = grnPrintBuildMetaRowHtml('Bill No.', billNo)
+        + grnPrintBuildMetaRowHtml('Bill Date', billDate);
 
-    const periodBar = (recvDate || billDate ? (recvDate || billDate) : today)
-        + (partyName ? ' — ' + partyName.toUpperCase() : '');
-
-    const isApproved = statusLbl === 'Approved' || statusLbl === 'Verified';
+    const totalColspan = colCount - 3;
 
     return '<div class="grn-wrap">'
         + grnBuildPrintCompanyHeaderHtml(companyInfo)
-        + '<div class="grn-title">GRN Service Report</div>'
-        + '<table class="grn-meta" role="presentation"><tr>'
-        + '<td><table role="presentation" style="width:100%;border:none;border-collapse:collapse;">'
-        + '<tr><td class="lbl" style="border:none;width:38%;">Date</td><td style="border:none;">' + grnPrintEscHtml(today) + '</td></tr>'
-        + '<tr><td class="lbl" style="border:none;">Bill Date</td><td style="border:none;">' + grnPrintEscHtml(billDate || '—') + '</td></tr>'
-        + '<tr><td class="lbl" style="border:none;">Receive Date</td><td style="border:none;">' + grnPrintEscHtml(recvDate || '—') + '</td></tr>'
-        + '</table></td>'
-        + '<td><table role="presentation" style="width:100%;border:none;border-collapse:collapse;">'
-        + '<tr><td class="lbl" style="border:none;width:38%;">MRN No</td><td style="border:none;">' + grnPrintEscHtml(mrnNo || '—') + '</td></tr>'
-        + '<tr><td class="lbl" style="border:none;">Bill No</td><td style="border:none;">' + grnPrintEscHtml(billNo || '—') + '</td></tr>'
-        + '<tr><td class="lbl" style="border:none;">Status</td><td style="border:none;">' + grnPrintEscHtml(statusLbl) + '</td></tr>'
-        + '</table></td>'
-        + '</tr></table>'
-        + '<div class="grn-split">'
-        + '<div><div class="grn-split-lbl">Vendor / Party Details :</div>'
-        + '<div class="grn-split-name">' + grnPrintEscHtml(partyName || '—') + '</div>'
-        + (projectHdr ? '<div>Project : ' + grnPrintEscHtml(projectHdr) + '</div>' : '')
-        + (siteHdr ? '<div>Site : ' + grnPrintEscHtml(siteHdr) + '</div>' : '')
+        + '<div class="grn-doc-box">'
+        + '<div class="grn-doc-top">'
+        + '<div class="grn-doc-top-left"><strong>G.R.N No. :</strong> ' + grnPrintEscHtml(mrnNo) + '</div>'
+        + '<div class="grn-doc-top-center">GOODS RECEIPT NOTE</div>'
+        + '<div class="grn-doc-top-right"><strong>Date:</strong> ' + grnPrintEscHtml(docDate) + '</div>'
         + '</div>'
-        + '<div><div class="grn-split-lbl">GRN Information :</div>'
-        + (siteTypeHdr ? '<div>Site Type : ' + grnPrintEscHtml(siteTypeHdr) + '</div>' : '')
-        + (industryType ? '<div>Industry Type : ' + grnPrintEscHtml(industryType) + '</div>' : '')
-        + (phoneNo ? '<div>Contact No : ' + grnPrintEscHtml(phoneNo) + '</div>' : '')
-        + (verifiedBy ? '<div>Verified By : ' + grnPrintEscHtml(verifiedBy) + '</div>' : '')
-        + '</div></div>'
-        + '<div class="grn-period-bar">GRN Period : ' + grnPrintEscHtml(periodBar) + '</div>'
+        + '<div class="grn-doc-body">'
+        + '<div class="grn-doc-body-left">'
+        + '<div class="grn-sup-lbl">Supplier\'s Name &amp; Address:</div>'
+        + grnPrintBuildSupplierAddressHtml(listRow)
+        + '</div>'
+        + '<div class="grn-doc-body-right">'
+        + '<table class="grn-meta-mini" role="presentation">' + metaRight + '</table>'
+        + '</div>'
+        + '</div>'
         + '<table class="grn-items"><thead><tr>'
-        + '<th style="width:40px;">S.No</th>'
-        + '<th>Project name</th>'
-        + '<th>Site name</th>'
-        + '<th>Item / Service</th>'
-        + '<th style="width:110px;">PO No.</th>'
-        + '<th style="width:110px;">Amount</th>'
-        + '</tr></thead><tbody>' + tableRows + '</tbody></table>'
-        + '<div class="grn-totals">'
-        + '<div>Total Amount : &#8377;' + grnPrintFmtCurrency(totalAmt) + '</div>'
-        + '<div class="total-line">Total : &#8377;' + grnPrintFmtCurrency(totalAmt) + '</div>'
-        + '</div>'
-        + '<div class="grn-words">Amount In Word : ' + grnPrintEscHtml(grnPrintNumToWords(Math.round(totalAmt))) + '</div>'
-        + (remarks ? '<div class="grn-note"><b>Remark</b>' + grnPrintEscHtml(remarks) + '</div>' : '')
-        + '<div class="grn-note"><b>Note:</b> The following details are essential to process this GRN for payment purpose.'
-        + '<br>i) Vendor / party name and bill details.'
-        + '<br>ii) Receive date, bill number and MRN number.'
-        + '<br>iii) Project / site name, PO number and item details.'
-        + '<br>iv) Supporting bills / invoices must be attached.</div>'
-        + '<div class="grn-sig">'
-        + '<div>' + (isApproved ? grnPrintStampImgHtml(stamps.verified, 'Verified') : '') + 'Verified By / Accounts</div>'
-        + '<div>' + (isApproved ? grnPrintStampImgHtml(stamps.approved, 'Approved') : '') + 'Approved By / Management</div>'
-        + '</div>'
-        + '</div>';
+        + '<th style="width:4%;">SNo</th>'
+        + '<th style="width:18%;">Item Description</th>'
+        + '<th style="width:6%;">UOM</th>'
+        + '<th style="width:8%;">Bill Qty</th>'
+        + '<th style="width:8%;">Accept Qty</th>'
+        + '<th style="width:7%;">Rej. Qty</th>'
+        + '<th style="width:7%;">Shortage</th>'
+        + '<th style="width:9%;">Rate Rs</th>'
+        + '<th style="width:10%;">Amount Rs</th>'
+        + '<th style="width:15%;">Remarks</th>'
+        + '</tr></thead><tbody>'
+        + tableBuilt.html
+        + '<tr class="grn-total-row">'
+        + '<td colspan="' + totalColspan + '" class="grn-total-label">Total Amount</td>'
+        + '<td class="grn-tc">Rs</td>'
+        + '<td class="grn-tr">' + grnPrintFmtCurrency(tableFooterAmt) + '</td>'
+        + '<td>&nbsp;</td>'
+        + '</tr>'
+        + '</tbody></table>'
+        + grnPrintBuildSummaryFooterHtml(colCount, totals, listRow)
+        + '<div class="grn-sig-wrap">'
+        + '<div class="grn-sig-for">For ' + grnPrintEscHtml(companyName || 'Company Name') + '</div>'
+        + '<div class="grn-sig-row">'
+        + '<div>' + grnPrintEscHtml(preparedBy || 'Prepared By') + '</div>'
+        + '<div>Received By/Sign. of Store Incharge</div>'
+        + '<div>Sign. of Q.C. Deptt</div>'
+        + '<div>Authorised Signatory</div>'
+        + '</div></div>'
+        + '</div></div>';
 }
 
 function grnBuildPrintReportDocument(pagesHtml, docTitle) {
     const css = grnPrintReportCss();
-    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + grnPrintEscHtml(docTitle || 'GRN Service Report') + '</title><style>' + css + '</style></head><body>'
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + grnPrintEscHtml(docTitle || 'Goods Receipt Note') + '</title><style>' + css + '</style></head><body>'
         + '<div class="no-print" style="display:flex;gap:8px;padding:3px 0 8px;">'
         + '<button type="button" onclick="window.print()" style="background:#1a2a6c;color:#fff;border:none;padding:5px 16px;border-radius:5px;font-size:9pt;cursor:pointer;">&#128438;&nbsp;Print</button>'
         + '<button type="button" onclick="window.close()" style="background:#666;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:9pt;cursor:pointer;">&#10005;&nbsp;Close</button>'
@@ -3526,16 +3982,25 @@ function grnBuildPrintReportDocument(pagesHtml, docTitle) {
 function grnBuildPrintReportHtml(listRow, detailRows, codeNum, companyInfo) {
     return grnBuildPrintReportDocument(
         grnBuildPrintReportInnerHtml(listRow, detailRows, codeNum, companyInfo),
-        'GRN Service Report'
+        'Goods Receipt Note'
     );
 }
 
 function grnResolvePrintDataForCode(codeNum, listRow, detailAll) {
-    let detailRows = grnFilterPrintDetailRows(detailAll, codeNum, listRow);
+    const formRows = grnPrintDetailsFromFormGrid(codeNum);
+    const formListRow = grnPrintListRowFromForm(codeNum);
+    if (formRows && formRows.length) {
+        return Promise.resolve({
+            listRow: Object.assign({}, listRow || {}, formListRow || {}),
+            detailRows: formRows,
+        });
+    }
+
+    let detailRows = grnNormalizePrintDetailRows(grnFilterPrintDetailRows(detailAll, codeNum, listRow));
     if (detailRows.length) {
         return Promise.resolve({
             listRow: listRow,
-            detailRows: grnStampPrintDetailProjectSite(detailRows, listRow, null),
+            detailRows: grnStampPrintDetailProjectSite(detailRows, listRow, null).map(grnNormalizePrintDetailRow),
         });
     }
     return GRNService.GetGRNByCode(codeNum).catch(function () { return null; }).then(function (byCodeResp) {
@@ -3620,7 +4085,7 @@ function PrintGRNServiceReportBatch(listRows, mode) {
         });
         return chain;
     }).then(function (pagesHtml) {
-        const html = grnBuildPrintReportDocument(pagesHtml, 'GRN Service Report');
+        const html = grnBuildPrintReportDocument(pagesHtml, 'Goods Receipt Note');
         grnOpenPrintWindow(html, mode || 'preview');
     }).catch(function (err) {
         console.error('PrintGRNServiceReportBatch', err);
@@ -3671,31 +4136,62 @@ function viewGRNFromList(code) {
 // EDIT GRN — load record into form
 // ══════════════════════════════════════════════════════════════════════════════
 async function editGRN(code) {
+    if (!code) return;
+
     var ModuleName = "GRN Services",
-        OptionName = "Edit",
-        ShowMsg = "Y",
         FinYear = getFinancialYear();
 
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
-        if (response.CheckModuleOptionRight === 'N') {
-            toastr.error(response.Msg);
+    if (grnIsVerifiedOrApprovedForEditBlockByCode(code)) {
+        try {
+            var afterVerifyResp = await MenuService.CheckModuleOptionRight(ModuleName, "Edit After Verification", "Y", FinYear);
+            if (!afterVerifyResp || afterVerifyResp.CheckModuleOptionRight === "N") {
+                if (afterVerifyResp && afterVerifyResp.Msg) {
+                    toastr.error(afterVerifyResp.Msg);
+                } else {
+                    showToast("Verified/approved GRN cannot be edited.", "warning");
+                }
+                return;
+            }
+        } catch (e) {
+            console.error("editGRN Edit After Verification check:", e);
+            showToast("Permission check failed.", "error");
             return;
         }
-        else {
-            if (!code) return;
-            showToast('Loading GRN...', 'info');
+    }
 
-            try {
-                const resp = await GRNService.GetGRNByCode(code);
-                if (!resp) { showToast('GRN not found.', 'error'); return; }
+    try {
+        var editRightResp = await MenuService.CheckModuleOptionRight(ModuleName, "Edit", "Y", FinYear);
+        if (!editRightResp || editRightResp.CheckModuleOptionRight === "N") {
+            toastr.error(editRightResp && editRightResp.Msg ? editRightResp.Msg : "No edit permission.");
+            return;
+        }
+    } catch (e) {
+        console.error("editGRN Edit check:", e);
+        showToast("Permission check failed.", "error");
+        return;
+    }
 
-                // SP SHOWDATA returns two result sets:
-                //   [0] GRNServiceList  → MRNMaster columns + AccountDesp
-                //   [1] GRNServiceDetail → MRNDetail columns + ItemName (ItemMaster JOIN) + PONo (PurchaseOrderMaster JOIN)
-                const master = (resp.GRNServiceList ?? resp.grnServiceList)?.[0] ?? resp;
-                const items = resp.GRNServiceDetail ?? resp.grnServiceDetail ?? [];
+    showToast("Loading GRN...", "info");
 
-                editMode = true;
+    try {
+        const resp = await GRNService.GetGRNByCode(code);
+        if (!resp) { showToast("GRN not found.", "error"); return; }
+
+        // SP SHOWDATA returns two result sets:
+        //   [0] GRNServiceList  → MRNMaster columns + AccountDesp
+        //   [1] GRNServiceDetail → MRNDetail columns + ItemName (ItemMaster JOIN) + PONo (PurchaseOrderMaster JOIN)
+        const master = (resp.GRNServiceList ?? resp.grnServiceList)?.[0] ?? resp;
+        const items = resp.GRNServiceDetail ?? resp.grnServiceDetail ?? [];
+
+        if (grnIsVerifiedOrApprovedForEditBlock(master)) {
+            var canEditAfterVerify = await checkGrnEditAfterVerificationRight("Y");
+            if (!canEditAfterVerify) {
+                showToast("Verified/approved GRN cannot be edited.", "warning");
+                return;
+            }
+        }
+
+        editMode = true;
                 editCode = code;
                 const hdnMrn = document.getElementById('hdnMRNMasterCode');
                 if (hdnMrn) hdnMrn.value = String(code);
@@ -3865,13 +4361,10 @@ async function editGRN(code) {
                 showFillGridCheckbox(false);  // Ensure hidden in Edit before showing form
                 showFormView();
                 showToast('GRN loaded for editing.', 'success');
-            } catch (e) {
-                console.error('editGRN error:', e);
-                showToast('Failed to load GRN data.', 'error');
-            }
-
-        }
-    });
+    } catch (e) {
+        console.error('editGRN error:', e);
+        showToast('Failed to load GRN data.', 'error');
+    }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -4050,7 +4543,14 @@ function saveGRN() {
         if (response.CheckModuleOptionRight === 'N') {
             toastr.error(response.Msg);
             return;
-        } else {
+        }         else {
+            if (editMode && grnIsVerifiedOrApprovedForEditBlockByCode(editCode)) {
+                var canSaveAfterVerify = await checkGrnEditAfterVerificationRight("Y");
+                if (!canSaveAfterVerify) {
+                    showToast("Verified/approved GRN cannot be edited.", "warning");
+                    return;
+                }
+            }
             if (!validateGRN()) return;
 
             // Helper: return date string or fallback date (never send null/empty for NOT NULL date cols)
@@ -4145,9 +4645,9 @@ function saveGRN() {
                         }
                         const savedPk = parseInt(data.Code ?? data.code ?? (editMode ? editCode : 0), 10) || 0;
                         const mrnNoNum = parseInt(String(document.getElementById('txtGRNNo')?.value ?? '').trim(), 10) || parseInt(String(newNo ?? '').trim(), 10) || 0;
-                        const recvDate = document.getElementById('dtRecvDate')?.value ?? '';
+                        const billDateForAttach = document.getElementById('dtBillDate')?.value ?? '';
                         if (savedPk > 0 && typeof window.FlushPendingAttachments === 'function') {
-                            const flush = await window.FlushPendingAttachments(savedPk, 'MRNMaster', mrnNoNum, recvDate);
+                            const flush = await window.FlushPendingAttachments(savedPk, 'MRNMaster', mrnNoNum, billDateForAttach);
                             if (flush && flush.failed > 0) {
                                 showToast(flush.uploaded + ' attachment(s) uploaded, ' + flush.failed + ' failed.', 'warning');
                             } else if (flush && flush.uploaded > 0) {
@@ -4192,7 +4692,8 @@ function cancelGRN() {
 }
 
 function resetForm() {
-    ['txtGRNNo', 'txtBillNo', 'dtBillDate', 'dtRecvDate', 'txtRemark', 'txtDedutionRemark']
+    ['txtGRNNo', 'txtBillNo', 'dtBillDate', 'dtRecvDate', 'txtRemark', 'txtDedutionRemark',
+        'txtTotalBillAmountManual', 'txtNetPayable']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 
     document.getElementById('ddlPartyName').value             = '';
@@ -4318,7 +4819,7 @@ function InitAttachmentControl(masterTableName, masterTableCode, detailTableName
 function openGrnServiceAttachmentControl() {
     const masterCode = parseInt(document.getElementById('hdnMRNMasterCode')?.value ?? '0', 10) || 0;
     const mrnNo = parseInt(document.getElementById('txtGRNNo')?.value?.trim() ?? '0', 10) || 0;
-    const entryDate = document.getElementById('dtRecvDate')?.value ?? '';
+    const entryDate = grnFormatDateInput(document.getElementById('dtBillDate')?.value ?? '');
     InitAttachmentControl('MRNMaster', masterCode, '', 0, mrnNo, entryDate, 'all', '');
 }
 
@@ -4328,7 +4829,8 @@ function openGrnServiceListAttachmentControl(code, entryNo, entryDate) {
         showToast('Invalid record. Cannot open attachments.', 'warning');
         return;
     }
-    InitAttachmentControl('MRNMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, entryDate || '', 'all', '');
+    const resolvedEntryDate = grnResolveAttachmentEntryDate(masterCode, entryDate);
+    InitAttachmentControl('MRNMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, resolvedEntryDate, 'all', '');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -4425,6 +4927,7 @@ window.closeGrnVerifyDetailPopover = closeGrnVerifyDetailPopover;
 window.InitAttachmentControl = InitAttachmentControl;
 window.openGrnServiceAttachmentControl = openGrnServiceAttachmentControl;
 window.openGrnServiceListAttachmentControl = openGrnServiceListAttachmentControl;
+window.grnResolveAttachmentEntryDate = grnResolveAttachmentEntryDate;
 window.syncGrnFooterAttachmentButtonState = syncGrnFooterAttachmentButtonState;
 window.showAllItems         = showAllItems;
 window.onAddItemClick       = onAddItemClick;

@@ -1879,15 +1879,103 @@ function bumpMrnApprovalAttachmentModalZIndex() {
     });
 }
 
-function resolveMrnApprovalAttachmentContext(codeNum) {
-    const payment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === codeNum; })
+function getBillDateForAttachment(p) {
+    if (!p) return '';
+    const direct = mrnPickRowField(p, [
+        'BillDate', 'billDate', 'Bill Date', 'Bill_Date', 'bill_date',
+    ]);
+    if (direct) return direct;
+    const lines = p._detailLines;
+    if (Array.isArray(lines) && lines.length) {
+        const fromLine = mrnPickRowField(lines[0], [
+            'BillDate', 'billDate', 'Bill Date', 'Bill_Date', 'bill_date',
+        ]);
+        if (fromLine) return fromLine;
+    }
+    return '';
+}
+
+function mrnLocalYmdFromDate(d) {
+    if (!d || Number.isNaN(d.getTime())) return '';
+    return d.getFullYear() + '-'
+        + String(d.getMonth() + 1).padStart(2, '0') + '-'
+        + String(d.getDate()).padStart(2, '0');
+}
+
+/** yyyy-mm-dd for attachment control — local calendar day (avoids UTC shift). */
+function mrnFormatDateInputForAttachment(val) {
+    if (val === undefined || val === null || val === '') return '';
+    const s = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const dmY = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (dmY) {
+        return dmY[3] + '-' + dmY[2].padStart(2, '0') + '-' + dmY[1].padStart(2, '0');
+    }
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return mrnLocalYmdFromDate(d);
+    return '';
+}
+
+function mrnFindPaymentByCode(codeNum) {
+    return G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === codeNum; })
         || (G_PaymentListFull || []).find(function (p) { return getPaymentMasterCode(p) === codeNum; })
         || (G_CurrentPayment && getPaymentMasterCode(G_CurrentPayment) === codeNum ? G_CurrentPayment : null);
+}
+
+function mrnResolveAttachmentBillDate(codeNum, payment, hint) {
+    let raw = hint;
+    if (raw === undefined || raw === null || String(raw).trim() === '') {
+        raw = payment ? getBillDateForAttachment(payment) : '';
+    }
+    if (!raw && typeof window.grnResolveAttachmentEntryDate === 'function') {
+        const fromGrn = window.grnResolveAttachmentEntryDate(payment || codeNum, '');
+        if (fromGrn) return fromGrn;
+    }
+    if (!raw && typeof window.grnGetApprovalSourceRow === 'function') {
+        const src = window.grnGetApprovalSourceRow(codeNum);
+        if (src) raw = getBillDateForAttachment(src);
+    }
+    if (!raw && payment) {
+        raw = payment.ReceiveDate ?? payment.receiveDate ?? '';
+    }
+    return mrnFormatDateInputForAttachment(raw);
+}
+
+function resolveMrnApprovalAttachmentContext(codeNum) {
+    const payment = mrnFindPaymentByCode(codeNum);
     const entryNoRaw = payment ? formatMrnDisplayNo(payment) : '';
     const entryNo = parseInt(entryNoRaw, 10) || 0;
-    const entryDate = payment ? getEntryDate(payment) : '';
-    const rawDate = entryDate ? String(entryDate).substring(0, 10) : '';
-    return { entryNo: entryNo, entryDate: rawDate };
+    const entryDate = mrnResolveAttachmentBillDate(codeNum, payment, '');
+    return { entryNo: entryNo, entryDate: entryDate, payment: payment };
+}
+
+function openMrnApprovalAttachmentControlResolved(codeNum, ctx) {
+    const entryNo = ctx && ctx.entryNo != null ? ctx.entryNo : 0;
+    const entryDate = ctx && ctx.entryDate ? ctx.entryDate : '';
+    InitMRNApprovalAttachmentControl(codeNum, entryNo, entryDate);
+}
+
+function openMrnApprovalAttachmentWithBillDate(codeNum, paymentHint) {
+    const payment = paymentHint || mrnFindPaymentByCode(codeNum);
+    const ctx = resolveMrnApprovalAttachmentContext(codeNum);
+    if (ctx.entryDate) {
+        openMrnApprovalAttachmentControlResolved(codeNum, ctx);
+        return;
+    }
+    MRNMasterApprovalService.GetMRNMasterDetail(codeNum)
+        .then(function (res) {
+            const merged = mergeDetailIntoPayment(res, payment || {});
+            const entryNoRaw = formatMrnDisplayNo(merged);
+            const entryDate = mrnResolveAttachmentBillDate(codeNum, merged, '');
+            openMrnApprovalAttachmentControlResolved(codeNum, {
+                entryNo: parseInt(entryNoRaw, 10) || ctx.entryNo,
+                entryDate: entryDate,
+            });
+        })
+        .catch(function (err) {
+            console.warn('GetMRNMasterDetail for attachment bill date', err);
+            openMrnApprovalAttachmentControlResolved(codeNum, ctx);
+        });
 }
 
 function InitMRNApprovalAttachmentControl(code, entryNo, entryDate) {
@@ -1908,8 +1996,7 @@ function InitMRNApprovalAttachmentControl(code, entryNo, entryDate) {
 function OpenMRNApprovalCardAttachment(code) {
     const codeNum = parseInt(code, 10);
     if (!Number.isFinite(codeNum) || codeNum <= 0) return;
-    const ctx = resolveMrnApprovalAttachmentContext(codeNum);
-    InitMRNApprovalAttachmentControl(codeNum, ctx.entryNo, ctx.entryDate);
+    openMrnApprovalAttachmentWithBillDate(codeNum, null);
 }
 
 function OpenMRNApprovalAttachmentFromModal() {
@@ -1918,8 +2005,7 @@ function OpenMRNApprovalAttachmentFromModal() {
         if (typeof toastr !== 'undefined') toastr.warning('No MRN selected.');
         return;
     }
-    const ctx = resolveMrnApprovalAttachmentContext(code);
-    InitMRNApprovalAttachmentControl(code, ctx.entryNo, ctx.entryDate);
+    openMrnApprovalAttachmentWithBillDate(code, G_CurrentPayment);
 }
 
 function LoadMrnAttachmentsInline(masterCode) {
@@ -2093,6 +2179,13 @@ function mapApprovalRowForGrnPrint(p) {
     const code = getPaymentMasterCode(p);
     const entryNo = getEntryNo(p);
     const amt = getTotalAmount(p);
+    const totalBill = p.TotalBillAmountManual ?? p.totalBillAmountManual ?? p.BillAmount ?? p.billAmount ?? amt;
+    const tds = parseFloat(p.TDSAmount ?? p.tdsAmount ?? 0) || 0;
+    const deduct = parseFloat(p.Dedution ?? p.dedution ?? p.Deduction ?? p.deduction ?? 0) || 0;
+    const billNum = parseFloat(totalBill) || 0;
+    const netPayable = billNum > 0
+        ? Math.max(0, billNum - tds - deduct)
+        : (p.NetPayable ?? p.netPayable ?? p.PayableAmount ?? p.payableAmount ?? amt);
     return Object.assign({}, p, {
         Code: code,
         MRNMaster_Code: code,
@@ -2102,8 +2195,12 @@ function mapApprovalRowForGrnPrint(p) {
         AccountDesp: getPartyName(p),
         ProjectDesp: getProject(p) || mrnProjectLabelFromPayment(p),
         SubProjectDesp: getSubProject(p) || mrnSubProjectLabelFromPayment(p),
-        NetPayable: amt,
-        TotalBillAmountManual: amt,
+        TotalBillAmountManual: totalBill,
+        Dedution: p.Dedution ?? p.dedution ?? p.Deduction ?? p.deduction,
+        Deduction: p.Deduction ?? p.deduction ?? p.Dedution ?? p.dedution,
+        DedutionRemark: p.DedutionRemark ?? p.dedutionRemark ?? p.DeductionRemark ?? p.deductionRemark,
+        TDSAmount: p.TDSAmount ?? p.tdsAmount,
+        NetPayable: netPayable,
     });
 }
 
@@ -2172,6 +2269,7 @@ window.OpenMRNApprovalCardAttachment = OpenMRNApprovalCardAttachment;
 window.OpenMRNApprovalAttachmentFromModal = OpenMRNApprovalAttachmentFromModal;
 window.openGRNApprovalCardAttachment = OpenMRNApprovalCardAttachment;
 window.openGRNApprovalAttachment = OpenMRNApprovalAttachmentFromModal;
+window.mrnResolveAttachmentBillDate = mrnResolveAttachmentBillDate;
 window.PrintGRNApprovalList = PrintGRNApprovalList;
 window.PrintGRNServiceFromApproval = PrintGRNServiceFromApproval;
 window.mrnGetCurrentPaymentForPrint = mrnGetCurrentPaymentForPrint;
