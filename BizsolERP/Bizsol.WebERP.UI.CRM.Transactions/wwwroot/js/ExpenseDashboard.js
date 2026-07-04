@@ -1,41 +1,245 @@
 import { ExpenseDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseDashboardService.js';
-import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
 import { ExpensesLedgerReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpensesLedgerReportService.js';
 
 let G_SubProjectList = [];
 let G_MarketingManList = [];
+let edashFilterPanel = null;
 let chartTrend = null;
 let chartCategory = null;
 
 const CATEGORY_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#14b8a6', '#eab308', '#ef4444', '#6366f1'];
+const EDASH_MM_MAX_RETRIES = 8;
+const EDASH_MM_RETRY_DELAY_MS = 400;
 
 $(document).ready(function () {
     $('#ERPHeading').text('Expense Dashboard');
-    initCurrentMonthDates();
-    bindEvents();
-    loadFilters().then(function () {
-        loadDashboard();
-    });
+    $('#btnExport').on('click', exportProjectTable);
+    MountFilterPanelToBody();
+    InitFilterSidePanelControl();
 });
 
-function bindEvents() {
-    $('#btnShow').on('click', loadDashboard);
-    $('#ddlProject').on('change', refreshSubProjectOptions);
-    $('#ddlMarketingMan').on('change', function () {
-        $('#edashWelcomeName').text(getSelectedMarketingManName());
-    });
-    $('#btnExport').on('click', exportProjectTable);
-    $('#txtFromDate, #txtToDate').on('change', updateDateRangeLabel);
+function MountFilterPanelToBody() {
+    const panel = document.getElementById('edashFilterPanel');
+    if (panel && panel.parentElement !== document.body) {
+        document.body.appendChild(panel);
+    }
 }
 
-function initCurrentMonthDates() {
+function InitFilterSidePanelControl() {
+    edashFilterPanel = document.getElementById('edashFilterPanel');
+    if (!edashFilterPanel) return;
+
+    if (!customElements.get('filter-side-panel-control')) {
+        customElements.whenDefined('filter-side-panel-control').then(InitFilterSidePanelControl);
+        return;
+    }
+
+    edashFilterPanel.setFilters([
+        { id: 'ddlMarketingMan', type: 'select', label: 'Marketing Man *', data: [{ Code: '', Desp: 'Select' }] },
+        { id: 'ddlProject', type: 'select', label: 'Project', data: [{ Code: '0', Desp: 'All' }] },
+        { id: 'ddlSubProject', type: 'select', label: 'Sub Project', data: [{ Code: '0', Desp: 'All' }] },
+        { id: 'dateRange', type: 'daterange', label: 'Date Range' },
+    ]);
+
+    edashFilterPanel.addEventListener('filtersapplied', function () {
+        loadDashboard();
+    });
+
+    Promise.all([
+        LoadMarketingManDropdownIntoFilter(),
+        LoadProjectDropdownIntoFilter(),
+        ExpensesLedgerReportService.GetSubProjectMasterList().then(function (response) {
+            G_SubProjectList = asArray(response);
+            LoadSubProjectDropdownIntoFilter(0);
+        }),
+    ])
+        .then(function () {
+            BindProjectChangeInFilter();
+            AutoSelectLoggedInMarketingManInFilter();
+            return new Promise(function (resolve) {
+                setTimeout(function () {
+                    SetDefaultDateRangeInFilter();
+                    resolve();
+                }, 500);
+            });
+        })
+        .then(function () {
+            loadDashboard();
+        })
+        .catch(function () {
+            toastr.error('Could not load filter dropdowns.');
+            loadDashboard();
+        });
+}
+
+function SetDefaultDateRangeInFilter() {
     const today = new Date();
     const first = new Date(today.getFullYear(), today.getMonth(), 1);
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    $('#txtFromDate').val(fmtIsoDate(first));
-    $('#txtToDate').val(fmtIsoDate(last));
-    updateDateRangeLabel();
+    const dateRangeEl = edashFilterPanel?.shadowRoot?.getElementById('dateRange');
+    if (dateRangeEl && typeof dateRangeEl.setRange === 'function') {
+        dateRangeEl.setRange({
+            fromDate: fmtIsoDate(first),
+            toDate: fmtIsoDate(last),
+        });
+    }
 }
+
+function GetFilterParams() {
+    if (!edashFilterPanel) {
+        return { marketingManCode: 0, projectCode: 0, subProjectCode: 0, fromDate: '', toDate: '' };
+    }
+    const f = edashFilterPanel.getFilterValues();
+    return {
+        marketingManCode: parseInt(f.ddlMarketingMan, 10) || 0,
+        projectCode: parseInt(f.ddlProject, 10) || 0,
+        subProjectCode: parseInt(f.ddlSubProject, 10) || 0,
+        fromDate: f.dateRange?.fromDate || '',
+        toDate: f.dateRange?.toDate || '',
+    };
+}
+
+function SetSelectFilterValue(filterId, code, desp) {
+    const hidden = edashFilterPanel?.shadowRoot?.getElementById(filterId + '_value');
+    const wrapper = edashFilterPanel?.shadowRoot?.getElementById(filterId);
+    if (!hidden || !wrapper) return;
+    hidden.value = String(code);
+    const labelEl = wrapper.querySelector('.search-select-label');
+    if (labelEl) {
+        labelEl.textContent = desp || code;
+        if (code === '' || code == null) labelEl.classList.add('is-placeholder');
+        else labelEl.classList.remove('is-placeholder');
+    }
+    const listEl = wrapper.querySelector('.search-select-list');
+    if (listEl) {
+        listEl.querySelectorAll('.search-select-option').forEach(function (opt) {
+            opt.classList.toggle('is-selected', String(opt.dataset.value) === String(code));
+        });
+    }
+}
+
+function LoadMarketingManDropdownIntoFilter(attempt) {
+    attempt = attempt || 0;
+
+    if (!isAuthKeyReady()) {
+        if (attempt < EDASH_MM_MAX_RETRIES) {
+            return new Promise(function (resolve) {
+                setTimeout(function () {
+                    resolve(LoadMarketingManDropdownIntoFilter(attempt + 1));
+                }, EDASH_MM_RETRY_DELAY_MS);
+            });
+        }
+        toastr.error('Unable to load Marketing Man list. Please refresh the page.');
+        return Promise.reject(new Error('authKey not ready'));
+    }
+
+    return ExpensesLedgerReportService.GetNestedMarketingManList()
+        .then(function (response) {
+            G_MarketingManList = mapMarketingManRows(asArray(response));
+            if (!G_MarketingManList.length) {
+                if (attempt < EDASH_MM_MAX_RETRIES) {
+                    return new Promise(function (resolve) {
+                        setTimeout(function () {
+                            resolve(LoadMarketingManDropdownIntoFilter(attempt + 1));
+                        }, EDASH_MM_RETRY_DELAY_MS);
+                    });
+                }
+                toastr.error('No Marketing Man data found.');
+                return;
+            }
+
+            const items = [{ Code: '', Desp: 'Select' }].concat(G_MarketingManList);
+            edashFilterPanel.updateFilterData('ddlMarketingMan', items);
+            setTimeout(function () {
+                AutoSelectLoggedInMarketingManInFilter();
+            }, 100);
+        })
+        .catch(function (err) {
+            console.error('Marketing Man list error:', err);
+            if (attempt < EDASH_MM_MAX_RETRIES) {
+                return new Promise(function (resolve) {
+                    setTimeout(function () {
+                        resolve(LoadMarketingManDropdownIntoFilter(attempt + 1));
+                    }, EDASH_MM_RETRY_DELAY_MS);
+                });
+            }
+            toastr.error('Could not load Marketing Man list.');
+            return Promise.reject(err);
+        });
+}
+
+function LoadProjectDropdownIntoFilter() {
+    return ExpensesLedgerReportService.GetProjectMasterList()
+        .then(function (response) {
+            const items = [{ Code: '0', Desp: 'All' }].concat(mapProjectRows(asArray(response)));
+            edashFilterPanel.updateFilterData('ddlProject', items);
+        });
+}
+
+function buildSubProjectItems(projectCode) {
+    const pid = parseInt(projectCode, 10) || 0;
+    const items = [{ Code: '0', Desp: 'All' }];
+    const list = pid === 0
+        ? G_SubProjectList
+        : G_SubProjectList.filter(function (sp) { return subProjectParentCode(sp) === pid; });
+    list.forEach(function (item) {
+        const Code = String(firstVal(item, ['SubProjectMaster_Code', 'Code', 'code']) || '');
+        items.push({ Code: Code, Desp: subProjectDesp(item) || Code });
+    });
+    return items;
+}
+
+function LoadSubProjectDropdownIntoFilter(projectCode) {
+    edashFilterPanel.updateFilterData('ddlSubProject', buildSubProjectItems(projectCode));
+    SetSelectFilterValue('ddlSubProject', '0', 'All');
+}
+
+function BindProjectChangeInFilter() {
+    setTimeout(function () {
+        const wrapper = edashFilterPanel?.shadowRoot?.getElementById('ddlProject');
+        if (!wrapper) return;
+        wrapper.addEventListener('click', function (e) {
+            const option = e.target.closest('.search-select-option');
+            if (!option) return;
+            setTimeout(function () {
+                const hidden = edashFilterPanel?.shadowRoot?.getElementById('ddlProject_value');
+                const projectCode = parseInt(hidden?.value || '0', 10) || 0;
+                LoadSubProjectDropdownIntoFilter(projectCode);
+            }, 50);
+        });
+    }, 200);
+}
+
+function AutoSelectLoggedInMarketingManInFilter() {
+    const userCode = getAuthUserMasterCode();
+    let matched = null;
+    if (userCode != null) {
+        matched = G_MarketingManList.find(function (m) {
+            return String(m.UserMaster_Code) === String(userCode);
+        });
+    }
+    const selected = matched || (G_MarketingManList.length ? G_MarketingManList[0] : null);
+    if (selected) {
+        SetSelectFilterValue('ddlMarketingMan', selected.Code, selected.Desp);
+        $('#edashWelcomeName').text(selected.Desp);
+    }
+}
+
+function ResetExpenseDashboard() {
+    SetDefaultDateRangeInFilter();
+    SetSelectFilterValue('ddlProject', '0', 'All');
+    LoadSubProjectDropdownIntoFilter(0);
+    AutoSelectLoggedInMarketingManInFilter();
+    loadDashboard();
+}
+
+window.OpenEdashFilterPanel = function () {
+    if (edashFilterPanel && typeof edashFilterPanel.open === 'function') {
+        edashFilterPanel.open();
+    }
+};
+
+window.ResetExpenseDashboard = ResetExpenseDashboard;
 
 function fmtIsoDate(d) {
     return d.getFullYear() + '-' +
@@ -44,17 +248,16 @@ function fmtIsoDate(d) {
 }
 
 function updateDateRangeLabel() {
-    const from = $('#txtFromDate').val();
-    const to = $('#txtToDate').val();
-    if (!from || !to) {
+    const { fromDate, toDate } = GetFilterParams();
+    if (!fromDate || !toDate || fromDate === '0' || toDate === '0') {
         $('#edashDateRangeLabel').text('—');
         $('#projectTableTitle').text('Project Wise Expense');
         return;
     }
-    const label = fmtDisplayDate(from) + ' - ' + fmtDisplayDate(to);
+    const label = fmtDisplayDate(fromDate) + ' - ' + fmtDisplayDate(toDate);
     $('#edashDateRangeLabel').text(label);
     $('#projectTableTitle').text('Project Wise Expense (' + label + ')');
-    $('#chartTrendTitle').text('Expense Trend (' + fmtMonthLabel(from) + ')');
+    $('#chartTrendTitle').text('Expense Trend (' + fmtMonthLabel(fromDate) + ')');
 }
 
 function fmtDisplayDate(iso) {
@@ -79,10 +282,19 @@ function convertDateForApi(iso) {
     return parts[2] + '-' + months[parseInt(parts[1], 10) - 1] + '-' + parts[0];
 }
 
+function isAuthKeyReady() {
+    try {
+        const auth = JSON.parse(sessionStorage.getItem('authKey'));
+        return !!(auth && auth.UserMaster_Code != null);
+    } catch (e) {
+        return false;
+    }
+}
+
 function asArray(response) {
     if (response == null) return [];
     if (Array.isArray(response)) return response;
-    const keys = ['data', 'Data', 'result', 'Result', 'items', 'Items', 'rows', 'Rows'];
+    const keys = ['data', 'Data', 'result', 'Result', 'items', 'Items', 'value', 'Value', 'rows', 'Rows', 'records', 'Records'];
     for (let i = 0; i < keys.length; i++) {
         if (Array.isArray(response[keys[i]])) return response[keys[i]];
     }
@@ -126,37 +338,25 @@ function setLoading(on) {
     $('#edashLoader').toggleClass('show', !!on);
 }
 
-function bindSelectList($el, list, firstItem) {
-    $el.empty();
-    if (firstItem === 'All') $el.append(new Option('All', '0'));
-    else if (firstItem === 'Select') $el.append(new Option('Select', ''));
-    list.forEach(function (item) {
-        const code = item.Code != null ? String(item.Code) : '';
-        let text = item.Desp != null ? String(item.Desp) : code;
-        $el.append(new Option(text, code));
-    });
-}
-
-function initSelect2(el) {
-    const $el = $(el);
-    if ($el.data('select2')) $el.select2('destroy');
-    $el.select2({
-        width: '100%',
-        matcher: function (params, data) {
-            if ($.trim(params.term) === '') return data;
-            if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) return data;
-            return null;
-        },
-    });
-}
-
 function mapMarketingManRows(rows) {
-    return rows.map(function (item) {
-        const Code = firstVal(item, ['MarketingManMaster_Code', 'marketingManMaster_Code', 'Code', 'code', 'EmployeeMaster_Code']);
-        const Desp = String(firstVal(item, ['PersonName', 'personName', 'EmployeeName', 'Desp', 'Name'])).trim();
-        const userCode = firstVal(item, ['Usermaster_Code', 'UserMaster_Code', 'userMaster_Code']);
-        return { Code: String(Code || ''), Desp: Desp || String(Code), UserMaster_Code: userCode };
-    }).filter(function (x) { return x.Code; });
+    return rows
+        .map(function (item) {
+            if (!item) return null;
+            const Code = firstVal(item, [
+                'Code', 'code',
+                'MarketingManMaster_Code', 'marketingManMaster_Code',
+                'EmployeeMaster_Code', 'employeeMaster_Code',
+            ]);
+            const Desp = String(firstVal(item, [
+                'PersonName', 'personName',
+                'EmployeeName', 'employeeName',
+                'Desp', 'desp', 'Name', 'name',
+            ])).trim();
+            const userCode = firstVal(item, ['Usermaster_Code', 'UserMaster_Code', 'userMaster_Code']);
+            if (!Code || !Desp) return null;
+            return { Code: String(Code), Desp: Desp, UserMaster_Code: userCode };
+        })
+        .filter(Boolean);
 }
 
 function mapProjectRows(rows) {
@@ -176,80 +376,25 @@ function subProjectDesp(item) {
     return String(firstVal(item, ['SubProjectDesp', 'SubProjectName', 'Desp', 'Name'])).trim();
 }
 
-function refreshSubProjectOptions() {
-    const pid = parseInt($('#ddlProject').val() || '0', 10) || 0;
-    const items = pid === 0
-        ? G_SubProjectList
-        : G_SubProjectList.filter(function (sp) { return subProjectParentCode(sp) === pid; });
-    const mapped = items.map(function (item) {
-        const Code = String(firstVal(item, ['SubProjectMaster_Code', 'Code', 'code']) || '');
-        return { Code: Code, Desp: subProjectDesp(item) || Code };
-    });
-    bindSelectList($('#ddlSubProject'), mapped, 'All');
-    initSelect2('#ddlSubProject');
-}
-
-function loadFilters() {
-    const pMm = ExpenseEntryService.GetNestedMarketingManList().then(function (response) {
-        G_MarketingManList = mapMarketingManRows(asArray(response));
-        bindSelectList($('#ddlMarketingMan'), G_MarketingManList, 'Select');
-        initSelect2('#ddlMarketingMan');
-        autoSelectLoggedInMarketingMan();
-    }).catch(function () {
-        toastr.error('Could not load Marketing Man list.');
-    });
-
-    const pProj = ExpensesLedgerReportService.GetProjectMasterList().then(function (response) {
-        bindSelectList($('#ddlProject'), mapProjectRows(asArray(response)), 'All');
-        initSelect2('#ddlProject');
-    });
-
-    const pSub = ExpensesLedgerReportService.GetSubProjectMasterList().then(function (response) {
-        G_SubProjectList = asArray(response);
-        refreshSubProjectOptions();
-    });
-
-    return Promise.all([pMm, pProj, pSub]).catch(function () {
-        toastr.error('Could not load filter dropdowns.');
-    });
-}
-
-function autoSelectLoggedInMarketingMan() {
-    const userCode = getAuthUserMasterCode();
-    let matched = null;
-    if (userCode != null) {
-        matched = G_MarketingManList.find(function (m) {
-            return String(m.UserMaster_Code) === String(userCode);
-        });
-    }
-    if (matched) {
-        $('#ddlMarketingMan').val(matched.Code).trigger('change');
-        $('#edashWelcomeName').text(matched.Desp);
-    } else if (G_MarketingManList.length > 0) {
-        $('#ddlMarketingMan').val(G_MarketingManList[0].Code).trigger('change');
-        $('#edashWelcomeName').text(G_MarketingManList[0].Desp);
-    }
-}
-
 function getSelectedMarketingManName() {
-    const code = $('#ddlMarketingMan').val();
+    const code = GetFilterParams().marketingManCode;
     const found = G_MarketingManList.find(function (m) { return String(m.Code) === String(code); });
     return found ? found.Desp : '—';
 }
 
 function loadDashboard() {
-    const mmCode = parseInt($('#ddlMarketingMan').val() || '0', 10);
-    const projCode = parseInt($('#ddlProject').val() || '0', 10);
-    const subCode = parseInt($('#ddlSubProject').val() || '0', 10);
-    const fromIso = $('#txtFromDate').val();
-    const toIso = $('#txtToDate').val();
+    const { marketingManCode, projectCode, subProjectCode, fromDate, toDate } = GetFilterParams();
 
-    if (!mmCode) {
+    if (!marketingManCode) {
         toastr.warning('Please select Marketing Man.');
         return;
     }
-    if (!fromIso || !toIso) {
+    if (!fromDate || !toDate || fromDate === '0' || toDate === '0') {
         toastr.warning('Please select date range.');
+        return;
+    }
+    if (fromDate > toDate) {
+        toastr.warning('From Date cannot be greater than To Date.');
         return;
     }
 
@@ -258,11 +403,11 @@ function loadDashboard() {
     setLoading(true);
 
     ExpenseDashboardService.GetExpenseDashboard(
-        convertDateForApi(fromIso),
-        convertDateForApi(toIso),
-        mmCode,
-        projCode,
-        subCode
+        convertDateForApi(fromDate),
+        convertDateForApi(toDate),
+        marketingManCode,
+        projectCode,
+        subProjectCode
     ).then(function (response) {
         bindDashboard(response);
     }).catch(function (err) {
@@ -481,10 +626,11 @@ function escHtml(s) {
 }
 
 function exportProjectTable() {
+    const { fromDate } = GetFilterParams();
     $('#tblProjectWise').table2excel({
         exclude: '.no-export',
         name: 'ProjectWiseExpense',
-        filename: 'ProjectWiseExpense_' + ($('#txtFromDate').val() || 'export'),
+        filename: 'ProjectWiseExpense_' + (fromDate || 'export'),
         fileext: '.xls',
     });
 }
