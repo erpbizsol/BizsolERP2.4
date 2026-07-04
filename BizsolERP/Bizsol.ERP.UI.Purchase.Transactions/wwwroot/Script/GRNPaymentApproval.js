@@ -143,7 +143,8 @@ function gpaFindApprovalListRow(codeNum, forPrint) {
 }
 
 function getEntryDate(p) {
-    return p.EntryDate ?? p['PO Date'] ?? p['Entry Date'] ?? p.PaymentDate ?? p.DocDate ?? '';
+    return p.EntryDate ?? p.entryDate ?? p['Entry Date'] ?? p.PaymentDate ?? p.paymentDate
+        ?? p['PO Date'] ?? p.DocDate ?? '';
 }
 
 function getTotalAmount(p) {
@@ -2161,17 +2162,25 @@ function PrintGPAVoucher(code, mode) {
 
             let detailsLines = '';
             (details || []).forEach(function (row, idx) {
-                const pay = row.TotalPOAmount ?? row.totalPOAmount
-                    ?? row.PaymentAmount ?? row.paymentAmount ?? '';
-                const poNo = gpaPoNoFromRecord(row);
+                const poNoRaw = typeof window.gpaResolvePoNoTextFromRow === 'function'
+                    ? window.gpaResolvePoNoTextFromRow(row)
+                    : gpaPoNoFromRecord(row);
+                const hasPo = poNoRaw && String(poNoRaw).trim() !== '' && String(poNoRaw).trim() !== '0';
+                const pay = hasPo && typeof window.gpaResolvePrintPoAmountFromRow === 'function'
+                    ? window.gpaResolvePrintPoAmountFromRow(row, base)
+                    : (hasPo ? (row.TotalPOAmount ?? row.totalPOAmount ?? '') : '');
                 const category = gpaCategoryNameFromRecord(row);
                 const proj = row.ProjectDesp ?? row.projectDesp ?? row.ProjectName ?? row.projectName ?? row.Project ?? row.project ?? '';
                 const site = row.SubProjectDesp ?? row.subProjectDesp ?? row.SiteName ?? row.siteName ?? row.Site ?? row.site ?? '';
-                detailsLines += '<div style="margin-bottom:6px;">'
+                let poPart = '';
+                if (hasPo) {
+                    poPart += ' &mdash; PO: ' + gpaEscH(String(poNoRaw));
+                    if (pay !== '' && pay != null) poPart += ' &mdash; PO Amount: &#8377;' + gpaFmtIndian(pay);
+                }
+                detailsLines += '<div class="pv-detail-line">'
                     + '<b>Line ' + (idx + 1) + '</b>'
-                    + (poNo ? ' &mdash; PO: ' + gpaEscH(String(poNo)) : '')
+                    + poPart
                     + (category ? ' &mdash; Category: ' + gpaEscH(String(category)) : '')
-                    + (pay !== '' && pay != null ? ' &mdash; PO Amount: &#8377;' + gpaFmtIndian(pay) : '')
                     + (proj ? ' &mdash; Project: ' + gpaEscH(String(proj)) : '')
                     + (site ? ' &mdash; Sub Project: ' + gpaEscH(String(site)) : '')
                     + '</div>';
@@ -2198,7 +2207,10 @@ function PrintGPAVoucher(code, mode) {
                 + 'table.pv-t td{border:1px solid #000;padding:6px 8px;font-size:9.5pt;vertical-align:top;}'
                 + 'table.pv-t td.lbl{font-weight:700;width:22%;background:#fafafa;}'
                 + '.pv-details{min-height:120px;border:1px solid #000;border-top:none;padding:8px;font-size:9.5pt;}'
+                + '.pv-detail-line{margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #000;}'
+                + '.pv-detail-line:last-of-type{margin-bottom:0;}'
                 + '.pv-narration-box{border:none;border-bottom:1px solid #000;padding:8px 10px;margin:0 -8px;min-height:44px;white-space:pre-wrap;line-height:1.45;font-size:9.5pt;background:#fff;}'
+                + '.pv-narration-after-lines{border-top:1px solid #000;margin-top:8px;padding-top:8px;}'
                 + '.pv-amount-block{padding-top:2px;}'
                 + '.pv-sig{display:flex;margin-top:14px;gap:8px;}'
                 + '.pv-sig > div{flex:1;border:1px solid #000;min-height:72px;padding:6px;text-align:center;font-weight:700;font-size:9pt;}';
@@ -2306,14 +2318,20 @@ function InitGRNPaymentAttachmentControl(code, entryNo, entryDate) {
     });
 }
 
+function gpaAttachmentEntryDateForControl(code, payment) {
+    if (typeof window.gpaResolveAttachmentEntryDate === 'function') {
+        return window.gpaResolveAttachmentEntryDate(payment || code, payment ? getEntryDate(payment) : '') || '';
+    }
+    const entryDate = payment ? (getEntryDate(payment) || '') : '';
+    return entryDate ? String(entryDate).substring(0, 10) : '';
+}
+
 function OpenGRNPaymentApprovalAttachment(code) {
     const codeNum = parseInt(code, 10);
     if (!Number.isFinite(codeNum) || codeNum <= 0) return;
     const payment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === codeNum; });
     const entryNo = payment ? (getEntryNo(payment) || 0) : 0;
-    const entryDate = payment ? (getEntryDate(payment) || '') : '';
-    const rawDate = entryDate ? String(entryDate).substring(0, 10) : '';
-    InitGRNPaymentAttachmentControl(codeNum, entryNo, rawDate);
+    InitGRNPaymentAttachmentControl(codeNum, entryNo, gpaAttachmentEntryDateForControl(codeNum, payment));
 }
 
 function OpenGRNPaymentApprovalAttachmentFromModal() {
@@ -2321,9 +2339,7 @@ function OpenGRNPaymentApprovalAttachmentFromModal() {
     if (!code) return;
     const payment = G_CurrentPayment || G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === code; });
     const entryNo = payment ? (getEntryNo(payment) || 0) : 0;
-    const entryDate = payment ? (getEntryDate(payment) || '') : '';
-    const rawDate = entryDate ? String(entryDate).substring(0, 10) : '';
-    InitGRNPaymentAttachmentControl(code, entryNo, rawDate);
+    InitGRNPaymentAttachmentControl(code, entryNo, gpaAttachmentEntryDateForControl(code, payment));
 }
 
 function CloseDetailModal() {

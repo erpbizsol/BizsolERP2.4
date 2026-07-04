@@ -47,6 +47,8 @@ function stripNonNumeric(el) {
 const DEFAULT_BILL_ROW_COUNT = 1;
 /** Edit: master PK from server (hdnGRNPaymentMasterCode mirrors this). */
 let editMode = false;
+/** True when loaded master is approved (P) — save requires Edit After Verification right. */
+let gpaEditingApprovedEntry = false;
 /** Pending bills for Add Bill modal (GetBillDetails rows). */
 let gpaAddBillModalBillRowsCache = [];
 /** Full list rows (all statuses); tabs filter client-side. Matches DDL: U Pending, P Approved, R Rejected. */
@@ -287,6 +289,21 @@ function gpaFormatPoNoForNarration(poNo) {
     return 'PO-' + raw;
 }
 
+/** Append narration on a new line; keeps existing text and skips duplicate lines. */
+function gpaAppendNarrationText(existing, addition, maxLen) {
+    const add = String(addition ?? '').trim();
+    const limit = Number.isFinite(maxLen) && maxLen > 0 ? maxLen : 225;
+    if (!add) return String(existing ?? '').slice(0, limit);
+    const prevTrim = String(existing ?? '').trimEnd();
+    if (!prevTrim) return add.length > limit ? add.slice(0, limit) : add;
+    const lines = prevTrim.split(/\r?\n/);
+    if (lines.some(function (ln) { return ln.trim() === add; })) {
+        return prevTrim.slice(0, limit);
+    }
+    const combined = prevTrim + '\n' + add;
+    return combined.length > limit ? combined.slice(0, limit) : combined;
+}
+
 function gpaBuildPoHistoryNarration(summary, poNo) {
     const s = summary || {};
     const totalWo = s.TotalPOAmount ?? s.totalPOAmount ?? s.TotalPO ?? s.totalPO ?? 0;
@@ -336,7 +353,7 @@ function copyGpaHistoryNarrationToForm() {
     }
 
     const maxLen = parseInt(nar.getAttribute('maxlength') || '225', 10) || 225;
-    nar.value = narration.length > maxLen ? narration.slice(0, maxLen) : narration;
+    nar.value = gpaAppendNarrationText(nar.value, narration, maxLen);
     nar.dispatchEvent(new Event('input', { bubbles: true }));
     nar.focus();
 
@@ -839,7 +856,7 @@ function normalizeGpaListStatusCode(item) {
         || s === 'RECT' || s.indexOf('RECTIF') === 0) {
         return 'R';
     }
-    if (s === 'P' || s === 'APPROVED' || s === 'APPROVE' || rawStr === 'Y' || slow === 'approved'
+    if (s === 'P' || s === 'APPROVED' || s === 'APPROVE' || s === 'Y' || slow === 'approved'
         || slow === 'complete' || slow === 'completed') return 'P';
 
     if (gpaListAllLevelsApprovedFromDetails(item)) return 'P';
@@ -1154,11 +1171,18 @@ function validateGpaListFilters(filters) {
     return true;
 }
 
+function gpaLocalYmdFromDate(d) {
+    if (!d || Number.isNaN(d.getTime())) return '';
+    return d.getFullYear() + '-'
+        + String(d.getMonth() + 1).padStart(2, '0') + '-'
+        + String(d.getDate()).padStart(2, '0');
+}
+
 function formatGpaListDate(val) {
     if (val === undefined || val === null || val === '') return '';
-    const s = String(val);
-    if (s.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(s)) {
-        const d = new Date(s.substring(0, 10) + 'T12:00:00');
+    const s = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        const d = new Date(s + 'T12:00:00');
         if (!Number.isNaN(d.getTime())) {
             return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
@@ -1168,6 +1192,29 @@ function formatGpaListDate(val) {
         return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
     return s;
+}
+
+function gpaEntryDateRawFromRow(item) {
+    if (!item || typeof item !== 'object') return '';
+    return item.EntryDate ?? item.entryDate ?? item.PaymentDate ?? item.paymentDate
+        ?? item['Entry Date'] ?? item['PO Date'] ?? item.PODate ?? item.pODate ?? '';
+}
+
+/** yyyy-mm-dd for attachment control — same source as list "Entry Date" column. */
+function gpaResolveAttachmentEntryDate(codeOrRow, hint) {
+    let raw = hint;
+    if (raw === undefined || raw === null || String(raw).trim() === '') {
+        if (codeOrRow && typeof codeOrRow === 'object') {
+            raw = gpaEntryDateRawFromRow(codeOrRow);
+        } else {
+            const codeNum = parseInt(codeOrRow, 10);
+            if (Number.isFinite(codeNum) && codeNum > 0) {
+                const listRow = gpaGetListRowRawByCode(codeNum);
+                if (listRow) raw = gpaEntryDateRawFromRow(listRow);
+            }
+        }
+    }
+    return formatDateInput(raw);
 }
 
 function gpaBizsolMetaKey(k) {
@@ -1451,11 +1498,11 @@ function mapGpaListRow(item) {
     const workType = item['Work Type'] ?? item.WorkType ?? item.workType
         ?? item.WorkTypeName ?? item.workTypeName ?? item.WorkTypeDesp ?? item.workTypeDesp ?? '';
     const rawAmt = item.Amount ?? item.amount ?? item.HeaderAmount ?? item.headerAmount
-        ?? item['Total Amount'] ?? item.TotalAmount ?? item.totalAmount ?? item.PaymentAmount ?? item.paymentAmount;
+        ?? item['Total Amount'] ?? item.TotalAmount ?? item.totalAmount ?? item.amount ?? item.amount;
     const amt = rawAmt !== undefined && rawAmt !== null && rawAmt !== '' ? Number(rawAmt) : '';
     const ref = item.RefNo ?? item.refNo ?? '';
     const label = String(entryNo || code || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    const rawEdStr = ed ? String(ed).substring(0, 10) : '';
+    const attachEntryDate = gpaResolveAttachmentEntryDate(item, ed);
     const enNum = parseInt(entryNo, 10) || 0;
     const hasAttachmentYes = gpaItemHasAttachmentYes(item);
     const attachBtnClass = hasAttachmentYes ? 'im-btn-attach im-btn-attach--has-attachment' : 'im-btn-attach';
@@ -1468,7 +1515,7 @@ function mapGpaListRow(item) {
         '<i class="fa fa-print"></i></button>' +
         '<button type="button" class="im-btn-edit" title="Edit" onclick="window.editGRNPaymentApproval(' + code + ')">' +
         '<i class="fas fa-pen"></i></button>' +
-        '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="window.openGpaListAttachmentControl(' + code + ',' + enNum + ',\'' + rawEdStr + '\')">' +
+        '<button type="button" class="' + attachBtnClass + '" title="Attachment" onclick="window.openGpaListAttachmentControl(' + code + ',' + enNum + ',\'' + attachEntryDate + '\')">' +
         '<i class="fas fa-paperclip"></i></button>' +
         '<button type="button" class="im-btn-delete" title="Delete" onclick="window.confirmDeleteGRNPaymentApproval(' + code + ', \'' + label + '\')">' +
         '<i class="fas fa-trash-can"></i></button>';
@@ -1562,7 +1609,7 @@ function BuildGpeEntryCard(rawItem) {
     );
     const edRaw = rawItem.EntryDate ?? rawItem.entryDate ?? rawItem.PaymentDate ?? rawItem.paymentDate
         ?? rawItem['Entry Date'] ?? rawItem['PO Date'] ?? rawItem.PODate ?? rawItem.pODate ?? '';
-    const rawEdStr = edRaw ? String(edRaw).substring(0, 10) : '';
+    const attachEntryDate = gpaResolveAttachmentEntryDate(rawItem, edRaw);
     const entryDate = gpeFmtDateDisplay(edRaw);
     const amount = gpeFmtCurrency(
         rawItem.Amount ?? rawItem.amount ?? rawItem.HeaderAmount ?? rawItem.headerAmount
@@ -1604,7 +1651,7 @@ function BuildGpeEntryCard(rawItem) {
         </button>
         <button type="button" class="btn-gpa-print-icon" title="Attachments"
                 style="background:${attachBg};color:#fff;box-shadow:0 2px 8px ${attachShadow};"
-                onclick="window.openGpaListAttachmentControl(${code},${enNum},'${rawEdStr}')">
+                onclick="window.openGpaListAttachmentControl(${code},${enNum},'${attachEntryDate}')">
             <i class="fas fa-paperclip"></i>
         </button>
         <button type="button" class="btn-gpa-print-icon" title="Delete"
@@ -1871,28 +1918,92 @@ function cancelGRNPaymentApproval() {
     showListView();
 }
 
+function gpaIsApprovedPaymentItem(item) {
+    if (!item || typeof item !== 'object') return false;
+    const st = String(
+        item.Status ?? item.status ?? item.ApprovalStatus ?? item.approvalStatus ?? item.Approval_Status ?? ''
+    ).trim().toUpperCase();
+    if (st === 'Y' || st === 'P') return true;
+    return normalizeGpaListStatusCode(item) === 'P';
+}
+
+function gpaGetListStatusCodeByCode(codeNum) {
+    const n = parseInt(codeNum, 10);
+    if (!Number.isFinite(n) || n <= 0) return 'U';
+    for (let i = 0; i < (gpaListFullRows || []).length; i++) {
+        const row = gpaListFullRows[i];
+        if (parseInt(row?.Code, 10) === n) {
+            return row.StatusCode || normalizeGpaListStatusCode(row._gpaRaw || row);
+        }
+    }
+    const raw = gpaGetListRowRawByCode(n);
+    return raw ? normalizeGpaListStatusCode(raw) : 'U';
+}
+
+function gpaIsApprovedPaymentEntry(codeNum) {
+    const raw = gpaGetListRowRawByCode(codeNum);
+    if (gpaIsApprovedPaymentItem(raw)) return true;
+    const statusCode = String(gpaGetListStatusCodeByCode(codeNum) || '').trim().toUpperCase();
+    return statusCode === 'P' || statusCode === 'Y';
+}
+
+/** Approved (P) — edit blocked unless user has Edit After Verification right. */
+function checkGpaEditAfterVerificationRight(showMsg) {
+    var FinYear = getFinancialYear();
+    return MenuService.CheckModuleOptionRight('Payment Entry', 'Edit After Verification', showMsg || 'N', FinYear)
+        .then(function (response) {
+            return !!(response && response.CheckModuleOptionRight === 'Y');
+        })
+        .catch(function () {
+            return false;
+        });
+}
+
 async function editGRNPaymentApproval(code) {
     const codeNum = parseInt(code, 10);
     if (!Number.isFinite(codeNum) || codeNum <= 0) return;
+
     var ModuleName = 'Payment Entry',
-        OptionName = 'Edit',
-        ShowMsg = 'Y',
         FinYear = getFinancialYear();
 
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(async function (response) {
-        if (response.CheckModuleOptionRight === 'N') {
-            toastr.error(response.Msg);
+    if (gpaIsApprovedPaymentEntry(codeNum)) {
+        try {
+            var afterVerifyResp = await MenuService.CheckModuleOptionRight(ModuleName, 'Edit After Verification', 'Y', FinYear);
+            if (!afterVerifyResp || afterVerifyResp.CheckModuleOptionRight === 'N') {
+                if (afterVerifyResp && afterVerifyResp.Msg) {
+                    toastr.error(afterVerifyResp.Msg);
+                } else {
+                    showToast('Approved payment entry cannot be edited.', 'warning');
+                }
+                return;
+            }
+        } catch (e) {
+            console.error('editGRNPaymentApproval Edit After Verification check:', e);
+            showToast('Permission check failed.', 'error');
             return;
         }
-        showToast('Loading...', 'info');
-        try {
-            await loadGRNPaymentApprovalByCode(codeNum);
-            showFormView();
-            showToast('Payment entry loaded for editing.', 'success');
-        } catch (e) {
-            showToast('Failed to open record.', 'error');
+    }
+
+    try {
+        var editRightResp = await MenuService.CheckModuleOptionRight(ModuleName, 'Edit', 'Y', FinYear);
+        if (!editRightResp || editRightResp.CheckModuleOptionRight === 'N') {
+            toastr.error(editRightResp && editRightResp.Msg ? editRightResp.Msg : 'No edit permission.');
+            return;
         }
-    });
+    } catch (e) {
+        console.error('editGRNPaymentApproval Edit check:', e);
+        showToast('Permission check failed.', 'error');
+        return;
+    }
+
+    showToast('Loading...', 'info');
+    try {
+        await loadGRNPaymentApprovalByCode(codeNum);
+        showFormView();
+        showToast('Payment entry loaded for editing.', 'success');
+    } catch (e) {
+        showToast('Failed to open record.', 'error');
+    }
 }
 
 function confirmDeleteGRNPaymentApproval(code, entryLabel) {
@@ -4072,10 +4183,14 @@ function recalcFooter() {
 // ══════════════════════════════════════════════════════════════════════════════
 function formatDateInput(val) {
     if (val === undefined || val === null || val === '') return '';
-    const s = String(val);
-    if (s.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+    const s = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const dmY = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmY) {
+        return dmY[3] + '-' + dmY[2].padStart(2, '0') + '-' + dmY[1].padStart(2, '0');
+    }
     const d = new Date(s);
-    if (!Number.isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    if (!Number.isNaN(d.getTime())) return gpaLocalYmdFromDate(d);
     return '';
 }
 
@@ -5037,6 +5152,7 @@ async function loadGRNPaymentApprovalByCode(Code) {
         }
 
         editMode = true;
+        gpaEditingApprovedEntry = gpaIsApprovedPaymentItem(master);
         const h = document.getElementById('hdnGRNPaymentMasterCode');
         if (h) h.value = String(master?.Code ?? master?.code ?? codeNum);
         const fgChk = document.getElementById('chkGpaFillGrid');
@@ -5385,6 +5501,16 @@ function saveGRNPaymentApproval() {
             toastr.error(response.Msg);
             return;
         }
+        if (editMode) {
+            const masterCode = parseInt(document.getElementById('hdnGRNPaymentMasterCode')?.value, 10) || 0;
+            if (masterCode > 0 && (gpaEditingApprovedEntry || gpaIsApprovedPaymentEntry(masterCode))) {
+                const canSaveAfterVerify = await checkGpaEditAfterVerificationRight('Y');
+                if (!canSaveAfterVerify) {
+                    showToast('Approved payment entry cannot be edited.', 'warning');
+                    return;
+                }
+            }
+        }
         if (!validateGRNPaymentApproval()) return;
         const payload = collectPayload();
         try {
@@ -5458,6 +5584,7 @@ function resetGRNPaymentApprovalForm() {
     const h = document.getElementById('hdnGRNPaymentMasterCode');
     if (h) h.value = '0';
     editMode = false;
+    gpaEditingApprovedEntry = false;
     const txtEn = document.getElementById('txtEntryNo');
     if (txtEn) txtEn.value = '';
     updateFloatBarEntryNo();
@@ -5544,7 +5671,8 @@ function openGpaListAttachmentControl(code, entryNo, entryDate) {
         showToast('Invalid record. Cannot open attachments.', 'warning');
         return;
     }
-    InitAttachmentControl('GRNPaymentMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, entryDate || '', 'all', '');
+    const resolvedEntryDate = gpaResolveAttachmentEntryDate(masterCode, entryDate);
+    InitAttachmentControl('GRNPaymentMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, resolvedEntryDate, 'all', '');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -5971,17 +6099,45 @@ function gpaFindAllCachedListRowsForPrint(codeNum) {
     return out;
 }
 
+function gpaListRowPoMatchesDetail(listRow, detailRow) {
+    if (!listRow || !detailRow) return false;
+    const poD = gpaResolvePoNoTextFromRow(gpaEnrichDetailRowPoCategory(detailRow));
+    if (!poD || String(poD).trim() === '0') return false;
+    const poL = gpaResolvePoNoTextFromRow(gpaEnrichDetailRowPoCategory(listRow));
+    return !!(poL && poL === poD);
+}
+
 function gpaFindListRowForDetailLine(listRows, detailRow, index) {
     if (!Array.isArray(listRows) || !listRows.length) return null;
-    if (listRows.length === 1) return listRows[0];
     const po = gpaResolvePoNoTextFromRow(gpaEnrichDetailRowPoCategory(detailRow || {}));
     if (po) {
         for (let i = 0; i < listRows.length; i++) {
-            const lrPo = gpaResolvePoNoTextFromRow(gpaEnrichDetailRowPoCategory(listRows[i]));
-            if (lrPo && lrPo === po) return listRows[i];
+            if (gpaListRowPoMatchesDetail(listRows[i], detailRow)) return listRows[i];
         }
+        return null;
     }
+    if (listRows.length === 1) return listRows[0];
     return listRows[index] != null ? listRows[index] : listRows[0];
+}
+
+/** PO Amount for print — detail row first, then PO-matched list row / PO cache (not master total). */
+function gpaResolvePrintPoAmountFromRow(detailRow, listRow) {
+    if (!detailRow || typeof detailRow !== 'object') return '';
+    const poNo = gpaResolvePoNoTextFromRow(gpaEnrichDetailRowPoCategory(detailRow));
+    if (!poNo || String(poNo).trim() === '0') return '';
+    const fromDetail = detailRow.TotalPOAmount ?? detailRow.totalPOAmount;
+    if (!gpaIsBlankPrintValue(fromDetail)) return fromDetail;
+    if (listRow && gpaListRowPoMatchesDetail(listRow, detailRow)) {
+        const fromList = listRow.TotalPOAmount ?? listRow.totalPOAmount;
+        if (!gpaIsBlankPrintValue(fromList)) return fromList;
+    }
+    for (let i = 0; i < (gpaPoListCache || []).length; i++) {
+        const po = gpaPoListCache[i];
+        if (gpaPoNoFromRecord(po) !== poNo) continue;
+        const amt = po.TotalPOAmount ?? po.totalPOAmount ?? po.TotalPO ?? po.totalPO;
+        if (!gpaIsBlankPrintValue(amt)) return amt;
+    }
+    return '';
 }
 
 function gpaSetDetailIfBlank(out, key, value) {
@@ -6009,7 +6165,9 @@ function gpaMergePrintDetailWithListRow(detail, listRow) {
     gpaSetDetailIfBlank(out, 'SiteType', pick('SiteType', 'siteType'));
     gpaSetDetailIfBlank(out, 'IndustryType', pick('IndustryType', 'industryType'));
     gpaSetDetailIfBlank(out, 'PhoneNo', pick('PhoneNo', 'phoneNo', 'ContactNo', 'contactNo', 'Mobile', 'mobile'));
-    gpaSetDetailIfBlank(out, 'TotalPOAmount', pick('TotalPOAmount', 'totalPOAmount'));
+    if (gpaListRowPoMatchesDetail(listRow, out)) {
+        gpaSetDetailIfBlank(out, 'TotalPOAmount', pick('TotalPOAmount', 'totalPOAmount'));
+    }
     gpaSetDetailIfBlank(out, 'PaymentAmount', pick('PaymentAmount', 'paymentAmount', 'Amount', 'amount'));
     gpaSetDetailIfBlank(out, 'PONo', pick('PONo', 'pONo', 'PoNO', 'PO_No', 'poNo'));
     gpaSetDetailIfBlank(out, 'PODate', pick('PODate', 'pODate', 'PO_Date', 'poDate'));
@@ -6027,10 +6185,9 @@ function gpaBuildPrintDetailLineHtml(row, idx, listRows, siteFallback) {
     if (!sb.project && siteFallback && siteFallback.project) sb.project = siteFallback.project;
     if (!sb.site && siteFallback && siteFallback.site) sb.site = siteFallback.site;
 
-    const pay = mergedRow.TotalPOAmount ?? mergedRow.totalPOAmount
-        ?? mergedRow.PaymentAmount ?? mergedRow.paymentAmount ?? mergedRow['Payment Amount']
-        ?? mergedRow.Amount ?? mergedRow.amount ?? '';
     const poLine = gpaResolvePoNoTextFromRow(gpaEnrichDetailRowPoCategory(mergedRow));
+    const hasPo = !gpaIsBlankPrintValue(poLine) && String(poLine).trim() !== '0';
+    const pay = hasPo ? gpaResolvePrintPoAmountFromRow(row, listRowForLine) : '';
     const catLine = gpaResolveCategoryNameFromRow(mergedRow);
     const catDesc = String(mergedRow.CategoryDesc ?? mergedRow.categoryDesc ?? '').trim();
 
@@ -6039,11 +6196,16 @@ function gpaBuildPrintDetailLineHtml(row, idx, listRows, siteFallback) {
     if (catDesc && catDesc !== catLine) catPart += ' &mdash; Category Desc: ' + gpaEscapeHtml(catDesc);
     else if (!catLine && catDesc) catPart += ' &mdash; Category Desc: ' + gpaEscapeHtml(catDesc);
 
-    return '<div style="margin-bottom:6px;">'
+    let poPart = '';
+    if (hasPo) {
+        poPart += ' &mdash; PO: ' + gpaEscapeHtml(String(poLine));
+        if (pay !== '' && pay != null) poPart += ' &mdash; PO Amount: &#8377;' + gpaFormatIndianCurrency(pay);
+    }
+
+    return '<div class="pv-detail-line">'
         + '<b>Line ' + (idx + 1) + '</b>'
-        + (poLine ? ' &mdash; PO: ' + gpaEscapeHtml(String(poLine)) : '')
+        + poPart
         + catPart
-        + (pay !== '' && pay != null ? ' &mdash; PO Amount: &#8377;' + gpaFormatIndianCurrency(pay) : '')
         + (sb.project ? ' &mdash; Project: ' + gpaEscapeHtml(String(sb.project)) : '')
         + (sb.site ? ' &mdash; Sub Project: ' + gpaEscapeHtml(String(sb.site)) : '')
         + '</div>';
@@ -6221,12 +6383,17 @@ function gpaResolvePrintNarration(master, listRows) {
     return '';
 }
 
-/** Details box — narration in its own bordered cell; otherwise PO / project line breakdown. */
+/** Details box — PO / project lines plus narration (both shown when present). */
 function gpaBuildPrintDetailsBlock(narration, detailsLines, amt, advance) {
     const narrationTrim = String(narration || '').trim();
-    const body = narrationTrim
-        ? ('<div class="pv-narration-box">' + gpaEscapeHtml(narrationTrim) + '</div>')
-        : (detailsLines || '<span style="color:#666;">—</span>');
+    const hasDetails = !!(detailsLines && String(detailsLines).trim());
+    let body = '';
+    if (hasDetails) body += detailsLines;
+    if (narrationTrim) {
+        const narrCls = hasDetails ? 'pv-narration-box pv-narration-after-lines' : 'pv-narration-box';
+        body += '<div class="' + narrCls + '">' + gpaEscapeHtml(narrationTrim) + '</div>';
+    }
+    if (!body) body = '<span style="color:#666;">—</span>';
     const amountFiguresBlock = amt > 0.005
         ? ('<div class="pv-amount-block" style="margin-top:10px;font-weight:700;">Amount (figures): &#8377; ' + gpaFormatIndianCurrency(amt) + '</div>'
             + '<div style="margin-top:4px;font-size:9pt;">Amount (words): ' + gpaNumberToWords(Math.round(amt)) + '</div>')
@@ -6320,17 +6487,24 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
             console.warn('PrintGRNPaymentVoucher PO/category lists', e);
         }
 
-        let mergedDetails = (details || []).map(function (d, idx) {
-            const enriched = gpaEnrichDetailRowPoCategory(mergeEditDetailWithBillLookup(d, billLookup));
-            const lr = gpaFindListRowForDetailLine(listRows, enriched, idx);
-            return gpaMergePrintDetailWithListRow(enriched, lr);
+        let printDetails = (details || []).map(function (d) {
+            return gpaEnrichDetailRowPoCategory(mergeEditDetailWithBillLookup(d, billLookup));
         });
-        if (!mergedDetails.length && listRows.length) {
+        let mergedDetails = printDetails.map(function (row, idx) {
+            const lr = gpaFindListRowForDetailLine(listRows, row, idx);
+            return gpaMergePrintDetailWithListRow(row, lr);
+        });
+        if (!printDetails.length && listRows.length) {
             mergedDetails = gpaBuildPrintDetailsFromListRows(listRows);
+            printDetails = mergedDetails.slice();
         }
-        if (!mergedDetails.length) {
+        if (!printDetails.length) {
             const synth = gpaDetailRowFromCombinedRecord(listRow) || gpaDetailRowFromCombinedRecord(master);
-            if (synth) mergedDetails = [gpaMergePrintDetailWithListRow(synth, listRow)];
+            if (synth) {
+                const merged = gpaMergePrintDetailWithListRow(synth, listRow);
+                printDetails = [synth];
+                mergedDetails = [merged];
+            }
         }
 
         const sessionCo = gpaSessionCompanyInfo();
@@ -6401,7 +6575,7 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
         if (printParty.vendorType) site0.vendorType = printParty.vendorType;
 
         let detailsLines = '';
-        mergedDetails.forEach(function (row, idx) {
+        printDetails.forEach(function (row, idx) {
             detailsLines += gpaBuildPrintDetailLineHtml(row, idx, listRows, site0);
         });
         const detailsBlock = gpaBuildPrintDetailsBlock(narration, detailsLines, amt, advance);
@@ -6429,7 +6603,10 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
             + 'table.pv-t td{border:1px solid #000;padding:6px 8px;font-size:9.5pt;vertical-align:top;}'
             + 'table.pv-t td.lbl{font-weight:700;width:22%;background:#fafafa;}'
             + '.pv-details{min-height:120px;border:1px solid #000;border-top:none;padding:8px;font-size:9.5pt;}'
+            + '.pv-detail-line{margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #000;}'
+            + '.pv-detail-line:last-of-type{margin-bottom:0;}'
             + '.pv-narration-box{border:none;border-bottom:1px solid #000;padding:8px 10px;margin:0 -8px;min-height:44px;white-space:pre-wrap;line-height:1.45;font-size:9.5pt;background:#fff;}'
+            + '.pv-narration-after-lines{border-top:1px solid #000;margin-top:8px;padding-top:8px;}'
             + '.pv-amount-block{padding-top:2px;}'
             + '.pv-sig{display:flex;margin-top:14px;gap:8px;}'
             + '.pv-sig > div{flex:1;border:1px solid #000;min-height:100px;padding:6px;text-align:center;font-weight:700;font-size:9pt;display:flex;flex-direction:column;justify-content:flex-end;}'
@@ -6528,6 +6705,8 @@ function initGpaVendorModalCloseHandler() {
 
 window.viewGRNPaymentEntry = viewGRNPaymentEntry;
 window.gpaGetListRowRawByCode = gpaGetListRowRawByCode;
+window.gpaResolveAttachmentEntryDate = gpaResolveAttachmentEntryDate;
+window.formatDateInput = formatDateInput;
 window.InitAttachmentControl = InitAttachmentControl;
 window.openGpaAttachmentControl = openGpaAttachmentControl;
 window.openGpaListAttachmentControl = openGpaListAttachmentControl;
@@ -6573,10 +6752,12 @@ window.gpaPeelGrnPaymentApiRoot = peelGrnPaymentApiRoot;
 window.gpaFirstMasterFromApi = firstMasterFromApi;
 window.gpaExtractGRNPaymentDetails = extractGRNPaymentDetailsArray;
 window.gpaResolvePrintNarration = gpaResolvePrintNarration;
+window.gpaAppendNarrationText = gpaAppendNarrationText;
 window.gpaBuildPrintDetailsBlock = gpaBuildPrintDetailsBlock;
 window.gpaOverlayMasterFromListRow = gpaOverlayMasterFromListRow;
 window.gpaResolvePoNoTextFromRow = gpaResolvePoNoTextFromRow;
 window.gpaEnrichDetailRowPoCategory = gpaEnrichDetailRowPoCategory;
+window.gpaResolvePrintPoAmountFromRow = gpaResolvePrintPoAmountFromRow;
 window.gpaPickPoFromMergedRows = gpaPickPoFromMergedRows;
 window.gpaFindCachedListRowForPrint = gpaFindCachedListRowForPrint;
 window.gpaFindAllCachedListRowsForPrint = gpaFindAllCachedListRowsForPrint;

@@ -17,7 +17,7 @@ let G_CopyFromSource        = { active: false, projectCode: 0, subProjectCode: 0
 
 const BOM_MAX_RATE    = 999999.99;
 const BOM_MAX_QTY     = 99999.99;
-const BOM_MAX_AMOUNT  = 99999999.99;
+// const BOM_MAX_AMOUNT  = 99999999.99;
 const BOM_MAX_GST_PCT = 100;
 
 $(document).ready(function () {
@@ -1782,16 +1782,16 @@ function enforceNumericWithMax(input, maxDecimals, maxValue) {
 
 function enforceBomRateInput(input) {
     formatBomMoneyInput(input);
-    const n = parseBomMoney(input.value);
-    if (n > BOM_MAX_RATE) {
-        input.value = formatBomMoneyRaw(BOM_MAX_RATE.toFixed(2));
-    }
+    // const n = parseBomMoney(input.value);
+    // if (n > BOM_MAX_RATE) {
+    //     input.value = formatBomMoneyRaw(BOM_MAX_RATE.toFixed(2));
+    // }
 }
 
 function capBomMoneyAmount(n) {
     const v = parseFloat(n);
     if (isNaN(v)) return 0;
-    return Math.min(v, BOM_MAX_AMOUNT);
+    return v;
 }
 
 /** Base amount (Qty × Rate) without GST. */

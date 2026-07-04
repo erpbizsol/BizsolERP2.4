@@ -1,0 +1,468 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/FilterSidePanelControl/FilterSidePanelControl.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ExpenseDashboard.js"></script>
+
+<style>
+    .edash-wrap {
+        background: #f1f5f9;
+        min-height: calc(100vh - 100px);
+        padding: 12px;
+    }
+
+    .edash-header {
+        background: #fff;
+        border-radius: 16px;
+        padding: 22px 26px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+        border: 1px solid #e2e8f0;
+    }
+    .edash-header-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 6px;
+    }
+    .edash-title {
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+    .edash-greeting {
+        font-size: 0.92rem;
+        color: #64748b;
+        margin: 4px 0 0;
+    }
+    .edash-greeting strong {
+        color: #334155;
+    }
+    .edash-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    .edash-date-badge {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #475569;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 8px 14px;
+        white-space: nowrap;
+    }
+    .edash-filter-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
+        flex-shrink: 0;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .edash-filter-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(102, 126, 234, 0.45);
+    }
+    .edash-header-reset {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 8px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .edash-header-reset:hover {
+        background: #f1f5f9;
+    }
+
+    .edash-kpi-row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .edash-kpi-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 16px 18px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .edash-kpi-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .edash-kpi-icon--total { background: #dbeafe; color: #2563eb; }
+    .edash-kpi-icon--approved { background: #dcfce7; color: #16a34a; }
+    .edash-kpi-icon--paid { background: #ede9fe; color: #7c3aed; }
+    .edash-kpi-icon--pending { background: #ffedd5; color: #ea580c; }
+    .edash-kpi-icon--claims { background: #fee2e2; color: #dc2626; }
+    .edash-kpi-val {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.2;
+    }
+    .edash-kpi-lbl {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    .edash-kpi-sub {
+        font-size: 0.68rem;
+        color: #94a3b8;
+        margin-top: 2px;
+    }
+
+    .edash-charts-row {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+    .edash-chart-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 18px 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+    .edash-chart-title {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 12px;
+    }
+    .edash-chart-area {
+        position: relative;
+        height: 260px;
+    }
+    .edash-donut-wrap {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    .edash-donut-canvas {
+        position: relative;
+        width: 180px;
+        height: 180px;
+        flex-shrink: 0;
+    }
+    .edash-donut-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        font-size: 0.72rem;
+        color: #64748b;
+        font-weight: 600;
+    }
+    .edash-donut-center strong {
+        font-size: 0.95rem;
+        color: #0f172a;
+    }
+    .edash-cat-legend {
+        flex: 1;
+        min-width: 160px;
+    }
+    .edash-cat-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 5px 0;
+        font-size: 0.78rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .edash-cat-item:last-child { border-bottom: none; }
+    .edash-cat-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-right: 6px;
+    }
+    .edash-cat-name {
+        flex: 1;
+        color: #475569;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    .edash-cat-amt {
+        color: #0f172a;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .edash-cat-pct {
+        color: #94a3b8;
+        font-size: 0.72rem;
+        min-width: 2.5rem;
+        text-align: right;
+    }
+
+    .edash-table-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        overflow: hidden;
+    }
+    .edash-table-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .edash-table-head h3 {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #334155;
+        margin: 0;
+    }
+    .edash-btn-export {
+        height: 34px;
+        padding: 0 14px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #334155;
+        cursor: pointer;
+    }
+    .edash-btn-export:hover {
+        background: #f8fafc;
+    }
+    #tblProjectWise {
+        width: 100%;
+        margin: 0;
+        font-size: 0.82rem;
+    }
+    #tblProjectWise th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        padding: 10px 14px;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+    #tblProjectWise td {
+        padding: 10px 14px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+    #tblProjectWise td.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    #tblProjectWise tr.row-total td {
+        font-weight: 800;
+        background: #f8fafc;
+        border-top: 2px solid #e2e8f0;
+    }
+    .edash-pct-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+    .edash-pct-bar-track {
+        width: 60px;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .edash-pct-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        border-radius: 3px;
+    }
+    .edash-proj-name {
+        font-weight: 700;
+        color: #0f172a;
+    }
+    .edash-proj-loc {
+        font-size: 0.72rem;
+        color: #94a3b8;
+    }
+
+    .edash-loader {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(255,255,255,0.6);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+    .edash-loader.show { display: flex; }
+
+    @@media (max-width: 1199px) {
+        .edash-kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .edash-charts-row { grid-template-columns: 1fr; }
+    }
+    @@media (max-width: 767px) {
+        .edash-kpi-row { grid-template-columns: 1fr 1fr; }
+        .edash-header-top { flex-direction: column; align-items: stretch; }
+        .edash-header-actions { flex-wrap: wrap; }
+    }
+</style>
+
+<div class="edash-wrap">
+    <div class="edash-header">
+        <div class="edash-header-top">
+            <div>
+                <h1 class="edash-title">My Expense Dashboard</h1>
+                <p class="edash-greeting">Welcome back, <strong id="edashWelcomeName">—</strong>!</p>
+            </div>
+            <div class="edash-header-actions">
+                <button type="button" class="edash-filter-btn" id="btnEdashFilter" onclick="OpenEdashFilterPanel()" title="Filters" aria-label="Open Filters">
+                    <i class="fa-solid fa-filter"></i>
+                </button>
+                <button type="button" class="edash-header-reset" id="btnEdashReset" onclick="ResetExpenseDashboard()" title="Reset Filters">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+                <div class="edash-date-badge" id="edashDateRangeLabel">—</div>
+            </div>
+        </div>
+    </div>
+
+    <filter-side-panel-control id="edashFilterPanel" show-button="false"></filter-side-panel-control>
+
+    <div class="edash-kpi-row">
+        <div class="edash-kpi-card">
+            <div class="edash-kpi-icon edash-kpi-icon--total"><i class="fa fa-file-invoice"></i></div>
+            <div>
+                <div class="edash-kpi-lbl">Total Expenses</div>
+                <div class="edash-kpi-val" id="kpiTotal">—</div>
+                <div class="edash-kpi-sub">This Month</div>
+            </div>
+        </div>
+        <div class="edash-kpi-card">
+            <div class="edash-kpi-icon edash-kpi-icon--approved"><i class="fa fa-check-circle"></i></div>
+            <div>
+                <div class="edash-kpi-lbl">Approved Amount</div>
+                <div class="edash-kpi-val" id="kpiApproved">—</div>
+                <div class="edash-kpi-sub">This Month</div>
+            </div>
+        </div>
+        <div class="edash-kpi-card">
+            <div class="edash-kpi-icon edash-kpi-icon--paid"><i class="fa fa-credit-card"></i></div>
+            <div>
+                <div class="edash-kpi-lbl">Paid Amount</div>
+                <div class="edash-kpi-val" id="kpiPaid">—</div>
+                <div class="edash-kpi-sub">This Month</div>
+            </div>
+        </div>
+        <div class="edash-kpi-card">
+            <div class="edash-kpi-icon edash-kpi-icon--pending"><i class="fa fa-clock"></i></div>
+            <div>
+                <div class="edash-kpi-lbl">Pending Amount</div>
+                <div class="edash-kpi-val" id="kpiPending">—</div>
+                <div class="edash-kpi-sub">This Month</div>
+            </div>
+        </div>
+        <div class="edash-kpi-card">
+            <div class="edash-kpi-icon edash-kpi-icon--claims"><i class="fa fa-exclamation-circle"></i></div>
+            <div>
+                <div class="edash-kpi-lbl">Pending Claims</div>
+                <div class="edash-kpi-val" id="kpiClaims">—</div>
+                <div class="edash-kpi-sub">Claims</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="edash-charts-row">
+        <div class="edash-chart-card">
+            <div class="edash-chart-title" id="chartTrendTitle">Expense Trend (This Month)</div>
+            <div class="edash-chart-area">
+                <canvas id="chartExpenseTrend"></canvas>
+            </div>
+        </div>
+        <div class="edash-chart-card">
+            <div class="edash-chart-title">Expense by Category</div>
+            <div class="edash-donut-wrap">
+                <div class="edash-donut-canvas">
+                    <canvas id="chartCategory"></canvas>
+                    <div class="edash-donut-center">
+                        <span>Total</span>
+                        <strong id="donutCenterTotal">—</strong>
+                    </div>
+                </div>
+                <div class="edash-cat-legend" id="categoryLegend"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="edash-table-card">
+        <div class="edash-table-head">
+            <h3 id="projectTableTitle">Project Wise Expense</h3>
+            <button type="button" id="btnExport" class="edash-btn-export">
+                <i class="fa-solid fa-file-excel me-1"></i>Export
+            </button>
+        </div>
+        <div class="table-responsive">
+            <table id="tblProjectWise" class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>Project / Site</th>
+                        <th>Sub Project</th>
+                        <th class="num">Total Expenses (₹)</th>
+                        <th class="num">Approved (₹)</th>
+                        <th class="num">Paid (₹)</th>
+                        <th class="num">Pending (₹)</th>
+                        <th class="num">% of Total</th>
+                    </tr>
+                </thead>
+                <tbody id="tblProjectWiseBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="edash-loader" id="edashLoader">
+    <div><i class="bx bx-loader bx-spin font-size-24"></i></div>
+</div>
