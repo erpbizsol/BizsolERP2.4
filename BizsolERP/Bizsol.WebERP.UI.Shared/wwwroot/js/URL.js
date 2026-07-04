@@ -114,6 +114,7 @@ let UrlService = {
     API_DOCUMENT_StockAgeingReport: `${environment.BASE_URL}/StockAgeingReport`,
     API_ENDPOINT_BillWiseOutStandingReport: `${environment.BASE_URL}/BillWiseOutStandingReport`,
     API_ENDPOINT_BalancePOCancellation: `${environment.BASE_URL}/BalancePOCancellation`,
+    API_ENDPOINT_MRNUpdation: `${environment.BASE_URL}/MRNUpdation`,
     API_ENDPOINT_CRM_SALESRETURN: `${environment.BASE_URL}/CRMSalesReturn`,
     API_ENDPOINT_SalesanalysisAST: `${environment.BASE_URL}/SalesanalysisAST`,
     API_ENDPOINT_QCPropertyGroupMaster: `${environment.BASE_URL}/QCPropertyGroupMaster`,
