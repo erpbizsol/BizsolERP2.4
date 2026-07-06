@@ -4123,7 +4123,7 @@ function viewGRNFromList(code) {
     if (!Number.isFinite(codeNum) || codeNum <= 0) return;
     var sourceRow = grnGetApprovalSourceRow(codeNum);
     if (typeof window.OpenDetailModal === "function") {
-        window.OpenDetailModal(codeNum, { viewOnly: true });
+        window.OpenDetailModal(codeNum, { viewOnly: true, sourceRow: sourceRow });
         bindMRNApprovalLevelsFromGRNService(codeNum, sourceRow);
         return;
     }

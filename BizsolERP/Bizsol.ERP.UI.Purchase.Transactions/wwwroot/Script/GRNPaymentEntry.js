@@ -1313,6 +1313,12 @@ async function gpaSyncFooterAttachmentFromApis(master, masterCode) {
 function gpaGetListRowRawByCode(codeNum) {
     const n = parseInt(codeNum, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
+    if (Array.isArray(gpaGetListPrintRows)) {
+        for (let p = 0; p < gpaGetListPrintRows.length; p++) {
+            const ddl = gpaGetListPrintRows[p];
+            if (gpaListRowPkForPrint(ddl) === n) return ddl;
+        }
+    }
     for (let i = 0; i < (gpaListFullRows || []).length; i++) {
         const row = gpaListFullRows[i];
         const raw = row?._gpaRaw || row;
@@ -1761,7 +1767,9 @@ function renderGpaListGrid() {
     const showButtons = [];
     const StringdoubleFilterColumn = [];
     const hiddenColumns = ['Code', 'StatusCode', '__bizsolRowClass', '_gpaRaw'];
-    const ColumnAlignment = { Action: 'center;width:308px;' };
+    const ColumnAlignment = { Action: 'center;width:308px;', Amount: 'right' };
+    const totalColumns = ['Amount'];
+    const commaColumns = ['Amount'];
 
     updateGpaListStatChips();
 
@@ -1788,9 +1796,9 @@ function renderGpaListGrid() {
         hiddenColumns,
         ColumnAlignment,
         true,
+        totalColumns,
         null,
-        null,
-        ['Amount'],
+        commaColumns,
         'Search by Entry No, Party, Bank, Employee, Work Type...'
     );
 }
@@ -2308,6 +2316,22 @@ function gpaIsBlankPrintValue(v) {
     if (v === undefined || v === null) return true;
     const s = String(v).trim();
     return s === '' || s.toLowerCase() === 'null';
+}
+
+/** Employee designation for print — DDL_LIST key Employeee (MarketingManMaster.Desig). */
+function gpaPickEmployeeeForPrint(master, listRow, listRows) {
+    const sources = [];
+    if (Array.isArray(listRows)) {
+        for (let i = 0; i < listRows.length; i++) sources.push(listRows[i]);
+    }
+    if (listRow) sources.push(listRow);
+    if (master) sources.push(master);
+    for (let j = 0; j < sources.length; j++) {
+        const v = sources[j].Employeee ?? sources[j].employeee
+            ?? sources[j].Employee ?? sources[j].employee;
+        if (!gpaIsBlankPrintValue(v)) return String(v).trim();
+    }
+    return '';
 }
 
 /** Build detail DTO from master+detail flat join row (single result set). */
@@ -5891,6 +5915,7 @@ function gpaOverlayMasterFromListRow(master, listRow) {
     setIf('SiteType', ['SiteType', 'siteType', 'SiteTypeName', 'siteTypeName']);
     setIf('PhoneNo', ['PhoneNo', 'phoneNo', 'ContactNo', 'contactNo', 'Mobile', 'mobile', 'Phone', 'phone']);
     setIf('IndustryType', ['IndustryType', 'industryType']);
+    setIf('Employeee', ['Employeee', 'employeee', 'Employee', 'employee']);
     setIf('TotalPOAmount', ['TotalPOAmount', 'totalPOAmount']);
     setIf('Status', ['Status', 'status', 'ApprovalStatus', 'approvalStatus', 'Approval_Status']);
     setIf('LevelDetails', ['LevelDetails', 'levelDetails']);
@@ -5961,12 +5986,12 @@ function gpaResolvePrintCreditAndVendorType(master, listRow, siteBundle, listRow
         if (!creditTo && listRow) {
             creditTo = String(
                 listRow.EmployeeName ?? listRow.employeeName
-                ?? listRow.Employee ?? listRow.employee
                 ?? listRow.MarketingManMaster ?? listRow.marketingManMaster
                 ?? listRow['Party Name'] ?? listRow.PartyName ?? listRow.Party ?? ''
             ).trim();
         }
-        return { creditTo: creditTo || '', vendorType: 'Employee' };
+        const employeee = gpaPickEmployeeeForPrint(master, listRow, listRows);
+        return { creditTo: creditTo || '', vendorType: employeee };
     }
     let creditTo = String(master?.VendorName ?? master?.vendorName ?? '').trim();
     if (!creditTo) creditTo = gpaLookupVendorName(master);
@@ -6742,6 +6767,7 @@ window.PrintGRNPaymentVoucher = PrintGRNPaymentVoucher;
 window.gpaMasterIsEmployeePayment = gpaMasterIsEmployeePayment;
 window.gpaLookupEmployeeNameForPrint = gpaLookupEmployeeNameForPrint;
 window.gpaPickIndustryTypeForPrint = gpaPickIndustryTypeForPrint;
+window.gpaPickEmployeeeForPrint = gpaPickEmployeeeForPrint;
 window.gpaResolvePrintCreditAndVendorType = gpaResolvePrintCreditAndVendorType;
 window.gpaPreloadEmployeeListForPrint = async function gpaPreloadEmployeeListForPrint() {
     if (!gpaEmployeeListCache || !gpaEmployeeListCache.length) {

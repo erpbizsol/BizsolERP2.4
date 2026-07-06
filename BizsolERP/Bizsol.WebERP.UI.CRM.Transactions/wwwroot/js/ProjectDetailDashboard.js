@@ -92,6 +92,7 @@ function BindKpiNavigation() {
         kpiCardPO:         'PurchaseTransactions/PurchaseOrder/POLevelsApprove?ModuleDesp=PO%20Approval',
         kpiCardPayment:    'PurchaseTransactions/GRNService/GRNPaymentApproval',
         kpiCardExpense:    'CRMTransactions/ExpenseEntry/ExpenseEntryLevelsApproval',
+        kpiCardGRN:        'PurchaseTransactions/GRNService/MRNMasterApproval?ModuleDesp=GRN%20Services',
         kpiCardReconciled: 'FinanceTransactions/BankStatement/BankStatementImport?ModuleDesp=Bank%20Statement%20Import',
     };
 
@@ -287,7 +288,7 @@ function ResetDashboard() {
 }
 
 function ClearAllWidgets() {
-    ['kpiPOCount','kpiPaymentAmt','kpiExpenseAmt','kpiTotalProjects','kpiIsReconciled',
+    ['kpiPOCount','kpiPaymentAmt','kpiExpenseAmt','kpiGRNCount','kpiTotalProjects','kpiIsReconciled',
      'legPOApproved','legPOPending','legPORejected','legPOTotal',
      'projSummaryTotal','legProjActive','legProjPending','legProjCompleted','legProjOnHold',
      'bvaBudget','bvaSpent','bvaBalance','bvaPct',
@@ -314,6 +315,7 @@ function RenderKPI(data) {
     SetKpiText('kpiPOCount',       d.PendingPOCount      ?? '0');
     SetKpiText('kpiPaymentAmt',    FmtLakh(d.PendingPaymentAmount  ?? 0));
     SetKpiText('kpiExpenseAmt',    FmtLakh(d.PendingExpenseAmount  ?? 0));
+    SetKpiText('kpiGRNCount',      d.PendingGRNService   ?? '0');
     SetKpiText('kpiTotalProjects', d.TotalProjects       ?? '0');
     SetKpiText('kpiIsReconciled',  FormatUnReconciled(d.IsReconciled ?? d.isReconciled ?? 0));
 }
