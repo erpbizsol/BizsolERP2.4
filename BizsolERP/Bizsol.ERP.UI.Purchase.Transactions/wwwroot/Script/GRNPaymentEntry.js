@@ -5685,8 +5685,8 @@ function openGpaAttachmentControl() {
     const masterCode = parseInt(document.getElementById('hdnGRNPaymentMasterCode')?.value ?? '0', 10) || 0;
     const entryNo = parseInt(document.getElementById('txtEntryNo')?.value?.trim() ?? '0', 10) || 0;
     const entryDate = document.getElementById('dtPaymentDate')?.value ?? '';
-    // masterCode=0 → temp mode handled generically inside the shared control
-    InitAttachmentControl('GRNPaymentMaster', masterCode, '', 0, entryNo, entryDate, 'all', '');
+    const mode = (masterCode > 0 && (gpaEditingApprovedEntry || gpaIsApprovedPaymentEntry(masterCode))) ? 'addview' : 'all';
+    InitAttachmentControl('GRNPaymentMaster', masterCode, '', 0, entryNo, entryDate, mode, '');
 }
 
 function openGpaListAttachmentControl(code, entryNo, entryDate) {
@@ -5696,7 +5696,8 @@ function openGpaListAttachmentControl(code, entryNo, entryDate) {
         return;
     }
     const resolvedEntryDate = gpaResolveAttachmentEntryDate(masterCode, entryDate);
-    InitAttachmentControl('GRNPaymentMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, resolvedEntryDate, 'all', '');
+    const mode = gpaIsApprovedPaymentEntry(masterCode) ? 'addview' : 'all';
+    InitAttachmentControl('GRNPaymentMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, resolvedEntryDate, mode, '');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

@@ -367,9 +367,9 @@ function eeaEntryDateParamForAttachmentControl(entry) {
     return !isNaN(dt.getTime()) ? dt.toISOString() : '';
 }
 
-/** Same as PO Level Approval / PO Store: full upload UI (drag-drop, browse, save). */
+/** Level approval: view-only attachments (no upload / delete). */
 function eeaGetAttachmentControlMode() {
-    return 'all';
+    return 'view';
 }
 
 function eeaNormalizeAttachmentApiResponse(response) {

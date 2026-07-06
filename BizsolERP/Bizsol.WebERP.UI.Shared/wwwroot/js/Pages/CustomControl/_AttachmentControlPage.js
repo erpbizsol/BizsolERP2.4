@@ -268,8 +268,10 @@ function _acRenderTempQueueGrid() {
 }
 
 function GatAllAttachment() {
+    const _acMode = ($('#hfMode').val() || '').toLowerCase();
 
-    $('#hfMode').val().toLowerCase() == "view" ? $('#fileUploadForm').hide() : $('#fileUploadForm').show();
+    // view: hide upload form; all/addview: show upload form (addview = upload allowed, delete not)
+    _acMode === "view" ? $('#fileUploadForm').hide() : $('#fileUploadForm').show();
 
     // ── Temp mode: masterCode = 0 (unsaved entry) ──────────────────────────
     if (_acIsTempMode()) {
@@ -292,7 +294,8 @@ function GatAllAttachment() {
     return AttachmentControlService.GetAttachmentUploadFiles($('#hfMasterTableName').val(), $('#hfMasterTableCode').val(), DetailTableName, DetailTableCode).then(function (response) {
         console.log(response);
         const raw = Array.isArray(response) ? response : [];
-        const mapped = $('#hfMode').val().toLowerCase() == "view"
+        // view & addview: no delete column; all: include delete column
+        const mapped = (_acMode === "view" || _acMode === "addview")
             ? raw.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>' }))
             : raw.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>', Action: '<a class="btn btn-danger icon-height" onclick="Delete_AttachmentControl(' + item.Code + ')"> <i class="fa fa-trash"></i></a>' }));
         if (mapped.length === 0) {
