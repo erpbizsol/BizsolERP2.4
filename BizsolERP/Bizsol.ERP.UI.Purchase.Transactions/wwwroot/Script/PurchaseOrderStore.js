@@ -1059,12 +1059,20 @@ function ShowAddressDetails(type, code) {
 }
 
 window.OpenAddAddressModal = function (type) {
+    const selectedCode  = type === 'BillTo' ? $('#frmDdlBillTo').val() : $('#frmDdlShipTo').val();
+    const existingAddr  = selectedCode
+        ? G_BillToShipToList.find(function (a) { return String(a.Code) === String(selectedCode); })
+        : null;
     $('#addrModalType').val(type);
-    $('#modalAddAddressTitle').text(type === 'BillTo' ? 'Add Bill To Address' : 'Add Ship To Address');
-    $('#addrTxtName').val('');
-    $('#addrTxtDisplayName').val('');
-    $('#addrTxtAddress').val('');
-    $('#addrTxtGSTNo').val('');
+    $('#hfAddrCode').val(existingAddr ? existingAddr.Code : 0);
+    $('#addrTxtName').val(existingAddr ? (existingAddr.Name || '') : '');
+    $('#addrTxtDisplayName').val(existingAddr ? (existingAddr.DisplayName || '') : '');
+    $('#addrTxtAddress').val(existingAddr ? (existingAddr.Address || '') : '');
+    $('#addrTxtGSTNo').val(existingAddr ? (existingAddr.GSTNo || '') : '');
+    const title = existingAddr
+        ? (type === 'BillTo' ? 'Edit Bill To Address' : 'Edit Ship To Address')
+        : (type === 'BillTo' ? 'Add Bill To Address' : 'Add Ship To Address');
+    $('#modalAddAddressTitle').text(title);
     $('#modalAddAddress').modal('show');
 };
 
@@ -1074,18 +1082,19 @@ window.SaveBillToShipToAddress = function () {
     const address     = $('#addrTxtAddress').val().trim();
     const gstNo       = $('#addrTxtGSTNo').val().trim();
     const type        = $('#addrModalType').val();
+    const code        = parseInt($('#hfAddrCode').val() || '0', 10) || 0;
 
     if (!name)        { toastr.warning('Please enter Name.');         return; }
     if (!displayName) { toastr.warning('Please enter Display Name.'); return; }
     if (!address)     { toastr.warning('Please enter Address.');      return; }
 
-    const payload = JSON.stringify({ Code:0, Addresses: [{ Name: name, DisplayName: displayName, Address: address, GSTNo: gstNo }]});
+    const payload = JSON.stringify({ Code: code, Addresses: [{ Code: code, Name: name, DisplayName: displayName, Address: address, GSTNo: gstNo }]});
 
     PurchaseOrderStoreService.SaveBillToShipToAddress(payload).then(function (res) {
         if (res && res.Status === 'Y') {
             toastr.success(res.Msg || 'Address saved successfully.');
             $('#modalAddAddress').modal('hide');
-            const newCode = res.Code || res.NewCode || null;
+            const newCode = res.Code || res.NewCode || code || null;
             LoadBillToShipToDropdown(
                 type === 'BillTo'  ? (newCode || $('#frmDdlBillTo').val() || null)  : ($('#frmDdlBillTo').val() || null),
                 type === 'ShipTo'  ? (newCode || $('#frmDdlShipTo').val() || null)  : ($('#frmDdlShipTo').val() || null)
