@@ -678,16 +678,15 @@ function FormatDateInput(d) {
     return `${yr}-${mo}-${dy}`;
 }
 
-/** Default list filters: To = today; From = API first pending PO date or first of month (same as POLevelsApprove.js). */
+/** Default list filters: To = today; From = first day of current month. */
 function InitDates() {
     const today = new Date();
     $('#lstTxtToDate').val(FormatDateInput(today));
-    if (USE_DUMMY) {
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        $('#lstTxtFromDate').val(FormatDateInput(firstDay));
-        return Promise.resolve();
-    }
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    $('#lstTxtFromDate').val(FormatDateInput(firstDay));
+    return Promise.resolve();
 
+    /* Temporary: API default from date disabled — use first day of current month.
     return POLevelsApproveService.GetFirstPendingPODate()
         .then(function (resp) {
             let dateStr = '';
@@ -709,6 +708,7 @@ function InitDates() {
             const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
             $('#lstTxtFromDate').val(FormatDateInput(firstDay));
         });
+    */
 }
 
 function FormatDateDisplay(d) {
@@ -2991,17 +2991,24 @@ function openPOAttachmentControl() {
     const masterCode = parseInt($('#frmHfCode').val() || '0', 10) || 0;
     const poNo = parseInt($('#frmTxtPONo').val() || '0', 10) || 0;
     const poDate = $('#frmTxtPODate').val() || '';
-    // masterCode=0 → temp/pending mode handled inside the shared control
-    InitAttachmentControl('PurchaseOrderMaster', masterCode, '', 0, poNo, poDate, 'all', '');
+    const poItem = masterCode > 0 ? G_POStoreList.find(function (i) { return String(i.Code) === String(masterCode); }) : null;
+    const mode = (poItem && poStoreNormStatus(poItem) === 'approved') ? 'addview' : 'all';
+    InitAttachmentControl('PurchaseOrderMaster', masterCode, '', 0, poNo, poDate, mode, '');
 }
 
-function openPOListAttachmentControl(code, poNo, poDate) {
+function openPOListAttachmentControl(code, poNo, poDate, mode) {
     const masterCode = parseInt(code, 10) || 0;
     if (masterCode <= 0) {
         toastr.warning('Invalid record. Cannot open attachments.');
         return;
     }
-    InitAttachmentControl('PurchaseOrderMaster', masterCode, '', 0, parseInt(poNo, 10) || 0, poDate || '', 'all', '');
+    // If explicit mode provided (e.g. 'view' from approval page), use it; otherwise auto-detect
+    let resolvedMode = mode;
+    if (!resolvedMode) {
+        const poItem = G_POStoreList.find(function (i) { return String(i.Code) === String(masterCode); });
+        resolvedMode = (poItem && poStoreNormStatus(poItem) === 'approved') ? 'addview' : 'all';
+    }
+    InitAttachmentControl('PurchaseOrderMaster', masterCode, '', 0, parseInt(poNo, 10) || 0, poDate || '', resolvedMode, '');
 }
 
 // --- SEND MAIL (Approved PO) — PDF via html2canvas + jsPDF (paged + footer) ---
