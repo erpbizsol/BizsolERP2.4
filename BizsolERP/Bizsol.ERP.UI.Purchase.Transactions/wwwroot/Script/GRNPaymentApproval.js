@@ -2095,20 +2095,40 @@ function PrintGPAVoucher(code, mode) {
                 master = Object.assign({}, master, base);
             }
 
+            let printListRows = [];
+            if (typeof window.gpaFindAllCachedListRowsForPrint === 'function') {
+                printListRows = window.gpaFindAllCachedListRowsForPrint(codeNum) || [];
+            }
+            let printBase = base;
+            if (printListRows.length) {
+                printBase = base ? Object.assign({}, base, printListRows[0]) : Object.assign({}, printListRows[0]);
+                if (typeof window.gpaOverlayMasterFromListRow === 'function') {
+                    for (let pi = 0; pi < printListRows.length; pi++) {
+                        master = window.gpaOverlayMasterFromListRow(master, printListRows[pi]);
+                    }
+                }
+            }
+
             const co = gpaGetSessionCo();
             const { companyName, companyAddr, companyTag } = co;
 
             let creditTo = '';
             let vendorTypePrint = '';
             if (typeof window.gpaResolvePrintCreditAndVendorType === 'function') {
-                const printParty = window.gpaResolvePrintCreditAndVendorType(master, base, null);
+                const printParty = window.gpaResolvePrintCreditAndVendorType(master, printBase, null, printListRows);
                 creditTo = printParty.creditTo || '';
                 vendorTypePrint = printParty.vendorType || '';
             } else {
                 const isEmp = typeof window.gpaMasterIsEmployeePayment === 'function'
                     && (window.gpaMasterIsEmployeePayment(master) || window.gpaMasterIsEmployeePayment(base));
                 if (isEmp) {
-                    vendorTypePrint = 'Employee';
+                    vendorTypePrint = typeof window.gpaPickEmployeeeForPrint === 'function'
+                        ? window.gpaPickEmployeeeForPrint(master, printBase, printListRows)
+                        : String(
+                            printBase?.Employeee ?? printBase?.employeee
+                            ?? base?.Employeee ?? base?.employeee
+                            ?? master?.Employeee ?? master?.employeee ?? ''
+                        ).trim();
                     if (typeof window.gpaLookupEmployeeNameForPrint === 'function') {
                         creditTo = window.gpaLookupEmployeeNameForPrint(master, base) || '';
                     }
@@ -2129,15 +2149,20 @@ function PrintGPAVoucher(code, mode) {
                     creditTo = String(partyRaw || '');
                 }
             }
-            if (typeof window.gpaPickIndustryTypeForPrint === 'function') {
-                const indHdr = window.gpaPickIndustryTypeForPrint(master, base, null, null);
-                if (indHdr) vendorTypePrint = indHdr;
-            } else {
-                const indHdr = String(
-                    base?.IndustryType ?? base?.industryType
-                    ?? master?.IndustryType ?? master?.industryType ?? ''
-                ).trim();
-                if (indHdr && indHdr.toLowerCase() !== 'null') vendorTypePrint = indHdr;
+            const isEmpPrintEntry = typeof window.gpaMasterIsEmployeePayment === 'function'
+                && (window.gpaMasterIsEmployeePayment(master) || window.gpaMasterIsEmployeePayment(printBase));
+            if (!isEmpPrintEntry) {
+                if (typeof window.gpaPickIndustryTypeForPrint === 'function') {
+                    const indHdr = window.gpaPickIndustryTypeForPrint(master, printBase, printListRows, null);
+                    if (indHdr) vendorTypePrint = indHdr;
+                } else {
+                    const indHdr = String(
+                        printBase?.IndustryType ?? printBase?.industryType
+                        ?? base?.IndustryType ?? base?.industryType
+                        ?? master?.IndustryType ?? master?.industryType ?? ''
+                    ).trim();
+                    if (indHdr && indHdr.toLowerCase() !== 'null') vendorTypePrint = indHdr;
+                }
             }
             if (!vendorTypePrint) vendorTypePrint = 'Party';
             const voucherNo = String(master.EntryNo ?? master.entryNo ?? getEntryNo(master) ?? '');

@@ -226,7 +226,16 @@ function formatMrnDisplayNo(p) {
 }
 
 function getPartyName(p) {
-    return p.AccountDesp ?? p['Party Name'] ?? p.PartyName ?? p.VendorName ?? p.AccountName ?? p.Vendor ?? '—';
+    if (!p) return '—';
+    const direct = p.AccountDesp ?? p['Party Name'] ?? p.PartyName ?? p.VendorName ?? p.AccountName ?? p.Vendor;
+    if (direct != null && `${direct}`.trim() !== '' && `${direct}`.trim() !== '—') {
+        return `${direct}`.trim();
+    }
+    const picked = mrnPickRowField(p, [
+        'AccountDesp', 'accountDesp', 'Party Name', 'party name', 'PartyName', 'partyName',
+        'VendorName', 'vendorName', 'AccountName', 'accountName', 'Vendor', 'vendor',
+    ]);
+    return picked !== '' ? String(picked).trim() : '—';
 }
 
 function getEntryDate(p) {
@@ -330,6 +339,8 @@ function mrnIsDetailRow(r) {
     return r.PONo != null || r.pONo != null || r.PurchaseOrderMaster_Code != null || r.purchaseOrderMaster_Code != null
         || r.ItemMaster_Code != null || r.itemMaster_Code != null || r.ItemName != null || r.itemName != null
         || r.Qty != null || r.qty != null || r.QtyMT != null || r.qtyMT != null
+        || r.QtyBill != null || r.qtyBill != null || r.GRNRejectedQty != null || r.grnRejectedQty != null
+        || r.RejectedQtyBill != null || r.rejectedQtyBill != null || r.SortageQty != null || r.sortageQty != null
         || r.Amount != null || r.amount != null || r.GRDate != null || r.grDate != null;
 }
 
@@ -458,14 +469,132 @@ function mrnResolveItemName(row) {
     return code !== '' ? String(code) : '';
 }
 
-function mrnResolveLineQty(row) {
-    if (!row || typeof row !== 'object') return '';
-    const v = mrnPickRowField(row, [
-        'Qty', 'qty', 'QtyMT', 'qtyMT', 'Qty_Mt', 'qty_Mt',
-        'QtyBill', 'qtyBill', 'Quantity', 'quantity',
+function mrnPickRowNum(row, names) {
+    if (!row || typeof row !== 'object') return null;
+    let i;
+    for (i = 0; i < names.length; i++) {
+        const v = row[names[i]];
+        if (v !== null && v !== undefined && `${v}`.trim() !== '' && String(v).trim().toLowerCase() !== 'null') {
+            const n = parseFloat(String(v).replace(/,/g, ''));
+            if (!isNaN(n)) return n;
+        }
+    }
+    const keys = Object.keys(row);
+    for (i = 0; i < names.length; i++) {
+        const want = names[i].toLowerCase();
+        for (let j = 0; j < keys.length; j++) {
+            if (keys[j].toLowerCase() === want) {
+                const v = row[keys[j]];
+                if (v !== null && v !== undefined && `${v}`.trim() !== '' && String(v).trim().toLowerCase() !== 'null') {
+                    const n = parseFloat(String(v).replace(/,/g, ''));
+                    if (!isNaN(n)) return n;
+                }
+            }
+        }
+    }
+    return null;
+}
+
+function mrnNormalizeDetailLineRow(row) {
+    if (!row || typeof row !== 'object') return row;
+    const billQty = mrnPickRowNum(row, [
+        'QtyBill', 'qtyBill', 'BillQty', 'billQty', 'Bill Qty', 'bill qty',
+        'Qty', 'qty', 'Quantity', 'quantity',
     ]);
-    if (v === null || v === undefined || `${v}`.trim() === '') return '';
-    return String(v).trim();
+    const acceptQty = mrnPickRowNum(row, [
+        'GRNRejectedQty', 'grnRejectedQty', 'AcceptQty', 'acceptQty', 'Accept Qty', 'accept qty',
+        'QtyMT', 'qtyMT', 'Qty_Mt', 'qty_Mt',
+    ]);
+    const rejectQty = mrnPickRowNum(row, [
+        'RejectedQtyBill', 'rejectedQtyBill', 'RejectQty', 'rejectQty', 'Reject Qty', 'reject qty',
+    ]);
+    let shortage = mrnPickRowNum(row, [
+        'SortageQty', 'sortageQty', 'ShortageQty', 'shortageQty', 'Shortage', 'shortage',
+    ]);
+    if (shortage === null && (billQty !== null || acceptQty !== null || rejectQty !== null)) {
+        shortage = Math.max(0, (billQty || 0) - (acceptQty || 0) - (rejectQty || 0));
+    }
+    return Object.assign({}, row, {
+        QtyBill: billQty,
+        qtyBill: billQty,
+        BillQty: billQty,
+        billQty: billQty,
+        GRNRejectedQty: acceptQty,
+        grnRejectedQty: acceptQty,
+        AcceptQty: acceptQty,
+        acceptQty: acceptQty,
+        RejectedQtyBill: rejectQty,
+        rejectedQtyBill: rejectQty,
+        RejectQty: rejectQty,
+        rejectQty: rejectQty,
+        SortageQty: shortage,
+        sortageQty: shortage,
+        ShortageQty: shortage,
+        shortageQty: shortage,
+    });
+}
+
+function mrnDetailNum(row, keys) {
+    return mrnPickRowNum(row, keys);
+}
+
+function mrnFmtLineQty(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return EscHtml(String(n));
+}
+
+function mrnResolveLineQtyBreakdown(row) {
+    if (!row || typeof row !== 'object') {
+        return { billQty: null, acceptQty: null, rejectQty: null, shortage: null };
+    }
+    const normalized = mrnNormalizeDetailLineRow(row);
+    const billQty = normalized.QtyBill ?? normalized.BillQty ?? null;
+    const acceptQty = normalized.GRNRejectedQty ?? normalized.AcceptQty ?? null;
+    const rejectQty = normalized.RejectedQtyBill ?? normalized.RejectQty ?? null;
+    const shortage = normalized.SortageQty ?? normalized.ShortageQty ?? null;
+    return { billQty: billQty, acceptQty: acceptQty, rejectQty: rejectQty, shortage: shortage };
+}
+
+function mrnResolveLineQty(row) {
+    const q = mrnResolveLineQtyBreakdown(row);
+    if (q.billQty !== null) return String(q.billQty);
+    if (q.acceptQty !== null) return String(q.acceptQty);
+    return '';
+}
+
+function mrnCollectDetailLinesFromData(data) {
+    if (!data) return [];
+    if (Array.isArray(data)) {
+        return data.length && mrnIsDetailRow(data[0]) ? data : [];
+    }
+    if (typeof data !== 'object') return [];
+
+    const direct = data.GRNServiceDetail ?? data.grnServiceDetail
+        ?? data.MRNDetails ?? data.MRNDetail ?? data.mRNDetail
+        ?? data.GRNPaymentDetails ?? data.Details ?? data.BillLines ?? data.Items ?? data.Lines
+        ?? data.Table ?? data.table;
+    if (Array.isArray(direct) && direct.length) return direct;
+
+    const vw = data.VW_MRNMaster ?? data.vw_MRNMaster;
+    if (vw && typeof vw === 'object') {
+        const vwLines = vw.GRNServiceDetail ?? vw.grnServiceDetail ?? vw.MRNDetails ?? vw.MRNDetail;
+        if (Array.isArray(vwLines) && vwLines.length) return vwLines;
+    }
+
+    const master = firstMrnMasterFromApi(data);
+    if (master && typeof master === 'object' && !Array.isArray(master)) {
+        const mLines = master.GRNServiceDetail ?? master.grnServiceDetail ?? master.MRNDetails ?? master.MRNDetail;
+        if (Array.isArray(mLines) && mLines.length) return mLines;
+    }
+
+    const masterArr = data.MRNMaster ?? data.mRNMaster ?? data.GRNServiceList ?? data.grnServiceList;
+    if (Array.isArray(masterArr) && masterArr[0]) {
+        const m0 = masterArr[0];
+        const m0Lines = m0.GRNServiceDetail ?? m0.grnServiceDetail ?? m0.MRNDetails ?? m0.MRNDetail;
+        if (Array.isArray(m0Lines) && m0Lines.length) return m0Lines;
+    }
+
+    return mrnScanDetailArraysInObject(data);
 }
 
 function mrnNormalizeDetailLines(lines, master) {
@@ -473,15 +602,18 @@ function mrnNormalizeDetailLines(lines, master) {
     const masterBillNo = m.BillNo ?? m.billNo ?? '';
     return (lines || []).map(function (row) {
         if (!row || typeof row !== 'object') return row;
-        const itemName = mrnResolveItemName(row);
-        const qty = mrnResolveLineQty(row);
-        const billNo = mrnPickRowField(row, ['BillNo', 'billNo']) || masterBillNo || '';
-        return Object.assign({}, row, {
+        const normalized = mrnNormalizeDetailLineRow(row);
+        const itemName = mrnResolveItemName(normalized);
+        const qtyBreak = mrnResolveLineQtyBreakdown(normalized);
+        const billNo = mrnPickRowField(normalized, ['BillNo', 'billNo']) || masterBillNo || '';
+        const qtyDisplay = qtyBreak.billQty != null ? String(qtyBreak.billQty)
+            : (qtyBreak.acceptQty != null ? String(qtyBreak.acceptQty) : '');
+        return Object.assign({}, normalized, {
             BillNo: billNo,
             ItemName: itemName,
             itemName: itemName,
-            Qty: qty !== '' ? qty : (row.Qty ?? row.QtyMT ?? row.QtyBill ?? ''),
-            qty: qty !== '' ? qty : (row.qty ?? row.qtyMT ?? row.qtyBill ?? ''),
+            Qty: qtyDisplay !== '' ? qtyDisplay : (normalized.Qty ?? normalized.QtyMT ?? normalized.QtyBill ?? ''),
+            qty: qtyDisplay !== '' ? qtyDisplay : (normalized.qty ?? normalized.qtyMT ?? normalized.qtyBill ?? ''),
         });
     });
 }
@@ -502,7 +634,10 @@ function ensureGpaModalItemsTableHead() {
             '<th>Bill no</th>' +
             '<th style="width:90px;">PO no</th>' +
             '<th>Item</th>' +
-            '<th style="width:120px;">Qty</th>' +
+            '<th style="width:72px;">Bill Qty</th>' +
+            '<th style="width:72px;">Accept Qty</th>' +
+            '<th style="width:72px;">Reject Qty</th>' +
+            '<th style="width:72px;">Shortage</th>' +
             '<th style="width:120px;">Amount</th>' +
         '</tr>'
     );
@@ -1399,6 +1534,17 @@ function FilterGpaCards(query) {
     ShowGpaEmpty(visible === 0 && filteredBase.length > 0);
 }
 
+function mrnMergePartyFromSource(target, source) {
+    if (!target || !source || typeof source !== 'object') return target;
+    const party = getPartyName(source);
+    if (party === '—') return target;
+    if (getPartyName(target) !== '—') return target;
+    target.AccountDesp = source.AccountDesp ?? source.accountDesp ?? party;
+    target['Party Name'] = source['Party Name'] ?? source.partyName ?? party;
+    target.PartyName = source.PartyName ?? source.partyName ?? party;
+    return target;
+}
+
 function mergeDetailIntoPayment(root, basePayment) {
     const p = { ...basePayment };
     const fromList = parseLevelDetailsToArray(basePayment.LevelDetails);
@@ -1407,19 +1553,22 @@ function mergeDetailIntoPayment(root, basePayment) {
         p._detailLines = root;
         p.LevelDetails = fromList.length ? fromList.slice() : [];
         enrichMrnHeaderFromDetailLines(p, root);
-        return p;
+        mrnMergePartyFromSource(p, basePayment);
+        return bindMrnNoOntoPayment(p);
     }
 
     const data = peelMrnApprovalApiRoot(root);
     if (!data || typeof data !== 'object') {
         p.LevelDetails = fromList.length ? fromList.slice() : parseLevelDetailsToArray(p.LevelDetails);
-        return p;
+        mrnMergePartyFromSource(p, basePayment);
+        return bindMrnNoOntoPayment(p);
     }
     if (Array.isArray(data)) {
         p._detailLines = data;
         p.LevelDetails = fromList.length ? fromList.slice() : parseLevelDetailsToArray(p.LevelDetails);
         enrichMrnHeaderFromDetailLines(p, data);
-        return p;
+        mrnMergePartyFromSource(p, basePayment);
+        return bindMrnNoOntoPayment(p);
     }
 
     const resolvedMaster = firstMrnMasterFromApi(data)
@@ -1444,14 +1593,15 @@ function mergeDetailIntoPayment(root, basePayment) {
     );
     p.LevelDetails = mergeLevelDetailsLists(fromList, fromApi);
 
-    let lines = data.GRNServiceDetail ?? data.grnServiceDetail
-        ?? data.MRNDetails ?? data.MRNDetail ?? data.mRNDetail
-        ?? data.GRNPaymentDetails ?? data.Details ?? data.BillLines ?? data.Items ?? data.Lines
-        ?? data.Table ?? data.table;
-    if (!Array.isArray(lines) || !lines.length) lines = mrnScanDetailArraysInObject(data);
+    let lines = mrnCollectDetailLinesFromData(data);
     if (Array.isArray(lines) && lines.length) {
         p._detailLines = lines;
         enrichMrnHeaderFromDetailLines(p, lines);
+    }
+
+    mrnMergePartyFromSource(p, basePayment);
+    if (resolvedMaster && typeof resolvedMaster === 'object' && !Array.isArray(resolvedMaster)) {
+        mrnMergePartyFromSource(p, resolvedMaster);
     }
 
     return bindMrnNoOntoPayment(p);
@@ -1463,15 +1613,7 @@ function extractDetailLines(root) {
     }
     const data = peelMrnApprovalApiRoot(root);
     if (!data) return [];
-    if (Array.isArray(data)) {
-        return data.length && mrnIsDetailRow(data[0]) ? data : [];
-    }
-    const lines = data.GRNServiceDetail ?? data.grnServiceDetail
-        ?? data.MRNDetails ?? data.MRNDetail ?? data.mRNDetail
-        ?? data.Details ?? data.Items ?? data.Lines
-        ?? data.Table ?? data.table;
-    if (Array.isArray(lines) && lines.length) return lines;
-    return mrnScanDetailArraysInObject(data);
+    return mrnCollectDetailLinesFromData(data);
 }
 
 function extractBillLines(root) {
@@ -1519,7 +1661,9 @@ function applyGpaModalActionButtons(payment) {
 }
 
 function OpenDetailModal(paymentCode, options) {
-    const viewOnly = options === true || !!(options && options.viewOnly);
+    const opts = (options && typeof options === 'object') ? options : {};
+    const viewOnly = options === true || !!opts.viewOnly;
+    const sourceRow = opts.sourceRow || null;
     setGpaModalViewOnlyMode(viewOnly);
     const code = parseInt(paymentCode, 10);
     if (!Number.isFinite(code) || code <= 0) return;
@@ -1527,11 +1671,19 @@ function OpenDetailModal(paymentCode, options) {
     G_CurrentPayment = G_PaymentList.find(function (p) { return getPaymentMasterCode(p) === code; })
         || (G_PaymentListFull || []).find(function (p) { return getPaymentMasterCode(p) === code; })
         || null;
+    if (sourceRow && typeof sourceRow === 'object') {
+        if (!G_CurrentPayment) {
+            G_CurrentPayment = Object.assign({}, sourceRow, { Code: code, MRNMaster_Code: code });
+        } else {
+            G_CurrentPayment = Object.assign({}, sourceRow, G_CurrentPayment);
+        }
+    }
     if (!G_CurrentPayment) {
         G_CurrentPayment = { Code: code, MRNMaster_Code: code };
     } else {
         bindMrnNoOntoPayment(G_CurrentPayment);
     }
+    mrnMergePartyFromSource(G_CurrentPayment, sourceRow);
 
     const entryNo = formatMrnDisplayNo(G_CurrentPayment);
     const vendor = getPartyName(G_CurrentPayment);
@@ -1546,7 +1698,7 @@ function OpenDetailModal(paymentCode, options) {
 
     ensureGpaModalItemsTableHead();
     $('#gpaModalItemsBody').html(
-        '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<tr><td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
         '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
     );
 
@@ -1566,6 +1718,7 @@ function OpenDetailModal(paymentCode, options) {
             G_CurrentPayment = enrichMrnHeaderFromDetailLines(G_CurrentPayment, lines);
             $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
             $('#gpaModalEntryTitle').text('MRN# ' + formatMrnDisplayNo(G_CurrentPayment));
+            $('#gpaModalParty').text(getPartyName(G_CurrentPayment));
             paintModalFromPayment(G_CurrentPayment);
             RenderGpaModalItems(lines);
             applyGpaModalActionButtons(G_CurrentPayment);
@@ -1573,7 +1726,7 @@ function OpenDetailModal(paymentCode, options) {
         .catch(function (err) {
             console.error('GetMRNMasterDetail', err);
             $('#gpaModalItemsBody').html(
-                '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<tr><td colspan="9" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
                 '<i class="fa fa-exclamation-triangle me-1"></i>Error loading GRN service lines.</td></tr>'
             );
         });
@@ -1589,6 +1742,8 @@ function paintModalFromPayment(po) {
     const status = EscHtml(getApprovalStatus(po));
     const project = EscHtml(getProject(po) || '—');
     const subProject = EscHtml(getSubProject(po) || '—');
+
+    $('#gpaModalParty').text(vendor);
 
     $('#gpaModalHeader').html(
         '<div class="gpa-info-grid">' +
@@ -1681,7 +1836,7 @@ function RenderGpaModalItems(items) {
     const rows = mrnNormalizeDetailLines(items, master);
     if (!rows || rows.length === 0) {
         $body.html(
-            '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No line items found.</td></tr>'
+            '<tr><td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No line items found.</td></tr>'
         );
         return;
     }
@@ -1693,15 +1848,21 @@ function RenderGpaModalItems(items) {
         const po = EscHtml(poRaw !== null && `${poRaw}`.trim() !== '' ? poRaw : '—');
         const itemRaw = mrnResolveItemName(row);
         const itemName = EscHtml(itemRaw !== '' ? itemRaw : '—');
-        const qtyRaw = mrnResolveLineQty(row);
-        const qty = qtyRaw !== '' ? EscHtml(qtyRaw) : '—';
+        const qtyBreak = mrnResolveLineQtyBreakdown(row);
+        const billQty = mrnFmtLineQty(qtyBreak.billQty);
+        const acceptQty = mrnFmtLineQty(qtyBreak.acceptQty);
+        const rejectQty = mrnFmtLineQty(qtyBreak.rejectQty);
+        const shortage = mrnFmtLineQty(qtyBreak.shortage);
         const amt = FmtCurrency(mrnResolveLineAmount(row));
         html += '<tr>' +
             '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
             '<td style="font-weight:600;">' + billNo + '</td>' +
             '<td class="text-center">' + po + '</td>' +
             '<td>' + itemName + '</td>' +
-            '<td class="text-end">' + qty + '</td>' +
+            '<td class="text-end">' + billQty + '</td>' +
+            '<td class="text-end">' + acceptQty + '</td>' +
+            '<td class="text-end">' + rejectQty + '</td>' +
+            '<td class="text-end">' + shortage + '</td>' +
             '<td class="text-end" style="font-weight:700;color:#667eea;">' + amt + '</td>' +
             '</tr>';
     });
