@@ -118,14 +118,28 @@ tbody tr:hover td { color: #1e1b4b; }
 
 /* ── Backdrop ── */
 .im-backdrop {
-    position: fixed; inset: 0;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     background: rgba(8,12,36,0.54);
     backdrop-filter: blur(5px);
-    display: none; align-items: flex-start; justify-content: center;
-    z-index: 1050; padding: 20px 12px; overflow-y: auto;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1060;
+    padding: 24px 16px;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
-.im-backdrop.show { display: flex; }
-.im-modal, .im-view-modal, .im-delete-modal, .im-success-modal { margin: auto; }
+.im-backdrop.show {
+    display: flex !important;
+}
+.im-modal, .im-view-modal, .im-delete-modal, .im-success-modal {
+    margin: 0;
+    flex-shrink: 0;
+}
 
 @@keyframes im-up {
     from { transform: translateY(22px) scale(0.97); opacity: 0; }
@@ -140,6 +154,7 @@ tbody tr:hover td { color: #1e1b4b; }
 .im-modal {
     width: 1160px;
     max-width: calc(100vw - 20px);
+    max-height: calc(100vh - 40px);
     background: #fff; border-radius: 18px;
     box-shadow: 0 20px 56px rgba(8,12,36,0.24);
     display: flex; flex-direction: column;
@@ -172,7 +187,8 @@ tbody tr:hover td { color: #1e1b4b; }
 
 .im-modal-body {
     padding: 18px 22px 14px; overflow-y: auto;
-    max-height: calc(100vh - 180px);
+    flex: 1;
+    min-height: 0;
 }
 .im-modal-body::-webkit-scrollbar { width: 5px; }
 .im-modal-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
@@ -482,6 +498,46 @@ select.im-input {
 .um-dash-item-text { font-size: 12.5px; font-weight: 500; color: #374151; line-height: 1.4; }
 .um-dash-item.checked .um-dash-item-text { color: #4f46e5; font-weight: 600; }
 
+/* Company × Dashboard grid (Add / Edit User) */
+.um-dash-grid-wrap {
+    max-height: 220px;
+    overflow: auto;
+    background: #fff;
+}
+.um-dash-grid-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 420px;
+}
+.um-dash-grid-wrap th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 7px 12px !important;
+    font-size: 10.5px !important;
+}
+.um-dash-grid-wrap td {
+    padding: 6px 10px !important;
+    font-size: 12.5px;
+    white-space: normal;
+}
+.um-dash-grid-wrap .um-dash-ddl {
+    width: 100%;
+    min-width: 180px;
+    padding: 6px 8px;
+    border: 1px solid #e5e7f0;
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: #374151;
+    background: #fff;
+}
+.um-dash-grid-wrap .um-dash-ddl:focus {
+    outline: none;
+    border-color: #7c6ef7;
+    box-shadow: 0 0 0 3px rgba(91,94,244,0.12);
+}
+.um-dash-company-name { font-weight: 600; color: #374151; }
+
 /* Right side of bottom */
 .um-right-bottom { display: flex; flex-direction: column; gap: 12px; }
 
@@ -676,6 +732,20 @@ select.im-input {
 .im-view-field-info { min-width: 0; flex: 1; }
 .im-view-field-label { font-size: 10px; font-weight: 700; color: #9ca3af; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 2px; }
 .im-view-field-value { font-size: 13px; font-weight: 700; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.im-view-field-value.is-wrap { white-space: normal; overflow: visible; text-overflow: unset; line-height: 1.45; }
+
+.um-view-dash-wrap { margin-bottom: 4px; }
+.um-view-dash-table { display: flex; flex-direction: column; gap: 7px; }
+.um-view-dash-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 8px 12px; border-radius: 9px;
+    border: 1px solid #eef0f6; background: #f9fafb;
+    font-size: 13px;
+}
+.um-view-dash-company { font-weight: 700; color: #374151; min-width: 120px; }
+.um-view-dash-sep { color: #c4b5fd; font-size: 10px; }
+.um-view-dash-name { font-weight: 600; color: #5b5ef4; }
+.um-view-empty { color: #9ca3af; font-weight: 500; }
 
 .im-view-footer {
     padding: 12px 20px 18px;
@@ -929,6 +999,27 @@ select.im-input {
                 </div>
             </div>
 
+            <!-- ── Section: Company Dashboard (admin only) ── -->
+            <div id="wrapUserDashboardSection" style="display:none;">
+                <div class="um-section-label" style="margin-top:14px;"><i class="fas fa-chart-line"></i> Company Dashboard</div>
+                <div class="um-dash-panel">
+                    <div class="um-dash-header">
+                        <i class="fas fa-building"></i>
+                        Assign default dashboard per company
+                    </div>
+                    <div class="um-dash-grid-wrap">
+                        <table id="tblUserDashboardGrid">
+                            <thead>
+                                <tr>
+                                    <th style="width:42%;">Company Name</th>
+                                    <th>Dashboard</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userDashboardGridBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
         </div><!-- /modal-body -->
 
@@ -1014,9 +1105,14 @@ select.im-input {
                     <div class="im-view-field-icon"><i class="fas fa-diagram-project"></i></div>
                     <div class="im-view-field-info">
                         <div class="im-view-field-label">Subproject</div>
-                        <div class="im-view-field-value" id="vf_SubProjects">—</div>
+                        <div class="im-view-field-value is-wrap" id="vf_SubProjects">—</div>
                     </div>
                 </div>
+            </div>
+
+            <div id="wrapViewUserDashboardSection" style="display:none;">
+                <div class="im-view-section-label"><i class="fas fa-chart-line"></i> Company Dashboard</div>
+                <div id="vf_DashboardList" class="um-view-dash-wrap"><span class="um-view-empty">—</span></div>
             </div>
 
 
