@@ -2339,7 +2339,7 @@ function InitGRNPaymentAttachmentControl(code, entryNo, entryDate) {
         DetailTableCode: 0,
         EntryNo: parseInt(entryNo, 10) || 0,
         EntryDate: entryDate || '',
-        Mode: 'all'
+        Mode: 'view'
     });
 }
 

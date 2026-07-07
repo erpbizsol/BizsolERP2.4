@@ -926,7 +926,7 @@ function OpenPOApprovalAttachment(code, poNo, poDate) {
         toastr.error('Attachments are not available. Please refresh the page.');
         return;
     }
-    window.openPOListAttachmentControl(code, poNo, poDate);
+    window.openPOListAttachmentControl(code, poNo, poDate, 'view');
 }
 
 function OpenPOApprovalAttachmentFromModal() {

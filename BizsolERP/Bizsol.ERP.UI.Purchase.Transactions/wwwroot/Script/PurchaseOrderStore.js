@@ -678,16 +678,15 @@ function FormatDateInput(d) {
     return `${yr}-${mo}-${dy}`;
 }
 
-/** Default list filters: To = today; From = API first pending PO date or first of month (same as POLevelsApprove.js). */
+/** Default list filters: To = today; From = first day of current month. */
 function InitDates() {
     const today = new Date();
     $('#lstTxtToDate').val(FormatDateInput(today));
-    if (USE_DUMMY) {
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        $('#lstTxtFromDate').val(FormatDateInput(firstDay));
-        return Promise.resolve();
-    }
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    $('#lstTxtFromDate').val(FormatDateInput(firstDay));
+    return Promise.resolve();
 
+    /* Temporary: API default from date disabled — use first day of current month.
     return POLevelsApproveService.GetFirstPendingPODate()
         .then(function (resp) {
             let dateStr = '';
@@ -709,6 +708,7 @@ function InitDates() {
             const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
             $('#lstTxtFromDate').val(FormatDateInput(firstDay));
         });
+    */
 }
 
 function FormatDateDisplay(d) {
@@ -1059,12 +1059,20 @@ function ShowAddressDetails(type, code) {
 }
 
 window.OpenAddAddressModal = function (type) {
+    const selectedCode  = type === 'BillTo' ? $('#frmDdlBillTo').val() : $('#frmDdlShipTo').val();
+    const existingAddr  = selectedCode
+        ? G_BillToShipToList.find(function (a) { return String(a.Code) === String(selectedCode); })
+        : null;
     $('#addrModalType').val(type);
-    $('#modalAddAddressTitle').text(type === 'BillTo' ? 'Add Bill To Address' : 'Add Ship To Address');
-    $('#addrTxtName').val('');
-    $('#addrTxtDisplayName').val('');
-    $('#addrTxtAddress').val('');
-    $('#addrTxtGSTNo').val('');
+    $('#hfAddrCode').val(existingAddr ? existingAddr.Code : 0);
+    $('#addrTxtName').val(existingAddr ? (existingAddr.Name || '') : '');
+    $('#addrTxtDisplayName').val(existingAddr ? (existingAddr.DisplayName || '') : '');
+    $('#addrTxtAddress').val(existingAddr ? (existingAddr.Address || '') : '');
+    $('#addrTxtGSTNo').val(existingAddr ? (existingAddr.GSTNo || '') : '');
+    const title = existingAddr
+        ? (type === 'BillTo' ? 'Edit Bill To Address' : 'Edit Ship To Address')
+        : (type === 'BillTo' ? 'Add Bill To Address' : 'Add Ship To Address');
+    $('#modalAddAddressTitle').text(title);
     $('#modalAddAddress').modal('show');
 };
 
@@ -1074,18 +1082,19 @@ window.SaveBillToShipToAddress = function () {
     const address     = $('#addrTxtAddress').val().trim();
     const gstNo       = $('#addrTxtGSTNo').val().trim();
     const type        = $('#addrModalType').val();
+    const code        = parseInt($('#hfAddrCode').val() || '0', 10) || 0;
 
     if (!name)        { toastr.warning('Please enter Name.');         return; }
     if (!displayName) { toastr.warning('Please enter Display Name.'); return; }
     if (!address)     { toastr.warning('Please enter Address.');      return; }
 
-    const payload = JSON.stringify({ Code:0, Addresses: [{ Name: name, DisplayName: displayName, Address: address, GSTNo: gstNo }]});
+    const payload = JSON.stringify({ Code: code, Addresses: [{ Code: code, Name: name, DisplayName: displayName, Address: address, GSTNo: gstNo }]});
 
     PurchaseOrderStoreService.SaveBillToShipToAddress(payload).then(function (res) {
         if (res && res.Status === 'Y') {
             toastr.success(res.Msg || 'Address saved successfully.');
             $('#modalAddAddress').modal('hide');
-            const newCode = res.Code || res.NewCode || null;
+            const newCode = res.Code || res.NewCode || code || null;
             LoadBillToShipToDropdown(
                 type === 'BillTo'  ? (newCode || $('#frmDdlBillTo').val() || null)  : ($('#frmDdlBillTo').val() || null),
                 type === 'ShipTo'  ? (newCode || $('#frmDdlShipTo').val() || null)  : ($('#frmDdlShipTo').val() || null)
@@ -2982,17 +2991,24 @@ function openPOAttachmentControl() {
     const masterCode = parseInt($('#frmHfCode').val() || '0', 10) || 0;
     const poNo = parseInt($('#frmTxtPONo').val() || '0', 10) || 0;
     const poDate = $('#frmTxtPODate').val() || '';
-    // masterCode=0 → temp/pending mode handled inside the shared control
-    InitAttachmentControl('PurchaseOrderMaster', masterCode, '', 0, poNo, poDate, 'all', '');
+    const poItem = masterCode > 0 ? G_POStoreList.find(function (i) { return String(i.Code) === String(masterCode); }) : null;
+    const mode = (poItem && poStoreNormStatus(poItem) === 'approved') ? 'addview' : 'all';
+    InitAttachmentControl('PurchaseOrderMaster', masterCode, '', 0, poNo, poDate, mode, '');
 }
 
-function openPOListAttachmentControl(code, poNo, poDate) {
+function openPOListAttachmentControl(code, poNo, poDate, mode) {
     const masterCode = parseInt(code, 10) || 0;
     if (masterCode <= 0) {
         toastr.warning('Invalid record. Cannot open attachments.');
         return;
     }
-    InitAttachmentControl('PurchaseOrderMaster', masterCode, '', 0, parseInt(poNo, 10) || 0, poDate || '', 'all', '');
+    // If explicit mode provided (e.g. 'view' from approval page), use it; otherwise auto-detect
+    let resolvedMode = mode;
+    if (!resolvedMode) {
+        const poItem = G_POStoreList.find(function (i) { return String(i.Code) === String(masterCode); });
+        resolvedMode = (poItem && poStoreNormStatus(poItem) === 'approved') ? 'addview' : 'all';
+    }
+    InitAttachmentControl('PurchaseOrderMaster', masterCode, '', 0, parseInt(poNo, 10) || 0, poDate || '', resolvedMode, '');
 }
 
 // --- SEND MAIL (Approved PO) — PDF via html2canvas + jsPDF (paged + footer) ---

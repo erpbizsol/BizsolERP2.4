@@ -11,41 +11,76 @@
 
 <style>
     .edash-wrap {
-        background: #f1f5f9;
+        background: linear-gradient(160deg, #eef2ff 0%, #f8fafc 45%, #f1f5f9 100%);
         min-height: calc(100vh - 100px);
         padding: 12px;
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
     }
 
     .edash-header {
-        background: #fff;
-        border-radius: 16px;
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 45%, #7c3aed 100%);
+        border-radius: 18px;
         padding: 22px 26px;
         margin-bottom: 16px;
-        box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
-        border: 1px solid #e2e8f0;
+        box-shadow: 0 8px 28px rgba(79, 70, 229, 0.28);
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+    .edash-header::before {
+        content: '';
+        position: absolute;
+        top: -50px; right: -30px;
+        width: 180px; height: 180px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 50%;
     }
     .edash-header-top {
         display: flex;
         flex-wrap: wrap;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 6px;
+        gap: 14px;
+        position: relative;
+        z-index: 1;
+    }
+    .edash-header-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+    }
+    .edash-header-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.25rem;
+        flex-shrink: 0;
     }
     .edash-title {
-        font-size: 1.45rem;
+        font-size: 1.35rem;
         font-weight: 800;
-        color: #0f172a;
+        color: #fff;
         margin: 0;
         letter-spacing: -0.02em;
+        line-height: 1.25;
     }
     .edash-greeting {
-        font-size: 0.92rem;
-        color: #64748b;
+        font-size: 0.88rem;
+        color: rgba(255,255,255,0.82);
         margin: 4px 0 0;
     }
     .edash-greeting strong {
-        color: #334155;
+        color: #fff;
+        font-weight: 700;
     }
     .edash-header-actions {
         display: flex;
@@ -54,38 +89,39 @@
         flex-shrink: 0;
     }
     .edash-date-badge {
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         font-weight: 600;
-        color: #475569;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        color: #fff;
+        background: rgba(255,255,255,0.16);
+        border: 1px solid rgba(255,255,255,0.3);
         border-radius: 10px;
         padding: 8px 14px;
         white-space: nowrap;
+        backdrop-filter: blur(6px);
     }
     .edash-filter-btn {
         width: 42px;
         height: 42px;
         border-radius: 50%;
-        border: none;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 2px solid rgba(255,255,255,0.45);
+        background: rgba(255,255,255,0.15);
         color: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.15);
         flex-shrink: 0;
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: transform 0.2s, background 0.2s;
     }
     .edash-filter-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(102, 126, 234, 0.45);
+        background: rgba(255,255,255,0.25);
     }
     .edash-header-reset {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #475569;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.35);
+        color: #fff;
         font-size: 0.75rem;
         font-weight: 700;
         padding: 8px 14px;
@@ -97,57 +133,77 @@
         gap: 5px;
     }
     .edash-header-reset:hover {
-        background: #f1f5f9;
+        background: rgba(255,255,255,0.22);
     }
 
     .edash-kpi-row {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
         margin-bottom: 16px;
     }
     .edash-kpi-card {
         background: #fff;
-        border-radius: 14px;
-        padding: 16px 18px;
+        border-radius: 16px;
+        padding: 18px 20px;
         border: 1px solid #e2e8f0;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
         display: flex;
         align-items: flex-start;
-        gap: 12px;
+        gap: 14px;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
     }
+    .edash-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+    }
+    .edash-kpi-card::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 4px;
+        border-radius: 16px 0 0 16px;
+    }
+    .edash-kpi-card--total::before { background: linear-gradient(180deg, #3b82f6, #2563eb); }
+    .edash-kpi-card--approved::before { background: linear-gradient(180deg, #22c55e, #16a34a); }
+    .edash-kpi-card--paid::before { background: linear-gradient(180deg, #8b5cf6, #7c3aed); }
+    .edash-kpi-card--pending::before { background: linear-gradient(180deg, #f97316, #ea580c); }
     .edash-kpi-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.1rem;
+        font-size: 1.15rem;
         flex-shrink: 0;
     }
-    .edash-kpi-icon--total { background: #dbeafe; color: #2563eb; }
-    .edash-kpi-icon--approved { background: #dcfce7; color: #16a34a; }
-    .edash-kpi-icon--paid { background: #ede9fe; color: #7c3aed; }
-    .edash-kpi-icon--pending { background: #ffedd5; color: #ea580c; }
-    .edash-kpi-icon--claims { background: #fee2e2; color: #dc2626; }
+    .edash-kpi-icon--total { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1d4ed8; }
+    .edash-kpi-icon--approved { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #15803d; }
+    .edash-kpi-icon--paid { background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: #6d28d9; }
+    .edash-kpi-icon--pending { background: linear-gradient(135deg, #ffedd5, #fed7aa); color: #c2410c; }
+    .edash-kpi-body { min-width: 0; flex: 1; }
     .edash-kpi-val {
-        font-size: 1.15rem;
+        font-size: 1.28rem;
         font-weight: 800;
         color: #0f172a;
         line-height: 1.2;
+        margin-top: 2px;
     }
     .edash-kpi-lbl {
         font-size: 0.72rem;
-        font-weight: 600;
+        font-weight: 700;
         color: #64748b;
         text-transform: uppercase;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.04em;
     }
     .edash-kpi-sub {
         font-size: 0.68rem;
         color: #94a3b8;
-        margin-top: 2px;
+        margin-top: 4px;
+        font-weight: 500;
     }
 
     .edash-charts-row {
@@ -155,6 +211,7 @@
         grid-template-columns: 1.2fr 1fr;
         gap: 14px;
         margin-bottom: 16px;
+        min-width: 0;
     }
     .edash-chart-card {
         background: #fff;
@@ -162,28 +219,52 @@
         padding: 18px 20px;
         border: 1px solid #e2e8f0;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
     }
     .edash-chart-title {
         font-size: 0.88rem;
         font-weight: 700;
         color: #334155;
         margin-bottom: 12px;
+        line-height: 1.35;
+    }
+    .edash-chart-scroll {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
     }
     .edash-chart-area {
         position: relative;
-        height: 260px;
+        height: 280px;
+        width: 100%;
+        min-width: 0;
+    }
+    .edash-chart-area--trend {
+        height: 300px;
+        min-width: 100%;
     }
     .edash-donut-wrap {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 20px;
         flex-wrap: wrap;
+        min-width: 0;
     }
     .edash-donut-canvas {
         position: relative;
         width: 180px;
         height: 180px;
         flex-shrink: 0;
+        margin: 0 auto;
+    }
+    .edash-donut-canvas canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
     }
     .edash-donut-center {
         position: absolute;
@@ -203,7 +284,8 @@
     }
     .edash-cat-legend {
         flex: 1;
-        min-width: 160px;
+        min-width: 0;
+        width: 100%;
     }
     .edash-cat-item {
         display: flex;
@@ -341,29 +423,102 @@
     .edash-loader.show { display: flex; }
 
     @@media (max-width: 1199px) {
-        .edash-kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .edash-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .edash-charts-row { grid-template-columns: 1fr; }
     }
     @@media (max-width: 767px) {
-        .edash-kpi-row { grid-template-columns: 1fr 1fr; }
+        .edash-wrap { padding: 8px; }
+        .edash-header { padding: 16px; border-radius: 14px; }
         .edash-header-top { flex-direction: column; align-items: stretch; }
-        .edash-header-actions { flex-wrap: wrap; }
+        .edash-header-actions {
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+        .edash-date-badge {
+            flex: 1 1 100%;
+            text-align: center;
+            white-space: normal;
+        }
+        .edash-kpi-row { grid-template-columns: 1fr; gap: 10px; }
+        .edash-kpi-val { font-size: 1.15rem; }
+        .edash-charts-row { gap: 12px; margin-bottom: 12px; }
+        .edash-chart-card { padding: 14px 12px; border-radius: 12px; }
+        .edash-chart-title {
+            font-size: 0.82rem;
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+        .edash-chart-scroll {
+            margin: 0 -2px;
+            padding-bottom: 4px;
+        }
+        .edash-chart-area--trend {
+            height: 240px;
+            min-width: 320px;
+        }
+        .edash-donut-wrap {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 14px;
+        }
+        .edash-donut-canvas {
+            width: 100%;
+            max-width: 190px;
+            height: 190px;
+            margin: 0 auto;
+        }
+        .edash-cat-legend { width: 100%; }
+        .edash-cat-item {
+            font-size: 0.76rem;
+            padding: 6px 0;
+        }
+        .edash-cat-name {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .edash-table-head {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .edash-table-head h3 { font-size: 0.85rem; }
+        #tblProjectWise { font-size: 0.75rem; }
+        #tblProjectWise th,
+        #tblProjectWise td { padding: 8px 10px; }
+    }
+    @@media (max-width: 480px) {
+        .edash-header-left { gap: 10px; }
+        .edash-header-icon { width: 40px; height: 40px; font-size: 1rem; }
+        .edash-title { font-size: 1.1rem; }
+        .edash-header-reset span { display: none; }
+        .edash-chart-area--trend {
+            height: 210px;
+            min-width: 300px;
+        }
+        .edash-donut-canvas {
+            max-width: 170px;
+            height: 170px;
+        }
     }
 </style>
 
 <div class="edash-wrap">
     <div class="edash-header">
         <div class="edash-header-top">
-            <div>
-                <h1 class="edash-title">My Expense Dashboard</h1>
-                <p class="edash-greeting">Welcome back, <strong id="edashWelcomeName">—</strong>!</p>
+            <div class="edash-header-left">
+                <div class="edash-header-icon"><i class="fa-solid fa-chart-line"></i></div>
+                <div>
+                    <h1 class="edash-title">My Expense Dashboard</h1>
+                    <p class="edash-greeting">Welcome back, <strong id="edashWelcomeName">—</strong>!</p>
+                </div>
             </div>
             <div class="edash-header-actions">
                 <button type="button" class="edash-filter-btn" id="btnEdashFilter" onclick="OpenEdashFilterPanel()" title="Filters" aria-label="Open Filters">
                     <i class="fa-solid fa-filter"></i>
                 </button>
                 <button type="button" class="edash-header-reset" id="btnEdashReset" onclick="ResetExpenseDashboard()" title="Reset Filters">
-                    <i class="fa-solid fa-rotate-left"></i> Reset
+                    <i class="fa-solid fa-rotate-left"></i> <span>Reset</span>
                 </button>
                 <div class="edash-date-badge" id="edashDateRangeLabel">—</div>
             </div>
@@ -373,56 +528,50 @@
     <filter-side-panel-control id="edashFilterPanel" show-button="false"></filter-side-panel-control>
 
     <div class="edash-kpi-row">
-        <div class="edash-kpi-card">
+        <div class="edash-kpi-card edash-kpi-card--total">
             <div class="edash-kpi-icon edash-kpi-icon--total"><i class="fa fa-file-invoice"></i></div>
-            <div>
+            <div class="edash-kpi-body">
                 <div class="edash-kpi-lbl">Total Expenses</div>
                 <div class="edash-kpi-val" id="kpiTotal">—</div>
-                <div class="edash-kpi-sub">This Month</div>
+                <div class="edash-kpi-sub">Selected Period</div>
             </div>
         </div>
-        <div class="edash-kpi-card">
+        <div class="edash-kpi-card edash-kpi-card--approved">
             <div class="edash-kpi-icon edash-kpi-icon--approved"><i class="fa fa-check-circle"></i></div>
-            <div>
+            <div class="edash-kpi-body">
                 <div class="edash-kpi-lbl">Approved Amount</div>
                 <div class="edash-kpi-val" id="kpiApproved">—</div>
-                <div class="edash-kpi-sub">This Month</div>
+                <div class="edash-kpi-sub">Selected Period</div>
             </div>
         </div>
-        <div class="edash-kpi-card">
+        <div class="edash-kpi-card edash-kpi-card--paid">
             <div class="edash-kpi-icon edash-kpi-icon--paid"><i class="fa fa-credit-card"></i></div>
-            <div>
+            <div class="edash-kpi-body">
                 <div class="edash-kpi-lbl">Paid Amount</div>
                 <div class="edash-kpi-val" id="kpiPaid">—</div>
-                <div class="edash-kpi-sub">This Month</div>
+                <div class="edash-kpi-sub">Selected Period</div>
             </div>
         </div>
-        <div class="edash-kpi-card">
+        <div class="edash-kpi-card edash-kpi-card--pending">
             <div class="edash-kpi-icon edash-kpi-icon--pending"><i class="fa fa-clock"></i></div>
-            <div>
+            <div class="edash-kpi-body">
                 <div class="edash-kpi-lbl">Pending Amount</div>
                 <div class="edash-kpi-val" id="kpiPending">—</div>
-                <div class="edash-kpi-sub">This Month</div>
-            </div>
-        </div>
-        <div class="edash-kpi-card">
-            <div class="edash-kpi-icon edash-kpi-icon--claims"><i class="fa fa-exclamation-circle"></i></div>
-            <div>
-                <div class="edash-kpi-lbl">Pending Claims</div>
-                <div class="edash-kpi-val" id="kpiClaims">—</div>
-                <div class="edash-kpi-sub">Claims</div>
+                <div class="edash-kpi-sub">Selected Period</div>
             </div>
         </div>
     </div>
 
     <div class="edash-charts-row">
-        <div class="edash-chart-card">
-            <div class="edash-chart-title" id="chartTrendTitle">Expense Trend (This Month)</div>
-            <div class="edash-chart-area">
-                <canvas id="chartExpenseTrend"></canvas>
+        <div class="edash-chart-card edash-chart-card--trend">
+            <div class="edash-chart-title" id="chartTrendTitle">Expense Trend</div>
+            <div class="edash-chart-scroll">
+                <div class="edash-chart-area edash-chart-area--trend">
+                    <canvas id="chartExpenseTrend"></canvas>
+                </div>
             </div>
         </div>
-        <div class="edash-chart-card">
+        <div class="edash-chart-card edash-chart-card--category">
             <div class="edash-chart-title">Expense by Category</div>
             <div class="edash-donut-wrap">
                 <div class="edash-donut-canvas">

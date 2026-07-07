@@ -4820,7 +4820,8 @@ function openGrnServiceAttachmentControl() {
     const masterCode = parseInt(document.getElementById('hdnMRNMasterCode')?.value ?? '0', 10) || 0;
     const mrnNo = parseInt(document.getElementById('txtGRNNo')?.value?.trim() ?? '0', 10) || 0;
     const entryDate = grnFormatDateInput(document.getElementById('dtBillDate')?.value ?? '');
-    InitAttachmentControl('MRNMaster', masterCode, '', 0, mrnNo, entryDate, 'all', '');
+    const mode = (masterCode > 0 && grnIsVerifiedOrApprovedForEditBlockByCode(masterCode)) ? 'addview' : 'all';
+    InitAttachmentControl('MRNMaster', masterCode, '', 0, mrnNo, entryDate, mode, '');
 }
 
 function openGrnServiceListAttachmentControl(code, entryNo, entryDate) {
@@ -4830,7 +4831,8 @@ function openGrnServiceListAttachmentControl(code, entryNo, entryDate) {
         return;
     }
     const resolvedEntryDate = grnResolveAttachmentEntryDate(masterCode, entryDate);
-    InitAttachmentControl('MRNMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, resolvedEntryDate, 'all', '');
+    const mode = grnIsApprovedGrn(masterCode) ? 'addview' : 'all';
+    InitAttachmentControl('MRNMaster', masterCode, '', 0, parseInt(entryNo, 10) || 0, resolvedEntryDate, mode, '');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
