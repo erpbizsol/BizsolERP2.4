@@ -9,6 +9,10 @@ var U_EditRow  = null;
 
 /** Loaded sub-projects for multi-select (GetSubProjectMasterList?CompanyCode=… → Code, SubProjectDesp). */
 var G_UserMasterSubProjectList = [];
+/** Companies for default-company dropdown and company×dashboard grid. */
+var G_UserMasterCompanyList = [];
+/** Dashboard list for per-company dropdown (GETDASHBOARDLIST). */
+var G_UserMasterDashboardList = [];
 /** Subproject codes to apply after form modal is visible (Select2 in backdrop). */
 var G_UserModalSubProjectPendingCodes = null;
 
@@ -100,6 +104,13 @@ function resolveUserMasterListFilterCode() {
 function updateUserMasterPageAccess() {
     var admin = isAdminUser();
     $('#btnNewUser').toggle(admin);
+    updateUserDashboardVisibility();
+}
+
+/** Company Dashboard grid — visible only to admin (UserType = A). */
+function updateUserDashboardVisibility() {
+    var show = isAdminUser();
+    $('#wrapUserDashboardSection, #wrapViewUserDashboardSection').toggle(show);
 }
 
 function buildUserMasterRowActions(code) {
@@ -162,6 +173,10 @@ $(document).ready(function () {
     }, 250);
     GetUserMasterList();
     LoadDropdowns();
+
+    /* Full viewport center — escape #modern-content scroll pane (see _Layout). */
+    $('#userDialogBackdrop, #viewUserBackdrop, #deleteConfirmBackdrop, #successBackdrop')
+        .appendTo(document.body);
 
     $('#btnModalClose, #btnCancelUser').on('click', CloseForm);
     $('#btnCancelDelete').on('click', function () { $('#deleteConfirmBackdrop').removeClass('show'); });
@@ -438,10 +453,22 @@ function pickEntityFromNestedTableArray(outer) {
     if (!Array.isArray(pack0) || !pack0.length) return null;
     var user = pack0[0];
     if (!isUserMasterRowShape(user)) return null;
-    if (outer.length < 2) return user;
-    var pack1 = outer[1];
-    if (!Array.isArray(pack1) || !pack1.length || !rowLooksLikeSubProjectUserDetailRow(pack1[0])) return user;
-    return Object.assign({}, user, { SubProjectMasterDetails: pack1 });
+    var merged = Object.assign({}, user);
+    if (outer.length >= 2) {
+        var pack1 = outer[1];
+        if (Array.isArray(pack1) && pack1.length) {
+            if (rowLooksLikeSubProjectUserDetailRow(pack1[0]))
+                merged.SubProjectMasterDetails = pack1;
+            else if (rowLooksLikeUserDashboardDetailRow(pack1[0]))
+                merged.UserDashboardDetails = pack1;
+        }
+    }
+    if (outer.length >= 3) {
+        var pack2 = outer[2];
+        if (Array.isArray(pack2) && pack2.length && rowLooksLikeUserDashboardDetailRow(pack2[0]))
+            merged.UserDashboardDetails = pack2;
+    }
+    return merged;
 }
 
 /** Attach subproject rows when API returns them beside UserMasterList / on outer wrapper. */
@@ -449,21 +476,45 @@ function mergeUserRowWithDetailsFromGetByCodeResponse(userRow, response) {
     if (!userRow || !response || typeof response !== 'object') return userRow;
     if (Array.isArray(response)) {
         var nestedUser = pickEntityFromNestedTableArray(response);
-        if (nestedUser && nestedUser.SubProjectMasterDetails && nestedUser.SubProjectMasterDetails.length)
-            return Object.assign({}, userRow, { SubProjectMasterDetails: nestedUser.SubProjectMasterDetails });
+        if (nestedUser) {
+            userRow = Object.assign({}, userRow, nestedUser);
+            if (nestedUser.SubProjectMasterDetails && nestedUser.SubProjectMasterDetails.length)
+                userRow.SubProjectMasterDetails = nestedUser.SubProjectMasterDetails;
+            if (nestedUser.UserDashboardDetails && nestedUser.UserDashboardDetails.length)
+                userRow.UserDashboardDetails = nestedUser.UserDashboardDetails;
+            return userRow;
+        }
     }
     var layers = [response];
     var inner = response.Data != null ? response.Data : response.data;
     inner = tryParseJsonIfString(inner);
     if (inner && typeof inner === 'object' && !Array.isArray(inner)) layers.push(inner);
+    for (var li = 0; li < layers.length; li++) {
+        var dsUser = pickUserRowFromDataSetShape(layers[li]);
+        if (dsUser) {
+            userRow = Object.assign({}, userRow, dsUser);
+            if (dsUser.SubProjectMasterDetails && dsUser.SubProjectMasterDetails.length)
+                userRow.SubProjectMasterDetails = dsUser.SubProjectMasterDetails;
+            if (dsUser.UserDashboardDetails && dsUser.UserDashboardDetails.length)
+                userRow.UserDashboardDetails = dsUser.UserDashboardDetails;
+        }
+    }
     if (inner && Array.isArray(inner)) {
         var fromArr = pickEntityFromNestedTableArray(inner);
-        if (fromArr && fromArr.SubProjectMasterDetails && fromArr.SubProjectMasterDetails.length)
-            return Object.assign({}, userRow, { SubProjectMasterDetails: fromArr.SubProjectMasterDetails });
+        if (fromArr) {
+            userRow = Object.assign({}, userRow, fromArr);
+            if (fromArr.SubProjectMasterDetails && fromArr.SubProjectMasterDetails.length)
+                userRow.SubProjectMasterDetails = fromArr.SubProjectMasterDetails;
+            if (fromArr.UserDashboardDetails && fromArr.UserDashboardDetails.length)
+                userRow.UserDashboardDetails = fromArr.UserDashboardDetails;
+            return userRow;
+        }
     }
     for (var li = 0; li < layers.length; li++) {
         var arr = pickSubProjectDetailsArrayFromResponseObject(layers[li]);
-        if (arr && arr.length) return Object.assign({}, userRow, { SubProjectMasterDetails: arr });
+        if (arr && arr.length) userRow = Object.assign({}, userRow, { SubProjectMasterDetails: arr });
+        var dashArr = pickUserDashboardDetailsArrayFromResponseObject(layers[li]);
+        if (dashArr && dashArr.length) userRow = Object.assign({}, userRow, { UserDashboardDetails: dashArr });
     }
     return userRow;
 }
@@ -540,6 +591,369 @@ function subProjectNamesDisplayFromCodes(arr) {
     return names.length ? names.join(', ') : '—';
 }
 
+function subProjectDetailsArrayFromUserRow(row) {
+    if (!row) return [];
+    var list = row.SubProjectMasterDetails || row.subProjectMasterDetails
+        || row.UserSubProjectDetails || row.userSubProjectDetails
+        || row.UserMasterSubProjectDetails || row.userMasterSubProjectDetails;
+    if (!list) {
+        var t1 = row.Table1 != null ? row.Table1 : row.table1;
+        t1 = tryParseJsonIfString(t1);
+        if (Array.isArray(t1)) list = t1;
+    }
+    if (list && !Array.isArray(list)) list = [list];
+    return Array.isArray(list) ? list : [];
+}
+
+/** View / display: SubProjectDesp from Table1, else lookup from loaded master list. */
+function subProjectNamesDisplayFromUserRow(row) {
+    if (!row) return '—';
+    var list = subProjectDetailsArrayFromUserRow(row);
+    if (list.length) {
+        var names = list.map(function (x) {
+            if (!x) return '';
+            var desp = x.SubProjectDesp != null ? x.SubProjectDesp : x.subProjectDesp;
+            if (desp != null && String(desp).trim() !== '') return String(desp).trim();
+            var sp = x.SubProjectMaster_Code != null ? x.SubProjectMaster_Code : x.subProjectMaster_Code;
+            if (sp == null || String(sp).trim() === '' || isNaN(Number(sp))) {
+                var c = x.Code != null ? x.Code : x.code;
+                if (c != null && String(c).trim() !== '' && !isNaN(Number(c))) sp = c;
+            }
+            if (sp != null && String(sp).trim() !== '' && !isNaN(Number(sp))) {
+                var m = (G_UserMasterSubProjectList || []).find(function (item) {
+                    return pickSubProjectRowCode(item) === String(Number(sp));
+                });
+                if (m) return pickSubProjectDisplayName(m);
+            }
+            return '';
+        }).filter(Boolean);
+        if (names.length) return names.join(', ');
+    }
+    return subProjectNamesDisplayFromCodes(subProjectCodesArrayFromUserRow(row));
+}
+
+function loadSubProjectsForViewModal(companyCode, callback) {
+    var cc = companyCode != null && companyCode !== '' ? String(companyCode).trim() : '';
+    if (!cc) {
+        if (typeof callback === 'function') callback();
+        return;
+    }
+    var url = UrlService.API_ENDPOINT_USERMASTER + '/GetSubProjectMasterList?CompanyCode=' + encodeURIComponent(cc);
+    $.ajax({
+        url: url,
+        type: 'GET',
+        dataType: 'json',
+        success: function (response) {
+            G_UserMasterSubProjectList = normalizeSubProjectMasterListResponse(response);
+        },
+        error: function () {
+            G_UserMasterSubProjectList = [];
+        },
+        complete: function () {
+            if (typeof callback === 'function') callback();
+        }
+    });
+}
+
+/* ══════════════════════════════════════════
+   COMPANY × DASHBOARD GRID (TY_UserDashboard)
+══════════════════════════════════════════ */
+function normalizeMasterListResponse(res) {
+    if (!res) return [];
+    res = tryParseJsonIfString(res);
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res.data)) return res.data;
+    if (Array.isArray(res.Data)) return res.Data;
+    if (Array.isArray(res.value)) return res.value;
+    if (Array.isArray(res.Value)) return res.Value;
+    if (res.Data && typeof res.Data === 'object') return normalizeMasterListResponse(res.Data);
+    if (res.data && typeof res.data === 'object') return normalizeMasterListResponse(res.data);
+    return [];
+}
+
+function pickCompanyRowCode(c) {
+    if (!c) return '';
+    var v = c.Code != null ? c.Code : c.code;
+    if (v === null || v === undefined || v === '') return '';
+    return String(v).trim();
+}
+
+function pickCompanyDisplayName(c) {
+    if (!c) return '';
+    var t = c.CompanyName != null ? c.CompanyName : c.companyName;
+    t = (t != null && String(t).trim() !== '') ? String(t).trim() : '';
+    if (t) return t;
+    return pickCompanyRowCode(c) || '';
+}
+
+function pickDashboardRowCode(d) {
+    if (!d) return '';
+    var v = d.WebApiDashboardMaster_Code != null ? d.WebApiDashboardMaster_Code
+        : (d.webApiDashboardMaster_Code != null ? d.webApiDashboardMaster_Code
+            : (d.Code != null ? d.Code : d.code));
+    if (v === null || v === undefined || v === '') return '';
+    return String(v).trim();
+}
+
+function pickDashboardDisplayName(d) {
+    if (!d) return '';
+    var t = d.Desp != null ? d.Desp
+        : (d.desp != null ? d.desp
+            : (d.DashboardName != null ? d.DashboardName
+                : (d.dashboardName != null ? d.dashboardName
+                    : (d.ModuleDesp != null ? d.ModuleDesp
+                        : (d.moduleDesp != null ? d.moduleDesp
+                            : (d.Name != null ? d.Name : d.name))))));
+    t = (t != null && String(t).trim() !== '') ? String(t).trim() : '';
+    if (t) return t;
+    return pickDashboardRowCode(d) || '';
+}
+
+function buildDashboardSelectOptions(selectedCode) {
+    var sel = selectedCode != null && String(selectedCode).trim() !== '' ? String(selectedCode).trim() : '';
+    var html = '<option value="">— Select Dashboard —</option>';
+    (G_UserMasterDashboardList || []).forEach(function (d) {
+        var val = pickDashboardRowCode(d);
+        if (!val) return;
+        var text = pickDashboardDisplayName(d);
+        html += '<option value="' + escHtmlUm(val) + '"' + (sel === val ? ' selected' : '') + '>' + escHtmlUm(text) + '</option>';
+    });
+    return html;
+}
+
+/** @param {Object<string,string>} selectionMap companyCode → dashboardCode */
+function bindUserDashboardGrid(selectionMap) {
+    var $body = $('#userDashboardGridBody');
+    if (!$body.length) return;
+    selectionMap = selectionMap || {};
+    var rows = '';
+    (G_UserMasterCompanyList || []).forEach(function (c) {
+        var companyCode = pickCompanyRowCode(c);
+        if (!companyCode) return;
+        var companyName = pickCompanyDisplayName(c);
+        var dashSel = selectionMap[companyCode] != null ? String(selectionMap[companyCode]) : '';
+        rows += '<tr data-company-code="' + escHtmlUm(companyCode) + '">' +
+            '<td class="um-dash-company-name">' + escHtmlUm(companyName) + '</td>' +
+            '<td><select class="um-dash-ddl im-input" data-company-code="' + escHtmlUm(companyCode) + '">' +
+            buildDashboardSelectOptions(dashSel) +
+            '</select></td></tr>';
+    });
+    if (!rows) {
+        rows = '<tr><td colspan="2" style="text-align:center;color:#9ca3af;padding:16px;">No companies found.</td></tr>';
+    }
+    $body.html(rows);
+}
+
+function rowLooksLikeUserDashboardDetailRow(o) {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return false;
+    return ('WebApiDashboardMaster_Code' in o) || ('webApiDashboardMaster_Code' in o)
+        || ('FixedParameter_Code' in o) || ('fixedParameter_Code' in o);
+}
+
+/** GetUserMasterByCode DataSet: Table = user, Table1 = subproject, Table2 = dashboard. */
+function pickUserRowFromDataSetShape(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+    var table = tryParseJsonIfString(obj.Table != null ? obj.Table : obj.table);
+    if (!Array.isArray(table) || !table.length || !isUserMasterRowShape(table[0])) return null;
+    var user = Object.assign({}, table[0]);
+    var t1 = tryParseJsonIfString(obj.Table1 != null ? obj.Table1 : obj.table1);
+    if (Array.isArray(t1) && t1.length && rowLooksLikeSubProjectUserDetailRow(t1[0]))
+        user.SubProjectMasterDetails = t1;
+    var t2 = tryParseJsonIfString(obj.Table2 != null ? obj.Table2 : obj.table2);
+    if (Array.isArray(t2) && t2.length && rowLooksLikeUserDashboardDetailRow(t2[0]))
+        user.UserDashboardDetails = t2;
+    return user;
+}
+
+function pickUserDashboardDetailsArrayFromResponseObject(obj) {
+    if (!obj || typeof obj !== 'object') return null;
+    var keys = [
+        'UserDashboardDetails', 'userDashboardDetails',
+        'UserDashboard', 'userDashboard',
+        'DashboardDetails', 'dashboardDetails'
+    ];
+    for (var i = 0; i < keys.length; i++) {
+        var v = tryParseJsonIfString(obj[keys[i]]);
+        if (!v) continue;
+        if (Array.isArray(v) && v.length && rowLooksLikeUserDashboardDetailRow(v[0])) return v;
+        if (v && typeof v === 'object' && !Array.isArray(v) && rowLooksLikeUserDashboardDetailRow(v)) return [v];
+    }
+    var t2 = obj.Table2 != null ? obj.Table2 : obj.table2;
+    t2 = tryParseJsonIfString(t2);
+    if (Array.isArray(t2) && t2.length && rowLooksLikeUserDashboardDetailRow(t2[0])) return t2;
+    return null;
+}
+
+function userDashboardSelectionMapFromUserRow(row) {
+    var map = Object.create(null);
+    if (!row) return map;
+    var list = row.UserDashboardDetails || row.userDashboardDetails
+        || row.UserDashboard || row.userDashboard;
+    if (!list) {
+        var t2 = row.Table2 != null ? row.Table2 : row.table2;
+        t2 = tryParseJsonIfString(t2);
+        if (Array.isArray(t2) && t2.length) list = t2;
+    }
+    if (list && !Array.isArray(list)) list = [list];
+    if (Array.isArray(list)) {
+        list.forEach(function (x) {
+            if (!x) return;
+            var cc = x.FixedParameter_Code != null ? x.FixedParameter_Code : x.fixedParameter_Code;
+            var dc = x.WebApiDashboardMaster_Code != null ? x.WebApiDashboardMaster_Code : x.webApiDashboardMaster_Code;
+            if (cc == null || dc == null || isNaN(Number(cc)) || isNaN(Number(dc))) return;
+            map[String(Number(cc))] = String(Number(dc));
+        });
+    }
+    return map;
+}
+
+function userDashboardDetailsArrayFromUserRow(row) {
+    if (!row) return [];
+    var list = row.UserDashboardDetails || row.userDashboardDetails
+        || row.UserDashboard || row.userDashboard;
+    if (!list) {
+        var t2 = row.Table2 != null ? row.Table2 : row.table2;
+        t2 = tryParseJsonIfString(t2);
+        if (Array.isArray(t2)) list = t2;
+    }
+    if (list && !Array.isArray(list)) list = [list];
+    return Array.isArray(list) ? list : [];
+}
+
+function pickUserDashboardDetailCompanyName(x) {
+    if (!x) return '';
+    var t = x.DefaultCompanyName != null ? x.DefaultCompanyName : x.defaultCompanyName;
+    if (t != null && String(t).trim() !== '') return String(t).trim();
+    var cc = x.FixedParameter_Code != null ? x.FixedParameter_Code : x.fixedParameter_Code;
+    if (cc != null && !isNaN(Number(cc))) {
+        var co = (G_UserMasterCompanyList || []).find(function (c) {
+            return pickCompanyRowCode(c) === String(Number(cc));
+        });
+        if (co) return pickCompanyDisplayName(co);
+    }
+    return cc != null ? String(cc) : '';
+}
+
+function pickUserDashboardDetailDesp(x) {
+    if (!x) return '';
+    var t = x.Desp != null ? x.Desp : x.desp;
+    if (t != null && String(t).trim() !== '') return String(t).trim();
+    var dc = x.WebApiDashboardMaster_Code != null ? x.WebApiDashboardMaster_Code : x.webApiDashboardMaster_Code;
+    if (dc != null && !isNaN(Number(dc))) {
+        var d = (G_UserMasterDashboardList || []).find(function (item) {
+            return pickDashboardRowCode(item) === String(Number(dc));
+        });
+        if (d) return pickDashboardDisplayName(d);
+    }
+    return dc != null ? String(dc) : '';
+}
+
+function userDashboardViewHtmlFromUserRow(row) {
+    var list = userDashboardDetailsArrayFromUserRow(row);
+    if (!list.length) return '<span class="um-view-empty">—</span>';
+    var html = '<div class="um-view-dash-table">';
+    list.forEach(function (x) {
+        var company = escHtmlUm(pickUserDashboardDetailCompanyName(x));
+        var dash = escHtmlUm(pickUserDashboardDetailDesp(x));
+        if (!company && !dash) return;
+        html += '<div class="um-view-dash-row">' +
+            '<span class="um-view-dash-company">' + (company || '—') + '</span>' +
+            '<span class="um-view-dash-sep"><i class="fas fa-chevron-right"></i></span>' +
+            '<span class="um-view-dash-name">' + (dash || '—') + '</span></div>';
+    });
+    html += '</div>';
+    return html;
+}
+
+/** tblUserMaster.UserDashboardDetails — TY_UserDashboard: WebApiDashboardMaster_Code, FixedParameter_Code, UserMaster_Code */
+function buildUserDashboardDetailsPayload(userCodeOverride) {
+    var userCode = userCodeOverride != null ? parseInt(userCodeOverride, 10) : 0;
+    if (isNaN(userCode) || userCode <= 0) {
+        userCode = U_EditCode > 0 ? parseInt(U_EditCode, 10) : 0;
+    }
+    var out = [];
+    $('#userDashboardGridBody tr').each(function () {
+        var companyCode = parseInt(String($(this).data('company-code') || '').trim(), 10);
+        var dashCode = parseInt(String($(this).find('.um-dash-ddl').val() || '').trim(), 10);
+        if (isNaN(companyCode) || companyCode <= 0) return;
+        if (isNaN(dashCode) || dashCode <= 0) return;
+        out.push({
+            WebApiDashboardMaster_Code: dashCode,
+            FixedParameter_Code: companyCode,
+            UserMaster_Code: userCode
+        });
+    });
+    return out;
+}
+
+function loadUserDashboardLookups(callback) {
+    var pending = 2;
+    function done() {
+        pending--;
+        if (pending <= 0 && typeof callback === 'function') callback();
+    }
+    if (G_UserMasterDashboardList.length) {
+        pending--;
+    } else {
+        $.ajax({
+            url: UrlService.API_ENDPOINT_USERMASTER + '/GETDASHBOARDLIST',
+            type: 'GET',
+            dataType: 'json',
+            success: function (res) {
+                G_UserMasterDashboardList = normalizeMasterListResponse(res);
+            },
+            error: function () {
+                G_UserMasterDashboardList = [];
+                toastr.error('Failed to load dashboard list.');
+            },
+            complete: done
+        });
+    }
+    if (G_UserMasterCompanyList.length) {
+        pending--;
+    } else {
+        $.ajax({
+            url: UrlService.API_ENDPOINT_USERMASTER + '/GetCompanyMasterList',
+            type: 'GET',
+            dataType: 'json',
+            success: function (res) {
+                G_UserMasterCompanyList = normalizeMasterListResponse(res);
+            },
+            error: function () {
+                G_UserMasterCompanyList = [];
+                toastr.error('Failed to load company list.');
+            },
+            complete: done
+        });
+    }
+    if (pending === 0 && typeof callback === 'function') callback();
+}
+
+function refreshUserDashboardGridFromRow(row) {
+    if (!isAdminUser()) return;
+    loadUserDashboardLookups(function () {
+        bindUserDashboardGrid(userDashboardSelectionMapFromUserRow(row));
+    });
+}
+
+function resolveUserDashboardDetailsForSave(codeVal) {
+    if (isAdminUser()) {
+        return buildUserDashboardDetailsPayload(codeVal);
+    }
+    if (!U_EditRow) return [];
+    var userCode = codeVal > 0 ? codeVal : (U_EditCode > 0 ? parseInt(U_EditCode, 10) : 0);
+    return userDashboardDetailsArrayFromUserRow(U_EditRow).map(function (x) {
+        var companyCode = parseInt(x.FixedParameter_Code != null ? x.FixedParameter_Code : x.fixedParameter_Code, 10);
+        var dashCode = parseInt(x.WebApiDashboardMaster_Code != null ? x.WebApiDashboardMaster_Code : x.webApiDashboardMaster_Code, 10);
+        if (isNaN(companyCode) || companyCode <= 0 || isNaN(dashCode) || dashCode <= 0) return null;
+        return {
+            WebApiDashboardMaster_Code: dashCode,
+            FixedParameter_Code: companyCode,
+            UserMaster_Code: userCode
+        };
+    }).filter(Boolean);
+}
+
 /* ══════════════════════════════════════════
    LOAD LIST
 ══════════════════════════════════════════ */
@@ -607,11 +1021,24 @@ function LoadDropdowns() {
         url: UrlService.API_ENDPOINT_USERMASTER + '/GetCompanyMasterList',
         type: 'GET',
         success: function (res) {
-            var companies = Array.isArray(res) ? res : (res.data || res.Data || []);
+            var companies = normalizeMasterListResponse(res);
+            G_UserMasterCompanyList = companies;
             var $ddl = $('#ddlDefaultCompany').empty().append('<option value="">— Select Company —</option>');
             companies.forEach(function (c) {
                 $ddl.append($('<option>').val(c.Code).text(c.CompanyName));
             });
+        }
+    });
+
+    /* Dashboard list for company×dashboard grid */
+    $.ajax({
+        url: UrlService.API_ENDPOINT_USERMASTER + '/GETDASHBOARDLIST',
+        type: 'GET',
+        success: function (res) {
+            G_UserMasterDashboardList = normalizeMasterListResponse(res);
+        },
+        error: function () {
+            G_UserMasterDashboardList = [];
         }
     });
 
@@ -630,11 +1057,13 @@ function OpenNewUser() {
     U_EditRow = null;
     ClearForm();
     updateBizsolUserVisibility();
+    updateUserDashboardVisibility();
     $('#formModalTitle').text('Add New User');
     $('#btnSaveText').text('Save User');
     $('#userDialogBackdrop').addClass('show');
     updateBizsolUserVisibility();
     updateUserFormFieldLocks();
+    refreshUserDashboardGridFromRow(null);
     /* Subproject list + Select2 only after user picks Default Company (change → loadSubProjects…). */
     setTimeout(function () { $('#txtUserID').focus(); }, 140);
 }
@@ -663,6 +1092,7 @@ function EditUser(code) {
         loadSubProjectsForUserMaster(companyCode);
         $('#userDialogBackdrop').addClass('show');
         updateBizsolUserVisibility();
+        updateUserDashboardVisibility();
         updateUserFormFieldLocks();
     }).catch(function () { toastr.error('Error loading user. Please try again.'); });
 }
@@ -680,8 +1110,13 @@ function ViewUser(code) {
         var row = pickEntity(res);
         if (!row) { toastr.error('Failed to load user details.'); return; }
         row = mergeUserRowWithDetailsFromGetByCodeResponse(row, res);
-        PopulateViewModal(row);
-        $('#viewUserBackdrop').addClass('show');
+        var companyCode = row.FixedParameter_Code != null && row.FixedParameter_Code !== ''
+            ? String(row.FixedParameter_Code) : '';
+        loadSubProjectsForViewModal(companyCode, function () {
+            PopulateViewModal(row);
+            updateUserDashboardVisibility();
+            $('#viewUserBackdrop').addClass('show');
+        });
     }).catch(function () { toastr.error('Error loading user details.'); });
 }
 
@@ -695,7 +1130,8 @@ function PopulateViewModal(d) {
     $('#vf_Group').text(d.GroupName || '—');
     $('#vf_GroupLabel').text(d.GroupName || '—');
     $('#vf_Company').text(d.DefaultCompanyName || '—');
-    $('#vf_SubProjects').text(subProjectNamesDisplayFromCodes(subProjectCodesArrayFromUserRow(d)));
+    $('#vf_SubProjects').text(subProjectNamesDisplayFromUserRow(d));
+    $('#vf_DashboardList').html(userDashboardViewHtmlFromUserRow(d));
 
     /* Status badge */
     var isActive = d.Status === 'A';
@@ -781,6 +1217,7 @@ function BuildPayload() {
         Statuss:                statusChar,
         UserCode:               sessionUser,
         SubProjectMasterDetails: buildSubProjectMasterDetailsPayload(),
+        UserDashboardDetails: resolveUserDashboardDetailsForSave(codeVal),
     };
 
     if (U_EditRow) {
@@ -803,6 +1240,7 @@ function BuildPayload() {
     row.UserCode = sessionUser;
     row.UserMaster_Code = sessionUser;
     row.SubProjectMasterDetails = buildSubProjectMasterDetailsPayload();
+    row.UserDashboardDetails = resolveUserDashboardDetailsForSave(codeVal);
 
     row = applyRestrictedFieldsForSelfServiceSave(row);
 
@@ -921,6 +1359,7 @@ function PopulateForm(d) {
 
     var spArr = subProjectCodesArrayFromUserRow(d);
     G_UserModalSubProjectPendingCodes = spArr.length ? spArr.slice() : null;
+    refreshUserDashboardGridFromRow(d);
 }
 
 /** Reset modal inputs/errors; full clear including edit buffer (Add New / Close). */
@@ -938,6 +1377,7 @@ function clearUserFormFieldsOnly() {
     SetStatus('Active');
     G_UserModalSubProjectPendingCodes = null;
     resetUserSubProjectDropdownToEmpty();
+    bindUserDashboardGrid({});
     $('.im-err-text').hide();
     updateUserFormFieldLocks();
 }
@@ -1047,6 +1487,8 @@ function pickEntity(response) {
         var u0 = response.UserMasterList[0];
         return mergeUserRowWithDetailsFromGetByCodeResponse(u0, response);
     }
+    var fromDataSet = pickUserRowFromDataSetShape(response);
+    if (fromDataSet) return mergeUserRowWithDetailsFromGetByCodeResponse(fromDataSet, response);
     if (response.UserID != null || response.UserName != null) {
         return mergeUserRowWithDetailsFromGetByCodeResponse(response, response);
     }
