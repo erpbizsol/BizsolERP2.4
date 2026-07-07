@@ -621,7 +621,7 @@ function ChangecolorTr() {
             const statusValue = tds[statusColIndex].textContent.trim().toUpperCase();
             switch (statusValue) {
                 case "PLANNED":
-                    tds[statusColIndex].style.backgroundColor = "#A52A2A";
+                    tds[statusColIndex].style.backgroundColor = "#008000";
                     break;
                 case "PARTIAL":
                     tds[statusColIndex].style.backgroundColor = "#ebb861";

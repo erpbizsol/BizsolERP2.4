@@ -822,7 +822,7 @@ function renderBsPendingGrnBizsolFilterGrid(items) {
     }
     var StringFilterColumn = ['Party Name', 'Employee', 'Ref No'];
     var NumericFilterColumn = ['Entry No', 'Amount'];
-    var DateFilterColumn = [];
+    var DateFilterColumn = ['Entry Date'];
     var StringdoubleFilterColumn = [];
     var hiddenColumns = ['Code', '_bsPendingRaw'];
     var ColumnAlignment = { Action: 'center;min-width:7rem;', Amount: 'right' };
@@ -841,7 +841,8 @@ function renderBsPendingGrnBizsolFilterGrid(items) {
         true,
         null,
         { Amount: 2 },
-        ['Amount']
+        ['Amount'],
+        'Search by Entry No, Party, Employee, Work Type...'
     );
     $('#paginator-tblBsPendingGrnList').show();
 }
