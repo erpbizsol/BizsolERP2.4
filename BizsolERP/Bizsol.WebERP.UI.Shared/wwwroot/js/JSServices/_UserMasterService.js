@@ -12,17 +12,14 @@ const UserMasterService = {
         var URL = UrlService.API_ENDPOINT_USERMASTER + '/GetUserMasterList?UserMaster_Code=' + encodeURIComponent(userMasterCode);
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
-
     GetUserMasterByCode: function (code) {
         var URL = UrlService.API_ENDPOINT_USERMASTER + '/GetUserMasterByCode?Code=' + encodeURIComponent(code);
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
-
     SaveUserMaster: function (data) {
         var URL = UrlService.API_ENDPOINT_USERMASTER + '/SaveUserMaster';
         return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data));
     },
-
     DeleteUserMaster: function (Code, ReasonForDelete) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
         var userMasterCode = authKeyData.UserMaster_Code || 0;
@@ -46,7 +43,11 @@ const UserMasterService = {
         var URL = UrlService.API_ENDPOINT_USERMASTER + '/GetSubProjectMasterList?CompanyCode=' + code;
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
-    
+    GetDashboardList: function () {
+        var URL = UrlService.API_ENDPOINT_USERMASTER + '/GETDASHBOARDLIST';
+        return promiseAjaxCallApi.CallAPI('GET', URL, '');
+    },
+
 };
 
 export { UserMasterService };
