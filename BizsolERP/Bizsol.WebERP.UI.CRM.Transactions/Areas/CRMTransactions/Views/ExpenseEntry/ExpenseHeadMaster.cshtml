@@ -37,8 +37,14 @@
                 <label for="txtExpenseDescription" class="form-label fw-bold">Expense Description <span class="text-danger">*</span></label>
                 <input id="txtExpenseDescription" type="text" name="txtExpenseDescription" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Expense Description" maxlength="50" required />
             </div>
-                <div class="col-12 col-sm-6 col-md-4 without-label-field" style="margin-bottom:0.8rem">
+            <div class="col-12 col-sm-6 col-md-4 without-label-field" style="margin-bottom:0.8rem">
                 <button type="button" id="btnExpenseEntryListBack" class="btn btn-secondary btn-height" title="Back" onclick="ExpenseHeadMaster_Back()">Back</button>
+            </div>
+            <div class="col-12 col-sm-auto d-flex align-items-end" style="margin-bottom:0.9rem">
+                <div class="form-check form-switch ms-1">
+                    <input class="form-check-input" type="checkbox" id="chkIsKMApplicable" onchange="ToggleKMApplicableLabel()" />
+                    <label class="form-check-label fw-bold" for="chkIsKMApplicable">Is KM Applicable</label>
+                </div>
             </div>
         </div>
     </form>
@@ -50,7 +56,7 @@
     <form>
         <div class="row g-3 align-items-end">
                 <div class="col-12 col-sm-6 col-md-4" style="margin-bottom:auto">
-                <label for="txtDesignation" class="form-label fw-bold">Expense Category <span class="text-danger">*</span></label>
+                <label for="txtDesignation" class="form-label fw-bold">Designation Category <span class="text-danger">*</span></label>
                 <select id="txtDesignation" class="form-control form-control-sm box_border"></select>
             </div>
             <div class="col-12 col-sm-6 col-md-4">
@@ -58,7 +64,7 @@
                 <input type="date" id="txtEffectiveDate" name="txtEffectiveDate" class="box_border form-control form-control-sm" required />
             </div>
             <div class="col-12 col-sm-6 col-md-4">
-                <label for="txtPerDayLimit" class="form-label fw-bold">Per Day Limit</label>
+                <label for="txtPerDayLimit" class="form-label fw-bold" id="lblPerDayLimit">Per Day Limit</label>
                 <input id="txtPerDayLimit" type="text" name="txtPerDayLimit" class="box_border form-control form-control-sm text-end" autocomplete="off" maxlength="8" oninput="validateDecimalInput(this)" />
             </div>
             <div class="col-12 col-sm-6 col-md-4 without-label-field">
