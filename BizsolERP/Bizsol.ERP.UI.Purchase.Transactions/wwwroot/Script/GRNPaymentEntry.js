@@ -1444,19 +1444,9 @@ function gpaBindGRNPaymentLevelsApprovalToList(codeNum, response) {
     }
 }
 
-async function gpaLoadAndBindLevelsApprovalForView(codeNum) {
-    try {
-        const response = await GRNPaymentApprovalService.GetGRNPaymentlevelsapproval(codeNum);
-        gpaBindGRNPaymentLevelsApprovalToList(codeNum, response);
-    } catch (err) {
-        console.warn('GetGRNPaymentlevelsapproval', err);
-    }
-}
-
 async function viewGRNPaymentEntry(code) {
     const codeNum = parseInt(code, 10);
     if (!Number.isFinite(codeNum) || codeNum <= 0) return;
-    await gpaLoadAndBindLevelsApprovalForView(codeNum);
     if (typeof window.OpenDetailModal === 'function') {
         window.OpenDetailModal(codeNum);
         return;
