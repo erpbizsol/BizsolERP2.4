@@ -930,6 +930,10 @@ function ShowGateEntryConfigurationModal() {
     GateEntryService.GetConfigGateEntry().then(function (response) {
         const toleranceParamName = 'ToleranceToMatchNetWeightWithDocumentQty';
         const matchParamName = 'MatchNetWeightWithDocumentQty';
+        const backdaysParamNames = new Set([
+            'NoOfBackdaysAllowedDocumentLoadedIn',
+            'NoOfBackdaysAllowedDocumentLoadedOut'
+        ]);
 
         const matchParam = response.find(x => x.PerameterName === matchParamName);
         const isMatchEnabled = matchParam && String(matchParam.PerameterValue).toUpperCase() === 'Y';
@@ -943,6 +947,13 @@ function ShowGateEntryConfigurationModal() {
                     `<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label>` +
                     `&nbsp;<input type="number" min="0" max="100" step="0.01" class="form-control d-inline-block w-50" ` +
                     `value="${val.PerameterValue}" onchange="setGateEntryToleranceParamater(this,'${val.PerameterName}')" /></div>`;
+            } else if (backdaysParamNames.has(val.PerameterName)) {
+                // Render as integer number textbox for backdays (0–90)
+                const numVal = parseInt(val.PerameterValue) || 0;
+                option += `<div class="col-6">` +
+                    `<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label>` +
+                    `&nbsp;<input type="number" min="0" max="90" step="1" class="form-control d-inline-block w-50" ` +
+                    `value="${numVal}" onchange="setGateEntryBackdaysParamater(this,'${val.PerameterName}')" /></div>`;
             } else {
                 let Checked = String(val.PerameterValue).toLowerCase() === 'y' ? 'checked' : '';
                 let extraOnClick = val.PerameterName === matchParamName
@@ -971,6 +982,21 @@ function setGateEntryToleranceParamater(element, PerameterName) {
     const val = parseFloat(element.value);
     if (isNaN(val) || val < 0 || val > 100) {
         toastr.error('Please enter a valid tolerance value between 0 and 100');
+        return;
+    }
+    GateEntryService.UpdateConfigGateEntry(PerameterName, String(val)).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            GetConfigGateEntry();
+        }
+    });
+}
+
+function setGateEntryBackdaysParamater(element, PerameterName) {
+    const val = parseInt(element.value);
+    if (isNaN(val) || val < 0 || val > 90) {
+        toastr.error('Please enter a valid number of back days between 0 and 90');
+        element.value = 0;
         return;
     }
     GateEntryService.UpdateConfigGateEntry(PerameterName, String(val)).then(function (response) {
@@ -1053,6 +1079,7 @@ function GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState() {
 function GetConfigGateEntry() {
     GateEntryService.GetConfigGateEntry().then(function (response) {
         ConfigGateEntry = response;
+        LockDocumntFutureDate();
         EnableScaleWeight();
         BindddlVehiclesStatusInFectory();
         BindGateEntryTransportModeSelects();
@@ -3634,9 +3661,25 @@ function EditEmptyIn() {
 }
 function LockDocumntFutureDate() {
     let maxDate = new Date().toISOString().slice(0, 10);
-    let MinDate = new Date()///.toISOString().slice(0, 10);
-    MinDate.setDate(MinDate.getDate() - 30);
-    MinDate=MinDate.toISOString().slice(0, 10);
+
+    // Read per-field backdays from config; default to 30 if not configured or zero
+    const backdaysInParam = ConfigGateEntry && ConfigGateEntry.find(x => x.PerameterName === 'NoOfBackdaysAllowedDocumentLoadedIn');
+    const backdaysOutParam = ConfigGateEntry && ConfigGateEntry.find(x => x.PerameterName === 'NoOfBackdaysAllowedDocumentLoadedOut');
+    const backdaysIn = (backdaysInParam && parseInt(backdaysInParam.PerameterValue) > 0) ? parseInt(backdaysInParam.PerameterValue) : 30;
+    const backdaysOut = (backdaysOutParam && parseInt(backdaysOutParam.PerameterValue) > 0) ? parseInt(backdaysOutParam.PerameterValue) : 30;
+
+    let MinDateIn = new Date();
+    MinDateIn.setDate(MinDateIn.getDate() - backdaysIn);
+    let MinDateInStr = MinDateIn.toISOString().slice(0, 10);
+
+    let MinDateOut = new Date();
+    MinDateOut.setDate(MinDateOut.getDate() - backdaysOut);
+    let MinDateOutStr = MinDateOut.toISOString().slice(0, 10);
+
+    // Shared min date for EWayBill / Reporting (use the more permissive of the two, or keep 30-day default)
+    let MinDateShared = new Date();
+    MinDateShared.setDate(MinDateShared.getDate() - 30);
+    let MinDateSharedStr = MinDateShared.toISOString().slice(0, 10);
 
     $('#frmLoadedOut_txtDocumentDate').attr('max', maxDate);
     $('#frmLoadedIn_txtDocumentDate').attr('max', maxDate);
@@ -3647,10 +3690,10 @@ function LockDocumntFutureDate() {
     //$('#txtFromDate').attr('max', maxDate);
     //$('#txtToDate').attr('max', maxDate);
 
-    $('#frmLoadedOut_txtDocumentDate').attr('min', MinDate);
-    $('#frmLoadedIn_txtDocumentDate').attr('min', MinDate);
-    $('#frmLoadedIn_txtEWayBillDate').attr('min', MinDate);
-    $('#frmLoadedOut_txtEWayBillDate').attr('min', MinDate);
+    $('#frmLoadedOut_txtDocumentDate').attr('min', MinDateOutStr);
+    $('#frmLoadedIn_txtDocumentDate').attr('min', MinDateInStr);
+    $('#frmLoadedIn_txtEWayBillDate').attr('min', MinDateSharedStr);
+    $('#frmLoadedOut_txtEWayBillDate').attr('min', MinDateSharedStr);
 
     $('#frmLoadedOut_txtDocumentDate').attr('value', maxDate);
     $('#frmLoadedIn_txtDocumentDate').attr('value', maxDate);
@@ -4497,6 +4540,7 @@ window.ShowGateEntryConfigurationModal = ShowGateEntryConfigurationModal
 window.setGateEntryParamater = setGateEntryParamater
 window.GateEntry_ToggleToleranceVisibility = GateEntry_ToggleToleranceVisibility
 window.setGateEntryToleranceParamater = setGateEntryToleranceParamater
+window.setGateEntryBackdaysParamater = setGateEntryBackdaysParamater
 window.GateEntry_rdPOAccess_onClick = GateEntry_rdPOAccess_onClick
 window.GateEntry_SaveData = GateEntry_SaveData
 window.GateEntry_frmLoadedIn_ddlPurchaseOrder_Change = GateEntry_frmLoadedIn_ddlPurchaseOrder_Change
