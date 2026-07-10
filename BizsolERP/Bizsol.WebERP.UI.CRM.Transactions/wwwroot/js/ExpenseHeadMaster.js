@@ -51,6 +51,16 @@ function GetExpenseHeadMasterTable(){
         }
     });
 }
+function ToggleKMApplicableLabel() {
+    var isChecked = $('#chkIsKMApplicable').prop('checked');
+    var $lbl = $('#lblPerDayLimit');
+    if (isChecked) {
+        $lbl.text('Rs/KM').css({ 'color': '#dc3545', 'font-weight': '700' });
+    } else {
+        $lbl.text('Per Day Limit').css({ 'color': '', 'font-weight': '' });
+    }
+}
+
 function validateDecimalInput(input) {
     let value = input.value.replace(/[^0-9.]/g, '');
     let parts = value.split('.');
@@ -72,13 +82,14 @@ function EditData(Code, desp, Mode) {
         CreateNew_ExpenseHeadMaster();
         $('#txtExpenseDescription').val(desp);
         $('#newCreateForm input').prop('disabled', true);
+        $('#chkIsKMApplicable').prop('disabled', true);
         $('#newCreateFormExpenseHeadLimit').hide();
         GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode);
         $('.EditButtonLimitData').prop('disabled', true);
-    }
-     else {
+    } else {
         CreateNew_ExpenseHeadMaster();
         $('#newCreateForm input').prop('disabled', false);
+        $('#chkIsKMApplicable').prop('disabled', false);
         $('#txtExpenseDescription').val(desp);
         GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode);
     }
@@ -106,13 +117,12 @@ function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode) {
                 "Effective From": 'center',
             };
             const updatedResponse = response.map(item => {
-                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1 EditButtonLimitData" title="Edit Limit" onclick="EditLimitData('${item?.["Expense Category"]}','${item?.["Effective From"]}','${item?.["Per Day Limit"]}')"><i class="fa fa-pencil"></i></button>&nbsp`;
-                
+                const kmFlag = item?.["Is KM Applicable"] || 'N';
+                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1 EditButtonLimitData" title="Edit Limit" onclick="EditLimitData('${item?.["Expense Category"]}','${item?.["Effective From"]}','${item?.["Per Day Limit"]}','${kmFlag}')"><i class="fa fa-pencil"></i></button>&nbsp`;
                 return {
                     ...item,
                     Action: buttonsHTML,
                 };
-
             });
 
             BizsolCustomFilterGrid.CreateDataTable("table-header-ExpenseHeadLimitDetails", "table-body-ExpenseHeadLimitDetails", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
@@ -137,16 +147,19 @@ function GetExpenseHeadMasterByCode(G_ExpenseHeadMaster, Mode) {
         }
     });
 }
-function EditLimitData(desp,effectiveDate,parDayLimit) {
+function EditLimitData(desp, effectiveDate, parDayLimit, isKMApplicable) {
     BizSolHelperFunction.SelectOptionByText('txtDesignation', desp);
     const parts = effectiveDate.split('-');
     if (parts.length === 3) {
         const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
         $('#txtEffectiveDate').val(formattedDate);
     } else {
-        $('#txtEffectiveDate').val(''); 
+        $('#txtEffectiveDate').val('');
     }
     $('#txtPerDayLimit').val(parDayLimit);
+    var isKM = (isKMApplicable === 'Y' || isKMApplicable === 'y');
+    $('#chkIsKMApplicable').prop('checked', isKM);
+    ToggleKMApplicableLabel();
 }
 function CreateNew_ExpenseHeadMaster() {
     G_ExpenseHeadMaster_Mode = 'E';
@@ -161,6 +174,8 @@ function CreateNew_ExpenseHeadMaster() {
     const dd = today.getDate().toString().padStart(2, '0');
     G_Date = `${yyyy}-${mm}-${dd}`;
     $('#txtEffectiveDate').val(G_Date);
+    $('#chkIsKMApplicable').prop('checked', false);
+    ToggleKMApplicableLabel();
 }
 function ExpenseHeadMaster_Back() {
     G_ExpenseHeadMaster = 0;
@@ -195,8 +210,9 @@ function BindSelectList(element, list) {
     element.innerHTML = option;
 }
 function ClearFormData() {
-    //$('#txtExpenseDescription').val('');
     $('#txtPerDayLimit').val('');
+    $('#chkIsKMApplicable').prop('checked', false);
+    ToggleKMApplicableLabel();
 }
 function submit_ExpenseHeadMaster() {
     let code = G_ExpenseHeadMaster;
@@ -214,14 +230,15 @@ function submit_ExpenseHeadMaster() {
         return;
     }
 
+    let isKMApplicable = $('#chkIsKMApplicable').prop('checked') ? 'Y' : 'N';
     let objExpenseHeadLimitDetails = [];
     if (designationCode && parseInt(designationCode) !== 0 && G_Date && G_Date.trim() !== '') {
         objExpenseHeadLimitDetails.push({
             marketingManExpenseEntryCategory_Code: parseInt(designationCode),
             effectiveFrom: G_Date,
-            perDayLimit: PerDayLimit
-        })
-        
+            perDayLimit: PerDayLimit,
+            isKMApplicable: isKMApplicable
+        });
     }
 
     let payLoadData = {
@@ -316,6 +333,7 @@ window.ExpenseHeadMaster_Back = ExpenseHeadMaster_Back;
 window.validateDecimalInput = validateDecimalInput;
 window.submit_ExpenseHeadMaster = submit_ExpenseHeadMaster;
 window.EditLimitData = EditLimitData;
+window.ToggleKMApplicableLabel = ToggleKMApplicableLabel;
 window.CloseExpenseHeadMasterSuccessModal = CloseExpenseHeadMasterSuccessModal;
 window.OpenDeleteExpenseHead = OpenDeleteExpenseHead;
 window.CloseDeleteEHMModal = CloseDeleteEHMModal;

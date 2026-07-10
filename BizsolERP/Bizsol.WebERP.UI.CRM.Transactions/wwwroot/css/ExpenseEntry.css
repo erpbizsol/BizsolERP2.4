@@ -1253,3 +1253,14 @@ input[type="number"] {
         width: 100%;
     }
 }
+
+/* ── KM column input ────────────────────────────────────────────────── */
+.txtKMValue {
+    width: 100%;
+    background: #fffbea;
+    border: 1px solid #f0c040;
+    border-radius: 4px;
+    text-align: right;
+    font-size: 0.82rem;
+    padding: 2px 4px;
+}

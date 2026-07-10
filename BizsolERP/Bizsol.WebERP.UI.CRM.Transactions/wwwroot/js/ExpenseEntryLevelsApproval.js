@@ -1148,7 +1148,7 @@ function OpenDetailModal(entryCode) {
     paintModalFromEntry(G_CurrentEntry);
 
     $('#eeaModalItemsBody').html(
-        '<tr><td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<tr><td colspan="10" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
         '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
     );
 
@@ -1180,7 +1180,7 @@ function OpenDetailModal(entryCode) {
         .catch(function (err) {
             console.error('GetExpenseEntryApprovalDetail', err);
             $('#eeaModalItemsBody').html(
-                '<tr><td colspan="9" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<tr><td colspan="10" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
                 '<i class="fa fa-exclamation-triangle me-1"></i>Error loading expense lines.</td></tr>'
             );
         });
@@ -1344,7 +1344,7 @@ function RenderEeaModalItems(items) {
     const $body = $('#eeaModalItemsBody');
     if (!items || items.length === 0) {
         $body.html(
-            '<tr><td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No expense lines found.</td></tr>'
+            '<tr><td colspan="10" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No expense lines found.</td></tr>'
         );
         return;
     }
@@ -1354,6 +1354,8 @@ function RenderEeaModalItems(items) {
     items.forEach(function (row, idx) {
         const head = EscHtml(row['Expense Head'] ?? row.ExpenseHead ?? row.ExpenseDesp ?? '—');
         const allowAmt = FmtCurrency(eeaNumFromRow(row, EEA_ALLOW_AMOUNT_KEYS));
+        const kmRaw = parseFloat(row['Distance (KM)'] ?? row['KM'] ?? row.KM ?? 0) || 0;
+        const kmCell = kmRaw > 0 ? String(kmRaw) : '';
         const expAmt = FmtCurrency(row['Expense Amount'] ?? row.ExpendedAmount ?? row['Expended Amount'] ?? 0);
         const apprRaw = eeaNumFromRow(row, EEA_APPROVED_AMOUNT_KEYS);
         const rem = EscHtml(row.Remarks ?? row['Remarks'] ?? row.Description ?? row.LineDescription ?? row.LineDesp ?? '');
@@ -1380,6 +1382,7 @@ function RenderEeaModalItems(items) {
             '<td>' + proj + '</td>' +
             '<td>' + subp + '</td>' +
             '<td class="text-end" style="font-weight:600;color:#059669;">' + allowAmt + '</td>' +
+            '<td class="text-end" style="color:#b45309;">' + kmCell + '</td>' +
             '<td class="text-end">' + expAmt + '</td>' +
             '<td class="text-end">' + apprCell + '</td>' +
             '<td style="max-width:180px;">' + rem + '</td>' +

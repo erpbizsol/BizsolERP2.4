@@ -1483,13 +1483,15 @@ function eeListDetailLineCodeFromRow(row, masterCode) {
 
 function eeListBuildDetailRowsHtml(items, masterCode) {
     if (!items || items.length === 0) {
-        return '<tr><td colspan="7" class="text-center py-3 text-muted">No expense lines found.</td></tr>';
+        return '<tr><td colspan="8" class="text-center py-3 text-muted">No expense lines found.</td></tr>';
     }
     const mc = parseInt(masterCode, 10) || 0;
     let rows = '';
     items.forEach(function (row, idx) {
         const head = eeListEscHtml(row['Expense Head'] ?? row.ExpenseHead ?? row.ExpenseDesp ?? '—');
         const allowAmt = eeListFmtCurrency(row['Allowed Amount'] ?? row['Allow Amount'] ?? 0);
+        const kmRaw = parseFloat(row['Distance (KM)'] ?? row['KM'] ?? row.KM ?? 0) || 0;
+        const kmCell = kmRaw > 0 ? String(kmRaw) : '';
         const expAmt = eeListFmtCurrency(row['Expense Amount'] ?? row.ExpendedAmount ?? row['Expended Amount'] ?? 0);
         const apprAmt = eeListFmtCurrency(row['Approved Amount'] ?? row.Approved ?? row.ApprovedAmount ?? 0);
         const rem = eeListEscHtml(row.Remarks ?? row['Remarks'] ?? row.Description ?? '');
@@ -1503,6 +1505,7 @@ function eeListBuildDetailRowsHtml(items, masterCode) {
             '<td class="text-center">' + (idx + 1) + '</td>' +
             '<td>' + head + '</td>' +
             '<td class="text-end">' + allowAmt + '</td>' +
+            '<td class="text-end" style="color:#b45309;">' + kmCell + '</td>' +
             '<td class="text-end">' + expAmt + '</td>' +
             '<td class="text-end">' + apprAmt + '</td>' +
             '<td>' + rem + '</td>' +
@@ -1651,6 +1654,7 @@ function renderExpenseEntryApprovalFlowModal(entry, detailLines) {
                         '<th class="text-center">#</th>' +
                         '<th>Expense Head</th>' +
                         '<th class="text-end">Allow Amount</th>' +
+                        '<th class="text-end">Distance (KM)</th>' +
                         '<th class="text-end">Expended</th>' +
                         '<th class="text-end">Approved</th>' +
                         '<th>Remarks</th>' +
@@ -2096,6 +2100,7 @@ function _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList
         const projectName = String(row['Project Name'] || row.ProjectName || eeListResolveProjectName(projectList, pm)).trim();
         const siteName = String(row['Sub Project Name'] || row.SubProjectName || eeListResolveSubProjectName(subProjectList, spm)).trim();
         const expenseType = String(row['Expense Head'] || row.ExpenseHead || row.ExpenseDesp || '').trim();
+        const kmRaw = parseFloat(row['Distance (KM)'] ?? row['KM'] ?? row.KM ?? 0) || 0;
         const expended = eeListNumFromRow(row, ['Expense Amount', 'ExpendedAmount', 'Expended Amount']);
         const approved = eeListNumFromRow(row, ['Approved Amount', 'Approved', 'ApprovedAmount']);
         grandExpended += expended;
@@ -2105,12 +2110,13 @@ function _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList
             + '<td>' + eeListEscHtml(projectName) + '</td>'
             + '<td>' + eeListEscHtml(siteName) + '</td>'
             + '<td>' + eeListEscHtml(expenseType) + '</td>'
+            + '<td class="tc">' + (kmRaw > 0 ? kmRaw : '') + '</td>'
             + '<td class="tr">&#8377;' + eeListFormatIndianCurrency(expended) + '</td>'
             + '</tr>';
     });
 
     if (!detailRowsHtml) {
-        detailRowsHtml = '<tr><td class="tc">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+        detailRowsHtml = '<tr><td class="tc">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
     }
 
     const listApproved = eeListNumFromRow(listEntry, ['Approved Amount', 'ApprovedAmount']);
@@ -2242,6 +2248,7 @@ function _BuildExpenseEntryPrintHTML(listEntry, master, detailLines, projectList
         + '<th>Project name</th>'
         + '<th>Site name</th>'
         + '<th>Expense type</th>'
+        + '<th style="width:80px;">Distance (KM)</th>'
         + '<th style="width:90px;">Expended Amount</th>'
         + '</tr></thead><tbody>' + detailRowsHtml + '</tbody></table>'
         + '<div class="tot-wrap"><table class="totals"><tbody>' + totalsHtml + '</tbody></table></div>'

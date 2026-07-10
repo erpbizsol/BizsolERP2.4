@@ -19,13 +19,14 @@ const Indx_Tbl = {
     Project: 4,
     SubProject: 5,
     AllowedAmount: 6,
-    ExpenseAmount: 7,
-    ApprovedAmount: 8,
-    Remarks: 9,
-    Attachment: 10,
-    VerifyStatus: 11,
-    ExpenseEntryDetail_Code: 12,
-    ExpenseHeadMaster_Code: 13
+    KM: 7,
+    ExpenseAmount: 8,
+    ApprovedAmount: 9,
+    Remarks: 10,
+    Attachment: 11,
+    VerifyStatus: 12,
+    ExpenseEntryDetail_Code: 13,
+    ExpenseHeadMaster_Code: 14
 };
 
 var G_ProjectList = [];
@@ -62,6 +63,7 @@ function getExpenseDetailColumnAlignment() {
     return {
         'Expense Head': 'left',
         'Allowed Amount': 'center',
+        'Distance (KM)': 'center',
         'Approved Amount': 'center',
         'Effective From': 'center',
         'Expense Amount': 'center',
@@ -84,7 +86,8 @@ function buildExpenseHeadOptionsFromDetailList(rawList) {
                 'Designation Name': item['Designation Name'],
                 'Effective From': item['Effective From'],
                 templatePerDayLimit: item['Per Day Limit'] != null ? item['Per Day Limit'] : 0,
-                templateAllowedAmount: item['Allowed Amount'] != null ? item['Allowed Amount'] : 0
+                templateAllowedAmount: item['Allowed Amount'] != null ? item['Allowed Amount'] : 0,
+                IsKMApplicable: (item['IsKMApplicable'] || item['Is KM Applicable'] || 'N').toString().trim().toUpperCase()
             });
         }
     });
@@ -100,6 +103,7 @@ function refreshExpenseEntryDetailTotals() {
     var sumAllowed = 0;
     var sumExp = 0;
     var sumAppr = 0;
+    var sumKM = 0;
     $tbody.find('tr').not('.total-row').not('.grand-total-row').each(function () {
         var $tr = $(this);
         if ($tr.hasClass('expense-entry-empty-row')) return;
@@ -107,9 +111,11 @@ function refreshExpenseEntryDetailTotals() {
         var a = parseFloat($tr.find('.txtAllowedAmount').val());
         var e = parseFloat($tr.find('.txtExpendedAmount').val());
         var p = parseFloat($tr.find('.txtApprovedAmount').val());
+        var k = parseFloat($tr.find('.txtKMValue').val());
         if (!isNaN(a) && isFinite(a)) sumAllowed += a;
         if (!isNaN(e) && isFinite(e)) sumExp += e;
         if (!isNaN(p) && isFinite(p)) sumAppr += p;
+        if (!isNaN(k) && isFinite(k)) sumKM += k;
     });
 
     var fixedCfg = window['fixedDecimalvalue_' + bodyId];
@@ -129,6 +135,7 @@ function refreshExpenseEntryDetailTotals() {
     }
 
     $totalRow.find('td').eq(Indx_Tbl.AllowedAmount).html(formatTotalCell('Allowed Amount', sumAllowed));
+    $totalRow.find('td').eq(Indx_Tbl.KM).html(formatTotalCell('Distance (KM)', sumKM));
     $totalRow.find('td').eq(Indx_Tbl.ExpenseAmount).html(formatTotalCell('Expense Amount', sumExp));
     $totalRow.find('td').eq(Indx_Tbl.ApprovedAmount).html(formatTotalCell('Approved Amount', sumAppr));
 }
@@ -151,7 +158,7 @@ function initializeExpenseEntryDetailGridShell() {
     var bodyId = 'ExpenseEntryDetails-body';
     var hiddenColumns = getExpenseDetailHiddenColumns();
     var sample = buildExpenseDetailRowObject(0);
-    var totalAmount = ['Allowed Amount', 'Approved Amount', 'Expense Amount'];
+    var totalAmount = ['Allowed Amount', 'Distance (KM)', 'Approved Amount', 'Expense Amount'];
     renderTableHeader(hiddenColumns, 'ExpenseEntryDetails-header', bodyId, Object.keys(sample), false, [], [], [], []);
     window['hiddenColumns_' + bodyId] = hiddenColumns;
     window['columnAlignment_' + bodyId] = getExpenseDetailColumnAlignment();
@@ -184,6 +191,45 @@ function loadExpenseHeadOptionsFromTemplate(marketingPersonName) {
     });
 }
 
+/**
+ * Builds the HTML for the standalone KM column cell.
+ * For KM-applicable heads: renders a KM number input.
+ * For normal heads: renders an empty hidden placeholder so hdnIsKMApplicable is always available on the row.
+ */
+function buildKMCellHtml(index, isKMApplicable, kmValue) {
+    var kmVal = kmValue != null ? kmValue : 0;
+    var isKM  = (String(isKMApplicable || 'N').trim().toUpperCase() === 'Y');
+    var hidnKM = '<input type="hidden" class="hdnIsKMApplicable" value="' + (isKM ? 'Y' : 'N') + '">';
+    if (isKM) {
+        return hidnKM + '<input type="number" id="txtKMValue" data-index="' + index + '" value="' + escHtml(String(kmVal)) + '" class="bal-mt-input txtKMValue" placeholder="KM" title="Enter KM traveled" oninput="RecalcKMExpenseAmount(this);" autocomplete="off" style="text-align:right;">';
+    }
+    return hidnKM;
+}
+
+/**
+ * Builds the HTML for the Expense Amount cell.
+ * Always a single amount input (KM input lives in the separate KM column).
+ */
+function buildExpenseAmountCellHtml(index, expenseAmount) {
+    var amtVal = expenseAmount != null ? expenseAmount : 0;
+    return '<input type="number" id="txtExpendedAmount" data-index="' + index + '" value="' + escHtml(String(amtVal)) + '" class="bal-mt-input txtExpendedAmount" onfocusout="CalculateApprovedAmount(this);" autocomplete="off" style="text-align:right;" oninput="limitInputLength(this,8);">';
+}
+
+/**
+ * Auto-calculates Expense Amount = Per Day Limit (Rs/KM) × KM entered.
+ * For KM heads the Allowed Amount always mirrors this calculated value —
+ * it is never driven by the date range like normal expense heads.
+ */
+function RecalcKMExpenseAmount(x) {
+    var $row    = $(x).closest('tr');
+    var km      = parseFloat($(x).val())                   || 0;
+    var perDay  = parseFloat($row.find('.txtPerDay').val()) || 0;
+    var expense = perDay * km;
+    $row.find('.txtExpendedAmount').val(expense.toFixed(3));
+    $row.find('.txtAllowedAmount').val(expense.toFixed(3));
+    refreshExpenseEntryDetailTotals();
+}
+
 function buildExpenseDetailRowObject(index) {
     return {
         'Expense Head': buildExpenseHeadSelectHtml(0, index),
@@ -193,7 +239,8 @@ function buildExpenseDetailRowObject(index) {
         'Project': buildProjectSelectHtml(0, index),
         'Sub Project': buildSubProjectSelectHtml(0, 0, index),
         'Allowed Amount': '<input type="number" id="txtAllowedAmount" data-index="' + index + '" value="0" class="bal-mt-input txtAllowedAmount" readonly="readonly" autocomplete="off" style="text-align: right;">',
-        'Expense Amount': '<input type="number" id="txtExpendedAmount" data-index="' + index + '" value="0" class="bal-mt-input txtExpendedAmount" onfocusout="CalculateApprovedAmount(this);" autocomplete="off" style="text-align: right;" oninput="limitInputLength(this, 8);">',
+        'Distance (KM)': buildKMCellHtml(index, 'N', 0),
+        'Expense Amount': buildExpenseAmountCellHtml(index, 0),
         'Approved Amount': '<input type="number" ' + G_EeApprovedInputDisabled + ' id="txtApprovedAmount" data-index="' + index + '" value="0" class="bal-pc-input txtApprovedAmount" onfocusout="ApprovedAmountIncrease(this);" autocomplete="off" style="text-align: right;" oninput="limitInputLength(this, 8);">',
         'Remarks': '<input type="text" id="txtRemarks" data-index="' + index + '" value="" class="bal-mtrs-input txtRemarks" autocomplete="off" maxlength="16">',
         'Attachment': buildDetailAttachmentButtonHtml(0),
@@ -345,13 +392,16 @@ function syncExpenseDetailRowToFilteredData($tr) {
     if (allowedV === undefined || allowedV === null) allowedV = '0';
     var expV = $tr.find('.txtExpendedAmount').val();
     if (expV === undefined || expV === null) expV = '0';
+    var kmV = parseFloat($tr.find('.txtKMValue').val()) || 0;
+    var isKMAppl = ($tr.find('.hdnIsKMApplicable').val() || 'N').toString().trim().toUpperCase();
     var apprV = $tr.find('.txtApprovedAmount').val();
     if (apprV === undefined || apprV === null) apprV = '0';
     var remV = $tr.find('.txtRemarks').val() || '';
 
     item['Per Day Limit'] = '<input type="number" id="txtPerDay" data-index="' + i + '" value="' + escHtml(perDayV) + '" class="bal-mt-input txtPerDay" readonly="readonly" autocomplete="off">';
     item['Allowed Amount'] = '<input type="number" id="txtAllowedAmount" data-index="' + i + '" value="' + escHtml(allowedV) + '" class="bal-mt-input txtAllowedAmount" readonly="readonly" autocomplete="off" style="text-align: right;">';
-    item['Expense Amount'] = '<input type="number" id="txtExpendedAmount" data-index="' + i + '" value="' + escHtml(expV) + '" class="bal-mt-input txtExpendedAmount" onfocusout="CalculateApprovedAmount(this);" autocomplete="off" style="text-align: right;" oninput="limitInputLength(this, 8);">';
+    item['Distance (KM)'] = buildKMCellHtml(i, isKMAppl, kmV);
+    item['Expense Amount'] = buildExpenseAmountCellHtml(i, escHtml(expV));
     item['Approved Amount'] = '<input type="number" ' + G_EeApprovedInputDisabled + ' id="txtApprovedAmount" data-index="' + i + '" value="' + escHtml(apprV) + '" class="bal-pc-input txtApprovedAmount" onfocusout="ApprovedAmountIncrease(this);" autocomplete="off" style="text-align: right;" oninput="limitInputLength(this, 8);">';
     item['Remarks'] = '<input type="text" id="txtRemarks" data-index="' + i + '" value="' + escHtml(remV) + '" class="bal-mtrs-input txtRemarks" autocomplete="off" maxlength="16">';
 }
@@ -497,16 +547,20 @@ function applyAllowedAmountFallbackForRow($row, rowCode) {
 
 /** When user picks an expense head: fill Per Day / Allowed from template or another line, then API may refine Allowed. */
 function applyImmediateFieldsForExpenseHeadSelection($row, headCode) {
+    var idx = expenseDetailDataIndexFromRow($row);
+    var idxForHtml = idx >= 0 ? idx : 0;
+
     if (!headCode || headCode <= 0) {
         $row.find('.txtAllowedAmount').val('0');
         $row.find('.txtPerDay').val('0');
+        $row.find('td').eq(Indx_Tbl.KM).html(buildKMCellHtml(idxForHtml, 'N', 0));
+        $row.find('td').eq(Indx_Tbl.ExpenseAmount).html(buildExpenseAmountCellHtml(idxForHtml, 0));
         refreshExpenseEntryDetailTotals();
         return;
     }
     var meta = G_ExpenseHeadOptions.find(function (h) {
         return Number(h.ExpenseHeadMaster_Code) === Number(headCode);
     }) || {};
-    var idx = expenseDetailDataIndexFromRow($row);
     var fromOther = findAllowedAmountFromOtherDetailRow(headCode, idx);
     var allowed = (fromOther != null && fromOther > 0)
         ? fromOther
@@ -514,6 +568,11 @@ function applyImmediateFieldsForExpenseHeadSelection($row, headCode) {
     var perDay = meta.templatePerDayLimit != null && !isNaN(Number(meta.templatePerDayLimit)) ? Number(meta.templatePerDayLimit) : 0;
     $row.find('.txtAllowedAmount').val(allowed);
     $row.find('.txtPerDay').val(perDay);
+
+    var isKMAppl = (meta.IsKMApplicable === 'Y') ? 'Y' : 'N';
+    var curExpAmt = parseFloat($row.find('.txtExpendedAmount').val()) || 0;
+    $row.find('td').eq(Indx_Tbl.KM).html(buildKMCellHtml(idxForHtml, isKMAppl, 0));
+    $row.find('td').eq(Indx_Tbl.ExpenseAmount).html(buildExpenseAmountCellHtml(idxForHtml, curExpAmt));
     refreshExpenseEntryDetailTotals();
 }
 
@@ -521,16 +580,26 @@ function refreshAllowedAmountForSingleRow($row) {
     var fromDate = $('#txtFromDate').val();
     var toDate = $('#txtToDate').val();
     var rowCode = parseInt($row.find('.hdnExpenseHeadMasterCode').val(), 10) || 0;
-    if (rowCode <= 0) {
-        $row.find('.txtAllowedAmount').val('0');
-        syncExpenseDetailRowToFilteredData($row);
-        refreshExpenseEntryDetailTotals();
-        return;
-    }
+
     function finish() {
         syncExpenseDetailRowToFilteredData($row);
         refreshExpenseEntryDetailTotals();
     }
+
+    if (rowCode <= 0) {
+        $row.find('.txtAllowedAmount').val('0');
+        finish();
+        return;
+    }
+
+    // KM rows: Allowed Amount = PerDayLimit × KM, not date-driven.
+    // Leave at 0 on head selection; RecalcKMExpenseAmount sets it when KM is entered.
+    var isKMRow = ($row.find('.hdnIsKMApplicable').val() || 'N').toUpperCase() === 'Y';
+    if (isKMRow) {
+        finish();
+        return;
+    }
+
     if (!fromDate || !toDate || !MarketingManMaster_Code) {
         applyAllowedAmountFallbackForRow($row, rowCode);
         finish();
@@ -894,8 +963,10 @@ function PopulateExpenseHeadDetails(Code) {
             if (rawList.length > 0) {
                 buildExpenseHeadOptionsFromDetailList(rawList);
                 var detailData = rawList.map(function (item, index) {
-                    var pm = Number(item.ProjectMaster_Code != null ? item.ProjectMaster_Code : 0) || 0;
+                    var pm  = Number(item.ProjectMaster_Code    != null ? item.ProjectMaster_Code    : 0) || 0;
                     var spm = Number(item.SubProjectMaster_Code != null ? item.SubProjectMaster_Code : 0) || 0;
+                    var isKMAppl = (item['IsKMApplicable'] || item['Is KM Applicable'] || 'N').toString().trim().toUpperCase();
+                    var kmVal    = parseFloat(item['KM'] != null ? item['KM'] : 0) || 0;
                     return {
                         'Expense Head': item['Expense Head'],
                         'Designation Name': item['Designation Name'],
@@ -904,7 +975,8 @@ function PopulateExpenseHeadDetails(Code) {
                         'Project': buildProjectSelectHtml(pm, index),
                         'Sub Project': buildSubProjectSelectHtml(pm, spm, index),
                         'Allowed Amount': '<input type="number" id="txtAllowedAmount" data-index="' + index + '" value="' + (item['Allowed Amount'] || 0) + '" class="bal-mt-input txtAllowedAmount" readonly="readonly" autocomplete="off" style="text-align: right;">',
-                        'Expense Amount': '<input type="number" id="txtExpendedAmount" data-index="' + index + '" value="' + (item['Expense Amount'] || 0) + '" class="bal-mt-input txtExpendedAmount" onfocusout="CalculateApprovedAmount(this);" autocomplete="off" style="text-align: right;" oninput="limitInputLength(this, 8);">',
+                        'Distance (KM)': buildKMCellHtml(index, isKMAppl, kmVal),
+                        'Expense Amount': buildExpenseAmountCellHtml(index, item['Expense Amount'] || 0),
                         'Approved Amount': '<input type="number" ' + G_EeApprovedInputDisabled + ' id="txtApprovedAmount" data-index="' + index + '" value="' + (item['Approved Amount'] || 0) + '" class="bal-pc-input txtApprovedAmount" onfocusout="ApprovedAmountIncrease(this);" autocomplete="off" style="text-align: right;" oninput="limitInputLength(this, 8);">',
                         'Remarks': '<input type="text" id="txtRemarks" data-index="' + index + '" value="' + (item['Remarks'] || '') + '" class="bal-mtrs-input txtRemarks" autocomplete="off" maxlength="16">',
                         'Attachment': buildDetailAttachmentButtonHtml(item['ExpenseEntryDetail_Code'] != null ? item['ExpenseEntryDetail_Code'] : 0),
@@ -921,7 +993,7 @@ function PopulateExpenseHeadDetails(Code) {
                 const StringdoubleFilterColumn = [];
                 const hiddenColumns = getExpenseDetailHiddenColumns();
                 const ColumnAlignment = getExpenseDetailColumnAlignment();
-                const totalAmount = ['Allowed Amount', 'Approved Amount', 'Expense Amount'];
+                const totalAmount = ['Allowed Amount', 'Approved Amount', 'Expense Amount', 'Distance (KM)'];
                 BizsolCustomFilterGrid.CreateDataTable('ExpenseEntryDetails-header', 'ExpenseEntryDetails-body', detailData, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false, totalAmount);
                 $('#paginator-ExpenseEntryDetails').show();
                 refreshExpenseEntryDetailTotals();
@@ -1015,9 +1087,40 @@ function InitAttachmentControl(masterTableName, masterTableCode, detailTableName
 var G_AmountExceedRow = null;
 
 function CalculateApprovedAmount(x) {
-    var ApprovedAmount = 0;
     var ObjCurrRow = $(x).closest('tr');
-    var AllowedAmount = ObjCurrRow.find('.txtAllowedAmount').val();
+
+    /* ── KM-applicable rows ──────────────────────────────────────────────
+       Rule 1 – KM is blank/0 but user typed Expense Amount directly:
+                back-calculate KM = ExpenseAmount ÷ PerDayLimit and fill it.
+                Allowed Amount = ExpenseAmount (the KM-derived value).
+       Rule 2 – KM already has a value (set by the KM input):
+                The user is overriding the Expense Amount manually → leave it.
+                Allowed Amount stays at the KM-based figure (PerDayLimit × KM)
+                and is NOT touched here — RecalcKMExpenseAmount already set it.
+       In both cases the Expense Amount the user sees is never overwritten here. */
+    var isKMRow = (ObjCurrRow.find('.hdnIsKMApplicable').val() || 'N').toUpperCase() === 'Y';
+    if (isKMRow) {
+        var expVal = parseFloat(ObjCurrRow.find('.txtExpendedAmount').val()) || 0;
+        var perDay = parseFloat(ObjCurrRow.find('.txtPerDay').val())         || 0;
+        var $kmInp = ObjCurrRow.find('.txtKMValue');
+
+        if ($kmInp.length && perDay > 0) {
+            var currentKM = parseFloat($kmInp.val()) || 0;
+            if (currentKM === 0 && expVal > 0) {
+                /* Back-fill KM and pin Allowed Amount to this calculation */
+                $kmInp.val((expVal / perDay).toFixed(3));
+                ObjCurrRow.find('.txtAllowedAmount').val(expVal.toFixed(3));
+            }
+            /* If KM > 0 the user is overriding expense amount – do NOT touch
+               AllowedAmount; it was already set to PerDayLimit × KM by RecalcKMExpenseAmount. */
+        } else if (perDay === 0) {
+            /* No rate configured yet – keep Allowed in sync with Expense */
+            ObjCurrRow.find('.txtAllowedAmount').val(expVal.toFixed(3));
+        }
+    }
+
+    var ApprovedAmount = 0;
+    var AllowedAmount  = ObjCurrRow.find('.txtAllowedAmount').val();
     var ExpendedAmount = ObjCurrRow.find('.txtExpendedAmount').val();
     ApprovedAmount = ExpendedAmount;
     if (parseFloat(AllowedAmount) < parseFloat(ExpendedAmount)) {
@@ -1223,10 +1326,11 @@ function CalculateTotalDays(MarketingManMaster_Code) {
                         const $row = $(this);
                         if (!$row.find('.hdnExpenseHeadMasterCode').length) return;
 
-                        // Get ExpenseHeadMaster_Code from hidden input or a reliable source
-                        const rowCode = parseInt($row.find('.hdnExpenseHeadMasterCode').val(), 10);
+                        // KM rows: Allowed Amount = PerDayLimit × KM (not date-driven) — skip
+                        var isKMRow = ($row.find('.hdnIsKMApplicable').val() || 'N').toUpperCase() === 'Y';
+                        if (isKMRow) return;
 
-                        // Find matching item from response
+                        const rowCode = parseInt($row.find('.hdnExpenseHeadMasterCode').val(), 10);
                         const matchedItem = response.find(function (item) {
                             return item.ExpenseHeadMaster_Code === rowCode;
                         });
@@ -1300,19 +1404,19 @@ function VerifyExpenseEntryMaster() {
             var ExpenseHeadMaster_Code = 0;
 
 
-            ExpenseHead = $(this).find('td:eq(' + Indx_Tbl.ExpenseHead + ')')[0].innerHTML.trim();
-            Designation = $(this).find('td:eq(' + Indx_Tbl.Designation + ')')[0].innerHTML.trim();
-            EffectiveFrom = $(this).find('td:eq(' + Indx_Tbl.EffectiveFrom + ')')[0].innerHTML.trim();
-            PerDayLimit = $(this).find('td:eq(' + Indx_Tbl.PerDayLimit + ')')[0].getElementsByTagName('input')[0].value;
-            AllowedAmount = $(this).find('td:eq(' + Indx_Tbl.AllowedAmount + ')')[0].getElementsByTagName('input')[0].value;
-            ExpenseAmount = $(this).find('td:eq(' + Indx_Tbl.ExpenseAmount + ')')[0].getElementsByTagName('input')[0].value;
-            ApprovedAmount = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0].value;
-            Remarks = $(this).find('td:eq(' + Indx_Tbl.Remarks + ')')[0].getElementsByTagName('input')[0].value;
-            Attachment = '';// $(this).find('td:eq(' + Indx_Tbl.Attachment + ')')[0].getElementsByTagName('input')[0].value;
-            //ExpenseHeadMaster_Code = $(this).find('td:eq(' + Indx_Tbl.ExpenseHeadMaster_Code + ')')[0].innerHTML.trim();
+            ExpenseHead    = $(this).find('td:eq(' + Indx_Tbl.ExpenseHead + ')')[0].innerHTML.trim();
+            Designation    = $(this).find('td:eq(' + Indx_Tbl.Designation + ')')[0].innerHTML.trim();
+            EffectiveFrom  = $(this).find('td:eq(' + Indx_Tbl.EffectiveFrom + ')')[0].innerHTML.trim();
+            PerDayLimit    = $(this).find('.txtPerDay').val() || '0';
+            AllowedAmount  = $(this).find('.txtAllowedAmount').val() || '0';
+            ExpenseAmount  = $(this).find('.txtExpendedAmount').val() || '0';
+            ApprovedAmount = $(this).find('.txtApprovedAmount').val() || '0';
+            Remarks        = $(this).find('.txtRemarks').val() || '';
+            Attachment     = '';
             ExpenseHeadMaster_Code = parseInt($(this).find('.hdnExpenseHeadMasterCode').val(), 10) || 0;
             var projectMaster_Code    = G_ProjectApplicable === 'Y' ? (parseInt($(this).find('.ee-ddl-project').val(), 10) || 0) : 0;
             var subProjectMaster_Code = G_ProjectApplicable === 'Y' ? (parseInt($(this).find('.ee-ddl-subproject').val(), 10) || 0) : 0;
+            var kmValue = parseFloat($(this).find('.txtKMValue').val()) || 0;
 
             var rowData = {};
 
@@ -1325,6 +1429,7 @@ function VerifyExpenseEntryMaster() {
             rowData["AllowAmount"] = ApprovedAmount;
             rowData["ExpendedAmount"] = ExpenseAmount;
             rowData["Remarks"] = Remarks;
+            rowData["KM"] = kmValue;
             rowData["voucherMaster_Code"] = 0;
             rowData["finYear"] = '';
             rowData["createdBy"] = UserMaster_Code;
@@ -1398,14 +1503,15 @@ function SaveData() {
                 var Remarks = '';
                 var ExpenseHeadMaster_Code = 0;
 
-                PerDayLimit = $(this).find('td:eq(' + Indx_Tbl.PerDayLimit + ')')[0].getElementsByTagName('input')[0].value;
-                AllowedAmount = $(this).find('td:eq(' + Indx_Tbl.AllowedAmount + ')')[0].getElementsByTagName('input')[0].value;
-                ExpenseAmount = $(this).find('td:eq(' + Indx_Tbl.ExpenseAmount + ')')[0].getElementsByTagName('input')[0].value;
-                ApprovedAmount = $(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0].value;
-                Remarks = $(this).find('td:eq(' + Indx_Tbl.Remarks + ')')[0].getElementsByTagName('input')[0].value;
+                PerDayLimit    = $(this).find('.txtPerDay').val() || '0';
+                AllowedAmount  = $(this).find('.txtAllowedAmount').val() || '0';
+                ExpenseAmount  = $(this).find('.txtExpendedAmount').val() || '0';
+                ApprovedAmount = $(this).find('.txtApprovedAmount').val() || '0';
+                Remarks        = $(this).find('.txtRemarks').val() || '';
                 ExpenseHeadMaster_Code = $(this).find('.hdnExpenseHeadMasterCode').val();
                 var projectMaster_Code    = G_ProjectApplicable === 'Y' ? (parseInt($(this).find('.ee-ddl-project').val(), 10) || 0) : 0;
                 var subProjectMaster_Code = G_ProjectApplicable === 'Y' ? (parseInt($(this).find('.ee-ddl-subproject').val(), 10) || 0) : 0;
+                var kmValue = parseFloat($(this).find('.txtKMValue').val()) || 0;
 
                 var rowData = {};
 
@@ -1418,6 +1524,7 @@ function SaveData() {
                 rowData["AllowAmount"] = ApprovedAmount;
                 rowData["ExpendedAmount"] = ExpenseAmount;
                 rowData["Remarks"] = Remarks;
+                rowData["KM"] = kmValue;
                 rowData["voucherMaster_Code"] = 0;
                 rowData["finYear"] = '';
                 rowData["createdBy"] = UserMaster_Code;
@@ -1514,9 +1621,9 @@ function ValidateData() {
         if ($(this).hasClass('total-row') || $(this).hasClass('grand-total-row')) return;
         var $amtCell = $(this).find('td:eq(' + Indx_Tbl.AllowedAmount + ')');
         if (!$amtCell.length || !$amtCell[0].getElementsByTagName('input').length) return;
-        var AllowedAmount = parseFloat($amtCell[0].getElementsByTagName('input')[0].value) || 0;
-        var ExpenseAmount = parseFloat($(this).find('td:eq(' + Indx_Tbl.ExpenseAmount + ')')[0].getElementsByTagName('input')[0].value) || 0;
-        var ApprovedAmount = parseFloat($(this).find('td:eq(' + Indx_Tbl.ApprovedAmount + ')')[0].getElementsByTagName('input')[0].value) || 0;
+        var AllowedAmount  = parseFloat($(this).find('.txtAllowedAmount').val())  || 0;
+        var ExpenseAmount  = parseFloat($(this).find('.txtExpendedAmount').val())  || 0;
+        var ApprovedAmount = parseFloat($(this).find('.txtApprovedAmount').val()) || 0;
 
         TotalAllowed += AllowedAmount;
         TotalExp += ExpenseAmount;
@@ -1584,6 +1691,7 @@ window.ViewAttachment = ViewAttachment;
 window.openExpenseEntryMasterAttachmentControl = openExpenseEntryMasterAttachmentControl;
 window.CalculateApprovedAmount = CalculateApprovedAmount;
 window.ApprovedAmountIncrease = ApprovedAmountIncrease;
+window.RecalcKMExpenseAmount = RecalcKMExpenseAmount;
 window.SaveData = SaveData;
 window.VerifyExpenseEntryMaster = VerifyExpenseEntryMaster;
 window.limitInputLength = limitInputLength;
