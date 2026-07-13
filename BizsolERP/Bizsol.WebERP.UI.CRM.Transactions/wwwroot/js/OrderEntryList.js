@@ -8,13 +8,6 @@ let QtyMTRHeader = '';
 let selectedDates = [];
 $(document).ready(function () {
     $("#ERPHeading").text("Order Entry List");
-    var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
-    if (ObjUserDetails !== undefined && ObjUserDetails[0].UserType == 'A') {
-        $('#btnCRMConfig').prop('hidden', false);
-    } else {
-        $('#btnCRMConfig').prop('hidden', true);
-    }
-
 
     GetOrderStatusList();
     GetUserNameList();
