@@ -53,11 +53,15 @@ const BizSolHelperFunction = {
     },
     HideOrShowConfigurationSettingBtn: function HideOrShowConfigurationSettingBtn(Id) {
         let userDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
-        if (userDetails.length > 0 && userDetails[0].IsBizSolUser == 'Y') {
-            $('#' + Id).show();
+        const el = document.getElementById(Id);
+        if (!el) {
+            return;
+        }
+        if (userDetails?.length > 0 && userDetails[0].IsBizSolUser == 'Y') {
+            el.style.removeProperty('display');
         }
         else {
-            $('#' + Id).hide();
+            el.style.setProperty('display', 'none', 'important');
         }
     },
     getFinancialYear: function getFinancialYear() {
