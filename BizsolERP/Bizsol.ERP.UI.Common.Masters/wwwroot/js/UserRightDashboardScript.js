@@ -200,6 +200,8 @@ $(document).ready(function () {
         e.preventDefault();
         LoadGroupUsers(getSelectedGroupCodesFromUi(), { notifyOnFail: true });
     });
+    $('#urdExpandAll').on('click', function () { SetAllRowsCollapsed(false); });
+    $('#urdCollapseAll').on('click', function () { SetAllRowsCollapsed(true); });
 });
 
 /* ═══════════════════════════════════════════════════
@@ -523,6 +525,7 @@ function RenderDashboard(res, selectedGroupCodes) {
     $('#urd-summary').show();
     $('#urd-placeholder').hide();
     $('#urd-table-wrap').show();
+    $('#urd-table-toolbar').show();
 
     // ─ Build Header ─
     var $thead = $('#urd-thead').empty();
@@ -531,7 +534,11 @@ function RenderDashboard(res, selectedGroupCodes) {
     $hr.append('<th class="urd-th-fixed urd-th-toggle"></th>');
     $hr.append('<th class="urd-th-fixed urd-th-module">Module</th>');
     groups.forEach(function (gName) {
-        $hr.append('<th class="urd-th-user">' + escHtml(gName) + '</th>');
+        $hr.append(
+            '<th class="urd-th-user"><span class="urd-th-user-inner">' +
+            '<span class="urd-th-avatar">' + escHtml(GetInitials(gName)) + '</span>' +
+            '<span class="urd-th-user-label">' + escHtml(gName) + '</span>' +
+            '</span></th>');
     });
     $thead.append($hr);
 
@@ -828,6 +835,38 @@ function UpdateCellUI($cell, val, saving) {
         : '<span class="urd-badge-n" title="Click to Grant"><i class="fas fa-xmark"></i></span>');
 }
 
+/** Short 1–2 letter initials for a group-column avatar chip, e.g. "PURCHASE & STORES" → "PS". */
+function GetInitials(name) {
+    var words = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return '?';
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+/* ═══════════════════════════════════════════════════
+   EXPAND ALL / COLLAPSE ALL
+═══════════════════════════════════════════════════ */
+function SetAllRowsCollapsed(collapsed) {
+    var $tbody = $('#urd-tbody');
+    $tbody.find('.urd-toggle-btn').each(function () {
+        var $btn = $(this);
+        var pc = $btn.attr('data-parent-code');
+        if (pc === undefined || pc === '') return;
+        var ck = rowCollapsedKey(pc);
+        if (collapsed) {
+            HideAllDescendants(pc, $tbody);
+            $btn.find('i').removeClass('fa-minus').addClass('fa-plus');
+            _collapsedRows[ck] = true;
+        } else {
+            delete _collapsedRows[ck];
+            $btn.find('i').removeClass('fa-plus').addClass('fa-minus');
+        }
+    });
+    if (!collapsed) {
+        $tbody.find('tr').show();
+    }
+}
+
 /* ═══════════════════════════════════════════════════
    MODULE ICON
 ═══════════════════════════════════════════════════ */
@@ -847,6 +886,7 @@ function SetLoadingState(loading) {
         $('#btnGo').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Loading…');
         $('#urd-loading').show();
         $('#urd-table-wrap').hide();
+        $('#urd-table-toolbar').hide();
         $('#urd-summary').hide();
         $('#urd-placeholder').hide();
     } else {
@@ -857,6 +897,7 @@ function SetLoadingState(loading) {
 
 function ShowPlaceholder(type) {
     $('#urd-table-wrap').hide();
+    $('#urd-table-toolbar').hide();
     $('#urd-summary').hide();
     var $ph = $('#urd-placeholder');
     if (type === 'empty') {
