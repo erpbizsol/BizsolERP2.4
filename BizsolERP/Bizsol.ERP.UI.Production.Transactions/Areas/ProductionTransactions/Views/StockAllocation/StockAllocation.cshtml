@@ -1,0 +1,795 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockAllocation.js"></script>
+<style>
+    .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
+
+    .sa-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 4px 0 32px;
+        overflow: visible !important;
+    }
+
+    .sa-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 4px 24px rgba(102, 126, 234, 0.22);
+        margin-bottom: 14px;
+    }
+
+    .sa-list-header--with-filter {
+        border-radius: 14px 14px 0 0;
+        margin-bottom: 0;
+    }
+
+    .sa-list-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .sa-list-header-title-block {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .sa-list-header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
+    .sa-list-header-title {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .sa-list-header-title i {
+        opacity: 0.95;
+    }
+
+    .sa-list-header-sub {
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.78rem;
+        display: block;
+        margin-top: 4px;
+    }
+
+    .sa-list-create-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+        line-height: 1;
+        font-size: 0.85rem;
+        height: auto !important;
+        min-height: 40px;
+    }
+
+    .sa-list-create-btn:hover {
+        background: #f0f4ff;
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .sa-list-filter-bar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        padding: 14px 18px 12px;
+        margin-bottom: 14px;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.06);
+        overflow: visible !important;
+    }
+
+    .sa-list-filter-bar .form-label {
+        font-size: 0.77rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.35rem;
+    }
+
+    .sa-list-filter-bar .form-control,
+    .sa-list-filter-bar .form-select {
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        background-color: #f5f3ff;
+        color: #1e1b4b;
+        height: 34px !important;
+    }
+
+    .sa-list-filter-bar .form-control:focus,
+    .sa-list-filter-bar .form-select:focus {
+        border-color: #667eea;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+
+    .sa-list-filter-bar .select2-container .select2-selection--single {
+        border: 1.5px solid #ddd6fe !important;
+        border-radius: 8px !important;
+        background-color: #f5f3ff !important;
+        height: 34px !important;
+        min-height: 34px !important;
+    }
+
+    .sa-list-filter-bar .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 32px !important;
+        font-size: 0.82rem;
+        color: #1e1b4b;
+        padding-left: 10px;
+    }
+
+    .sa-list-filter-bar .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 32px !important;
+    }
+
+    .sa-list-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sa-list-filter-bar .sa-list-toolbar .btn {
+        height: auto !important;
+        min-height: 34px;
+        line-height: normal !important;
+        font-size: 0.82rem !important;
+        border-radius: 9px;
+        font-weight: 700;
+        padding: 7px 16px;
+    }
+
+    .sa-list-filter-bar .sa-btn-show.btn-primary {
+        border: none !important;
+        color: #fff !important;
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        box-shadow: 0 3px 10px rgba(102, 126, 234, 0.35);
+    }
+
+    .sa-list-filter-bar .sa-btn-show.btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 14px rgba(102, 126, 234, 0.45);
+        color: #fff !important;
+    }
+
+    .sa-list-filter-bar .sa-btn-back.btn-danger {
+        background: linear-gradient(135deg, #64748b, #475569) !important;
+        border: none !important;
+        box-shadow: 0 2px 8px rgba(71, 85, 105, 0.3);
+    }
+
+    .sa-list-filter-bar .without-label-field {
+        display: flex;
+        align-items: flex-end;
+        margin-bottom: 0.5rem;
+    }
+
+    .sa-list-grid-wrap {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+        overflow: visible;
+        margin-bottom: 8px;
+        position: relative;
+    }
+
+    .sa-list-grid-wrap::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        z-index: 1;
+    }
+
+    .sa-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100vh - 320px);
+    }
+
+    #dvFrom .sa-table-wrapper {
+        max-height: calc(100vh - 390px);
+    }
+
+    .sa-table-wrapper .table {
+        margin-bottom: 0;
+        font-size: 13.5px;
+        min-width: max-content;
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: auto;
+    }
+
+    .sa-table-wrapper .table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+
+    .sa-table-wrapper .table thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 12px 14px;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+    }
+
+    .sa-table-wrapper .table thead th .filter-table-heading,
+    .sa-table-wrapper .table thead th .table-filter-arrow,
+    .sa-table-wrapper .table thead th .fa,
+    .sa-table-wrapper .table thead th i {
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
+
+    .sa-table-wrapper .table tbody tr:nth-child(even) {
+        background: #f8fafc !important;
+    }
+
+    .sa-table-wrapper .table tbody tr:hover {
+        background: rgba(102, 126, 234, 0.07) !important;
+    }
+
+    .sa-table-wrapper .table td {
+        padding: 10px 14px;
+        vertical-align: middle;
+        border-bottom: 1px solid #e2e8f0 !important;
+        color: #1e293b !important;
+        /* background: transparent !important; */
+    }
+
+    #tblStockAllocationEditable {
+        --bs-table-bg: transparent;
+    }
+
+    .sa-page .paginator {
+        position: sticky;
+        bottom: 15px;
+        background-color: #fff;
+        z-index: 5;
+        padding: 8px 16px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .select2-container--open .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+
+    .select2-dropdown {
+        z-index: 9999 !important;
+        position: absolute !important;
+    }
+
+    .select2-results {
+        max-height: 200px !important;
+        overflow-y: auto !important;
+    }
+
+    .sa-page .main-content,
+    .sa-page .row,
+    .sa-page .col-md-3,
+    .sa-page .col-lg-2 {
+        overflow: visible !important;
+    }
+
+    .section-entry-animation {
+        animation: sa-fade-slide 0.35s ease both;
+    }
+
+    @@keyframes sa-fade-slide {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .rps-detail-modal .modal-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        border: none;
+    }
+
+    .rps-detail-modal .modal-header .modal-title {
+        color: #fff;
+        font-weight: 700;
+    }
+
+    .rps-detail-modal .modal-header .close,
+    .rps-detail-modal .modal-header .modal-close {
+        color: #fff;
+        opacity: 0.9;
+    }
+
+    .rps-detail-modal .modal-content {
+        border-radius: 14px;
+        border: none;
+        overflow: hidden;
+    }
+
+    /* Select Coil / Identification modal — Stock Allocation theme */
+    #IdentificationControlmodal.sa-objlist-modal .modal-dialog {
+        max-width: 900px;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .modal-content {
+        border-radius: 14px;
+        border: none;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(102, 126, 234, 0.28);
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border: none;
+        padding: 14px 18px;
+        align-items: center;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .modal-header .modal-title {
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.05rem;
+        margin: 0;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .modal-header .modal-close,
+    #IdentificationControlmodal.sa-objlist-modal .modal-header .close {
+        color: #fff;
+        opacity: 0.9;
+        font-size: 1.25rem;
+        line-height: 1;
+        background: transparent;
+        border: none;
+        padding: 0 4px;
+        margin-left: auto;
+        cursor: pointer;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .modal-header .modal-close:hover,
+    #IdentificationControlmodal.sa-objlist-modal .modal-header .close:hover {
+        opacity: 1;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .modal-body {
+        background: #f8fafc;
+        padding: 14px 16px 8px;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .modal-body > .row {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 8px 4px;
+        margin-left: 0;
+        margin-right: 0;
+        margin-bottom: 12px !important;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.06);
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .form-control,
+    #IdentificationControlmodal.sa-objlist-modal .form-select {
+        border: 1.5px solid #ddd6fe !important;
+        border-radius: 8px !important;
+        font-size: 0.82rem;
+        background-color: #f5f3ff !important;
+        color: #1e1b4b;
+        height: 34px !important;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .form-control:focus,
+    #IdentificationControlmodal.sa-objlist-modal .form-select:focus {
+        border-color: #667eea !important;
+        background-color: #fff !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .modal-body > div[style*="overflow-y"] {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        background: #fff;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.06);
+        overflow-y: auto !important;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal #objListTableHead {
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal #objListTableHead th {
+        background: transparent !important;
+        color: #fff !important;
+        font-weight: 700 !important;
+        font-size: 0.8rem !important;
+        border: none !important;
+        border-bottom: none !important;
+        padding: 10px 12px !important;
+        white-space: nowrap;
+        letter-spacing: 0.01em;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal table.table {
+        margin-bottom: 0;
+        border-color: #e2e8f0;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal table.table td {
+        font-size: 0.82rem;
+        color: #1e293b;
+        padding: 8px 12px !important;
+        vertical-align: middle;
+        border-color: #eef2ff !important;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal #objListTableBody .objlist-row:nth-child(even) {
+        background-color: #f8f7ff;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal #objListTableBody .objlist-row:hover {
+        background-color: #eef2ff !important;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal #objListTableBody .objlist-row.table-primary {
+        background: linear-gradient(90deg, rgba(102, 126, 234, 0.22), rgba(118, 75, 162, 0.12)) !important;
+        color: #1e1b4b !important;
+        box-shadow: inset 3px 0 0 #667eea;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal #objListTableBody .objlist-row.table-primary td {
+        color: #1e1b4b !important;
+        border-color: transparent !important;
+        font-weight: 600;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal #objListTotalsBar {
+        background: linear-gradient(135deg, #eef2ff, #f5f3ff) !important;
+        border: 1px solid #c7d2fe !important;
+        border-radius: 10px !important;
+        color: #3730a3 !important;
+        margin-top: 10px !important;
+        padding: 8px 12px !important;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .modal-body > .text-end {
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        border-top: 1px solid #e2e8f0;
+        margin-top: 8px;
+        background: #fff;
+        margin-left: -16px;
+        margin-right: -16px;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .btn-primary.btn-height {
+        border: none !important;
+        color: #fff !important;
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        box-shadow: 0 3px 10px rgba(102, 126, 234, 0.35);
+        border-radius: 9px !important;
+        font-weight: 700;
+        min-width: 88px;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .btn-primary.btn-height:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 14px rgba(102, 126, 234, 0.45);
+        color: #fff !important;
+    }
+
+    #IdentificationControlmodal.sa-objlist-modal .btn-danger.btn-height {
+        background: linear-gradient(135deg, #64748b, #475569) !important;
+        border: none !important;
+        box-shadow: 0 2px 8px rgba(71, 85, 105, 0.3);
+        border-radius: 9px !important;
+        font-weight: 700;
+        color: #fff !important;
+        min-width: 88px;
+    }
+
+    @@media (max-width: 768px) {
+        .sa-list-filter-bar .without-label-field {
+            width: 100%;
+        }
+
+        .sa-list-filter-bar .sa-list-toolbar {
+            width: 100%;
+        }
+
+        .sa-list-filter-bar .sa-list-toolbar .btn {
+            flex: 1;
+        }
+    }
+
+    .sa-filter-6 {
+        max-width: 100%;
+    }
+
+    .sa-grade-dd {
+        position: relative;
+        width: 100%;
+    }
+
+    .sa-grade-dd-btn {
+        height: 34px !important;
+        background: #f5f3ff;
+        border: 1.5px solid #ddd6fe !important;
+        cursor: pointer;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding-right: 28px;
+    }
+
+    .sa-grade-dd-btn:hover,
+    .sa-grade-dd-btn:focus {
+        border-color: #667eea !important;
+        background: #fff;
+    }
+
+    .sa-grade-dd-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        z-index: 1060;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.18);
+        max-height: 240px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sa-grade-dd-items {
+        overflow-y: auto;
+        max-height: 190px;
+        padding: 4px 0;
+    }
+
+    .sa-grade-dd-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        font-size: 0.82rem;
+        color: #1e293b;
+        cursor: pointer;
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .sa-grade-dd-item:hover {
+        background: rgba(102, 126, 234, 0.08);
+    }
+
+    #dvCoilFilter.align-items-end {
+        align-items: flex-end !important;
+    }
+
+    #dvCoilFilter .sa-coil-show-spacer {
+        display: block;
+        line-height: 1.2;
+        visibility: hidden;
+        user-select: none;
+    }
+
+    #dvCoilFilter .sa-coil-show-btn {
+        height: 31px !important;
+        min-height: 31px !important;
+        line-height: 1.2 !important;
+        padding: 0.25rem 0.85rem !important;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0 !important;
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+
+    #dvCoilFilter .form-control,
+    #dvCoilFilter .sa-grade-dd-btn {
+        height: 31px !important;
+        min-height: 31px !important;
+    }
+
+    .sa-grade-dd-item input {
+        margin: 0;
+        cursor: pointer;
+    }
+</style>
+
+<div class="sa-page">
+    <div class="sa-list-header section-entry-animation" id="saPageHeader">
+        <div class="sa-list-header-top">
+            <div class="sa-list-header-title-block">
+                <h2 class="sa-list-header-title"><i class="fa fa-cubes me-2" aria-hidden="true"></i>Stock Allocation</h2>
+                <small class="sa-list-header-sub">Allocate stock against client orders and projects.</small>
+            </div>
+            <div class="sa-list-header-actions" id="saHeaderActions">
+                <button type="button" class="sa-list-create-btn" title="Create New" onclick="CreateNew()">
+                    <i class="fa fa-plus-circle" aria-hidden="true"></i>
+                    <span class="ms-1">Create New</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dvGrid">
+        <div class="sa-list-grid-wrap">
+            <div class="sa-table-wrapper">
+                <table id="tblStockAllocation" class="fixed-width-table table">
+                    <thead id="table-header"></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-tblStockAllocation"></div>
+        </div>
+    </div>
+
+    <div id="dvFrom" style="display:none;">
+        <div class="sa-list-filter-bar">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                    <label for="ddlClientName" class="form-label">Client Name <span class="text-danger">*</span></label>
+                    <select id="ddlClientName" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                    <label for="ddlOrderNo" class="form-label">Order No. <span class="text-danger">*</span></label>
+                    <select id="ddlOrderNo" class="form-control form-control-sm box_border" autocomplete="off" tabindex="1"></select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-auto without-label-field">
+                    <div class="sa-list-toolbar">
+                        <button type="button" id="btnStockAllocationShow" class="btn btn-primary sa-btn-show btn-height">
+                            <i class="fas fa-search me-1"></i>Show
+                        </button>
+                        <button type="button" class="btn btn-danger sa-btn-back icon-height" title="Back" id="btnBack" onclick="Back()">Back</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="sa-list-grid-wrap">
+            <div class="sa-table-wrapper">
+                <table id="tblStockAllocationEditable" class="fixed-width-table table">
+                    <thead id="table-headerEditable"></thead>
+                    <tbody id="table-bodyEditable"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-tblStockAllocationEditable"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade rps-detail-modal" id="dvRemark" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Remark</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="col-md-12">
+                    <label for="txtRemark" class="form-label filter-label">Remark </label> <span class="text-danger">*</span>
+                    <input type="text" id="txtRemark" class="form-control form-control-sm box_border" autocomplete="off" maxlength="500" />
+                    <input type="hidden" id="hfCode" class="form-control form-control-sm box_border" />
+                </div>
+                <div class="col-md-12 text-end mt-3">
+                    <button type="button" class="btn btn-success icon-height" onclick="DeleteStockAllocation()">Ok</button>
+                    <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade rps-detail-modal" id="DetailModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Coil Details</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2 align-items-end mb-3" id="dvCoilFilter">
+                    <div class="col-6 col-md-2">
+                        <label for="txtWidthFrom" class="form-label fw-semibold mb-1">Width From</label>
+                        <input type="text" inputmode="decimal" maxlength="6" id="txtWidthFrom" class="form-control form-control-sm box_border sa-filter-6" autocomplete="off" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label for="txtWidthTo" class="form-label fw-semibold mb-1">Width To</label>
+                        <input type="text" inputmode="decimal" maxlength="6" id="txtWidthTo" class="form-control form-control-sm box_border sa-filter-6" autocomplete="off" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label for="txtThicknessFrom" class="form-label fw-semibold mb-1">Thickness From</label>
+                        <input type="text" inputmode="decimal" maxlength="6" id="txtThicknessFrom" class="form-control form-control-sm box_border sa-filter-6" autocomplete="off" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label for="txtThicknessTo" class="form-label fw-semibold mb-1">Thickness To</label>
+                        <input type="text" inputmode="decimal" maxlength="6" id="txtThicknessTo" class="form-control form-control-sm box_border sa-filter-6" autocomplete="off" />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label fw-semibold mb-1">Grade</label>
+                        <div class="sa-grade-dd" id="saGradeDropdown">
+                            <button type="button" class="form-control form-control-sm box_border sa-grade-dd-btn text-start" id="btnGradeDropdown">
+                                <span id="saGradeSelectedText">Select Grade...</span>
+                                <i class="fa fa-chevron-down float-end mt-1"></i>
+                            </button>
+                            <div class="sa-grade-dd-menu" id="ddlGradeCheckList" style="display:none;">
+                                <div class="sa-grade-dd-search px-2 py-1">
+                                    <input type="text" id="txtGradeSearch" class="form-control form-control-sm" placeholder="Search grade..." autocomplete="off" />
+                                </div>
+                                <div class="sa-grade-dd-items" id="saGradeCheckItems"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-auto d-flex flex-column justify-content-end">
+                        <label class="form-label fw-semibold mb-1 sa-coil-show-spacer">&nbsp;</label>
+                        <button type="button" id="btnFetchIdentification" class="btn btn-primary btn-height sa-coil-show-btn" onclick="FetchIdentificationByFilter()">
+                            <i class="fas fa-search me-1"></i>Show
+                        </button>
+                    </div>
+                </div>
+                <div class="sa-table-wrapper" style="min-height:200px !important; max-height: 360px;">
+                    <table id="DetailTable" class="fixed-width-table table">
+                        <thead id="DetailTable-head"></thead>
+                        <tbody id="DetailTable-body"></tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-DetailTable"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="SaveStockAllocation()">Save</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

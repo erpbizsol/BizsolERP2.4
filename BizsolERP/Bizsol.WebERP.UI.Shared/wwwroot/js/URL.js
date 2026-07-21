@@ -121,6 +121,7 @@ let UrlService = {
     API_ENDPOINT_QCPropertyMaster: `${environment.BASE_URL}/QCPropertyMaster`,
     API_ENDPOINT_QCPropertyTestTypeMaster: `${environment.BASE_URL}/QCPropertyTestTypeMaster`,
     API_ENDPOINT_RawMaterialOffer: `${environment.BASE_URL}/RawMaterialOffer`,
+    API_ENDPOINT_StockAllocation: `${environment.BASE_URL}/StockAllocation`,
     //MachineMaintenanceRequest
     API_ENDPOINT_MachineMaintenance: `${environment.BASE_URL}/MachineMaintenance`,
     API_ENDPOINT_FGInspectedOffer: `${environment.BASE_URL}/FGInspectedEntry`,
