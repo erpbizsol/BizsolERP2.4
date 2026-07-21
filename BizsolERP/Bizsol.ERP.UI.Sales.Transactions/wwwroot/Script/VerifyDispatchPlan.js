@@ -144,15 +144,20 @@ $(document).ready(function () {
     //     GetDispatchAdvicePlanList($(this).val());
     // })
     var initialStatus = $("#ddlStatus").val();
-    if (initialStatus === 'R' || initialStatus === 'T' || initialStatus === 'TR') {
+    if (initialStatus === 'R' || initialStatus === 'T' || initialStatus === 'TR' || initialStatus === 'DR' || initialStatus === 'FL') {
         $(".despatch-activity-filter").removeClass('d-none');
         $("#dvTableDispatch").hide();
         $("#dvApprovedTransporterDashboard").removeClass('show').hide();
         if (initialStatus === 'TR') {
             ShowTransporterReportList();
+        } else if (initialStatus === 'DR') {
+            ShowDelayReportList();
+        } else if (initialStatus === 'FL') {
+            ShowFreightLossReportList();
         }
     } else if (initialStatus === 'AR') {
         $(".despatch-activity-filter").removeClass('d-none');
+        $("#dvDelayReportCards").hide();
         $("#dvTableDispatch").hide();
         openApprovedTransporterDashboard();
     } else {
@@ -162,15 +167,20 @@ $(document).ready(function () {
     }
     $("#ddlStatus").change(function () {
         var status = $(this).val();
-        if (status === 'R' || status === 'T' || status === 'TR') {
+        if (status === 'R' || status === 'T' || status === 'TR' || status === 'DR' || status === 'FL') {
             $(".despatch-activity-filter").removeClass('d-none');
             $("#dvTableDispatch").hide();
             $("#dvApprovedTransporterDashboard").removeClass('show').hide();
             if (status === 'TR') {
                 ShowTransporterReportList();
+            } else if (status === 'DR') {
+                ShowDelayReportList();
+            } else if (status === 'FL') {
+                ShowFreightLossReportList();
             }
         } else if (status === 'AR') {
             $(".despatch-activity-filter").removeClass('d-none');
+            $("#dvDelayReportCards").hide();
             $("#dvTableDispatch").hide();
             openApprovedTransporterDashboard();
         } else {
@@ -181,23 +191,25 @@ $(document).ready(function () {
     });
     $("#txtFromDate").change(function () {
         var s = $("#ddlStatus").val();
-        if (s === 'R' || s === 'TR' || s === 'AR') {
+        if (s === 'R' || s === 'TR' || s === 'AR' || s === 'DR' || s === 'FL') {
             ShowFilteredList();
         }
     });
     $("#txtToDate").change(function () {
         var s = $("#ddlStatus").val();
-        if (s === 'R' || s === 'TR' || s === 'AR') {
+        if (s === 'R' || s === 'TR' || s === 'AR' || s === 'DR' || s === 'FL') {
             ShowFilteredList();
         }
     });
 });
 function ensureStandardGridLayout() {
+    $('#dvDelayReportCards').hide();
     $('#dvTransporterReportTwinGrids').addClass('d-none').removeClass('d-flex');
     $('#tableWrapper').removeClass('d-none');
 }
 
 function ensureTransporterTwinLayout() {
+    $('#dvDelayReportCards').hide();
     $('#tableWrapper').addClass('d-none');
     $('#dvTransporterReportTwinGrids').removeClass('d-none').addClass('d-flex');
 }
@@ -232,7 +244,11 @@ function GetDispatchAdvicePlanList(Status, fromdate, todate) {
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"
-                , "Remarks", "Marketing Remark", "PPC Remark","CityMaster_Code_Freight", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
+                , "Remarks", "CityMaster_Code_Freight", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
+            // Show remark columns for Approved Quotation (T); hide for other locate statuses
+            if (Status !== 'T') {
+                hiddenColumns.push("Marketing Remark", "PPC Remark", "Despatch Remark", "Dispatch Remark");
+            }
             const columnAlignment = {
                 "Ord Qty Pc": "right;max-width:30px;",
                 "Ord Qty MT": "right",
@@ -1129,6 +1145,89 @@ function ExportExcel() {
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(omitTransporterHiddenExportColumns(parsed.result2)), 'Result2_Transporter');
             }
             XLSX.writeFile(wb, 'TransporterReport.xlsx');
+            toastr.success('Export completed successfully.');
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || error.message || 'Error during export.');
+        });
+        return;
+    }
+    if (status === 'DR') {
+        var fromDate = $('#txtFromDate').val();
+        var toDate = $('#txtToDate').val();
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(toDate) < new Date(fromDate)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
+        Showloader();
+        VerifyDispatchPlanService.GetDelayReport(fromDate, toDate).then(function (response) {
+            HideLoader();
+            const parsed = parseTransporterReportResults(response);
+            const detail = parsed.result1 && parsed.result1.length > 0 ? parsed.result1 : [];
+            const summary = parsed.result2 && parsed.result2.length > 0 ? parsed.result2 : [];
+            if (!detail.length && !summary.length) {
+                toastr.info('No data to export.');
+                return;
+            }
+            if (typeof XLSX === 'undefined') {
+                toastr.error('Excel export is not available.');
+                return;
+            }
+            const wb = XLSX.utils.book_new();
+            if (detail.length) {
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mapNullsToEmptyStrings(detail)), 'DelayReport');
+            }
+            if (summary.length) {
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mapNullsToEmptyStrings(summary)), 'Summary');
+            }
+            XLSX.writeFile(wb, 'DispatchDelayReport.xlsx');
+            toastr.success('Export completed successfully.');
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || error.message || 'Error during export.');
+        });
+        return;
+    }
+    if (status === 'FL') {
+        var fromDate = $('#txtFromDate').val();
+        var toDate = $('#txtToDate').val();
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(toDate) < new Date(fromDate)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
+        Showloader();
+        VerifyDispatchPlanService.GetFreightLossReport(fromDate, toDate).then(function (response) {
+            HideLoader();
+            var rows = [];
+            if (Array.isArray(response)) {
+                rows = response;
+            } else if (response) {
+                var parsed = parseTransporterReportResults(response);
+                rows = parsed.result1 || [];
+            }
+            rows = mapNullsToEmptyStrings(rows || []);
+            if (!rows.length) {
+                toastr.info('No data to export.');
+                return;
+            }
+            if (typeof ExportToExcelControl !== 'undefined' && ExportToExcelControl.ExportToExcel) {
+                ExportToExcelControl.ExportToExcel(rows, [], 'FreightLossReport');
+            } else if (typeof XLSX !== 'undefined') {
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'FreightLossReport');
+                XLSX.writeFile(wb, 'FreightLossReport.xlsx');
+            } else {
+                toastr.error('Excel export is not available.');
+                return;
+            }
             toastr.success('Export completed successfully.');
         }).catch(function (error) {
             HideLoader();
@@ -2208,6 +2307,14 @@ function ShowFilteredList() {
         ShowTransporterReportList();
         return;
     }
+    if ($("#ddlStatus").val() === 'DR') {
+        ShowDelayReportList();
+        return;
+    }
+    if ($("#ddlStatus").val() === 'FL') {
+        ShowFreightLossReportList();
+        return;
+    }
     if ($("#ddlStatus").val() === 'AR') {
         openApprovedTransporterDashboard();
         return;
@@ -2389,6 +2496,8 @@ function ShowTransporterReportList() {
     VerifyDispatchPlanService.GetTransporterReport(fromDate, toDate).then(function (response) {
         HideLoader();
         ensureTransporterTwinLayout();
+        $('.transporter-rpt-label').eq(0).text('Transporter approved details');
+        $('.transporter-rpt-label').eq(1).text('Transporter summary');
         const parsed = parseTransporterReportResults(response);
         const hasR1 = parsed.result1 && parsed.result1.length > 0;
         const hasR2 = parsed.result2 && parsed.result2.length > 0;
@@ -2412,6 +2521,213 @@ function ShowTransporterReportList() {
 }
 
 window.ShowTransporterReportList = ShowTransporterReportList;
+
+function ShowDelayReportList() {
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+    Showloader();
+    VerifyDispatchPlanService.GetDelayReport(fromDate, toDate).then(function (response) {
+        HideLoader();
+        ensureStandardGridLayout();
+        const parsed = parseTransporterReportResults(response);
+        const detailClean = mapNullsToEmptyStrings(parsed.result1 || []);
+        const summaryRow = (parsed.result2 && parsed.result2.length > 0) ? parsed.result2[0] : null;
+        if (!detailClean.length) {
+            $("#dvDelayReportCards").hide();
+            $("#dvTableDispatch").hide();
+            toastr.info('No data found for Dispatch Delay Report.');
+            return;
+        }
+        G_DispatchPlanlist = detailClean;
+        const filters = getTransporterReportColumnFilters(detailClean);
+        BizsolCustomFilterGrid.CreateDataTable('table-head', 'table-body', detailClean, false, [], filters.stringFilterColumn, filters.numericFilterColumn, filters.dateFilterColumn, [], [], {}, false);
+        const tableHead = document.getElementById('table-head');
+        if (tableHead) {
+            const totalsRow = tableHead.querySelector('.totals-row');
+            if (totalsRow) totalsRow.remove();
+        }
+        renderDelayReportCards(summaryRow, detailClean);
+        $("#dvDelayReportCards").show();
+        $("#dvTableDispatch").show();
+        scheduleVerifyDispatchPlanTableHeightAdjust();
+    }).catch(function (error) {
+        HideLoader();
+        $("#dvDelayReportCards").hide();
+        $("#dvTableDispatch").hide();
+        toastr.error(error.Msg || error.message || 'Error loading Dispatch Delay Report.');
+    });
+}
+
+function delayReportToNumber(v) {
+    if (v === null || v === undefined || v === '') return 0;
+    var n = Number(String(v).replace(/[^0-9.\-]/g, ''));
+    return isNaN(n) ? 0 : n;
+}
+
+function delayReportFormatNumber(v) {
+    var n = delayReportToNumber(v);
+    return (Math.round(n * 100) / 100).toString();
+}
+
+function delayReportStageFromStatus(rows, colName) {
+    var on = 0, late = 0, sumDelay = 0, lateCount = 0;
+    rows.forEach(function (r) {
+        var v = (r[colName] === null || r[colName] === undefined) ? '' : String(r[colName]).trim();
+        if (!v) return;
+        if (/late/i.test(v)) {
+            late++;
+            var m = v.match(/(\d+)\s*Min/i);
+            if (m) { sumDelay += parseInt(m[1], 10); lateCount++; }
+        } else if (/on\s*time/i.test(v)) {
+            on++;
+        }
+    });
+    var total = rows.length;
+    return {
+        on: on,
+        late: late,
+        score: total > 0 ? (on * 100 / total) : 0,
+        avg: lateCount > 0 ? (sumDelay / lateCount) : 0
+    };
+}
+
+function delayReportDispatchFromDetail(rows) {
+    var on = 0, late = 0;
+    rows.forEach(function (r) {
+        var t = (r['Dispatch verifyTime'] === null || r['Dispatch verifyTime'] === undefined) ? '' : String(r['Dispatch verifyTime']).trim();
+        var resp = (r['Delay Responsibility'] === null || r['Delay Responsibility'] === undefined) ? '' : String(r['Delay Responsibility']);
+        if (/dispatch/i.test(resp)) {
+            late++;
+        } else if (t) {
+            on++;
+        }
+    });
+    var total = rows.length;
+    return { on: on, late: late, score: total > 0 ? (on * 100 / total) : 0, avg: 0 };
+}
+
+function delayReportSetStage(prefix, o) {
+    $('#drc' + prefix + 'OnTime').text(o.on);
+    $('#drc' + prefix + 'Late').text(o.late);
+    $('#drc' + prefix + 'Score').text(delayReportFormatNumber(o.score) + '%');
+    $('#drc' + prefix + 'Avg').text(delayReportFormatNumber(o.avg));
+}
+
+function renderDelayReportCards(summaryRow, detail) {
+    var total, mkt, ppc, dsp;
+    if (summaryRow) {
+        total = delayReportToNumber(summaryRow['Total Indents']);
+        mkt = {
+            on: delayReportToNumber(summaryRow['On-Time by Marketing']),
+            late: delayReportToNumber(summaryRow['Late by Marketing']),
+            score: delayReportToNumber(summaryRow['Marketing Score %']),
+            avg: delayReportToNumber(summaryRow['Avg. Marketing Delay'])
+        };
+        ppc = {
+            on: delayReportToNumber(summaryRow['On-Time by PPC']),
+            late: delayReportToNumber(summaryRow['Late by PPC']),
+            score: delayReportToNumber(summaryRow['PPC Score %']),
+            avg: delayReportToNumber(summaryRow['Avg. PPC Delay'])
+        };
+        dsp = {
+            on: delayReportToNumber(summaryRow['On-Time by Dispatch']),
+            late: delayReportToNumber(summaryRow['Late by Dispatch']),
+            score: delayReportToNumber(summaryRow['Dispatch Score %']),
+            avg: delayReportToNumber(summaryRow['Avg. Dispatch Delay'])
+        };
+    } else {
+        total = detail.length;
+        mkt = delayReportStageFromStatus(detail, 'MKT Status (Before 4:00 PM/16:00)');
+        ppc = delayReportStageFromStatus(detail, 'PPC Status (Before 5:00 PM/17:00)');
+        dsp = delayReportDispatchFromDetail(detail);
+    }
+    $('#drcTotalIndents').text(total);
+    delayReportSetStage('Mkt', mkt);
+    delayReportSetStage('Ppc', ppc);
+    delayReportSetStage('Dsp', dsp);
+}
+
+window.ShowDelayReportList = ShowDelayReportList;
+
+function normalizeFreightLossRows(response) {
+    if (!response) return [];
+    if (Array.isArray(response)) {
+        if (response.length && Array.isArray(response[0])) return response[0];
+        return response;
+    }
+    var parsed = parseTransporterReportResults(response);
+    return parsed.result1 || [];
+}
+
+function ShowFreightLossReportList() {
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+    Showloader();
+    VerifyDispatchPlanService.GetFreightLossReport(fromDate, toDate).then(function (response) {
+        HideLoader();
+        ensureStandardGridLayout();
+        $("#dvDelayReportCards").hide();
+        var rows = mapNullsToEmptyStrings(normalizeFreightLossRows(response));
+        if (!rows.length) {
+            $("#dvTableDispatch").hide();
+            toastr.info('No data found for Freight Loss Report.');
+            return;
+        }
+        G_DispatchPlanlist = rows;
+        const filters = getTransporterReportColumnFilters(rows);
+        const columnAlignment = {
+            'Dispatch advice MT': 'right',
+            'Lorry capacity': 'right',
+            'Dispatch Qty (MT)': 'right',
+            'Freight Loss (MT)': 'right',
+            'Freight Rate (₹/MT)': 'right',
+            'Freight Loss Amount (₹)': 'right'
+        };
+        BizsolCustomFilterGrid.CreateDataTable(
+            'table-head',
+            'table-body',
+            rows,
+            false,
+            [],
+            filters.stringFilterColumn,
+            filters.numericFilterColumn,
+            filters.dateFilterColumn,
+            [],
+            [],
+            columnAlignment,
+            false
+        );
+        const tableHead = document.getElementById('table-head');
+        if (tableHead) {
+            const totalsRow = tableHead.querySelector('.totals-row');
+            if (totalsRow) totalsRow.remove();
+        }
+        $("#dvTableDispatch").show();
+        scheduleVerifyDispatchPlanTableHeightAdjust();
+    }).catch(function (error) {
+        HideLoader();
+        $("#dvTableDispatch").hide();
+        toastr.error(error.Msg || error.message || 'Error loading Freight Loss Report.');
+    });
+}
+
+window.ShowFreightLossReportList = ShowFreightLossReportList;
 
 /* --- Approved Transporter Dashboard (modal + GetApprovedTransporterReport) --- */
 var ATD_CHART = null;
@@ -2808,6 +3124,100 @@ function atdRenderCategoryLegend(vkeys) {
     });
 }
 
+function atdPieGrandTotalKey(valueKeys) {
+    if (!valueKeys) return null;
+    for (var i = 0; i < valueKeys.length; i++) {
+        if (atdIsTotalColumnKey(valueKeys[i])) return valueKeys[i];
+    }
+    return null;
+}
+
+function atdPieRowValue(row, valueKeys) {
+    // Prefer Grand Total column so pie % matches the table exactly
+    var gtKey = atdPieGrandTotalKey(valueKeys);
+    if (gtKey && row[gtKey] !== undefined && row[gtKey] !== null && row[gtKey] !== '') {
+        var g = typeof row[gtKey] === 'number' ? row[gtKey] : Number(String(row[gtKey]).replace(/,/g, ''));
+        if (!isNaN(g)) return g;
+    }
+    return atdRowTotal(row, valueKeys);
+}
+
+function atdFormatPct(val, total) {
+    if (!total) return '0.0';
+    return ((val / total) * 100).toFixed(1);
+}
+
+function atdWrapPieName(name, maxCharsPerLine) {
+    var words = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return ['—'];
+    maxCharsPerLine = maxCharsPerLine || 18;
+    var lines = [];
+    var cur = '';
+    words.forEach(function (w) {
+        var next = cur ? (cur + ' ' + w) : w;
+        if (next.length > maxCharsPerLine && cur) {
+            lines.push(cur);
+            cur = w;
+        } else {
+            cur = next;
+        }
+    });
+    if (cur) lines.push(cur);
+    if (lines.length > 3) {
+        lines = [lines[0], lines[1], lines.slice(2).join(' ')];
+    }
+    return lines;
+}
+
+/** Spread Y positions so callout labels never overlap */
+function atdResolveLabelYs(items, canvasH, minGap) {
+    if (!items.length) return;
+    minGap = minGap || 16;
+    items.sort(function (a, b) { return a.y - b.y; });
+    // forward pass
+    for (var i = 1; i < items.length; i++) {
+        if (items[i].y - items[i - 1].y < minGap) {
+            items[i].y = items[i - 1].y + minGap;
+        }
+    }
+    // pull back if overflow bottom
+    var overflow = items[items.length - 1].y - (canvasH - 8);
+    if (overflow > 0) {
+        for (var j = 0; j < items.length; j++) items[j].y -= overflow;
+    }
+    // backward pass for top clamp
+    if (items[0].y < 8) items[0].y = 8;
+    for (var k = 1; k < items.length; k++) {
+        if (items[k].y - items[k - 1].y < minGap) {
+            items[k].y = items[k - 1].y + minGap;
+        }
+    }
+}
+
+function atdRenderHtmlPieLegend(legEl, labels, data, colors, total) {
+    if (!legEl) return;
+    legEl.innerHTML = '';
+    if (!labels.length) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'atd-pie-html-legend';
+    labels.forEach(function (name, i) {
+        var pct = atdFormatPct(data[i], total);
+        var row = document.createElement('div');
+        row.className = 'atd-pie-html-legend-item';
+        var sw = document.createElement('span');
+        sw.className = 'atd-pie-html-legend-swatch';
+        sw.style.background = colors[i % colors.length];
+        var tx = document.createElement('span');
+        tx.className = 'atd-pie-html-legend-text';
+        tx.textContent = name + ' (' + pct + '%)';
+        tx.title = name + ' (' + pct + '%)';
+        row.appendChild(sw);
+        row.appendChild(tx);
+        wrap.appendChild(row);
+    });
+    legEl.appendChild(wrap);
+}
+
 function atdRenderDonut(norm) {
     var canvas = document.getElementById('atdDonutCanvas');
     var leg = document.getElementById('atdDonutLegend');
@@ -2829,9 +3239,9 @@ function atdRenderDonut(norm) {
     filteredRows.forEach(function (r) {
         var nm = nameKey ? String(r[nameKey] || '').trim() : '';
         if (!nm) nm = '—';
-        var t = atdRowTotal(r, vkeys);
+        var t = atdPieRowValue(r, vkeys);
         if (t > 0) {
-            labels.push(nm.length > 22 ? nm.slice(0, 20) + '…' : nm);
+            labels.push(nm);
             data.push(t);
         }
     });
@@ -2839,16 +3249,152 @@ function atdRenderDonut(norm) {
         if (leg) leg.textContent = 'No numeric data for chart.';
         return;
     }
+    var pieTotal = data.reduce(function (a, b) { return a + b; }, 0);
+    var sliceColors = labels.map(function (_, i) { return ATD_COLORS[i % ATD_COLORS.length]; });
+    var isMobile = window.innerWidth < 768;
+    var isTablet = window.innerWidth < 992;
+    var manySlices = labels.length > 10;
+    // Always second-image style: % inside + name callouts with leader lines (no bottom legend)
+    var sidePad = isMobile ? 88 : (isTablet ? 110 : (manySlices ? 130 : 150));
+    var vertPad = isMobile ? 28 : (manySlices ? 44 : 36);
+    var wrapChars = isMobile ? 12 : (manySlices ? 14 : 16);
+    var labelFontPx = manySlices || isMobile ? 8 : 9;
+    var lineH = manySlices || isMobile ? 10 : 12;
     var ctx = canvas.getContext('2d');
+
+    // Make chart area taller automatically when there are many transporters
+    var chartWrap = canvas.parentElement;
+    if (chartWrap && chartWrap.classList.contains('atd-chart-wrap')) {
+        var h = isMobile ? 300 : (manySlices ? Math.min(520, 320 + labels.length * 10) : 380);
+        chartWrap.style.minHeight = h + 'px';
+        chartWrap.style.height = h + 'px';
+        chartWrap.style.maxHeight = 'none';
+    }
+
+    var pieSliceLabels = {
+        id: 'pieSliceLabels',
+        afterDatasetsDraw: function (chart) {
+            var g = chart.ctx;
+            var meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data) return;
+            var ds = chart.data.datasets[0];
+            var chartLabels = chart.data.labels || [];
+            var total = ds.data.reduce(function (a, b) { return a + (Number(b) || 0); }, 0);
+            if (!total) return;
+            var canvasW = chart.width;
+            var canvasH = chart.height;
+            var leftItems = [];
+            var rightItems = [];
+
+            meta.data.forEach(function (arc, i) {
+                var val = Number(ds.data[i]) || 0;
+                if (val <= 0) return;
+                var pct = (val / total) * 100;
+                var mid = (arc.startAngle + arc.endAngle) / 2;
+                var cosM = Math.cos(mid);
+                var sinM = Math.sin(mid);
+                var pctTxt = atdFormatPct(val, total) + '%';
+                var sliceColor = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : ds.backgroundColor;
+
+                // % inside slice (white)
+                if (pct >= 3.5) {
+                    var rIn = arc.innerRadius + (arc.outerRadius - arc.innerRadius) * 0.55;
+                    var ix = arc.x + cosM * rIn;
+                    var iy = arc.y + sinM * rIn;
+                    var fontSize = pct >= 18 ? 14 : (pct >= 8 ? 12 : 10);
+                    if (isMobile) fontSize = Math.max(9, fontSize - 2);
+                    g.save();
+                    g.textAlign = 'center';
+                    g.textBaseline = 'middle';
+                    g.font = '800 ' + fontSize + "px 'Segoe UI', system-ui, sans-serif";
+                    g.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                    g.shadowBlur = 3;
+                    g.fillStyle = '#ffffff';
+                    g.fillText(pctTxt, ix, iy);
+                    g.restore();
+                }
+
+                var fullName = String(chartLabels[i] || '').trim() || '—';
+                var nameLines = atdWrapPieName(fullName, wrapChars);
+                nameLines.push('(' + pctTxt + ')');
+                var item = {
+                    i: i,
+                    arc: arc,
+                    cosM: cosM,
+                    sinM: sinM,
+                    nameLines: nameLines,
+                    sliceColor: sliceColor,
+                    y: arc.y + sinM * (arc.outerRadius + 12),
+                    blockH: nameLines.length * lineH
+                };
+                if (cosM >= 0) rightItems.push(item);
+                else leftItems.push(item);
+            });
+
+            function drawSide(items, isRight) {
+                var gap = Math.max(lineH + 2, Math.min(18, Math.floor(canvasH / (items.length + 1))));
+                atdResolveLabelYs(items, canvasH, gap);
+                items.forEach(function (it) {
+                    var arc = it.arc;
+                    var x0 = arc.x + it.cosM * arc.outerRadius;
+                    var y0 = arc.y + it.sinM * arc.outerRadius;
+                    var x1 = arc.x + it.cosM * (arc.outerRadius + 10);
+                    var y1 = arc.y + it.sinM * (arc.outerRadius + 10);
+                    var x2 = isRight ? Math.min(canvasW - 8, x1 + (isMobile ? 36 : 52)) : Math.max(8, x1 - (isMobile ? 36 : 52));
+                    var y2 = it.y;
+                    var labelPad = 4;
+
+                    g.save();
+                    g.font = '700 ' + labelFontPx + "px 'Segoe UI', system-ui, sans-serif";
+                    var maxLineW = 0;
+                    it.nameLines.forEach(function (ln) {
+                        maxLineW = Math.max(maxLineW, g.measureText(ln).width);
+                    });
+                    if (isRight && x2 + labelPad + maxLineW > canvasW - 3) {
+                        x2 = Math.max(8, canvasW - 3 - maxLineW - labelPad);
+                    }
+                    if (!isRight && x2 - labelPad - maxLineW < 3) {
+                        x2 = Math.min(canvasW - 8, 3 + maxLineW + labelPad);
+                    }
+
+                    g.strokeStyle = it.sliceColor || '#ffffff';
+                    g.lineWidth = 1.4;
+                    g.beginPath();
+                    g.moveTo(x0, y0);
+                    g.lineTo(x1, y1);
+                    g.lineTo(x2, y2);
+                    g.stroke();
+                    g.beginPath();
+                    g.fillStyle = it.sliceColor || '#ffffff';
+                    g.arc(x0, y0, 2.2, 0, Math.PI * 2);
+                    g.fill();
+
+                    g.textAlign = isRight ? 'left' : 'right';
+                    g.textBaseline = 'middle';
+                    g.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                    g.shadowBlur = 2;
+                    g.fillStyle = '#ffffff';
+                    var startY = y2 - ((it.nameLines.length - 1) * lineH) / 2;
+                    it.nameLines.forEach(function (ln, li) {
+                        g.fillText(ln, x2 + (isRight ? labelPad : -labelPad), startY + li * lineH);
+                    });
+                    g.restore();
+                });
+            }
+
+            drawSide(leftItems, false);
+            drawSide(rightItems, true);
+        }
+    };
+
     ATD_CHART = new Chart(ctx, {
-        type: 'doughnut',
+        type: 'pie',
+        plugins: [pieSliceLabels],
         data: {
             labels: labels,
             datasets: [{
                 data: data,
-                backgroundColor: labels.map(function (_, i) {
-                    return ATD_COLORS[i % ATD_COLORS.length];
-                }),
+                backgroundColor: sliceColors,
                 borderWidth: 2,
                 borderColor: 'rgba(15, 23, 42, 0.95)'
             }]
@@ -2856,33 +3402,27 @@ function atdRenderDonut(norm) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+                padding: { top: vertPad, bottom: vertPad, left: sidePad, right: sidePad }
+            },
+            color: '#ffffff',
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'right',
-                    labels: {
-                        color: '#cbd5e1',
-                        boxWidth: 10,
-                        padding: 8,
-                        font: { size: 10, family: "'Segoe UI', system-ui, sans-serif" }
-                    }
-                },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function (ctx) {
-                            var sum = data.reduce(function (a, b) {
-                                return a + b;
-                            }, 0);
-                            var val = ctx.parsed || 0;
-                            var pct = sum ? ((val / sum) * 100).toFixed(1) : '0';
-                            return ctx.label + ': ' + atdFormatInt(val) + ' (' + pct + '%)';
+                        label: function (c) {
+                            var val = typeof c.parsed === 'number' ? c.parsed : (c.raw || 0);
+                            var pct = atdFormatPct(val, pieTotal);
+                            return c.label + ': ' + atdFormatInt(val) + ' (' + pct + '%)';
                         }
                     }
                 }
             }
-        },
+        }
     });
-    if (leg) leg.textContent = '';
+
+    // Never show bottom HTML legend list (first-image style)
+    if (leg) leg.innerHTML = '';
 }
 
 function atdRenderAll() {
@@ -2928,6 +3468,16 @@ function openApprovedTransporterDashboard() {
 
 $(document).on('change', '#atdFilterTransporter, #atdFilterIndent', function () {
     if (ATD_NORMALIZED) atdRenderAll();
+});
+
+var ATD_RESIZE_TIMER = null;
+$(window).on('resize', function () {
+    if (!$('#dvApprovedTransporterDashboard').hasClass('show') && !$('#dvApprovedTransporterDashboard').is(':visible')) return;
+    if (!ATD_NORMALIZED) return;
+    clearTimeout(ATD_RESIZE_TIMER);
+    ATD_RESIZE_TIMER = setTimeout(function () {
+        atdRenderDonut(ATD_NORMALIZED);
+    }, 200);
 });
 
 $(document).on('hidden.bs.modal', '#dvApprovedTransporterDashboard', function () {

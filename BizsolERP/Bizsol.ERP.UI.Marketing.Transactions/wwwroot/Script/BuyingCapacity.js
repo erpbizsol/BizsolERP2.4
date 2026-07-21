@@ -1,7 +1,10 @@
 import { BuyingCapacityService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BuyingCapacityService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
 let G_BuyingCapacityRows = [];
+// When true, programmatic value binding is in progress and onchange-triggered saves are ignored
+let G_SuppressSave = false;
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
@@ -67,25 +70,38 @@ function GetNestedMarketingManList() {
                 }
             }
 
-            BindSelectList1($('#ddlMarketingMan')[0], marketingList);
-            $('#ddlMarketingMan option[value="0"]').val("ALL");
-            if ($('#ddlMarketingMan').select2) {
-                $('#ddlMarketingMan').select2({
-                    width: '-webkit-fill-available'
-                });
-            }
+            var $ddl = $('#ddlMarketingMan');
+            BindSelectList1($ddl[0], marketingList);
+            $ddl.find('option[value="0"]').val("ALL");
 
-            // Set the marketing man input or dropdown value
+            // Determine which value should be selected
             var urlParams = getUrlVars();
             var urlMarketingMan = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
-            if (urlMarketingMan == '') {
-                if (matchedPersonName) {
-                    $('#ddlMarketingMan').val(matchedPersonName);
-                } else {
-                    $('#ddlMarketingMan').val("ALL");
-                }
+            var targetValue;
+            if (urlMarketingMan === '') {
+                targetValue = matchedPersonName ? matchedPersonName : "ALL";
             } else {
-                $('#ddlMarketingMan').val(urlMarketingMan);
+                targetValue = urlMarketingMan;
+            }
+
+            // (Re)initialize select2 so options and selection stay in sync
+            try {
+                if ($ddl.hasClass('select2-hidden-accessible')) {
+                    $ddl.select2('destroy');
+                }
+            } catch (e) { }
+            try {
+                if (typeof $ddl.select2 === 'function') {
+                    $ddl.select2({ width: '-webkit-fill-available' });
+                }
+            } catch (e) { }
+
+            // Set the value AFTER select2 init and trigger change so the UI reflects it
+            $ddl.val(targetValue);
+            try {
+                $ddl.trigger('change.select2');
+            } catch (e) {
+                $ddl.trigger('change');
             }
 
         } else {
@@ -126,20 +142,24 @@ async function GetBuyingCapacityList() {
                 let BuyingFrequencyInputHTML = `<select type="text" class="form-control form-control-sm box_border" id="ddlFillBuyingFrequency_${rowIndex}" onchange="SaveBuyingCapacity(${rowIndex},'${item.Code}')"></select>`;
                 let MonthlyRequiredQtyInputHTML = `<input type="text" class="form-control form-control-sm box_border text-end" id="txtMonthlyRequired_${rowIndex}" oninput="validateDecimalRateInput(this)" onblur="SaveBuyingCapacity(${rowIndex},'${item.Code}')" style="width:120px" autocomplete="off"/>`;
                 let CustomerRatingInputHTML = `<input type="text" class="form-control form-control-sm box_border" id="txtCustomerRating_${rowIndex}" maxlength="100" onblur="SaveBuyingCapacity(${rowIndex},'${item.Code}')" style="width:150px" placeholder="Customer Rating" autocomplete="off"/>`;
+                let GPRollingInputHTML = `<select type="text" class="form-control form-control-sm box_border" id="ddlFillGPRolling_${rowIndex}" onchange="SaveBuyingCapacity(${rowIndex},'${item.Code}')"></select>`;
 
                 return {
                     ...item,
                     'Buying Frequency': BuyingFrequencyInputHTML,
                     'Monthly Required(Qty)': MonthlyRequiredQtyInputHTML,
                     'Customer Rating': CustomerRatingInputHTML,
+                    'GP Rolling': GPRollingInputHTML,
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-BuyingCapacity", "table-body-BuyingCapacity", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
 
             // Ensure dropdown options are populated first
             await FillBuyingFrequency();
+            await FillBuyingGPRolling();
 
             // Bind initial values from response to each row controls
+            G_SuppressSave = true;
             try {
                 for (var i = 0; i < G_BuyingCapacityRows.length; i++) {
                     var row = G_BuyingCapacityRows[i] || {};
@@ -154,6 +174,7 @@ async function GetBuyingCapacityList() {
                     } catch(eMap) { }
                     var qty = baseRow.MonthlyRequiredQty != null ? baseRow.MonthlyRequiredQty : (baseRow['Monthly Required(Qty)'] != null ? baseRow['Monthly Required(Qty)'] : '');
                     var customerRating = baseRow['Customer Rating'] != null ? baseRow['Customer Rating'] : (baseRow.CustomerRating != null ? baseRow.CustomerRating : (baseRow.Ratings != null ? baseRow.Ratings : ''));
+                    var gpRolling = baseRow.GPRolling != null ? baseRow.GPRolling : (baseRow['GP Rolling'] != null ? baseRow['GP Rolling'] : '');
 
                     // Bind Buying Frequency by text using helper (matches option display text)
                     try {
@@ -178,8 +199,17 @@ async function GetBuyingCapacityList() {
                     if ($ratingInp && $ratingInp.length) {
                         $ratingInp.val(customerRating || '');
                     }
+
+                    // Bind GP Rolling by value or text
+                    try {
+                        SelectGPRollingOption(`ddlFillGPRolling_${domIndex}`, gpRolling);
+                    } catch(e3) { }
                 }
             } catch(e) { }
+            finally {
+                // Re-enable saving after any select2 change events settle
+                setTimeout(function () { G_SuppressSave = false; }, 0);
+            }
         }
         else {
             $('#BuyingCapacity').hide();
@@ -194,6 +224,10 @@ async function GetBuyingCapacityList() {
 
 function SaveBuyingCapacity(index,Code) {
     try {
+        // Ignore saves fired by programmatic value binding (e.g. after clicking Show / filtering)
+        if (G_SuppressSave) {
+            return;
+        }
         var baseItem = (G_BuyingCapacityRows && G_BuyingCapacityRows.length > index) ? G_BuyingCapacityRows[index] : null;
         if (!baseItem) {
             toastr.error('Row context not found');
@@ -204,6 +238,8 @@ function SaveBuyingCapacity(index,Code) {
         var monthlyQty = monthlyQtyStr !== '' ? parseFloat(monthlyQtyStr) : null;
         var customerRatingVal = $('#txtCustomerRating_' + index).val();
         var customerRating = (customerRatingVal != null && typeof customerRatingVal === 'string') ? String(customerRatingVal).trim().substring(0, 100) : '';
+        var gpRollingVal = $('#ddlFillGPRolling_' + index).val();
+        var gpRolling = (gpRollingVal && gpRollingVal !== '0') ? gpRollingVal : '';
 
         if (!buyingFrequency || buyingFrequency === '0') {
             return;
@@ -219,7 +255,8 @@ function SaveBuyingCapacity(index,Code) {
             AccountMaster_Code: parseInt(Code, 10) || 0,
             BuyingFrequency: buyingFrequency,
             MonthlyRequiredQty: monthlyQty,
-            CustomerRating: customerRating === '' ? '' : customerRating
+            CustomerRating: customerRating === '' ? '' : customerRating,
+            GPRolling: gpRolling
         };
 
         Showloader();
@@ -244,6 +281,33 @@ function SaveBuyingCapacity(index,Code) {
     } catch (e) {
         toastr.error('Unexpected error while saving');
     }
+}
+
+function ExportExcel() {
+    var MarketingPersonName = $("#ddlMarketingMan").val();
+    if (MarketingPersonName == undefined || MarketingPersonName === '') {
+        toastr.error('Please select Sales Person');
+        return;
+    }
+    // Procedure expects 'All' (not 'ALL') when exporting all marketing persons
+    if (MarketingPersonName === 'ALL' || MarketingPersonName === '0') {
+        MarketingPersonName = 'All';
+    }
+
+    Showloader();
+    BuyingCapacityService.GetBuyingCapacityList(MarketingPersonName).then(function (response) {
+        HideLoader();
+        if (response && response.length > 0) {
+            var hiddenFields = ["Code", "__RowIndex"];
+            ExportToExcelControl.ExportToExcel(response, hiddenFields, "BuyingCapacity");
+            toastr.success('Export completed successfully.');
+        } else {
+            toastr.info('No data to export.');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error((error && (error.Msg || error.message)) || 'Error during export.');
+    });
 }
 
 async function FillBuyingFrequency(selectId) {
@@ -280,6 +344,72 @@ async function FillBuyingFrequency(selectId) {
         }
     } catch (error) {
         toastr.error('Error fetching buying frequency');
+    }
+}
+async function FillBuyingGPRolling(selectId) {
+    try {
+        const response = await BuyingCapacityService.GetBuyingGPRollingCategory();
+        if (response && response.length > 0) {
+            var list = response.map(function (item) {
+                // Store the descriptive string in RollingGPCategory: use Description as both value and text
+                var text = (item.Description != null ? item.Description : (item.Desp != null ? item.Desp : item.Value));
+                return { Code: text, Desp: text };
+            });
+
+            function bindOptions($select) {
+                if (!$select || $select.length === 0) { return; }
+                var option = '<option value="0">Select</option>';
+                for (var i = 0; i < list.length; i++) {
+                    option += '<option value="' + list[i].Code + '">' + list[i].Desp + '</option>';
+                }
+                $select.html(option);
+                try {
+                    if ($select.select2) {
+                        $select.select2({ width: '-webkit-fill-available' });
+                    }
+                } catch(e) { }
+            }
+
+            if (selectId && typeof selectId === 'string') {
+                bindOptions($('#' + selectId));
+            } else {
+                $('[id^=ddlFillGPRolling_]').each(function () {
+                    bindOptions($(this));
+                });
+            }
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    } catch (error) {
+        toastr.error('Error fetching GP rolling category');
+    }
+}
+function SelectGPRollingOption(selectId, gpValue) {
+    var $sel = $('#' + selectId);
+    if (!$sel || $sel.length === 0) { return; }
+    if (gpValue == null || gpValue === '') { return; }
+    var target = String(gpValue).trim();
+    var matched = false;
+    // Try match by option value first
+    $sel.find('option').each(function () {
+        if (!matched && String($(this).val()).trim() === target) {
+            $(this).prop('selected', true);
+            matched = true;
+        }
+    });
+    // Fallback: match by option text
+    if (!matched) {
+        $sel.find('option').each(function () {
+            if (!matched && String($(this).text()).trim() === target) {
+                $(this).prop('selected', true);
+                matched = true;
+            }
+        });
+    }
+    if (matched) {
+        try {
+            if ($sel.select2) { $sel.trigger('change.select2'); } else { $sel.trigger('change'); }
+        } catch (e) { $sel.trigger('change'); }
     }
 }
 function validateDecimalRateInput(input) {
@@ -327,7 +457,8 @@ function refreshBuyingCapacityRowControls(rows) {
         return;
     }
 
-    FillBuyingFrequency().then(function () {
+    Promise.all([FillBuyingFrequency(), FillBuyingGPRolling()]).then(function () {
+        G_SuppressSave = true;
         try {
             var codeMap = { 'M': 'Monthly', 'O': 'Occasionally', 'W': 'Weekly' };
 
@@ -360,6 +491,13 @@ function refreshBuyingCapacityRowControls(rows) {
                     customerRating = baseRow.CustomerRating;
                 } else if (baseRow.Ratings !== undefined && baseRow.Ratings !== null) {
                     customerRating = baseRow.Ratings;
+                }
+
+                var gpRolling = '';
+                if (baseRow.GPRolling !== undefined && baseRow.GPRolling !== null) {
+                    gpRolling = baseRow.GPRolling;
+                } else if (baseRow['GP Rolling'] !== undefined && baseRow['GP Rolling'] !== null) {
+                    gpRolling = baseRow['GP Rolling'];
                 }
 
                 var selectId = 'ddlFillBuyingFrequency_' + domIndex;
@@ -397,14 +535,20 @@ function refreshBuyingCapacityRowControls(rows) {
                 if ($ratingInp && $ratingInp.length) {
                     $ratingInp.val(customerRating || '');
                 }
+
+                try {
+                    SelectGPRollingOption('ddlFillGPRolling_' + domIndex, gpRolling);
+                } catch (e3) { }
             }
         } catch (error) {
             console.error('Error rebinding buying capacity controls:', error);
         } finally {
+            setTimeout(function () { G_SuppressSave = false; }, 0);
             adjustFilterDropdownPosition();
         }
     }).catch(function (error) {
         console.error('Error refreshing buying frequency after filtering:', error);
+        G_SuppressSave = false;
         adjustFilterDropdownPosition();
     });
 }
@@ -486,5 +630,8 @@ window.GetBuyingCapacityList = GetBuyingCapacityList;
 window.GetNestedMarketingManList = GetNestedMarketingManList;
 window.getUrlVars = getUrlVars;
 window.FillBuyingFrequency = FillBuyingFrequency;
+window.FillBuyingGPRolling = FillBuyingGPRolling;
+window.SelectGPRollingOption = SelectGPRollingOption;
 window.validateDecimalRateInput = validateDecimalRateInput;
 window.SaveBuyingCapacity = SaveBuyingCapacity;
+window.ExportExcel = ExportExcel;

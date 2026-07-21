@@ -26,6 +26,23 @@ function firstArray(payload) {
     return [];
 }
 
+/** First defined property from record (PascalCase / camelCase API JSON). */
+function pickField(rec) {
+    if (!rec || typeof rec !== 'object') return undefined;
+    for (var i = 1; i < arguments.length; i++) {
+        var key = arguments[i];
+        if (rec[key] !== undefined && rec[key] !== null) return rec[key];
+    }
+    return undefined;
+}
+
+function pickInt(rec) {
+    var v = pickField.apply(null, arguments);
+    if (v === undefined || v === null || v === '') return null;
+    var n = parseInt(v, 10);
+    return isFinite(n) ? n : null;
+}
+
 function showModal(id) {
     try {
         const el = document.getElementById(id);
@@ -175,16 +192,17 @@ function getLinkedClientAccountSet() {
 }
 
 function accountCodeFromDealerRow(row) {
-    var c =
-        row.Code != null
-            ? row.Code
-            : row.AccountMaster_Code != null
-              ? row.AccountMaster_Code
-              : row.Account_Code != null
-                ? row.Account_Code
-                : null;
+    var c = pickField(row, 'Code', 'code', 'AccountMaster_Code', 'accountMaster_Code', 'Account_Code', 'account_Code');
     var n = parseInt(c, 10);
     return isFinite(n) && n > 0 ? n : null;
+}
+
+function isAccountLinkedFromRow(row, linkedSet) {
+    var acct = accountCodeFromDealerRow(row);
+    if (acct == null) return false;
+    if (G_MMM_ClientCodesLoaded) return !!linkedSet[acct];
+    var apiLinked = String(pickField(row, 'IsLinked', 'isLinked') || '').toUpperCase() === 'Y';
+    return apiLinked || !!linkedSet[acct];
 }
 
 /** Writes selected checkbox account codes to #hfClientAccountCodes (comma-separated). */
@@ -218,7 +236,7 @@ function refreshClientTable() {
             }
             rows.forEach(function (row, idx) {
                 var name =
-                    row.AccountDesp ||
+                    pickField(row, 'AccountDesp', 'accountDesp') ||
                     row.DealerName ||
                     row.PartyName ||
                     row.Name ||
@@ -228,7 +246,7 @@ function refreshClientTable() {
                 var tr = $('<tr></tr>');
                 tr.append('<td class="center"><span class="pm-sno">' + (idx + 1) + '</span></td>');
                 tr.append('<td>' + $('<div></div>').text(name).html() + '</td>');
-                var checked = acct != null && linked[acct];
+                var checked = isAccountLinkedFromRow(row, linked);
                 var cb =
                     '<input type="checkbox" class="mmm-client-link-cb" ' +
                     (acct != null ? 'data-account-code="' + acct + '" ' : '') +
@@ -238,6 +256,12 @@ function refreshClientTable() {
                 tr.append($('<td class="center"></td>').html(cb));
                 $tb.append(tr);
             });
+            if (!G_MMM_ClientCodesLoaded) {
+                syncClientAccountCodesFromCheckboxes();
+                if (($('#hfClientAccountCodes').val() || '').trim()) {
+                    G_MMM_ClientCodesLoaded = true;
+                }
+            }
         })
         .catch(function () {
             $('#tblClientBody').html(
@@ -584,11 +608,11 @@ function buildSavePayload() {
         AllowToVerifyOrderInMobileApp: 'N',
         IsActiveMobileApp: 'N',
     };
-    if ($('#tblClientBody').find('input.mmm-client-link-cb').length) {
+    /* Linked Clients are independent of Show All Party (that flag only controls User ID required). */
+    if ($('#tblClientBody').find('input.mmm-client-link-cb').length || G_MMM_ClientCodesLoaded) {
         syncClientAccountCodesFromCheckboxes();
-    }
-    if (G_MMM_ClientCodesLoaded && !$('#chkShowAllParty').is(':checked')) {
         payload.ClientAccountCodes = $('#hfClientAccountCodes').val() || '';
+        G_MMM_ClientCodesLoaded = true;
     } else {
         payload.ClientAccountCodes = null;
     }
@@ -599,48 +623,57 @@ function mapRecordToForm(rec) {
     if (!rec || typeof rec !== 'object') return;
     G_MMM_SkipApplyUserToPerson = true;
     try {
-    if (rec.Code != null) $('#hfMarketingManMaster_Code').val(rec.Code);
-    if (rec.UserMaster_Code != null) {
-        $('#ddlUserId').val(String(rec.UserMaster_Code)).trigger('change');
+    var code = pickInt(rec, 'Code', 'code');
+    if (code != null && code > 0) {
+        $('#hfMarketingManMaster_Code').val(String(code));
     }
-    $('#txtPersonName').val(rec.PersonName || rec.Person_Name || '');
-    $('#txtDesignation').val(rec.Designation || '');
-    $('#txtMobile').val(rec.Mobile || rec.MobileNo || '');
-    $('#txtEMail').val(rec.EMail || rec.Email || '');
+    var userCode = pickInt(rec, 'UserMaster_Code', 'userMaster_Code', 'Usermaster_Code');
+    if (userCode != null) {
+        $('#ddlUserId').val(String(userCode)).trigger('change');
+    }
+    $('#txtPersonName').val(pickField(rec, 'PersonName', 'personName', 'Person_Name') || '');
+    $('#txtDesignation').val(pickField(rec, 'Designation', 'designation') || '');
+    $('#txtMobile').val(pickField(rec, 'Mobile', 'mobile', 'MobileNo', 'mobileNo') || '');
+    $('#txtEMail').val(pickField(rec, 'EMail', 'eMail', 'Email', 'email') || '');
     $('#chkEmailInvoiceCopy').prop(
         'checked',
-        String(rec.EmailInvoiceCopy || '').toUpperCase() === 'Y'
+        String(pickField(rec, 'EmailInvoiceCopy', 'emailInvoiceCopy') || '').toUpperCase() === 'Y'
     );
-    var sj = (rec.SeniorJunior || 'S').toString().toUpperCase().indexOf('J') >= 0 ? 'J' : 'S';
+    var sj =
+        (pickField(rec, 'SeniorJunior', 'seniorJunior') || 'S').toString().toUpperCase().indexOf('J') >= 0
+            ? 'J'
+            : 'S';
     $('input[name="radSeniority"][value="' + sj + '"]').prop('checked', true);
-    if (rec.SeniorMarketingManMaster_Code != null) {
-        $('#ddlSeniorName').val(String(rec.SeniorMarketingManMaster_Code)).trigger('change');
+    var seniorCode = pickInt(rec, 'SeniorMarketingManMaster_Code', 'seniorMarketingManMaster_Code', 'Senior_Code', 'senior_Code');
+    if (seniorCode != null) {
+        $('#ddlSeniorName').val(String(seniorCode)).trigger('change');
     }
-    if (rec.EmployeeMaster_Code != null) {
-        $('#ddlEmployeeName').val(String(rec.EmployeeMaster_Code)).trigger('change');
+    var empCode = pickInt(rec, 'EmployeeMaster_Code', 'employeeMaster_Code');
+    if (empCode != null) {
+        $('#ddlEmployeeName').val(String(empCode)).trigger('change');
     }
-    if (rec.CostCentreMaster_Code != null) {
-        $('#ddlCostCenter').val(String(rec.CostCentreMaster_Code)).trigger('change');
+    var costCode = pickInt(rec, 'CostCentreMaster_Code', 'costCentreMaster_Code', 'CostCanterIDMaster_Code');
+    if (costCode != null) {
+        $('#ddlCostCenter').val(String(costCode)).trigger('change');
     }
-    var ld = rec.EmployeeLeaveDate || rec.LeaveDate;
+    var ld = pickField(rec, 'EmployeeLeaveDate', 'employeeLeaveDate', 'LeaveDate', 'leaveDate');
     if (ld) {
-        var d = ld.length >= 10 ? ld.substring(0, 10) : ld;
+        var d = String(ld).length >= 10 ? String(ld).substring(0, 10) : String(ld);
         $('#txtEmployeeLeaveDate').val(d);
     }
-    if (rec.ZoneMaster_Code != null) {
-        $('#ddlZone').val(String(rec.ZoneMaster_Code)).trigger('change');
+    var zoneCode = pickInt(rec, 'ZoneMaster_Code', 'zoneMaster_Code');
+    if (zoneCode != null) {
+        $('#ddlZone').val(String(zoneCode)).trigger('change');
     }
     bindExpenseCategoryDropdown(rec);
-    var active = String(rec.IsActive || 'Y').toUpperCase() !== 'N';
+    var active = String(pickField(rec, 'IsActive', 'isActive') || 'Y').toUpperCase() !== 'N';
     $('input[name="radStatus"][value="' + (active ? 'Y' : 'N') + '"]').prop('checked', true);
-    $('#chkShowAllParty').prop(
-        'checked',
-        String(rec.ShowAllParty || rec.ShowAllClient || '').toUpperCase() === 'Y'
-    );
     var showAllClient =
-        String(rec.ShowAllParty || rec.ShowAllClient || '').toUpperCase() === 'Y';
-    var cc = rec.ClientAccountCodes != null ? rec.ClientAccountCodes : rec.clientAccountCodes;
-    if (!showAllClient && cc != null && cc !== undefined && String(cc).trim() !== '') {
+        String(pickField(rec, 'ShowAllParty', 'showAllParty', 'ShowAllClient', 'showAllClient') || '').toUpperCase() ===
+        'Y';
+    $('#chkShowAllParty').prop('checked', showAllClient);
+    var cc = pickField(rec, 'ClientAccountCodes', 'clientAccountCodes');
+    if (cc != null && String(cc).trim() !== '') {
         $('#hfClientAccountCodes').val(String(cc));
         G_MMM_ClientCodesLoaded = true;
     } else {
@@ -656,13 +689,21 @@ function mapRecordToForm(rec) {
 }
 
 function loadEditRecord(code, mode) {
-    return MarketingManMasterService.GetMarketingManMasterByCode(code)
+    var mmCode = parseInt(code, 10) || 0;
+    if (mmCode > 0) {
+        $('#hfMarketingManMaster_Code').val(String(mmCode));
+    }
+    return MarketingManMasterService.GetMarketingManMasterByCode(mmCode)
         .then(function (res) {
             var raw = res && (res.data || res.Data || res);
             var rec = raw;
             if (Array.isArray(raw) && raw.length) rec = raw[0];
             if (rec) {
                 mapRecordToForm(rec);
+                /* Keep edit Code even if API JSON only has camelCase / nested shapes. */
+                if (mmCode > 0) {
+                    $('#hfMarketingManMaster_Code').val(String(mmCode));
+                }
                 /* Select2 sometimes needs a second tick to show the selected expense category after options exist. */
                 setTimeout(function () {
                     bindExpenseCategoryDropdown(rec);
@@ -799,9 +840,12 @@ function saveMarketingMan() {
             .then(function (res) {
                 var ok = res && (res.Status === 'Y' || res.status === 'Y');
                 if (ok) {
-                    if (res.Code != null) $('#hfMarketingManMaster_Code').val(res.Code);
+                    var savedCode = pickInt(res, 'Code', 'code');
+                    if (savedCode != null && savedCode > 0) {
+                        $('#hfMarketingManMaster_Code').val(String(savedCode));
+                    }
                     if (typeof toastr !== 'undefined') {
-                        toastr.success((res && (res.Msg || res.Message)) || 'Saved successfully.');
+                        toastr.success((res && (res.Msg || res.Message || res.msg)) || 'Saved successfully.');
                     }
                     clearAllFieldErrors();
                     // Navigate back to the list after a short delay so toastr is visible
@@ -934,13 +978,9 @@ $(document).ready(function () {
         }
     });
 
+    /* Show All Party only toggles whether User ID is mandatory — does not touch Linked Clients. */
     $('#chkShowAllParty').on('change', function () {
         toggleUserIdRequiredUi();
-        if ($(this).is(':checked')) {
-            $('#hfClientAccountCodes').val('');
-            G_MMM_ClientCodesLoaded = false;
-        }
-        refreshClientTable();
     });
 
     $(document).on('change', '#tblClient .mmm-client-link-cb', function () {

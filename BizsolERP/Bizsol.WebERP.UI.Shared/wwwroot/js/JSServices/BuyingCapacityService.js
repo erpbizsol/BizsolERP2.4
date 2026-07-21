@@ -39,6 +39,14 @@ const BuyingCapacityService = {
             }
         );
     },
+    GetBuyingGPRollingCategory: function GetBuyingGPRollingCategory() {
+        var URL = UrlService.API_ENDPOINT_BuyingCapacity + "/GetBuyingGPRollingCategory";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { BuyingCapacityService }
