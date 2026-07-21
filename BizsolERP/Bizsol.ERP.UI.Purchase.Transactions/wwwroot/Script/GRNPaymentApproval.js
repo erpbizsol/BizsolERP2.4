@@ -1036,6 +1036,22 @@ function gpaBestListTruthForModal(codeNum, snapshot, pendingRow) {
     return truth;
 }
 
+/** GetGRNPaymentlevelsapproval response for this entry — correct source for the modal's Approval Flow stepper. */
+function gpaLevelsApprovalRowFromApi(apiResp, codeNum) {
+    if (!apiResp) return null;
+    const rows = NormalizePaymentList(normalizeListResponse(apiResp));
+    if (rows.length) {
+        const n = parseInt(codeNum, 10);
+        const match = rows.find(function (r) { return getPaymentMasterCode(r) === n; }) || rows[0];
+        return match ? gpaPreparePaymentForDisplay(match) : null;
+    }
+    const data = apiResp?.Data ?? apiResp?.data ?? apiResp;
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+        return gpaPreparePaymentForDisplay(data);
+    }
+    return null;
+}
+
 function gpaClonePaymentForApprovalMerge(p) {
     if (!p || typeof p !== 'object') return null;
     return Object.assign({}, p, {
@@ -1570,14 +1586,14 @@ function OpenDetailModal(paymentCode) {
                         GRNPaymentApprovalService.GetGRNPaymentDetail(code),
                         GRNPaymentEntryDataService.GetGRNPaymentApprovalByCode(code).catch(function () { return null; }),
                         GRNPaymentEntryDataService.GetProjectMasterList().catch(function () { return null; }),
-                        GRNPaymentApprovalService.GetPendingGRNPaymentList('2020-01-01', '2099-12-31', 'A').catch(function () { return null; }),
+                        GRNPaymentEntryDataService.GetGRNPaymentlevelsapproval(code).catch(function () { return null; }),
                         loadGpaApprovalWorkTypes(),
                     ]);
                     const res = results[0];
                     const entryRes = results[1];
                     const projectCache = normalizeGpaModalApiRows(results[2]);
-                    const pendingRow = gpaFindPendingListRowFromApi(results[3], code);
-                    const listTruth = gpaBestListTruthForModal(code, gpaListSnapshot, pendingRow);
+                    const levelsApprovalRow = gpaLevelsApprovalRowFromApi(results[3], code);
+                    const listTruth = gpaBestListTruthForModal(code, gpaListSnapshot, levelsApprovalRow);
 
                     G_CurrentPayment = mergeDetailIntoPayment(res, G_CurrentPayment);
                     G_CurrentPayment = mergeEntryPaymentIntoApproval(G_CurrentPayment, entryRes);
