@@ -4,6 +4,7 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BuyingCapacity.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
     /* Aligned with Layout - Hide page scrollbar */
     html {
@@ -129,6 +130,12 @@
 
                 <div class="col-md-3 without-label-field">
                     <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+                </div>
+
+                <div class="col text-md-end without-label-field">
+                    <button type="button" id="btnExportExcel" class="btn btn-primary btn-height" onclick="ExportExcel();">
+                        <i class="fas fa-download"></i> Download
+                    </button>
                 </div>
             </div>
         </div>

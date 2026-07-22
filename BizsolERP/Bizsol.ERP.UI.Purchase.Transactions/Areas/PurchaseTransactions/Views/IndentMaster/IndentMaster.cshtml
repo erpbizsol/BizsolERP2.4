@@ -1,0 +1,105 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/IndentMaster.js"></script>
+
+<style>
+    .indent-card-header {
+        background: linear-gradient(135deg, #3b7dd8 0%, #1a56b0 100%);
+        border-radius: 12px 12px 0 0;
+        padding: 14px 20px 12px;
+    }
+
+    .indent-card-header h5 {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .indent-filter-bar {
+        background: #fff;
+        border: 1px solid #dbe3ef;
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        padding: 12px 18px 10px;
+        margin-bottom: 14px;
+    }
+
+    .indent-grid-wrap {
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 2px 10px rgba(59,125,216,0.07);
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    .table-wrapper.indent-table-scroll {
+        max-height: 480px;
+        overflow-y: auto;
+    }
+
+    /* Row colour classes driven by F_LocateConfiguration.RowColorCodeString */
+    tr.row-pending      { background-color: #fff3cd !important; }
+    tr.row-completed    { background-color: #d4edda !important; }
+    tr.row-partial      { background-color: #e2f4d0 !important; }
+    tr.row-rejected     { background-color: #f8d7da !important; }
+    tr.row-verified     { background-color: #cce5ff !important; }
+    tr.row-hold         { background-color: #ffeeba !important; }
+
+    .btn-height { height: 28px; }
+    .icon-height { height: 28px; }
+</style>
+
+<div id="divIndentMasterPage">
+
+    <!-- ── Filter Card ─────────────────────────────────────────── -->
+    <div class="card col-md-12" style="border-radius:12px; overflow:hidden; margin-bottom:14px;">
+        <div class="indent-card-header">
+            <h5><i class="fa fa-list-alt me-2"></i>Indent / Material Requirement (Store)</h5>
+        </div>
+        <div class="indent-filter-bar">
+            <div class="row g-2 align-items-end">
+
+                <div class="col-md-2">
+                    <label class="col-form-label-sm fw-bold">From Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtFromDate" class="form-control form-control-sm" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="col-form-label-sm fw-bold">To Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtToDate" class="form-control form-control-sm" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="col-form-label-sm fw-bold">View Type <span class="text-danger">*</span></label>
+                    <select id="ddlLocateType" class="form-control form-control-sm box_border"></select>
+                </div>
+
+                <div class="col-md-2" style="padding-top: 1.4rem;">
+                    <button type="button" class="btn btn-primary btn-sm btn-height px-4"
+                            onclick="LoadIndentList()">
+                        <i class="fa fa-search me-1"></i> Show
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Data Grid ───────────────────────────────────────────── -->
+    <div id="divIndentGrid" class="indent-grid-wrap" style="display:none;">
+        <div class="table-wrapper indent-table-scroll">
+            <table id="IndentMasterTable" class="table table-bordered table-hover mb-0" style="width:100%;">
+                <thead id="tblIndentHeader"></thead>
+                <tbody id="tblIndentBody"></tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-IndentMasterTable"></div>
+    </div>
+
+</div>
