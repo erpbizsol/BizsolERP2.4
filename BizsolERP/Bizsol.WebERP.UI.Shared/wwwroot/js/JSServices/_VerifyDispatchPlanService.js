@@ -150,6 +150,30 @@ const VerifyDispatchPlanService = {
             }
         );
     },
+    GetDelayReport: function GetDelayReport(fromDate, toDate) {
+        var q = '';
+        if (fromDate && toDate) {
+            q = '?FromDate=' + encodeURIComponent(fromDate) + '&ToDate=' + encodeURIComponent(toDate);
+        }
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetDelayReport" + q;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetFreightLossReport: function GetFreightLossReport(fromDate, toDate) {
+        var q = '';
+        if (fromDate && toDate) {
+            q = '?FromDate=' + encodeURIComponent(fromDate) + '&ToDate=' + encodeURIComponent(toDate);
+        }
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetFreightLossReport" + q;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { VerifyDispatchPlanService }
