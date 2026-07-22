@@ -4,6 +4,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.MIS.Reports/Script/DayWiseMISReport.js"></script>
 <style>
     .mis-wrap {
@@ -71,6 +73,44 @@
 
     .mis-btn-soft { background: #fff; color: var(--accent); border-color: #cdd5e3; }
     .mis-btn-soft:hover { background: #f1f4fa; }
+
+    .mis-download-wrap {
+        position: relative;
+        display: inline-flex;
+    }
+
+    .mis-download-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        min-width: 150px;
+        background: #fff;
+        border: 1px solid #d4d9e3;
+        border-radius: 6px;
+        box-shadow: 0 6px 18px rgba(28, 39, 61, 0.12);
+        z-index: 20;
+        overflow: hidden;
+    }
+
+    .mis-download-menu button {
+        width: 100%;
+        border: 0;
+        background: #fff;
+        text-align: left;
+        padding: 9px 14px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #2c3852;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mis-download-menu button:hover {
+        background: #f1f4fa;
+        color: var(--accent);
+    }
 
     /* ---------- Section cards ---------- */
     .mis-section {
@@ -215,9 +255,20 @@
         <button type="button" id="btnLoading" class="mis-btn mis-btn-primary" hidden="true">
             <i class="fa-solid fa-spinner fa-spin"></i> Loading
         </button>
-        <button type="button" id="btnDownload" class="mis-btn mis-btn-soft">
-             Download
-        </button>
+        <div class="mis-download-wrap">
+            <button type="button" id="btnDownload" class="mis-btn mis-btn-soft">
+                <i class="fa-solid fa-download"></i> Download
+                <i class="fa-solid fa-caret-down"></i>
+            </button>
+            <div id="downloadMenu" class="mis-download-menu" style="display:none;">
+                <button type="button" id="btnDownloadExcel">
+                    <i class="fa-solid fa-file-excel" style="color:#1d6f42;"></i> Excel
+                </button>
+                <button type="button" id="btnDownloadPdf">
+                    <i class="fa-solid fa-file-pdf" style="color:#c0392b;"></i> PDF
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Report Sections (all shown together) -->
@@ -293,4 +344,9 @@
 <!-- Hidden table for combined Excel export (2x2 quadrant layout) -->
 <div style="display:none;">
     <table id="tblExportMaster"><tbody></tbody></table>
+</div>
+
+<!-- Hidden table for PDF export (vertical sections, paginated with repeating headers) -->
+<div id="misPdfExportWrap" style="display:none;">
+    <table id="tblPdfExport"><tbody></tbody></table>
 </div>
