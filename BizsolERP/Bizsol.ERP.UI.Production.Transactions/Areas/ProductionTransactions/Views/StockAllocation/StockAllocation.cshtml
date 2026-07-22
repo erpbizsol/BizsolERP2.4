@@ -281,6 +281,39 @@
 
     #tblStockAllocationEditable {
         --bs-table-bg: transparent;
+        width: 100% !important;
+        min-width: 100% !important;
+        table-layout: auto !important;
+    }
+
+    #tblStockAllocationEditable th.sa-action-col,
+    #tblStockAllocationEditable td.sa-action-col {
+        width: 52px !important;
+        min-width: 52px !important;
+        max-width: 56px !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+
+    /* Stable fallback for editable grid where Action is 7th column */
+    #tblStockAllocationEditable thead th:nth-child(7),
+    #tblStockAllocationEditable tbody td:nth-child(7),
+    #tblStockAllocationEditable tfoot td:nth-child(7) {
+        width: 52px !important;
+        min-width: 52px !important;
+        max-width: 56px !important;
+        text-align: center !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+
+    #tblStockAllocationEditable .sa-grid-action-btn {
+        margin: 0 !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .sa-page .paginator {
@@ -737,6 +770,12 @@
                 <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
+                <div class="row g-2 align-items-end mb-2" id="dvCoilInfo">
+                    <div class="col-12 col-md-4">
+                        <label for="txtCoilEntryNo" class="form-label fw-semibold mb-1">Stock Allocation Entry No</label>
+                        <input type="text" id="txtCoilEntryNo" class="form-control form-control-sm box_border" readonly />
+                    </div>
+                </div>
                 <div class="row g-2 align-items-end mb-3" id="dvCoilFilter">
                     <div class="col-6 col-md-2">
                         <label for="txtWidthFrom" class="form-label fw-semibold mb-1">Width From</label>

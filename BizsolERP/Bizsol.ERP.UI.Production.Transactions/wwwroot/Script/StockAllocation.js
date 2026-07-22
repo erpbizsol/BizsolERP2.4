@@ -10,6 +10,7 @@ let G_RawMaterialDropDown = [];
 let G_GetBOMMasterDataOrderWise = [];
 let G_ClientOrderProjectData = [];
 let G_IdentificationList = [];
+let G_StockAllocationList = [];
 let G_CurrentIdentificationRow = null;
 let G_BomTransactionOrderWise_Code = 0;
 let G_RMInspectionRequestMaster_Code = 0;
@@ -37,11 +38,21 @@ function GetBOMMasterDataOrderWiselist() {
     var ddlOrderNo = $("#ddlOrderNo").val();
     GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo)
 }
+function clearStockAllocationListGrid() {
+    $('#table-header').empty();
+    $('#table-body').empty();
+    $('#paginator-tblStockAllocation').empty();
+    $('#paginator-table-body').empty();
+}
+
 function GetStockAllocationList() {
     Showloader();
     StockAllocationService.GetStockAllocationList().then(function (response) {
+        HideLoader();
+        clearStockAllocationListGrid();
+
         if (response && response.length > 0) {
-            HideLoader();
+            G_StockAllocationList = Array.isArray(response) ? response : [];
             const stringFilterColumn = ["Order No", "Client Name", "Status"];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
@@ -52,9 +63,7 @@ function GetStockAllocationList() {
             const columnAlignment = {
             };
             const updatedResponse = (response).map(function (item) {
-                // Edit button
                 let actionHtml = '<button class="btn btn-primary icon-height mb-1" title="Edit Stock Allocation" onclick="EditStockAllocation(' + item.Code + ')"><i class="fa fa-pencil"></i></button>';
-                // Delete button
                 actionHtml += ' <button class="btn btn-danger icon-height mb-1" title="Delete Stock Allocation" onclick="DeleteStockAllocationClick(' + item.Code + ')"><i class="fa fa-trash"></i></button>';
                 item.Action = actionHtml;
                 return item;
@@ -62,13 +71,14 @@ function GetStockAllocationList() {
 
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
         } else {
-            toastr.error('No Data Found');
-            HideLoader();
+            G_StockAllocationList = [];
+            toastr.info('No Data Found');
         }
 
     }).catch(function (error) {
-        toastr.error(error);
         HideLoader();
+        clearStockAllocationListGrid();
+        toastr.error(error);
     });
 }
 function CreateNew() { 
@@ -85,41 +95,21 @@ function CreateNew() {
             G_RMInspectionRequestMaster_Code = 0;
             G_BomTransactionOrderWise_Code = 0;
     
-            const $tableHeaderEditable = $('#table-headerEditable');
-            const $tableBodyEditable = $('#table-bodyEditable');
-    
-            if ($tableHeaderEditable && $tableHeaderEditable.length) {
-                $tableHeaderEditable.empty();
-            }
-            if ($tableBodyEditable && $tableBodyEditable.length) {
-                $tableBodyEditable.empty();
-            }
-    
+            clearBOMMasterOrderWiseGrid();
+            G_GetBOMMasterDataOrderWise = [];
+
             try {
-                const $table = $tableBodyEditable.closest('table');
-                if ($table && $table.length && $.fn.DataTable) {
-                    const dataTable = $table.DataTable();
-                    if (dataTable) {
-                        dataTable.clear().destroy();
-                    }
-                }
-            } catch (e) {
-                console.log('DataTable cleanup:', e.message);
-            }
-    
-            try {
-                const tableId = $tableBodyEditable.closest('table').attr('id');
-                if (tableId) {
-                    delete window[`hiddenColumns_table-bodyEditable`];
-                    delete window[`columnAlignment_table-bodyEditable`];
-                    delete window[`button_${tableId}`];
-                    delete window[`ShowButtons_table-bodyEditable`];
-                    delete window[`filteredData_${tableId}`];
-                    delete window[`filteredDataTemp_${tableId}`];
-                    delete window[`currentPage_${tableId}`];
-                    delete window[`itemsPerPage_${tableId}`];
-                    delete window[`Paginator_${tableId}`];
-                }
+                delete window[`hiddenColumns_table-bodyEditable`];
+                delete window[`columnAlignment_table-bodyEditable`];
+                delete window[`totalColumns_table-bodyEditable`];
+                delete window[`floatingTotalRow_table-bodyEditable`];
+                delete window[`button_tblStockAllocationEditable`];
+                delete window[`ShowButtons_table-bodyEditable`];
+                delete window[`filteredData_tblStockAllocationEditable`];
+                delete window[`filteredDataTemp_tblStockAllocationEditable`];
+                delete window[`currentPage_tblStockAllocationEditable`];
+                delete window[`itemsPerPage_tblStockAllocationEditable`];
+                delete window[`Paginator_tblStockAllocationEditable`];
             } catch (e) {
                 console.log('Window variables cleanup:', e.message);
             }
@@ -427,57 +417,153 @@ function isOrderValidForClient(orderNo, clientCode) {
         return item.OrderNo == orderNo && item.Code == clientCode;
     });
 }
+function clearBOMMasterOrderWiseGrid() {
+    $('#table-headerEditable').empty();
+    $('#table-bodyEditable').empty();
+    $('#tblStockAllocationEditable tfoot').remove();
+    $('#paginator-tblStockAllocationEditable').empty();
+}
+
+function forceRefreshEditableGridTotals() {
+    const bodyId = 'table-bodyEditable';
+    const tableId = 'tblStockAllocationEditable';
+    const data = window[`filteredData_${tableId}`] || [];
+    const $tfoot = $('#tfoot-' + bodyId);
+
+    if (!data.length) {
+        if ($tfoot.length) {
+            $tfoot.empty();
+        }
+        return;
+    }
+
+    // Re-render so floating tfoot totals match current grid data
+    if (typeof window.renderTable === 'function') {
+        window.renderTable(data, bodyId, false);
+    }
+}
+
+function bindBOMMasterOrderWiseGrid(response) {
+    clearBOMMasterOrderWiseGrid();
+
+    const list = Array.isArray(response) ? response : [];
+    G_GetBOMMasterDataOrderWise = list;
+
+    if (list.length === 0) {
+        return;
+    }
+
+    const stringFilterColumn = ["Order No", "Mark No", "Grade", "Client Name"];
+    const numericFilterColumn = ["Width", "Thickness"];
+    const dateFilterColumn = ["Order Date", "Dispatch Date"];
+    const button = false;
+    const stringDoubleFilterColumn = [];
+    const showButtons = [];
+    const hiddenColumns = ["BomTransactionOrderWise_Codes", "Code", "SortPriority", "BuyerPODetail_Code", "Thickness_Code", "Grade_Code", "BuyerPOMaster_Code", "EntryNo", "GodownMaster_Code", "AccountMaster_Code", "EntryDate", "InspectionDate"];
+    const columnAlignment = {
+        "Client Name": "left;min-width:240px;",
+        "Order No": "left;min-width:100px;",
+        "Width": "right;width:76px;min-width:76px;",
+        "Thickness": "right;width:76px;min-width:76px;",
+        "Grade": "left;min-width:120px;",
+        "Qty(Wt.) To Allocate": "right;width:130px;min-width:130px;",
+        "Allocated Qty(Wt.)": "right;width:110px;min-width:110px;",
+        "Action": "center;width:52px;min-width:52px;max-width:56px;"
+    };
+    const totalColumns = ["Qty(Wt.) To Allocate", "Allocated Qty(Wt.)"];
+    const updatedResponse = list.map(function (item) {
+        const balanceToInspect = parseFloat(item["BalQty"] != null ? item["BalQty"] : item["Qty(Wt.) To Allocate"]) || 0;
+        const actionHtml = '<button class="btn btn-primary icon-height mb-1 sa-grid-action-btn" title="Coil Details" onclick="UpdateCoilDetail('
+            + item.Grade_Code + ',' + item.Code + ',' + balanceToInspect + ')"><i class="fa fa-pencil"></i></button>';
+
+        // Place Action between Qty(Wt.) To Allocate and Allocated Qty(Wt.)
+        const ordered = {};
+        Object.keys(item).forEach(function (key) {
+            if (key === 'Action') return;
+            ordered[key] = item[key];
+            if (key === 'Qty(Wt.) To Allocate') {
+                ordered.Action = actionHtml;
+            }
+        });
+        if (!ordered.hasOwnProperty('Action')) {
+            ordered.Action = actionHtml;
+        }
+        return ordered;
+    });
+
+    BizsolCustomFilterGrid.CreateDataTable(
+        "table-headerEditable",
+        "table-bodyEditable",
+        updatedResponse,
+        button,
+        showButtons,
+        stringFilterColumn,
+        numericFilterColumn,
+        dateFilterColumn,
+        stringDoubleFilterColumn,
+        hiddenColumns,
+        columnAlignment,
+        false,
+        totalColumns,
+        null,
+        null,
+        false,
+        true
+    );
+    forceRefreshEditableGridTotals();
+    tightenEditableGridActionColumn();
+}
+
 function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo) {
     Showloader();
     StockAllocationService.GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo, G_RMInspectionRequestMaster_Code).then(function (response) {
+        HideLoader();
         if (response && response.length > 0) {
-            G_GetBOMMasterDataOrderWise = response;
-                    HideLoader();
-                const stringFilterColumn = ["Order No", "Mark No", "Grade", "Client Name"];
-                const numericFilterColumn = ["Width", "Thickness"];
-                const dateFilterColumn = ["Order Date", "Dispatch Date"];
-                const button = false;
-                const stringDoubleFilterColumn = [];
-                const showButtons = [];
-                const hiddenColumns = ["BomTransactionOrderWise_Codes", "Code", "SortPriority", "BuyerPODetail_Code", "Thickness_Code", "Grade_Code", "BuyerPOMaster_Code", "EntryNo", "GodownMaster_Code", "AccountMaster_Code", "EntryDate", "InspectionDate"];
-                const columnAlignment = {
-                    "Width": "right;",
-                    "Thickness": "right;",
-                    "Qty(Wt.) To Allocate": "right;",
-                    "Allocated Qty(Wt.)": "right;"
-                };
-                const totalColumns = ["Qty(Wt.) To Allocate", "Allocated Qty(Wt.)"];
-                const updatedResponse = (response).map(function (item) {
-                    const balanceToInspect = parseFloat(item["BalQty"] != null ? item["BalQty"] : item["Qty(Wt.) To Allocate"]) || 0;
-                    const actionHtml = '<button class="btn btn-primary icon-height mb-1" title="Coil Details" onclick="UpdateCoilDetail('
-                        + item.Grade_Code + ',' + item.Code + ',' + balanceToInspect + ')"><i class="fa fa-pencil"></i></button>';
-
-                    // Place Action between Qty(Wt.) To Allocate and Allocated Qty(Wt.)
-                    const ordered = {};
-                    Object.keys(item).forEach(function (key) {
-                        if (key === 'Action') return;
-                        ordered[key] = item[key];
-                        if (key === 'Qty(Wt.) To Allocate') {
-                            ordered.Action = actionHtml;
-                        }
-                    });
-                    if (!ordered.hasOwnProperty('Action')) {
-                        // Fallback if column name differs
-                        ordered.Action = actionHtml;
-                    }
-                    return ordered;
-                });
-
-                BizsolCustomFilterGrid.CreateDataTable("table-headerEditable", "table-bodyEditable", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, totalColumns, null, null, false, true);
-            } else {
-                toastr.error('No Data Found');
-                HideLoader();
-            }
-        }).catch(function (error) {
+            bindBOMMasterOrderWiseGrid(response);
+        } else {
+            G_GetBOMMasterDataOrderWise = [];
+            clearBOMMasterOrderWiseGrid();
             toastr.error('No Data Found');
-            HideLoader();
+        }
+    }).catch(function () {
+        HideLoader();
+        G_GetBOMMasterDataOrderWise = [];
+        clearBOMMasterOrderWiseGrid();
+        toastr.error('No Data Found');
     });
 }
+function tightenEditableGridActionColumn() {
+    const $ths = $('#table-headerEditable th');
+    if (!$ths.length) {
+        return;
+    }
+
+    $ths.each(function (index) {
+        const label = (($(this).find('.filter-table-heading').text() || $(this).text() || '')).replace(/\s+/g, ' ').trim();
+        if (label !== 'Action') {
+            return;
+        }
+
+        const actionStyle = {
+            width: '52px',
+            minWidth: '52px',
+            maxWidth: '56px',
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
+            paddingLeft: '4px',
+            paddingRight: '4px'
+        };
+
+        $(this).css(actionStyle).addClass('sa-action-col');
+        $('#table-bodyEditable tr').each(function () {
+            $(this).children('td').eq(index).css(actionStyle).addClass('sa-action-col');
+        });
+        $('#tfoot-table-bodyEditable tr, #tblStockAllocationEditable tfoot tr').each(function () {
+            $(this).children('td').eq(index).css(actionStyle).addClass('sa-action-col');
+        });
+    });
+}
+
 function clearDetailTable() {
     const $thead = $('#DetailTable-head');
     const $tbody = $('#DetailTable-body');
@@ -503,6 +589,7 @@ function buildDetailTableHeader() {
         <tr>
             <th style="width:30px;">SNo</th>
             <th style="width:120px;">Identification No</th>
+            <th style="width:130px;">Order No To</th>
             <th style="width:90px;">Coil Wt.</th>
             <th style="width:220px;">Size</th>
             <th style="width:50px;">Action</th>
@@ -534,11 +621,12 @@ function updateDetailTableFooterSum() {
             });
         }
 
-        // Build footer row (5 columns: SNo, Identification No, Coil Wt., Size, Action)
+        // Build footer row (6 columns: SNo, Identification No, Order No To, Coil Wt., Size, Action)
         const footerHtml = `
             <tr style="background-color: #f8f9fa; font-weight: bold;">
                 <td></td>
                 <td>Total</td>
+                <td></td>
                 <td style="text-align:right;">${total.toFixed(3)}</td>
                 <td></td>
                 <td></td>
@@ -674,16 +762,22 @@ function addNewEditableRow() {
     const currentRowCount = $tbody.find('tr.editable-row').length;
     const newSNo = currentRowCount + 1;
 
+    const defaultOrderNoTo = resolveOrderNoToForRow(null);
     const rowHtml = `
         <tr class="editable-row">
             <td class="row-sno">${newSNo}
                 <input type="hidden" class="Code" value="0" />
-                <input type="hidden" class="godown-code" value="0" />
+                <input type="hidden" class="param-width-code" value="0" />
+                <input type="hidden" class="param-thk-code" value="0" />
+                <input type="hidden" class="param-grade-code" value="0" />
             </td>
             <td>
                 <select class="form-control form-control-sm identification-no">
                     <option value="">Select...</option>
                 </select>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm order-no-to" readonly value="${defaultOrderNoTo.replace(/"/g, '&quot;')}" />
             </td>
             <td>
                 <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" disabled />
@@ -818,7 +912,6 @@ function deleteEditableRow($row) {
         ).then(function (response) {
             if (response && response.Status === 'Y') {
                 toastr.success(response.Msg || 'Detail row deleted successfully');
-                GetBOMMasterDataOrderWiselist();
                 const $identificationNo = $row.find('.identification-no');
                 
                 if ($.fn.select2 && $identificationNo.hasClass('select2-hidden-accessible')) {
@@ -834,6 +927,8 @@ function deleteEditableRow($row) {
                 updateButtonVisibility();
                 updateAllIdentificationDropdowns();
                 updateDetailTableFooterSum();
+                // Refresh parent grid + totals after detail delete
+                GetBOMMasterDataOrderWiselist();
             } else {
                 toastr.error((response && response.Msg) || 'Failed to delete detail row');
             }
@@ -846,17 +941,150 @@ function deleteEditableRow($row) {
         console.error('CheckModuleOptionRight error:', error);
     });
 }
+function getIdentificationParamCodes(item) {
+    if (!item) {
+        return { width: 0, thk: 0, grade: 0 };
+    }
+    return {
+        width: parseInt(item.ItemParaMeterValueCode_Width ?? item.itemParameterValueCode_Width ?? item.ItemParameterValueCode_Width ?? 0, 10) || 0,
+        thk: parseInt(item.ItemParaMeterValueCode_Thk ?? item.itemParameterValueCode_Thk ?? item.ItemParameterValueCode_Thk ?? 0, 10) || 0,
+        grade: parseInt(item.ItemParaMeterValueCode_Grade ?? item.itemParameterValueCode_Grade ?? item.ItemParameterValueCode_Grade ?? 0, 10) || 0
+    };
+}
+
+function getDetailIdentificationNo(detail) {
+    if (!detail) {
+        return '';
+    }
+    return (detail.IdentificationNo || detail.identificationNo || detail.IdentificationNos || detail.identificationNos || '').toString().trim();
+}
+
+function normalizeStockAllocationDetails(detailResponse) {
+    if (!detailResponse) {
+        return [];
+    }
+    if (Array.isArray(detailResponse)) {
+        return detailResponse;
+    }
+    if (typeof detailResponse === 'object') {
+        // Some APIs wrap list in a property
+        if (Array.isArray(detailResponse.data)) {
+            return detailResponse.data;
+        }
+        if (Array.isArray(detailResponse.Details)) {
+            return detailResponse.Details;
+        }
+        if (Array.isArray(detailResponse.boMorderWiseStockAllocationDetails)) {
+            return detailResponse.boMorderWiseStockAllocationDetails;
+        }
+        // Single detail object
+        if (getDetailIdentificationNo(detailResponse) || detailResponse.Weight != null || detailResponse.weight != null) {
+            return [detailResponse];
+        }
+    }
+    return [];
+}
+
+/** Keep saved IDs in dropdown/list even when outside current Width/Thickness/Grade filter */
+function mergeSavedDetailsIntoIdentificationList(details) {
+    G_IdentificationList = Array.isArray(G_IdentificationList) ? G_IdentificationList : [];
+    (details || []).forEach(function (detail) {
+        const id = getDetailIdentificationNo(detail);
+        if (!id) {
+            return;
+        }
+        const existing = G_IdentificationList.find(function (item) {
+            return String(item.IdentificationNo || item.IdentificationNos || '') === id;
+        });
+        const codes = getIdentificationParamCodes(detail);
+        const size = detail.Size || detail.size || '';
+        const weight = detail.Weight != null ? detail.Weight : (detail.weight != null ? detail.weight : 0);
+
+        if (existing) {
+            if (!existing.Size && size) {
+                existing.Size = size;
+            }
+            if (!existing.BalQtyMT && weight) {
+                existing.BalQtyMT = weight;
+            }
+            if (!existing.ItemParaMeterValueCode_Width && codes.width) {
+                existing.ItemParaMeterValueCode_Width = codes.width;
+            }
+            if (!existing.ItemParaMeterValueCode_Thk && codes.thk) {
+                existing.ItemParaMeterValueCode_Thk = codes.thk;
+            }
+            if (!existing.ItemParaMeterValueCode_Grade && codes.grade) {
+                existing.ItemParaMeterValueCode_Grade = codes.grade;
+            }
+        } else {
+            G_IdentificationList.push({
+                IdentificationNo: id,
+                BalQtyMT: weight,
+                Size: size,
+                ItemParaMeterValueCode_Width: codes.width,
+                ItemParaMeterValueCode_Thk: codes.thk,
+                ItemParaMeterValueCode_Grade: codes.grade
+            });
+        }
+    });
+}
+
+function ensureIdentificationOption($identificationNo, identificationNo) {
+    if (!$identificationNo || !$identificationNo.length || !identificationNo) {
+        return;
+    }
+    const id = String(identificationNo);
+    const hasOption = $identificationNo.find('option').filter(function () {
+        return $(this).val() === id;
+    }).length > 0;
+    if (!hasOption) {
+        $identificationNo.append($('<option>').val(id).text(id));
+    }
+}
+
+function setRowIdentificationParamCodes($row, item) {
+    const codes = getIdentificationParamCodes(item);
+    $row.find('.param-width-code').val(codes.width);
+    $row.find('.param-thk-code').val(codes.thk);
+    $row.find('.param-grade-code').val(codes.grade);
+}
+
+function clearRowIdentificationParamCodes($row) {
+    $row.find('.param-width-code').val('0');
+    $row.find('.param-thk-code').val('0');
+    $row.find('.param-grade-code').val('0');
+}
+
+function getStockAllocationEntryDate() {
+    try {
+        const currentDate = BizSolHelperFunction.getCurrentDate && BizSolHelperFunction.getCurrentDate();
+        if (currentDate) {
+            return currentDate;
+        }
+    } catch (e) { }
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return dd + '/' + mm + '/' + yyyy;
+}
+
 function initializeEditableRow($row, detail) {
     if (!$row || !$row.length) {
         return;
     }
 
-    const $godownCode = $row.find('.godown-code');
     const $identificationNo = $row.find('.identification-no');
+    const $orderNoTo = $row.find('.order-no-to');
     const $coilWt = $row.find('.coil-wt');
     const $coilSize = $row.find('.coil-size');
     const $addBtn = $row.find('.add-row-btn');
     const $deleteBtn = $row.find('.delete-row-btn');
+
+    // Order No To: API value on edit; grid Order No for new rows
+    if ($orderNoTo && $orderNoTo.length) {
+        $orderNoTo.val(resolveOrderNoToForRow(detail));
+    }
 
     // Bind Identification options from GetBOMMasterIdentificationNo result
     updateIdentificationDropdownOptions($identificationNo, $row);
@@ -891,7 +1119,7 @@ function initializeEditableRow($row, detail) {
         }
     }
 
-    // On Identification change, auto-set Godown (hidden) and BalQtyMT (Coil Wt.)
+    // On Identification change, auto-set param codes, Size and BalQtyMT (Coil Wt.)
     function handleIdentificationChange() {
         const selectedId = $identificationNo.val() || '';
         
@@ -899,7 +1127,7 @@ function initializeEditableRow($row, detail) {
         if (selectedId && selectedIds.indexOf(selectedId) >= 0) {
             toastr.warning('This Identification No is already selected in another row. Please select a different one.');
             $identificationNo.val('');
-            $godownCode.val('0');
+            clearRowIdentificationParamCodes($row);
             $coilSize.val('');
             return;
         }
@@ -911,8 +1139,7 @@ function initializeEditableRow($row, detail) {
             });
 
             if (match) {
-                const godownCode = match.GodownCode || match.Code || match.GodownMaster_Code || '';
-                $godownCode.val(godownCode ? String(godownCode) : '0');
+                setRowIdentificationParamCodes($row, match);
                 $coilSize.val(match.Size || match.size || '');
                 
                 const balQtyMT = parseFloat(match.BalQtyMT) || 0;
@@ -929,7 +1156,7 @@ function initializeEditableRow($row, detail) {
                 }
             }
         } else {
-            $godownCode.val('0');
+            clearRowIdentificationParamCodes($row);
             $coilSize.val('');
             $coilWt.removeAttr('max');
             $coilWt.removeData('max-bal-qty');
@@ -979,54 +1206,47 @@ function initializeEditableRow($row, detail) {
     });
 
     if (detail) {
-        const existingIdentification = detail.identificationNo || detail.IdentificationNo || '';
-        const existingQty = detail.qtyMTOffer || detail.QtyMTOffer || '';
-        const existingGodownCode = detail.godownMaster_Code || detail.GodownMaster_Code || '';
+        const existingIdentification = getDetailIdentificationNo(detail);
+        const existingQty = detail.weight != null ? detail.weight : (detail.Weight != null ? detail.Weight : (detail.qtyMTOffer || detail.QtyMTOffer || ''));
         const existingSize = detail.Size || detail.size || '';
+
+        setRowIdentificationParamCodes($row, detail);
+
+        // Always keep saved Identification in dropdown, even outside filter range
+        if (existingIdentification) {
+            ensureIdentificationOption($identificationNo, existingIdentification);
+            $identificationNo.val(existingIdentification);
+
+            if ($.fn.select2 && $identificationNo.hasClass('select2-hidden-accessible')) {
+                $identificationNo.trigger('change.select2');
+            }
+        }
+
+        if (existingQty !== '') {
+            $coilWt.val(existingQty);
+            const qtyNum = parseFloat(existingQty) || 0;
+            if (qtyNum > 0) {
+                $coilWt.attr('max', qtyNum);
+                $coilWt.data('max-bal-qty', qtyNum);
+            }
+        }
 
         if (existingSize) {
             $coilSize.val(existingSize);
         }
 
-        if (existingIdentification) {
-            $identificationNo.val(existingIdentification);
-
-            if (!$identificationNo.val()) {
-                const normalizedId = String(existingIdentification).trim().toLowerCase();
-                let matchedValue = null;
-                $identificationNo.find('option').each(function () {
-                    const text = ($(this).text() || '').trim().toLowerCase();
-                    if (text === normalizedId) {
-                        matchedValue = $(this).val();
-                        return false;
-                    }
-                });
-                if (matchedValue !== null) {
-                    $identificationNo.val(matchedValue);
-                }
-            }
-
-            if ($.fn.select2 && $identificationNo.hasClass('select2-hidden-accessible')) {
-                $identificationNo.trigger('change.select2');
-            } else {
-                $identificationNo.trigger('change');
-            }
-        }
-        if (existingQty !== '') {
-            $coilWt.val(existingQty);
-        }
-
+        // Prefer saved edit API values (Identification, Weight, Size, param codes)
         if ($identificationNo.val()) {
-            handleIdentificationChange();
-            const balQtyMT = parseFloat($coilWt.data('max-bal-qty')) || parseFloat($coilWt.attr('max')) || 0;
-            if (balQtyMT > 0) {
-                $coilWt.attr('max', balQtyMT);
-                $coilWt.data('max-bal-qty', balQtyMT);
+            setRowIdentificationParamCodes($row, detail);
+            if (existingQty !== '') {
+                $coilWt.val(existingQty);
             }
-        } else if (existingGodownCode) {
-            $godownCode.val(String(existingGodownCode));
+            if (existingSize) {
+                $coilSize.val(existingSize);
+            }
         }
 
+        updateDetailTableFooterSum();
         checkRowComplete();
     } else {
         checkRowComplete();
@@ -1038,16 +1258,22 @@ function bindEmptyEditableRow() {
         return;
     }
 
+    const defaultOrderNoTo = resolveOrderNoToForRow(null);
     const rowHtml = `
         <tr class="editable-row">
             <td class="row-sno">1
                 <input type="hidden" class="Code" value="0" />
-                <input type="hidden" class="godown-code" value="0" />
+                <input type="hidden" class="param-width-code" value="0" />
+                <input type="hidden" class="param-thk-code" value="0" />
+                <input type="hidden" class="param-grade-code" value="0" />
             </td>
             <td>
                 <select class="form-control form-control-sm identification-no">
                     <option value="">Select...</option>
                 </select>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm order-no-to" readonly value="${defaultOrderNoTo.replace(/"/g, '&quot;')}" />
             </td>
             <td>
                 <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" readonly />
@@ -1077,12 +1303,13 @@ function bindExistingEditableRows(detailResponse) {
         return;
     }
 
-    const details = Array.isArray(detailResponse) ? detailResponse : [];
+    const details = normalizeStockAllocationDetails(detailResponse);
     if (details.length === 0) {
         bindEmptyEditableRow();
         return;
     }
 
+    mergeSavedDetailsIntoIdentificationList(details);
     $tbody.empty();
 
     details.forEach(function (detail, index) {
@@ -1090,18 +1317,24 @@ function bindExistingEditableRows(detailResponse) {
         const isLocked = verifyStatus !== 'N';
         const lockedClass = isLocked ? 'locked-row' : '';
         
-        const existingGodown = detail.godownMaster_Code || detail.GodownMaster_Code || 0;
+        const paramCodes = getIdentificationParamCodes(detail);
+        const orderNoTo = resolveOrderNoToForRow(detail).replace(/"/g, '&quot;');
         const rowHtml = `
             <tr class="editable-row ${lockedClass}">
                 <td class="row-sno">${index + 1}
                     <input type="hidden" class="Code" value="${detail.Code || 0}" />
                     <input type="hidden" class="Verify" value="${verifyStatus}" />
-                    <input type="hidden" class="godown-code" value="${existingGodown}" />
+                    <input type="hidden" class="param-width-code" value="${paramCodes.width}" />
+                    <input type="hidden" class="param-thk-code" value="${paramCodes.thk}" />
+                    <input type="hidden" class="param-grade-code" value="${paramCodes.grade}" />
                 </td>
                 <td>
                     <select class="form-control form-control-sm identification-no" ${isLocked ? 'disabled' : ''}>
                         <option value="">Select...</option>
                     </select>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm order-no-to" readonly value="${orderNoTo}" />
                 </td>
                 <td>
                     <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" readonly />
@@ -1288,6 +1521,63 @@ function fillCoilFiltersFromRow(row) {
     bindGradeCheckboxDropdown(grade ? [grade] : []);
     $('#ddlGradeCheckList').hide();
 }
+
+function getStockAllocationEntryNoDisplay() {
+    const masterCode = G_RMInspectionRequestMaster_Code || 0;
+    if (!masterCode) {
+        return '';
+    }
+    const listRow = (G_StockAllocationList || []).find(function (r) {
+        return String(r.Code) === String(masterCode);
+    });
+    if (listRow) {
+        return listRow['Entry No'] != null ? listRow['Entry No']
+            : (listRow.EntryNo != null ? listRow.EntryNo
+                : (listRow.Entry_No != null ? listRow.Entry_No : masterCode));
+    }
+    return masterCode;
+}
+
+function getCurrentGridOrderNo() {
+    const currentGridRow = Array.isArray(G_GetBOMMasterDataOrderWise)
+        ? G_GetBOMMasterDataOrderWise.find(function (r) { return String(r.Code) === String(G_BomTransactionOrderWise_Code); })
+        : null;
+    if (!currentGridRow) {
+        return '';
+    }
+    const orderNo = currentGridRow['Order No'] != null ? currentGridRow['Order No']
+        : (currentGridRow.OrderNo != null ? currentGridRow.OrderNo
+            : (currentGridRow.Order_No != null ? currentGridRow.Order_No : ''));
+    return orderNo != null ? String(orderNo) : '';
+}
+
+function getOrderNoToFromDetail(detail) {
+    if (!detail) {
+        return '';
+    }
+    const orderNoTo = detail['Order no To'] != null ? detail['Order no To']
+        : (detail['Order No To'] != null ? detail['Order No To']
+            : (detail.OrderNoTo != null ? detail.OrderNoTo
+                : (detail.orderNoTo != null ? detail.orderNoTo : '')));
+    return orderNoTo != null ? String(orderNoTo) : '';
+}
+
+/** Edit: API Order No To; New row: current BOM grid Order No */
+function resolveOrderNoToForRow(detail) {
+    const fromApi = getOrderNoToFromDetail(detail);
+    if (fromApi !== '') {
+        return fromApi;
+    }
+    return getCurrentGridOrderNo();
+}
+
+function fillCoilModalInfo() {
+    $('#txtCoilEntryNo').val(getStockAllocationEntryNoDisplay());
+}
+
+function clearCoilModalInfo() {
+    $('#txtCoilEntryNo').val('');
+}
 function filterIdentificationListByRange(list) {
     const f = getCoilFilterValues();
     const widthFrom = parseFloat(f.WidthFrom);
@@ -1390,16 +1680,22 @@ function UpdateCoilDetail(Grade_Code, Code, balanceToInspectWt) {
                 buildDetailTableHeader();
 
                 StockAllocationService.GetRMInspectionRequestDetailsEdit(G_RMInspectionRequestMaster_Code, G_BomTransactionOrderWise_Code).then(function (detailResponse) {
-                    let details = Array.isArray(detailResponse) ? detailResponse : [];
-                    const keyNames = ['bomTransactionOrderWise_Code', 'BomTransactionOrderWise_Code'];
-                    const hasKey = details.length > 0 && keyNames.some(function (k) { return k in details[0]; });
+                    let details = normalizeStockAllocationDetails(detailResponse);
+                    // Only filter by BOM order-wise code when that key exists
+                    const hasBomKey = details.length > 0 && (
+                        ('bomTransactionOrderWise_Code' in details[0]) ||
+                        ('BomTransactionOrderWise_Code' in details[0])
+                    );
 
-                    if (hasKey) {
+                    if (hasBomKey) {
                         details = details.filter(function (d) {
                             const val = d.bomTransactionOrderWise_Code != null ? d.bomTransactionOrderWise_Code : d.BomTransactionOrderWise_Code;
                             return String(val) === String(G_BomTransactionOrderWise_Code);
                         });
                     }
+
+                    mergeSavedDetailsIntoIdentificationList(details);
+                    fillCoilModalInfo();
 
                     if (details.length > 0) {
                         bindExistingEditableRows(details);
@@ -1410,6 +1706,7 @@ function UpdateCoilDetail(Grade_Code, Code, balanceToInspectWt) {
                     HideLoader();
                     OpenModal();
                 }).catch(function () {
+                    fillCoilModalInfo();
                     bindEmptyEditableRow();
                     HideLoader();
                     OpenModal();
@@ -1419,6 +1716,7 @@ function UpdateCoilDetail(Grade_Code, Code, balanceToInspectWt) {
                 G_IdentificationList = [];
                 clearDetailTable();
                 buildDetailTableHeader();
+                fillCoilModalInfo();
                 bindEmptyEditableRow();
                 HideLoader();
                 OpenModal();
@@ -1442,6 +1740,7 @@ function CloseModal() {
     $('#txtRemark').val('');
     $('#hfCode').val('');
     $('#txtWidthFrom, #txtWidthTo, #txtThicknessFrom, #txtThicknessTo').val('');
+    clearCoilModalInfo();
     $('#saGradeCheckItems').empty();
     $('#saGradeSelectedText').text('Select Grade...');
     $('#ddlGradeCheckList').hide();
@@ -1455,17 +1754,22 @@ function SaveStockAllocation() {
         if (userDetails && userDetails.length > 0 && userDetails[0].Code) {
             userMaster_Code = userDetails[0].Code;
         }
+        if (!userMaster_Code) {
+            const authKey = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+            userMaster_Code = authKey.UserMaster_Code || 0;
+        }
     } catch (e) {
         console.error('Error getting user details:', e);
         toastr.error('Unable to get user details');
         return;
     }
 
-    // Get BomTransaction_Codes from the grid row that matches the current BomTransactionOrderWise_Code
     const currentGridRow = Array.isArray(G_GetBOMMasterDataOrderWise)
         ? G_GetBOMMasterDataOrderWise.find(function (r) { return String(r.Code) === String(G_BomTransactionOrderWise_Code); })
         : null;
-    const BomTransaction_Codes = currentGridRow ? (currentGridRow.BomTransactionOrderWise_Codes || 0) : 0;
+    const buyerPOMaster_Code = currentGridRow
+        ? (currentGridRow.BuyerPOMaster_Code || currentGridRow.buyerPOMaster_Code || 0)
+        : 0;
 
     const $tbody = $('#DetailTable-body');
     const detailRows = [];
@@ -1474,15 +1778,16 @@ function SaveStockAllocation() {
     if ($tbody && $tbody.length) {
         $tbody.find('tr.editable-row').each(function () {
             if (validationError) {
-                return false; // Stop processing if validation error occurred
+                return false;
             }
             
             const $row = $(this);
-
             const identificationNo = $row.find('.identification-no').val() || '';
             const coilWt = parseFloat($row.find('.coil-wt').val()) || 0;
-            const godownCode = $row.find('.godown-code').val() || '0';
-            const rowCode = $row.find('.Code').val() || 0;
+            const orderNoTo = ($row.find('.order-no-to').val() || '').toString().trim() || getCurrentGridOrderNo();
+            const widthCode = parseInt($row.find('.param-width-code').val(), 10) || 0;
+            const thkCode = parseInt($row.find('.param-thk-code').val(), 10) || 0;
+            const gradeCode = parseInt($row.find('.param-grade-code').val(), 10) || 0;
 
             if (identificationNo !== '' && coilWt > 0) {
                 if (G_BalanceToInspectWt > 0 && coilWt > G_BalanceToInspectWt) {
@@ -1492,20 +1797,21 @@ function SaveStockAllocation() {
                 }
                 
                 detailRows.push({
-                    code: rowCode,
-                    rmInspectionRequestMaster_Code: G_RMInspectionRequestMaster_Code,
-                    bomTransactionOrderWise_Code: G_BomTransactionOrderWise_Code,
-                    godownMaster_Code: godownCode,
+                    boMorderWiseStockAllocationMaster_Code: G_RMInspectionRequestMaster_Code || 0,
+                    buyerPOMaster_Code: buyerPOMaster_Code,
+                    itemParameterValueCode_Width: widthCode,
+                    itemParameterValueCode_Thk: thkCode,
+                    itemParameterValueCode_Grade: gradeCode,
                     identificationNo: identificationNo,
-                    qtyMTOffer: coilWt,
-                    BomTransaction_Codes: BomTransaction_Codes
+                    weight: coilWt,
+                    orderNoTo: orderNoTo
                 });
             }
         });
     }
     
     if (validationError) {
-        return; // Stop save if validation failed
+        return;
     }
 
     if (detailRows.length === 0) {
@@ -1513,10 +1819,9 @@ function SaveStockAllocation() {
         return;
     }
 
-    // Validate that total Coil Wt. does not exceed Balance to Inspect (Wt.)
     try {
         const totalCoilWt = detailRows.reduce(function (sum, item) {
-            return sum + (parseFloat(item.qtyMTOffer) || 0);
+            return sum + (parseFloat(item.weight) || 0);
         }, 0);
 
         if (G_BalanceToInspectWt > 0 && totalCoilWt > G_BalanceToInspectWt) {
@@ -1528,13 +1833,14 @@ function SaveStockAllocation() {
     }
 
     const saveData = {
-        rmInspectionRequestMaster: [
+        boMorderWiseStockAllocationMaster: [
             {
-                code: G_RMInspectionRequestMaster_Code,
+                code: G_RMInspectionRequestMaster_Code || 0,
+                entryDate: getStockAllocationEntryDate(),
                 userMaster_Code: userMaster_Code
             }
         ],
-        rmInspectionRequestDetails: detailRows,
+        boMorderWiseStockAllocationDetails: detailRows
     };
 
     Showloader();
@@ -1546,7 +1852,7 @@ function SaveStockAllocation() {
             G_RMInspectionRequestMaster_Code = response.Code;
             GetBOMMasterDataOrderWiselist();
         } else {
-            const errorMessage = response && response.message ? response.message : 'Failed to save data';
+            const errorMessage = response && (response.Msg || response.message) ? (response.Msg || response.message) : 'Failed to save data';
             toastr.error(errorMessage);
         }
     }).catch(function (error) {
@@ -1575,40 +1881,21 @@ function EditStockAllocation(Code) {
 function Back() {
     G_RMInspectionRequestMaster_Code = 0;
     G_BomTransactionOrderWise_Code = 0;
-    const $tableHeaderEditable = $('#table-headerEditable');
-    const $tableBodyEditable = $('#table-bodyEditable');
-    
-    if ($tableHeaderEditable && $tableHeaderEditable.length) {
-        $tableHeaderEditable.empty();
-    }
-    if ($tableBodyEditable && $tableBodyEditable.length) {
-        $tableBodyEditable.empty();
-    }
+    clearBOMMasterOrderWiseGrid();
+    G_GetBOMMasterDataOrderWise = [];
+
     try {
-        const $table = $tableBodyEditable.closest('table');
-        if ($table && $table.length && $.fn.DataTable) {
-            const dataTable = $table.DataTable();
-            if (dataTable) {
-                dataTable.clear().destroy();
-            }
-        }
-    } catch (e) {
-        console.log('DataTable cleanup:', e.message);
-    }
-    
-    try {
-        const tableId = $tableBodyEditable.closest('table').attr('id');
-        if (tableId) {
-            delete window[`hiddenColumns_table-bodyEditable`];
-            delete window[`columnAlignment_table-bodyEditable`];
-            delete window[`button_${tableId}`];
-            delete window[`ShowButtons_table-bodyEditable`];
-            delete window[`filteredData_${tableId}`];
-            delete window[`filteredDataTemp_${tableId}`];
-            delete window[`currentPage_${tableId}`];
-            delete window[`itemsPerPage_${tableId}`];
-            delete window[`Paginator_${tableId}`];
-        }
+        delete window[`hiddenColumns_table-bodyEditable`];
+        delete window[`columnAlignment_table-bodyEditable`];
+        delete window[`totalColumns_table-bodyEditable`];
+        delete window[`floatingTotalRow_table-bodyEditable`];
+        delete window[`button_tblStockAllocationEditable`];
+        delete window[`ShowButtons_table-bodyEditable`];
+        delete window[`filteredData_tblStockAllocationEditable`];
+        delete window[`filteredDataTemp_tblStockAllocationEditable`];
+        delete window[`currentPage_tblStockAllocationEditable`];
+        delete window[`itemsPerPage_tblStockAllocationEditable`];
+        delete window[`Paginator_tblStockAllocationEditable`];
     } catch (e) {
         console.log('Window variables cleanup:', e.message);
     }
@@ -1777,11 +2064,14 @@ function ShowIdentificationPickModal() {
             return id !== '' && selectedIds.indexOf(id) < 0;
         })
         .map(function (item) {
+            const codes = getIdentificationParamCodes(item);
             return {
                 IdentificationNo: item.IdentificationNo || item.IdentificationNos || '',
                 BalQtyMT: item.BalQtyMT != null ? item.BalQtyMT : 0,
                 Size: item.Size || item.size || '',
-                GodownCode: item.GodownCode || item.Code || item.GodownMaster_Code || ''
+                ItemParaMeterValueCode_Width: codes.width,
+                ItemParaMeterValueCode_Thk: codes.thk,
+                ItemParaMeterValueCode_Grade: codes.grade
             };
         });
 
@@ -1804,7 +2094,9 @@ function ShowIdentificationPickModal() {
             { field: 'IdentificationNo', header: 'Identification No' },
             { field: 'BalQtyMT', header: 'Weight' },
             { field: 'Size', header: 'Size' },
-            { field: 'GodownCode', visible: false }
+            { field: 'ItemParaMeterValueCode_Width', visible: false },
+            { field: 'ItemParaMeterValueCode_Thk', visible: false },
+            { field: 'ItemParaMeterValueCode_Grade', visible: false }
         ]
     };
     initializeObjectlistControl(options);
@@ -1908,8 +2200,14 @@ window.onIdentificationSelected = function (response) {
         }
 
         $targetRow.find('.coil-size').val(sizeVal);
+        // New selection: Order No To = current BOM grid Order No
+        $targetRow.find('.order-no-to').val(getCurrentGridOrderNo());
+        setRowIdentificationParamCodes($targetRow, item);
         $ident.val(identNo).trigger('change.identification');
+        // Keep codes/size from selected modal row if list lookup did not overwrite
+        setRowIdentificationParamCodes($targetRow, item);
         $targetRow.find('.coil-size').val(sizeVal);
+        $targetRow.find('.order-no-to').val(getCurrentGridOrderNo());
         addedCount++;
     });
 
