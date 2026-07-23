@@ -1,6 +1,15 @@
 import { MISReportsServices } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MISReportsService.js';
 
 let lastReportData = null;
+let _pdfExportCompact = false;
+
+const PDF_LAYOUT = {
+    marginMm: 4,
+    fontSizePx: '7.5px',
+    cellPadding: '1px 3px',
+    lineHeight: '1.08',
+    minRowPx: 7
+};
 
 $(document).ready(function () {
     $("#ERPHeading").text("MIS Report");
@@ -24,8 +33,27 @@ $(document).ready(function () {
         GetReportData();
     });
 
-    $('#btnDownload').click(function () {
-        Export();
+    $('#btnDownload').click(function (e) {
+        e.stopPropagation();
+        $('#downloadMenu').toggle();
+    });
+
+    $('#downloadMenu').click(function (e) {
+        e.stopPropagation();
+    });
+
+    $('#btnDownloadExcel').click(function () {
+        $('#downloadMenu').hide();
+        ExportExcel();
+    });
+
+    $('#btnDownloadPdf').click(function () {
+        $('#downloadMenu').hide();
+        ExportPdf();
+    });
+
+    $(document).on('click', function () {
+        $('#downloadMenu').hide();
     });
 
     // Auto-load the report for today's date on page load
@@ -68,7 +96,7 @@ function GetReportData() {
         const DispatchSales  = response.DispatchSales  || [];
         const SlittingData   = response.SlittingData   || response.SlittingDate || [];
 
-        // Keep last data for the combined Excel export
+        // Keep last data for PDF / export
         lastReportData = {
             MRNReceive: MRNReceive,
             ProductionData: ProductionData,
@@ -99,6 +127,31 @@ function isNumericValue(value) {
     return !isNaN(parseFloat(value)) && isFinite(value);
 }
 
+function normalizeColName(key) {
+    return String(key || '').toLowerCase().replace(/[\s._%]/g, '');
+}
+
+function isYieldColumn(key) {
+    const k = normalizeColName(key);
+    return k === 'yield' || k === 'yieldpct' || k === 'yieldpercent' || k === 'yeild' || k === 'yeildpct';
+}
+
+function formatYieldPct(value) {
+    if (value === null || value === undefined || value === '') return '';
+    const num = parseFloat(value);
+    if (isNaN(num)) return '';
+    return num.toFixed(2);
+}
+
+function sortMillNames(order) {
+    return order.slice().sort(function (a, b) {
+        const na = parseInt(String(a).replace(/\D/g, ''), 10);
+        const nb = parseInt(String(b).replace(/\D/g, ''), 10);
+        if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+        return String(a).localeCompare(String(b));
+    });
+}
+
 // Determine which columns hold numeric values (every non-empty value is numeric)
 function getNumericColumns(data, headers) {
     const numeric = {};
@@ -122,11 +175,18 @@ function getNumericColumns(data, headers) {
 function formatCellValue(value, key) {
     if (value === null || value === undefined) return '';
 
-    // Round any column whose name contains "Weight" to 3 decimal places
-    if (key && key.toLowerCase().indexOf('weight') !== -1) {
-        const num = parseFloat(value);
-        if (!isNaN(num)) {
-            return num.toFixed(3);
+    if (isYieldColumn(key)) {
+        return formatYieldPct(value);
+    }
+
+    // Round Weight / Qty MT columns to 3 decimal places
+    if (key) {
+        const k = key.toLowerCase();
+        if (k.indexOf('weight') !== -1 || k.replace(/[\s.]/g, '') === 'qtymt') {
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                return num.toFixed(3);
+            }
         }
     }
 
@@ -139,11 +199,16 @@ function formatCellValue(value, key) {
 }
 
 function formatTotalValue(key, sum) {
-    if (key && key.toLowerCase().indexOf('weight') !== -1) {
-        return sum.toFixed(3);
+    if (isYieldColumn(key)) {
+        return '';
+    }
+    const k = String(key || '').toLowerCase();
+    // Weight / Qty MT totals keep 3 decimals
+    if (k.indexOf('weight') !== -1 || k.replace(/[\s.]/g, '') === 'qtymt') {
+        return Number(sum).toFixed(3);
     }
     // Integer-only sums stay integer, otherwise show 2 decimals
-    return Number.isInteger(sum) ? String(sum) : sum.toFixed(2);
+    return Number.isInteger(sum) ? String(sum) : Number(sum).toFixed(2);
 }
 
 function isSerialColumn(key) {
@@ -160,11 +225,54 @@ function makeAlignChecker(numericCols) {
 function makeTotalChecker(numericCols) {
     return function (key) {
         if (!numericCols[key]) return false;
+        // Yield% is derived from totals — never sum the % values
+        if (isYieldColumn(key)) return false;
         const k = key.toLowerCase().replace(/[\s.]/g, '');
         if (k.indexOf('code') !== -1) return false;
         if (isSerialColumn(key)) return false;
         return true;
     };
+}
+
+function buildTotalRowCells(displayCols, totals, isTotalable, isRightAligned, labelText, bgColor) {
+    let labelPlaced = false;
+
+    return displayCols.map(function (key) {
+        const td = document.createElement('td');
+        td.style.fontWeight = 'bold';
+        td.style.backgroundColor = bgColor || '#f1f3f5';
+
+        if (isYieldColumn(key)) {
+            td.textContent = '';
+        } else if (isTotalable(key)) {
+            td.textContent = formatTotalValue(key, totals[key] || 0);
+            if (isRightAligned(key)) td.style.textAlign = 'right';
+        } else if (!labelPlaced) {
+            td.textContent = labelText;
+            labelPlaced = true;
+        } else {
+            td.textContent = '';
+        }
+        return td;
+    });
+}
+
+function buildTotalExportCells(displayCols, totals, isTotalable, labelText) {
+    let labelPlaced = false;
+
+    return displayCols.map(function (k) {
+        if (isYieldColumn(k)) {
+            return cell('', { type: 'total' });
+        }
+        if (isTotalable(k)) {
+            return cell(formatTotalValue(k, totals[k] || 0), { type: 'total', bold: true, align: 'right' });
+        }
+        if (!labelPlaced) {
+            labelPlaced = true;
+            return cell(labelText, { type: 'total', bold: true });
+        }
+        return cell('', { type: 'total' });
+    });
 }
 
 function RenderSection(headerId, bodyId, noDataId, data) {
@@ -301,7 +409,7 @@ function RenderGroupedSection(headerId, bodyId, noDataId, data, groupKeyName) {
     const isRightAligned = makeAlignChecker(numericCols);
     const isTotalable = makeTotalChecker(numericCols);
 
-    // Group rows preserving first-seen order
+    // Group rows preserving first-seen order; sort mills MILL-1, MILL-2, MILL-3...
     const groups = {};
     const order = [];
     data.forEach(function (r) {
@@ -309,11 +417,15 @@ function RenderGroupedSection(headerId, bodyId, noDataId, data, groupKeyName) {
         if (!groups[g]) { groups[g] = []; order.push(g); }
         groups[g].push(r);
     });
+    const sortedOrder = sortMillNames(order);
 
     const colCount = displayCols.length;
+    const grandTotals = {};
+    displayCols.forEach(function (key) { if (isTotalable(key)) grandTotals[key] = 0; });
 
-    order.forEach(function (machine) {
+    sortedOrder.forEach(function (machine, machineIndex) {
         const rows = groups[machine];
+        const isLastMill = machineIndex === sortedOrder.length - 1;
 
         // Group band row showing the machine name
         const bandTr = document.createElement('tr');
@@ -346,35 +458,31 @@ function RenderGroupedSection(headerId, bodyId, noDataId, data, groupKeyName) {
             displayCols.forEach(function (key) {
                 const td = document.createElement('td');
                 td.textContent = formatCellValue(item[key], key);
-                if (isRightAligned(key)) td.style.textAlign = 'right';
+                if (isRightAligned(key) || isYieldColumn(key)) td.style.textAlign = 'right';
                 tr.appendChild(td);
                 if (isTotalable(key)) {
                     const num = parseFloat(item[key]);
-                    if (!isNaN(num)) totals[key] += num;
+                    if (!isNaN(num)) {
+                        totals[key] += num;
+                        grandTotals[key] += num;
+                    }
                 }
             });
+
             $body[0].appendChild(tr);
         });
 
-        // Subtotal row for the group
         const totalTr = document.createElement('tr');
-        let labelPlaced = false;
-        displayCols.forEach(function (key) {
-            const td = document.createElement('td');
-            td.style.fontWeight = 'bold';
-            td.style.backgroundColor = '#f1f3f5';
-            if (isTotalable(key)) {
-                td.textContent = formatTotalValue(key, totals[key]);
-                if (isRightAligned(key)) td.style.textAlign = 'right';
-            } else if (!labelPlaced) {
-                td.textContent = 'Total';
-                labelPlaced = true;
-            } else {
-                td.textContent = '';
-            }
-            totalTr.appendChild(td);
-        });
+        buildTotalRowCells(displayCols, totals, isTotalable, isRightAligned, 'Total', '#f1f3f5')
+            .forEach(function (td) { totalTr.appendChild(td); });
         $body[0].appendChild(totalTr);
+
+        if (isLastMill && Object.keys(grandTotals).length > 0) {
+            const grandTr = document.createElement('tr');
+            buildTotalRowCells(displayCols, grandTotals, isTotalable, isRightAligned, 'Grand Total', '#dde5f0')
+                .forEach(function (td) { grandTr.appendChild(td); });
+            $body[0].appendChild(grandTr);
+        }
     });
 }
 
@@ -609,23 +717,23 @@ function buildSlittingBlock(title, data) {
     const cols = issueCols.length + 3;
     const rows = [];
 
-    rows.push([cell(title, { type: 'title', bold: true, align: 'center', colspan: cols })]);
+    rows.push(tagExportRow([cell(title, { type: 'title', bold: true, align: 'center', colspan: cols })], 'sectionTitle'));
 
     const bandRow = [
-        cell('Issue', { type: 'band', bold: true, align: 'center', colspan: issueCols.length }),
-        cell('Receive', { type: 'band', bold: true, align: 'center', colspan: 3 })
+        cell('Issue', { type: 'slitBandIssue', bold: true, align: 'center', colspan: issueCols.length }),
+        cell('Receive', { type: 'slitBandReceive', bold: true, align: 'center', colspan: 3 })
     ];
-    rows.push(bandRow);
+    rows.push(tagExportRow(bandRow, 'slitBand', { repeat: true }));
 
     const subRow = issueCols.map(function (k) {
         const label = slittingIssueColumnLabel(k, shiftKey, sizeKey, weightKey);
-        return cell(label, { type: 'header', bold: true });
+        return cell(label, { type: 'slitHeadIssue', bold: true, align: 'center' });
     }).concat([
-        cell('Weight MT', { type: 'header', bold: true }),
-        cell('No Of Slits', { type: 'header', bold: true }),
-        cell('Size Desp', { type: 'header', bold: true })
+        cell('Weight MT', { type: 'slitHeadReceive', bold: true, align: 'center' }),
+        cell('No Of Slits', { type: 'slitHeadReceive', bold: true, align: 'center' }),
+        cell('Size Desp', { type: 'slitHeadReceive', bold: true, align: 'center' })
     ]);
-    rows.push(subRow);
+    rows.push(tagExportRow(subRow, 'slitSubHead', { repeat: true }));
 
     const groups = {};
     const order = [];
@@ -650,28 +758,51 @@ function buildSlittingBlock(title, data) {
             return normalizeWeightType(r[typeKey]) === 'receive';
         });
         const displayRows = receiveRows.length > 0 ? receiveRows : [null];
+        const rowSpan = displayRows.length;
 
         displayRows.forEach(function (receiveRow, idx) {
             const row = [];
 
-            issueCols.forEach(function (key) {
-                if (key === weightKey) {
-                    const n = parseFloat(issueRow ? issueRow[key] : '');
-                    if (idx === 0 && !isNaN(n)) totalIssueWeight += n;
-                    row.push(cell(formatCellValue(issueRow ? issueRow[key] : '', key), { align: 'right' }));
-                } else {
-                    row.push(cell(formatCellValue(issueRow ? issueRow[key] : '', key)));
-                }
-            });
+            // Issue columns — rowspan on first receive row only (matches on-screen table)
+            if (idx === 0) {
+                issueCols.forEach(function (key) {
+                    const isWeight = key === weightKey;
+                    const isSize = key === sizeKey;
+                    const c = cell(formatCellValue(issueRow ? issueRow[key] : '', key), {
+                        type: 'slitIssueCol',
+                        align: isWeight ? 'right' : 'left',
+                        valign: 'middle',
+                        wrap: isSize,
+                        rowspan: rowSpan > 1 ? rowSpan : undefined,
+                        groupStart: true
+                    });
+                    if (isWeight) {
+                        const n = parseFloat(issueRow ? issueRow[key] : '');
+                        if (!isNaN(n)) totalIssueWeight += n;
+                    }
+                    row.push(c);
+                });
+            } else {
+                row._skipPad = true;
+            }
 
             if (receiveRow) {
                 const n = parseFloat(receiveRow[weightKey]);
                 if (!isNaN(n)) totalReceiveWeight += n;
             }
 
-            row.push(cell(receiveRow ? formatCellValue(receiveRow[weightKey], weightKey) : '', { align: 'right' }));
-            row.push(cell(receiveRow && slitsKey ? formatCellValue(receiveRow[slitsKey], slitsKey) : '', { align: 'right' }));
-            row.push(cell(receiveRow && sizeKey ? formatCellValue(receiveRow[sizeKey], sizeKey) : ''));
+            row.push(cell(receiveRow ? formatCellValue(receiveRow[weightKey], weightKey) : '', {
+                align: 'right', valign: 'middle', groupStart: idx === 0
+            }));
+            row.push(cell(receiveRow && slitsKey ? formatCellValue(receiveRow[slitsKey], slitsKey) : '', {
+                align: 'right', valign: 'middle', groupStart: idx === 0
+            }));
+            row.push(cell(receiveRow && sizeKey ? formatCellValue(receiveRow[sizeKey], sizeKey) : '', {
+                valign: 'middle', wrap: true, groupStart: idx === 0
+            }));
+
+            if (idx > 0) row._skipPad = true;
+            tagExportRow(row, 'data', { slittingGroup: String(code) });
             rows.push(row);
         });
     });
@@ -691,8 +822,9 @@ function buildSlittingBlock(title, data) {
         cell('', { type: 'total' }),
         cell('', { type: 'total' })
     ]);
-    rows.push(totalRow);
+    rows.push(tagExportRow(totalRow, 'total'));
 
+    rows.forEach(function (row) { row._exportCols = cols; });
     return { rows: rows, cols: cols };
 }
 
@@ -704,14 +836,39 @@ function buildSlittingBlock(title, data) {
 
 // Excel cell style palette (inline styles are preserved by table2excel)
 const XL = {
-    title:  { bg: '#1f4e8c', color: '#ffffff' },   // section title band
-    band:   { bg: '#4a5568', color: '#ffffff' },   // machine group band
-    header: { bg: '#d9e0ee', color: '#1f2937' },   // column headers
-    total:  { bg: '#fde9c8', color: '#1f2937' },   // total / subtotal rows
+    title:  { bg: '#1f4e8c', color: '#ffffff' },
+    band:   { bg: '#4a5568', color: '#ffffff' },
+    header: { bg: '#d9e0ee', color: '#1f2937' },
+    total:  { bg: '#fde9c8', color: '#1f2937' },
+    slitBandIssue:   { bg: '#2c5282', color: '#ffffff' },
+    slitBandReceive: { bg: '#276749', color: '#ffffff' },
+    slitHeadIssue:   { bg: '#3d5a80', color: '#ffffff' },
+    slitHeadReceive: { bg: '#2f6b4f', color: '#ffffff' },
+    slitIssueCol:    { bg: '#f0f4fa', color: '#1f2937' },
 };
 
 function cell(text, opts) {
     return Object.assign({ text: (text === null || text === undefined) ? '' : text }, opts || {});
+}
+
+function tagExportRow(row, type, opts) {
+    row._exportType = type;
+    if (opts) {
+        if (opts.group) row._exportGroup = String(opts.group);
+        if (opts.slittingGroup) row._exportSlittingGroup = String(opts.slittingGroup);
+        if (opts.repeat) row._exportRepeat = true;
+    }
+    return row;
+}
+
+function applyExportRowMeta(tr, row) {
+    if (!Array.isArray(row)) return;
+    tr.setAttribute('data-export-cols', String(row._exportCols || rowWidth(row)));
+    if (!row._exportType) return;
+    tr.setAttribute('data-export-type', row._exportType);
+    if (row._exportGroup) tr.setAttribute('data-export-group', row._exportGroup);
+    if (row._exportSlittingGroup) tr.setAttribute('data-export-slitting-group', row._exportSlittingGroup);
+    if (row._exportRepeat) tr.setAttribute('data-export-repeat', '1');
 }
 
 // Logical column width of a row (accounts for colspan).
@@ -747,29 +904,29 @@ function buildFlatBlock(title, data) {
     const cols = headers.length;
     const rows = [];
 
-    rows.push([cell(title, { type: 'title', bold: true, align: 'center', colspan: cols })]);
-    rows.push(headers.map(function (k) { return cell(k, { type: 'header', bold: true }); }));
+    rows.push(tagExportRow([cell(title, { type: 'title', bold: true, align: 'center', colspan: cols })], 'sectionTitle'));
+    rows.push(tagExportRow(headers.map(function (k) { return cell(k, { type: 'header', bold: true }); }), 'columnHeader', { repeat: true }));
 
     const totals = {};
     headers.forEach(function (k) { if (isTotalable(k)) totals[k] = 0; });
 
     data.forEach(function (item) {
-        rows.push(headers.map(function (k) {
+        rows.push(tagExportRow(headers.map(function (k) {
             if (isTotalable(k)) {
                 const n = parseFloat(item[k]);
                 if (!isNaN(n)) totals[k] += n;
             }
             return cell(formatCellValue(item[k], k), { align: isRightAligned(k) ? 'right' : 'left' });
-        }));
+        }), 'data'));
     });
 
     if (Object.keys(totals).length > 0) {
         let labelPlaced = false;
-        rows.push(headers.map(function (k) {
+        rows.push(tagExportRow(headers.map(function (k) {
             if (isTotalable(k)) return cell(formatTotalValue(k, totals[k]), { type: 'total', bold: true, align: 'right' });
             if (!labelPlaced) { labelPlaced = true; return cell('Total', { type: 'total', bold: true }); }
             return cell('', { type: 'total' });
-        }));
+        }), 'total'));
     }
 
     return { rows: rows, cols: cols };
@@ -803,41 +960,46 @@ function buildGroupedBlock(title, data, groupKeyName) {
         if (!groups[g]) { groups[g] = []; order.push(g); }
         groups[g].push(r);
     });
+    const sortedOrder = sortMillNames(order);
 
     const cols = displayCols.length;
     const rows = [];
-    rows.push([cell(title, { type: 'title', bold: true, align: 'center', colspan: cols })]);
+    const grandTotals = {};
+    displayCols.forEach(function (k) { if (isTotalable(k)) grandTotals[k] = 0; });
+    rows.push(tagExportRow([cell(title, { type: 'title', bold: true, align: 'center', colspan: cols })], 'sectionTitle'));
 
-    order.forEach(function (machine) {
-        rows.push([cell(machine, { type: 'band', bold: true, align: 'center', colspan: cols })]);
-        rows.push(displayCols.map(function (k) { return cell(k, { type: 'header', bold: true }); }));
+    sortedOrder.forEach(function (machine, machineIndex) {
+        const isLastMill = machineIndex === sortedOrder.length - 1;
+        rows.push(tagExportRow([cell(machine, { type: 'band', bold: true, align: 'center', colspan: cols })], 'groupBand', { group: machine }));
+        rows.push(tagExportRow(displayCols.map(function (k) { return cell(k, { type: 'header', bold: true }); }), 'columnHeader', { group: machine, repeat: true }));
 
         const totals = {};
         displayCols.forEach(function (k) { if (isTotalable(k)) totals[k] = 0; });
 
         groups[machine].forEach(function (item) {
-            rows.push(displayCols.map(function (k) {
+            rows.push(tagExportRow(displayCols.map(function (k) {
                 if (isTotalable(k)) {
                     const n = parseFloat(item[k]);
-                    if (!isNaN(n)) totals[k] += n;
+                    if (!isNaN(n)) {
+                        totals[k] += n;
+                        grandTotals[k] += n;
+                    }
                 }
-                return cell(formatCellValue(item[k], k), { align: isRightAligned(k) ? 'right' : 'left' });
-            }));
+                return cell(formatCellValue(item[k], k), { align: (isRightAligned(k) || isYieldColumn(k)) ? 'right' : 'left' });
+            }), 'data', { group: machine }));
         });
 
-        let labelPlaced = false;
-        rows.push(displayCols.map(function (k) {
-            if (isTotalable(k)) return cell(formatTotalValue(k, totals[k]), { type: 'total', bold: true, align: 'right' });
-            if (!labelPlaced) { labelPlaced = true; return cell('Total', { type: 'total', bold: true }); }
-            return cell('', { type: 'total' });
-        }));
+        rows.push(tagExportRow(buildTotalExportCells(displayCols, totals, isTotalable, 'Total'), 'total', { group: machine }));
+
+        if (isLastMill && Object.keys(grandTotals).length > 0) {
+            rows.push(tagExportRow(buildTotalExportCells(displayCols, grandTotals, isTotalable, 'Grand Total'), 'grandTotal'));
+        }
     });
 
     return { rows: rows, cols: cols };
 }
 
-// Place two blocks side-by-side with a 1-column gap. Every row is padded to
-// the exact left/right width using real cells so Excel columns stay aligned.
+// Place two blocks side-by-side with a 1-column gap.
 function combineSideBySide(leftBlock, rightBlock) {
     const leftCols = leftBlock.cols;
     const rightCols = rightBlock.cols;
@@ -846,23 +1008,49 @@ function combineSideBySide(leftBlock, rightBlock) {
 
     for (let i = 0; i < maxRows; i++) {
         const leftRow = padRowToWidth(leftBlock.rows[i] || [], leftCols);
-        const rightRow = padRowToWidth(rightBlock.rows[i] || [], rightCols);
+        const rawRight = rightBlock.rows[i] || [];
+        const rightRow = rawRight._skipPad ? rawRight : padRowToWidth(rawRight, rightCols);
         combined.push(leftRow.concat([cell('', { spacer: true })]).concat(rightRow));
     }
     return combined;
 }
 
 function styleCell(td, cell) {
+    const compact = _pdfExportCompact;
     td.style.border = '1px solid #b9c0cf';
-    td.style.padding = '3px 7px';
-    td.style.fontSize = '11px';
+    td.style.padding = compact ? PDF_LAYOUT.cellPadding : '3px 7px';
+    td.style.fontSize = compact ? PDF_LAYOUT.fontSizePx : '11px';
+    td.style.lineHeight = compact ? PDF_LAYOUT.lineHeight : 'normal';
     if (cell.bold) td.style.fontWeight = 'bold';
     if (cell.align) td.style.textAlign = cell.align;
+    if (cell.valign) td.style.verticalAlign = compact ? 'top' : cell.valign;
 
     const palette = cell.type && XL[cell.type];
     if (palette) {
         td.style.backgroundColor = palette.bg;
         td.style.color = palette.color;
+    }
+
+    if (cell.type === 'slitHeadIssue' || cell.type === 'slitHeadReceive') {
+        td.style.whiteSpace = 'normal';
+        td.style.wordBreak = 'keep-all';
+        td.style.textAlign = 'center';
+        td.style.verticalAlign = 'middle';
+    }
+
+    if (cell.type === 'slitIssueCol') {
+        td.style.borderRight = '2px solid #c8d2e8';
+    }
+
+    if (cell.groupStart) {
+        td.style.borderTop = '2px solid #c8d2e8';
+    }
+
+    if (cell.wrap) {
+        td.style.whiteSpace = 'normal';
+        td.style.wordBreak = 'break-word';
+        td.style.minWidth = compact ? '80px' : '140px';
+        td.style.maxWidth = compact ? 'none' : '280px';
     }
 
     // Column headers: wrap only at spaces (never break words mid-character), centered
@@ -883,6 +1071,7 @@ function styleCell(td, cell) {
 function renderCellGridToTable($tbody, gridRows) {
     gridRows.forEach(function (row) {
         const tr = document.createElement('tr');
+        applyExportRowMeta(tr, row);
         row.forEach(function (c) {
             const td = document.createElement('td');
             td.textContent = c.text;
@@ -901,12 +1090,7 @@ function renderCellGridToTable($tbody, gridRows) {
     });
 }
 
-function Export() {
-    if (!lastReportData) {
-        toastr.warning("Please load the report first.");
-        return;
-    }
-
+function buildExportTable() {
     const receivingBlock = buildFlatBlock('RECEIVING', lastReportData.MRNReceive);
     const productionBlock = buildGroupedBlock('PRODUCTION', lastReportData.ProductionData, 'Machine');
     const dispatchBlock   = buildFlatBlock('DISPATCH', lastReportData.DispatchSales);
@@ -915,30 +1099,249 @@ function Export() {
     const topRows    = combineSideBySide(receivingBlock, productionBlock);
     const bottomRows = combineSideBySide(dispatchBlock, slittingBlock);
 
-    const $tbody = $('#tblExportMaster tbody');
+    const $table = $('#tblExportMaster');
+    const $tbody = $table.find('tbody');
     $tbody.empty();
+    $table.attr('cellspacing', '0').attr('cellpadding', '0').css({ borderCollapse: 'collapse', width: '100%' });
 
     renderCellGridToTable($tbody, topRows);
-    $tbody[0].appendChild(document.createElement('tr')); // gap between quadrants
+    $tbody[0].appendChild(document.createElement('tr'));
     $tbody[0].appendChild(document.createElement('tr'));
     renderCellGridToTable($tbody, bottomRows);
-
-    var currentDate = new Date();
-    var dateString = currentDate.getFullYear() + "-" +
-        (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
-        currentDate.getDate().toString().padStart(2, "0");
-
-    downloadTableAsExcel('tblExportMaster', "MISReport_" + dateString);
 }
 
-// Export an HTML table to Excel while preserving inline styles
-// (bold, background colour, borders). Excel reads the HTML directly.
+function applyPdfTableStyles(table) {
+    table.className = 'pdf-section-table';
+    table.setAttribute('cellspacing', '0');
+    table.setAttribute('cellpadding', '0');
+    table.style.borderCollapse = 'collapse';
+    table.style.width = '100%';
+    table.style.minWidth = '100%';
+    table.style.tableLayout = 'fixed';
+    table.style.background = '#ffffff';
+    table.style.fontSize = PDF_LAYOUT.fontSizePx;
+}
+
+// PDF: one full-width table per section so mixed column counts do not leave blank space on the right
+function buildPdfExportDom(wrapper) {
+    wrapper.querySelectorAll('table.pdf-section-table').forEach(function (t) { t.remove(); });
+
+    const blocks = [
+        buildFlatBlock('RECEIVING', lastReportData.MRNReceive),
+        buildGroupedBlock('PRODUCTION', lastReportData.ProductionData, 'Machine'),
+        buildFlatBlock('DISPATCH', lastReportData.DispatchSales),
+        buildSlittingBlock('SLITTING', lastReportData.SlittingData)
+    ];
+
+    const sectionTables = [];
+    blocks.forEach(function (block) {
+        if (!block || !block.rows || block.rows.length === 0) return;
+        const table = document.createElement('table');
+        applyPdfTableStyles(table);
+        const tbody = document.createElement('tbody');
+        renderCellGridToTable($(tbody), block.rows);
+        table.appendChild(tbody);
+        wrapper.appendChild(table);
+        sectionTables.push(table);
+    });
+    return sectionTables;
+}
+
+function getPdfWrapperWidthPx(usableWMm) {
+    return Math.max(960, Math.round((usableWMm / 25.4) * 96));
+}
+
+function updatePdfRepeatState(state, info) {
+    if (!info) return;
+    if (info.type === 'sectionTitle') {
+        state.repeatTrs = [];
+        return;
+    }
+    if (info.type === 'groupBand') {
+        state.repeatTrs = [{ tr: info.tr, h: info.h }];
+        return;
+    }
+    if (info.type === 'columnHeader') {
+        if (state.repeatTrs.length === 1 &&
+            state.repeatTrs[0].tr.getAttribute('data-export-type') === 'groupBand') {
+            state.repeatTrs = [state.repeatTrs[0], { tr: info.tr, h: info.h }];
+        } else {
+            state.repeatTrs = [{ tr: info.tr, h: info.h }];
+        }
+        return;
+    }
+    if (info.type === 'slitBand') {
+        state.repeatTrs = [{ tr: info.tr, h: info.h }];
+        return;
+    }
+    if (info.type === 'slitSubHead') {
+        if (state.repeatTrs.length &&
+            state.repeatTrs[0].tr.getAttribute('data-export-type') === 'slitBand') {
+            state.repeatTrs = [state.repeatTrs[0], { tr: info.tr, h: info.h }];
+        } else {
+            state.repeatTrs = [{ tr: info.tr, h: info.h }];
+        }
+    }
+}
+
+function collectSlittingGroupRows(rowInfos, startIndex) {
+    const group = rowInfos[startIndex].slittingGroup;
+    if (!group) return [rowInfos[startIndex]];
+    const batch = [rowInfos[startIndex]];
+    let j = startIndex + 1;
+    while (j < rowInfos.length && rowInfos[j].slittingGroup === group) {
+        batch.push(rowInfos[j]);
+        j++;
+    }
+    return batch;
+}
+
+function measurePdfRowHeight(tr) {
+    return Math.max(tr.offsetHeight || tr.getBoundingClientRect().height || 0, PDF_LAYOUT.minRowPx);
+}
+
+// Rowspan slitting groups: sum of row heights can under-count; use DOM span when possible
+function measureBatchHeight(batch) {
+    if (!batch || !batch.length) return 0;
+    if (batch.length === 1) return batch[0].h;
+
+    const firstTr = batch[0].tr;
+    const lastTr = batch[batch.length - 1].tr;
+    if (firstTr.offsetParent && firstTr.offsetParent === lastTr.offsetParent) {
+        const spanH = lastTr.offsetTop + lastTr.offsetHeight - firstTr.offsetTop;
+        if (spanH > 0) return spanH;
+    }
+
+    return batch.reduce(function (sum, info) { return sum + info.h; }, 0);
+}
+
+function buildPdfRowPages(sectionTables, usableHeightPx) {
+    const rowInfos = [];
+    sectionTables.forEach(function (table) {
+        Array.from(table.querySelectorAll('tbody tr')).forEach(function (tr) {
+            rowInfos.push({
+                tr: tr,
+                h: measurePdfRowHeight(tr),
+                type: tr.getAttribute('data-export-type') || 'data',
+                slittingGroup: tr.getAttribute('data-export-slitting-group') || '',
+                cols: parseInt(tr.getAttribute('data-export-cols') || '0', 10) || tr.cells.length
+            });
+        });
+    });
+    const filtered = rowInfos.filter(function (info) { return info.type !== 'spacer'; });
+
+    const pages = [];
+    let current = [];
+    let currentH = 0;
+    const state = { repeatTrs: [] };
+
+    function appendRepeatHeaders() {
+        state.repeatTrs.forEach(function (item) {
+            current.push(item.tr.cloneNode(true));
+            currentH += item.h;
+        });
+    }
+
+    function startNewPage() {
+        if (current.length) pages.push({ rows: current, contentH: currentH });
+        current = [];
+        currentH = 0;
+        appendRepeatHeaders();
+    }
+
+    for (let i = 0; i < filtered.length; i++) {
+        const batch = filtered[i].slittingGroup
+            ? collectSlittingGroupRows(filtered, i)
+            : [filtered[i]];
+
+        updatePdfRepeatState(state, batch[0]);
+        const batchH = measureBatchHeight(batch);
+
+        if (current.length > 0 && currentH + batchH > usableHeightPx) {
+            startNewPage();
+        }
+
+        batch.forEach(function (info) {
+            current.push(info.tr.cloneNode(true));
+        });
+        currentH += batchH;
+
+        if (filtered[i].slittingGroup) {
+            i += batch.length - 1;
+        }
+    }
+
+    if (current.length) pages.push({ rows: current, contentH: currentH });
+    return pages;
+}
+
+function buildPdfPageTable(pageRows) {
+    const table = document.createElement('table');
+    applyPdfTableStyles(table);
+    const tbody = document.createElement('tbody');
+    pageRows.forEach(function (tr) { tbody.appendChild(tr.cloneNode(true)); });
+    table.appendChild(tbody);
+    return table;
+}
+
+// Split page rows into separate full-width tables when column counts change between sections
+function buildPdfPageFragment(pageRows) {
+    const host = document.createElement('div');
+    host.style.width = '100%';
+    host.style.background = '#ffffff';
+
+    let group = [];
+    let groupCols = null;
+
+    function flushGroup() {
+        if (!group.length) return;
+        host.appendChild(buildPdfPageTable(group));
+        group = [];
+    }
+
+    pageRows.forEach(function (tr) {
+        const cols = parseInt(tr.getAttribute('data-export-cols') || '0', 10) || tr.cells.length;
+        const slitGroup = tr.getAttribute('data-export-slitting-group') || '';
+        const prevSlit = group.length
+            ? (group[group.length - 1].getAttribute('data-export-slitting-group') || '')
+            : '';
+        const sameSlitGroup = slitGroup && slitGroup === prevSlit;
+
+        if (groupCols !== null && cols !== groupCols && !sameSlitGroup) flushGroup();
+        if (!sameSlitGroup) groupCols = cols;
+        group.push(tr);
+    });
+    flushGroup();
+    return host;
+}
+
+function waitNextFrame() {
+    return new Promise(function (resolve) { requestAnimationFrame(function () { resolve(); }); });
+}
+
+function getReportFileName() {
+    const currentDate = new Date();
+    const dateString = currentDate.getFullYear() + "-" +
+        (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
+        currentDate.getDate().toString().padStart(2, "0");
+    return "MISReport_" + dateString;
+}
+
+function ExportExcel() {
+    if (!lastReportData) {
+        toastr.warning("Please load the report first.");
+        return;
+    }
+
+    buildExportTable();
+    downloadTableAsExcel('tblExportMaster', getReportFileName());
+}
+
 function downloadTableAsExcel(tableId, filename) {
     const table = document.getElementById(tableId);
     if (!table) return;
 
     const tableHtml = table.outerHTML;
-
     const template =
         '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
         'xmlns:x="urn:schemas-microsoft-com:office:excel" ' +
@@ -951,9 +1354,7 @@ function downloadTableAsExcel(tableId, filename) {
         '<style>td{mso-number-format:"\\@";}</style>' +
         '</head><body>' + tableHtml + '</body></html>';
 
-    const dataUri = 'data:application/vnd.ms-excel;base64,' +
-        base64EncodeUnicode(template);
-
+    const dataUri = 'data:application/vnd.ms-excel;base64,' + base64EncodeUnicode(template);
     const link = document.createElement('a');
     link.href = dataUri;
     link.download = filename + '.xls';
@@ -963,12 +1364,140 @@ function downloadTableAsExcel(tableId, filename) {
 }
 
 function base64EncodeUnicode(str) {
-    // Handle Unicode characters safely before base64 encoding
     const utf8 = encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function (_, p1) {
         return String.fromCharCode(parseInt(p1, 16));
     });
     return window.btoa(utf8);
 }
 
+async function ExportPdf() {
+    if (!lastReportData) {
+        toastr.warning("Please load the report first.");
+        return;
+    }
+
+    const JsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!JsPDF || typeof html2canvas !== 'function') {
+        toastr.error("PDF library not loaded. Please refresh the page.");
+        return;
+    }
+
+    _pdfExportCompact = true;
+
+    const wrapper = document.getElementById('misPdfExportWrap');
+    if (!wrapper) {
+        _pdfExportCompact = false;
+        toastr.error("PDF export container not found.");
+        return;
+    }
+
+    const sectionTables = buildPdfExportDom(wrapper);
+    if (!sectionTables.length) {
+        _pdfExportCompact = false;
+        toastr.warning("No data available for PDF export.");
+        return;
+    }
+
+    const prev = {
+        display: wrapper.style.display,
+        position: wrapper.style.position,
+        left: wrapper.style.left,
+        top: wrapper.style.top,
+        zIndex: wrapper.style.zIndex,
+        background: wrapper.style.background,
+        width: wrapper.style.width
+    };
+
+    const pdf = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const margin = PDF_LAYOUT.marginMm;
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const usableW = pageW - margin * 2;
+    const usableH = pageH - margin * 2;
+    const wrapperWidthPx = getPdfWrapperWidthPx(usableW);
+
+    wrapper.style.display = 'block';
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '-12000px';
+    wrapper.style.top = '0';
+    wrapper.style.zIndex = '-1';
+    wrapper.style.background = '#ffffff';
+    wrapper.style.width = wrapperWidthPx + 'px';
+    wrapper.style.overflow = 'hidden';
+
+    const $btn = $('#btnDownload');
+    $btn.prop('disabled', true);
+
+    try {
+        await waitNextFrame();
+        await waitNextFrame();
+
+        const usablePx = wrapperWidthPx * (usableH / usableW);
+        const pages = buildPdfRowPages(sectionTables, usablePx);
+
+        for (let p = 0; p < pages.length; p++) {
+            const pageFragment = buildPdfPageFragment(pages[p].rows);
+            const captureHost = document.createElement('div');
+            captureHost.style.width = wrapperWidthPx + 'px';
+            captureHost.style.overflow = 'hidden';
+            captureHost.style.background = '#ffffff';
+            captureHost.appendChild(pageFragment);
+            wrapper.appendChild(captureHost);
+            await waitNextFrame();
+
+            const captureW = captureHost.offsetWidth;
+            const captureH = captureHost.offsetHeight;
+
+            const canvas = await html2canvas(captureHost, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                width: captureW,
+                height: captureH,
+                windowWidth: captureW,
+                windowHeight: captureH
+            });
+
+            wrapper.removeChild(captureHost);
+
+            if (p > 0) pdf.addPage();
+
+            // Scale to full page width; keep natural height (do not stretch short pages)
+            const drawW = usableW;
+            const drawH = Math.min(usableH, (captureH / captureW) * drawW);
+
+            pdf.addImage(
+                canvas.toDataURL('image/jpeg', 0.92),
+                'JPEG',
+                margin,
+                margin,
+                drawW,
+                drawH,
+                undefined,
+                'FAST'
+            );
+        }
+
+        pdf.save(getReportFileName() + '.pdf');
+    } catch (err) {
+        console.error('PDF export failed:', err);
+        toastr.error("Failed to generate PDF.");
+    } finally {
+        _pdfExportCompact = false;
+        wrapper.querySelectorAll('table.pdf-section-table').forEach(function (t) { t.remove(); });
+        wrapper.style.display = prev.display;
+        wrapper.style.position = prev.position;
+        wrapper.style.left = prev.left;
+        wrapper.style.top = prev.top;
+        wrapper.style.zIndex = prev.zIndex;
+        wrapper.style.background = prev.background;
+        wrapper.style.width = prev.width;
+        wrapper.style.overflow = '';
+        $btn.prop('disabled', false);
+    }
+}
+
 window.GetReportData = GetReportData;
-window.Export = Export;
+window.ExportExcel = ExportExcel;
+window.ExportPdf = ExportPdf;

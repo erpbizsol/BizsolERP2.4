@@ -50,7 +50,7 @@ window.parseNumericCellForTotal = function parseNumericCellForTotal(raw) {
 };
 
 const BizsolCustomFilterGrid = {
-    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null, CommaColumns = null, GlobalSearch = false) {
+    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null, CommaColumns = null, GlobalSearch = false, FloatingTotalRow = false) {
         const columns = Object.keys(data[0]);
         const tableId = $('#' + bodyId).closest('table').attr('id');
         renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
@@ -59,6 +59,14 @@ const BizsolCustomFilterGrid = {
         window[`totalColumns_${bodyId}`] = TotalColumns;
         window[`fixedDecimalvalue_${bodyId}`] = FixedDecimalvalue;
         window[`commaColumns_${bodyId}`] = Array.isArray(CommaColumns) ? CommaColumns : [];
+        window[`floatingTotalRow_${bodyId}`] = !!FloatingTotalRow;
+
+        // Create or remove the sticky <tfoot> used for the floating total row
+        const $tbl = $('#' + bodyId).closest('table');
+        $tbl.find('tfoot.bizsol-floating-tfoot').remove();
+        if (FloatingTotalRow) {
+            $tbl.append('<tfoot class="bizsol-floating-tfoot" id="tfoot-' + bodyId + '"></tfoot>');
+        }
         renderTable(data, bodyId);
         window[`button_${tableId}`] = Button;
         window[`ShowButtons_${bodyId}`] = ShowButtons;
@@ -882,6 +890,7 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
 
     const totalColumns = window[`totalColumns_${bodyId}`];
     const columnTotals = {};
+    let _floatingTfootHtml = null;
 
     // Calculate totals for specified columns (if not skipping)
     if (totalColumns && Array.isArray(totalColumns) && totalColumns.length > 0 && !skipTotalRow) {
@@ -1006,18 +1015,29 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 cellContent = `<strong>${totalValue}</strong>`;
             }
 
-            return `<td style="${style}; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #333;">${cellContent}</td>`;
+            return `<td style="${style}; font-weight: bold; background-color: #ffffff; border-top: 2px solid #333;">${cellContent}</td>`;
         }).join('');
 
         let totalButtons = '';
         if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
-            totalButtons = '<td style="background-color: #f8f9fa; border-top: 2px solid #333;"></td>';
+            totalButtons = '<td style="background-color: #ffffff; border-top: 2px solid #333;"></td>';
         }
 
-        rows += `<tr class="total-row">${totalRow}${totalButtons}</tr>`;
+        const _isFloatingTotal = window[`floatingTotalRow_${bodyId}`];
+        if (_isFloatingTotal) {
+            // Store for tfoot update after tbody is written
+            _floatingTfootHtml = `<tr class="total-row">${totalRow}${totalButtons}</tr>`;
+        } else {
+            rows += `<tr class="total-row">${totalRow}${totalButtons}</tr>`;
+        }
     }
 
     $(`#${bodyId}`).html(rows);
+
+    // Push total row into sticky tfoot when floating mode is active
+    if (_floatingTfootHtml !== null) {
+        $(`#tfoot-${bodyId}`).html(_floatingTfootHtml);
+    }
 
     if (tableId === "VendorMaster") {
         const $body = $(`#${bodyId}`);
@@ -1102,10 +1122,15 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
     }
 
     const grandTotalRowHtml = `<tr class="grand-total-row">${grandTotalRow}${totalButtons}</tr>`;
-    
-    console.log('Appending grand total row to:', bodyId);
-    // Append grand total row to tbody
-    $(`#${bodyId}`).append(grandTotalRowHtml);
+
+    const _isFloatingGrandTotal = window[`floatingTotalRow_${bodyId}`];
+    if (_isFloatingGrandTotal) {
+        // Overwrite the sticky tfoot with the grand total (covers all filtered data)
+        $(`#tfoot-${bodyId}`).html(grandTotalRowHtml);
+    } else {
+        // Append grand total row to tbody (default behaviour)
+        $(`#${bodyId}`).append(grandTotalRowHtml);
+    }
 }
 window.updatePageInfo = function updatePageInfo(tableId) {
     var filteredData = window[`filteredData_${tableId}`];

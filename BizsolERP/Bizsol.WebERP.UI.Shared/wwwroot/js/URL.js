@@ -109,6 +109,7 @@ let UrlService = {
     API_ENDPOINT_PDI: `${environment.BASE_URL}/PDI`,
     API_ENDPOINT_CustomerDashboard: `${environment.BASE_URL}/CustomerDashboard`,
     API_ENDPOINT_BuyingCapacity: `${environment.BASE_URL}/BuyingCapacity`,
+    API_ENDPOINT_TargetExecutiveWise: `${environment.BASE_URL}/TargetExecutiveWise`,
     API_ENDPOINT_ProspectiveCustomer: `${environment.BASE_URL}/ProspectiveCustomer`,
     API_DOCUMENT_DispatchAdvicePlan: `${environment.BASE_URL}/VerifyDispatchAdvice`,
     API_DOCUMENT_StockAgeingReport: `${environment.BASE_URL}/StockAgeingReport`,
@@ -121,6 +122,7 @@ let UrlService = {
     API_ENDPOINT_QCPropertyMaster: `${environment.BASE_URL}/QCPropertyMaster`,
     API_ENDPOINT_QCPropertyTestTypeMaster: `${environment.BASE_URL}/QCPropertyTestTypeMaster`,
     API_ENDPOINT_RawMaterialOffer: `${environment.BASE_URL}/RawMaterialOffer`,
+    API_ENDPOINT_StockAllocation: `${environment.BASE_URL}/StockAllocation`,
     //MachineMaintenanceRequest
     API_ENDPOINT_MachineMaintenance: `${environment.BASE_URL}/MachineMaintenance`,
     API_ENDPOINT_FGInspectedOffer: `${environment.BASE_URL}/FGInspectedEntry`,
@@ -172,6 +174,7 @@ let UrlService = {
     API_ENDPOINT_SalesPersonTargetAchievementReport: `${environment.BASE_URL}/SalesPersonTargetAchievementReport`,
     API_ENDPOINT_SalesPersonDashboard: `${environment.BASE_URL}/SalesPersonDashboard`,
     API_ENDPOINT_ExpenseDashboard: `${environment.BASE_URL}/ExpenseDashboard`,
+    API_ENDPOINT_IndentMaster: `${environment.BASE_URL}/IndentMaster`,
     API_ENDPOINT_TEMPLETE_REPORT: `${environment.BASE_URL}/OrderLoadReport`,
 }
 

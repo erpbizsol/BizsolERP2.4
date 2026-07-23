@@ -603,6 +603,10 @@
     #dvApprovedTransporterDashboard .atd-main-row {
         margin-top: 0;
     }
+
+    #dvApprovedTransporterDashboard .atd-main-row > [class*="col-"] {
+        margin-bottom: 0;
+    }
     
     #dvApprovedTransporterDashboard .atd-panel {
         background: rgba(15, 23, 42, 0.55);
@@ -610,6 +614,7 @@
         border-radius: 10px;
         padding: 10px 12px;
         height: 100%;
+        min-width: 0;
     }
     
     #dvApprovedTransporterDashboard .atd-panel-title {
@@ -621,11 +626,12 @@
     }
     
     #dvApprovedTransporterDashboard .atd-table-wrap {
-        max-height: 280px;
+        max-height: 380px;
         overflow: auto;
         border-radius: 8px;
         border: 1px solid rgba(148, 163, 184, 0.12);
         background: rgba(15, 23, 42, 0.4);
+        -webkit-overflow-scrolling: touch;
     }
     
     #dvApprovedTransporterDashboard table.atd-matrix-table {
@@ -699,15 +705,61 @@
     }
     
     #dvApprovedTransporterDashboard .atd-chart-wrap {
-        min-height: 220px;
-        max-height: 260px;
+        min-height: 380px;
+        height: 380px;
+        max-height: none;
         position: relative;
-        padding: 5px 3px;
+        overflow: visible;
+        padding: 8px 4px;
     }
-    
-    #dvApprovedTransporterDashboard .atd-donut-legend-hint {
-        color: #94a3b8;
-        min-height: 0;
+
+    /* Hide under-chart legend list (first-image style) */
+    #dvApprovedTransporterDashboard #atdDonutLegend {
+        display: none !important;
+    }
+
+    @@media (max-width: 991.98px) {
+        #dvApprovedTransporterDashboard .atd-body {
+            max-height: none;
+            padding: 0.65rem 0.75rem 0.85rem;
+        }
+        #dvApprovedTransporterDashboard .atd-main-row > [class*="col-"] {
+            margin-bottom: 10px;
+        }
+        #dvApprovedTransporterDashboard .atd-chart-wrap {
+            min-height: 340px;
+            height: 340px;
+        }
+        #dvApprovedTransporterDashboard .atd-table-wrap {
+            max-height: 300px;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        #dvApprovedTransporterDashboard .atd-header {
+            padding: 0.6rem 0.75rem;
+        }
+        #dvApprovedTransporterDashboard .atd-title {
+            font-size: 0.95rem;
+        }
+        #dvApprovedTransporterDashboard .atd-chart-wrap {
+            min-height: 300px;
+            height: 300px;
+        }
+        #dvApprovedTransporterDashboard .atd-table-wrap {
+            max-height: 260px;
+        }
+        #dvApprovedTransporterDashboard table.atd-matrix-table {
+            font-size: 0.74rem;
+        }
+        #dvApprovedTransporterDashboard table.atd-matrix-table td.atd-text,
+        #dvApprovedTransporterDashboard table.atd-matrix-table thead th.atd-th-name {
+            min-width: 120px;
+            max-width: 180px;
+        }
+        #dvApprovedTransporterDashboard .atd-kpi-card {
+            width: calc(50% - 7px);
+        }
     }
     
     #dvApprovedTransporterDashboard .atd-legend-grid {
@@ -742,6 +794,73 @@
         margin-top: 12px;
         margin-bottom: 8px;
     }
+
+    /* ===== Dispatch Delay Report – summary KPI cards ===== */
+    #dvDelayReportCards {
+        margin-bottom: 8px;
+    }
+    #dvDelayReportCards .drc-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 100%;
+        background: #fff;
+        border: 1px solid #eef0f4;
+        border-radius: 12px;
+        padding: 14px 16px;
+        box-shadow: 0 4px 14px rgba(17, 24, 39, 0.06);
+        border-top: 4px solid #6366f1;
+    }
+    #dvDelayReportCards .drc-accent-indigo { border-top-color: #7c3aed; }
+    #dvDelayReportCards .drc-accent-green  { border-top-color: #10b981; }
+    #dvDelayReportCards .drc-accent-orange { border-top-color: #f59e0b; }
+    #dvDelayReportCards .drc-accent-blue   { border-top-color: #3b82f6; }
+    #dvDelayReportCards .drc-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        color: #fff;
+        flex-shrink: 0;
+    }
+    #dvDelayReportCards .drc-accent-indigo .drc-icon { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+    #dvDelayReportCards .drc-accent-green  .drc-icon { background: linear-gradient(135deg, #34d399, #10b981); }
+    #dvDelayReportCards .drc-accent-orange .drc-icon { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+    #dvDelayReportCards .drc-accent-blue   .drc-icon { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+    #dvDelayReportCards .drc-body { min-width: 0; flex: 1 1 auto; }
+    #dvDelayReportCards .drc-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #111827;
+        font-variant-numeric: tabular-nums;
+    }
+    #dvDelayReportCards .drc-title {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #374151;
+        margin-bottom: 4px;
+    }
+    #dvDelayReportCards .drc-label {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        margin-top: 2px;
+    }
+    #dvDelayReportCards .drc-metrics {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2px 10px;
+        font-size: 0.72rem;
+        color: #4b5563;
+    }
+    #dvDelayReportCards .drc-metrics b { color: #111827; }
 </style>
 <div class="row vdp-page">
     <div class="col-sm-12">
@@ -761,6 +880,8 @@
                         <option value="T">Approved Quotation</option>
                         <option value="R">Dispatch Activity Report</option> 
                         <option value="TR">Transporter Report</option>
+                        <option value="DR">Dispatch Delay Report</option>
+                        <option value="FL">Freight Loss Report</option>
                     </select>
                 </div>
                 <div class="col-auto despatch-activity-filter d-none">
@@ -779,6 +900,61 @@
                         <i class="fas fa-download"></i> Download
                     </button>
                 </div>
+            </div>
+        </div>
+        <div id="dvDelayReportCards" style="display:none;">
+            <div class="row g-2">
+                <div class="col-md-4 col-sm-6 mb-2">
+                    <div class="drc-card drc-accent-indigo">
+                        <div class="drc-icon"><i class="fas fa-layer-group"></i></div>
+                        <div class="drc-body">
+                            <div class="drc-value" id="drcTotalIndents">0</div>
+                            <div class="drc-label">Total Indents (by Marketing Man)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6 mb-2">
+                    <div class="drc-card drc-accent-green">
+                        <div class="drc-icon"><i class="fas fa-user-tie"></i></div>
+                        <div class="drc-body">
+                            <div class="drc-title">Marketing</div>
+                            <div class="drc-metrics">
+                                <span>On-Time: <b id="drcMktOnTime">0</b></span>
+                                <span>Late: <b id="drcMktLate">0</b></span>
+                                <span>Score: <b id="drcMktScore">0%</b></span>
+                                <span>Avg Delay: <b id="drcMktAvg">0</b></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6 mb-2">
+                    <div class="drc-card drc-accent-orange">
+                        <div class="drc-icon"><i class="fas fa-clipboard-check"></i></div>
+                        <div class="drc-body">
+                            <div class="drc-title">PPC</div>
+                            <div class="drc-metrics">
+                                <span>On-Time: <b id="drcPpcOnTime">0</b></span>
+                                <span>Late: <b id="drcPpcLate">0</b></span>
+                                <span>Score: <b id="drcPpcScore">0%</b></span>
+                                <span>Avg Delay: <b id="drcPpcAvg">0</b></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @* <div class="col-md-4 col-sm-6 mb-2">
+                    <div class="drc-card drc-accent-blue">
+                        <div class="drc-icon"><i class="fas fa-truck"></i></div>
+                        <div class="drc-body">
+                            <div class="drc-title">Dispatch</div>
+                            <div class="drc-metrics">
+                                <span>On-Time: <b id="drcDspOnTime">0</b></span>
+                                <span>Late: <b id="drcDspLate">0</b></span>
+                                <span>Score: <b id="drcDspScore">0%</b></span>
+                                <span>Avg Delay: <b id="drcDspAvg">0</b></span>
+                            </div>
+                        </div>
+                    </div>
+                </div> *@
             </div>
         </div>
         <div class="card p-1" id="dvTableDispatch" style="display:none;">
@@ -844,7 +1020,7 @@
                     </div>
                 </div>
                 <div class="row g-2 atd-main-row">
-                    <div class="col-lg-5">
+                    <div class="col-12 col-lg-6">
                         <div class="atd-panel">
                             <div class="atd-panel-title">Share by transporter</div>
                             <div class="atd-chart-wrap">
@@ -853,7 +1029,7 @@
                             <div id="atdDonutLegend" class="small mt-1 atd-donut-legend-hint"></div>
                         </div>
                     </div>
-                    <div class="col-lg-7">
+                    <div class="col-12 col-lg-6">
                         <div class="atd-panel">
                             <div class="atd-panel-title">Quote status / record count</div>
                             <div class="atd-table-wrap">
@@ -1085,7 +1261,7 @@
                     </div>
                 </div>
                 <div class="row g-2 atd-main-row">
-                    <div class="col-lg-5">
+                    <div class="col-12 col-lg-6">
                         <div class="atd-panel">
                             <div class="atd-panel-title">Share by transporter</div>
                             <div class="atd-chart-wrap">
@@ -1094,7 +1270,7 @@
                             <div id="atdDonutLegend" class="small mt-1 atd-donut-legend-hint"></div>
                         </div>
                     </div>
-                    <div class="col-lg-7">
+                    <div class="col-12 col-lg-6">
                         <div class="atd-panel">
                             <div class="atd-panel-title">Quote status / record count</div>
                             <div class="atd-table-wrap">
