@@ -1,0 +1,255 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Marketing.Reports/css/OrderLoadReport.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Reports/js/OrderLoadReport.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Reports/js/OrderLoadManageTemplate.js"></script>
+
+<style>
+    .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
+    .form-control-sm {
+        margin-bottom: 1px !important;
+        padding: .25rem .4rem !important;
+        font-size: 12px !important;
+    }
+</style>
+
+<div id="OrderLoadReportPage" class="ol-page">
+
+    <div class="ol-list-header section-entry-animation">
+        <div class="ol-list-header-top">
+            <div class="ol-list-header-title-block">
+                <h2 class="ol-list-header-title">
+                    <i class="fa fa-truck-loading me-2" aria-hidden="true"></i>Order Load Report
+                </h2>
+                <small class="ol-list-header-sub">View order load report by template and filters.</small>
+            </div>
+            <div class="ol-list-header-actions">
+                <div class="ol-filter-field ol-template-field ol-header-template" id="olFieldTemplate">
+                    <label for="ddlTemplate" class="form-label"><span>Report Template</span> <span class="text-danger">*</span></label>
+                    <select id="ddlTemplate" class="form-control form-control-sm box_border">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <div class="ol-filter-actions ol-header-filter-actions">
+                    <button type="button" class="ol-btn ol-btn-filter" id="btnFilter">
+                        <i class="fas fa-filter"></i> Filter
+                        <span class="ol-filter-badge" id="olFilterBadge" style="display:none;">0</span>
+                    </button>
+                    <button type="button" class="ol-btn ol-btn-show" id="btnShow">
+                        <i class="fas fa-play" id="btnShowIcon"></i>
+                        <span id="btnShowText">Load Report</span>
+                        <i class="fas fa-spinner fa-spin" id="btnShowSpinner" style="display:none;"></i>
+                    </button>
+                </div>
+                <button type="button" class="ol-btn ol-btn-manage" id="btnManageTemplate">
+                    <i class="fas fa-table-list"></i> Manage Template
+                </button>
+                <button type="button" class="ol-btn ol-btn-reset" id="btnReset">
+                    <i class="fas fa-rotate-left"></i> Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="ol-list-grid-wrap">
+        <div id="olPageLoader" class="ol-page-loader">
+            <div class="ol-spinner"></div>
+            <div class="ol-loader-text" id="olLoaderText">Loading templates...</div>
+        </div>
+
+        <div id="olEmptyState" class="ol-empty">
+            <div>
+                <i class="fas fa-table fa-2x" style="color:#cbd5e1;"></i>
+                <h4>No report loaded</h4>
+                <p>Select template, set dates in <strong>Filter</strong>, then click <strong>Load Report</strong>.</p>
+            </div>
+        </div>
+
+        <div id="tblOrderLoadReport" class="ol-grid-panel" style="display:none;">
+            <div class="ol-grid-toolbar" id="olGridMeta" style="display:none;">
+                <span class="ol-record-badge" id="olRecordCount">0 records</span>
+                <div id="olSearchSlot"></div>
+            </div>
+            <div class="ol-table-wrapper table-wrapper fixed-height-table">
+                <div id="olGridLoader" class="ol-grid-loader">
+                    <div class="ol-spinner"></div>
+                    <div class="ol-loader-text">Loading report data...</div>
+                </div>
+                <table id="OrderLoadReport" class="fixed-width-table table">
+                    <thead id="OrderLoadReport-header"></thead>
+                    <tbody id="OrderLoadReport-body"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-OrderLoadReport"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Extra filters (modal) — OtherFilter1/2/3 show only when template value is not blank -->
+<div class="modal fade" id="olFilterModal" tabindex="-1" aria-labelledby="olFilterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content ol-filter-modal-content">
+            <div class="modal-header ol-filter-modal-header">
+                <h5 class="modal-title" id="olFilterModalLabel">
+                    <i class="fas fa-filter me-2"></i>Filters
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body ol-filter-modal-body">
+                <div class="ol-filter-modal-grid">
+                    <div class="ol-filter-field ol-hidden" id="olFieldFromDate">
+                        <label for="txtFromDate" class="form-label"><span id="lblFromDateText">Order Date</span> <span class="text-danger">*</span></label>
+                        <input type="date" id="txtFromDate" class="form-control form-control-sm box_border" />
+                    </div>
+                    <div class="ol-filter-field ol-hidden" id="olFieldToDate">
+                        <label for="txtToDate" class="form-label"><span id="lblToDateText">To Date</span> <span class="text-danger">*</span></label>
+                        <input type="date" id="txtToDate" class="form-control form-control-sm box_border" />
+                    </div>
+                    <div class="ol-filter-field ol-hidden" id="olFieldLevel">
+                        <label for="ddlLevel" class="form-label"><span>Level</span></label>
+                        <select id="ddlLevel" class="form-control form-control-sm box_border"></select>
+                    </div>
+                    <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldWareHouse">
+                        <label for="ddlWareHouse" class="form-label"><span>Warehouse</span></label>
+                        <select id="ddlWareHouse" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
+                    </div>
+                    <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldItemGroup">
+                        <label for="ddlItemGroup" class="form-label"><span>Item Group</span></label>
+                        <select id="ddlItemGroup" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
+                    </div>
+                    <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldProcess">
+                        <label for="ddlProcess" class="form-label"><span>Process</span></label>
+                        <select id="ddlProcess" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
+                    </div>
+                    <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldMarketingMan">
+                        <label for="ddlMarketingMan" class="form-label"><span>Marketing Man</span></label>
+                        <select id="ddlMarketingMan" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
+                    </div>
+                    <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldOrderNo">
+                        <label for="ddlOrderNo" class="form-label"><span>Order No</span></label>
+                        <select id="ddlOrderNo" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
+                    </div>
+                    <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldItemType">
+                        <label for="ddlItemType" class="form-label"><span>Item Type</span></label>
+                        <select id="ddlItemType" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
+                    </div>
+                    <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldItemName">
+                        <label for="ddlItemName" class="form-label"><span>Item Name</span></label>
+                        <select id="ddlItemName" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
+                    </div>
+                    <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldOtherFilter1">
+                        <label for="ddlOtherFilter1" class="form-label"><span id="lblOtherFilter1">Other Filter 1</span></label>
+                        <select id="ddlOtherFilter1" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
+                    </div>
+                    <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldOtherFilter2">
+                        <label for="ddlOtherFilter2" class="form-label"><span id="lblOtherFilter2">Other Filter 2</span></label>
+                        <select id="ddlOtherFilter2" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
+                    </div>
+                    <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldOtherFilter3">
+                        <label for="ddlOtherFilter3" class="form-label"><span id="lblOtherFilter3">Other Filter 3</span></label>
+                        <select id="ddlOtherFilter3" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
+                    </div>
+                </div>
+                <div class="ol-filter-modal-empty ol-hidden" id="olFilterModalEmpty">
+                    No extra filters for this template.
+                </div>
+            </div>
+            <div class="modal-footer ol-filter-modal-footer">
+                <button type="button" class="ol-btn ol-btn-reset" id="btnFilterModalClear">
+                    <i class="fas fa-eraser"></i> Clear
+                </button>
+                <button type="button" class="ol-btn ol-btn-ok" id="btnFilterModalOk">
+                    <i class="fas fa-check"></i> OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Template (modal) -->
+<div class="modal fade" id="olManageTemplateModal" tabindex="-1" aria-labelledby="olManageTemplateLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content ol-filter-modal-content">
+            <div class="modal-header ol-filter-modal-header">
+                <h5 class="modal-title" id="olManageTemplateLabel">
+                    <i class="fas fa-table-list me-2"></i>Manage Template
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body ol-mt-body">
+                <!-- Mode + master/template selection -->
+                <div class="ol-mt-toolbar">
+                    <div class="ol-mt-mode-group" role="group">
+                        <button type="button" class="ol-btn ol-mt-mode-btn active" id="btnMtAdd" data-mode="ADD">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                        <button type="button" class="ol-btn ol-mt-mode-btn" id="btnMtEdit" data-mode="EDIT">
+                            <i class="fas fa-pen"></i> Edit
+                        </button>
+                        <button type="button" class="ol-btn ol-btn-reset" id="btnMtDelete" disabled>
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                    <div class="ol-filter-field">
+                        <label class="form-label"><span id="lblMtMaster">Master Template</span></label>
+                        <select id="ddlMtMaster" class="form-control form-control-sm box_border">
+                            <option value="">-- Select --</option>
+                        </select>
+                    </div>
+                    <div class="ol-filter-field">
+                        <label class="form-label"><span>Template Name</span> <span class="text-danger">*</span></label>
+                        <input type="text" id="txtMtTemplateName" class="form-control form-control-sm box_border" maxlength="200" placeholder="Enter template name" />
+                    </div>
+                    <div class="ol-filter-field">
+                        <label class="form-label"><span>Freeze Column</span></label>
+                        <select id="ddlMtFreezeColumn" class="form-control form-control-sm box_border">
+                            <option value="">-- None --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="ol-mt-grid-wrap">
+                    <div id="olMtGridLoader" class="ol-grid-loader">
+                        <div class="ol-spinner"></div>
+                        <div class="ol-loader-text">Loading fields...</div>
+                    </div>
+                    <div class="ol-mt-select-all-bar">
+                        <label>
+                            <input type="checkbox" id="chkMtSelectAll" title="Select all" />
+                            <span>Select all fields</span>
+                        </label>
+                    </div>
+                    <table class="table ol-mt-table" id="olMtTable">
+                        <thead>
+                            <tr>
+                                <th style="width:44px;" class="text-center">Show</th>
+                                <th>Name</th>
+                                <th>Display Name</th>
+                                <th style="width:80px;" class="text-center">Show Total</th>
+                                <th style="width:70px;" class="text-center">Filter</th>
+                                <th style="width:100px;" class="text-center">Sort Order</th>
+                                <th style="width:90px;" class="text-center">Show In Print</th>
+                            </tr>
+                        </thead>
+                        <tbody id="olMtTableBody"></tbody>
+                    </table>
+                    <!-- Mobile-only card list (avoids broken table→card CSS) -->
+                    <div id="olMtCards" class="ol-mt-cards" aria-hidden="true"></div>
+                    <div class="ol-mt-empty" id="olMtEmpty">Select a template to load its fields.</div>
+                </div>
+            </div>
+            <div class="modal-footer ol-filter-modal-footer">
+                <button type="button" class="ol-btn ol-btn-reset" data-bs-dismiss="modal">
+                    <i class="fas fa-xmark"></i> Close
+                </button>
+                <button type="button" class="ol-btn ol-btn-ok" id="btnMtSave">
+                    <i class="fas fa-floppy-disk"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
