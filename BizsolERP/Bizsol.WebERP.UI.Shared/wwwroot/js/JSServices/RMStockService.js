@@ -124,6 +124,14 @@ const RMStockService = {
             }
         );
     },
+    GetRMStockRMReport: function GetRMStockRMReport(FromDate, ToDate) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockRMReport?FromDate=" + FromDate + "&ToDate=" + ToDate;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetRMStockSummaryData: function GetRMStockSummaryData() {
         var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockSummaryData";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(

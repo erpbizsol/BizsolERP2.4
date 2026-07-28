@@ -1,4 +1,10 @@
 import { MISReportsServices } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MISReportsService.js';
+import {
+    loadYieldConfiguration,
+    getYieldConfigReady,
+    applyYieldCellColour,
+    getYieldColour
+} from '../../Bizsol.WebERP.UI.Shared/js/YieldConfigurationHelper.js';
 
 let lastReportData = null;
 let _pdfExportCompact = false;
@@ -12,6 +18,7 @@ const PDF_LAYOUT = {
 };
 
 $(document).ready(function () {
+    loadYieldConfiguration();
     $("#ERPHeading").text("MIS Report");
     var today = new Date();
     $('#txtDate').val(today.toISOString().split('T')[0]);
@@ -80,7 +87,11 @@ function GetReportData() {
 
     const formattedDate = convertDateFormat(dateVal);
 
-    MISReportsServices.GetDayWiseMISReports(formattedDate).then(function (response) {
+    Promise.all([
+        MISReportsServices.GetDayWiseMISReports(formattedDate),
+        getYieldConfigReady()
+    ]).then(function (results) {
+        const response = results[0];
         $('#btnShow').prop('hidden', false);
         $('#btnLoading').prop('hidden', true);
 
@@ -141,6 +152,27 @@ function formatYieldPct(value) {
     const num = parseFloat(value);
     if (isNaN(num)) return '';
     return num.toFixed(2);
+}
+
+function yieldContrastTextColor(hex) {
+    if (!hex) return '';
+    const h = String(hex).replace('#', '').slice(0, 6);
+    if (h.length < 6) return '#111827';
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return lum > 0.55 ? '#111827' : '#ffffff';
+}
+
+function yieldCellStyleOpts(value, baseOpts) {
+    const opts = Object.assign({}, baseOpts || {});
+    const colour = getYieldColour(value);
+    if (colour) {
+        opts.yieldBg = colour;
+        opts.yieldFg = yieldContrastTextColor(colour);
+    }
+    return opts;
 }
 
 function sortMillNames(order) {
@@ -330,6 +362,7 @@ function RenderSection(headerId, bodyId, noDataId, data) {
             const td = document.createElement('td');
             td.textContent = formatCellValue(item[key], key);
             if (isRightAligned(key)) td.style.textAlign = 'right';
+            if (isYieldColumn(key)) applyYieldCellColour(td, item[key]);
             tr.appendChild(td);
             if (isTotalable(key)) {
                 const num = parseFloat(item[key]);
@@ -459,6 +492,7 @@ function RenderGroupedSection(headerId, bodyId, noDataId, data, groupKeyName) {
                 const td = document.createElement('td');
                 td.textContent = formatCellValue(item[key], key);
                 if (isRightAligned(key) || isYieldColumn(key)) td.style.textAlign = 'right';
+                if (isYieldColumn(key)) applyYieldCellColour(td, item[key]);
                 tr.appendChild(td);
                 if (isTotalable(key)) {
                     const num = parseFloat(item[key]);
@@ -916,7 +950,11 @@ function buildFlatBlock(title, data) {
                 const n = parseFloat(item[k]);
                 if (!isNaN(n)) totals[k] += n;
             }
-            return cell(formatCellValue(item[k], k), { align: isRightAligned(k) ? 'right' : 'left' });
+            const baseOpts = { align: isRightAligned(k) ? 'right' : 'left' };
+            return cell(
+                formatCellValue(item[k], k),
+                isYieldColumn(k) ? yieldCellStyleOpts(item[k], baseOpts) : baseOpts
+            );
         }), 'data'));
     });
 
@@ -985,7 +1023,11 @@ function buildGroupedBlock(title, data, groupKeyName) {
                         grandTotals[k] += n;
                     }
                 }
-                return cell(formatCellValue(item[k], k), { align: (isRightAligned(k) || isYieldColumn(k)) ? 'right' : 'left' });
+                const baseOpts = { align: (isRightAligned(k) || isYieldColumn(k)) ? 'right' : 'left' };
+                return cell(
+                    formatCellValue(item[k], k),
+                    isYieldColumn(k) ? yieldCellStyleOpts(item[k], baseOpts) : baseOpts
+                );
             }), 'data', { group: machine }));
         });
 
@@ -1065,6 +1107,13 @@ function styleCell(td, cell) {
         td.style.border = 'none';
         td.style.backgroundColor = '#ffffff';
         td.style.width = '24px';
+    }
+
+    // Yield% band colours (same config as Slitting Plan)
+    if (cell.yieldBg) {
+        td.style.backgroundColor = cell.yieldBg;
+        if (cell.yieldFg) td.style.color = cell.yieldFg;
+        td.style.fontWeight = '600';
     }
 }
 

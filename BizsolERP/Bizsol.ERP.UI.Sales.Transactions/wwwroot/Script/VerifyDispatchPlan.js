@@ -1179,7 +1179,12 @@ function ExportExcel() {
             }
             const wb = XLSX.utils.book_new();
             if (detail.length) {
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mapNullsToEmptyStrings(detail)), 'DelayReport');
+                // Excel: Unicode ballot icons (☑ / ☒) instead of SQL "?" placeholders
+                XLSX.utils.book_append_sheet(
+                    wb,
+                    XLSX.utils.json_to_sheet(decorateDelayReportStatusIcons(mapNullsToEmptyStrings(detail), false)),
+                    'DelayReport'
+                );
             }
             if (summary.length) {
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mapNullsToEmptyStrings(summary)), 'Summary');
@@ -2522,6 +2527,55 @@ function ShowTransporterReportList() {
 
 window.ShowTransporterReportList = ShowTransporterReportList;
 
+function isDelayReportStatusColumn(colName) {
+    if (!colName) return false;
+    var k = String(colName);
+    return /MKT\s*Status/i.test(k) || /PPC\s*Status/i.test(k);
+}
+
+function delayReportStatusPlainText(val) {
+    if (val === null || val === undefined) return '';
+    var s = String(val).replace(/<[^>]*>/g, ' ').trim();
+    if (!s) return '';
+    // Strip leading placeholder (?), Wingdings leftovers, or Unicode ballot icons
+    return s.replace(/^[\?\u00FE\u00FD\u00FC\u2610\u2611\u2612\u2713\u2714\u2717\u2718\u2705\u274C\s]+/, '').trim();
+}
+
+function delayReportStatusWithIcon(val, forHtml) {
+    var text = delayReportStatusPlainText(val);
+    if (!text) return '';
+    if (/^late/i.test(text)) {
+        if (forHtml) {
+            // Black square + white X (matches Excel mockup)
+            return '<span class="dr-status dr-status-late">' +
+                '<span class="dr-status-icon" title="Late"><i class="fa-solid fa-xmark"></i></span>' +
+                '<span class="dr-status-text">' + text + '</span></span>';
+        }
+        return '\u2612 ' + text; // ☒ for Excel
+    }
+    if (/^on\s*time/i.test(text)) {
+        if (forHtml) {
+            // Black square + white check (matches Excel mockup)
+            return '<span class="dr-status dr-status-ok">' +
+                '<span class="dr-status-icon" title="On Time"><i class="fa-solid fa-check"></i></span>' +
+                '<span class="dr-status-text">' + text + '</span></span>';
+        }
+        return '\u2611 ' + text; // ☑ for Excel
+    }
+    return text;
+}
+
+function decorateDelayReportStatusIcons(rows, forHtml) {
+    if (!rows || !rows.length) return rows || [];
+    return rows.map(function (row) {
+        var o = {};
+        Object.keys(row).forEach(function (k) {
+            o[k] = isDelayReportStatusColumn(k) ? delayReportStatusWithIcon(row[k], forHtml) : row[k];
+        });
+        return o;
+    });
+}
+
 function ShowDelayReportList() {
     var fromDate = $('#txtFromDate').val();
     var toDate = $('#txtToDate').val();
@@ -2546,9 +2600,15 @@ function ShowDelayReportList() {
             toastr.info('No data found for Dispatch Delay Report.');
             return;
         }
-        G_DispatchPlanlist = detailClean;
-        const filters = getTransporterReportColumnFilters(detailClean);
-        BizsolCustomFilterGrid.CreateDataTable('table-head', 'table-body', detailClean, false, [], filters.stringFilterColumn, filters.numericFilterColumn, filters.dateFilterColumn, [], [], {}, false);
+        // Grid cells get real HTML icons (SQL "?" placeholders are replaced)
+        const detailForGrid = decorateDelayReportStatusIcons(detailClean, true);
+        G_DispatchPlanlist = detailForGrid;
+        const filters = getTransporterReportColumnFilters(detailForGrid);
+        // Status cols contain HTML — keep them out of filter dropdowns
+        filters.stringFilterColumn = filters.stringFilterColumn.filter(function (c) {
+            return !isDelayReportStatusColumn(c);
+        });
+        BizsolCustomFilterGrid.CreateDataTable('table-head', 'table-body', detailForGrid, false, [], filters.stringFilterColumn, filters.numericFilterColumn, filters.dateFilterColumn, [], [], {}, false);
         const tableHead = document.getElementById('table-head');
         if (tableHead) {
             const totalsRow = tableHead.querySelector('.totals-row');

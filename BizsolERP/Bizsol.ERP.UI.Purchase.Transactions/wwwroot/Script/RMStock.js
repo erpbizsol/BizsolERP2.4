@@ -7,10 +7,12 @@ let G_today = '';
 let G_FromDateValue = '';
 let G_FromDateValueSlitted = '';
 let G_FromDateValueJobWork = '';
+let G_FromDateValueRMReport = '';
 let G_FromDateSlittedCoilStockValue = '';
 let G_ToDateValue = '';
 let G_ToDateValueSlitted = '';
 let G_ToDateValueJobWork = '';
+let G_ToDateValueRMReport = '';
 let G_ToDateSlittedCoilStockValue = '';
 let G_IdentificationNo = '';
 let G_Code = 0;
@@ -37,18 +39,25 @@ $(document).ready(function () {
     loadYieldConfiguration();
     let isInitialLoad = true;
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+    bindRMStockFilterTotalHooks();
    
     $('#current-stock').show();
     $('#unApproved-planned').hide();
     $('#dispatch').hide();
     $('#slitted').hide();
     $('#job-work').hide();
+    $('#rm-report').hide();
     $('#stock-summary').hide();
     $('#slitted-coil-stock').hide();
     GetRMStockCurrentListTable();
     $('#exampleCheck').on("click", function () {
-        GetRMStockCurrentListTable();
-        GetUnApprovedPlannedList();
+        var activeTab = $('#rmStockTabs .nav-link.active').attr('data-bs-target');
+        if (activeTab === '#rm-report') {
+            ShowRMReportList();
+        } else {
+            GetRMStockCurrentListTable();
+            GetUnApprovedPlannedList();
+        }
     });
 
     $('#RMStockCurrentPlanned').on('change', '.ddlItemNameRow', function () {
@@ -1494,6 +1503,8 @@ function loadTabData(tabId) {
     $('#Slitted thead tr').empty();
     $('#JobWorkData tbody').empty();
     $('#JobWorkData thead tr').empty();
+    $('#RMReport tbody').empty();
+    $('#RMReport thead tr').empty();
     $('#SummaryData tbody').empty();
     $('#SummaryData thead tr').empty();
     switch (tabId) {
@@ -1507,6 +1518,7 @@ function loadTabData(tabId) {
             $('#checkBoxHideAndShow').show();
             $('#slitted').hide();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#stock-summary').hide();
             GetRMStockCurrentListTable();
             break;
@@ -1520,6 +1532,7 @@ function loadTabData(tabId) {
             $('#stock-summary').hide();
             $('#slitted').hide();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#checkBoxHideAndShow').hide();
             $('#tblUnApproved_Planned').hide();
             GetUnApprovedPlannedList();
@@ -1533,6 +1546,7 @@ function loadTabData(tabId) {
             $('#stock-summary').hide();
             $('#slitted').hide();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#checkBoxHideAndShow').hide();
             $('#tblUnApproved_Planned').hide();
             $('#slitted-coil-stock').show();
@@ -1551,6 +1565,7 @@ function loadTabData(tabId) {
             $('#dispatch').show();
             $('#slitted').hide();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#stock-summary').hide();
             setCurrentDateDispatch();
             loadDispatchData(G_FromDateValue, G_ToDateValue);
@@ -1567,6 +1582,7 @@ function loadTabData(tabId) {
             $('#tblSlitted').hide();
             $('#slitted').show();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#stock-summary').hide();
             setCurrentDateDispatch();
             loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted);
@@ -1582,10 +1598,28 @@ function loadTabData(tabId) {
             $('#dispatch').hide();
             $('#slitted').hide();
             $('#stock-summary').hide();
+            $('#rm-report').hide();
             $('#tblJobWorkData').hide();
             $('#job-work').show();
             setCurrentDateDispatch();
             loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, $('#txtStatus').val() || 'All');
+            break;
+        case '#rm-report':
+            $('#tblReport tbody').empty();
+            $('#tblReport thead tr').empty();
+            $('#current-stock').hide();
+            $('#tblUnApproved_Planned').hide();
+            $('#unApproved-planned').hide();
+            $('#slitted-coil-stock').hide();
+            $('#checkBoxHideAndShow').show();
+            $('#dispatch').hide();
+            $('#slitted').hide();
+            $('#job-work').hide();
+            $('#stock-summary').hide();
+            $('#tblRMReport').hide();
+            $('#rm-report').show();
+            setCurrentDateDispatch();
+            loadRMReportData(G_FromDateValueRMReport, G_ToDateValueRMReport);
             break;
         case '#stock-summary':
             $('#tblReport tbody').empty();
@@ -1597,6 +1631,7 @@ function loadTabData(tabId) {
             $('#checkBoxHideAndShow').hide();
             $('#dispatch').hide();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#slitted').hide();
             $('#tblSummaryData').hide();
             $('#stock-summary').show();
@@ -1621,18 +1656,22 @@ function setCurrentDateDispatch() {
      $('#txtFromDate').val(formatDate(firstOfMonth));  
      $('#txtFromDateSlitted').val(formatDate(firstOfMonth));  
      $('#txtFromDateJobWork').val(formatDate(firstOfMonth));  
+     $('#txtFromDateRMReport').val(formatDate(firstOfMonth));
      $('#txtFromDateSlittedCoilStock').val(formatDate(firstOfMonth));  
      $('#txtToDate').val(formatDate(today));    
      $('#txtToDateSlitted').val(formatDate(today));    
      $('#txtToDateJobWork').val(formatDate(today));    
+     $('#txtToDateRMReport').val(formatDate(today));
      $('#txtToDateSlittedCoilStock').val(formatDate(today));    
     G_FromDateValue = $('#txtFromDate').val();  
     G_FromDateValueSlitted = $('#txtFromDateSlitted').val();  
     G_FromDateValueJobWork = $('#txtFromDateJobWork').val();  
+    G_FromDateValueRMReport = $('#txtFromDateRMReport').val();
     G_FromDateSlittedCoilStockValue = $('#txtFromDateSlittedCoilStock').val();  
     G_ToDateValue = $('#txtToDate').val();    
     G_ToDateValueSlitted = $('#txtToDateSlitted').val();    
     G_ToDateValueJobWork = $('#txtToDateJobWork').val();    
+    G_ToDateValueRMReport = $('#txtToDateRMReport').val();
     G_ToDateSlittedCoilStockValue = $('#txtToDateSlittedCoilStock').val();
     
 }
@@ -1710,8 +1749,9 @@ function loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted) {
                 'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Entry Date': "center",
                 'Weight': "right;min-width:20px", 'ACT WT': "right;min-width:20px", 'Output Weight': "right", "Scrap": "right", "Yield %":"right", "Width Loss %":"right"
             };
-            calculateTotalFooterSlitted(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted", "table-body-Slitted", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            rebuildSlittedFooter(Object.keys(response[0]));
+            calculateTotalFooterSlitted(response);
             HideLoader();
             PopulateTableForPrint(response);
         } else {
@@ -1727,22 +1767,61 @@ function loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted) {
 
         });
 }
+function rebuildSlittedFooter(columns) {
+    const $tfoot = $('#table-footer-Slitted');
+    if (!$tfoot.length || !columns || !columns.length) {
+        return;
+    }
+
+    const totalValueIds = {
+        'Weight': 'totalWt',
+        'ACT WT': 'totalActWt',
+        'Output Weight': 'totalSlittedOutputWt',
+        'Scrap': 'totalSlittedScrap'
+    };
+    const weightIdx = columns.indexOf('Weight');
+    const labelColspan = weightIdx > 0 ? weightIdx : 1;
+
+    let html = '<tr>';
+    html += '<td colspan="' + labelColspan + '" class="text-end">Totals</td>';
+
+    for (let i = labelColspan; i < columns.length; i++) {
+        const col = columns[i];
+        const cellId = totalValueIds[col];
+        if (cellId) {
+            html += '<td id="' + cellId + '" class="text-end">0.000</td>';
+        } else {
+            html += '<td></td>';
+        }
+    }
+    html += '</tr>';
+    $tfoot.html(html);
+}
 function calculateTotalFooterSlitted(rows) {
         try {
             let totalWt = 0;
             let totalActWt = 0;
+            let totalOutputWt = 0;
+            let totalScrap = 0;
             if (rows && rows.length) {
                 rows.forEach(function (r) {
                     totalWt += parseFloat(r['Weight']) || 0;
                     totalActWt += parseFloat(r['ACT WT']) || 0;
+                    totalOutputWt += parseFloat(r['Output Weight']) || 0;
+                    totalScrap += parseFloat(r['Scrap']) || 0;
                 });
             }
-            // Write into footer elements if they exist
             if ($('#totalWt').length) {
                 $('#totalWt').text(totalWt.toFixed(3));
             }
             if ($('#totalActWt').length) {
                 $('#totalActWt').text(totalActWt.toFixed(3));
+            }
+            if ($('#totalSlittedOutputWt').length) {
+                $('#totalSlittedOutputWt').text(totalOutputWt.toFixed(3));
+            }
+            if ($('#totalSlittedScrap').length) {
+                $('#totalSlittedScrap').text(totalScrap.toFixed(3));
             }
         } catch (e) {
         }
@@ -1752,6 +1831,92 @@ function ShowJobWorkList() {
     G_ToDateValueJobWork   = $('#txtToDateJobWork').val();
     var status             = $('#txtStatus').val() || 'All';
     loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, status);
+}
+function ShowRMReportList() {
+    G_FromDateValueRMReport = $('#txtFromDateRMReport').val();
+    G_ToDateValueRMReport = $('#txtToDateRMReport').val();
+    loadRMReportData(G_FromDateValueRMReport, G_ToDateValueRMReport);
+}
+function loadRMReportData(fromDate, toDate) {
+    Showloader();
+    RMStockService.GetRMStockRMReport(fromDate, toDate).then(function (response) {
+        HideLoader();
+        if (response && response.length > 0) {
+            $('#tblRMReport').show();
+            const stringFilterColumn = ["Invoice No", "Item Name", "Vendor", "COIL ID", "Brand", "Thickness", "Width", "Grade", "Warehouse", "Remark", "Entry No/Packing List No", "Slitting Combination"];
+            const numericFilterColumn = ["MRN No", "Challan Weight", "Act Weight"];
+            const dateFilterColumn = ["Receive Date", "Invoice Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            let hiddenColumns = [];
+            if (!$('#exampleCheck').is(':checked')) {
+                hiddenColumns = ["% E", "Hardness", "UTS", "YST", "BEND TEST", "Bend Test", "Bend test"];
+            }
+            const columnAlignment = {
+                'Invoice Date': 'center',
+                'Receive Date': 'center',
+                'Thickness': 'right',
+                'Width': 'right;min-width:60px',
+                'Challan Weight': 'right',
+                'Act Weight': 'right',
+                '% E': 'right;min-width:50px',
+                'Hardness': 'right',
+                'UTS': 'right;min-width:70px',
+                'YST': 'right;min-width:70px'
+            };
+            calculateRMReportFooterTotals(response);
+            BizsolCustomFilterGrid.CreateDataTable(
+                "table-header-RMReport",
+                "table-body-RMReport",
+                response,
+                button,
+                showButtons,
+                stringFilterColumn,
+                numericFilterColumn,
+                dateFilterColumn,
+                stringDoubleFilterColumn,
+                hiddenColumns,
+                columnAlignment,
+                false,
+                null,
+                null,
+                null,
+                'Search by MRN No, Item Name, Vendor, COIL ID, Grade...'
+            );
+            PopulateTableForPrint(response);
+        } else {
+            toastr.error('No Data Found');
+            $('#tblRMReport').hide();
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error during RM Report');
+        $('#tblRMReport').hide();
+    });
+}
+function calculateRMReportFooterTotals(rows) {
+    try {
+        let totalChallanWt = 0;
+        let totalActWt = 0;
+        const rowCount = Array.isArray(rows) ? rows.length : 0;
+        if (rows && rows.length) {
+            rows.forEach(function (r) {
+                totalChallanWt += parseFloat(r['Challan Weight']) || 0;
+                totalActWt += parseFloat(r['Act Weight']) || 0;
+            });
+        }
+        if ($('#RMReportRowCountValue').length) {
+            $('#RMReportRowCountValue').text('Count:' + rowCount);
+        }
+        if ($('#totalRMReportChallanWt').length) {
+            $('#totalRMReportChallanWt').text(totalChallanWt.toFixed(3));
+        }
+        if ($('#totalRMReportActWt').length) {
+            $('#totalRMReportActWt').text(totalActWt.toFixed(3));
+        }
+    } catch (e) {
+    }
 }
 function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, Status) {
     Showloader();
@@ -1939,17 +2104,20 @@ function calculateTotalFooterStockSummary(rows, pcCoilGreterKey, totalWtGreterKe
 }
 
 // Combined Grand Total across both summary tables (raw-coil summary + slitted-coil summary).
-function updateStockSummaryGrandTotal() {
+// Pass filtered arrays when grid filters/search are active (BOM-style live totals).
+function updateStockSummaryGrandTotal(summaryRows, slittedRows) {
     try {
+        var summary = Array.isArray(summaryRows) ? summaryRows : (G_SummaryData || []);
+        var slitted = Array.isArray(slittedRows) ? slittedRows : (G_SlittedSummaryData || []);
         var grandPcs = 0, grandWt = 0, grandPending = 0;
 
-        (G_SummaryData || []).forEach(function (r) {
+        summary.forEach(function (r) {
             grandPcs     += parseFloat(r['PCS/Coil'])       || 0;
             grandWt      += parseFloat(r['Total Weight'])   || 0;
             grandPending += parseFloat(r['Pending Weight']) || 0;
         });
 
-        (G_SlittedSummaryData || []).forEach(function (r) {
+        slitted.forEach(function (r) {
             grandPcs     += parseFloat(r['PCS'])                        || 0;
             grandWt      += parseFloat(r['Weight'])                     || 0;
             grandPending += parseFloat(r['Pending on Job Work Weight']) || 0;
@@ -1960,6 +2128,29 @@ function updateStockSummaryGrandTotal() {
         if ($('#grandTotalPending').length) $('#grandTotalPending').text(grandPending.toFixed(3));
     } catch (e) {
     }
+}
+
+function getRMStockFilteredRows(tableId) {
+    if (!tableId) return [];
+    if (Array.isArray(window['filteredData_' + tableId])) {
+        return window['filteredData_' + tableId];
+    }
+    if (Array.isArray(window['filteredDataTemp_' + tableId])) {
+        return window['filteredDataTemp_' + tableId];
+    }
+    return [];
+}
+
+function updateStockSummaryTotalsFromFilters() {
+    var summaryRows = Array.isArray(window['filteredData_SummaryData'])
+        ? window['filteredData_SummaryData']
+        : (G_SummaryData || []);
+    var slittedRows = Array.isArray(window['filteredData_SlittedCoilsStockSummary'])
+        ? window['filteredData_SlittedCoilsStockSummary']
+        : (G_SlittedSummaryData || []);
+
+    calculateTotalFooterStockSummary(summaryRows, 'PCS/Coil', 'Total Weight', 'Pending Weight');
+    updateStockSummaryGrandTotal(summaryRows, slittedRows);
 }
 function Export() {
     var ReportType = "RMStockReport";
@@ -2019,6 +2210,9 @@ function refreshSlitted() {
 function refreshJobWork() {
     loadJobWorkData();
 }
+function refreshRMReport() {
+    loadRMReportData(G_FromDateValueRMReport, G_ToDateValueRMReport);
+}
 function refreshStockSummary() {
     loadStockSummaryData();
     loadStockSlittedCoilsStockSummary();
@@ -2074,10 +2268,50 @@ function getFinancialYear() {
     return startYear + "-" + (startYear + 1);
 }
 
-$(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
+// Live footer/grand-total refresh from filtered grid data (page-level only; no Filter.js change).
+function scheduleRMStockFooterTotalsRefresh() {
     setTimeout(function () {
         triggerActiveTabFooterTotals();
-    }, 300);
+    }, 50);
+}
+
+function bindRMStockFilterTotalHooks() {
+    if (window.__rmStockFilterTotalHooksBound) {
+        return;
+    }
+    window.__rmStockFilterTotalHooksBound = true;
+
+    [
+        'applyStringFilters',
+        'applyNumericFilter',
+        'applyfilterdate',
+        'applyfilterdouble',
+        'applyFilters',
+        'ClearFilter',
+        'applyGlobalSearch'
+    ].forEach(function (fnName) {
+        var original = window[fnName];
+        if (typeof original !== 'function') {
+            return;
+        }
+        window[fnName] = function () {
+            var result = original.apply(this, arguments);
+            scheduleRMStockFooterTotalsRefresh();
+            return result;
+        };
+    });
+}
+
+$(document).on(
+    'click',
+    '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="applyfilterdouble"], [onclick*="applyFilters"], [onclick*="ClearFilter"], [id^="global-search-clear-"]',
+    function () {
+        scheduleRMStockFooterTotalsRefresh();
+    }
+);
+
+$(document).on('input', '.bizsol-global-search-input', function () {
+    scheduleRMStockFooterTotalsRefresh();
 });
 
 function triggerActiveTabFooterTotals() {
@@ -2086,7 +2320,11 @@ function triggerActiveTabFooterTotals() {
         if (!context || typeof context.calculator !== 'function') {
             return;
         }
-        var filteredRows = window['filteredData_' + context.tableId] || [];
+        if (context.tableId === 'StockSummaryBoth') {
+            context.calculator();
+            return;
+        }
+        var filteredRows = getRMStockFilteredRows(context.tableId);
         context.calculator(filteredRows);
     } catch (e) {
     }
@@ -2104,16 +2342,10 @@ function getActiveTabFooterContext() {
         '#slitted-coil-stock': { tableId: 'Slitted_Coil_Stock', calculator: calculateTotalFooterSlitted_Coil_Stock },
         '#slitted': { tableId: 'Slitted', calculator: calculateTotalFooterSlitted },
         '#job-work': { tableId: 'JobWorkData', calculator: calculateTotalFooterJobWork },
+        '#rm-report': { tableId: 'RMReport', calculator: calculateRMReportFooterTotals },
         '#stock-summary': {
-            tableId: 'SummaryData',
-            calculator: function (rows) {
-                calculateTotalFooterStockSummary(
-                    rows,
-                    'PCS/Coil',
-                    'Total Weight',
-                    'Pending Weight'
-                );
-            }
+            tableId: 'StockSummaryBoth',
+            calculator: updateStockSummaryTotalsFromFilters
         }
     };
     return tabContexts[targetTab] || null;
@@ -2175,6 +2407,7 @@ window.loadTabData = loadTabData;
 window.loadDispatchData = loadDispatchData;
 window.loadSlittedData = loadSlittedData;
 window.loadJobWorkData = loadJobWorkData;
+window.loadRMReportData = loadRMReportData;
 window.loadStockSummaryData = loadStockSummaryData;
 window.loadStockSlittedCoilsStockSummary = loadStockSlittedCoilsStockSummary;
 window.calculateStockSummary = calculateStockSummary;
@@ -2182,6 +2415,7 @@ window.refreshCurrentStock = refreshCurrentStock;
 window.refreshDispatch = refreshDispatch;
 window.refreshSlitted = refreshSlitted;
 window.refreshJobWork = refreshJobWork;
+window.refreshRMReport = refreshRMReport;
 window.refreshStockSummary = refreshStockSummary;
 window.ShowModelPlanned = ShowModelPlanned;
 window.CloseModal_RMStock = CloseModal_RMStock;
@@ -2202,4 +2436,5 @@ window.CloseModal = CloseModal;
 window.ShowDispatchList = ShowDispatchList;
 window.ShowSlittedList = ShowSlittedList;
 window.ShowJobWorkList = ShowJobWorkList;
+window.ShowRMReportList = ShowRMReportList;
 window.Verify = Verify;

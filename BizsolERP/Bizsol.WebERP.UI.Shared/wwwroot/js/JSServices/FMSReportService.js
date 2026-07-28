@@ -11,6 +11,14 @@ const FMSReportService = {
             }
         );
     },
+    GetPOHistory: function GetPOHistory(ItemMaster_Code, Itemsizemaster_Code) {
+        var URL = UrlService.API_ENDPOINT_FMSReport + "/GetPOHistory?ItemMaster_Code=" + ItemMaster_Code + "&Itemsizemaster_Code=" + (Itemsizemaster_Code || 0);
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     FMSReportApproved: function FMSReportApproved(Code, Status) {
         let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
         var URL = UrlService.API_ENDPOINT_FMSReport + "/FMSReportApproved?Code=" + Code + "&UserMaster_Code=" + userCode + "&Status=" + Status;
