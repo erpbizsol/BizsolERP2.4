@@ -411,6 +411,13 @@ function initializeObjectlistControl(options) {
         $('#hfObjList_CallBackFunctionName').val(options.CallBackFunctionName_btnDone);
     }
 
+    if (options.ModalTitle) {
+        $(`#${modalId} .modal-title`).text(options.ModalTitle);
+    }
+    if (options.DoneButtonText) {
+        $(`#${modalId}`).find('button.btn-primary.btn-height').first().text(options.DoneButtonText);
+    }
+
     // Apply initial search value
     const rawSearch   = (options.searchvalue || '').toString().trim();
     const searchValue = (rawSearch === '.') ? '' : rawSearch;
