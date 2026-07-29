@@ -387,15 +387,103 @@
         .bwo-chart-wrap { min-height: 230px; }
         .bwo-chart-wrap.bwo-chart-wrap--bar10 { min-height: 280px; }
     }
+
+    /* ── Ageing Report table ── */
+    .bwo-ageing-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.5rem;
+    }
+
+    .bwo-ageing-toolbar-title {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #3d5cce;
+        margin: 0;
+    }
+
+    .bwo-ageing-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.78rem;
+        background: #fff;
+    }
+
+    .bwo-ageing-table th,
+    .bwo-ageing-table td {
+        border: 1px solid #c5cdd8;
+        padding: 4px 8px;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .bwo-ageing-table thead th {
+        background: #1e3a5f;
+        color: #fff;
+        font-weight: 700;
+        text-align: center;
+        font-size: 0.72rem;
+    }
+
+    .bwo-ageing-table tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    .bwo-ageing-table .bwo-ageing-group {
+        background: #e8eef7;
+        color: #1e3a5f;
+        font-weight: 800;
+        text-align: center;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        letter-spacing: 0.08em;
+        font-size: 0.75rem;
+        min-width: 28px;
+        max-width: 36px;
+        padding: 8px 4px;
+    }
+
+    .bwo-ageing-table .bwo-ageing-party {
+        text-align: left;
+        font-weight: 600;
+        color: #1e293b;
+        white-space: normal;
+        min-width: 180px;
+        max-width: 280px;
+    }
+
+    .bwo-ageing-table .bwo-ageing-num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .bwo-ageing-table .bwo-ageing-center {
+        text-align: center;
+    }
+
+    .bwo-ageing-table .bwo-ageing-total-col {
+        font-weight: 700;
+        background: #f1f5f9;
+    }
+
+    .bwo-ageing-table tfoot td {
+        background: #dbeafe;
+        font-weight: 800;
+    }
 </style>
 
 <div id="bill-wise-outstanding-report">
 
     <!-- Filter Card -->
     <div class="filter-card">
-        <div class="row g-2 mb-1">
+        <div class="row g-2 mb-1 align-items-end">
             <!-- Cr. Days — Master / Invoice / Without Credit Limit -->
-            <div class="col-12 col-md-6 col-lg-5">
+            <div class="col-12 col-md-7 col-lg-6">
                 <label class="form-label filter-label">Cr. Days</label>
                 <div class="bwo-drcr-toggle bwo-drcr-toggle--triple" id="bwoCrDaysToggle">
                     <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysMaster" value="Y" checked autocomplete="off" />
@@ -405,6 +493,16 @@
                     <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysNoLimit" value="W" autocomplete="off" />
                     <label for="radBillWiseCrDaysNoLimit">Without Credit Limit</label>
                 </div>
+            </div>
+
+            <!-- Status — Dashboard / Ageing Report -->
+            <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                <label for="ddlBillWiseReportStatus" class="form-label filter-label">Report Type</label>
+                <select id="ddlBillWiseReportStatus" name="ddlBillWiseReportStatus"
+                        class="form-select form-select-sm box_border" autocomplete="off">
+                    <option value="Dashboard" selected>Dashboard</option>
+                    <option value="AgeingReport">Ageing Report</option>
+                </select>
             </div>
         </div>
 
@@ -558,8 +656,25 @@
 
     </div>
 
-    <!-- Data Table -->
-    <div class="card p-1 mt-1">
+    <!-- Data Table (Dashboard bill-wise / Ageing Report party matrix) -->
+    <div class="card p-1 mt-1" id="billWiseReportTableCard">
+        <div class="bwo-ageing-toolbar d-none" id="billWiseAgeingToolbar">
+            <p class="bwo-ageing-toolbar-title">Ageing Report</p>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="bwo-drcr-toggle bwo-drcr-toggle--chart" id="bwoAgeingTableDateToggle">
+                    <input type="radio" name="bwoAgeingTableDateMode" id="radBwoAgeingBillDate" value="bill" checked autocomplete="off" />
+                    <label for="radBwoAgeingBillDate">As Per Bill Date</label>
+                    <input type="radio" name="bwoAgeingTableDateMode" id="radBwoAgeingDueDate" value="due" autocomplete="off" />
+                    <label for="radBwoAgeingDueDate">As Per Due Date</label>
+                </div>
+                <span class="bwo-ageing-format-badge">
+                    Format: <strong id="lblBillWiseAgeingFormatTable">Default</strong>
+                </span>
+                <button type="button" id="btnBillWiseAgeingParamTable" class="btn btn-primary btn-sm">
+                    <i class="fas fa-sliders-h"></i> Configure Range
+                </button>
+            </div>
+        </div>
         <div class="d-flex justify-content-end mb-1">
             <button type="button" id="btnDownload" class="btn btn-primary btn-height d-none">
                 <i class="fas fa-download"></i> Download
@@ -569,6 +684,7 @@
             <table id="tblReport" class="fixed-width-table table">
                 <thead id="table-header"></thead>
                 <tbody id="table-body"></tbody>
+                <tfoot id="table-footer"></tfoot>
             </table>
         </div>
         <div class="paginator" id="paginator-tblReport"></div>

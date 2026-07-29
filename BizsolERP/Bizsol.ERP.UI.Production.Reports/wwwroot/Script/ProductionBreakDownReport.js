@@ -263,19 +263,19 @@ function formatMonthCell(value, decimals) {
     }
     return n.toFixed(decimals);
 }
-function getCategoryRowSpans(data, categoryKey, srNoKey) {
+function getCategoryRowSpans(data, groupKey, srNoKey) {
     const spans = new Array(data.length).fill(0);
     let i = 0;
 
     while (i < data.length) {
-        const category = data[i][categoryKey];
+        const groupValue = data[i][groupKey];
         const srNo = srNoKey ? data[i][srNoKey] : i;
         let count = 1;
 
         while (i + count < data.length) {
-            const nextCategory = data[i + count][categoryKey];
+            const nextGroupValue = data[i + count][groupKey];
             const nextSrNo = srNoKey ? data[i + count][srNoKey] : i + count;
-            if (nextCategory !== category || nextSrNo !== srNo) break;
+            if (nextGroupValue !== groupValue || nextSrNo !== srNo) break;
             count++;
         }
 
@@ -289,6 +289,7 @@ function buildMonthModeHeader(monthColumns, totalKey, averageKey) {
     let headerHtml = '<tr class="pbdr-month-header-top">';
 
     headerHtml += '<th rowspan="2" class="pbdr-static-col text-start">S.No</th>';
+    headerHtml += '<th rowspan="2" class="pbdr-static-col">Reasontype</th>';
     headerHtml += '<th rowspan="2" class="pbdr-static-col">Category</th>';
     headerHtml += '<th rowspan="2" class="pbdr-static-col">Reason Code</th>';
     headerHtml += '<th rowspan="2" class="pbdr-static-col">Reason Description</th>';
@@ -314,8 +315,9 @@ function buildMonthModeHeader(monthColumns, totalKey, averageKey) {
     headerHtml += '</tr>';
     return headerHtml;
 }
-function buildMonthModeBody(data, monthColumns, columnKeys, categorySpans) {
+function buildMonthModeBody(data, monthColumns, columnKeys, reasonTypeSpans) {
     const srNoKey = columnKeys.srNo;
+    const reasonTypeKey = columnKeys.reasonType;
     const categoryKey = columnKeys.category;
     const reasonCodeKey = columnKeys.reasonCode;
     const reasonDespKey = columnKeys.reasonDesp;
@@ -327,14 +329,16 @@ function buildMonthModeBody(data, monthColumns, columnKeys, categorySpans) {
     data.forEach(function (row, rowIndex) {
         bodyHtml += '<tr>';
 
-        if (categorySpans[rowIndex] > 0) {
-            const span = categorySpans[rowIndex];
+        if (reasonTypeSpans[rowIndex] > 0) {
+            const span = reasonTypeSpans[rowIndex];
             bodyHtml += '<td rowspan="' + span + '" class="text-start pbdr-static-col">' +
                 (srNoKey ? (row[srNoKey] != null ? row[srNoKey] : '') : '') + '</td>';
             bodyHtml += '<td rowspan="' + span + '" class="pbdr-static-col">' +
-                (categoryKey ? (row[categoryKey] != null ? row[categoryKey] : '') : '') + '</td>';
+                (reasonTypeKey ? (row[reasonTypeKey] != null ? row[reasonTypeKey] : '') : '') + '</td>';
         }
 
+        bodyHtml += '<td class="pbdr-static-col">' +
+            (categoryKey ? (row[categoryKey] != null ? row[categoryKey] : '') : '') + '</td>';
         bodyHtml += '<td class="text-center pbdr-static-col">' +
             (reasonCodeKey ? (row[reasonCodeKey] != null ? row[reasonCodeKey] : '') : '') + '</td>';
         bodyHtml += '<td class="pbdr-static-col">' +
@@ -380,7 +384,7 @@ function buildMonthModeFooter(data, monthColumns, columnKeys) {
     });
 
     let footerHtml = '<tr class="pbdr-month-total-row">';
-    footerHtml += '<td colspan="4" class="text-center fw-bold">Total</td>';
+    footerHtml += '<td colspan="5" class="text-center fw-bold">Total</td>';
 
     monthColumns.forEach(function (item) {
         footerHtml += '<td class="text-end fw-bold">' + formatMonthCell(totals.fq[item.fqKey], 0) + '</td>';
@@ -401,18 +405,20 @@ function RenderMonthModeGrid(data) {
     const monthColumns = parseMonthPivotColumns(data);
     const columnKeys = {
         srNo: findDataColumn(data, ['S.No', 'SrNo', 'SNo']),
+        reasonType: findDataColumn(data, ['Reasontype', 'ReasonType', 'Reason Type']),
         category: findDataColumn(data, ['Category']),
         reasonCode: findDataColumn(data, ['ReasonCode', 'Reason Code']),
-        reasonDesp: findDataColumn(data, ['ReasonDesp', 'Reason Description']),
+        reasonDesp: findDataColumn(data, ['ReasonDesp', 'Reason Description', 'Reason']),
         total: findDataColumn(data, ['Total']),
         average: findDataColumn(data, ['Average']),
     };
-    const categorySpans = getCategoryRowSpans(data, columnKeys.category, columnKeys.srNo);
+    const groupKey = columnKeys.reasonType || columnKeys.category;
+    const reasonTypeSpans = getCategoryRowSpans(data, groupKey, columnKeys.srNo);
 
     $('#tblProductionBreakDown').addClass('pbdr-month-mode');
     $('#table-header').html(buildMonthModeHeader(monthColumns, columnKeys.total, columnKeys.average));
     $('#table-body').html(
-        buildMonthModeBody(data, monthColumns, columnKeys, categorySpans) +
+        buildMonthModeBody(data, monthColumns, columnKeys, reasonTypeSpans) +
         buildMonthModeFooter(data, monthColumns, columnKeys)
     );
 

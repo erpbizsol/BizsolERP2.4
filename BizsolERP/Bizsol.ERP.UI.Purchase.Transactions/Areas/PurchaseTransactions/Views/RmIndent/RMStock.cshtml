@@ -27,6 +27,17 @@
         min-width: auto;
     }
 
+    /* Slitted tab: fill trailing white gap after last column */
+    /* #slitted #Slitted {
+        width: 100%;
+        table-layout: auto;
+    }
+    #slitted #Slitted thead th:last-child,
+    #slitted #Slitted tbody td:last-child,
+    #slitted #Slitted tfoot td:last-child {
+        width: 100%;
+    } */
+
     .table-wrapper {
         position: relative;
         overflow: auto;
@@ -43,6 +54,7 @@
     #dispatch,
     #Slitted,
     #JobWorkData,
+    #RMReport,
     #SummaryData,
     #SlittedCoilsStockSummary {
         width: 100%;
@@ -56,6 +68,7 @@
     #dispatch thead,
     #Slitted thead,
     #JobWorkData thead,
+    #RMReport thead,
     #SummaryData thead,
     #SlittedCoilsStockSummary thead,
     #RMStockCurrentPlanned thead {
@@ -74,6 +87,7 @@
     #dispatch thead th,
     #Slitted thead th,
     #JobWorkData thead th,
+    #RMReport thead th,
     #SummaryData thead th,
     #SlittedCoilsStockSummary thead th,
     #RMStockCurrentPlanned thead th {
@@ -145,6 +159,8 @@
     #Slitted tfoot td,
     #JobWorkData tfoot th,
     #JobWorkData tfoot td,
+    #RMReport tfoot th,
+    #RMReport tfoot td,
     #SummaryData tfoot th,
     #SummaryData tfoot td {
         height: 22px;
@@ -373,6 +389,8 @@
     #Slitted_Coil_Stock tfoot th,
     #JobWorkData tfoot td,
     #JobWorkData tfoot th,
+    #RMReport tfoot td,
+    #RMReport tfoot th,
     #SummaryData tfoot td,
     #SummaryData tfoot th,
     #SlittedCoilsStockSummary .total-row td {
@@ -629,6 +647,11 @@
                             </button>
                         </div>
                         <div class="nav-item" role="presentation">
+                            <button class="nav-link" id="rm-report-tab" data-bs-toggle="tab" data-bs-target="#rm-report" type="button" role="tab" aria-controls="rm-report" aria-selected="false">
+                                <i class="fas fa-file-alt"></i> RM Report
+                            </button>
+                        </div>
+                        <div class="nav-item" role="presentation">
                             <button class="nav-link" id="stock-summary-tab" data-bs-toggle="tab" data-bs-target="#stock-summary" type="button" role="tab" aria-controls="stock-summary" aria-selected="false">
                                 <i class="fas fa-chart-bar"></i> Stock Summary
                             </button>
@@ -790,18 +813,8 @@
                                         </thead>
                                         <tbody id="table-body-Slitted">
                                         </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <td colspan="8" class="text-end">Totals</td>
-                                                <td id="totalWt" class="text-end">0.000</td>
-                                                <td id="totalActWt" class="text-end">0.000</td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                            </tr>
+                                        <tfoot id="table-footer-Slitted">
+                                            <tr></tr>
                                         </tfoot>
                                     </table>
                                 </div>
@@ -862,6 +875,52 @@
                                     </table>
                                 </div>
                                 <div class="paginator" id="paginator-JobWorkData">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RM Report Tab -->
+                    <div class="tab-pane fade" id="rm-report" role="tabpanel" aria-labelledby="rm-report-tab">
+                        <div class="card col-md-12 border-0 rms-filter-card">
+                            <div class="card-body">
+                                <div class="row g-2 flex-wrap align-items-end">
+                                    <div class="col-12 col-sm-auto">
+                                        <label for="txtFromDateRMReport" class="col-form-label-sm fw-bold">From Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtFromDateRMReport" name="txtFromDateRMReport" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-12 col-sm-auto">
+                                        <label for="txtToDateRMReport" class="col-form-label-sm fw-bold">To Date:<span class="text-danger">*</span></label>
+                                        <input type="date" id="txtToDateRMReport" name="txtToDateRMReport" class="box_border form-control form-control-sm" required />
+                                    </div>
+                                    <div class="col-12 col-sm-auto mb-2">
+                                        <div><button type="button" onclick="ShowRMReportList()" title="Show" class="btn btn-primary btn-height btn-sm">Show</button></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <div id="tblRMReport">
+                                <div class="table-wrapper">
+                                    <table id="RMReport" class="fixed-width-table table ">
+                                        <thead id="table-header-RMReport">
+                                        </thead>
+                                        <tbody id="table-body-RMReport">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td id="RMReportRowCountValue" class="text-end">Count:</td>
+                                                <td colspan="10" class="text-end">Totals</td>
+                                                <td id="totalRMReportChallanWt" class="text-end">0.000</td>
+                                                <td id="totalRMReportActWt" class="text-end">0.000</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div class="paginator" id="paginator-RMReport">
                                 </div>
                             </div>
                         </div>
