@@ -62,6 +62,33 @@ const BWO_CREDIT_DAYS_ALIASES = [
     'Credit Days', 'CreditDays', 'creditDays', 'Credit_Days',
 ];
 
+/** Prefer API / grid label "GSTN No" (not "GSTIN"). */
+const BWO_GSTIN_ALIASES = [
+    'GSTN No', 'GSTNNo', 'Gstn No', 'GstnNo',
+    'GSTIN', 'Gstin', 'gstin', 'GST No', 'GSTNo', 'GstNo', 'GST_No',
+    'GSTIN No', 'GSTINNo', 'Party GSTIN', 'PartyGSTIN', 'Vendor GSTIN', 'VendorGSTIN',
+];
+
+/**
+ * All GSTN-related keys on a row — hide these on Dashboard grid.
+ * @param {object} row
+ * @returns {string[]}
+ */
+function gstnHiddenColumnNames(row) {
+    if (!row || typeof row !== 'object') return ['GSTN No'];
+    const want = new Set(BWO_GSTIN_ALIASES.map(normalizeFieldName));
+    const found = Object.keys(row).filter(function (k) {
+        return want.has(normalizeFieldName(k));
+    });
+    return found.length ? found : ['GSTN No'];
+}
+
+const BWO_CREDIT_LIMIT_ALIASES = [
+    'Credit Limit', 'CreditLimit', 'creditLimit', 'Credit_Limit',
+    'Cr Limit', 'CrLimit', 'Cr. Limit', 'Credit Limit In Lacs', 'CreditLimitInLacs',
+    'Cr Limit In Lacs', 'CrLimitInLacs',
+];
+
 /** Delay Days column from report grid/API — used everywhere except delay-bucket chart. */
 const BWO_DELAY_DAYS_REPORT_ALIASES = [
     'Delay Days', 'DelayDays', 'delayDays', 'Delay_Days', 'DelayDay',
@@ -426,6 +453,271 @@ function formatInr(n) {
 }
 
 /**
+ * Amount cell for Ageing Report (2 decimal places, Indian grouping).
+ * Empty string when amount is zero (matches Excel blank cells).
+ * @param {number} n
+ * @param {boolean} [blankIfZero]
+ * @returns {string}
+ */
+function formatAgeingAmount(n, blankIfZero) {
+    const v = toNumber(n);
+    if (blankIfZero && Math.abs(v) < 0.005) return '';
+    return new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(v);
+}
+
+/**
+ * @returns {'Dashboard'|'AgeingReport'}
+ */
+function getReportStatus() {
+    const el = document.getElementById('ddlBillWiseReportStatus');
+    if (!el) return 'Dashboard';
+    return String(el.value || 'Dashboard') === 'AgeingReport' ? 'AgeingReport' : 'Dashboard';
+}
+
+/**
+ * @returns {'bill'|'due'}
+ */
+function getAgeingTableDateMode() {
+    const sel = document.querySelector('#bill-wise-outstanding-report input[name="bwoAgeingTableDateMode"]:checked');
+    if (sel && String(sel.value).toLowerCase() === 'due') return 'due';
+    return 'bill';
+}
+
+/**
+ * Selected group type description for Ageing Report side label (e.g. DEBTORS).
+ * @returns {string}
+ */
+function getSelectedGroupTypeLabel() {
+    const code = debtorCreditorFilterForApi();
+    const item = groupTypeMasterList.find((x) => String(x.Code) === String(code));
+    const desp = item && item.GroupTypeDesp ? String(item.GroupTypeDesp).trim() : '';
+    return (desp || 'DEBTORS').toUpperCase();
+}
+
+/**
+ * Party display name from a bill-wise row.
+ * @param {object} row
+ * @returns {string}
+ */
+function getRowPartyName(row) {
+    const name = rowStringFromAliases(row, [
+        'Client Name', 'ClientName', 'Vendor Name', 'VendorName', 'Vendor/Client',
+        'Party Name', 'PartyName', 'Account Name', 'AccountName', 'AccountDesp',
+    ]);
+    return name || '—';
+}
+
+/**
+ * Credit limit in lacs for Ageing Report column.
+ * If value looks like absolute rupees (>= 1000), convert to lacs.
+ * @param {object} row
+ * @returns {number}
+ */
+function getRowCreditLimitInLacs(row) {
+    const raw = rowNumberFromAliases(row, BWO_CREDIT_LIMIT_ALIASES);
+    if (!raw) return 0;
+    if (Math.abs(raw) >= 1000) return raw / 100000;
+    return raw;
+}
+
+/**
+ * Aggregate bill-wise rows into party × ageing-bucket matrix (Excel Ageing Report layout).
+ * @param {Array<object>} rows
+ * @param {'bill'|'due'} [dateMode]
+ * @returns {Array<object>}
+ */
+function buildPartyAgeingRows(rows, dateMode) {
+    const mode = dateMode || getAgeingTableDateMode();
+    const bucketRows = getActiveDelayBucketRows();
+    const bucketOrder = bucketRows.map(function (r) { return r.DaysDesp; });
+    /** @type {Map<string, object>} */
+    const byParty = new Map();
+
+    for (let i = 0; i < (rows || []).length; i++) {
+        const row = rows[i];
+        const party = getRowPartyName(row);
+        const gstin = rowStringFromAliases(row, BWO_GSTIN_ALIASES);
+        const key = party.toUpperCase() + '||' + gstin.toUpperCase();
+        let agg = byParty.get(key);
+        if (!agg) {
+            /** @type {Record<string, number>} */
+            const buckets = {};
+            bucketOrder.forEach(function (b) { buckets[b] = 0; });
+            agg = {
+                partyName: party,
+                gstin: gstin,
+                creditDays: getRowCreditDays(row),
+                creditLimitLacs: getRowCreditLimitInLacs(row),
+                buckets: buckets,
+                total: 0,
+            };
+            byParty.set(key, agg);
+        } else {
+            if (!agg.gstin && gstin) agg.gstin = gstin;
+            const cd = getRowCreditDays(row);
+            if (cd > agg.creditDays) agg.creditDays = cd;
+            const cl = getRowCreditLimitInLacs(row);
+            if (cl > agg.creditLimitLacs) agg.creditLimitLacs = cl;
+        }
+
+        const net = rowNetOutstanding(row);
+        if (Math.abs(net) < 0.00001) continue;
+
+        const dd = getRowDelayDaysForBucket(row, mode);
+        let bucket = delayDaysBucketLabel(dd, bucketRows);
+        if (!Object.prototype.hasOwnProperty.call(agg.buckets, bucket) && bucketOrder.length) {
+            bucket = bucketOrder[bucketOrder.length - 1];
+        }
+        if (Object.prototype.hasOwnProperty.call(agg.buckets, bucket)) {
+            agg.buckets[bucket] += net;
+            agg.total += net;
+        }
+    }
+
+    const list = Array.from(byParty.values()).filter(function (p) {
+        return Math.abs(p.total) >= 0.005;
+    });
+    list.sort(function (a, b) {
+        return String(a.partyName).localeCompare(String(b.partyName), undefined, { sensitivity: 'base' });
+    });
+    return list;
+}
+
+/**
+ * Show/hide Ageing Report toolbar vs Dashboard charts.
+ * @param {boolean} isAgeing
+ */
+function setAgeingReportUiVisible(isAgeing) {
+    const toolbar = document.getElementById('billWiseAgeingToolbar');
+    if (toolbar) toolbar.classList.toggle('d-none', !isAgeing);
+    if (isAgeing) {
+        setDashboardSectionVisible(false);
+    }
+}
+
+/**
+ * Render party Ageing Report table (Excel-style matrix).
+ * @param {Array<object>} billRows
+ */
+function renderAgeingReportGrid(billRows) {
+    clearReportTableDom();
+    setAgeingReportUiVisible(true);
+    destroyDashboardCharts();
+    setDashboardSectionVisible(false);
+
+    const partyRows = buildPartyAgeingRows(billRows || []);
+    const bucketOrder = getDelayBucketOrder();
+    const groupLabel = getSelectedGroupTypeLabel();
+    const tbl = document.getElementById('tblReport');
+    const thead = document.getElementById('table-header');
+    const tbody = document.getElementById('table-body');
+    const tfoot = document.getElementById('table-footer');
+    const paginator = document.getElementById('paginator-tblReport');
+
+    if (tbl) {
+        tbl.classList.remove('fixed-width-table', 'table');
+        tbl.classList.add('bwo-ageing-table');
+    }
+    if (paginator) paginator.innerHTML = '';
+
+    if (!partyRows.length) {
+        toastr.info('No records found.');
+        setDownloadButtonVisible(false);
+        return;
+    }
+
+    let headHtml = '<tr>';
+    headHtml += '<th></th>';
+    headHtml += '<th>Company Name</th>';
+    headHtml += '<th>GSTN No</th>';
+    headHtml += '<th>Credit Days</th>';
+    headHtml += '<th>Cr. Limit (In Lacs)</th>';
+    for (let b = 0; b < bucketOrder.length; b++) {
+        headHtml += '<th>' + escapeHtml(bucketOrder[b]) + '</th>';
+    }
+    headHtml += '<th>Total</th>';
+    headHtml += '</tr>';
+    if (thead) thead.innerHTML = headHtml;
+
+    /** @type {Record<string, number>} */
+    const colTotals = {};
+    bucketOrder.forEach(function (b) { colTotals[b] = 0; });
+    let grandTotal = 0;
+
+    let bodyHtml = '';
+    for (let i = 0; i < partyRows.length; i++) {
+        const p = partyRows[i];
+        bodyHtml += '<tr>';
+        if (i === 0) {
+            bodyHtml +=
+                '<td class="bwo-ageing-group" rowspan="' +
+                partyRows.length +
+                '">' +
+                escapeHtml(groupLabel) +
+                '</td>';
+        }
+        bodyHtml += '<td class="bwo-ageing-party">' + escapeHtml(p.partyName) + '</td>';
+        bodyHtml += '<td class="bwo-ageing-center">' + escapeHtml(p.gstin || '') + '</td>';
+        bodyHtml += '<td class="bwo-ageing-center">' + escapeHtml(String(p.creditDays || 0)) + '</td>';
+        bodyHtml +=
+            '<td class="bwo-ageing-num">' +
+            formatAgeingAmount(p.creditLimitLacs, false) +
+            '</td>';
+        for (let b = 0; b < bucketOrder.length; b++) {
+            const label = bucketOrder[b];
+            const amt = p.buckets[label] || 0;
+            colTotals[label] += amt;
+            bodyHtml +=
+                '<td class="bwo-ageing-num">' +
+                formatAgeingAmount(amt, true) +
+                '</td>';
+        }
+        grandTotal += p.total;
+        bodyHtml +=
+            '<td class="bwo-ageing-num bwo-ageing-total-col">' +
+            formatAgeingAmount(p.total, false) +
+            '</td>';
+        bodyHtml += '</tr>';
+    }
+    if (tbody) tbody.innerHTML = bodyHtml;
+
+    let footHtml = '<tr>';
+    footHtml += '<td></td>';
+    footHtml += '<td colspan="3" class="bwo-ageing-party">Total</td>';
+    footHtml += '<td></td>';
+    for (let b = 0; b < bucketOrder.length; b++) {
+        footHtml +=
+            '<td class="bwo-ageing-num">' +
+            formatAgeingAmount(colTotals[bucketOrder[b]], true) +
+            '</td>';
+    }
+    footHtml +=
+        '<td class="bwo-ageing-num bwo-ageing-total-col">' +
+        formatAgeingAmount(grandTotal, false) +
+        '</td>';
+    footHtml += '</tr>';
+    if (tfoot) tfoot.innerHTML = footHtml;
+
+    setDownloadButtonVisible(true);
+}
+
+/**
+ * @param {string} text
+ * @returns {string}
+ */
+function escapeHtml(text) {
+    return String(text == null ? '' : text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
  * Compact Indian-system label: 22.9Cr / 34.7L / 5.2K / 678
  * Used for chart axis ticks and data-labels so they don't overflow on mobile.
  * @param {number} n
@@ -548,8 +840,10 @@ function delayDaysBucketLabel(delayDays, rows) {
 
 function updateAgeingFormatLabel(desp) {
     const text = desp ? String(desp) : 'Default';
-    const el = document.getElementById('lblBillWiseAgeingFormatChart');
-    if (el) el.textContent = text;
+    const chartEl = document.getElementById('lblBillWiseAgeingFormatChart');
+    if (chartEl) chartEl.textContent = text;
+    const tableEl = document.getElementById('lblBillWiseAgeingFormatTable');
+    if (tableEl) tableEl.textContent = text;
 }
 
 /**
@@ -603,7 +897,7 @@ function onAgeingParameterSelected(result) {
     }
 
     if (lastReportRows && lastReportRows.length) {
-        renderBillWiseDashboard(lastReportRows, lastMonthWiseData);
+        renderLoadedReport(lastReportRows, lastMonthWiseData);
     }
 }
 
@@ -2412,19 +2706,45 @@ function setDownloadButtonVisible(visible) {
     btn.classList.toggle('d-none', !visible);
 }
 
-function clearReportTable() {
-    clearDashboardUi();
-    setDownloadButtonVisible(false);
+function clearReportTableDom() {
     const thead = document.getElementById('table-header');
     const tbody = document.getElementById('table-body');
+    const tfoot = document.getElementById('table-footer');
     const paginator = document.getElementById('paginator-tblReport');
+    const tbl = document.getElementById('tblReport');
     if (thead) thead.innerHTML = '';
     if (tbody) tbody.innerHTML = '';
+    if (tfoot) tfoot.innerHTML = '';
     if (paginator) paginator.innerHTML = '';
+    if (tbl) {
+        tbl.classList.remove('bwo-ageing-table');
+        tbl.classList.add('fixed-width-table', 'table');
+    }
+}
+
+function clearReportTable() {
+    clearDashboardUi();
+    setAgeingReportUiVisible(false);
+    setDownloadButtonVisible(false);
+    clearReportTableDom();
+}
+
+/**
+ * Render based on Status dropdown (Dashboard charts + bill grid, or Ageing Report matrix).
+ * @param {Array<object>} rows
+ * @param {{ outstanding: Array<object>, overdue: Array<object> }|null} monthWiseData
+ */
+function renderLoadedReport(rows, monthWiseData) {
+    if (getReportStatus() === 'AgeingReport') {
+        renderAgeingReportGrid(rows || []);
+        return;
+    }
+    renderReportGrid(rows || [], monthWiseData);
 }
 
 function renderReportGrid(rows, monthWiseData) {
     clearReportTable();
+    setAgeingReportUiVisible(false);
     if (!rows.length) {
         toastr.info('No records found.');
         renderBillWiseDashboard([], monthWiseData || { outstanding: [], overdue: [] });
@@ -2442,7 +2762,8 @@ function renderReportGrid(rows, monthWiseData) {
     ];
     const DateFilterColumn = ['Entry Date', 'Bill Date'];
     const StringdoubleFilterColumn = [];
-    const HiddenColumns = ["Code"];
+    // Dashboard: hide GSTN No (Ageing Report shows it via renderAgeingReportGrid)
+    const HiddenColumns = ['Code'].concat(gstnHiddenColumnNames(firstRow));
     const ColumnAlignment = {
         'Amount': 'right',
         'Credit Days': 'right',
@@ -2517,7 +2838,7 @@ function ShowData() {
             const filtered = applyDebtorCreditorClientFilter(raw, groupTypeCode);
             lastReportRows = groupReportRowsByCode(applyPartyNameTransform(filtered, groupTypeCode));
             lastMonthWiseData = normalizeMonthWiseApiResponse(monthResponse);
-            renderReportGrid(lastReportRows, lastMonthWiseData);
+            renderLoadedReport(lastReportRows, lastMonthWiseData);
         })
         .catch(function () {
             lastReportRows = null;
@@ -2540,7 +2861,8 @@ function downloadExcel() {
     }
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.table_to_sheet(document.getElementById('tblReport'));
-    XLSX.utils.book_append_sheet(wb, ws, 'Bill Wise Outstanding');
+    const sheetName = getReportStatus() === 'AgeingReport' ? 'Ageing Report' : 'Bill Wise Outstanding';
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
     const now = new Date();
     const stamp =
         now.getFullYear() +
@@ -2554,7 +2876,8 @@ function downloadExcel() {
         String(now.getMinutes()).padStart(2, '0') +
         '-' +
         String(now.getSeconds()).padStart(2, '0');
-    XLSX.writeFile(wb, `BillWiseOutStandingReport_${stamp}.xlsx`);
+    const filePrefix = getReportStatus() === 'AgeingReport' ? 'AgeingReport' : 'BillWiseOutStandingReport';
+    XLSX.writeFile(wb, `${filePrefix}_${stamp}.xlsx`);
 }
 
 document.getElementById('btnShow')?.addEventListener('click', () => {
@@ -2565,8 +2888,20 @@ document.getElementById('btnBillWiseAgeingParamChart')?.addEventListener('click'
     ShowAgeingParameterModal(false);
 });
 
+document.getElementById('btnBillWiseAgeingParamTable')?.addEventListener('click', function () {
+    ShowAgeingParameterModal(false);
+});
+
 document.getElementById('btnDownload')?.addEventListener('click', () => {
     downloadExcel();
+});
+
+document.getElementById('ddlBillWiseReportStatus')?.addEventListener('change', function () {
+    if (lastReportRows && lastReportRows.length) {
+        renderLoadedReport(lastReportRows, lastMonthWiseData);
+    } else {
+        clearReportTable();
+    }
 });
 
 window.ShowAgeingParameterModal = ShowAgeingParameterModal;
@@ -2594,9 +2929,18 @@ $(function () {
         // Reload both salesperson and account lists when Debtors/Creditors changes
         loadMarketingManDropdown();
         loadAccountDropdown(0);
+        if (getReportStatus() === 'AgeingReport' && lastReportRows && lastReportRows.length) {
+            renderAgeingReportGrid(lastReportRows);
+        }
     });
 
     $(document).on('change', 'input[name="bwoDelayBucketDateMode"]', function () {
         refreshDelayBucketChartOnly();
+    });
+
+    $(document).on('change', 'input[name="bwoAgeingTableDateMode"]', function () {
+        if (getReportStatus() === 'AgeingReport' && lastReportRows && lastReportRows.length) {
+            renderAgeingReportGrid(lastReportRows);
+        }
     });
 });

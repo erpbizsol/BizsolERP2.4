@@ -64,7 +64,11 @@ function renderFMSCard(item) {
     const currStk = escapeHtml(rowField(item, ["Curr. Stk."]) || "0.000");
     const lastMonCon = escapeHtml(rowField(item, ["Last Mon Con."]) || "0.000");
     const unitPrice = escapeHtml(rowField(item, ["Unit Price", "UnitPrice"]) || "\u2014");
+    const lastPoDate = escapeHtml(rowField(item, ["Last Po Date", "LastPODate"]) || "\u2014");
+    const lastPoRate = escapeHtml(rowField(item, ["Last PO Rate", "LastPORate"]) || "\u2014");
     const totalAmount = formatINRAmount(rowField(item, ["Total Amount", "TotalAmount"]));
+    const itemMasterCode = rowField(item, ["ItemMaster_Code", "ItemMaster Code"]) || "";
+    const sizeCode = rowField(item, ["Itemsizemaster_Code", "ItemSizeMaster_Code", "itemsizemaster_Code"]) || "0";
     const actionLabel = escapeHtml(FrmAction || "Verify");
 
     const remarksHtml = remarks
@@ -74,6 +78,13 @@ function renderFMSCard(item) {
     const createdHtml = createdBy
         ? '<span><i class="fa fa-user" aria-hidden="true"></i> ' + createdBy + "</span>"
         : "";
+
+    const historyBtn =
+        '<button type="button" class="sopa-btn sopa-btn--history fmsr-js-history" title="View History" data-itemmaster="' +
+        escapeHtml(String(itemMasterCode)) +
+        '" data-sizecode="' +
+        escapeHtml(String(sizeCode || 0)) +
+        '"><i class="fa fa-eye" aria-hidden="true"></i> History</button>';
 
     const verifyBtn =
         '<button type="button" class="sopa-btn sopa-btn--primary fmsr-js-verify" data-code="' +
@@ -107,8 +118,11 @@ function renderFMSCard(item) {
         '<div class="sopa-metric"><span class="sopa-metric-lbl">Curr. Stk.</span><span class="sopa-metric-val">' + currStk + "</span></div>" +
         '<div class="sopa-metric"><span class="sopa-metric-lbl">Last Mon Con.</span><span class="sopa-metric-val">' + lastMonCon + "</span></div>" +
         '<div class="sopa-metric"><span class="sopa-metric-lbl">Unit Price</span><span class="sopa-metric-val">' + unitPrice + "</span></div>" +
+        '<div class="sopa-metric"><span class="sopa-metric-lbl">Last Po Date</span><span class="sopa-metric-val">' + lastPoDate + "</span></div>" +
+        '<div class="sopa-metric"><span class="sopa-metric-lbl">Last PO Rate</span><span class="sopa-metric-val">' + lastPoRate + "</span></div>" +
         "</div>" +
         '<div class="sopa-card-foot">' +
+        historyBtn +
         verifyBtn +
         "</div></article>"
     );
@@ -257,11 +271,152 @@ $(document).ready(function () {
     syncPageHeader(menuValue);
     unApprovedFMSReport();
 
+    $("#myHistoryModal").on("hidden.bs.modal", function () {
+        $(this).css("z-index", "");
+        fmsrCleanupModalState();
+    });
+
     $(document).on("click", "#FMSReportCards .fmsr-js-verify", function () {
         const code = $(this).attr("data-code");
         if (code) Approval(code);
     });
+
+    $(document).on("click", "#FMSReportCards .fmsr-js-history", function () {
+        const itemMasterCode = $(this).attr("data-itemmaster");
+        const sizeCode = $(this).attr("data-sizecode") || 0;
+        ViewHistory(itemMasterCode, sizeCode);
+    });
 });
+
+function fmsrRemoveOrphanBackdrops() {
+    const visibleCount = $(".modal.show:visible").length;
+    const $backs = $(".modal-backdrop");
+    if (visibleCount === 0) {
+        $backs.remove();
+        $("body").removeClass("modal-open");
+        $("body").css({ overflow: "", paddingRight: "" });
+    }
+}
+
+function fmsrCleanupModalState() {
+    fmsrRemoveOrphanBackdrops();
+    $("#myHistoryModal").css("z-index", "");
+}
+
+function fmsrShowModal($el) {
+    const el = $el && $el[0];
+    if (!el) return;
+    const opts = { backdrop: "static", keyboard: false };
+    if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
+        let inst = bootstrap.Modal.getInstance(el);
+        if (!inst) inst = new bootstrap.Modal(el, opts);
+        inst.show();
+    } else {
+        $el.modal({ show: true, backdrop: "static", keyboard: false });
+    }
+}
+
+function fmsrHideModal($el) {
+    const el = $el && $el[0];
+    if (!el) return;
+    if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
+        const inst = bootstrap.Modal.getInstance(el);
+        if (inst) inst.hide();
+        else $el.modal("hide");
+    } else {
+        $el.modal("hide");
+    }
+}
+
+function fmsrShowHistoryModal() {
+    const $history = $("#myHistoryModal");
+    $history.off("shown.bs.modal.fmsrStack").on("shown.bs.modal.fmsrStack", function () {
+        const $backs = $(".modal-backdrop");
+        if ($backs.length > 1) {
+            $backs.last().css("z-index", 1055);
+        }
+        $(this).css("z-index", 1060);
+    });
+    fmsrShowModal($history);
+}
+
+function renderHistoryMobileCards(rows) {
+    const $box = $("#fmsrHistoryMobile");
+    if (!$box.length) return;
+    if (!rows || !rows.length) {
+        $box.html('<div class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No history found.</div>');
+        return;
+    }
+
+    $box.html(rows.map(function (row) {
+        const poNo = escapeHtml(rowField(row, ["PO No", "PONo", "PO Number"]) || "\u2014");
+        const poDate = escapeHtml(rowField(row, ["PO Date", "PODate"]) || "\u2014");
+        const party = escapeHtml(rowField(row, ["Party", "Party Name", "PartyName"]) || "\u2014");
+        const qty = escapeHtml(rowField(row, ["Qty", "Quantity"]) || "\u2014");
+        const rate = escapeHtml(rowField(row, ["Rate"]) || "\u2014");
+
+        return (
+            '<div class="fmsr-hist-card">' +
+            '<div class="fmsr-hist-card-head">' + poNo + "</div>" +
+            '<div class="fmsr-hist-card-grid">' +
+            '<div class="fmsr-hist-kv"><span class="lbl">PO Date</span><span class="val">' + poDate + "</span></div>" +
+            '<div class="fmsr-hist-kv"><span class="lbl">Qty</span><span class="val is-num">' + qty + "</span></div>" +
+            '<div class="fmsr-hist-kv fmsr-hist-kv--full"><span class="lbl">Party</span><span class="val">' + party + "</span></div>" +
+            '<div class="fmsr-hist-kv fmsr-hist-kv--full"><span class="lbl">Rate</span><span class="val is-num">' + rate + "</span></div>" +
+            "</div></div>"
+        );
+    }).join(""));
+}
+
+function ViewHistory(ItemMaster_Code, itemsizemaster_Code) {
+    if (!ItemMaster_Code) {
+        toastr.warning("Item not available for history.");
+        return;
+    }
+    FMSReportService.GetPOHistory(ItemMaster_Code, itemsizemaster_Code || 0).then(function (response) {
+        if (response && response.length > 0) {
+            $("#modal-title").text("View History");
+            $("#fmsrHistorySectionTitle").html('<i class="fa fa-list me-1"></i>PO History');
+            $("#fmsrHistoryModalSub").text("Previous purchase orders for this item.").show();
+            fmsrShowHistoryModal();
+            const stringFilterColumn = [];
+            const numericFilterColumn = [];
+            const dateFilterColumn = [];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            const hiddenColumns = [];
+            const ColumnAlignment = {
+                "PO Date": "center",
+                "PO No": "center",
+                Qty: "right",
+                Rate: "right",
+            };
+            BizsolCustomFilterGrid.CreateDataTable(
+                "table-header-FMSReportHistory",
+                "table-body-FMSReportHistory",
+                response,
+                button,
+                showButtons,
+                stringFilterColumn,
+                numericFilterColumn,
+                dateFilterColumn,
+                stringDoubleFilterColumn,
+                hiddenColumns,
+                ColumnAlignment
+            );
+            renderHistoryMobileCards(response);
+        } else {
+            toastr.error("No history found for this item.");
+        }
+    }).catch(function (error) {
+        toastr.error("Error in fetching history:", error);
+    });
+}
+
+function CloseHistoryModal() {
+    fmsrHideModal($("#myHistoryModal"));
+}
 
 function unApprovedFMSReport() {
     FMSReportService.GetUnApprovedFMSReport(FrmAction, FrmType).then(function (response) {
@@ -322,3 +477,5 @@ function getUrlVars() {
 }
 
 window.Approval = Approval;
+window.ViewHistory = ViewHistory;
+window.CloseHistoryModal = CloseHistoryModal;
