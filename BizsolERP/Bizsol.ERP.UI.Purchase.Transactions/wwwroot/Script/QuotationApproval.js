@@ -4,6 +4,9 @@ let FrmType = '';
 let FrmAction = '';
 let G_QuotationList = [];
 let G_CurrentQuotation = null;
+/** 'Y' = show Rate As Per Cost Sheet column; anything else = hide */
+let G_RateAsPerCostSheet  = 'N';
+const QA_COST_SHEET_KEYS = new Set(['Rate As Per Cost Sheet', 'RateAsPerCostSheet']);
 
 function EscHtml(s) {
     if (s == null || s === '') return '';
@@ -228,10 +231,29 @@ function RenderQuotationCards(list) {
 function GetModalItemKeys(rows) {
     if (!rows || !rows.length) return [];
     const hiddenKeys = new Set(['Code', 'ItemMaster_Code', 'itemsizemaster_Code']);
-    return Object.keys(rows[0]).filter(function (k) { return !hiddenKeys.has(k); });
+    return Object.keys(rows[0]).filter(function (k) {
+        if (hiddenKeys.has(k)) return false;
+        if (G_RateAsPerCostSheet  !== 'Y' && QA_COST_SHEET_KEYS.has(k)) return false;
+        return true;
+    });
 }
 
-const QA_ITEM_NUMERIC = new Set(['Amount', 'Qty MT', 'Last Rate', 'Qty', 'Rate']);
+function LoadCostSheetParameter() {
+    return QuotationApprovalService.GetQuotationCostSheetParameter().then(function (res) {
+        const row = Array.isArray(res) ? res[0] : res;
+        const val = row
+            ? (row.RateAsPerCostSheet  != null ? row.RateAsPerCostSheet  : row.RateAsPerCostSheet )
+            : 'N';
+        G_RateAsPerCostSheet  = String(val || 'N').trim().toUpperCase();
+    }).catch(function () {
+        G_RateAsPerCostSheet  = 'N';
+    });
+}
+
+const QA_ITEM_NUMERIC = new Set([
+    'Amount', 'Qty MT', 'Last Rate', 'Qty', 'Quantity', 'Rate',
+    'Rate As Per Cost Sheet', 'RateAsPerCostSheet',
+]);
 const QA_ITEM_HEAD = {
     sno: ['SNO', 'Sno', 'Sr No', 'SrNo'],
     item: ['Item Name', 'ItemName', 'ITEM NAME', 'Item', 'Description'],
@@ -248,10 +270,11 @@ function BuildLineItemMobileCard(row, keys, index) {
         const val = row[k];
         if (val == null || val === '') return '';
         const isNum = QA_ITEM_NUMERIC.has(k);
-        const full = k.length > 14 || String(val).length > 18 ? ' qa-li-mobile-kv--full' : '';
+        const lbl = k === 'RateAsPerCostSheet' ? 'Rate As Per Cost Sheet' : k;
+        const full = lbl.length > 14 || String(val).length > 18 ? ' qa-li-mobile-kv--full' : '';
         return (
             '<div class="qa-li-mobile-kv' + full + '">' +
-            '<span class="qa-li-mobile-lbl">' + EscHtml(k) + '</span>' +
+            '<span class="qa-li-mobile-lbl">' + EscHtml(lbl) + '</span>' +
             '<span class="qa-li-mobile-val' + (isNum ? ' is-num' : '') + '">' + EscHtml(String(val)) + '</span></div>'
         );
     }).join('');
@@ -294,7 +317,8 @@ function RenderModalItems(rows) {
     const keys = GetModalItemKeys(rows);
 
     thead.innerHTML = '<tr>' + keys.map(function (k) {
-        return '<th>' + EscHtml(k) + '</th>';
+        const header = k === 'RateAsPerCostSheet' ? 'Rate As Per Cost Sheet' : k;
+        return '<th>' + EscHtml(header) + '</th>';
     }).join('') + '</tr>';
 
     tbody.innerHTML = rows.map(function (row) {
@@ -397,7 +421,9 @@ $(document).ready(function () {
     }
 
     document.getElementById('btnQuotationVerifyLabel').textContent = VerifyButtonLabel();
-    GetApprovedQuotationList();
+    LoadCostSheetParameter().then(function () {
+        GetApprovedQuotationList();
+    });
 
     $('#myModal').on('shown.bs.modal', function () {
         document.body.style.overflow = 'hidden';

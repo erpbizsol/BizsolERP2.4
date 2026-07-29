@@ -180,11 +180,17 @@
 
     .sopa-metrics {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 0.5rem 0.75rem;
         padding: 0.65rem 1.15rem;
         background: #f8fafc;
         border-top: 1px solid #f0f2f6;
+    }
+
+    @@media (min-width: 768px) {
+        .sopa-metrics {
+            grid-template-columns: repeat(6, 1fr);
+        }
     }
 
     .sopa-metric {
@@ -246,6 +252,192 @@
     .sopa-btn--primary:hover {
         color: #fff;
         box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+    }
+
+    .sopa-btn--history {
+        background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
+    }
+
+    .sopa-btn--history:hover {
+        color: #fff;
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+    }
+
+    /* ── VIEW HISTORY MODAL ───────────────────────────────────── */
+    #myHistoryModal.fmsr-hist-modal {
+        overflow: hidden !important;
+    }
+
+    #myHistoryModal .modal-dialog {
+        margin: 1rem auto;
+        max-width: min(860px, calc(100vw - 2rem));
+        width: 100%;
+        max-height: calc(100dvh - 2rem);
+        display: flex;
+        align-items: center;
+        min-height: calc(100% - 2rem);
+    }
+
+    #myHistoryModal .modal-content {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.22);
+        overflow: hidden;
+        width: 100%;
+        max-height: calc(100dvh - 2rem);
+        display: flex;
+        flex-direction: column;
+    }
+
+    #myHistoryModal .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border: none;
+        padding: 14px 18px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    #myHistoryModal .modal-title {
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1.3;
+    }
+
+    #myHistoryModal #fmsrHistoryModalSub {
+        display: block;
+        font-size: 0.72rem;
+        opacity: 0.85;
+        margin-top: 2px;
+    }
+
+    #myHistoryModal .modal-body {
+        padding: 14px 16px;
+        background: #fff;
+        overflow-y: auto;
+        overflow-x: hidden;
+        flex: 1 1 auto;
+        min-height: 0;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #myHistoryModal .modal-footer {
+        padding: 10px 16px;
+        background: #fafbff;
+        border-top: 1px solid #eef0f8;
+        gap: 8px;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
+
+    #myHistoryModal .fmsr-hist-section-title {
+        font-weight: 700;
+        margin-bottom: 10px;
+        color: #334155;
+        font-size: 0.88rem;
+    }
+
+    .fmsr-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+    }
+
+    .fmsr-history-table th {
+        background: #f1f5f9;
+        color: #334155;
+        font-weight: 700;
+        padding: 0.55rem 0.65rem;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+
+    .fmsr-history-table td {
+        padding: 0.5rem 0.65rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: #0f172a;
+        word-break: break-word;
+    }
+
+    #paginator-FMSReportHistory {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    /* Mobile cards — hidden on desktop */
+    #fmsrHistoryMobile {
+        display: none;
+    }
+
+    .fmsr-hist-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 3px solid #667eea;
+        border-radius: 10px;
+        padding: 0.6rem 0.7rem;
+        margin-bottom: 0.55rem;
+    }
+
+    .fmsr-hist-card:last-child {
+        margin-bottom: 0;
+    }
+
+    .fmsr-hist-card-head {
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 0.4rem;
+        word-break: break-word;
+    }
+
+    .fmsr-hist-card-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem 0.5rem;
+    }
+
+    .fmsr-hist-kv {
+        background: #fff;
+        border: 1px solid #eef2f7;
+        border-radius: 6px;
+        padding: 0.32rem 0.45rem;
+        min-width: 0;
+    }
+
+    .fmsr-hist-kv--full {
+        grid-column: 1 / -1;
+    }
+
+    .fmsr-hist-kv .lbl {
+        display: block;
+        font-size: 0.58rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #94a3b8;
+        margin-bottom: 0.1rem;
+    }
+
+    .fmsr-hist-kv .val {
+        display: block;
+        font-size: 0.76rem;
+        font-weight: 600;
+        color: #334155;
+        word-break: break-word;
+    }
+
+    .fmsr-hist-kv .val.is-num {
+        text-align: right;
+        color: #667eea;
     }
 
     .sopa-empty {
@@ -323,6 +515,11 @@
             grid-template-columns: repeat(2, 1fr);
         }
 
+        .sopa-card-foot .sopa-btn {
+            flex: 1 1 calc(50% - 0.25rem);
+            width: auto;
+        }
+
         .sopa-card-head {
             flex-direction: column;
             align-items: stretch;
@@ -355,6 +552,48 @@
             width: 100%;
         }
     }
+
+    @@media (max-width: 768px) {
+        #myHistoryModal .modal-dialog {
+            margin: 0.5rem auto;
+            max-width: calc(100vw - 1rem) !important;
+            width: calc(100vw - 1rem);
+            max-height: calc(100dvh - 1rem);
+            min-height: 0;
+            align-items: flex-start;
+        }
+
+        #myHistoryModal .modal-content {
+            max-height: calc(100dvh - 1rem);
+            border-radius: 14px;
+        }
+
+        #myHistoryModal .modal-header {
+            padding: 12px 14px;
+        }
+
+        #myHistoryModal .modal-body {
+            padding: 12px;
+        }
+
+        #myHistoryModal .modal-footer {
+            padding: 10px 12px;
+        }
+
+        #myHistoryModal .modal-footer .btn {
+            width: 100%;
+            margin: 0 !important;
+        }
+
+        /* Hide desktop table/paginator; show mobile cards */
+        #fmsrHistoryDesktop {
+            display: none !important;
+        }
+
+        #fmsrHistoryMobile {
+            display: block !important;
+        }
+    }
 </style>
 
 <!-- PAGE HEADER -->
@@ -385,4 +624,44 @@
     </table>
 </div>
 <div class="paginator d-none" id="paginator-FMSReport" aria-hidden="true">
+</div>
+
+<div class="modal fade fmsr-hist-modal" id="myHistoryModal" tabindex="-1" role="dialog"
+     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="flex-grow-1 min-w-0">
+                    <h5 class="modal-title">
+                        <i class="fa fa-history me-2"></i><span id="modal-title">View History</span>
+                    </h5>
+                    <small id="fmsrHistoryModalSub"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto"
+                        onclick="CloseHistoryModal()" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="fmsr-hist-section-title" id="fmsrHistorySectionTitle">
+                    <i class="fa fa-list me-1"></i>PO History
+                </div>
+                <div id="fmsrHistoryDesktop">
+                    <div class="table-responsive">
+                        <table id="FMSReportHistory" class="fmsr-history-table">
+                            <thead id="table-header-FMSReportHistory"></thead>
+                            <tbody id="table-body-FMSReportHistory"></tbody>
+                        </table>
+                    </div>
+                    <div class="paginator" id="paginator-FMSReportHistory"></div>
+                </div>
+                <div id="fmsrHistoryMobile" aria-live="polite"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-height ms-auto" onclick="CloseHistoryModal()">
+                    <i class="fa fa-times-circle me-1"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
