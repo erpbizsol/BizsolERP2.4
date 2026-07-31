@@ -22,7 +22,13 @@
 }
 
 #dvTab1, #dvTab2, #dvTab3, #dvTab4 {
-    scroll-margin-top: 100px;
+    scroll-margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+    #dvTab1, #dvTab2, #dvTab3, #dvTab4 {
+        scroll-margin-top: 4px;
+    }
 }
 
 /* Section nav is sticky in EnquiryMaster.cshtml (.enq-section-nav); legacy .card-header-tabs unused */
@@ -124,6 +130,7 @@ button.icon-height:not(.btn-enq-primary):not(.btn-enq-secondary):not(.btn-enq-ne
     .enq-section-nav {
         gap: 6px;
         padding: 8px;
+        top: 0;
     }
     .enq-nav-tabs-wrap {
         overflow-x: auto;
