@@ -3,7 +3,7 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=26"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=29"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 
 <style>
@@ -110,6 +110,52 @@
     .bom-fg select:focus {
         border-color: var(--accent-primary);
         box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+    }
+
+    .bom-entry-mode-fg {
+        min-width: 200px;
+    }
+
+    .bom-entry-mode-radios {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+        min-height: 40px;
+        padding: 4px 2px;
+    }
+
+    .bom-radio-opt {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-dark);
+        cursor: pointer;
+        user-select: none;
+        margin: 0;
+    }
+
+    .bom-radio-opt input[type="radio"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent-primary, #667eea);
+        cursor: pointer;
+        margin: 0;
+    }
+
+    #tblExpenseBOM {
+        min-width: 480px;
+        table-layout: fixed;
+    }
+
+    #tblExpenseBOM .bom-expense-group {
+        min-width: 0;
+    }
+
+    #tblExpenseBOM .bom-expense-amount {
+        text-align: right;
     }
 
     .bom-table-wrap {
@@ -1192,7 +1238,7 @@
     }
 
     #tblBOMList {
-        min-width: 820px;
+        min-width: 960px;
     }
 
     #tblBOMList .bom-actions {
@@ -1478,6 +1524,7 @@
                         <th class="center" style="min-width:100px;">Total Items</th>
                         <th class="right" style="min-width:120px;">Amount</th>
                         <th class="right" style="min-width:130px;">Total Amount</th>
+                        <th class="right" style="min-width:140px;">Expense Amount</th>
                         <th class="center" style="min-width:168px;">Action</th>
                     </tr>
                 </thead>
@@ -1487,6 +1534,7 @@
                         <td colspan="4" style="text-align:right; font-weight:700; padding:8px 10px;">Grand Total</td>
                         <td id="bomListGrandAmount" class="right pm-budget" style="font-weight:700; padding:8px 10px;">—</td>
                         <td id="bomListGrandTotal" class="right pm-budget" style="font-weight:700; padding:8px 10px;">—</td>
+                        <td id="bomListGrandExpense" class="right pm-budget" style="font-weight:700; padding:8px 10px;">—</td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -1508,6 +1556,20 @@
             <select id="ddlSubProject">
                 <option value="">Select project first</option>
             </select>
+        </div>
+
+        <div class="bom-fg bom-entry-mode-fg">
+            <label>Entry Type</label>
+            <div class="bom-entry-mode-radios" role="radiogroup" aria-label="BOM entry type">
+                <label class="bom-radio-opt">
+                    <input type="radio" name="bomEntryMode" id="rdoBomMode" value="BOM" checked />
+                    <span>BOM</span>
+                </label>
+                <label class="bom-radio-opt">
+                    <input type="radio" name="bomEntryMode" id="rdoExpenseMode" value="EXPENSE" />
+                    <span>Expense Budget</span>
+                </label>
+            </div>
         </div>
 
         <div style="margin-left:auto; display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;">
@@ -1532,12 +1594,12 @@
 
     <input type="hidden" id="hfBOMCode" value="0" />
 
-    <div class="bom-entry-scroll-hint">
+    <!-- <div class="bom-entry-scroll-hint" id="bomEntryScrollHint">
         <i class="fas fa-arrows-alt-h"></i>
         <span>Swipe left / right to view all columns</span>
-    </div>
+    </div> -->
 
-    <div class="bom-table-wrap bom-entry-table-wrap">
+    <div class="bom-table-wrap bom-entry-table-wrap" id="dvBomTableWrap">
         <table class="bom-table" id="tblBOM">
             <colgroup>
                 <col class="bom-c-sno" />
@@ -1580,24 +1642,45 @@
         </table>
     </div>
 
-    <!-- BOM Summary by project category (inside entry card so it hides/shows with the form) -->
+    <!-- Expense Budget entry grid -->
+    <div class="bom-table-wrap bom-entry-table-wrap" id="dvExpenseTableWrap" style="display:none;">
+        <table class="bom-table" id="tblExpenseBOM">
+            <colgroup>
+                <col style="width:48px;" />
+                <col />
+                <col style="width:220px;" />
+                <col style="width:48px;" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th class="center">#</th>
+                    <th>Expense Group</th>
+                    <th class="right">Expense Amount</th>
+                    <th class="center"></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- BOM / Expense Summary (inside entry card so it hides/shows with the form) -->
     <div id="dvBOMSummary" style="display:none;margin-top:16px;" class="bom-card">
-        <div class="bom-summary-header">
-            <i class="fas fa-chart-bar"></i> BOM Summary by Prj Category
+        <div class="bom-summary-header" id="bomSummaryHeaderTitle">
+            <i class="fas fa-chart-bar"></i> <span id="bomSummaryHeaderText">BOM Summary by Prj Category</span>
         </div>
         <div class="bom-summary-scroll-hint">
             <i class="fas fa-arrows-alt-h"></i>
-            <span>Swipe to see Total Amount</span>
+            <span id="bomSummaryScrollHintText">Swipe to see Total Amount</span>
         </div>
         <div class="bom-table-wrap bom-summary-table-wrap" style="margin-top:0; border-radius:0; box-shadow:none; border:none;">
             <table class="bom-table" id="tblBOMSummary">
-                <colgroup>
+                <colgroup id="bomSummaryColgroup">
                     <col class="bom-sum-col-cat" />
                     <col class="bom-sum-col-qty" />
                     <col class="bom-sum-col-amt" />
                     <col class="bom-sum-col-total" />
                 </colgroup>
-                <thead>
+                <thead id="bomSummaryThead">
                     <tr>
                         <th>Prj Category</th>
                         <th class="right">Qty Required</th>
@@ -1606,7 +1689,7 @@
                     </tr>
                 </thead>
                 <tbody></tbody>
-                <tfoot>
+                <tfoot id="bomSummaryTfoot">
                     <tr>
                         <td><strong>Grand Total</strong></td>
                         <td class="right" id="sumQtyRequired">—</td>
