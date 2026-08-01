@@ -1047,32 +1047,41 @@ function collectAllArraysFromPayload(payload, depth) {
     return out;
 }
 
-/** When GETBYCODE detail set uses transaction Code in TaskListMaster_Code, attach real master id from header. */
+/**
+ * Normalize task lines for a master.
+ * Handles broken SP shapes:
+ * - GETBYCODE: transaction Code aliased as TaskListMaster_Code (no Code column)
+ * - GETBYEMPFINYEAR: Code = TaskListMaster.Code (master id), no transaction Code
+ */
 function normalizeTaskRowsForMaster(rows, masterCode) {
     var id = parseInt(masterCode, 10) || 0;
     return (rows || []).map(function (r) {
         var norm = normalizeApiTaskRow(r);
         if (!(norm.Task || '').trim()) return norm;
-        if (!id) return norm;
 
-        var assoc = resolveMasterCodeFromRow(norm);
-        if (assoc === id) return norm;
+        var rawCode = parseRowCode(norm);
+        var aliasMaster =
+            norm.TaskListMaster_Code != null ? parseInt(norm.TaskListMaster_Code, 10) || 0 : 0;
+        var transCode = 0;
 
-        var transCode = parseRowCode(norm);
-        var aliasMaster = norm.TaskListMaster_Code != null ? parseInt(norm.TaskListMaster_Code, 10) || 0 : 0;
-        if (aliasMaster && aliasMaster !== id) {
-            return Object.assign({}, norm, {
-                Code: transCode && transCode !== id ? transCode : aliasMaster,
-                TaskListMaster_Code: id,
-            });
+        // Prefer a Code that is not the master header id.
+        if (rawCode && (!id || rawCode !== id)) {
+            transCode = rawCode;
+        } else if (aliasMaster && (!id || aliasMaster !== id)) {
+            // GETBYCODE bug: TaskListMaster_Code holds transaction Code.
+            transCode = aliasMaster;
+        } else if (
+            r.TransactionCode != null &&
+            r.TransactionCode !== '' &&
+            (!id || parseInt(r.TransactionCode, 10) !== id)
+        ) {
+            transCode = parseInt(r.TransactionCode, 10) || 0;
         }
-        if (!assoc || assoc !== id) {
-            return Object.assign({}, norm, {
-                Code: transCode && transCode !== id ? transCode : norm.Code,
-                TaskListMaster_Code: id,
-            });
-        }
-        return norm;
+
+        return Object.assign({}, norm, {
+            Code: transCode || 0,
+            TaskListMaster_Code: id || (aliasMaster === rawCode ? 0 : aliasMaster) || 0,
+        });
     });
 }
 
@@ -2029,7 +2038,7 @@ function shouldSkipExistingTasksOnSave() {
     return G_TLM_SkipExistingTasksOnSave;
 }
 
-/** Edit: save all existing rows + new rows. Copy: skip rows already in DB. */
+/** Edit: save dirty existing rows + new rows. Copy: skip rows already in DB. */
 function getRowsToSaveForCurrentForm() {
     syncTaskRowsFromDom();
     var emp = getDetailEmployeeCode();
@@ -2044,7 +2053,8 @@ function getRowsToSaveForCurrentForm() {
         if (!key) return false;
 
         if (isEditSave) {
-            if (isExistingEditRow(row)) return true;
+            // Do not re-post unchanged existing lines (avoids false "Task already exists").
+            if (isExistingEditRow(row)) return hasExistingRowEditableChanges(row);
             if (savedKeys[key]) return false;
             return true;
         }
@@ -2069,6 +2079,10 @@ function countSkippedExistingTasksOnSave() {
 }
 
 function isBulkNewTaskSave() {
+    // Existing master (edit) — never treat as bulk-new; CHECKEMPFINYEAR would false-positive.
+    var headerCode = parseInt($('#hfTaskListMaster_Code').val() || '0', 10) || 0;
+    if (headerCode > 0 || isTaskListEditSaveMode()) return false;
+
     syncTaskRowsFromDom();
     if (!G_TLM_TaskRows.length) return false;
     return G_TLM_TaskRows.every(function (row) {
@@ -2629,8 +2643,12 @@ function applyRecordsToForm(rows, headerOverride) {
         $('#txtFinYear').val(finYear);
         G_TLM_TaskRows = list.map(function (r) {
             var row = newTaskRow(r);
-            var transCode = parseRowCode(r);
-            if (transCode) row.Code = transCode;
+            var normalized = normalizeTaskRowsForMaster([r], masterCode)[0] || r;
+            var transCode = parseRowCode(normalized);
+            // Never keep master header Code as transaction Code.
+            if (transCode && transCode === masterCode) transCode = 0;
+            row.Code = transCode || 0;
+            row.TaskListMaster_Code = masterCode;
             row._existingRow = true;
             row._dirty = false;
             return row;
@@ -2770,9 +2788,43 @@ function savePayloadDateValue(row) {
     return String(row.Date).trim();
 }
 
+/** Resolve TaskListTransaction.Code for SAVE (never send master header Code as transaction Code). */
+function resolveTransactionCodeForSave(row) {
+    var masterCode = parseInt($('#hfTaskListMaster_Code').val() || '0', 10) || 0;
+    var code = parseRowCode(row);
+    if (code && code === masterCode) code = 0;
+
+    if (!code && row) {
+        var alias =
+            row.TaskListMaster_Code != null ? parseInt(row.TaskListMaster_Code, 10) || 0 : 0;
+        if (alias && alias !== masterCode) code = alias;
+    }
+
+    if (!code && row && masterCode) {
+        var taskKey = normalizeTaskKey(row.Task);
+        (G_TLM_TransactionRows || []).some(function (r) {
+            if (normalizeTaskKey(r.Task) !== taskKey) return false;
+            var tc = parseRowCode(r);
+            if (tc && tc !== masterCode) {
+                code = tc;
+                return true;
+            }
+            var am = r.TaskListMaster_Code != null ? parseInt(r.TaskListMaster_Code, 10) || 0 : 0;
+            if (am && am !== masterCode) {
+                code = am;
+                return true;
+            }
+            return false;
+        });
+    }
+
+    return code || 0;
+}
+
 function buildSavePayload(row) {
     var active = normalizeActiveFlag(row.Active);
-    var transCode = parseRowCode(row);
+    var transCode = resolveTransactionCodeForSave(row);
+    if (transCode && row) row.Code = transCode;
     return {
         Mode: 'SAVE',
         Code: transCode,
@@ -2901,7 +2953,13 @@ function saveTaskListWithFreshData() {
             if (!rowsToSave.length) {
                 if (typeof toastr !== 'undefined') {
                     if (isTaskListEditSaveMode()) {
-                        toastr.warning('Please add at least one task with a name to save.');
+                        if (G_TLM_TaskRows.some(function (r) {
+                            return !!(r && (r.Task || '').trim());
+                        })) {
+                            toastr.info('No changes to save.');
+                        } else {
+                            toastr.warning('Please add at least one task with a name to save.');
+                        }
                     } else if (skippedExisting) {
                         toastr.warning(
                             'All tasks already exist for this employee and fin year. Add a new task to save.'
@@ -2919,7 +2977,10 @@ function saveTaskListWithFreshData() {
                 return saveTaskRowsSequentially(rowsToSave, 0, skippedExisting);
             }
 
-            if (isCreateModeSave || bulkNew) {
+            // CHECKEMPFINYEAR is only for brand-new employee+finyear create.
+            // In edit, data already exists — that is expected, so skip this guard.
+            var isEditSave = isTaskListEditSaveMode() || headerCode > 0;
+            if (!isEditSave && (isCreateModeSave || bulkNew)) {
                 return Promise.resolve(checkEmployeeFinYearAlreadySaved(emp, finYear)).then(function (exists) {
                     if (exists) {
                         warnEmployeeFinYearExists();

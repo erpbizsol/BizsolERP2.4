@@ -84,6 +84,7 @@ let UrlService = {
     API_ENDPOINT_CRM_ORDERENTRY_CONFIG: `${environment.BASE_URL}/ConfigCRMOrderEntry`,
     
     
+    API_ENDPOINT_WeightConfirmation: `${environment.BASE_URL}/WeightConfirmation`,
     API_ENDPOINT_BreakDown: `${environment.BASE_URL}/BreakDownStartOrEnd`,
     API_ENDPOINT_SlittingEntry: `${environment.BASE_URL}/SlittingEntry`,
     API_ENDPOINT_VisitorMaster: `${environment.BASE_URL}/VisitorMaster`,
@@ -176,6 +177,7 @@ let UrlService = {
     API_ENDPOINT_ExpenseDashboard: `${environment.BASE_URL}/ExpenseDashboard`,
     API_ENDPOINT_IndentMaster: `${environment.BASE_URL}/IndentMaster`,
     API_ENDPOINT_TEMPLETE_REPORT: `${environment.BASE_URL}/OrderLoadReport`,
+    API_ENDPOINT_DASHBOARD_CONFIGURATION: `${environment.BASE_URL}/DashboardConfiguration`,
 }
 
 export { UrlService  }
