@@ -345,6 +345,43 @@ const LeadMasterService = {
             return value;
         });
     },
+    /** Pending / verified / rejected close-enquiry list for Verify Close Enquiry page */
+    GetCloseEnquiryVerifyList: function GetCloseEnquiryVerifyList() {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var url = UrlService.API_ENDPOINT_ENQUIRY +
+            `/GetCloseEnquiryVerifyList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(function (value) {
+            return value;
+        });
+    },
+    VerifyCloseEnquiry: function VerifyCloseEnquiry(Code, ReasonForVerify) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var url = UrlService.API_ENDPOINT_ENQUIRY +
+            `/EnquiryCloseVerifyDetail?Code=${encodeURIComponent(Code)}&ReasonForVerify=${encodeURIComponent(ReasonForVerify)}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(function (value) {
+            return value;
+        });
+    },
+    RejectCloseEnquiry: function RejectCloseEnquiry(Code, ReasonForReject) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var url = UrlService.API_ENDPOINT_ENQUIRY +
+            `/EnquiryCloseReject?Code=${encodeURIComponent(Code)}&ReasonForReject=${encodeURIComponent(ReasonForReject || '')}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(function (value) {
+            return value;
+        });
+    },
+    EnquiryReOpen: function EnquiryReOpen(EnquiryMaster_Code, Remark) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var url = UrlService.API_ENDPOINT_ENQUIRY +
+            `/EnquiryReOpen?EnquiryMaster_Code=${encodeURIComponent(EnquiryMaster_Code)}&UserMaster_Code=${encodeURIComponent(userMasterCode)}&Remark=${encodeURIComponent(Remark || '')}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(function (value) {
+            return value;
+        });
+    },
     EnquiryAssign: function EnquiryAssign(Code, MarketingPersonMaster_Code) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
@@ -411,6 +448,14 @@ const LeadMasterService = {
     },
     GetLeadStatuslist: function GetLeadStatuslist() {
         var URL = UrlService.API_ENDPOINT_ENQUIRY + `/GetLeadStatuslist`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetLeadCloseStatuslist: function GetLeadCloseStatuslist() {
+        var URL = UrlService.API_ENDPOINT_ENQUIRY + `/GetLeadCloseStatuslist`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
