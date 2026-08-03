@@ -9,6 +9,11 @@ namespace Bizsol.WebERP.UI.Marketing.Masters.Areas.MarketingMasters.Controllers
 		{
 			return View();
 		}
+
+		public IActionResult VerifyCloseEnquiry()
+		{
+			return View();
+		}
 	}
 }
 
