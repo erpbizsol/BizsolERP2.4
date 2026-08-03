@@ -54,6 +54,40 @@ const BOMService = {
         });
     },
 
+    /** Expense Budget — USP_WebAPI_BOM Mode = GETEXPENSEBYCODE */
+    GetExpenseBOMByCode: function GetExpenseBOMByCode(code, subProjectMaster_Code) {
+        const URL = UrlService.API_ENDPOINT_BOM + "/GetExpenseBOMByCode?Code=" + (code || 0)
+                  + "&SubProjectMaster_Code=" + (subProjectMaster_Code || 0);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) {
+            return value;
+        });
+    },
+
+    /** Expense Budget — USP_WebAPI_BOM Mode = COPYFROMEXPENSE */
+    GetExpenseBOMCopyFrom: function GetExpenseBOMCopyFrom(code, subProjectMaster_Code) {
+        const URL = UrlService.API_ENDPOINT_BOM + "/GetExpenseBOMCopyFrom?Code=" + (code || 0)
+                  + "&SubProjectMaster_Code=" + (subProjectMaster_Code || 0);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) {
+            return value;
+        });
+    },
+
+    /** Expense Budget — USP_WebAPI_BOM Mode = SAVEEXPENSE */
+    SaveExpenseBOM: function SaveExpenseBOM(payload) {
+        const URL = UrlService.API_ENDPOINT_BOM + "/SaveExpenseBOM";
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload)).then(function (value) {
+            return value;
+        });
+    },
+
+    /** Expense Group dropdown — USP_WebAPI_BOM Mode = GETEXPENSEGROUPLIST */
+    GetExpenseGroupList: function GetExpenseGroupList() {
+        const URL = UrlService.API_ENDPOINT_BOM + "/GetExpenseGroupList";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) {
+            return value;
+        });
+    },
+
     VerifyBOM: function VerifyBOM(code, subProjectMaster_Code) {
         const authKey  = JSON.parse(sessionStorage.getItem('authKey') || '{}');
         const userCode = authKey.UserMaster_Code || 0;

@@ -119,7 +119,7 @@ const GRNService = {
             });
     },
 
-    /** Pending PO numbers for the selected party/vendor (same contract as GRN Payment Entry GetPOList). */
+    /** Pending PO numbers for the selected party/vendor (DDL_GETPENDINGPOSTORELIST). */
     GetPendingPOStoreList: function GetPendingPOStoreList(Code) {
         const code = Code !== undefined && Code !== null ? String(Code).trim() : '';
         let url = UrlService.API_ENDPOINT_GRNService + `/GetPendingPOStoreList?Code=${encodeURIComponent(code || '0')}`;
@@ -127,6 +127,11 @@ const GRNService = {
             .then(function (value) {
                 return value;
             });
+    },
+
+    /** Alias used by GRNService.js fetchGrnPoListFromApi (same as GetPendingPOStoreList). */
+    GetPOList: function GetPOList(Code) {
+        return GRNService.GetPendingPOStoreList(Code);
     },
 
     LoadStatusDropdown: function LoadStatusDropdown() {

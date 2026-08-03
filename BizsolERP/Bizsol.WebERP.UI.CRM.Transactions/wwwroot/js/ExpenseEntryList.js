@@ -13,7 +13,6 @@ function CheckRight(optionName) {
     const FinYear = BizSolHelperFunction.getFinancialYear();
     return MenuService.CheckModuleOptionRight(ModuleName, optionName, 'Y', FinYear);
 }
-var G_EEL_ConfigBtnRequestId = 0;
 var G_EEL_LevelVerifyApplicable = 'N';
 /** Cached list rows keyed by Code — used by approval-flow modal (avoids wrong DOM column reads). */
 var G_EE_ListRowCache = {};
@@ -38,7 +37,6 @@ const Indx_Tbl = {
 
 $(document).ready(function () {
     $("#ERPHeading").text("Expense Entry");
-    $('#btnExpenseEntryConfig').hide();
 
     DatePicker();
     renderInitialEmptyExpenseTable();
@@ -110,21 +108,6 @@ $(document).ready(function () {
      $("#btnAddExpenseEntry").click(function () {
         CreateNew(0);
     });
-    
-    $('#btnExpenseEntryConfig').click(async function (e) {
-        const FinYear = BizSolHelperFunction.getFinancialYear();
-        try {
-            const resp = await MenuService.CheckModuleOptionRight('Expense Head Master', 'View', 'Y', FinYear);
-            if (resp && resp.CheckModuleOptionRight === 'N') {
-                toastr.error(resp.Msg);
-                return;
-            }
-        } catch (err) {
-            toastr.error('Could not verify access rights.');
-            return;
-        }
-        window.location = baseUrl + "/CRMTransactions/ExpenseEntry/ExpenseHeadMaster";
-    });
 
     $('#eeStatCardPendingOnMe').on('click', function () {
         navigateToExpenseLevelsApproval();
@@ -154,30 +137,9 @@ $(document).ready(function () {
     $('#eeBtnCancelDelete').on('click', function () {
         $('#eeDeleteConfirmBackdrop').removeClass('show');
     });
-
-    applyExpenseEntryConfigButtonVisibility();
 });
 
-async function applyExpenseEntryConfigButtonVisibility() {
-    const reqId = ++G_EEL_ConfigBtnRequestId;
-    const $btn = $('#btnExpenseEntryConfig');
-    $btn.hide();
-    try {
-        const FinYear = BizSolHelperFunction.getFinancialYear();
-        const resp = await MenuService.CheckModuleOptionRight('Expense Head Master', 'View', 'N', FinYear);
-        if (reqId !== G_EEL_ConfigBtnRequestId) return;
-        if (resp && resp.CheckModuleOptionRight === 'Y') {
-            $btn.show();
-        }
-    } catch (err) {
-        if (reqId !== G_EEL_ConfigBtnRequestId) return;
-        $btn.hide();
-    }
-}
-
 function applyEEListConfigVisibility() {
-    applyExpenseEntryConfigButtonVisibility();
-
     // "Pending on Me" chip: only when level-verify is enabled
     if (G_EEL_LevelVerifyApplicable === 'Y') {
         $('#eeStatCardPendingOnMe').show();
