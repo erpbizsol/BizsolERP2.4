@@ -7,7 +7,7 @@ let G_CardPage = 1;
 let G_PageSize = 10;
 let G_CurrentCode = 0;
 let G_CurrentRow = null;
-const PRO_ITEM_COL_COUNT = 18;
+const PRO_ITEM_COL_COUNT = 20;
 
 function escapeHtml(s) {
     if (s == null || s === '') return '';
@@ -50,7 +50,21 @@ function displayCell(val) {
 function formatQty(val) {
     const n = parseFloat(String(val ?? '').replace(/,/g, '').trim());
     if (isNaN(n)) return '—';
-    return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+    // No thousand separator; always 3 decimal places (e.g. 1045.000)
+    return n.toFixed(3);
+}
+
+function formatDateDisplay(val) {
+    if (val == null || val === '') return '';
+    const s = String(val).trim();
+    if (!s) return '';
+    // Already formatted like "31 Mar 2024" from SQL style 106
+    if (/^\d{1,2}\s+[A-Za-z]{3}\s+\d{4}/.test(s)) return s;
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) return s;
+    const dt = new Date(s);
+    if (isNaN(dt.getTime())) return s;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return String(dt.getDate()).padStart(2, '0') + ' ' + months[dt.getMonth()] + ' ' + dt.getFullYear();
 }
 
 function reviewActionLabel() {
@@ -82,37 +96,38 @@ function getFromList(code) {
 }
 
 function renderCard(item) {
-    const code = rowField(item, ['Code', 'WorkOrderPlanMaster_Code']) || '0';
-    const entryNo = escapeHtml(rowField(item, ['EntryNo', 'Entry No']) || '—');
-    const party = escapeHtml(rowField(item, ['Party Name', 'PartyName', 'Process', 'Warehouse']) || '—');
-    const orderDate = escapeHtml(rowField(item, ['Order Date', 'EntryDate', 'Entry Date']) || '—');
-    const statusText = escapeHtml(rowField(item, ['Status Text', 'StatusText', 'Status']) || 'PENDING');
-    const warehouse = escapeHtml(rowField(item, ['Warehouse']) || '');
-    const process = escapeHtml(rowField(item, ['Process']) || '');
-    const machine = escapeHtml(rowField(item, ['Machine']) || '');
+    const code = rowField(item, ['Code', 'WorkOrderPlanMaster_Code', 'code']) || '0';
+    const entryNo = escapeHtml(rowField(item, ['EntryNo', 'entryno', 'Entry No']) || '—');
+    const warehouse = escapeHtml(rowField(item, ['Warehouse', 'GodownName']) || '—');
+    const entryDate = escapeHtml(formatDateDisplay(rowField(item, ['EntryDate', 'Entry Date', 'Order Date'])) || '—');
+    const processName = escapeHtml(rowField(item, ['ProcessName', 'Process Name', 'Process']) || '—');
+    const machineNo = escapeHtml(rowField(item, ['MachineNo', 'Machine No', 'Machine', 'MachineName']) || '—');
+    const userId = escapeHtml(rowField(item, ['UserID', 'UserId', 'User ID', 'userid']) || '—');
+    // Use SQL-formatted CreateDate as-is (date + time from SP)
+    const createDate = escapeHtml(rowField(item, ['createDate', 'CreateDate', 'Create Date']) || '—');
+    const statusText = escapeHtml(rowField(item, ['StatusText', 'Status Text', 'Status']) || 'PENDING');
     const frmLabel = escapeHtml(FrmAction || 'Verify');
-
-    const sub = [
-        warehouse ? '<span><i class="fa fa-warehouse me-1"></i>' + warehouse + '</span>' : '',
-        process ? '<span><i class="fa fa-cogs me-1"></i>' + process + '</span>' : '',
-        machine ? '<span><i class="fa fa-industry me-1"></i>' + machine + '</span>' : '',
-    ].filter(Boolean).join('');
 
     return (
         '<article class="pro-card section-entry-animation" role="listitem" data-code="' + escapeHtml(code) + '">' +
         '<div class="pro-card-head">' +
-        '<div class="pro-po-badge"><span class="pro-po-label">WO#</span><span class="pro-po-no">' + entryNo + '</span></div>' +
+        '<div class="pro-po-badge"><span class="pro-po-label">Entry No</span><span class="pro-po-no">' + entryNo + '</span></div>' +
         '<div class="pro-company-block">' +
-        '<div class="pro-company-title"><i class="fa fa-building" aria-hidden="true"></i><span>' + party + '</span></div>' +
+        '<div class="pro-company-title"><i class="fa fa-cogs" aria-hidden="true"></i><span>' + processName + '</span></div>' +
         '<div class="pro-meta">' +
-        '<span><i class="far fa-calendar-alt" aria-hidden="true"></i>' + orderDate + '</span>' +
+        '<span><i class="far fa-calendar-alt" aria-hidden="true"></i>' + entryDate + '</span>' +
         '<span class="pro-tag"><i class="fa fa-file-invoice" aria-hidden="true"></i> ' + frmLabel + '</span>' +
         '</div></div>' +
         '<div class="pro-amount-block">' +
+        '<div class="pro-process-name" title="Machine">' + machineNo + '</div>' +
+        '<div class="pro-warehouse-name" title="Warehouse"><i class="fa fa-building me-1"></i>' + warehouse + '</div>' +
         '<span class="pro-status ' + statusClass(statusText) + '">' + statusText + '</span>' +
         '</div></div>' +
         '<div class="pro-card-foot">' +
-        '<div class="pro-submeta">' + (sub || '<span>&nbsp;</span>') + '</div>' +
+        '<div class="pro-submeta">' +
+        '<span title="User"><i class="fa fa-user me-1"></i>' + userId + '</span>' +
+        '<span title="Create Date"><i class="far fa-clock me-1"></i>' + createDate + '</span>' +
+        '</div>' +
         '<button type="button" class="pro-btn pro-js-view" data-code="' + encodeURIComponent(code) + '">' +
         '<i class="fa fa-folder-open" aria-hidden="true"></i> ' + escapeHtml(reviewActionLabel()) +
         '</button></div></article>'
@@ -205,41 +220,30 @@ function buildInfoItem(label, value, icon, valueColor) {
         '</div>';
 }
 
-function buildModalHeader(row, items) {
+function buildModalHeader(row) {
     if (!row) return '';
-    let qty = parseFloat(String(rowField(row, ['Total Qty KG', 'TotalQtyKG']) || '').replace(/,/g, ''));
-    if (isNaN(qty) || qty === 0) {
-        qty = (items || []).reduce(function (acc, it) {
-            const v = parseFloat(String(rowField(it, ['Order Qty KG', 'OrderQtyKG', 'QtyMT_Finish']) || '').replace(/,/g, ''));
-            return acc + (isNaN(v) ? 0 : v);
-        }, 0);
-    }
-    const statusTxt = escapeHtml(rowField(row, ['Status Text', 'StatusText', 'Status']) || 'Pending');
-    return '<div class="pro-info-grid">' +
-        buildInfoItem('Total Qty KG', escapeHtml(formatQty(qty)), 'fa-balance-scale', '#667eea') +
-        buildInfoItem('Status', statusTxt, 'fa-info-circle') +
-        buildInfoItem('Action', escapeHtml(FrmAction || 'Verify'), 'fa-user-check') +
+    const machineNo = escapeHtml(rowField(row, ['MachineNo', 'Machine No', 'Machine']) || '—');
+    const warehouse = escapeHtml(rowField(row, ['Warehouse', 'GodownName']) || '—');
+    const processName = escapeHtml(rowField(row, ['ProcessName', 'Process Name', 'Process']) || '—');
+    const userId = escapeHtml(rowField(row, ['UserID', 'UserId', 'userid']) || '—');
+    // One line: Machine → Warehouse → Process → Created By (user only, no createDate)
+    return '<div class="pro-info-grid pro-info-grid--4">' +
+        buildInfoItem('Machine', machineNo, 'fa-industry', '#667eea') +
+        buildInfoItem('Warehouse', warehouse, 'fa-building') +
+        buildInfoItem('Process', processName, 'fa-cogs') +
+        buildInfoItem('Created By', userId, 'fa-user') +
         '</div>';
 }
 
 function syncModalTitle(row) {
+    $('#proModalDate').text('');
+    $('#proModalDateWrap').hide();
     if (!row) {
         $('#proModalTitle').text('View Details');
-        $('#proModalDate').text('');
-        $('#proModalDateWrap').hide();
         return;
     }
-    const entryNo = rowField(row, ['EntryNo', 'Entry No']) || '—';
-    const party = rowField(row, ['Party Name', 'PartyName', 'Process', 'Warehouse']) || '';
-    const orderDate = rowField(row, ['Order Date', 'EntryDate', 'Entry Date']) || '';
-    $('#proModalTitle').text('WO# ' + entryNo + (party ? ' — ' + party : ''));
-    if (orderDate) {
-        $('#proModalDate').text(orderDate);
-        $('#proModalDateWrap').show();
-    } else {
-        $('#proModalDate').text('');
-        $('#proModalDateWrap').hide();
-    }
+    const entryNo = rowField(row, ['EntryNo', 'entryno', 'Entry No']) || '—';
+    $('#proModalTitle').text('Entry No ' + entryNo);
 }
 
 function renderModalItems(items) {
@@ -257,17 +261,19 @@ function renderModalItems(items) {
             '<tr>' +
             '<td class="text-center">' + (idx + 1) + '</td>' +
             '<td>' + displayCell(rowField(item, ['Order No', 'OrderNo'])) + '</td>' +
-            '<td>' + displayCell(rowField(item, ['Cust. Code', 'CustCode', 'AccountCode'])) + '</td>' +
+            '<td>' + displayCell(rowField(item, ['Cust. Code', 'CustCode', 'AccountShortCode', 'AccountCode'])) + '</td>' +
             '<td style="font-weight:600;">' + displayCell(rowField(item, ['Order Item Name', 'OrderItemName'])) + '</td>' +
             '<td>' + displayCell(rowField(item, ['Order Item Size', 'OrderItemSize'])) + '</td>' +
-            '<td class="text-end">' + displayCell(rowField(item, ['Order Qty PC', 'OrderQtyPC'])) + '</td>' +
+            '<td class="text-end">' + displayCell(rowField(item, ['Order Qty PC', 'OrderQtyPC', 'QtyPC'])) + '</td>' +
             '<td class="text-end" style="font-weight:700;color:#667eea;">' +
-            escapeHtml(formatQty(rowField(item, ['Order Qty KG', 'OrderQtyKG', 'QtyMT_Finish']))) +
+            escapeHtml(formatQty(rowField(item, ['Order Qty KG', 'OrderQtyKG', 'QtyMT', 'QtyMT_Finish']))) +
             '</td>' +
             '<td>' + displayCell(rowField(item, ['I/P Item Name', 'IP Item Name', 'IPItemName'])) + '</td>' +
             '<td>' + displayCell(rowField(item, ['Input Roll', 'InputRoll', 'InputID'])) + '</td>' +
             '<td>' + displayCell(rowField(item, ['I/P Item Size', 'IP Item Size', 'IPItemSize'])) + '</td>' +
             '<td class="text-end">' + escapeHtml(formatQty(rowField(item, ['I/P Weight', 'IP Weight', 'QtyMT_Input']))) + '</td>' +
+            '<td class="text-end">' + escapeHtml(formatQty(rowField(item, ['Target Coat Weight', 'TargetCoatWeight']))) + '</td>' +
+            '<td class="text-end">' + escapeHtml(formatQty(rowField(item, ['Chemical Weight', 'QtyMT_Chemical', 'ChemicalWeight']))) + '</td>' +
             '<td>' + displayCell(rowField(item, ['WIP Item Name', 'WIPItemName'])) + '</td>' +
             '<td>' + displayCell(rowField(item, ['WIP Item Size', 'WIPItemSize'])) + '</td>' +
             '<td class="text-end">' + escapeHtml(formatQty(rowField(item, ['WIP Qty KG', 'WIPQtyKG', 'QtyMT_WIP']))) + '</td>' +
