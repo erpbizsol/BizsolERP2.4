@@ -673,6 +673,20 @@
         min-height: 31px !important;
     }
 
+    #dvCoilInfo .sa-balance-highlight {
+        background-color: #fef3c7 !important;
+        font-weight: 700;
+        color: #92400e;
+    }
+
+    #DetailTable .sa-coil-wt-readonly {
+        background-color: #fff5f5 !important;
+        border-color: #fca5a5 !important;
+        color: #dc2626 !important;
+        font-weight: 700;
+        cursor: not-allowed;
+    }
+
     .sa-grade-dd-item input {
         margin: 0;
         cursor: pointer;
@@ -771,9 +785,21 @@
             </div>
             <div class="modal-body">
                 <div class="row g-2 align-items-end mb-2" id="dvCoilInfo">
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
                         <label for="txtCoilEntryNo" class="form-label fw-semibold mb-1">Stock Allocation Entry No</label>
                         <input type="text" id="txtCoilEntryNo" class="form-control form-control-sm box_border" readonly />
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label for="txtToAllocateWt" class="form-label fw-semibold mb-1">To Allocate (Wt.)</label>
+                        <input type="text" id="txtToAllocateWt" class="form-control form-control-sm box_border text-end" readonly />
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label for="txtAllocatedWt" class="form-label fw-semibold mb-1">Allocated (Wt.)</label>
+                        <input type="text" id="txtAllocatedWt" class="form-control form-control-sm box_border text-end" readonly />
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label for="txtBalanceWt" class="form-label fw-semibold mb-1">Balance (Wt.)</label>
+                        <input type="text" id="txtBalanceWt" class="form-control form-control-sm box_border text-end sa-balance-highlight" readonly />
                     </div>
                 </div>
                 <div class="row g-2 align-items-end mb-3" id="dvCoilFilter">
