@@ -22,6 +22,9 @@ let G_DeleteContext = {
 };
 
 let G_BalanceToInspectWt = 0;
+let G_ToAllocateWt = 0;
+let G_AllocatedWt = 0;
+let G_InitialBalanceWt = 0;
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
@@ -453,7 +456,7 @@ function bindBOMMasterOrderWiseGrid(response) {
         return;
     }
 
-    const stringFilterColumn = ["Order No", "Mark No", "Grade", "Client Name"];
+    const stringFilterColumn = ["Order No", "Mark No", "Grade", "Client Name","Section Size"];
     const numericFilterColumn = ["Width", "Thickness"];
     const dateFilterColumn = ["Order Date", "Dispatch Date"];
     const button = false;
@@ -633,6 +636,7 @@ function updateDetailTableFooterSum() {
             </tr>`;
 
         $tfoot.html(footerHtml);
+        updateCoilAllocationSummaryFromGrid();
     } catch (e) {
         console.error('Error updating detail table footer sum:', e);
     }
@@ -780,7 +784,7 @@ function addNewEditableRow() {
                 <input type="text" class="form-control form-control-sm order-no-to" readonly value="${defaultOrderNoTo.replace(/"/g, '&quot;')}" />
             </td>
             <td>
-                <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" disabled />
+                <input type="text" class="form-control form-control-sm coil-wt text-end sa-coil-wt-readonly" readonly disabled />
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm coil-size" readonly />
@@ -1119,7 +1123,7 @@ function initializeEditableRow($row, detail) {
         }
     }
 
-    // On Identification change, auto-set param codes, Size and BalQtyMT (Coil Wt.)
+    // On Identification change, auto-set Size and Coil Wt. (read-only)
     function handleIdentificationChange() {
         const selectedId = $identificationNo.val() || '';
         
@@ -1129,6 +1133,7 @@ function initializeEditableRow($row, detail) {
             $identificationNo.val('');
             clearRowIdentificationParamCodes($row);
             $coilSize.val('');
+            clearRowCoilWt($coilWt);
             return;
         }
         
@@ -1141,59 +1146,29 @@ function initializeEditableRow($row, detail) {
             if (match) {
                 setRowIdentificationParamCodes($row, match);
                 $coilSize.val(match.Size || match.size || '');
-                
-                const balQtyMT = parseFloat(match.BalQtyMT) || 0;
-                if (balQtyMT > 0) {
-                    $coilWt.attr('max', balQtyMT);
-                    $coilWt.data('max-bal-qty', balQtyMT);
-                    
-                    if (!$coilWt.val() || parseFloat($coilWt.val()) === 0) {
-                        $coilWt.val(balQtyMT.toFixed(3));
-                    }
-                } else {
-                    $coilWt.removeAttr('max');
-                    $coilWt.removeData('max-bal-qty');
+
+                const idBalQty = parseFloat(match.BalQtyMT) || 0;
+                $coilWt.data('id-bal-qty', idBalQty);
+
+                const maxWt = getMaxCoilWtForRow($row, idBalQty);
+                if (idBalQty > 0 && maxWt > 0 && idBalQty > maxWt) {
+                    toastr.warning('Coil Wt. (' + formatAllocationWt(idBalQty) + ') exceeds available Balance (' + formatAllocationWt(maxWt) + ').');
                 }
+
+                setRowCoilWt($coilWt, idBalQty);
             }
         } else {
             clearRowIdentificationParamCodes($row);
             $coilSize.val('');
-            $coilWt.removeAttr('max');
-            $coilWt.removeData('max-bal-qty');
+            clearRowCoilWt($coilWt);
         }
         
         updateAllIdentificationDropdowns();
         checkRowComplete();
+        updateDetailTableFooterSum();
     }
 
     $identificationNo.off('change.identification').on('change.identification', handleIdentificationChange);
-    $coilWt
-        .off('input.checkComplete change.checkComplete')
-        .on('input.checkComplete change.checkComplete', function() {
-            const maxBalQty = parseFloat($(this).data('max-bal-qty')) || parseFloat($(this).attr('max')) || 0;
-            const currentVal = parseFloat($(this).val()) || 0;
-            
-            if (maxBalQty > 0 && currentVal > maxBalQty) {
-                toastr.warning('Coil Wt. cannot be greater than Balance Qty (' + maxBalQty.toFixed(3) + '). Value will be limited.');
-                $(this).val(maxBalQty.toFixed(3));
-            }
-            
-            checkRowComplete();
-            updateDetailTableFooterSum();
-        })
-        .off('input.decimalLimit')
-        .on('input.decimalLimit', function () {
-            let val = $(this).val() || '';
-            if (val.indexOf('.') >= 0) {
-                const parts = val.split('.');
-                const intPart = parts[0];
-                let decPart = parts[1] || '';
-                if (decPart.length > 3) {
-                    decPart = decPart.substring(0, 3);
-                    $(this).val(intPart + '.' + decPart);
-                }
-            }
-        });
 
     $addBtn.off('click.addRow').on('click.addRow', function() {
         if (!$(this).prop('disabled')) {
@@ -1222,25 +1197,21 @@ function initializeEditableRow($row, detail) {
             }
         }
 
-        if (existingQty !== '') {
-            $coilWt.val(existingQty);
-            const qtyNum = parseFloat(existingQty) || 0;
-            if (qtyNum > 0) {
-                $coilWt.attr('max', qtyNum);
-                $coilWt.data('max-bal-qty', qtyNum);
-            }
-        }
-
         if (existingSize) {
             $coilSize.val(existingSize);
         }
 
-        // Prefer saved edit API values (Identification, Weight, Size, param codes)
         if ($identificationNo.val()) {
             setRowIdentificationParamCodes($row, detail);
-            if (existingQty !== '') {
-                $coilWt.val(existingQty);
-            }
+
+            const match = (G_IdentificationList || []).find(function (item) {
+                const idVal = item.IdentificationNo || item.IdentificationNos || '';
+                return idVal === $identificationNo.val();
+            });
+            const idBalQty = match ? (parseFloat(match.BalQtyMT) || 0) : (parseFloat(existingQty) || 0);
+            $coilWt.data('id-bal-qty', idBalQty);
+            setRowCoilWt($coilWt, existingQty !== '' ? existingQty : idBalQty);
+
             if (existingSize) {
                 $coilSize.val(existingSize);
             }
@@ -1276,7 +1247,7 @@ function bindEmptyEditableRow() {
                 <input type="text" class="form-control form-control-sm order-no-to" readonly value="${defaultOrderNoTo.replace(/"/g, '&quot;')}" />
             </td>
             <td>
-                <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" readonly />
+                <input type="text" class="form-control form-control-sm coil-wt text-end sa-coil-wt-readonly" readonly disabled />
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm coil-size" readonly />
@@ -1337,7 +1308,7 @@ function bindExistingEditableRows(detailResponse) {
                     <input type="text" class="form-control form-control-sm order-no-to" readonly value="${orderNoTo}" />
                 </td>
                 <td>
-                    <input type="number" min="0" step="0.001" class="form-control form-control-sm coil-wt" readonly />
+                    <input type="text" class="form-control form-control-sm coil-wt text-end sa-coil-wt-readonly" readonly disabled />
                 </td>
                 <td>
                     <input type="text" class="form-control form-control-sm coil-size" readonly />
@@ -1370,8 +1341,8 @@ function bindExistingEditableRows(detailResponse) {
                 $identificationNo.prop('disabled', true);
             }
             
-            // Make Coil Wt. readonly and add visual indicator
-            $coilWt.prop('readonly', true).css('background-color', '#e9ecef');
+            // Coil Wt. is always read-only
+            $coilWt.prop('readonly', true).addClass('sa-coil-wt-readonly');
             
             // Hide delete button for locked rows
             $deleteBtn.hide().prop('disabled', true);
@@ -1571,12 +1542,135 @@ function resolveOrderNoToForRow(detail) {
     return getCurrentGridOrderNo();
 }
 
+function getCurrentGridAllocationInfo() {
+    const currentGridRow = Array.isArray(G_GetBOMMasterDataOrderWise)
+        ? G_GetBOMMasterDataOrderWise.find(function (r) { return String(r.Code) === String(G_BomTransactionOrderWise_Code); })
+        : null;
+
+    if (!currentGridRow) {
+        return {
+            toAllocate: G_ToAllocateWt || 0,
+            allocated: G_AllocatedWt || 0,
+            balance: G_BalanceToInspectWt || 0
+        };
+    }
+
+    const toAllocate = parseFloat(currentGridRow['Qty(Wt.) To Allocate']) || 0;
+    const allocated = parseFloat(currentGridRow['Allocated Qty(Wt.)']) || 0;
+    const balance = parseFloat(
+        currentGridRow.BalQty != null ? currentGridRow.BalQty : (toAllocate - allocated)
+    ) || 0;
+
+    return { toAllocate: toAllocate, allocated: allocated, balance: balance };
+}
+
+function formatAllocationWt(value) {
+    const num = parseFloat(value) || 0;
+    return num.toFixed(3);
+}
+
+function fillCoilAllocationSummary() {
+    const info = getCurrentGridAllocationInfo();
+    G_ToAllocateWt = info.toAllocate;
+    G_InitialBalanceWt = info.balance;
+    G_AllocatedWt = info.allocated;
+    G_BalanceToInspectWt = info.balance;
+
+    $('#txtToAllocateWt').val(formatAllocationWt(info.toAllocate));
+    updateCoilAllocationSummaryFromGrid();
+}
+
+function updateCoilAllocationSummaryFromGrid() {
+    const toAllocate = G_ToAllocateWt || parseFloat($('#txtToAllocateWt').val()) || 0;
+    const allocated = getTotalCoilWtExcludingRow(null);
+    const balance = Math.max(0, toAllocate - allocated);
+
+    G_AllocatedWt = allocated;
+    G_BalanceToInspectWt = balance;
+
+    $('#txtAllocatedWt').val(formatAllocationWt(allocated));
+    $('#txtBalanceWt').val(formatAllocationWt(balance));
+}
+
+function clearCoilAllocationSummary() {
+    G_ToAllocateWt = 0;
+    G_AllocatedWt = 0;
+    G_InitialBalanceWt = 0;
+    G_BalanceToInspectWt = 0;
+    $('#txtToAllocateWt').val('');
+    $('#txtAllocatedWt').val('');
+    $('#txtBalanceWt').val('');
+}
+
+function getTotalCoilWtExcludingRow(excludeRow) {
+    let total = 0;
+    const $tbody = $('#DetailTable-body');
+    if (!$tbody || !$tbody.length) {
+        return 0;
+    }
+
+    $tbody.find('tr.editable-row').each(function () {
+        if (excludeRow && this === excludeRow[0]) {
+            return;
+        }
+        total += parseFloat($(this).find('.coil-wt').val()) || 0;
+    });
+    return total;
+}
+
+function getRemainingBalanceForRow(excludeRow) {
+    const maxAllowed = G_InitialBalanceWt > 0 ? G_InitialBalanceWt : (G_ToAllocateWt || 0);
+    const usedByOthers = getTotalCoilWtExcludingRow(excludeRow);
+    return Math.max(0, maxAllowed - usedByOthers);
+}
+
+function setRowCoilWt($coilWt, weight) {
+    if (!$coilWt || !$coilWt.length) {
+        return;
+    }
+
+    const wt = parseFloat(weight) || 0;
+    $coilWt
+        .val(wt > 0 ? formatAllocationWt(wt) : '')
+        .prop('readonly', true)
+        .prop('disabled', false)
+        .addClass('sa-coil-wt-readonly');
+}
+
+function clearRowCoilWt($coilWt) {
+    if (!$coilWt || !$coilWt.length) {
+        return;
+    }
+
+    $coilWt
+        .val('')
+        .prop('readonly', true)
+        .prop('disabled', true)
+        .removeClass('sa-coil-wt-readonly')
+        .removeData('id-bal-qty');
+}
+
+function getMaxCoilWtForRow($row, identificationBalQty) {
+    const remainingBalance = getRemainingBalanceForRow($row);
+    const idBalQty = parseFloat(identificationBalQty) || 0;
+
+    if (idBalQty > 0 && remainingBalance > 0) {
+        return Math.min(remainingBalance, idBalQty);
+    }
+    if (idBalQty > 0) {
+        return idBalQty;
+    }
+    return remainingBalance;
+}
+
 function fillCoilModalInfo() {
     $('#txtCoilEntryNo').val(getStockAllocationEntryNoDisplay());
+    fillCoilAllocationSummary();
 }
 
 function clearCoilModalInfo() {
     $('#txtCoilEntryNo').val('');
+    clearCoilAllocationSummary();
 }
 function filterIdentificationListByRange(list) {
     const f = getCoilFilterValues();
@@ -1672,6 +1766,14 @@ function UpdateCoilDetail(Grade_Code, Code, balanceToInspectWt) {
             const gridRow = Array.isArray(G_GetBOMMasterDataOrderWise)
                 ? G_GetBOMMasterDataOrderWise.find(function (r) { return String(r.Code) === String(Code); })
                 : null;
+            if (gridRow) {
+                G_ToAllocateWt = parseFloat(gridRow['Qty(Wt.) To Allocate']) || 0;
+                G_AllocatedWt = parseFloat(gridRow['Allocated Qty(Wt.)']) || 0;
+                G_InitialBalanceWt = parseFloat(
+                    gridRow.BalQty != null ? gridRow.BalQty : (G_ToAllocateWt - G_AllocatedWt)
+                ) || 0;
+                G_BalanceToInspectWt = G_InitialBalanceWt;
+            }
             fillCoilFiltersFromRow(gridRow);
 
             Showloader();
@@ -1790,8 +1892,9 @@ function SaveStockAllocation() {
             const gradeCode = parseInt($row.find('.param-grade-code').val(), 10) || 0;
 
             if (identificationNo !== '' && coilWt > 0) {
-                if (G_BalanceToInspectWt > 0 && coilWt > G_BalanceToInspectWt) {
-                    toastr.error('Coil Wt. (' + coilWt + ') for Identification ' + identificationNo + ' cannot be greater than Balance to Inspect (' + G_BalanceToInspectWt.toFixed(3) + ').');
+                const maxWt = getMaxCoilWtForRow($row, $row.find('.coil-wt').data('id-bal-qty'));
+                if (maxWt > 0 && coilWt > maxWt) {
+                    toastr.error('Coil Wt. (' + formatAllocationWt(coilWt) + ') for Identification ' + identificationNo + ' exceeds available Balance (' + formatAllocationWt(maxWt) + ').');
                     validationError = true;
                     return false;
                 }
@@ -1824,8 +1927,9 @@ function SaveStockAllocation() {
             return sum + (parseFloat(item.weight) || 0);
         }, 0);
 
-        if (G_BalanceToInspectWt > 0 && totalCoilWt > G_BalanceToInspectWt) {
-            toastr.error('Total Coil Wt. (' + totalCoilWt + ') cannot be greater than Balance to Inspect (Wt.) (' + G_BalanceToInspectWt + ').');
+        const maxAllowed = G_InitialBalanceWt > 0 ? G_InitialBalanceWt : G_ToAllocateWt;
+        if (maxAllowed > 0 && totalCoilWt > maxAllowed) {
+            toastr.error('Total Coil Wt. (' + formatAllocationWt(totalCoilWt) + ') cannot be greater than Balance (Wt.) (' + formatAllocationWt(maxAllowed) + ').');
             return;
         }
     } catch (e) {
