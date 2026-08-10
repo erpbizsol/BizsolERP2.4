@@ -27,20 +27,147 @@
     .req { color: #dc2626; }
 
     #dvLoad {
-        background: transparent;
+        background:
+            radial-gradient(1200px 420px at 8% -10%, rgba(85, 139, 192, 0.16), transparent 55%),
+            radial-gradient(900px 360px at 100% 0%, rgba(51, 65, 85, 0.08), transparent 50%),
+            linear-gradient(180deg, #eef3f8 0%, #f7f9fc 40%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 14px 14px 18px;
+        margin: 0 0 8px;
+        min-height: calc(100vh - 140px);
+    }
+    .enq-list-shell {
+        max-width: 1480px;
+        margin: 0 auto;
+    }
+    .enq-list-card {
+        background: #fff;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        border-radius: 16px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+        margin-bottom: 14px;
     }
 
     .enq-list-header {
-        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-        border-radius: 12px 12px 0 0;
-        padding: 18px 24px 16px;
+        background: linear-gradient(125deg, #1e293b 0%, #334155 48%, #558bc0 140%);
+        border-radius: 0;
+        padding: 20px 22px 18px;
         display: flex;
         flex-direction: column;
         gap: 8px;
+        position: relative;
+        overflow: hidden;
     }
-    .enq-list-header h5 { margin: 0; color: #fff; font-weight: 650; font-size: 1.05rem; letter-spacing: -0.02em; }
-    .enq-list-header small { color: rgba(255,255,255,0.72); font-size: 0.8125rem; display: block; line-height: 1.4; }
-    .enq-header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .enq-list-header::after {
+        content: "";
+        position: absolute;
+        right: -40px;
+        top: -50px;
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        pointer-events: none;
+    }
+    .enq-list-header h5 {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.2rem;
+        letter-spacing: -0.025em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: nowrap;
+    }
+    .enq-list-header h5 .enq-title-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+    .enq-list-header .enq-header-sub {
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.8125rem;
+        display: block;
+        line-height: 1.45;
+        margin: 0;
+        flex: 1 1 100%;
+        padding-left: 46px;
+    }
+    .enq-header-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px 12px;
+        position: relative;
+        z-index: 1;
+    }
+    .enq-header-title-block {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    .enq-header-actions {
+        flex-shrink: 0;
+    }
+    @@media (max-width: 768px) {
+        .enq-list-header {
+            padding: 12px 14px;
+        }
+        .enq-header-top {
+            align-items: center;
+            gap: 8px 10px;
+        }
+        .enq-header-title-block {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .enq-list-header h5 {
+            font-size: 1.05rem;
+            line-height: 1.2;
+        }
+        .enq-list-header h5 .enq-title-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+        .enq-list-header .enq-header-sub {
+            flex: 1 1 100%;
+            order: 3;
+            padding-left: 0;
+            margin-top: 2px;
+            font-size: 0.7rem;
+            line-height: 1.35;
+            color: rgba(255, 255, 255, 0.72);
+        }
+        .enq-header-actions {
+            margin-left: auto;
+        }
+        .btn-enq-new {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            gap: 5px;
+            border-radius: 8px;
+        }
+        .btn-enq-new span {
+            white-space: nowrap;
+        }
+        .btn-enq-settings {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            font-size: 0.8rem;
+        }
+    }
     /* Primary actions: New enquiry, Save, Back */
     .btn-enq-new {
         display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -166,14 +293,46 @@
     #EnquiryConfigurationModal .enq-config-mandatory-item label { font-weight: 500; cursor: pointer; margin: 0; line-height: 1.3; }
 
     .enq-filter-bar {
-        background: #fff;
-        border: 1px solid var(--enq-border, #e2e8f0);
-        border-top: none;
-        border-radius: 0 0 12px 12px;
-        padding: 14px 18px 14px;
-        margin-bottom: 16px;
+        background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
+        border: none;
+        border-top: 1px solid #e8eef5;
+        border-radius: 0;
+        padding: 16px 20px 18px;
+        margin-bottom: 0;
         position: relative;
         z-index: 2;
+    }
+    .enq-filter-bar .enq-filter-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .enq-filter-bar .enq-filter-label i {
+        color: #558bc0;
+        font-size: 0.78rem;
+    }
+    .enq-filter-bar .form-control,
+    .enq-filter-bar .form-select {
+        border-radius: 8px !important;
+        border-color: #d7e0ea !important;
+        background: #fff;
+        min-height: 30px;
+        height: 30px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        font-size: 0.8rem;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    }
+    .enq-filter-bar .form-control:focus,
+    .enq-filter-bar .form-select:focus {
+        border-color: #558bc0 !important;
+        box-shadow: 0 0 0 3px rgba(85, 139, 192, 0.18) !important;
     }
     /* Select2 next to native Status: keep widget in flow (avoids jumping to viewport top after grid refresh) */
     .enq-filter-bar .row > [class*="col-"] {
@@ -187,17 +346,397 @@
         vertical-align: top;
     }
     .enq-filter-bar .select2-container .select2-selection--single {
-        height: calc(1.5em + 0.5rem + 2px);
+        height: 30px !important;
+        min-height: 30px !important;
+        border-radius: 8px !important;
+        border: 1.5px solid #d7e0ea !important;
+        background: #fff !important;
+    }
+    .enq-filter-bar .select2-container .select2-selection--single .select2-selection__rendered {
+        line-height: 27px !important;
+        padding-left: 10px;
+        color: #0f172a;
+        font-size: 0.8rem;
+    }
+    .enq-filter-bar .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 28px !important;
+        top: 1px !important;
+    }
+    .enq-filter-bar .select2-container--focus .select2-selection--single,
+    .enq-filter-bar .select2-container--open .select2-selection--single,
+    .enq-filter-bar .select2-container--focus .select2-selection--multiple,
+    .enq-filter-bar .select2-container--open .select2-selection--multiple {
+        border-color: #558bc0 !important;
+        box-shadow: 0 0 0 3px rgba(85, 139, 192, 0.16) !important;
+    }
+    .enq-filter-bar .select2-container .select2-selection--multiple {
+        min-height: 30px !important;
+        max-height: 58px;
+        overflow-y: auto;
+        border-radius: 8px !important;
+        border: 1.5px solid #d7e0ea !important;
+        background: #fff !important;
+        padding: 2px 24px 2px 4px;
+    }
+    .enq-filter-bar .select2-container .select2-selection--multiple .select2-selection__rendered {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    /* Select2 4.1 choice chip: remove btn is position:absolute left — keep that layout */
+    .enq-filter-bar .select2-container--default .select2-selection--multiple .select2-selection__choice,
+    .enq-filter-bar .select2-container .select2-selection--multiple .select2-selection__choice {
+        position: relative !important;
+        font-size: 0.72rem !important;
+        font-weight: 600 !important;
+        margin: 0 !important;
+        background: linear-gradient(180deg, #eef6fc 0%, #e2f0fa 100%) !important;
+        border: 1px solid #b7d4ef !important;
+        color: #1e4a75 !important;
+        border-radius: 999px !important;
+        /* left padding reserves space for × button (no divider line) */
+        padding: 2px 8px 2px 22px !important;
+        line-height: 1.25 !important;
+        max-width: 100%;
+        overflow: hidden;
+        display: inline-block !important;
+        vertical-align: middle;
+    }
+    .enq-filter-bar .select2-container--default .select2-selection--multiple .select2-selection__choice__display,
+    .enq-filter-bar .select2-container .select2-selection--multiple .select2-selection__choice__display {
+        padding-left: 6px !important;
+        padding-right: 2px !important;
+        color: #1e4a75 !important;
+        cursor: default;
+    }
+    .enq-filter-bar .select2-container--default .select2-selection--multiple .select2-selection__choice__remove,
+    .enq-filter-bar .select2-container .select2-selection--multiple .select2-selection__choice__remove {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 4px 0 8px !important;
+        border: none !important;
+        border-right: none !important;
+        border-radius: 999px 0 0 999px !important;
+        background: transparent !important;
+        color: #558bc0 !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer;
+        box-shadow: none !important;
+    }
+    .enq-filter-bar .select2-container--default .select2-selection--multiple .select2-selection__choice__remove span,
+    .enq-filter-bar .select2-container .select2-selection--multiple .select2-selection__choice__remove span {
+        padding-right: 2px !important;
+        padding-left: 0 !important;
+        display: inline-block !important;
+        line-height: 1 !important;
+        border: none !important;
+    }
+    .enq-filter-bar .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover,
+    .enq-filter-bar .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:focus,
+    .enq-filter-bar .select2-container .select2-selection--multiple .select2-selection__choice__remove:hover {
+        color: #b91c1c !important;
+        background: rgba(185, 28, 28, 0.08) !important;
+        outline: none !important;
+    }
+    .enq-filter-bar .select2-container .select2-selection--multiple .select2-selection__clear {
+        margin-right: 2px !important;
+        margin-top: 2px !important;
+        font-size: 14px;
+        color: #94a3b8 !important;
+    }
+    .enq-filter-bar .select2-container .select2-selection--multiple .select2-search--inline .select2-search__field {
+        margin-top: 1px;
+        font-size: 0.78rem;
+        color: #334155;
+        min-height: 22px !important;
+        height: 22px !important;
+        line-height: 22px !important;
+    }
+    /* Dropdown is on body (not clipped by .enq-list-card overflow:hidden) */
+    .select2-dropdown.enq-filter-select2-dropdown {
+        border: 1.5px solid #cfe0f0 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12) !important;
+        overflow: hidden;
+        z-index: 10050 !important;
+    }
+    .select2-dropdown.enq-filter-select2-dropdown .select2-results__option {
+        font-size: 0.82rem;
+        padding: 8px 12px;
+    }
+    .select2-dropdown.enq-filter-select2-dropdown .select2-results__option--highlighted {
+        background: #558bc0 !important;
+    }
+    .enq-filter-bar .select2-container--open {
+        z-index: 10050 !important;
+    }
+    /* Column sort menu (filter-division wraps dropdown-content; JS toggles filter-division) */
+    #dvLoad .filter-table-heading-div {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+    }
+    #dvLoad .filter-table-heading {
+        color: #fff !important;
+    }
+    #dvLoad .table-filter-arrow {
+        cursor: pointer;
+        line-height: 1;
+    }
+    #dvLoad .table-filter-arrow > i {
+        color: rgba(255, 255, 255, 0.95) !important;
+        font-size: 0.75rem !important;
+    }
+    #dvLoad .filter-division {
+        position: absolute !important;
+        top: calc(100% + 4px) !important;
+        left: 0 !important;
+        right: auto !important;
+        z-index: 10080 !important;
+        /* display toggled by Filter.js OpenFilter — do not force display:none here */
+    }
+    #dvLoad .filter-division .dropdown-content,
+    #dvLoad #table.enq-list-table thead th .filter-division .dropdown-content {
+        position: static !important;
+        top: auto !important;
+        right: auto !important;
+        min-width: 172px !important;
+        width: max-content !important;
+        background: #ffffff !important;
+        border: 1px solid #d7e0ea !important;
+        border-radius: 10px !important;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16) !important;
+        padding: 6px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        color: #0f172a !important;
+        overflow: hidden;
+    }
+    #dvLoad .filter-division .dropdown-content .dropdown-item,
+    #dvLoad #table.enq-list-table thead th .filter-division .dropdown-content .dropdown-item {
+        color: #1e293b !important;
+        background: transparent !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        padding: 9px 12px !important;
+        border-radius: 8px !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        cursor: pointer;
+        white-space: nowrap;
+        text-transform: none !important;
+        letter-spacing: 0 !important;
+        line-height: 1.25 !important;
+    }
+    #dvLoad .filter-division .dropdown-content .dropdown-item:hover {
+        background: #eef6fc !important;
+        color: #0f172a !important;
+    }
+    #dvLoad .filter-division .dropdown-content .dropdown-item i,
+    #dvLoad .filter-division .dropdown-content .sort-indicator,
+    #dvLoad .filter-division .dropdown-content .sort-indicator-color,
+    #dvLoad #table.enq-list-table thead th .filter-division .dropdown-content .dropdown-item i {
+        color: #558bc0 !important;
+        font-size: 0.85rem !important;
+        width: 1.1rem;
+        text-align: center;
+        margin: 0 !important;
+    }
+
+    /* Column filter popup after choosing Filter… */
+    #dvLoad .filter-dropdown,
+    #dvLoad .filter-dropdown-double {
+        background: #fff !important;
+        border: 1px solid #d7e0ea !important;
+        border-radius: 12px !important;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14) !important;
+        padding: 12px !important;
+        width: 230px !important;
+        top: calc(100% + 4px) !important;
+        z-index: 10080 !important;
+        color: #0f172a !important;
+    }
+    #dvLoad .filter-dropdown label,
+    #dvLoad .filter-dropdown-double label {
+        font-size: 0.72rem !important;
+        font-weight: 700 !important;
+        color: #64748b !important;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin: 0 0 6px;
+    }
+    #dvLoad .filter-inputs input,
+    #dvLoad .filter-dropdown input[type="text"],
+    #dvLoad .filter-dropdown-double input[type="text"] {
+        border: 1.5px solid #d7e0ea !important;
+        border-radius: 8px !important;
+        padding: 8px 10px !important;
+        font-size: 0.82rem !important;
+        color: #0f172a !important;
+        margin-bottom: 8px !important;
+        background: #fff !important;
+        box-shadow: none !important;
+    }
+    #dvLoad .filter-inputs input:focus,
+    #dvLoad .filter-dropdown input[type="text"]:focus {
+        border-color: #558bc0 !important;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(85, 139, 192, 0.16) !important;
+    }
+    #dvLoad .filter-dropdown button,
+    #dvLoad .filter-dropdown-double button,
+    #dvLoad .filter-inputs + button,
+    #dvLoad .filter-dropdown .btn {
+        border-radius: 8px !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        padding: 5px 10px !important;
+        color: #fff !important;
+    }
+    #dvLoad .checkbox-container {
+        max-height: 160px;
+        border: 1px solid #eef2f7;
+        border-radius: 8px;
+        padding: 6px 8px;
+        background: #f8fafc;
+        color: #334155 !important;
+    }
+    #dvLoad .checkbox-container label {
+        font-size: 0.78rem !important;
+        color: #334155 !important;
+        margin: 3px 0;
+        text-transform: none !important;
+        letter-spacing: 0 !important;
+        font-weight: 500 !important;
     }
     .enq-grid-wrap {
         background: #fff;
-        border-radius: 12px;
-        border: 1px solid var(--enq-border, #e2e8f0);
-        box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+        border-radius: 16px;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
         overflow: hidden;
         margin-bottom: 12px;
     }
-    .table-wrapper.enq-table-scroll { min-height: 300px; max-height: 440px; overflow-y: auto; }
+    .enq-grid-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #eef2f7;
+        background: linear-gradient(180deg, #fbfdff, #f8fafc);
+    }
+    .enq-grid-toolbar .enq-grid-title {
+        margin: 0;
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: #334155;
+        letter-spacing: 0.02em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+    .enq-grid-toolbar .enq-grid-title i { color: #558bc0; }
+    .enq-grid-toolbar .enq-grid-hint {
+        margin: 0;
+        font-size: 0.75rem;
+        color: #94a3b8;
+        flex-shrink: 0;
+    }
+    .enq-grid-toolbar .enq-grid-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    .enq-grid-toolbar .enq-grid-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: #e8f4fd;
+        border: 1px solid #cfe0f0;
+        color: #558bc0;
+        font-size: 0.85rem;
+    }
+    .enq-grid-toolbar.enq-grid-toolbar--stack {
+        justify-content: flex-start;
+        align-items: center;
+        gap: 10px;
+    }
+    .enq-grid-toolbar.enq-grid-toolbar--stack .enq-grid-title {
+        gap: 0;
+    }
+    @@media (max-width: 768px) {
+        .enq-grid-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+            padding: 10px 12px;
+        }
+        .enq-grid-toolbar .enq-grid-title {
+            font-size: 0.9rem;
+            width: 100%;
+        }
+        .enq-grid-toolbar .enq-grid-hint {
+            width: 100%;
+            font-size: 0.7rem;
+            line-height: 1.35;
+            padding-left: 16px;
+            white-space: normal;
+        }
+        /* Structured toolbar (icon + text stack) — no extra hint indent */
+        .enq-grid-toolbar.enq-grid-toolbar--stack {
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .enq-grid-toolbar.enq-grid-toolbar--stack .enq-grid-hint {
+            padding-left: 0;
+            margin-top: 1px;
+        }
+        .enq-grid-toolbar.enq-grid-toolbar--stack .enq-grid-title {
+            font-size: 0.88rem;
+        }
+        #dvFollowup .enq-follow-grid-wrap {
+            margin-top: 10px !important;
+            border-radius: 10px;
+        }
+        #dvFollowup .enq-follow-actions {
+            justify-content: stretch !important;
+            gap: 8px !important;
+        }
+        #dvFollowup .enq-follow-actions .btn {
+            flex: 1 1 auto;
+            min-width: 0;
+            justify-content: center;
+            display: inline-flex;
+            align-items: center;
+        }
+    }
+    .table-wrapper.enq-table-scroll { min-height: 320px; max-height: 520px; overflow-y: auto; }
     .enq-grid-wrap #table.table { margin-bottom: 0; }
 
     /* List grid — Rolling Plan Sheet style (#tblTable) */
@@ -217,22 +756,24 @@
         background-color: #fff;
     }
     #table.enq-list-table thead th {
-        background-color: #558bc0 !important;
+        background: linear-gradient(180deg, #5f94c7 0%, #558bc0 100%) !important;
         color: #fff !important;
         position: sticky;
         top: 0;
-        border-bottom: 2px solid #dee2e6 !important;
+        border-bottom: none !important;
         border-top: none !important;
         border-left: none !important;
-        border-right: 1px solid rgba(255,255,255,0.25) !important;
-        padding: 6px 10px !important;
-        padding-right: 15px !important;
-        font-size: 8pt !important;
-        font-weight: 600 !important;
+        border-right: 1px solid rgba(255,255,255,0.22) !important;
+        padding: 4px 8px !important;
+        padding-right: 10px !important;
+        font-size: 0.65rem !important;
+        font-weight: 700 !important;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         vertical-align: middle !important;
         white-space: nowrap;
+        line-height: 1.2 !important;
+        height: 28px !important;
     }
     #table.enq-list-table thead th:last-child {
         border-right: none !important;
@@ -244,21 +785,103 @@
     .select2-dropdown {
         z-index: 10050 !important;
     }
+    #table.enq-list-table tbody tr {
+        height: 28px !important;
+    }
     #table.enq-list-table tbody td {
-        padding: 4px 8px !important;
-        border: 1px solid #ddd !important;
-        font-size: 9pt !important;
+        padding: 2px 6px !important;
+        border: none !important;
+        border-bottom: 1px solid #eef2f7 !important;
+        font-size: 0.75rem !important;
         vertical-align: middle !important;
-        color: #212529;
+        color: #1e293b;
+        line-height: 1.2 !important;
+        height: 28px !important;
+        background-color: #fff !important; /* default / else rows — white */
+        --bs-table-bg: #fff;
+        --bs-table-accent-bg: #fff;
     }
-    #table.enq-list-table.table-hover tbody tr:hover {
-        background-color: #e8f4fd !important;
+    /* Enquiry list — Our Remark: wrap / hard-break when text > 50 chars */
+    #table.enq-list-table th.enq-list-col-remark-wrap,
+    #table.enq-list-table td.enq-list-col-remark-wrap {
+        white-space: normal !important;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-word;
+        min-width: 140px;
+        max-width: 240px;
+        vertical-align: middle !important;
+        line-height: 1.25;
+        height: auto !important;
+        padding-top: 3px !important;
+        padding-bottom: 3px !important;
     }
-    /* Overdue row — overrides table-hover !important so colour persists on hover */
-    #table.enq-list-table tbody tr.enq-row-overdue,
-    #table.enq-list-table.table-hover tbody tr.enq-row-overdue:hover {
+    #table.enq-list-table tbody tr:nth-child(even) > td {
+        background-color: #fff !important;
+    }
+    #table.enq-list-table.table-hover tbody tr:hover > td {
+        background-color: #fff !important;
+    }
+    /* Row status colours — colour TD cells (Bootstrap table-hover paints cells, not TR) */
+    #table.enq-list-table tbody tr.enq-row-assigned > td,
+    #table.enq-list-table.table-hover tbody tr.enq-row-assigned:hover > td {
+        background-color: #dcfce7 !important; /* Assigned — green */
+        --bs-table-bg: #dcfce7;
+        --bs-table-accent-bg: #dcfce7;
+    }
+    #table.enq-list-table tbody tr.enq-row-unassigned > td,
+    #table.enq-list-table.table-hover tbody tr.enq-row-unassigned:hover > td {
+        background-color: #fef3c7 !important; /* Unassigned — amber */
+        --bs-table-bg: #fef3c7;
+        --bs-table-accent-bg: #fef3c7;
+    }
+    #table.enq-list-table tbody tr.enq-row-closed > td,
+    #table.enq-list-table.table-hover tbody tr.enq-row-closed:hover > td {
+        background-color: #e2e8f0 !important; /* Closed — slate */
+        --bs-table-bg: #e2e8f0;
+        --bs-table-accent-bg: #e2e8f0;
+    }
+    #table.enq-list-table tbody tr.enq-row-draft > td,
+    #table.enq-list-table.table-hover tbody tr.enq-row-draft:hover > td {
+        background-color: #bcdbf3 !important; /* Draft — blue */
+        --bs-table-bg: #bcdbf3;
+        --bs-table-accent-bg: #bcdbf3;
+    }
+    /* Overdue next follow-up — strongest highlight */
+    #table.enq-list-table tbody tr.enq-row-overdue > td,
+    #table.enq-list-table.table-hover tbody tr.enq-row-overdue:hover > td {
         background-color: #fecaca !important;
+        --bs-table-bg: #fecaca;
+        --bs-table-accent-bg: #fecaca;
     }
+    .enq-row-legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 0.7rem;
+        color: #64748b;
+    }
+    .enq-row-legend li {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+    .enq-row-legend .enq-leg-swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        flex-shrink: 0;
+    }
+    .enq-leg-assigned { background: #fff; border-color: #cbd5e1; }
+    .enq-leg-unassigned { background: #fef3c7; }
+    .enq-leg-closed { background: #e2e8f0; }
+    .enq-leg-overdue { background: #fecaca; }
     /* Action column: flex cell + display:contents wrapper = all buttons one row, centered */
     #dvLoad #table.enq-list-table thead th:last-child {
         min-width: 270px;
@@ -266,7 +889,7 @@
         vertical-align: middle !important;
     }
     #dvLoad #table.enq-list-table tbody td:last-child {
-        min-width: 270px;
+        min-width: 220px;
         width: 1%;
         white-space: nowrap;
         text-align: center !important;
@@ -274,11 +897,12 @@
         flex-wrap: nowrap !important;
         justify-content: center !important;
         align-items: center !important;
-        gap: 5px;
-        padding: 6px 8px !important;
+        gap: 3px;
+        padding: 1px 4px !important;
         /* Collapse &nbsp; text nodes between buttons (legacy string concat) */
         font-size: 0;
         line-height: 0;
+        height: 28px !important;
     }
     #dvLoad #table.enq-list-table tbody td:last-child .btn,
     #dvLoad #table.enq-list-table tbody td:last-child .btn-group {
@@ -307,20 +931,20 @@
     #dvLoad #table.enq-list-table tbody td:last-child .btn-group > .btn {
         flex: 0 0 auto !important;
         align-self: center !important;
-        height: 28px !important;
-        min-height: 28px !important;
-        max-height: 28px !important;
+        height: 22px !important;
+        min-height: 22px !important;
+        max-height: 22px !important;
     }
     #dvLoad #table.enq-list-table tbody td:last-child .btn.icon-height {
-        min-width: 26px;
-        width: 28px;
-        height: 28px !important;
-        min-height: 28px !important;
-        max-height: 28px !important;
+        min-width: 22px;
+        width: 22px;
+        height: 22px !important;
+        min-height: 22px !important;
+        max-height: 22px !important;
         padding: 0 !important;
-        font-size: 11px !important;
+        font-size: 10px !important;
         line-height: 1 !important;
-        border-radius: 5px;
+        border-radius: 4px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         display: inline-flex !important;
         align-items: center;
@@ -328,11 +952,11 @@
     }
     #dvLoad #table.enq-list-table tbody td:last-child .btn-group > .btn.dropdown-toggle {
         margin-top: 0 !important;
-        min-width: 28px;
-        width: 28px;
-        height: 28px !important;
-        min-height: 28px !important;
-        max-height: 28px !important;
+        min-width: 22px;
+        width: 22px;
+        height: 22px !important;
+        min-height: 22px !important;
+        max-height: 22px !important;
         padding: 0 !important;
     }
     #dvLoad #table.enq-list-table tbody td:last-child .dropdown-menu {
@@ -468,6 +1092,43 @@
         margin-bottom: 1.25rem;
     }
 
+    #dvFollowup {
+        background:
+            radial-gradient(1000px 380px at 0% -8%, rgba(85, 139, 192, 0.14), transparent 55%),
+            linear-gradient(180deg, #eef3f8 0%, #f7f9fc 45%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 14px;
+        min-height: calc(100vh - 140px);
+    }
+    .enq-fu-meta {
+        display: grid;
+        grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) minmax(220px, 2fr);
+        gap: 12px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 14px 16px;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+    }
+    .enq-fu-meta-label {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 5px;
+    }
+    .enq-fu-meta .form-control:disabled {
+        background: #f8fafc;
+        color: #0f172a;
+        font-weight: 600;
+        border-color: #e2e8f0;
+        opacity: 1;
+    }
+    @@media (max-width: 768px) {
+        .enq-fu-meta { grid-template-columns: 1fr; }
+    }
     #dvEnquiry .form-label,
     #dvFollowup .form-label {
         font-size: 0.78rem;
@@ -734,9 +1395,11 @@
         white-space: normal !important;
         word-wrap: break-word;
         overflow-wrap: break-word;
+        word-break: break-word;
         min-width: 160px;
         max-width: 320px;
         vertical-align: top;
+        line-height: 1.35;
     }
 
     /* Paginator — match enquiry accent (Filter.js buttons); compact height */
@@ -1110,9 +1773,16 @@
     .fixed-width-table.table { width: 100%; min-width: 700px; }
 
     @@media (max-width: 768px) {
-        .enq-form-wrap { padding-bottom: 24px; }
+        /* Content pane already sits below header — stick tabs flush to top (no 58px gap) */
+        #dvEnquiry {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            padding-left: 0.35rem !important;
+            padding-right: 0.35rem !important;
+        }
+        .enq-form-wrap { padding-bottom: 24px; padding-top: 0; }
         .enq-section-nav {
-            top: 58px;
+            top: 0px;
             flex-direction: column;
             align-items: stretch;
         }
@@ -1129,53 +1799,75 @@
             justify-content: center;
         }
         .enq-step-body { padding: 16px 14px 20px; }
+        #dvEnquiry #dvTab1,
+        #dvEnquiry #dvTab2,
+        #dvEnquiry #dvTab3,
+        #dvEnquiry #dvTab4 {
+            scroll-margin-top: 4px;
+        }
     }
 </style>
 
 <div id="dvLoad" style="display:block;">
-    <div class="enq-list-header">
-        <div class="enq-header-top">
-            <div>
-                <h5><i class="fa fa-clipboard-list me-2"></i>Enquiries</h5>
-                <small>View, filter, and manage sales enquiries</small>
+    <div class="enq-list-shell">
+        <div class="enq-list-card">
+            <div class="enq-list-header">
+                <div class="enq-header-top">
+                    <div class="enq-header-title-block">
+                        <h5>
+                            <span class="enq-title-icon"><i class="fa fa-clipboard-list"></i></span>
+                            Enquiries
+                        </h5>
+                    </div>
+                    <div class="enq-header-actions d-flex align-items-center gap-2">
+                        <button type="button" class="btn-enq-new" onclick="CreateNew()">
+                            <i class="fa fa-plus"></i>
+                            <span>New Enquiry</span>
+                        </button>
+                        <button type="button" class="btn-enq-settings" id="btnEnquiryConfiguration" onclick="ShowEnquiryConfigurationModal()" title="Set Configuration">
+                            <i class="fa fa-sliders"></i>
+                        </button>
+                    </div>
+                    <small class="enq-header-sub">Filter by sales person, status, and lead type — then act from the grid</small>
+                </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn-enq-new" onclick="CreateNew()">
-                    <i class="fa fa-plus-circle"></i>
-                    <span class="ms-1">New Enquiry</span>
-                </button>
-                <button type="button" class="btn-enq-settings" id="btnEnquiryConfiguration" onclick="ShowEnquiryConfigurationModal()" title="Settings">
-                    <i class="fa fa-gear"></i>
-                </button>
+            <div class="enq-filter-bar">
+                <div class="row g-3 align-items-start">
+                    <div class="col-12 col-md-4 col-xl-3">
+                        <label for="ddlSalesPerson" class="enq-filter-label"><i class="fa fa-user-tie"></i> Sales Person</label>
+                        <select id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border"></select>
+                    </div>
+                    <div class="col-12 col-md-4 col-xl-4">
+                        <label for="ddlStatus" class="enq-filter-label"><i class="fa fa-circle-check"></i> Status</label>
+                        <select id="ddlStatus" name="ddlStatus" class="form-control form-control-sm box_border" multiple="multiple"></select>
+                    </div>
+                    <div class="col-12 col-md-4 col-xl-5">
+                        <label for="ddlfilterLeadType" class="enq-filter-label"><i class="fa fa-tags"></i> Lead Type</label>
+                        <select id="ddlfilterLeadType" name="ddlfilterLeadType" class="form-control form-control-sm box_border" multiple="multiple"></select>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="enq-filter-bar">
-        <div class="row">
-            <div class="col-12 col-md-3">
-                <label for="ddlSalesPerson" class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Sales Person <span class="req">*</span></label>
-                <select id="ddlSalesPerson" name="ddlSalesPerson" class="form-control form-control-sm box_border"></select>
+        <div id="tblLeadList" class="enq-grid-wrap">
+            <div class="enq-grid-toolbar">
+                <p class="enq-grid-title"><i class="fa fa-table-list"></i> Enquiry list</p>
+                <ul class="enq-row-legend" aria-label="Row colour legend">
+                    <li><span class="enq-leg-swatch enq-leg-assigned"></span> Other (white)</li>
+                    <li><span class="enq-leg-swatch enq-leg-unassigned"></span> Unassigned</li>
+                    <li><span class="enq-leg-swatch enq-leg-closed"></span> Closed</li>
+                    <li><span class="enq-leg-swatch enq-leg-overdue"></span> Overdue follow-up</li>
+                </ul>
             </div>
-            <div class="col-12 col-md-3">
-                <label for="ddlStatus" class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Status <span class="req">*</span></label>
-                <select id="ddlStatus" name="ddlStatus" class="form-control form-control-sm box_border"></select>
+            <div class="table-wrapper enq-table-scroll">
+                <table id="table" class="table table-sm table-hover mb-0 enq-list-table fixed-width-table">
+                    <thead id="table-header">
+                    </thead>
+                    <tbody id="table-body">
+                    </tbody>
+                </table>
             </div>
-            <div class="col-12 col-md-3">
-                <label for="ddlfilterLeadType" class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Lead Type <span class="req">*</span></label>
-                <select id="ddlfilterLeadType" name="ddlfilterLeadType" class="form-control form-control-sm box_border"></select>
+            <div class="paginator" id="paginator-table">
             </div>
-        </div>
-    </div>
-    <div id="tblLeadList" class="enq-grid-wrap">
-        <div class="table-wrapper enq-table-scroll">
-            <table id="table" class="table table-sm table-hover table-bordered mb-0 enq-list-table fixed-width-table">
-                <thead id="table-header">
-                </thead>
-                <tbody id="table-body">
-                </tbody>
-            </table>
-        </div>
-        <div class="paginator" id="paginator-table">
         </div>
     </div>
 </div>
@@ -1376,43 +2068,21 @@
     </div>
 </div>
 <div id="dvFollowup" style="display:none;--enq-accent:#558bc0;--enq-border:#e2e8f0;">
-    @* <div id="dvFollowTab1" class="card p-2" style="display:block;">
-        <div class="card ps-2 p-1" style="background:#275481;color:white;font-weight:bold;">Follow Up Details</div>
-       <div class="form-grid">
-            <div class="row">
-                <div class="col-md-3">
-                    <label for="txtEnquiryNumber" class="form-label">Enquiry Number <span class="text-danger">*</span></label>
-                    <input type="text" id="txtEnquiryNumber" disabled name="txtEnquiryNumber" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" maxlength="50">
-                </div>
-                <div class="col-md-3">
-                    <label for="txtFollowupEnquiryDate" class="form-label">Enquiry Date <span class="text-danger">*</span></label>
-                    <input type="text" id="txtFollowupEnquiryDate" disabled name="txtFollowupEnquiryDate" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
-                </div>
-                <div class="col-md-3">
-                    <label for="txtFollowupCustomerName" class="form-label">Company/Customer Name <span class="text-danger">*</span></label>
-                    <input type="text" id="txtFollowupCustomerName" disabled name="txtFollowupCustomerName" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
-                </div>
-                <div class="col-md-3" style="text-align:right;margin-top:23px;">
-                    <input type="button" style="height:28px;line-height:1px;padding:0 10px;font-size:0.875rem;" class="btn btn-success" onclick="CreateNewFollowUp()" value="+" />
-                </div>
-            </div>
-        </div> 
-         <div id="tblFollowUp" style="display:none;">
-            <div class="table-wrapper">
-                <table id="FollowUp" class="table table-sm table-bordered enq-grid-table">
-                    <thead id="FollowUp-header">
-                    </thead>
-                    <tbody id="FollowUp-body">
-                    </tbody>
-                </table>
-            </div>
-            <div class="paginator" id="paginator-FollowUp">
-            </div>
+    <div class="enq-list-shell">
+    <div class="enq-fu-meta mb-2">
+        <div class="enq-fu-meta-item">
+            <span class="enq-fu-meta-label">Enquiry No</span>
+            <input type="text" id="txtEnquiryNumber" disabled class="form-control form-control-sm box_border" autocomplete="off" maxlength="50" />
         </div>
-        <div style="text-align:right;">
-            <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back To Enquiry List</button>
+        <div class="enq-fu-meta-item">
+            <span class="enq-fu-meta-label">Enquiry Date</span>
+            <input type="text" id="txtFollowupEnquiryDate" disabled class="form-control form-control-sm box_border" autocomplete="off" maxlength="100" />
         </div>
-    </div> *@
+        <div class="enq-fu-meta-item enq-fu-meta-wide">
+            <span class="enq-fu-meta-label">Company / Customer</span>
+            <input type="text" id="txtFollowupCustomerName" disabled class="form-control form-control-sm box_border" autocomplete="off" maxlength="100" />
+        </div>
+    </div>
     <div id="dvFollowTab2" class="enq-step-card section-entry-animation" style="display:none;">
         <div class="enq-step-header">
             <div class="enq-step-num">1</div>
@@ -1429,11 +2099,11 @@
                     <input type="hidden" id="hfFollowUpMaster_Code" class="form-control form-control-sm box_border" autocomplete="off" value="0">
                 </div>
                 <div class="col-12 col-md-6">
-                    <label for="txtCustomerRemarks" class="form-label">Customer Remarks<span class="text-danger">*</span></label>
+                    <label for="txtCustomerRemarks" class="form-label">Customer Remarks<span class="text-danger fu-req-optional-close">*</span></label>
                     <textarea id="txtCustomerRemarks" name="txtCustomerRemarks" class="form-control form-control-sm box_border" placeholder="" autocomplete="off" maxlength="500"></textarea>
                 </div>
                 <div class="col-12 col-md-4">
-                    <label for="ddlCustomerContactPersonName" class="form-label">Customer Contact Person Name<span class="text-danger">*</span></label>
+                    <label for="ddlCustomerContactPersonName" class="form-label">Customer Contact Person Name<span class="text-danger fu-req-optional-close">*</span></label>
                     <div class="input-group input-group-sm">
                         <select id="ddlCustomerContactPersonName" class="form-control form-control-sm box_border">
                         </select>
@@ -1441,15 +2111,20 @@
                     </div>
                 </div>
                 <div class="col-12 col-md-4">
-                    <label for="txtFollowUpDateFollowUp" class="form-label">Follow Up Date <span class="text-danger">*</span></label>
+                    <label for="txtFollowUpDateFollowUp" class="form-label">Follow Up Date <span class="text-danger fu-req-optional-close">*</span></label>
                     <input type="date" id="txtFollowUpDateFollowUp" name="txtFollowUpDateFollowUp" class="form-control form-control-sm box_border" autocomplete="off" maxlength="100">
                 </div>
                 <div class="col-12 col-md-4 col-lg-4">
-                    <label for="ddlFollowUpModeFollowUp" class="form-label">Follow Up Mode <span class="text-danger">*</span></label>
+                    <label for="ddlFollowUpModeFollowUp" class="form-label">Follow Up Mode <span class="text-danger fu-req-optional-close">*</span></label>
                     <select id="ddlFollowUpModeFollowUp" class="form-control form-control-sm box_border">
                     </select>
                 </div>
-                <div class="col-12 col-md-4 col-lg-4 d-flex align-items-center" style="margin-top:0;padding-top:1.1rem;">
+                <div class="col-12 col-md-4 col-lg-4" id="dvddlLeadStatus" style="display:block">
+                    <label for="ddlLeadStatus" class="form-label">Lead Type<span class="text-danger">*</span></label>
+                    <select id="ddlLeadStatus" class="form-control form-control-sm box_border">
+                    </select>
+                </div>
+                <div class="col-12 col-md-4 col-lg-4 d-flex align-items-center" id="dvNextFollowUpRequired" style="margin-top:0;padding-top:1.1rem;">
                     <input type="checkbox" checked id="chkFollowUpRequired" name="chkFollowUpRequired" autocomplete="off" class="me-2">
                     <label for="chkFollowUpRequired" class="form-label mb-0">Next Follow-up Required</label>
                 </div>
@@ -1462,11 +2137,7 @@
                     <select id="ddlNextFollowUpModeFollowUp" class="form-control form-control-sm box_border">
                     </select>
                 </div>
-                <div class="col-12 col-md-4 col-lg-4" id="dvddlLeadStatus" style="display:block">
-                    <label for="ddlLeadStatus" class="form-label">Status<span class="text-danger">*</span></label>
-                    <select id="ddlLeadStatus" class="form-control form-control-sm box_border">
-                    </select>
-                </div>
+               
                 <div class="col-12 pt-1 mt-1 d-flex flex-wrap gap-2 justify-content-end align-items-center enq-follow-actions">
                     <button type="button" id="btnFollowUpSave" class="btn btn-enq-primary px-3 py-1" onclick="SaveEnquiryFollowUp()"><i class="fa fa-check me-1"></i>Save</button>
                     <button type="button" id="btnFollowUpReset" class="btn btn-enq-outline px-3 py-1" onclick="ResetEnquiryFollowUp()">Reset</button>
@@ -1476,6 +2147,13 @@
         </div>
         </div>
         <div id="tblFollowUp" style="display:none;" class="enq-follow-grid-wrap mt-2 mx-0">
+            <div class="enq-grid-toolbar enq-grid-toolbar--stack">
+                <span class="enq-grid-icon" aria-hidden="true"><i class="fa fa-clock-rotate-left"></i></span>
+                <div class="enq-grid-text">
+                    <p class="enq-grid-title">Follow-up history</p>
+                    <p class="enq-grid-hint">Previous interactions for this enquiry</p>
+                </div>
+            </div>
             <div class="table-wrapper">
                 <table id="FollowUp" class="table table-sm table-bordered enq-grid-table mb-0 fixed-width-table">
                     <thead id="FollowUp-header">
@@ -1487,9 +2165,7 @@
             <div class="paginator" id="paginator-FollowUp">
             </div>
         </div>
-        @* <div style="text-align:right;">
-            <button type="button" class="btn btn-danger icon-height" onclick="BackMaster()">Back To List</button>
-        </div> *@
+    </div>
     </div>
 </div>
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -1506,6 +2182,25 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-success icon-height" onclick="DeleteModal()">Ok</button>
                 <button type="button" class="btn btn-danger icon-height" onclick="CloseModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="ReOpenEnquiryModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-width-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Re-Open Enquiry</h5>
+                <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
+            </div>
+            <div class="modal-body">
+                <label for="txtReOpenRemark" class="form-label">Remark <span class="text-danger">*</span></label>
+                <input type="text" id="txtReOpenRemark" class="form-control" placeholder="Enter remark" autocomplete="off" />
+                <input type="hidden" id="txtReOpenEnquiryCode" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" onclick="ConfirmReOpenEnquiry()">Ok</button>
+                <button type="button" class="btn btn-danger icon-height" onclick="HideReOpenEnquiryModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -1703,7 +2398,7 @@
                     <input type="checkbox" id="chkMandatoryPhoneNo" />
                     <input type="checkbox" id="chkMandatoryEmail" />
                 </div>
-                <!-- Default Lead Status (radio — single selection) -->
+                <!-- Default Lead Status (checkbox — multi selection, saved as Value1#Value2) -->
                 <div class="enq-config-section">
                     <div class="enq-config-section-title">
                         <i class="fa fa-tags"></i> Default Lead Status
@@ -1712,7 +2407,7 @@
                         <span class="text-muted" style="font-size:12px;">Loading…</span>
                     </div>
                 </div>
-                <!-- Default Status (radio — single selection) -->
+                <!-- Default Status (checkbox — multi selection, saved as Value1#Value2) -->
                 <div class="enq-config-section">
                     <div class="enq-config-section-title">
                         <i class="fa fa-circle-check"></i> Default Status
