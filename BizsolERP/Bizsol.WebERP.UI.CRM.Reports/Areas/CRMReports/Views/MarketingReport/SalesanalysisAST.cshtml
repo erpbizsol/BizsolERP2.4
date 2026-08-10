@@ -6,6 +6,7 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
 <style>
     
@@ -144,6 +145,270 @@
         display: flex;
         flex-direction: column;
         height: 350px;
+    }
+
+    /* Regional Analysis drill-down */
+    .regional-analysis-panel {
+        border: 1px solid #e0e6ed;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .regional-breadcrumb {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: #eef4ff;
+        border: 1px solid #d7e3ff;
+        border-radius: 10px;
+    }
+
+    .regional-breadcrumb-item {
+        color: #4e73df;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .regional-breadcrumb-item:hover {
+        text-decoration: underline;
+    }
+
+    .regional-breadcrumb-item.active {
+        color: #1f2937;
+        cursor: default;
+        text-decoration: none;
+    }
+
+    .regional-breadcrumb-separator {
+        color: #94a3b8;
+        font-weight: 700;
+    }
+
+    .regional-chart-container {
+        position: relative;
+        height: 380px;
+    }
+
+    .regional-table-container {
+        max-height: 380px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .regional-drill-hint {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 12px;
+    }
+
+    .regional-level-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+
+    .regional-back-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-width: 120px;
+        min-height: 36px;
+        padding: 8px 16px;
+        border: 1px solid #4e73df;
+        border-radius: 8px;
+        background: #4e73df;
+        color: #ffffff !important;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.2;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(78, 115, 223, 0.25);
+    }
+
+    .regional-back-btn:hover,
+    .regional-back-btn:focus {
+        background: #3b5cc9;
+        border-color: #3b5cc9;
+        color: #ffffff !important;
+        outline: none;
+    }
+
+    /* Target Vs Growth */
+    .tvg-panel {
+        border: 1px solid #e0e6ed;
+        border-radius: 14px;
+        background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+        padding: 20px;
+    }
+
+    .tvg-kpi-card {
+        border: none;
+        border-radius: 14px;
+        overflow: hidden;
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+        min-height: 110px;
+    }
+
+    .tvg-kpi-card .card-body {
+        padding: 18px 20px;
+    }
+
+    .tvg-kpi-label {
+        font-size: 13px;
+        opacity: 0.92;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+
+    .tvg-kpi-value {
+        font-size: 32px;
+        font-weight: 800;
+        margin-top: 6px;
+        line-height: 1.1;
+    }
+
+    .tvg-kpi-lost {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    }
+
+    .tvg-kpi-manifest {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    }
+
+    .tvg-kpi-actual {
+        background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+    }
+
+    .tvg-section-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #fff;
+        height: 100%;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .tvg-section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #fff;
+        padding: 12px 16px;
+        border-radius: 12px 12px 0 0;
+        margin: 0;
+    }
+
+    .tvg-section-body {
+        padding: 16px;
+    }
+
+    .tvg-metric-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        background: #f8fafc;
+        border: 1px solid #eef2f7;
+    }
+
+    .tvg-metric-row strong {
+        font-size: 15px;
+    }
+
+    .tvg-chart-box {
+        position: relative;
+        height: 300px;
+    }
+
+    .tvg-table thead th {
+        background: #365e9a !important;
+        color: #fff !important;
+        border-color: #2f5287 !important;
+    }
+
+    /* Client Analysis */
+    .ca-kpi-total {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    }
+
+    .ca-kpi-lost {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    }
+
+    .ca-kpi-sales {
+        background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+    }
+
+    .ca-kpi-avg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .ca-kpi-dream {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .ca-kpi-panel {
+        min-height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ca-kpi-panel .card-body {
+        text-align: center;
+        width: 100%;
+    }
+
+    .ca-table-scroll {
+        max-height: 360px;
+        overflow-y: auto;
+    }
+
+    .ca-status-badge {
+        display: inline-block;
+        min-width: 52px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .ca-status-high {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .ca-status-mid {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .ca-status-low {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .ca-segment-total-row td {
+        background: #eef2ff;
+        font-weight: 700;
     }
 
     /* Column width specifications for 2-column tables */
@@ -386,6 +651,26 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
+        <button class="nav-link" id="regionalAnalysis-tab" data-bs-toggle="tab" data-bs-target="#regionalAnalysis" type="button" role="tab" aria-controls="regionalAnalysis" aria-selected="false">
+            <i class="fas fa-map-marked-alt"></i>Regional Analysis
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="productAnalysis-tab" data-bs-toggle="tab" data-bs-target="#productAnalysis" type="button" role="tab" aria-controls="productAnalysis" aria-selected="false">
+            <i class="fas fa-cubes"></i>Product Analysis
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="targetVsGrowth-tab" data-bs-toggle="tab" data-bs-target="#targetVsGrowth" type="button" role="tab" aria-controls="targetVsGrowth" aria-selected="false">
+            <i class="fas fa-bullseye"></i>TARGET Vs GROWTH
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="clientAnalysis-tab" data-bs-toggle="tab" data-bs-target="#clientAnalysis" type="button" role="tab" aria-controls="clientAnalysis" aria-selected="false">
+            <i class="fas fa-users"></i>CLIENT ANALYSIS
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
         <button class="nav-link" id="gpWiseSummary-tab" data-bs-toggle="tab" data-bs-target="#gpWiseSummary" type="button" role="tab" aria-controls="gpWiseSummary" aria-selected="false">
             <i class="fas fa-chart-bar"></i>GP Wise Summary
         </button>
@@ -606,6 +891,10 @@
 
     <div class="tab-pane fade" id="goldenCircle" role="tabpanel" aria-labelledby="goldenCircle-tab">
         <div class="container-fluid">
+            <div id="goldenCircleGpFilterNote" class="alert alert-info mb-3 py-2" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Note:</strong> Golden Circle Client data is for <strong>All</strong> GP clients. If no data is shown or want to shown Super High, open Filters and apply the <strong>GP</strong> filter with <strong>Super High</strong>.
+            </div>
             <!-- Row 1: Marketing Person Table and Base % Chart -->
             <div class="row">
                 <!-- Marketing Person Weight Table -->
@@ -899,6 +1188,324 @@
         </div>
     </div>
 
+    <div class="tab-pane fade" id="regionalAnalysis" role="tabpanel" aria-labelledby="regionalAnalysis-tab">
+        <div class="container-fluid">
+            <div class="regional-analysis-panel">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        Regional Analysis
+                        <span id="regionalAnalysisLevelBadge" class="regional-level-badge">State Wise</span>
+                    </h5>
+                    <a id="regionalAnalysisBackBtn" class="regional-back-btn">
+                        &#8592; Back
+                    </a>
+                </div>
+
+                <div id="regionalAnalysisBreadcrumb" class="regional-breadcrumb mb-3">
+                    <span class="regional-breadcrumb-item active" data-level="state">All States</span>
+                </div>
+
+                <div id="regionalAnalysisDrillHint" class="regional-drill-hint">
+                    <i class="fas fa-hand-pointer me-1"></i>Click on a pie chart segment or table row to drill down. Next level opens below without hiding this chart.
+                </div>
+
+                <!-- Level 1: State Wise -->
+                <div id="regionalLevelStateRow" class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                State-wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="regionalStatePieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                State-wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="regionalStateTableHeader">
+                                            <th>State Name</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="regionalStateTableBody">
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="regionalStateTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 2: City Wise -->
+                <div id="regionalLevelCityRow" class="row g-4 mb-4" style="display:none;">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="regionalCityChartTitle" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                City-wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="regionalCityPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="regionalCityTableTitle" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                City-wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="regionalCityTableHeader">
+                                            <th>State Name</th>
+                                            <th>City Name</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="regionalCityTableBody">
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">No data available</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="regionalCityTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td colspan="2"><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 3: Party Wise -->
+                <div id="regionalLevelPartyRow" class="row g-4 mb-4" style="display:none;">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="regionalPartyChartTitle" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                Party-wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="regionalPartyPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="regionalPartyTableTitle" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);">
+                                Party-wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="regionalPartyTableHeader">
+                                            <th>State Name</th>
+                                            <th>City Name</th>
+                                            <th>Party Name</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="regionalPartyTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No data available</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="regionalPartyTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td colspan="3"><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="productAnalysis" role="tabpanel" aria-labelledby="productAnalysis-tab">
+        <div class="container-fluid">
+            <div class="regional-analysis-panel">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        Product Analysis
+                        <span id="productAnalysisLevelBadge" class="regional-level-badge">Item Wise</span>
+                    </h5>
+                    <a id="productAnalysisBackBtn" class="regional-back-btn">
+                        &#8592; Back
+                    </a>
+                </div>
+
+                <div id="productAnalysisBreadcrumb" class="regional-breadcrumb mb-3">
+                    <span class="regional-breadcrumb-item active" data-level="item">All Items</span>
+                </div>
+
+                <div id="productAnalysisDrillHint" class="regional-drill-hint">
+                    <i class="fas fa-hand-pointer me-1"></i>Click on a pie chart segment or table row to drill down. Next level opens below without hiding this chart.
+                </div>
+
+                <!-- Level 1: Item Wise -->
+                <div id="productLevelItemRow" class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                Item-wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="productItemPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                Item-wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="productItemTableHeader">
+                                            <th>Item Name</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productItemTableBody">
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="productItemTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 2: Item-Size Wise -->
+                <div id="productLevelSizeRow" class="row g-4 mb-4" style="display:none;">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="productSizeChartTitle" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                Item-Size wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="productSizePieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="productSizeTableTitle" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                Item-Size wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="productSizeTableHeader">
+                                            <th>Item Name</th>
+                                            <th>Size</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productSizeTableBody">
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">No data available</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="productSizeTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td colspan="2"><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 3: Item-Size-Thickness Wise -->
+                <div id="productLevelThicknessRow" class="row g-4 mb-4" style="display:none;">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="productThicknessChartTitle" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                Item-Size-Thickness wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="productThicknessPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="productThicknessTableTitle" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);">
+                                Item-Size-Thickness wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="productThicknessTableHeader">
+                                            <th>Item Name</th>
+                                            <th>Size</th>
+                                            <th>Thickness</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productThicknessTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No data available</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="productThicknessTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td colspan="3"><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="tab-pane fade" id="gpWiseSummary" role="tabpanel" aria-labelledby="gpWiseSummary-tab">
         <div class="card">
             <div class="card-body">
@@ -910,6 +1517,254 @@
                         <tbody id="gpWiseTableBody">
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="targetVsGrowth" role="tabpanel" aria-labelledby="targetVsGrowth-tab">
+        <div class="container-fluid">
+            <div class="tvg-panel">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">TARGET Vs GROWTH</h5>
+                    <span class="regional-level-badge">Manifest vs Actual</span>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card tvg-kpi-card tvg-kpi-lost">
+                            <div class="card-body">
+                                <div class="tvg-kpi-label"><i class="fas fa-user-slash me-1"></i>Lost Clients</div>
+                                <div id="tvgKpiLostClients" class="tvg-kpi-value">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card tvg-kpi-card tvg-kpi-manifest">
+                            <div class="card-body">
+                                <div class="tvg-kpi-label"><i class="fas fa-flag-checkered me-1"></i>Manifest %</div>
+                                <div id="tvgKpiManifestPct" class="tvg-kpi-value">0.00%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card tvg-kpi-card tvg-kpi-actual">
+                            <div class="card-body">
+                                <div class="tvg-kpi-label"><i class="fas fa-chart-line me-1"></i>Actual %</div>
+                                <div id="tvgKpiActualPct" class="tvg-kpi-value">0.00%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-5">
+                        <div class="tvg-section-card">
+                            <h6 class="tvg-section-title" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">GP / Lost Clients</h6>
+                            <div class="tvg-section-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered tvg-table mb-3">
+                                        <thead>
+                                            <tr>
+                                                <th>GP</th>
+                                                <th class="text-end">Lost Client</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tvgLostClientTableBody">
+                                            <tr><td colspan="2" class="text-center text-muted">Loading...</td></tr>
+                                        </tbody>
+                                        <tfoot id="tvgLostClientTableFooter">
+                                            <tr class="grand-total-row">
+                                                <td><strong>Total</strong></td>
+                                                <td class="text-end"><strong>0</strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <div class="tvg-metric-row">
+                                    <span>Manifest (MT)</span>
+                                    <strong id="tvgManifestMt">0.00</strong>
+                                </div>
+                                <div class="tvg-metric-row">
+                                    <span>Actual (MT)</span>
+                                    <strong id="tvgActualMt">0.00</strong>
+                                </div>
+                                <div class="tvg-metric-row">
+                                    <span>Manifest Share</span>
+                                    <strong id="tvgManifestShare">0.00%</strong>
+                                </div>
+                                <div class="tvg-metric-row mb-0">
+                                    <span>Actual Share</span>
+                                    <strong id="tvgActualShare">0.00%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="tvg-section-card">
+                            <h6 class="tvg-section-title" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">Lost Clients by GP</h6>
+                            <div class="tvg-section-body">
+                                <div class="tvg-chart-box">
+                                    <canvas id="tvgLostClientBarChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="tvg-section-card">
+                            <h6 class="tvg-section-title" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">Manifest vs Actual (MT)</h6>
+                            <div class="tvg-section-body">
+                                <div class="tvg-chart-box">
+                                    <canvas id="tvgManifestActualPieChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="tvg-section-card">
+                            <h6 class="tvg-section-title" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">Growth Snapshot</h6>
+                            <div class="tvg-section-body">
+                                <div class="row g-3">
+                                    <div class="col-sm-6">
+                                        <div class="p-3 rounded-3" style="background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #c7d2fe;">
+                                            <div class="text-muted small fw-semibold">Manifest Target</div>
+                                            <div id="tvgSnapManifest" class="fs-4 fw-bold text-primary mt-1">0.00 MT</div>
+                                            <div id="tvgSnapManifestPct" class="small fw-bold text-primary">0.00%</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="p-3 rounded-3" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0;">
+                                            <div class="text-muted small fw-semibold">Actual Growth</div>
+                                            <div id="tvgSnapActual" class="fs-4 fw-bold text-success mt-1">0.00 MT</div>
+                                            <div id="tvgSnapActualPct" class="small fw-bold text-success">0.00%</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="p-3 rounded-3" style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #fdba74;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="text-muted small fw-semibold">Gap (Manifest - Actual)</div>
+                                                    <div id="tvgSnapGap" class="fs-4 fw-bold mt-1" style="color:#c2410c;">0.00 MT</div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <div class="text-muted small fw-semibold">Achievement</div>
+                                                    <div id="tvgSnapAchievement" class="fs-4 fw-bold mt-1" style="color:#9a3412;">0.00%</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="clientAnalysis" role="tabpanel" aria-labelledby="clientAnalysis-tab">
+        <div class="container-fluid">
+            <div class="tvg-panel">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">CLIENT ANALYSIS</h5>
+                    <span class="regional-level-badge">Client Performance Overview</span>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-lg-3">
+                        <div class="card tvg-kpi-card ca-kpi-total">
+                            <div class="card-body">
+                                <div class="tvg-kpi-label"><i class="fas fa-users me-1"></i>Total Clients</div>
+                                <div id="caKpiTotalClients" class="tvg-kpi-value">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="card tvg-kpi-card ca-kpi-lost">
+                            <div class="card-body">
+                                <div class="tvg-kpi-label"><i class="fas fa-user-slash me-1"></i>Lost Clients</div>
+                                <div id="caKpiLostClients" class="tvg-kpi-value">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="card tvg-kpi-card ca-kpi-sales">
+                            <div class="card-body">
+                                <div class="tvg-kpi-label"><i class="fas fa-weight-hanging me-1"></i>Sales (MT)</div>
+                                <div id="caKpiSalesMt" class="tvg-kpi-value">0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="card tvg-kpi-card ca-kpi-avg">
+                            <div class="card-body">
+                                <div class="tvg-kpi-label"><i class="fas fa-chart-bar me-1"></i>Avg MT/Client</div>
+                                <div id="caKpiAvgMtClient" class="tvg-kpi-value">0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="tvg-section-card">
+                            <h6 class="tvg-section-title" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">GP-wise Client List</h6>
+                            <div class="tvg-section-body p-0">
+                                <div class="table-responsive ca-table-scroll">
+                                    <table class="table table-sm table-bordered tvg-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Client</th>
+                                                <th>Seg</th>
+                                                <th class="text-end">MT</th>
+                                                <th>GP</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="caGpClientTableBody">
+                                            <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card tvg-kpi-card ca-kpi-dream ca-kpi-panel h-100">
+                            <div class="card-body py-5">
+                                <div class="tvg-kpi-label"><i class="fas fa-star me-1"></i>Dream Clients</div>
+                                <div id="caKpiDreamClients" class="tvg-kpi-value">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="tvg-section-card">
+                            <h6 class="tvg-section-title" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">Segment-wise Sales (MT)</h6>
+                            <div class="tvg-section-body p-0">
+                                <div class="table-responsive ca-table-scroll">
+                                    <table class="table table-sm table-bordered tvg-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Segment</th>
+                                                <th>Party name</th>
+                                                <th class="text-end">MT</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="caSegmentSalesTableBody">
+                                            <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
