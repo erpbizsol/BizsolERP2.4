@@ -5,6 +5,8 @@ let fixedParaMeterConfigurationList = [];
 let QtyMTHeader = '';
 let QtyPCHeader = '';
 let QtyMTRHeader = '';
+let QtyBagsHeader = '';
+let CRM_Config_OEL = null;
 let selectedDates = [];
 $(document).ready(function () {
     $("#ERPHeading").text("Order Entry List");
@@ -295,6 +297,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                 "Verified": 'center',
                 "Closed": 'center',
                 "Credit Days": 'right',
+                "Avg. Cost/Crate": 'right',
             };
             if (QtyMTRHeader !== '') {
                 response = response.map(item => {
@@ -353,7 +356,20 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             } else {
                 hiddenColumns.push("Total Order Qty PC");
             }
-            //if (QtyMTRHeader !== '') {
+
+            // Hide Total Order Qty columns when AskTotalOrderQty is N
+            var _oel_crmCfg = CRM_Config_OEL || JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
+            var _askTotalQty = _oel_crmCfg ? (_oel_crmCfg.AskTotalOrderQty || 'N') : 'N';
+            if (_askTotalQty !== 'Y') {
+                hiddenColumns.push('Total Order Qty.', 'Total Order Qty PC', 'Total Order Qty MR');
+                //hiddenColumns.push('Qty ' + QtyMTHeader, 'Qty ' + QtyMTRHeader, 'Qty ' + QtyPCHeader);
+            }
+
+            // Hide Avg. Cost/Crate when Qty unit is not NOS (QtyPCHeader empty)
+            if (QtyMTRHeader !== 'NOS') {
+                hiddenColumns.push('Avg. Cost/Crate');
+            }
+
             //    response = response.map(item => {
             //        if (item.hasOwnProperty('Dispatched Qty MTRS')) {
             //            const reorderedItem = {};
@@ -648,7 +664,7 @@ function isViewButtonEnabled(order) {
 function GetFixedParameterConfiguration() {
     //OrderEntryListService.GetFixedParameterConfiguration().then(function (res) {
     OrderEntryListService.GetFixedParameterQtyConfig().then(function (res) {
-    
+
         fixedParaMeterConfigurationList = res;
         //QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMTHeader;
         //QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPCHeader;
@@ -656,7 +672,14 @@ function GetFixedParameterConfiguration() {
         QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMT;
         QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPC;
         QtyMTRHeader = fixedParaMeterConfigurationList[0].QtyMR;
-       
+        QtyBagsHeader = (fixedParaMeterConfigurationList[0].Unit || '').trim().toUpperCase() === 'AS PER MASTER' ? 'Crate' : '';
+
+    });
+    OrderEntryListService.GetCRMOrderEntryConfig().then(function (res) {
+        if (res && res.length > 0) {
+            CRM_Config_OEL = res[0];
+            sessionStorage.setItem('CRMOrderEntryConfig', JSON.stringify(res[0]));
+        }
     });
 }
 
@@ -692,11 +715,13 @@ function updateFooter(data) {
         let TotalOrderQty = 0;
         let TotalOrderQtyPC = 0;
         let TotalOrderQtyMR = 0;
+        let totalAvgCostCrate = 0;
 
         data.forEach(row => {
             totalQuantity += parseFloat(row['Qty ' + QtyMTHeader] || row['Qty ' + QtyMTRHeader] || row['Qty ' + QtyPCHeader] || 0);
             //totalBasicRate += parseFloat(row["Basic Rate"] || 0);
             totalFinalAmount += parseFloat(row["Amount"] || 0);
+            totalAvgCostCrate += parseFloat(row['Avg. Cost/Crate'] || 0);
             //totalFinalRate += parseFloat(row["Final Rate"] || 0);
             //totalDispatchQtyMTRS += parseFloat(row["Dispatched Qty MTRS"] || 0);
             //totalDispatchQtyMT += parseFloat(row["Dispatched Qty"] || 0);
@@ -712,6 +737,8 @@ function updateFooter(data) {
             }
         });
 
+        const showAvgCostCrate = QtyBagsHeader !== '' || QtyPCHeader !== '';
+
         var tfootContent1 = ``;
         var tfootContent2= ``;
         var tfootContent3= ``;
@@ -722,12 +749,13 @@ function updateFooter(data) {
         <tr>
             <td colspan="3"><b>Row Count :</b> ${rowCount}</td>
             <td><b>Total</b></td>
+            ${showAvgCostCrate ? `<td style="text-align:right"><b>${totalAvgCostCrate.toFixed(2)}</b></td>` : ''}
             ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQty.toFixed(2)}</b></td>` : ''}
              ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyPC.toFixed(2)}</b></td>` : ''}
              ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyMR.toFixed(2)}</b></td>` : ''}
             <td style="text-align: right;"><b>${totalFinalAmount.toFixed(2)}</b></td>
-            <td style="text-align: right;"></td>   
-            
+            <td></td>   
+
             <td ></td>`;
         //if (QtyMTRHeader !== '') {
         //    tfootContent2 = `<td style="text-align: right;">${totalDispatchQtyMTRS.toFixed(2)}</td>`;

@@ -154,6 +154,7 @@ template.innerHTML = `
 
 .filter-group select,
 .filter-group input[type="text"],
+.filter-group input[type="number"],
 .filter-group input[type="date"] {
     width: 100%;
     padding: 8px;
@@ -1067,10 +1068,18 @@ class FilterSidePanelControl extends HTMLElement {
     
     _renderTextFilter(container, filter) {
         const input = document.createElement('input');
-        input.type = 'text';
+        input.type = filter.inputType || 'text';
         input.id = filter.id;
         input.className = 'form-control form-control-sm box_border';
         input.placeholder = filter.placeholder || '';
+        if (filter.inputType === 'number') {
+            if (filter.min !== undefined) input.min = filter.min;
+            if (filter.max !== undefined) input.max = filter.max;
+            if (filter.step !== undefined) input.step = filter.step;
+        }
+        if (filter.defaultValue !== undefined && filter.defaultValue !== null) {
+            input.value = filter.defaultValue;
+        }
 
         container.appendChild(input);
     }

@@ -3,7 +3,7 @@ let FrmType = '';
 let FrmAction = '';
 let G_POA_LIST = [];
 let G_CurrentPOA = null;
-const POA_ITEM_COL_COUNT = 17;
+const POA_ITEM_COL_COUNT = 18;
 $(document).ready(function () {
     var urlParams = getUrlVars();
     var menuValue = decodeURI(urlParams['menu']);
@@ -12,6 +12,8 @@ $(document).ready(function () {
     
     if (menuValue && menuValue !== "undefined" && menuValue !== "") {
         $("#ERPHeading").text(menuValue);
+        var poaPageTitle = document.getElementById('poaPageTitle');
+        if (poaPageTitle) poaPageTitle.textContent = menuValue;
     }
     else {
         $("#ERPHeading").text("PO Approval");
@@ -409,6 +411,7 @@ function RenderPOAModalItems(items, listPo) {
     items.forEach(function (item) {
         const itemCode = pickField(item, ['Item Code', 'ItemCode', 'Item_Code']);
         const itemDesc = EscHtml(buildItemDescription(item, listPo, 0, itemCount));
+        const sizeDesc = displayCell(pickField(item, ['Size Description', 'SizeDescription', 'Size Desp', 'SizeDesp', 'Size']));
         const poQty = displayCell(pickField(item, ['PO Qty', 'Qty', 'Quantity', 'POQty']));
         const tolerance = displayCell(pickField(item, ['Tolerance %', 'Tolerance', 'TolerancePercent']));
         const rate = displayCell(pickField(item, ['Rate', 'UnitRate']));
@@ -443,6 +446,7 @@ function RenderPOAModalItems(items, listPo) {
         html += `<tr>
             <td>${displayCell(itemCode)}</td>
             <td style="font-weight:600;">${itemDesc}</td>
+            <td>${sizeDesc}</td>
             <td class="text-end">${poQty}</td>
             <td class="text-end">${tolerance}</td>
             <td class="text-end">${rate}</td>

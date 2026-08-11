@@ -477,6 +477,9 @@ function GetEditVisitDetails() {
             if (response.VisitORroutePlanMaster[0].TotalVisitOrderQty != null && response.VisitORroutePlanMaster[0].TotalVisitOrderQty !== undefined) {
                 $('#txtTotalOrderQty').val(parseFloat(response.VisitORroutePlanMaster[0].TotalVisitOrderQty) || '');
             }
+            if (response.VisitORroutePlanMaster[0].VehicleNo != null && response.VisitORroutePlanMaster[0].VehicleNo !== undefined) {
+                $('#txtVehicleNo').val(response.VisitORroutePlanMaster[0].VehicleNo);
+            }
             param_IsVisitVerified = parseInt(response.VisitORroutePlanMaster[0].IsVisitVerified) || 0;
 
 
@@ -1023,6 +1026,9 @@ function AddNewRow() {
     UOMDecimalUnit.innerHTML = '<input type="text"  id="txtUOMDecimalUnit' + tbItemConsumeRowNo + '"  name="UOMDecimalUnit" placeholder=""  autocomplete="off" onclick="$(this).val(\'\')"  onchange="" required>';
     ToBeTransferredCell.className = 'td-to-be-transferred';
     ToBeTransferredCell.innerHTML = BuildToBeTransferredCell(tbItemConsumeRowNo, 'Y');
+    if ((CRM_Config && (CRM_Config.EnablePartialTransferOrderInERP || 'N') !== 'Y')) {
+        ToBeTransferredCell.style.display = 'none';
+    }
     row.setAttribute('data-tbt', 'Y');
 
 
@@ -1299,10 +1305,23 @@ function ValidateData() {
         Valid = false;
     }
 
-    var totalOrderQtyVal = parseFloat($('#txtTotalOrderQty').val());
-    if (isNaN(totalOrderQtyVal) || totalOrderQtyVal <= 0) {
-        MsgStr += "* Total Order Qty cannot be blank or zero. Please enter a valid Total Order Qty!" + newLine;
-        Valid = false;
+    var _valCrmCfg = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
+    var _askTotalOrderQty = _valCrmCfg ? (_valCrmCfg.AskTotalOrderQty || 'N') : 'N';
+    if (_askTotalOrderQty === 'Y') {
+        var totalOrderQtyVal = parseFloat($('#txtTotalOrderQty').val());
+        if (isNaN(totalOrderQtyVal) || totalOrderQtyVal <= 0) {
+            MsgStr += "* Total Order Qty cannot be blank or zero. Please enter a valid Total Order Qty!" + newLine;
+            Valid = false;
+        }
+    }
+
+    var _askVehicleNo = _valCrmCfg ? (_valCrmCfg.AskVehicleNo || 'N') : 'N';
+    if (_askVehicleNo === 'Y') {
+        var _vehicleNoVal = $('#txtVehicleNo').val();
+        if (typeof _vehicleNoVal === 'undefined' || _vehicleNoVal === '' || _vehicleNoVal === null) {
+            MsgStr += "* Please Check! Vehicle No can not be blank!" + newLine;
+            Valid = false;
+        }
     }
 
     if (GetSelectedCustomerBillApplicable() === 'N') {
@@ -1791,6 +1810,7 @@ function SaveData() {
     visitMasterRow["buyerPODate"] = new Date().toISOString().split("T")[0];
     visitMasterRow["zoneName"] = '';
     visitMasterRow["totalOrderQty"] = parseFloat($("#txtTotalOrderQty").val()) || 0;
+    visitMasterRow["vehicleNo"] = $('#txtVehicleNo').val() || '';
 
     visitMasterData.push(visitMasterRow);
 
@@ -3108,6 +3128,18 @@ function SetOrderBookingTableHeaderAsPerConfig() {
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyBags + 1) + ")").css('width', '70px');
     $("#tblorderbooking thead tr th:nth-child(" + (Indx_TblOrder.OrderQtyMTR + 1) + ")").css('width', '70px');
 
+    // Show/Hide ToBeTransferred column based on EnablePartialTransferOrderInERP
+    var EnablePartialTransferOrderInERP = CRM_Config.EnablePartialTransferOrderInERP;
+    if (EnablePartialTransferOrderInERP === 'Y') {
+        $("#tblorderbooking thead tr th[data-col='ToBeTransferred']").css('display', '');
+        $("#tblorderbooking tbody tr td.td-to-be-transferred").css('display', '');
+        $("#tblorderbooking tfoot tr:first-child td:nth-child(" + (Indx_TblOrder.ToBeTransferred + 1) + ")").css('display', '');
+    } else {
+        $("#tblorderbooking thead tr th[data-col='ToBeTransferred']").css('display', 'none');
+        $("#tblorderbooking tbody tr td.td-to-be-transferred").css('display', 'none');
+        $("#tblorderbooking tfoot tr:first-child td:nth-child(" + (Indx_TblOrder.ToBeTransferred + 1) + ")").css('display', 'none');
+    }
+
 }
 function ShowSizeDespButton(x) {
     if (x.checked == true) {
@@ -3175,6 +3207,7 @@ function ShowFooterTotal() {
     var totalQty = 0;
     var totalPC = 0;
     var totalMTR = 0;
+    var totalBags = 0;
     var totalDiscount = 0;
     var totalDiscount_AfterRate = 0;
     $('#tblorderbooking tbody tr').each(function () {
@@ -3182,6 +3215,7 @@ function ShowFooterTotal() {
         var qty = parseFloat($(this).find('input[name="txtOrderQtyMT"]').val());
         var qtyPC = parseFloat($(this).find('input[name="txtOrderQtyPC"]').val());
         var qtyMTR = parseFloat($(this).find('input[name="txtOrderQtyMTR"]').val());
+        var qtyBags = parseFloat($(this).find('input[name="txtOrderQtyBags"]').val());
         var Discount = parseFloat($(this).find('input[name="txtDiscount"]').val());
         var Discount_AfterRate = parseFloat($(this).find('input[name="txtDiscount_AfterRate"]').val());
 
@@ -3196,6 +3230,9 @@ function ShowFooterTotal() {
         }
         if (!isNaN(qtyMTR)) {
             totalMTR += qtyMTR;
+        }
+        if (!isNaN(qtyBags)) {
+            totalBags += qtyBags;
         }
         if (!isNaN(Discount)) {
             totalDiscount += Discount;
@@ -3213,6 +3250,7 @@ function ShowFooterTotal() {
     $('#txtOrderQtyMTTotal').text(totalQty);
     $('#txtOrderQtyPCTotal').text(totalPC);
     $('#txtOrderQtyMTRTotal').text(totalMTR);
+    $('#txtOrderQtyBagsTotal').text(parseFloat(totalBags).toFixed(0));
     $('#txtDiscountTotal').text(parseFloat(totalDiscount).toFixed(2));
     $('#txtDiscountTotal_AfterRate').text(parseFloat(totalDiscount_AfterRate).toFixed(2));
 }
@@ -3702,6 +3740,10 @@ function PopulateOrderBookingTable(data) {
         if (_tbt === 'N') {
             $(row).addClass('row-not-transferred');
         }
+        var _populateCrmCfg = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
+        if (_populateCrmCfg && (_populateCrmCfg.EnablePartialTransferOrderInERP || 'N') !== 'Y') {
+            ToBeTransferredCell.style.display = 'none';
+        }
 
     //    var row = `
     //  <tr>
@@ -4019,6 +4061,22 @@ function SetFieldsAsPerConfig() {
 
     if (ShowStock == 'N') {
         $('#btnShow').prop('hidden', true);
+    }
+
+    var AskTotalOrderQty = CRM_Config.AskTotalOrderQty;
+    var AskVehicleNo = CRM_Config.AskVehicleNo;
+
+    if (AskTotalOrderQty === 'Y') {
+        $('#divTotalOrderQty').removeClass('d-none');
+    } else {
+        $('#divTotalOrderQty').addClass('d-none');
+    }
+
+    if (AskVehicleNo === 'Y') {
+        $('#divVehicleNo').removeClass('d-none');
+        BizSolHelperFunction.applyAlphaNumUppercase(document.getElementById('txtVehicleNo'));
+    } else {
+        $('#divVehicleNo').addClass('d-none');
     }
 
 }
@@ -6797,7 +6855,7 @@ function GenerateTableHeaders() {
         // Skip hidden columns or add logic to determine display
         if (['VisitDetailsCode', 'IsNewRow', 'SizeApplicable', 'ThkApplicable',
             'LenApplicable', 'ItemMasterCode', 'UOMDecimalUnit'].indexOf(columnName) === -1) {
-            thead.append('<th>' + BizSolHelperFunction.ToWithSpace(columnName)  + '</th>');
+            thead.append('<th data-col="' + columnName + '">' + BizSolHelperFunction.ToWithSpace(columnName) + '</th>');
         }
     });
 }
@@ -6939,6 +6997,12 @@ window.ConfirmMarkToTransfer = ConfirmMarkToTransfer;
 // ─────────────────────────────────────────────────────────────────────────────
 function BuildToBeTransferredCell(rowNo, tbtValue) {
     var val = (tbtValue !== null && tbtValue !== undefined && tbtValue !== '') ? tbtValue : 'Y';
+    var _cfg = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
+    var _enablePartial = _cfg ? (_cfg.EnablePartialTransferOrderInERP || 'N') : 'N';
+    if (_enablePartial !== 'Y') {
+        // When EnablePartialTransferOrderInERP = N, always force Y, no button shown
+        return '<input type="hidden" id="txtToBeTransferred' + rowNo + '" name="txtToBeTransferred" value="Y">';
+    }
     return '<input type="hidden" id="txtToBeTransferred' + rowNo + '" name="txtToBeTransferred" value="' + val + '">'
         + '<button type="button" id="btnCheckStock' + rowNo + '" class="btn btn-primary btn-sm btn-check-stock" onclick="CheckStockAndMarkTransfer(' + rowNo + ');">'
         + '<i class="fa fa-search btn-check-stock-icon"></i> <span class="btn-check-stock-label">Check Stock</span></button>';
