@@ -5,6 +5,7 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <link href="~/_content/Bizsol.WebERP.UI.Marketing.Reports/css/OrderLoadReport.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Reports/js/OrderLoadReport.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Reports/js/OrderLoadManageTemplate.js"></script>
 
@@ -39,6 +40,15 @@
                         <i class="fas fa-filter"></i> Filter
                         <span class="ol-filter-badge" id="olFilterBadge" style="display:none;">0</span>
                     </button>
+                    <div class="ol-size-param-wrap is-hidden">
+                        <button type="button" class="ol-btn ol-btn-size-param" id="btnSizeParameterFilter" title="Size Parameter Filter">
+                            <i class="fas fa-ruler-combined"></i> Size Parameter Filter
+                            <span class="ol-size-filter-badge is-hidden" id="olSizeFilterBadge">Applied</span>
+                        </button>
+                        <button type="button" class="ol-btn ol-btn-size-param-clear is-hidden" id="btnClearSizeParameterFilter" title="Clear Size Parameter Filter">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     <button type="button" class="ol-btn ol-btn-show" id="btnShow">
                         <i class="fas fa-play" id="btnShowIcon"></i>
                         <span id="btnShowText">Load Report</span>
@@ -47,6 +57,17 @@
                 </div>
                 <button type="button" class="ol-btn ol-btn-manage" id="btnManageTemplate">
                     <i class="fas fa-table-list"></i> Manage Template
+                </button>
+                <div class="ol-download-wrap" id="olDownloadWrap">
+                    <button type="button" class="ol-btn ol-btn-download" id="btnOlDownload" title="Download Excel">
+                        <i class="fas fa-file-excel ol-download-icon-excel"></i> Download
+                    </button>
+                </div>
+                <button type="button" class="ol-btn ol-btn-preview" id="btnOlPreview" title="Preview Report" disabled>
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+                <button type="button" class="ol-btn ol-btn-print" id="btnOlPrint" title="Print Report" disabled>
+                    <i class="fas fa-print"></i> Print
                 </button>
                 <button type="button" class="ol-btn ol-btn-reset" id="btnReset">
                     <i class="fas fa-rotate-left"></i> Reset
@@ -62,19 +83,29 @@
         </div>
 
         <div id="olEmptyState" class="ol-empty">
-            <div>
+            <div data-ol-empty-mode="default">
                 <i class="fas fa-table fa-2x" style="color:#cbd5e1;"></i>
                 <h4>No report loaded</h4>
                 <p>Select template, set dates in <strong>Filter</strong>, then click <strong>Load Report</strong>.</p>
+            </div>
+            <div data-ol-empty-mode="size-filter" class="ol-empty-size-filter is-hidden">
+                <i class="fas fa-ruler-combined fa-2x" style="color:#fdba74;"></i>
+                <h4>No data for Size Parameter Filter</h4>
+                <p>Size Parameter Filter is applied but no matching data was found.</p>
+                <button type="button" class="ol-btn ol-btn-size-param" id="btnEmptyClearSizeFilter">
+                    <i class="fas fa-times"></i> Clear Size Filter
+                </button>
             </div>
         </div>
 
         <div id="tblOrderLoadReport" class="ol-grid-panel" style="display:none;">
             <div class="ol-grid-toolbar" id="olGridMeta" style="display:none;">
-                <span class="ol-record-badge" id="olRecordCount">0 records</span>
+                <div class="ol-grid-toolbar-left">
+                    <span class="ol-record-badge" id="olRecordCount">0 records</span>
+                </div>
                 <div id="olSearchSlot"></div>
             </div>
-            <div class="ol-table-wrapper table-wrapper fixed-height-table">
+            <div class="ol-table-wrapper table-wrapper">
                 <div id="olGridLoader" class="ol-grid-loader">
                     <div class="ol-spinner"></div>
                     <div class="ol-loader-text">Loading report data...</div>
@@ -84,7 +115,9 @@
                     <tbody id="OrderLoadReport-body"></tbody>
                 </table>
             </div>
-            <div class="paginator" id="paginator-OrderLoadReport"></div>
+            <div class="ol-grid-footer" id="olGridFooter" style="display:none;">
+                <div class="paginator" id="paginator-OrderLoadReport"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -185,7 +218,7 @@
                 <div class="ol-mt-toolbar">
                     <div class="ol-mt-mode-group" role="group">
                         <button type="button" class="ol-btn ol-mt-mode-btn active" id="btnMtAdd" data-mode="ADD">
-                            <i class="fas fa-plus"></i> Add
+                            <i class="fas fa-plus"></i> Add Template
                         </button>
                         <button type="button" class="ol-btn ol-mt-mode-btn" id="btnMtEdit" data-mode="EDIT">
                             <i class="fas fa-pen"></i> Edit
@@ -200,9 +233,9 @@
                             <option value="">-- Select --</option>
                         </select>
                     </div>
-                    <div class="ol-filter-field">
-                        <label class="form-label"><span>Template Name</span> <span class="text-danger">*</span></label>
-                        <input type="text" id="txtMtTemplateName" class="form-control form-control-sm box_border" maxlength="200" placeholder="Enter template name" />
+                    <div class="ol-filter-field ol-mt-template-name-field" id="olMtTemplateNameField">
+                        <label class="form-label"><span>Template Name</span> <span class="text-muted ol-mt-name-optional">(optional)</span></label>
+                        <input type="text" id="txtMtTemplateName" class="form-control form-control-sm box_border" maxlength="200" placeholder="Leave blank to update master · enter name for new copy" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ol-mt-template-name-field" />
                     </div>
                     <div class="ol-filter-field">
                         <label class="form-label"><span>Freeze Column</span></label>
@@ -243,13 +276,34 @@
                 </div>
             </div>
             <div class="modal-footer ol-filter-modal-footer">
-                <button type="button" class="ol-btn ol-btn-reset" data-bs-dismiss="modal">
-                    <i class="fas fa-xmark"></i> Close
-                </button>
                 <button type="button" class="ol-btn ol-btn-ok" id="btnMtSave">
                     <i class="fas fa-floppy-disk"></i> Save
+                </button>
+                <button type="button" class="ol-btn ol-btn-reset" data-bs-dismiss="modal">
+                    <i class="fas fa-xmark"></i> Close
                 </button>
             </div>
         </div>
     </div>
 </div>
+
+<div id="olPrintPreviewModal" class="ol-print-preview-modal is-hidden" aria-hidden="true">
+    <div class="ol-print-preview-backdrop" id="olPrintPreviewBackdrop"></div>
+    <div class="ol-print-preview-panel">
+        <div class="ol-print-preview-toolbar">
+            <p class="ol-print-preview-title">Report Preview</p>
+            <div class="ol-print-preview-actions">
+                <button type="button" class="ol-btn ol-btn-print" id="btnOlPreviewPrint">
+                    <i class="fas fa-print"></i> Print
+                </button>
+                <button type="button" class="ol-btn ol-btn-reset" id="btnOlPreviewClose">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+        <iframe id="olPrintPreviewFrame" title="Order Load Report Preview"></iframe>
+    </div>
+</div>
+<iframe id="olPrintHiddenFrame" title="Order Load Report Print" class="ol-print-hidden-frame"></iframe>
+<div id="DivSizeControlmodal"></div>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/Pages/CommonSizeFilterControl.js"></script>
