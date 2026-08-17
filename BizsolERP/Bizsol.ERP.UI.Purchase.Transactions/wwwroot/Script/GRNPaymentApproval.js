@@ -2848,6 +2848,18 @@ const GPA_BUDGET_PARTY_TILES = [
     { key: 'POGRNNetBalance', label: 'PO - GRN Balance', card: 'balance', altKeys: ['POGRNNNetBalance'] },
 ];
 
+const GPA_BUDGET_PARTY_SUMMARY_HEADERS = [
+    { key: 'TotalPOAmountWithGST', label: 'Total Po amount with GST' },
+    { key: 'TotalGRNBillAmountWithGST', label: 'Total bill amount of grn with gst' },
+    { key: 'Deduction', label: 'Deduction' },
+    { key: 'NetGRNAmountWithGST', label: 'Net GRN Amt with gst (B-C)' },
+    { key: 'TDSDeduction', label: 'TDS deduction' },
+    { key: 'PaidAmountFromBank', label: 'Paid Amount From Bank' },
+    { key: 'NetPaymentWithTDS', label: 'Net Payment With TDS (E+F)' },
+    { key: 'GRNLessPayment', label: 'GRN Less Payment (D-G)' },
+    { key: 'POGRNNetBalance', label: 'po - grn amount net balance (A-D)', altKeys: ['POGRNNNetBalance'] },
+];
+
 const GPA_BUDGET_PARTY_SUMMARY_COLUMNS = [
     { key: 'Project', label: 'Project' },
     { key: 'SubProject', label: 'Sub Project' },
@@ -2968,19 +2980,50 @@ function gpaBuildPartyTotalFromRows(rows) {
             return sum + (isNaN(val) ? 0 : val);
         }, 0);
     };
-    return {
+    return gpaApplyPartyBudgetFormulas({
         Project: 'TOTAL',
         SubProject: '',
         TotalPOAmountWithGST: sumKey('TotalPOAmountWithGST'),
         TotalGRNBillAmountWithGST: sumKey('TotalGRNBillAmountWithGST'),
         Deduction: sumKey('Deduction'),
-        NetGRNAmountWithGST: sumKey('NetGRNAmountWithGST'),
         TDSDeduction: sumKey('TDSDeduction'),
         PaidAmountFromBank: sumKey('PaidAmountFromBank'),
-        NetPaymentWithTDS: sumKey('NetPaymentWithTDS'),
-        GRNLessPayment: sumKey('GRNLessPayment'),
-        POGRNNetBalance: sumKey('POGRNNetBalance'),
-    };
+    });
+}
+
+function gpaBuildPartyTotalFromHistoryRows(rows) {
+    const list = Array.isArray(rows) ? rows : [];
+    if (!list.length) return null;
+    let totalPo = 0;
+    let grnBill = 0;
+    let deduction = 0;
+    let tds = 0;
+    let paidFromBank = 0;
+    list.forEach(function (row) {
+        const type = gpaBudgetDocTypeFromRow(row);
+        const amt = parseFloat(gpaBudgetPickRowVal(row, 'Amount') || 0) || 0;
+        const totalPoAmt = parseFloat(gpaBudgetPickRowVal(row, 'TotalPO', ['TotalPOAmount', 'totalPOAmount']) || 0) || 0;
+        const totalGrnAmt = parseFloat(gpaBudgetPickRowVal(row, 'TotalGRN', ['totalGRN']) || 0) || 0;
+        const totalPayAmt = parseFloat(gpaBudgetPickRowVal(row, 'TotalPayment', ['totalPayment']) || 0) || 0;
+        if (type === 'po') {
+            totalPo += totalPoAmt || amt;
+        } else if (type === 'grn') {
+            grnBill += totalGrnAmt || amt;
+            deduction += parseFloat(gpaBudgetPickRowVal(row, 'Deduction') || 0) || 0;
+            tds += parseFloat(gpaBudgetPickRowVal(row, 'TDSDeduction') || 0) || 0;
+        } else if (type === 'payment') {
+            paidFromBank += totalPayAmt || amt;
+            tds += parseFloat(gpaBudgetPickRowVal(row, 'TDSDeduction') || 0) || 0;
+        }
+    });
+    if (!totalPo && !grnBill && !paidFromBank && !deduction && !tds) return null;
+    return gpaApplyPartyBudgetFormulas({
+        TotalPOAmountWithGST: totalPo,
+        TotalGRNBillAmountWithGST: grnBill,
+        Deduction: deduction,
+        TDSDeduction: tds,
+        PaidAmountFromBank: paidFromBank,
+    });
 }
 
 function gpaSplitBudgetRows(rows, mode) {
@@ -3154,12 +3197,87 @@ function gpaToggleBudgetPanels(mode) {
     gpaApplyBudgetViewChrome(mode);
 }
 
+function gpaResetBudgetPartySummaryTable() {
+    const head = document.getElementById('gpaBudgetPartySummaryTableHead');
+    const tbody = document.getElementById('gpaBudgetPartySummaryTableBody');
+    if (head) head.innerHTML = '';
+    if (tbody) tbody.innerHTML = '';
+}
+
+function gpaApplyPartyBudgetFormulas(row) {
+    if (!row || typeof row !== 'object') return {};
+    const out = Object.assign({}, row);
+    const num = function (key, altKeys) {
+        const v = parseFloat(gpaBudgetPickRowVal(out, key, altKeys) || 0);
+        return isNaN(v) ? 0 : v;
+    };
+    const totalPo = num('TotalPOAmountWithGST');
+    const grnBill = num('TotalGRNBillAmountWithGST');
+    const deduction = num('Deduction');
+    const tds = num('TDSDeduction');
+    const paidFromBank = num('PaidAmountFromBank');
+    const netGrn = grnBill - deduction;
+    const netPayment = tds + paidFromBank;
+    out.NetGRNAmountWithGST = netGrn;
+    out.NetPaymentWithTDS = netPayment;
+    out.GRNLessPayment = netGrn - netPayment;
+    out.POGRNNetBalance = totalPo - netGrn;
+    return out;
+}
+
+function gpaRenderBudgetPartySummaryTable(totalRow) {
+    const head = document.getElementById('gpaBudgetPartySummaryTableHead');
+    const tbody = document.getElementById('gpaBudgetPartySummaryTableBody');
+    if (!head || !tbody) return;
+
+    const row = gpaApplyPartyBudgetFormulas(totalRow || {});
+    let headHtml = '<tr class="gpa-budget-party-group-row">'
+        + '<th class="text-center">as per party</th>'
+        + '<th colspan="8" class="text-center">GRN part</th>'
+        + '</tr><tr class="gpa-budget-party-label-row">';
+    GPA_BUDGET_PARTY_SUMMARY_HEADERS.forEach(function (t) {
+        headHtml += '<th class="text-end">' + EscHtml(t.label) + '</th>';
+    });
+    headHtml += '</tr>';
+    head.innerHTML = headHtml;
+
+    let bodyHtml = '<tr class="gpa-budget-party-summary-row">';
+    GPA_BUDGET_PARTY_SUMMARY_HEADERS.forEach(function (t) {
+        const val = gpaBudgetPickRowVal(row, t.key, t.altKeys);
+        bodyHtml += gpaBudgetAmountCellHtml(t.key, val);
+    });
+    bodyHtml += '</tr>';
+    tbody.innerHTML = bodyHtml;
+}
+
+function gpaClearBudgetSummary(mode) {
+    const viewMode = mode === 'employee' ? 'employee' : 'party';
+    if (viewMode === 'party') {
+        $(gpaBudgetPanel(viewMode).summary).html('');
+        gpaResetBudgetPartySummaryTable();
+        $('#gpaBudgetPartySummaryTableWrap').hide();
+        return;
+    }
+    $(gpaBudgetPanel(viewMode).summary).html('');
+}
+
 function renderGpaBudgetTotalTiles(totalRow, mode) {
-    const row = totalRow || {};
+    const row = gpaApplyPartyBudgetFormulas(totalRow || {});
+    if (mode === 'party') {
+        const p = gpaBudgetPanel(mode);
+        let cardHtml = '';
+        GPA_BUDGET_PARTY_TILES.forEach(function (t) {
+            const val = gpaBudgetPickRowVal(row, t.key, t.altKeys);
+            cardHtml += gpaBudgetSummaryCard(t.label, gpaBudgetTileValue(t.key, val), t.card);
+        });
+        $(p.summary).html(cardHtml);
+        gpaRenderBudgetPartySummaryTable(row);
+        $('#gpaBudgetPartySummaryTableWrap').show();
+        return;
+    }
     const p = gpaBudgetPanel(mode);
     let html = '';
-    const tiles = mode === 'employee' ? GPA_BUDGET_EMPLOYEE_TILES : GPA_BUDGET_PARTY_TILES;
-    tiles.forEach(function (t) {
+    GPA_BUDGET_EMPLOYEE_TILES.forEach(function (t) {
         const val = gpaBudgetPickRowVal(row, t.key, t.altKeys);
         html += gpaBudgetSummaryCard(t.label, gpaBudgetTileValue(t.key, val), t.card);
     });
@@ -3452,14 +3570,16 @@ function gpaRenderBudgetTableBody(rows, mode, tableKind) {
     }
 }
 
-function gpaBudgetFindPartyTileRow(budgetRows, summaryRow, split) {
+function gpaBudgetFindPartyTileRow(budgetRows, summaryRow, split, historyRows) {
     const total = (split && split.total) || gpaBudgetFindTotalRow(budgetRows) || summaryRow;
     if (total) return total;
     const list = Array.isArray(budgetRows)
         ? budgetRows.filter(function (r) { return !gpaBudgetIsTotalRow(r); })
         : [];
     if (list.length === 1 && gpaRowLooksLikePartyBudgetRow(list[0])) return list[0];
-    return gpaBuildPartyTotalFromRows(list);
+    const built = gpaBuildPartyTotalFromRows(list);
+    if (built) return built;
+    return gpaBuildPartyTotalFromHistoryRows(historyRows);
 }
 
 function gpaResetBudgetHistoryShell() {
@@ -3475,7 +3595,7 @@ function gpaResetBudgetHistoryShell() {
 function gpaResetBudgetPanelShell(mode) {
     const viewMode = mode === 'employee' ? 'employee' : 'party';
     const p = gpaBudgetPanel(viewMode);
-    $(p.summary).html('');
+    gpaClearBudgetSummary(viewMode);
     if (viewMode === 'employee') {
         const head = document.getElementById(p.tableHead);
         const tbody = document.getElementById(p.tableBody);
@@ -3520,9 +3640,9 @@ function gpaApplyBudgetRowsToGrid(payload, mode) {
 
     const tileRow = viewMode === 'employee'
         ? (gpaBudgetFindEmployeeTileRow(budgetRows, preferGrandTotal) || split.total || summaryRow)
-        : gpaBudgetFindPartyTileRow(budgetRows, summaryRow, split);
-    if (tileRow) {
-        renderGpaBudgetTotalTiles(tileRow, viewMode);
+        : gpaBudgetFindPartyTileRow(budgetRows, summaryRow, split, allHistoryRows);
+    if (tileRow || (viewMode === 'party' && (allHistoryRows.length || summaryRow || budgetRows.length))) {
+        renderGpaBudgetTotalTiles(tileRow || {}, viewMode);
     }
 
     let summaryRows = [];
@@ -3862,7 +3982,7 @@ function gpaShowBudgetGridLoading(show, mode) {
             $(p.tableWrap).hide();
         }
         $(p.empty).hide();
-        $(p.summary).html('');
+        gpaClearBudgetSummary(viewMode);
         if (viewMode === 'party') {
             gpaResetBudgetHistoryShell();
         }
