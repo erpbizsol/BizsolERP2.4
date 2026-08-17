@@ -113,6 +113,7 @@ let UrlService = {
     API_ENDPOINT_TargetExecutiveWise: `${environment.BASE_URL}/TargetExecutiveWise`,
     API_ENDPOINT_ProspectiveCustomer: `${environment.BASE_URL}/ProspectiveCustomer`,
     API_DOCUMENT_DispatchAdvicePlan: `${environment.BASE_URL}/VerifyDispatchAdvice`,
+    API_ENDPOINT_FreightInvoice: `${environment.BASE_URL}/FreightInvoice`,
     API_DOCUMENT_StockAgeingReport: `${environment.BASE_URL}/StockAgeingReport`,
     API_ENDPOINT_BillWiseOutStandingReport: `${environment.BASE_URL}/BillWiseOutStandingReport`,
     API_ENDPOINT_BalancePOCancellation: `${environment.BASE_URL}/BalancePOCancellation`,
