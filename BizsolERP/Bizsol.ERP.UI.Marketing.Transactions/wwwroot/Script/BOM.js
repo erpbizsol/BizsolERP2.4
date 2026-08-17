@@ -1821,7 +1821,7 @@ function saveAllRows() {
         .catch(function (err) {
             HideLoader && HideLoader();
             if (err && err.message === 'save_failed') return;
-            toastr.error('Error while saving BOM or reloading lines.');
+            // toastr.error('Error while saving BOM or reloading lines.');
         });
 }
 function lockAllRowsAfterSave() {
