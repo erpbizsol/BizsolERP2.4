@@ -12,9 +12,10 @@ import { getOrderLoadFormTypeFromQuery } from '../../Bizsol.WebERP.UI.Shared/js/
 */
 
 function getManageTemplateFormType() {
+    var urlParams = BizSolHelperFunction.getUrlVars();
     var formType = getOrderLoadFormTypeFromQuery(
-        BizSolHelperFunction.getQueryParam('FormType', ''),
-        BizSolHelperFunction.getQueryParam('ModuleDesp', '')
+        urlParams['FormType'] || urlParams['formtype'] || '',
+        urlParams['ModuleDesp'] || urlParams['moduledesp'] || ''
     );
     return formType || window.G_OL_FORM_TYPE || 'OrderLoad';
 }

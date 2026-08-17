@@ -25,9 +25,10 @@ var G_OL_FilterModalFocusTrapSuspended = false;
 var G_OL_OpenCheckboxDropdownId = '';
 
 function getFormTypeFromQuery() {
+    var urlParams = BizSolHelperFunction.getUrlVars();
     return getOrderLoadFormTypeFromQuery(
-        BizSolHelperFunction.getQueryParam('FormType', ''),
-        BizSolHelperFunction.getQueryParam('ModuleDesp', '')
+        urlParams['FormType'] || urlParams['formtype'] || '',
+        urlParams['ModuleDesp'] || urlParams['moduledesp'] || ''
     );
 }
 
@@ -113,6 +114,9 @@ function bindEvents() {
         applyFilterActiveColors();
         updateFilterButtonState();
         updateFilterSummary();
+    });
+    $('#txtFromDate, #txtToDate').on('change', function () {
+        refreshReportOnDateChange();
     });
     $('#txtFromDate, #txtToDate').on('keydown', function (e) {
         if (e.key === 'Enter') {
@@ -480,7 +484,7 @@ function clearModalFilters() {
     if (tpl && tpl.code) {
         loadTemplateDefaultDatesFromApi(tpl);
     } else {
-        initDefaultDates();
+        clearDateFilterInputs();
     }
     resetDropdownFilters();
     clearSizeParameterFilter();
@@ -525,11 +529,9 @@ function applyFilterActiveColors() {
     });
 }
 
-function initDefaultDates() {
-    var today = new Date();
-    var first = new Date(today.getFullYear(), today.getMonth(), 1);
-    $('#txtFromDate').val(toIsoDate(first));
-    $('#txtToDate').val(toIsoDate(today));
+function clearDateFilterInputs() {
+    $('#txtFromDate').val('');
+    $('#txtToDate').val('');
 }
 
 function apiDateToIso(value) {
@@ -592,35 +594,42 @@ function extractDatesFromApiRow(row) {
     return out;
 }
 
-function applyTemplateDefaultDates(tpl, fallbackToMonthStart) {
+function applyTemplateDefaultDates(tpl) {
     tpl = tpl || getSelectedTemplate();
     var dates = extractDatesFromApiRow(tpl);
     var fromIso = apiDateToIso(dates.fromDate || tpl.fromDate);
     var toIso = apiDateToIso(dates.toDate || tpl.toDate);
+    var showFrom = !tpl.code || isFlagY(tpl.showFromDate);
+    var showTo = !tpl.code || isFlagY(tpl.showToDate);
 
     if (!fromIso && !toIso) {
-        if (fallbackToMonthStart !== false && (!tpl || !tpl.code)) {
-            initDefaultDates();
-        }
+        clearDateFilterInputs();
         return;
     }
 
-    if (fromIso && (!tpl.code || isFlagY(tpl.showFromDate))) {
+    if (!showFrom) {
+        $('#txtFromDate').val('');
+    } else if (fromIso) {
         $('#txtFromDate').val(fromIso);
+    } else {
+        $('#txtFromDate').val('');
     }
-    if (toIso && (!tpl.code || isFlagY(tpl.showToDate))) {
+
+    if (!showTo) {
+        $('#txtToDate').val('');
+    } else if (toIso) {
         $('#txtToDate').val(toIso);
-    } else if (fromIso && !$('#txtToDate').val()) {
+    } else if (showFrom && fromIso) {
         $('#txtToDate').val(toIsoDate(new Date()));
+    } else {
+        $('#txtToDate').val('');
     }
 }
 
 function loadTemplateDefaultDatesFromApi(tpl) {
     tpl = tpl || getSelectedTemplate();
     if (!tpl || !tpl.code) {
-        if (!$('#txtFromDate').val() && !$('#txtToDate').val()) {
-            initDefaultDates();
-        }
+        clearDateFilterInputs();
         return Promise.resolve();
     }
 
@@ -647,12 +656,10 @@ function loadTemplateDefaultDatesFromApi(tpl) {
         mergedDates.toDate || tpl.toDate || levelDates.toDate || masterDates.toDate || optionDates.toDate
     );
 
-    if (fromIso || toIso) {
-        applyTemplateDefaultDates(Object.assign({}, tpl, master, {
-            fromDate: fromIso || mergedDates.fromDate || tpl.fromDate,
-            toDate: toIso || mergedDates.toDate || tpl.toDate
-        }), false);
-    }
+    applyTemplateDefaultDates(Object.assign({}, tpl, master, {
+        fromDate: fromIso || mergedDates.fromDate || tpl.fromDate || '',
+        toDate: toIso || mergedDates.toDate || tpl.toDate || ''
+    }));
 
     return Promise.resolve();
 }
@@ -769,6 +776,30 @@ function normalizeFieldName(value) {
         text = text.slice(1, -1).trim();
     }
     return text;
+}
+
+function toSqlFieldName(value) {
+    var text = String(value || '').trim();
+    if (!text) return '';
+
+    if (text.indexOf('.') >= 0) {
+        return text.split('.').map(function (part) {
+            return toSqlFieldName(part);
+        }).join('.');
+    }
+
+    if (text.charAt(0) === '[' && text.charAt(text.length - 1) === ']') {
+        return text;
+    }
+
+    var name = normalizeFieldName(text);
+    if (!name) return '';
+
+    if (/[\s[\]]/.test(name) || /[^A-Za-z0-9_]/.test(name)) {
+        return '[' + name.replace(/\]/g, ']]') + ']';
+    }
+
+    return name;
 }
 
 function fieldNameToLabel(fieldName, fallback) {
@@ -1235,6 +1266,9 @@ function applyLevelToFilters(tpl) {
 
     toggleFilterField('olFieldFromDate', showFrom);
     toggleFilterField('olFieldToDate', showTo);
+    if (!showFrom) $('#txtFromDate').val('');
+    if (!showTo) $('#txtToDate').val('');
+
     toggleFilterField('olFieldWareHouse', isFlagY(tpl.showWareHouse));
     toggleFilterField('olFieldItemGroup', isFlagY(tpl.showItemGroup));
     toggleFilterField('olFieldProcess', isFlagY(tpl.showProcess));
@@ -1943,10 +1977,11 @@ function appendCodeFilter(parts, columnName, codes) {
     codes = codes.filter(function (n) { return n > 0; });
     if (!codes.length) return;
 
+    var field = toSqlFieldName(columnName);
     if (codes.length === 1) {
-        parts.push(' AND (' + columnName + '=' + codes[0] + ' OR 0=' + codes[0] + ')');
+        parts.push(' AND (' + field + '=' + codes[0] + ' OR 0=' + codes[0] + ')');
     } else {
-        parts.push(' AND (' + columnName + ' IN (' + codes.join(',') + '))');
+        parts.push(' AND (' + field + ' IN (' + codes.join(',') + '))');
     }
 }
 
@@ -1985,7 +2020,7 @@ function appendTextFilter(parts, columnName, texts) {
         return;
     }
 
-    parts.push(' AND (' + field + ' IN (' + escaped.join(',') + '))');
+    parts.push(' AND (' + toSqlFieldName(field) + ' IN (' + escaped.join(',') + '))');
 }
 
 function templateKey(tpl) {
@@ -2070,13 +2105,30 @@ function getTemplateDateField(tpl) {
     return normalizeFieldName(tpl && tpl.fieldForDate) || 'OrderDate';
 }
 
+function isViewBasedTemplate(tpl) {
+    return !String(tpl && tpl.procedureName || '').trim();
+}
+
+function normalizeReportCondition(value) {
+    var text = String(value || '').trim();
+    if (!text || text.indexOf('%') < 0) return text;
+    try {
+        return decodeURIComponent(text.replace(/\+/g, ' '));
+    } catch (e) {
+        return text;
+    }
+}
+
 function buildReportConditions(tpl) {
     var filterParts = [];
     var queryParts = [];
-    var isStockSafe = inferUsesQueryCondition(tpl);
-    var usesFilter = procedureUsesParam(tpl, 'FilterCondition') || inferUsesFilterCondition(tpl);
-    var usesQuery = procedureUsesParam(tpl, 'QueryCondition') || isStockSafe;
-    var usesDateParams = procedureUsesParam(tpl, 'FromDate') || procedureUsesParam(tpl, 'ToDate');
+    var viewBased = isViewBasedTemplate(tpl);
+    var isStockSafe = viewBased ? false : inferUsesQueryCondition(tpl);
+    var usesFilter = viewBased
+        || procedureUsesParam(tpl, 'FilterCondition')
+        || inferUsesFilterCondition(tpl);
+    var usesQuery = !viewBased && (procedureUsesParam(tpl, 'QueryCondition') || isStockSafe);
+    var usesDateParams = !viewBased && (procedureUsesParam(tpl, 'FromDate') || procedureUsesParam(tpl, 'ToDate'));
     var fromIso = $('#txtFromDate').val();
     var toIso = $('#txtToDate').val();
     // Master + OtherFilter travel together (same routing rules)
@@ -2094,11 +2146,12 @@ function buildReportConditions(tpl) {
     }
 
     if (!usesDateParams) {
-        if (isFlagY(tpl.showFromDate) && fromIso) {
-            filterParts.push(" AND " + dateField + " >= CAST('" + isoToApiDate(fromIso) + "' AS DATE)");
+        var sqlDateField = toSqlFieldName(dateField);
+        if (isFlagY(tpl.showFromDate) && dateField && fromIso) {
+            filterParts.push(" AND " + sqlDateField + " >= CAST('" + isoToApiDate(fromIso) + "' AS DATE)");
         }
-        if (isFlagY(tpl.showToDate) && toIso) {
-            filterParts.push(" AND " + dateField + " <= CAST('" + isoToApiDate(toIso) + "' AS DATE)");
+        if (isFlagY(tpl.showToDate) && dateField && toIso) {
+            filterParts.push(" AND " + sqlDateField + " <= CAST('" + isoToApiDate(toIso) + "' AS DATE)");
         }
     }
 
@@ -2282,8 +2335,8 @@ function formatOrderLoadReportErrorMessage(rawMsg, tpl) {
         return 'Report request failed.';
     }
 
-    if (/procedure\s*not\s*found/i.test(msg)) {
-        return 'Procedure not found for selected report template.';
+    if (/report\s*source\s*not\s*configured|view\s*not\s*found/i.test(msg)) {
+        return 'Report is not configured for the selected template.';
     }
 
     if (/^(error|parsererror|not found|internal server error):?\s*/i.test(msg)) {
@@ -2291,6 +2344,28 @@ function formatOrderLoadReportErrorMessage(rawMsg, tpl) {
     }
 
     return msg;
+}
+
+function canAutoRefreshReportOnDateChange() {
+    if (G_OL_LoadingReport) return false;
+    if (!$('#ddlTemplate').val()) return false;
+
+    var tpl = getSelectedTemplate();
+    if (!tpl.code || !tpl.desp) return false;
+
+    var fromIso = $('#txtFromDate').val();
+    var toIso = $('#txtToDate').val();
+
+    if (isFlagY(tpl.showFromDate) && normalizeFieldName(tpl.fieldForDate) && !fromIso) return false;
+    if (isFlagY(tpl.showToDate) && normalizeFieldName(tpl.fieldForDate) && !toIso) return false;
+    if (isFlagY(tpl.showFromDate) && isFlagY(tpl.showToDate) && fromIso && toIso && fromIso > toIso) return false;
+
+    return true;
+}
+
+function refreshReportOnDateChange() {
+    if (!canAutoRefreshReportOnDateChange()) return;
+    loadReportData();
 }
 
 function assertValidOrderLoadReportResponse(response, tpl) {
@@ -2346,11 +2421,11 @@ function loadReportData() {
     var params = {
         reportType: String(tpl.desp || '').trim(),
         templateCode: tpl.code,
-        filterCondition: conditions.filterCondition,
+        filterCondition: normalizeReportCondition(conditions.filterCondition),
         // Size filter travels only via ItemSizeMaster_Codes; SP builds FilterCondition/QueryCondition.
-        queryCondition: sizeCodes ? '' : conditions.queryCondition,
-        fromDate: isFlagY(tpl.showFromDate) ? isoToApiDate(fromIso) : '',
-        toDate: isFlagY(tpl.showToDate) ? isoToApiDate(toIso) : '',
+        queryCondition: normalizeReportCondition(sizeCodes ? '' : conditions.queryCondition),
+        fromDate: (isFlagY(tpl.showFromDate) && fromIso) ? isoToApiDate(fromIso) : '',
+        toDate: (isFlagY(tpl.showToDate) && toIso) ? isoToApiDate(toIso) : '',
         userMasterCode: auth.UserMaster_Code || 0,
         marketingManMasterCode: marketingManCode,
         godownMasterCode: filterCodes.godownMasterCode,
