@@ -3216,8 +3216,30 @@ function gpaBillNoFromSelect(sel) {
     return gpaBillNoTextFromSelectOption(sel);
 }
 
+function gpaCommitRowBillNo(tr, billNo) {
+    if (!tr) return '';
+    const normalized = billNo !== undefined && billNo !== null ? String(billNo).trim() : '';
+    const hidden = tr.querySelector('.inp-bill-no');
+    if (hidden) hidden.value = normalized;
+    return normalized;
+}
+
 function gpaBillNoFromRow(tr) {
-    return gpaBillNoFromSelect(tr?.querySelector('.inp-bill-ddl'));
+    if (!tr) return '';
+    const hidden = tr.querySelector('.inp-bill-no')?.value?.trim();
+    if (hidden) return hidden;
+    return gpaBillNoFromSelect(tr.querySelector('.inp-bill-ddl'));
+}
+
+function gpaRestoreRowBillSelection(tr) {
+    if (!tr) return;
+    const billSel = tr.querySelector('.inp-bill-ddl');
+    if (!billSel) return;
+    const saved = gpaBillNoFromRow(tr);
+    if (!saved) return;
+    const current = gpaBillNoFromSelect(billSel);
+    if (current === saved) return;
+    gpaFillBillSelectOptions(billSel, saved);
 }
 
 function gpaFillBillSelectOptions(sel, selectedBillNo) {
@@ -3225,11 +3247,11 @@ function gpaFillBillSelectOptions(sel, selectedBillNo) {
     const savedBillNo = selectedBillNo !== undefined && selectedBillNo !== null
         ? String(selectedBillNo).trim() : '';
     sel.innerHTML = '<option value="">-- Bill No --</option>';
-    (gpaPartyBillRowsCache || []).forEach((row, i) => {
+    (gpaPartyBillRowsCache || []).forEach(function (row) {
         const billNo = gpaBillNoFromRecord(row);
         if (!billNo) return;
         const opt = document.createElement('option');
-        opt.value = String(i);
+        opt.value = billNo;
         opt.text = billNo;
         opt.dataset.billNo = billNo;
         const mrn = resolveMrnFromRow(row);
@@ -3237,7 +3259,9 @@ function gpaFillBillSelectOptions(sel, selectedBillNo) {
         sel.appendChild(opt);
     });
     if (savedBillNo) {
-        let opt = [...sel.options].find(o => o.dataset.billNo === savedBillNo || o.text === savedBillNo);
+        let opt = [...sel.options].find(function (o) {
+            return o.dataset.billNo === savedBillNo || o.value === savedBillNo || o.text === savedBillNo;
+        });
         if (!opt) {
             opt = document.createElement('option');
             opt.text = savedBillNo;
@@ -3250,6 +3274,7 @@ function gpaFillBillSelectOptions(sel, selectedBillNo) {
 }
 
 function initBillRowBillSelect(tr) {
+    gpaCommitRowBillNo(tr, '');
     const bill = tr.querySelector('.inp-bill-ddl');
     gpaFillBillSelectOptions(bill, '');
 }
@@ -3258,8 +3283,9 @@ function gpaRefreshAllBillRowBillDropdowns(keepSaved) {
     document.querySelectorAll('#billTbody tr.bill-row').forEach(function (tr) {
         const bill = tr.querySelector('.inp-bill-ddl');
         if (!bill) return;
-        const saved = keepSaved === false ? '' : gpaBillNoFromSelect(bill);
+        const saved = keepSaved === false ? '' : gpaBillNoFromRow(tr);
         gpaFillBillSelectOptions(bill, saved);
+        if (saved) gpaCommitRowBillNo(tr, saved);
     });
 }
 
@@ -3554,7 +3580,7 @@ async function fillBillGridFromDetailRows(rows) {
             await applyBillDetailRow(tr, r);
         }
     }
-    gpaApplyPoListToAllDropdowns(true);
+    gpaApplyPoListToAllDropdowns(false);
     syncGpaProjectRequiredUI();
 }
 
@@ -3685,6 +3711,7 @@ function billRowTemplate() {
     <td>
         <input type="hidden" class="inp-detail-code" value="0">
         <input type="hidden" class="inp-mrn-code" value="">
+        <input type="hidden" class="inp-bill-no" value="">
         <select class="form-control form-control-sm inp-bill-ddl" style="min-width:100px;"><option value="">-- Bill No --</option></select>
     </td>
     <td><select class="form-control form-control-sm inp-po-ddl" style="min-width:100px;"><option value="">-- PO No --</option></select></td>
@@ -3864,7 +3891,9 @@ function applyBillApiFieldsOnly(tr, r) {
     const py = tr.querySelector('.inp-payable');
     const pm = tr.querySelector('.inp-payment');
     if (billSel) {
-        gpaFillBillSelectOptions(billSel, gpaBillNoFromRecord(r));
+        const billNo = gpaBillNoFromRecord(r);
+        gpaCommitRowBillNo(tr, billNo);
+        gpaFillBillSelectOptions(billSel, billNo);
     }
     const bdt = r.BillDate ?? r.billDate ?? r.ReceiveDate ?? r.receiveDate;
     if (bd) bd.value = formatDateInput(bdt);
@@ -3934,22 +3963,19 @@ async function onBillRowBillChange(tr) {
     const billSel = tr.querySelector('.inp-bill-ddl');
     const v = billSel?.value ?? '';
     if (v === '') {
+        gpaCommitRowBillNo(tr, '');
         const mrnHidden = tr.querySelector('.inp-mrn-code');
         if (mrnHidden) mrnHidden.value = '';
         gpaRefreshRowPayableEditable(tr);
         recalcFooter();
         return;
     }
-    let r = null;
-    const idx = parseInt(v, 10);
-    if (Number.isFinite(idx) && gpaPartyBillRowsCache[idx]) {
-        r = gpaPartyBillRowsCache[idx];
-    } else {
-        const billNo = gpaBillNoFromSelect(billSel);
-        if (billNo) {
-            r = (gpaPartyBillRowsCache || []).find(row => gpaBillNoFromRecord(row) === billNo);
-        }
-    }
+    const billNo = gpaBillNoFromSelect(billSel);
+    gpaCommitRowBillNo(tr, billNo);
+    if (!billNo) return;
+    const r = (gpaPartyBillRowsCache || []).find(function (row) {
+        return gpaBillNoFromRecord(row) === billNo;
+    });
     if (!r) return;
     const prevPay = tr.querySelector('.inp-payment')?.value ?? '';
     applyBillApiFieldsOnly(tr, r);
@@ -4054,7 +4080,10 @@ function wireBillTableDelegation() {
         const t = e.target;
         if (!(t instanceof HTMLSelectElement) || !t.classList.contains('inp-bill-ddl')) return;
         const tr = t.closest('tr');
-        if (tr) gpaRefreshRowPayableEditable(tr);
+        if (tr) {
+            gpaRestoreRowBillSelection(tr);
+            gpaRefreshRowPayableEditable(tr);
+        }
         const issue = findDuplicateBillAllocationIssue();
         if (issue) showGpaDuplicateBillToast(issue);
     });
@@ -4983,7 +5012,9 @@ function applyBillDetailRow(tr, r) {
     const py = tr.querySelector('.inp-payable');
     const pm = tr.querySelector('.inp-payment');
     if (billSel) {
-        gpaFillBillSelectOptions(billSel, gpaBillNoFromRecord(r));
+        const billNo = gpaBillNoFromRecord(r);
+        gpaCommitRowBillNo(tr, billNo);
+        gpaFillBillSelectOptions(billSel, billNo);
     }
     const bdt = r.BillDate ?? r.billDate ?? r.ReceiveDate ?? r.receiveDate;
     if (bd) bd.value = formatDateInput(bdt);

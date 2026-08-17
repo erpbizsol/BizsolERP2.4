@@ -2458,9 +2458,9 @@ function gpaResolveProjectCodeByName(name, projectCache) {
 }
 
 function gpaComboRowLabel(r) {
-    const projectName = gpaProjectLabelFromRow(r) || String(r.Project ?? r.project ?? '').trim();
-    const subProjectName = gpaSubProjectLabelFromRow(r)
-        || String(r['Sub Project'] ?? r.SubProject ?? r.subProject ?? '').trim();
+    const projectName = gpaProjectLabelFromRow(r)
+        || String(gpaBudgetPickRowVal(r, 'Project') ?? r.Project ?? r.project ?? '').trim();
+    const subProjectName = gpaBudgetSubProjectRowName(r);
     return { projectName: projectName, subProjectName: subProjectName };
 }
 
@@ -3152,6 +3152,51 @@ function gpaFilterBudgetHistoryByType(rows, typeVal) {
     });
 }
 
+function gpaBudgetSubProjectNormName(name) {
+    return String(name || '').trim().toLowerCase();
+}
+
+function gpaBudgetSubProjectOptionValue(entry) {
+    const sc = parseInt(String(entry?.subProjectMasterCode || 0), 10) || 0;
+    if (sc > 0) return String(sc);
+    const norm = gpaBudgetSubProjectNormName(entry?.subProjectName);
+    return norm ? ('0:' + norm) : '0';
+}
+
+function gpaBudgetSubProjectRowName(row) {
+    if (!row || typeof row !== 'object') return '';
+    return String(
+        gpaSubProjectLabelFromRow(row)
+        || gpaBudgetPickRowVal(row, 'SubProject', [
+            'Sub Project', 'subProject', 'SubProjectDesp', 'subProjectDesp',
+            'SubProjectName', 'subProjectName', 'SiteName', 'siteName', 'Site', 'site',
+        ])
+        || row['Sub Project']
+        || ''
+    ).trim();
+}
+
+function gpaBudgetProjectRowName(row) {
+    if (!row || typeof row !== 'object') return '';
+    return String(
+        gpaProjectLabelFromRow(row)
+        || gpaBudgetPickRowVal(row, 'Project')
+        || row.Project
+        || row.project
+        || ''
+    ).trim();
+}
+
+function gpaFilterBudgetHistoryBySubProject(rows, filters) {
+    const list = Array.isArray(rows) ? rows : [];
+    if (!filters || filters.subProjectMasterCode > 0) return list.slice();
+    const nameFilter = gpaBudgetSubProjectNormName(filters.subProjectName);
+    if (!nameFilter) return list.slice();
+    return list.filter(function (r) {
+        return gpaBudgetSubProjectNormName(gpaBudgetSubProjectRowName(r)) === nameFilter;
+    });
+}
+
 function gpaBindBudgetTypeFilter(historyRows, options) {
     const opts = options || {};
     const $type = $('#gpaBudgetDdlType');
@@ -3197,7 +3242,36 @@ function gpaToggleBudgetPanels(mode) {
     gpaApplyBudgetViewChrome(mode);
 }
 
+function gpaEnsureBudgetPartySummaryShell() {
+    const summary = document.getElementById('gpaBudgetPartySummary');
+    if (!summary) return;
+
+    if (!summary.classList.contains('gpa-history-summary')) {
+        summary.classList.add('gpa-history-summary', 'gpa-budget-summary', 'gpa-budget-summary--party');
+    }
+
+    let wrap = document.getElementById('gpaBudgetPartySummaryTableWrap');
+    if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'gpaBudgetPartySummaryTableWrap';
+        wrap.className = 'gpa-budget-party-summary-section';
+        wrap.style.display = 'none';
+        summary.insertAdjacentElement('afterend', wrap);
+    }
+
+    if (!document.getElementById('gpaBudgetPartySummaryTableHead')
+        || !document.getElementById('gpaBudgetPartySummaryTableBody')) {
+        wrap.innerHTML = ''
+            + '<div class="gpa-budget-table-scroll-wrap gpa-budget-party-summary-scroll">'
+            + '<table class="gpa-budget-table gpa-budget-party-summary-table">'
+            + '<thead id="gpaBudgetPartySummaryTableHead"></thead>'
+            + '<tbody id="gpaBudgetPartySummaryTableBody"></tbody>'
+            + '</table></div>';
+    }
+}
+
 function gpaResetBudgetPartySummaryTable() {
+    gpaEnsureBudgetPartySummaryShell();
     const head = document.getElementById('gpaBudgetPartySummaryTableHead');
     const tbody = document.getElementById('gpaBudgetPartySummaryTableBody');
     if (head) head.innerHTML = '';
@@ -3253,6 +3327,7 @@ function gpaRenderBudgetPartySummaryTable(totalRow) {
 function gpaClearBudgetSummary(mode) {
     const viewMode = mode === 'employee' ? 'employee' : 'party';
     if (viewMode === 'party') {
+        gpaEnsureBudgetPartySummaryShell();
         $(gpaBudgetPanel(viewMode).summary).html('');
         gpaResetBudgetPartySummaryTable();
         $('#gpaBudgetPartySummaryTableWrap').hide();
@@ -3264,6 +3339,7 @@ function gpaClearBudgetSummary(mode) {
 function renderGpaBudgetTotalTiles(totalRow, mode) {
     const row = gpaApplyPartyBudgetFormulas(totalRow || {});
     if (mode === 'party') {
+        gpaEnsureBudgetPartySummaryShell();
         const p = gpaBudgetPanel(mode);
         let cardHtml = '';
         GPA_BUDGET_PARTY_TILES.forEach(function (t) {
@@ -3551,8 +3627,10 @@ function gpaRenderBudgetTableBody(rows, mode, tableKind) {
                 html += gpaBudgetTypeCell(row);
             } else if (c.isCenter) {
                 html += '<td class="text-center">' + EscHtml(val ?? '—') + '</td>';
-            } else if (c.key === 'Project' || c.key === 'SubProject' || c.key === 'Employee') {
-                html += gpaBudgetTextCell(val ?? row['Sub Project']);
+            } else if (c.key === 'SubProject') {
+                html += gpaBudgetTextCell(gpaBudgetSubProjectRowName(row) || val || row['Sub Project']);
+            } else if (c.key === 'Project' || c.key === 'Employee') {
+                html += gpaBudgetTextCell(val);
             } else if (tableKind === 'history' && (c.key === 'Amount' || c.key === 'TotalPO' || c.key === 'TotalGRN' || c.key === 'TotalPayment')) {
                 html += gpaBudgetAmtCell(val);
             } else {
@@ -3631,12 +3709,17 @@ function gpaApplyBudgetRowsToGrid(payload, mode) {
     const budgetRows = gpaBudgetPayloadBudgetRows(payload);
     const allHistoryRows = viewMode === 'party' ? gpaBudgetPayloadHistoryRows(payload) : [];
     const filters = gpaSelectedBudgetFilterLabels();
-    const historyRows = viewMode === 'party'
+    let historyRows = viewMode === 'party'
         ? gpaFilterBudgetHistoryByType(allHistoryRows, filters.docTypeFilter)
         : [];
+    if (viewMode === 'party') {
+        historyRows = gpaFilterBudgetHistoryBySubProject(historyRows, filters);
+    }
     const summaryRow = gpaBudgetPayloadSummaryRow(payload);
     const split = gpaSplitBudgetRows(budgetRows, viewMode);
-    const preferGrandTotal = !filters.projectMasterCode && !filters.subProjectMasterCode;
+    const preferGrandTotal = !filters.projectMasterCode
+        && !filters.subProjectMasterCode
+        && !gpaBudgetSubProjectNormName(filters.subProjectName);
 
     const tileRow = viewMode === 'employee'
         ? (gpaBudgetFindEmployeeTileRow(budgetRows, preferGrandTotal) || split.total || summaryRow)
@@ -3646,12 +3729,14 @@ function gpaApplyBudgetRowsToGrid(payload, mode) {
     }
 
     let summaryRows = [];
+    let employeeComboRows = [];
     if (viewMode === 'employee') {
         gpaRenderBudgetTableHead(viewMode, 'summary');
-        summaryRows = split.details.length
+        employeeComboRows = split.details.length
             ? split.details.slice()
             : (summaryRow && !gpaBudgetIsEmployeeTotalRow(summaryRow) && !gpaBudgetIsTotalRow(summaryRow)
                 ? [summaryRow] : []);
+        summaryRows = gpaFilterBudgetHistoryBySubProject(employeeComboRows, filters);
         gpaRenderBudgetTableBody(summaryRows, viewMode, 'summary');
     }
 
@@ -3677,7 +3762,10 @@ function gpaApplyBudgetRowsToGrid(payload, mode) {
     }
 
     $(p.loading).hide();
-    gpaSyncBudgetFilterCombos(budgetRows.concat(allHistoryRows, summaryRow ? [summaryRow] : []));
+    const comboRows = viewMode === 'employee'
+        ? employeeComboRows
+        : budgetRows.concat(allHistoryRows, summaryRow ? [summaryRow] : []);
+    gpaSyncBudgetFilterCombos(comboRows, { replace: viewMode === 'employee' });
 }
 
 function gpaReapplyBudgetPartyFromCache() {
@@ -3853,11 +3941,14 @@ function gpaEnsureBudgetProjectCache() {
         });
 }
 
-function gpaSyncBudgetFilterCombos(rows) {
+function gpaSyncBudgetFilterCombos(rows, options) {
+    const opts = options || {};
     return gpaEnsureBudgetProjectCache().then(function (cache) {
-        const base = G_GpaBudgetFilterCombos.length
-            ? G_GpaBudgetFilterCombos
-            : (G_GpaBudgetState?.lineCombos || []);
+        const base = opts.replace
+            ? []
+            : (G_GpaBudgetFilterCombos.length
+                ? G_GpaBudgetFilterCombos
+                : (G_GpaBudgetState?.lineCombos || []));
         const fromBudget = gpaCollectCombosFromRows(rows, cache);
         const merged = gpaMergeFilterCombos(base, fromBudget);
         if (G_GpaBudgetState) G_GpaBudgetState.lineCombos = merged;
@@ -3876,7 +3967,7 @@ function gpaBindBudgetFilterDropdowns(combos, options) {
     G_GpaBudgetFilterCombos = list.slice();
 
     const prevProj = opts.preserve ? (parseInt($proj.val(), 10) || 0) : 0;
-    const prevSub = opts.preserve ? (parseInt($sub.val(), 10) || 0) : 0;
+    const prevSub = opts.preserve ? String($sub.val() || '0') : '0';
 
     $proj.html('<option value="0">All Projects</option>');
     const seenProj = new Map();
@@ -3893,9 +3984,16 @@ function gpaBindBudgetFilterDropdowns(combos, options) {
 
     function refillSubProject() {
         const pc = parseInt($proj.val(), 10) || 0;
+        const projName = pc > 0
+            ? gpaBudgetSubProjectNormName($proj.find('option:selected').text())
+            : '';
         $sub.html('<option value="0">All Sub Projects</option>');
         const filtered = pc > 0
-            ? list.filter(function (c) { return c.projectMasterCode === pc; })
+            ? list.filter(function (c) {
+                if (c.projectMasterCode === pc) return true;
+                return projName
+                    && gpaBudgetSubProjectNormName(c.projectName) === projName;
+            })
             : list;
 
         const byName = new Map();
@@ -3910,17 +4008,18 @@ function gpaBindBudgetFilterDropdowns(combos, options) {
             }
         });
 
-        let codedCount = 0;
+        let optionCount = 0;
         Array.from(byName.values())
             .sort(function (a, b) { return a.subProjectName.localeCompare(b.subProjectName); })
             .forEach(function (entry) {
-                if (!entry.subProjectMasterCode) return;
-                codedCount += 1;
+                const val = gpaBudgetSubProjectOptionValue(entry);
+                if (val === '0') return;
+                optionCount += 1;
                 $sub.append(
-                    '<option value="' + entry.subProjectMasterCode + '">' + EscHtml(entry.subProjectName) + '</option>'
+                    '<option value="' + EscHtml(val) + '">' + EscHtml(entry.subProjectName) + '</option>'
                 );
             });
-        $sub.prop('disabled', codedCount === 0);
+        $sub.prop('disabled', optionCount === 0);
     }
 
     $proj.off('change.gpaBudget').on('change.gpaBudget', function () {
@@ -3946,16 +4045,30 @@ function gpaBindBudgetFilterDropdowns(combos, options) {
         $proj.val('0');
     }
     refillSubProject();
-    if (opts.preserve && prevSub > 0 && $sub.find('option[value="' + prevSub + '"]').length) {
-        $sub.val(String(prevSub));
+    if (opts.preserve && prevSub !== '0' && $sub.find('option').filter(function () {
+        return String(this.value) === prevSub;
+    }).length) {
+        $sub.val(prevSub);
     }
 }
 
 function gpaSelectedBudgetFilterLabels() {
     const projVal = parseInt($('#gpaBudgetDdlProject').val(), 10) || 0;
-    const subVal = parseInt($('#gpaBudgetDdlSubProject').val(), 10) || 0;
+    const subRaw = String($('#gpaBudgetDdlSubProject').val() || '0');
+    const subVal = parseInt(subRaw, 10) || 0;
     const docTypeFilter = String($('#gpaBudgetDdlType').val() || '').trim();
-    return { projectMasterCode: projVal, subProjectMasterCode: subVal, docTypeFilter: docTypeFilter };
+    let subProjectName = '';
+    if (subRaw.indexOf('0:') === 0) {
+        subProjectName = subRaw.slice(2);
+    } else if (subVal > 0) {
+        subProjectName = String($('#gpaBudgetDdlSubProject option:selected').text() || '').trim();
+    }
+    return {
+        projectMasterCode: projVal,
+        subProjectMasterCode: subVal,
+        subProjectName: subProjectName,
+        docTypeFilter: docTypeFilter,
+    };
 }
 
 function gpaBudgetFilterCacheKey() {
@@ -3966,6 +4079,7 @@ function gpaBudgetFilterCacheKey() {
         state?.accountMasterCode || 0,
         filters.projectMasterCode,
         filters.subProjectMasterCode,
+        gpaBudgetSubProjectNormName(filters.subProjectName),
     ].join('|');
 }
 
