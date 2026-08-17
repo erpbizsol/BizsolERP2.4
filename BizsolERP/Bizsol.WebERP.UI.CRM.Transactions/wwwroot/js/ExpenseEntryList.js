@@ -18,6 +18,8 @@ var G_EEL_LevelVerifyApplicable = 'N';
 var G_EE_ListRowCache = {};
 /** Detail lines for the open approval-flow modal — used by line history lookup. */
 var G_EE_ListHistoryContext = { detailLines: [], masterCode: 0 };
+/** API-reconciled HasAttach flags (master + detail-line docs), keyed by ExpenseEntryMaster.Code. */
+var G_EE_ListAttachmentYesMap = {};
 const EE_SALES_PERSON_MAX_RETRIES = 4;
 const EE_SALES_PERSON_RETRY_DELAY_MS = 600;
 
@@ -40,6 +42,16 @@ $(document).ready(function () {
 
     DatePicker();
     renderInitialEmptyExpenseTable();
+
+    /** Reload list after attachment save/delete so paperclip green/blue updates (PO Store pattern). */
+    document.addEventListener('bizsol:attachmentcontrol:changed', function (ev) {
+        const d = ev && ev.detail;
+        if (!d || d.tempMode) return;
+        if (d.masterTableName !== 'ExpenseEntryMaster') return;
+        if (typeof GetExpenseEntryList !== 'function') return;
+        if (!document.getElementById('ExpenseEntryList-body')) return;
+        GetExpenseEntryList({ suppressEmptyToast: true });
+    });
 
     var urlParams = getUrlVars();
     var FromDateSave = decodeURIComponent(urlParams['FromDate'] || "");
@@ -438,7 +450,7 @@ function GetExpenseEntryList(opts){
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code","MarketingManMaster_Code","VerifyStatus","Approved By","Approved On"];
+            const hiddenColumns = ["Code","MarketingManMaster_Code","VerifyStatus","Approved By","Approved On","HasAttach","HasAttachment"];
             const ColumnAlignment = {
                 "Entry No": "right",
                 "Entry Date": "center",
@@ -452,20 +464,22 @@ function GetExpenseEntryList(opts){
             };
             const totalApprovedAmount=["Allow Amount","Approved Amount","Deduction","Expended Amount"];
             G_EE_ListRowCache = {};
-            const updatedResponse = filtered.map(item => {
-                G_EE_ListRowCache[item.Code] = { ...item };
-                const statusText = (item.Status || '').trim();
-                const entryNo = item['Entry No'] != null ? String(item['Entry No']) : '';
-                const entryDateIso = eeListEntryDateParamForAttachmentControl(item['Entry Date'] ?? item.EntryDate);
-                const hasAttach = eeListHasAttachmentYes(item);
-                const attachBg = hasAttach
-                    ? 'linear-gradient(135deg,#16a34a,#15803d)'
-                    : 'linear-gradient(135deg,#0ea5e9,#0284c7)';
-                let approvalFlowBtn = '';
-                if (G_EEL_LevelVerifyApplicable === 'Y' || (statusText && statusText !== 'Unverified')) {
-                    approvalFlowBtn = `<button class="btn icon-height mb-1 ms-1 ee-btn-view-approval" title="View Approval Flow" onclick="ViewApprovalFlowData(${item.Code},this)"><i class="fa fa-layer-group"></i></button>`;
-                }
-                let buttonsHTML = `<button class="btn btn-info icon-height mb-1" title="View" onclick="ViewData(${item.Code},this)"><i class="fa fa-eye"></i></button>
+
+            eeListSyncListAttachmentStates(filtered).then(function () {
+                const updatedResponse = filtered.map(item => {
+                    G_EE_ListRowCache[item.Code] = { ...item };
+                    const statusText = (item.Status || '').trim();
+                    const entryNo = item['Entry No'] != null ? String(item['Entry No']) : '';
+                    const entryDateIso = eeListEntryDateParamForAttachmentControl(item['Entry Date'] ?? item.EntryDate);
+                    const hasAttach = eeListHasAttachmentYes(item);
+                    const attachBg = hasAttach
+                        ? 'linear-gradient(135deg,#16a34a,#15803d)'
+                        : 'linear-gradient(135deg,#0ea5e9,#0284c7)';
+                    let approvalFlowBtn = '';
+                    if (G_EEL_LevelVerifyApplicable === 'Y' || (statusText && statusText !== 'Unverified')) {
+                        approvalFlowBtn = `<button class="btn icon-height mb-1 ms-1 ee-btn-view-approval" title="View Approval Flow" onclick="ViewApprovalFlowData(${item.Code},this)"><i class="fa fa-layer-group"></i></button>`;
+                    }
+                    let buttonsHTML = `<button class="btn btn-info icon-height mb-1" title="View" onclick="ViewData(${item.Code},this)"><i class="fa fa-eye"></i></button>
                 <button class="btn btn-primary icon-height mb-1 ms-1" title="Edit" ${statusText !== 'Unverified' ? 'disabled' : ''} onclick="EditData(${item.Code},this)"><i class="fa fa-pencil"></i></button>
                 <button class="btn btn-danger icon-height mb-1 ms-1" title="Delete" ${item.VerifyStatus === 'Y' ? 'disabled' : ''} onclick="DeleteData('${item.Code}',this)"><i class="fa fa-times"></i></button>
                 <button class="btn btn-secondary icon-height mb-1 ms-1" title="Print Preview" onclick="PrintExpenseEntry(${item.Code},'preview')"><i class="fa fa-search-plus"></i></button>
@@ -473,25 +487,26 @@ function GetExpenseEntryList(opts){
                 <button class="btn icon-height mb-1 ms-1" title="Attachments" style="background:${attachBg};color:#fff;border:none;" onclick="openEEListAttachmentControl(${item.Code},'${eeEscHtmlAttr(entryNo)}','${eeEscHtmlAttr(entryDateIso)}')"><i class="fa fa-paperclip"></i></button>
                 ${approvalFlowBtn}`;
 
-                var td_StatusBtn = '';
-                if (item.Status == 'Unverified') {
-                    td_StatusBtn = `<button type="button" class="btn btn-secondary btn-rounded waves-effect waves-light btn-sm"  style="cursor: not-allowed">${item.Status}</button>`;
-                } else if (item.Status == 'Verified') {
-                    td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-sm"  style="cursor: not-allowed">${item.Status}</button>`;
-                } else if (item.Status == 'Rejected') {
-                    td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light  btn-sm"  style="cursor: not-allowed">${item.Status}</button>`;
-                } else {
-                    td_StatusBtn = `<button type="button" class="btn btn-success  btn-rounded waves-effect waves-light btn-sm"  style="cursor: not-allowed">${item.Status}</button>`;
-                }
-                return {
-                    ...item,
-                    Action: buttonsHTML,
-                    Status: td_StatusBtn,
-                };
-            });
+                    var td_StatusBtn = '';
+                    if (item.Status == 'Unverified') {
+                        td_StatusBtn = `<button type="button" class="btn btn-secondary btn-rounded waves-effect waves-light btn-sm"  style="cursor: not-allowed">${item.Status}</button>`;
+                    } else if (item.Status == 'Verified') {
+                        td_StatusBtn = `<button type="button" class="btn btn-success btn-rounded waves-effect waves-light btn-sm"  style="cursor: not-allowed">${item.Status}</button>`;
+                    } else if (item.Status == 'Rejected') {
+                        td_StatusBtn = `<button type="button" class="btn btn-danger  btn-rounded waves-effect waves-light  btn-sm"  style="cursor: not-allowed">${item.Status}</button>`;
+                    } else {
+                        td_StatusBtn = `<button type="button" class="btn btn-success  btn-rounded waves-effect waves-light btn-sm"  style="cursor: not-allowed">${item.Status}</button>`;
+                    }
+                    return {
+                        ...item,
+                        Action: buttonsHTML,
+                        Status: td_StatusBtn,
+                    };
+                });
 
-            BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryList-header", "ExpenseEntryList-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, true, totalApprovedAmount);
-            $("#paginator-ExpenseEntryList").show();
+                BizsolCustomFilterGrid.CreateDataTable("ExpenseEntryList-header", "ExpenseEntryList-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, true, totalApprovedAmount);
+                $("#paginator-ExpenseEntryList").show();
+            });
         } else {
             ShowExpenseEntryListEmptyState({
                 mode: raw.length > 0 ? 'filter' : 'nodata',
@@ -628,9 +643,13 @@ function DoExpenseEntryDelete() {
         $('#eeReasonForDeleteInput').focus();
         return;
     }
+    const delPk = parseInt(G_DeleteExpenseEntryCode, 10) || 0;
     ExpenseEntryService.DeleteExpenseEntryMaster(G_DeleteExpenseEntryCode, reason).then(function (response) {
         $('#eeDeleteConfirmBackdrop').removeClass('show');
         if (response && response.Status === 'Y') {
+            if (delPk > 0) {
+                AttachmentControlService.DeleteAllAttachment('ExpenseEntryMaster', delPk, '', 0).catch(function () { /* best-effort */ });
+            }
             GetExpenseEntryList();
             ShowExpenseEntrySuccessModal("Deleted Successfully!", response.Msg || "The expense entry has been permanently removed.", "fa-trash-can");
         } else {
@@ -1693,11 +1712,57 @@ function closeExpenseEntryApprovalFlowModal() {
 }
 
 function eeListHasAttachmentYes(entry) {
+    if (!entry || typeof entry !== 'object') return false;
+    const code = parseInt(entry.Code != null ? entry.Code : 0, 10) || 0;
+    if (code > 0 && Object.prototype.hasOwnProperty.call(G_EE_ListAttachmentYesMap, code)) {
+        return !!G_EE_ListAttachmentYesMap[code];
+    }
     const v = entry.HasAttach != null ? entry.HasAttach
         : entry.hasAttach != null ? entry.hasAttach
             : entry.HasAttachment != null ? entry.HasAttachment
                 : entry.hasAttachment;
     return String(v || '').trim().toUpperCase() === 'Y';
+}
+
+/** Verified → upload allowed, delete hidden (PO Store addview). Else full attachment CRUD. */
+function eeListGetAttachmentControlMode(entry) {
+    if (!entry) return 'all';
+    const vs = String(entry.VerifyStatus ?? '').trim().toUpperCase();
+    const status = String(entry.Status ?? '').trim();
+    if (vs === 'Y' || status === 'Verified') return 'addview';
+    return 'all';
+}
+
+/**
+ * Reconcile list paperclip color with Document Attachment API (master + detail lines).
+ * Falls back to LOCATE HasAttach when API calls fail.
+ */
+function eeListSyncListAttachmentStates(rows) {
+    G_EE_ListAttachmentYesMap = {};
+    if (!Array.isArray(rows) || rows.length === 0) return Promise.resolve();
+    eeListPatchAttachmentService();
+    const origGet = AttachmentControlService._eeListOrigGetFiles
+        || AttachmentControlService.GetAttachmentUploadFiles.bind(AttachmentControlService);
+
+    const tasks = rows.map(function (item) {
+        if (!item || typeof item !== 'object') return Promise.resolve();
+        const code = parseInt(item.Code != null ? item.Code : 0, 10) || 0;
+        if (!code) return Promise.resolve();
+        const person = item['Person Name'] || item.PersonName || '';
+        const spFlag = String(item.HasAttach ?? item.HasAttachment ?? '').trim().toUpperCase() === 'Y';
+
+        return eeListCollectDetailCodesFromApi(person, code).then(function (detailCodes) {
+            return eeListFetchMergedExpenseEntryAttachments(code, detailCodes, origGet).then(function (merged) {
+                const yes = Array.isArray(merged) && merged.length > 0;
+                G_EE_ListAttachmentYesMap[code] = yes;
+                item.HasAttach = yes ? 'Y' : 'N';
+            });
+        }).catch(function () {
+            G_EE_ListAttachmentYesMap[code] = spFlag;
+            item.HasAttach = spFlag ? 'Y' : 'N';
+        });
+    });
+    return Promise.all(tasks);
 }
 
 function eeListEntryDateParamForAttachmentControl(raw) {
@@ -1753,6 +1818,7 @@ function eeListFetchMergedExpenseEntryAttachments(masterCode, detailCodes, origG
 function eeListPatchAttachmentService() {
     if (AttachmentControlService._eeListGetFilesPatched) return;
     const prevGet = AttachmentControlService.GetAttachmentUploadFiles;
+    AttachmentControlService._eeListOrigGetFiles = prevGet;
     AttachmentControlService.GetAttachmentUploadFiles = function (masterTableName, masterTableCode, detailTableName, detailTableCode) {
         const mc = parseInt(masterTableCode, 10) || 0;
         const aggMc = parseInt(window._eeListAttachmentAggregateMasterCode || '0', 10);
@@ -1786,7 +1852,7 @@ function eeListCollectDetailCodesFromApi(person, masterCode) {
     });
 }
 
-function InitEEListAttachmentControl(masterCode, entryNo, entryDate) {
+function InitEEListAttachmentControl(masterCode, entryNo, entryDate, mode) {
     eeListPatchAttachmentService();
     const url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
     $('#ExpenseEntryList_AttachmentControlmodal').load(url, {
@@ -1796,7 +1862,7 @@ function InitEEListAttachmentControl(masterCode, entryNo, entryDate) {
         DetailTableCode: 0,
         EntryNo: parseInt(entryNo, 10) || 0,
         EntryDate: entryDate || '',
-        Mode: 'view'
+        Mode: mode || 'all'
     }, function () {
         $(document).off('hidden.bs.modal.eeListAttachAgg', '#AttachmentControlmodal')
             .on('hidden.bs.modal.eeListAttachAgg', '#AttachmentControlmodal', function () {
@@ -1813,10 +1879,11 @@ function openEEListAttachmentControl(code, entryNo, entryDate) {
     }
     const cached = G_EE_ListRowCache[masterCode] || {};
     const person = cached['Person Name'] || cached.PersonName || '';
+    const mode = eeListGetAttachmentControlMode(cached);
     eeListCollectDetailCodesFromApi(person, masterCode).then(function (detailCodes) {
         window._eeListAttachmentAggregateMasterCode = masterCode;
         window._eeListAttachmentDetailCodes = detailCodes;
-        InitEEListAttachmentControl(masterCode, entryNo, entryDate);
+        InitEEListAttachmentControl(masterCode, entryNo, entryDate, mode);
     });
 }
 

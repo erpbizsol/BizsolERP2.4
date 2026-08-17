@@ -488,6 +488,12 @@
         background: #f8fafc;
         color: #94a3b8;
     }
+    #gpaBudgetMeta.gpa-history-meta {
+        grid-template-columns: 1.15fr 1fr 1fr 0.85fr;
+    }
+    @@media (max-width: 992px) {
+        #gpaBudgetMeta.gpa-history-meta { grid-template-columns: 1fr 1fr; }
+    }
     @@media (max-width: 768px) {
         .gpa-history-meta { grid-template-columns: 1fr; }
     }
@@ -649,6 +655,169 @@
         transition:all 0.2s; cursor:pointer;
     }
     .btn-gpa-history:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(99,102,241,0.5); color:#fff; }
+    .btn-gpa-budget {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#0ea5e9,#0284c7);
+        border:none; color:#fff; border-radius:9px; padding:9px 18px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(14,165,233,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-budget:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(14,165,233,0.5); color:#fff; }
+    .gpa-budget-view-toggle {
+        display: inline-flex;
+        gap: 0;
+        border: 1px solid #bae6fd;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 12px;
+        background: #f0f9ff;
+    }
+    .gpa-budget-view-btn {
+        border: none;
+        background: transparent;
+        color: #0369a1;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 8px 16px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+    }
+    .gpa-budget-view-btn.active {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: #fff;
+    }
+    #modalGpaBudgetBalance .modal-dialog { max-width: min(1480px, calc(100vw - 2rem)); margin: 1.5rem auto; max-height: calc(100vh - 2rem); }
+    #modalGpaBudgetBalance .modal-content {
+        border-radius: 18px; border: none;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+        overflow: hidden; display: flex; flex-direction: column;
+        max-height: calc(100vh - 2rem);
+    }
+    #modalGpaBudgetBalance .gpa-budget-modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 22px 16px; border: none;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff;
+    }
+    #modalGpaBudgetBalance .gpa-budget-modal-body {
+        padding: 16px 18px; background: #fff; flex: 1 1 auto; overflow: hidden;
+        display: flex; flex-direction: column; min-height: 0;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table-scroll-wrap {
+        flex: 1 1 auto; overflow: auto; min-height: 120px;
+        max-height: min(420px, calc(100vh - 380px));
+        border: 1px solid #e5e7eb; border-radius: 8px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table {
+        width: 100%; border-collapse: collapse; font-size: 0.78rem;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table thead tr th {
+        position: sticky; top: 0; z-index: 2;
+        background: #f0f9ff; color: #0369a1; font-weight: 700;
+        padding: 10px 10px; white-space: nowrap;
+        border-bottom: 2px solid #bae6fd;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table tbody tr td {
+        padding: 9px 10px; vertical-align: middle;
+        border-bottom: 1px solid #f3f4f6; color: #374151;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table tbody tr:hover td { background: #f0f9ff; }
+    #modalGpaBudgetBalance .gpa-budget-summary {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+        margin-bottom: 12px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-summary > * {
+        flex: 1 1 0;
+        min-width: 108px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-summary .gpa-history-card,
+    #modalGpaBudgetBalance .gpa-budget-summary .gpa-budget-card {
+        padding: 10px 8px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-summary .gpa-history-card-lbl {
+        font-size: 0.62rem;
+        margin-bottom: 4px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-summary .gpa-history-card-val {
+        font-size: 0.82rem;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-section {
+        margin-bottom: 12px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-scroll {
+        overflow-x: auto;
+        border: 1px solid #bae6fd;
+        border-radius: 8px;
+        max-height: none;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table thead tr.gpa-budget-party-group-row th {
+        background: #e0f2fe;
+        color: #0c4a6e;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-bottom: 1px solid #bae6fd;
+        padding: 8px 10px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table thead tr.gpa-budget-party-label-row th {
+        background: #f0f9ff;
+        color: #0369a1;
+        font-size: 0.68rem;
+        font-weight: 700;
+        white-space: nowrap;
+        padding: 8px 10px;
+        border-bottom: 2px solid #bae6fd;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table tbody tr.gpa-budget-party-summary-row td {
+        background: #fff;
+        font-weight: 700;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table tbody tr.gpa-budget-party-summary-row:hover td {
+        background: #f0f9ff;
+    }
+    @@media (max-width: 992px) {
+        #modalGpaBudgetBalance .gpa-budget-summary { flex-wrap: nowrap; }
+    }
+    @@media (max-width: 576px) {
+        #modalGpaBudgetBalance .gpa-budget-summary { flex-wrap: nowrap; }
+    }
+    .gpa-budget-card {
+        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+        border: 1px solid #bae6fd;
+        border-radius: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .gpa-budget-card .gpa-history-card-lbl { color: #0369a1; }
+    .gpa-budget-card .gpa-history-card-val { color: #0c4a6e; }
+    #modalGpaBudgetBalance .gpa-history-table-section > .gpa-items-title {
+        color: #0369a1;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table .gpa-history-type {
+        display: inline-block;
+        min-width: 62px;
+        text-align: center;
+    }
+    #modalGpaBudgetBalance .gpa-budget-history-section {
+        margin-top: 14px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-history-scroll-wrap {
+        max-height: min(300px, calc(100vh - 520px));
+    }
+    #modalGpaBudgetBalance .gpa-budget-table tbody tr.gpa-budget-total-row td {
+        background: #f0f9ff;
+        font-weight: 800;
+        border-top: 2px solid #bae6fd;
+    }
+    .gpa-budget-mode-panel { display: none !important; }
+    .gpa-budget-mode-panel.is-active { display: block !important; }
     .btn-gpa-reject {
         display:inline-flex; align-items:center; gap:5px;
         background:linear-gradient(135deg,#dc2626,#ef4444);
@@ -938,6 +1107,10 @@
                         onclick="OpenGpaApprovalHistory()" title="Party / Project history">
                     <i class="fa fa-history"></i>History
                 </button>
+                <button type="button" id="gpaBtnBudgetBalanceAction" class="btn-gpa-budget"
+                        onclick="OpenGpaBudgetBalance()" title="Party / Employee budget balance">
+                    <i class="fa fa-balance-scale"></i>Budget Balance
+                </button>
                 <button type="button" class="btn-gpa-close ms-auto" onclick="CloseDetailModal()">
                     <i class="fa fa-times-circle"></i>Close
                 </button>
@@ -1028,6 +1201,103 @@
             </div>
             <div class="modal-footer gpa-history-modal-footer">
                 <button type="button" class="btn-gpa-close" onclick="CloseGpaApprovalHistoryModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGpaBudgetBalance" tabindex="-1" role="dialog"
+     aria-hidden="true" style="z-index:1075;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header gpa-budget-modal-header">
+                <h5 class="modal-title mb-0" style="font-size:1rem;font-weight:700;">
+                    <i class="fa fa-balance-scale me-2"></i>Budget Balance
+                </h5>
+                <button type="button" class="gpa-history-modal-close" data-bs-dismiss="modal"
+                        aria-label="Close" onclick="CloseGpaBudgetBalanceModal()" title="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body gpa-budget-modal-body">
+                <div id="gpaBudgetMeta" class="gpa-history-meta">
+                    <div>
+                        <span class="gpa-history-filter-lbl" id="gpaBudgetCounterpartyLbl">Party</span>
+                        <strong id="gpaBudgetPartyName">—</strong>
+                    </div>
+                    <div>
+                        <label class="gpa-history-filter-lbl" for="gpaBudgetDdlProject">Project</label>
+                        <select id="gpaBudgetDdlProject" class="gpa-history-filter-select form-select form-select-sm"></select>
+                    </div>
+                    <div>
+                        <label class="gpa-history-filter-lbl" for="gpaBudgetDdlSubProject">Sub Project</label>
+                        <select id="gpaBudgetDdlSubProject" class="gpa-history-filter-select form-select form-select-sm"></select>
+                    </div>
+                    <div id="gpaBudgetTypeFilterWrap">
+                        <label class="gpa-history-filter-lbl" for="gpaBudgetDdlType">Type</label>
+                        <select id="gpaBudgetDdlType" class="gpa-history-filter-select form-select form-select-sm">
+                            <option value="">All Types</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="gpa-budget-view-toggle" role="group" aria-label="Budget view mode">
+                    <button type="button" id="gpaBudgetBtnPartyWise" class="gpa-budget-view-btn active">Party Wise</button>
+                    <button type="button" id="gpaBudgetBtnEmployeeWise" class="gpa-budget-view-btn">Employee Wise</button>
+                </div>
+
+                <div id="gpaBudgetPartyPanel" class="gpa-budget-mode-panel is-active">
+                    <div id="gpaBudgetPartySummary" class="gpa-history-summary gpa-budget-summary gpa-budget-summary--party"></div>
+                    <div id="gpaBudgetPartySummaryTableWrap" class="gpa-budget-party-summary-section" style="display:none;">
+                        <div class="gpa-budget-table-scroll-wrap gpa-budget-party-summary-scroll">
+                            <table class="gpa-budget-table gpa-budget-party-summary-table">
+                                <thead id="gpaBudgetPartySummaryTableHead"></thead>
+                                <tbody id="gpaBudgetPartySummaryTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="gpaBudgetPartyLoading" style="display:none;text-align:center;padding:24px;color:#64748b;">
+                        <i class="fa fa-spinner fa-spin me-2"></i>Loading budget balance…
+                    </div>
+                    <div id="gpaBudgetPartyEmpty" style="display:none;text-align:center;padding:24px;color:#94a3b8;font-size:0.85rem;">
+                        No budget balance data found.
+                    </div>
+                    <div class="gpa-history-table-section gpa-budget-history-section" id="gpaBudgetPartyHistorySection" style="display:none;">
+                        <div class="gpa-items-title">Budget History</div>
+                        <div id="gpaBudgetPartyHistoryEmpty" style="display:none;text-align:center;padding:20px;color:#94a3b8;font-size:0.85rem;">
+                            No budget history found for the selected project and sub project.
+                        </div>
+                        <div class="gpa-budget-table-scroll-wrap gpa-budget-history-scroll-wrap" id="gpaBudgetPartyHistoryTableWrap" style="display:none;">
+                            <table class="gpa-budget-table">
+                                <thead id="gpaBudgetPartyHistoryTableHead"></thead>
+                                <tbody id="gpaBudgetPartyHistoryTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="gpaBudgetEmployeePanel" class="gpa-budget-mode-panel">
+                    <div id="gpaBudgetEmployeeSummary" class="gpa-history-summary gpa-budget-summary gpa-budget-summary--employee"></div>
+                    <div class="gpa-history-table-section">
+                        <div class="gpa-items-title">Employee Wise Budget</div>
+                        <div id="gpaBudgetEmployeeLoading" style="display:none;text-align:center;padding:24px;color:#64748b;">
+                            <i class="fa fa-spinner fa-spin me-2"></i>Loading budget balance…
+                        </div>
+                        <div id="gpaBudgetEmployeeEmpty" style="display:none;text-align:center;padding:24px;color:#94a3b8;font-size:0.85rem;">
+                            No employee wise budget data found.
+                        </div>
+                        <div class="gpa-budget-table-scroll-wrap" id="gpaBudgetEmployeeTableWrap" style="display:none;">
+                            <table class="gpa-budget-table">
+                                <thead id="gpaBudgetEmployeeTableHead"></thead>
+                                <tbody id="gpaBudgetEmployeeTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer gpa-history-modal-footer">
+                <button type="button" class="btn-gpa-close" onclick="CloseGpaBudgetBalanceModal()">
                     <i class="fa fa-times-circle"></i>Close
                 </button>
             </div>

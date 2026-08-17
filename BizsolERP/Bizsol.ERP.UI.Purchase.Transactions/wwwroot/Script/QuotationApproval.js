@@ -4,9 +4,20 @@ let FrmType = '';
 let FrmAction = '';
 let G_QuotationList = [];
 let G_CurrentQuotation = null;
-/** 'Y' = show Rate As Per Cost Sheet column; anything else = hide */
+/** 'Y' = show Rate As Per Cost Sheet column(s); anything else = hide */
 let G_RateAsPerCostSheet  = 'N';
-const QA_COST_SHEET_KEYS = new Set(['Rate As Per Cost Sheet', 'RateAsPerCostSheet']);
+const QA_RATE_CS_KEYS = new Set(['Rate As Per Cost Sheet', 'RateAsPerCostSheet']);
+const QA_RATE_FC_KEYS = new Set(['Rate As Per Cost Sheet In FC', 'RateAsPerCostSheetInFC']);
+const QA_COST_SHEET_KEYS = new Set([...QA_RATE_CS_KEYS, ...QA_RATE_FC_KEYS]);
+const QA_COST_SHEET_LABELS = {
+    RateAsPerCostSheet: 'Rate As Per Cost Sheet',
+    'Rate As Per Cost Sheet': 'Rate As Per Cost Sheet',
+    RateAsPerCostSheetInFC: 'Rate As Per Cost Sheet In FC',
+    'Rate As Per Cost Sheet In FC': 'Rate As Per Cost Sheet In FC'
+};
+const QA_QUOT_FOR_KEYS = ['QuotationFor', 'Quotation For'];
+const QA_QUOT_AGAINST_KEYS = ['QuotationAgainst', 'Quotation Against', 'OrderAgainst', 'Order Against'];
+const QA_CONVERSION_RATE_KEYS = ['ConversionRate', 'Conversion Rate'];
 
 function EscHtml(s) {
     if (s == null || s === '') return '';
@@ -228,31 +239,118 @@ function RenderQuotationCards(list) {
     container.innerHTML = list.map(BuildQuotationCard).join('');
 }
 
-function GetModalItemKeys(rows) {
+function QaPickQuotationField(quotation, rows, keys) {
+    let val = quotation ? pickRowField(quotation, keys) : '';
+    if ((!val || val === '') && rows && rows.length) {
+        val = pickRowField(rows[0], keys);
+    }
+    return val || '';
+}
+
+function ShouldShowRateAsPerCostSheetInFC(quotation, rows) {
+    if (G_RateAsPerCostSheet !== 'Y') return false;
+    const quoteFor = QaPickQuotationField(quotation, rows, QA_QUOT_FOR_KEYS).trim().toUpperCase();
+    const quoteAgainst = QaPickQuotationField(quotation, rows, QA_QUOT_AGAINST_KEYS).trim().toUpperCase();
+    return quoteFor === 'EXPORT' && quoteAgainst === 'PRICE LIST';
+}
+
+function GetConversionRate(quotation, rows) {
+    const raw = QaPickQuotationField(quotation, rows, QA_CONVERSION_RATE_KEYS);
+    const n = parseFloat(String(raw || '').replace(/,/g, ''));
+    return !isNaN(n) && n !== 0 ? n : 1;
+}
+
+function GetRateAsPerCostSheetFromRow(row) {
+    if (row == null) return 0;
+    if (row['Rate As Per Cost Sheet'] != null && row['Rate As Per Cost Sheet'] !== '') {
+        return row['Rate As Per Cost Sheet'];
+    }
+    if (row.RateAsPerCostSheet != null && row.RateAsPerCostSheet !== '') {
+        return row.RateAsPerCostSheet;
+    }
+    return 0;
+}
+
+function CalcRateAsPerCostSheetInFC(rateAsPerCostSheet, conversionRate) {
+    const rate = parseFloat(String(rateAsPerCostSheet ?? '').replace(/,/g, ''));
+    if (isNaN(rate)) return 0;
+    const conv = conversionRate || 1;
+    return Math.round((rate / conv) * 1000) / 1000;
+}
+
+function PrepareQuotationDetailRows(rows, quotation) {
     if (!rows || !rows.length) return [];
-    const hiddenKeys = new Set(['Code', 'ItemMaster_Code', 'itemsizemaster_Code']);
-    return Object.keys(rows[0]).filter(function (k) {
+    const showFc = ShouldShowRateAsPerCostSheetInFC(quotation, rows);
+    const conversionRate = GetConversionRate(quotation, rows);
+
+    return rows.map(function (row) {
+        const newRow = Object.assign({}, row);
+        const rateCs = GetRateAsPerCostSheetFromRow(row);
+
+        if (showFc) {
+            // VB: Round(RateAsPerCostSheet / IIf(ConversionRate=0, 1, ConversionRate), 3)
+            newRow['Rate As Per Cost Sheet In FC'] = CalcRateAsPerCostSheetInFC(rateCs, conversionRate);
+        } else {
+            delete newRow['Rate As Per Cost Sheet In FC'];
+            delete newRow.RateAsPerCostSheetInFC;
+        }
+        return newRow;
+    });
+}
+
+function OrderModalItemKeys(keys) {
+    const fcKey = keys.find(function (k) { return QA_RATE_FC_KEYS.has(k); });
+    const csKey = keys.find(function (k) { return QA_RATE_CS_KEYS.has(k); });
+    if (!fcKey || !csKey) return keys;
+    const ordered = keys.filter(function (k) { return k !== fcKey; });
+    const csIdx = ordered.indexOf(csKey);
+    if (csIdx === -1) {
+        ordered.push(fcKey);
+    } else {
+        ordered.splice(csIdx + 1, 0, fcKey);
+    }
+    return ordered;
+}
+
+function GetModalItemKeys(rows, quotation) {
+    if (!rows || !rows.length) return [];
+    const hiddenKeys = new Set([
+        'Code', 'ItemMaster_Code', 'itemsizemaster_Code',
+        'QuotationFor', 'Quotation For',
+        'QuotationAgainst', 'Quotation Against', 'OrderAgainst', 'Order Against',
+        'ConversionRate', 'Conversion Rate'
+    ]);
+    const showFc = ShouldShowRateAsPerCostSheetInFC(quotation, rows);
+
+    const keys = Object.keys(rows[0]).filter(function (k) {
         if (hiddenKeys.has(k)) return false;
-        if (G_RateAsPerCostSheet  !== 'Y' && QA_COST_SHEET_KEYS.has(k)) return false;
+        if (G_RateAsPerCostSheet !== 'Y' && QA_COST_SHEET_KEYS.has(k)) return false;
+        if (!showFc && QA_RATE_FC_KEYS.has(k)) return false;
         return true;
     });
+    return OrderModalItemKeys(keys);
 }
 
 function LoadCostSheetParameter() {
     return QuotationApprovalService.GetQuotationCostSheetParameter().then(function (res) {
         const row = Array.isArray(res) ? res[0] : res;
-        const val = row
-            ? (row.RateAsPerCostSheet  != null ? row.RateAsPerCostSheet  : row.RateAsPerCostSheet )
-            : 'N';
-        G_RateAsPerCostSheet  = String(val || 'N').trim().toUpperCase();
+        let val = 'N';
+        if (row) {
+            val = row.RateAsPerCostSheet != null ? row.RateAsPerCostSheet
+                : row.rateAsPerCostSheet != null ? row.rateAsPerCostSheet
+                : row['Rate As Per Cost Sheet'] != null ? row['Rate As Per Cost Sheet']
+                : 'N';
+        }
+        G_RateAsPerCostSheet = String(val || 'N').trim().toUpperCase();
     }).catch(function () {
-        G_RateAsPerCostSheet  = 'N';
+        G_RateAsPerCostSheet = 'N';
     });
 }
 
 const QA_ITEM_NUMERIC = new Set([
     'Amount', 'Qty MT', 'Last Rate', 'Qty', 'Quantity', 'Rate',
     'Rate As Per Cost Sheet', 'RateAsPerCostSheet',
+    'Rate As Per Cost Sheet In FC', 'RateAsPerCostSheetInFC',
 ]);
 const QA_ITEM_HEAD = {
     sno: ['SNO', 'Sno', 'Sr No', 'SrNo'],
@@ -270,7 +368,7 @@ function BuildLineItemMobileCard(row, keys, index) {
         const val = row[k];
         if (val == null || val === '') return '';
         const isNum = QA_ITEM_NUMERIC.has(k);
-        const lbl = k === 'RateAsPerCostSheet' ? 'Rate As Per Cost Sheet' : k;
+        const lbl = QA_COST_SHEET_LABELS[k] || k;
         const full = lbl.length > 14 || String(val).length > 18 ? ' qa-li-mobile-kv--full' : '';
         return (
             '<div class="qa-li-mobile-kv' + full + '">' +
@@ -299,12 +397,13 @@ function pickRowField(row, keys) {
     return '';
 }
 
-function RenderModalItems(rows) {
+function RenderModalItems(rows, quotation) {
     const tbody = document.getElementById('table-body-Quotation');
     const thead = document.getElementById('table-header-Quotation');
     const mobileEl = document.getElementById('qaLineItemsMobile');
+    const preparedRows = PrepareQuotationDetailRows(rows, quotation);
 
-    if (!rows || rows.length === 0) {
+    if (!preparedRows || preparedRows.length === 0) {
         thead.innerHTML = '';
         tbody.innerHTML =
             '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No line items found.</td></tr>';
@@ -314,14 +413,14 @@ function RenderModalItems(rows) {
         return;
     }
 
-    const keys = GetModalItemKeys(rows);
+    const keys = GetModalItemKeys(preparedRows, quotation);
 
     thead.innerHTML = '<tr>' + keys.map(function (k) {
-        const header = k === 'RateAsPerCostSheet' ? 'Rate As Per Cost Sheet' : k;
+        const header = QA_COST_SHEET_LABELS[k] || k;
         return '<th>' + EscHtml(header) + '</th>';
     }).join('') + '</tr>';
 
-    tbody.innerHTML = rows.map(function (row) {
+    tbody.innerHTML = preparedRows.map(function (row) {
         return '<tr>' + keys.map(function (k) {
             const val = row[k] == null ? '' : row[k];
             const align = QA_ITEM_NUMERIC.has(k) ? ' style="text-align:right;"' : '';
@@ -330,7 +429,7 @@ function RenderModalItems(rows) {
     }).join('');
 
     if (mobileEl) {
-        mobileEl.innerHTML = rows.map(function (row, idx) {
+        mobileEl.innerHTML = preparedRows.map(function (row, idx) {
             return BuildLineItemMobileCard(row, keys, idx);
         }).join('');
     }
@@ -386,11 +485,7 @@ function OpenReviewModal(code) {
     $('#myModal').modal('show');
 
     QuotationApprovalService.GetQuotationDetail(code).then(function (response) {
-        if (response && response.length > 0) {
-            RenderModalItems(response);
-        } else {
-            RenderModalItems([]);
-        }
+        RenderModalItems(response && response.length > 0 ? response : [], G_CurrentQuotation);
     }).catch(function () {
         document.getElementById('table-body-Quotation').innerHTML =
             '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
