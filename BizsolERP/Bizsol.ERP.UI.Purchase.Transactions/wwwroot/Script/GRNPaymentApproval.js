@@ -9,6 +9,13 @@ let G_PaymentList = [];
 let G_PaymentListFull = [];
 let G_CurrentPayment = null;
 let G_GpaHistoryState = null;
+let G_GpaBudgetState = null;
+let G_GpaBudgetViewMode = 'party';
+let G_GpaBudgetActiveRequest = { party: 0, employee: 0 };
+let G_GpaBudgetCache = { party: null, employee: null, filterKey: '' };
+let G_GpaBudgetBindingFilters = false;
+let G_GpaBudgetFilterCombos = [];
+let G_GpaBudgetProjectCache = null;
 let G_GpaWorkTypeList = [];
 /** When true, card list shows only entries pending approval on the current user (see paymentIsPendingOnMe). */
 let G_OnlyPendingOnMe = false;
@@ -1486,6 +1493,7 @@ function applyGpaModalActionButtons(showApproveRejectHold, payment) {
         $('.btn-gpa-modal-preview, .btn-gpa-modal-print').hide();
         $('#gpaBtnModalAttachment, .btn-gpa-modal-attach').hide();
         $('#gpaBtnHistoryAction').hide();
+        $('#gpaBtnBudgetBalanceAction').hide();
         return;
     }
 
@@ -1501,6 +1509,7 @@ function applyGpaModalActionButtons(showApproveRejectHold, payment) {
     $('.btn-gpa-modal-preview, .btn-gpa-modal-print').toggle(!viewOnly);
     $('#gpaBtnModalAttachment, .btn-gpa-modal-attach').toggle(!viewOnly);
     $('#gpaBtnHistoryAction').toggle(!viewOnly);
+    $('#gpaBtnBudgetBalanceAction').toggle(!viewOnly);
     const $modal = $('#modalGpaDetail');
     if ($modal.length) $modal.toggleClass('gpa-modal-view-only', !!viewOnly);
 }
@@ -2414,26 +2423,126 @@ function gpaResolveHistoryPartyContext(payment) {
     };
 }
 
-function gpaCollectHistoryLineCombos(payment) {
-    const lines = payment?._modalBillLines || payment?._entryDetailLines || payment?._detailLines || [];
-    const map = new Map();
+function gpaProjectCodeFromRow(r) {
+    if (!r || typeof r !== 'object') return 0;
+    const v = r.ProjectMaster_Code ?? r.projectMaster_Code
+        ?? r.F_ProjectMaster_Code ?? r.f_ProjectMaster_Code
+        ?? r.Project_Code ?? r.project_Code ?? r.ProjectMasterCode ?? r.projectMasterCode;
+    const n = parseInt(String(v ?? '0'), 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+}
 
-    lines.forEach(function (r) {
+function gpaSubProjectCodeFromRow(r) {
+    if (!r || typeof r !== 'object') return 0;
+    const v = r.SubProjectMaster_Code ?? r.subProjectMaster_Code
+        ?? r.F_SubProjectMaster_Code ?? r.f_SubProjectMaster_Code
+        ?? r.SubProject_Code ?? r.subProject_Code ?? r.SubProjectMasterCode ?? r.subProjectMasterCode;
+    const n = parseInt(String(v ?? '0'), 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function gpaResolveProjectCodeByName(name, projectCache) {
+    const q = String(name || '').trim().toLowerCase();
+    if (!q || !Array.isArray(projectCache)) return 0;
+    for (let i = 0; i < projectCache.length; i += 1) {
+        const p = projectCache[i];
+        const label = String(
+            p.ProjectName ?? p.projectName ?? p.ProjectDesp ?? p.projectDesp ?? p.Name ?? p.name ?? ''
+        ).trim().toLowerCase();
+        if (label && label === q) {
+            const code = parseInt(String(p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code ?? 0), 10);
+            if (Number.isFinite(code) && code > 0) return code;
+        }
+    }
+    return 0;
+}
+
+function gpaComboRowLabel(r) {
+    const projectName = gpaProjectLabelFromRow(r) || String(r.Project ?? r.project ?? '').trim();
+    const subProjectName = gpaSubProjectLabelFromRow(r)
+        || String(r['Sub Project'] ?? r.SubProject ?? r.subProject ?? '').trim();
+    return { projectName: projectName, subProjectName: subProjectName };
+}
+
+function gpaCollectCombosFromRows(rows, projectCache) {
+    const map = new Map();
+    const list = Array.isArray(rows) ? rows : [];
+
+    list.forEach(function (r) {
         if (!r || typeof r !== 'object') return;
-        const pc = parseInt(r.ProjectMaster_Code ?? r.projectMaster_Code ?? 0, 10) || 0;
-        const sc = parseInt(r.SubProjectMaster_Code ?? r.subProjectMaster_Code ?? 0, 10) || 0;
-        if (!pc && !sc) return;
-        const key = pc + '|' + sc;
-        if (map.has(key)) return;
+        if (typeof gpaBudgetIsTotalRow === 'function' && gpaBudgetIsTotalRow(r)) return;
+        if (typeof gpaBudgetIsEmployeeTotalRow === 'function' && gpaBudgetIsEmployeeTotalRow(r)) return;
+
+        const labels = gpaComboRowLabel(r);
+        let pc = gpaProjectCodeFromRow(r);
+        let sc = gpaSubProjectCodeFromRow(r);
+        if (!pc && labels.projectName) {
+            pc = gpaResolveProjectCodeByName(labels.projectName, projectCache);
+        }
+        if (!pc && !sc && !labels.projectName && !labels.subProjectName) return;
+        if (!labels.subProjectName || labels.subProjectName.toLowerCase() === 'all sub projects') return;
+
+        const key = String(pc || 0) + '|'
+            + labels.projectName.toLowerCase().trim() + '|'
+            + labels.subProjectName.toLowerCase().trim();
+        if (map.has(key)) {
+            const existing = map.get(key);
+            if (!existing.subProjectMasterCode && sc) {
+                existing.subProjectMasterCode = sc;
+            }
+            if (!existing.projectMasterCode && pc) {
+                existing.projectMasterCode = pc;
+            }
+            return;
+        }
         map.set(key, {
             projectMasterCode: pc,
             subProjectMasterCode: sc,
-            projectName: gpaProjectLabelFromRow(r) || ('Project ' + pc),
-            subProjectName: gpaSubProjectLabelFromRow(r) || ('Sub Project ' + sc),
+            projectName: labels.projectName || ('Project ' + (pc || '?')),
+            subProjectName: labels.subProjectName || ('Sub Project ' + (sc || '?')),
         });
     });
 
     return Array.from(map.values());
+}
+
+function gpaMergeFilterCombos(base, extra) {
+    const map = new Map();
+    function comboMergeKey(c) {
+        return String(c.projectMasterCode || 0) + '|'
+            + String(c.projectName || '').trim().toLowerCase() + '|'
+            + String(c.subProjectName || '').trim().toLowerCase();
+    }
+    function upsert(c) {
+        if (!c) return;
+        const name = String(c.subProjectName || '').trim();
+        if (!name || name.toLowerCase() === 'all sub projects') return;
+        const key = comboMergeKey(c);
+        const existing = map.get(key);
+        if (!existing) {
+            map.set(key, {
+                projectMasterCode: c.projectMasterCode || 0,
+                subProjectMasterCode: c.subProjectMasterCode || 0,
+                projectName: c.projectName || '',
+                subProjectName: name,
+            });
+            return;
+        }
+        map.set(key, {
+            projectMasterCode: existing.projectMasterCode || c.projectMasterCode || 0,
+            subProjectMasterCode: existing.subProjectMasterCode || c.subProjectMasterCode || 0,
+            projectName: existing.projectName || c.projectName || '',
+            subProjectName: existing.subProjectName || name,
+        });
+    }
+    (Array.isArray(base) ? base : []).forEach(upsert);
+    (Array.isArray(extra) ? extra : []).forEach(upsert);
+    return Array.from(map.values());
+}
+
+function gpaCollectHistoryLineCombos(payment) {
+    const lines = payment?._modalBillLines || payment?._entryDetailLines || payment?._detailLines || [];
+    return gpaCollectCombosFromRows(lines, G_GpaBudgetProjectCache);
 }
 
 function gpaBindHistoryFilterDropdowns(combos) {
@@ -2610,7 +2719,7 @@ function normalizeGpaHistoryResponse(res) {
 function gpaHistoryDocTypeBadge(docType) {
     const t = String(docType || '').trim().toLowerCase();
     if (t === 'po') return '<span class="gpa-history-type gpa-history-type-po">PO</span>';
-    if (t === 'grn') return '<span class="gpa-history-type gpa-history-type-grn">GRN</span>';
+    if (t === 'grn' || t === 'mrn') return '<span class="gpa-history-type gpa-history-type-grn">GRN</span>';
     return '<span class="gpa-history-type gpa-history-type-payment">Payment</span>';
 }
 
@@ -2650,14 +2759,18 @@ function renderGpaApprovalHistorySummary(summary, ctx) {
     );
 }
 
-function renderGpaApprovalHistoryDetails(details) {
+function renderGpaApprovalHistoryDetails(details, targets) {
+    const t = targets || {};
     const rows = Array.isArray(details) ? details : [];
-    const tbody = document.getElementById('gpaHistoryTableBody');
+    const bodyId = t.bodyId || 'gpaHistoryTableBody';
+    const wrapSel = t.wrapSel || '#gpaHistoryTableWrap';
+    const emptySel = t.emptySel || '#gpaHistoryEmpty';
+    const tbody = document.getElementById(bodyId);
     if (!tbody) return;
 
     if (!rows.length) {
-        $('#gpaHistoryTableWrap').hide();
-        $('#gpaHistoryEmpty').show();
+        $(wrapSel).hide();
+        $(emptySel).show();
         tbody.innerHTML = '';
         return;
     }
@@ -2678,8 +2791,8 @@ function renderGpaApprovalHistoryDetails(details) {
     });
 
     tbody.innerHTML = html;
-    $('#gpaHistoryEmpty').hide();
-    $('#gpaHistoryTableWrap').show();
+    $(emptySel).hide();
+    $(wrapSel).show();
 }
 
 function OpenGpaApprovalHistory() {
@@ -2710,6 +2823,1194 @@ function CloseGpaApprovalHistoryModal() {
     if (typeof window !== 'undefined') window.__gpaPoHistoryState = null;
     $('#modalGpaHistory').modal('hide');
 }
+
+const GPA_BUDGET_PARTY_AMOUNT_COLUMNS = [
+    { key: 'TotalPOAmountWithGST', label: 'Total PO (GST)' },
+    { key: 'TotalGRNBillAmountWithGST', label: 'Total GRN Bill (GST)' },
+    { key: 'Deduction', label: 'Deduction' },
+    { key: 'NetGRNAmountWithGST', label: 'Net GRN (GST)' },
+    { key: 'TDSDeduction', label: 'TDS Deduction' },
+    { key: 'PaidAmountFromBank', label: 'Paid From Bank' },
+    { key: 'NetPaymentWithTDS', label: 'Net Payment (TDS)' },
+    { key: 'GRNLessPayment', label: 'GRN Less Payment' },
+    { key: 'POGRNNetBalance', label: 'PO - GRN Balance', altKeys: ['POGRNNNetBalance'] },
+];
+
+const GPA_BUDGET_PARTY_TILES = [
+    { key: 'TotalPOAmountWithGST', label: 'Total PO (GST)', card: 'po', altKeys: [] },
+    { key: 'TotalGRNBillAmountWithGST', label: 'Total GRN Bill (GST)', card: 'grn', altKeys: [] },
+    { key: 'Deduction', label: 'Deduction', card: 'budget', altKeys: [] },
+    { key: 'NetGRNAmountWithGST', label: 'Net GRN (GST)', card: 'budget', altKeys: [] },
+    { key: 'TDSDeduction', label: 'TDS Deduction', card: 'budget', altKeys: [] },
+    { key: 'PaidAmountFromBank', label: 'Paid From Bank', card: 'payment', altKeys: [] },
+    { key: 'NetPaymentWithTDS', label: 'Net Payment (TDS)', card: 'payment', altKeys: [] },
+    { key: 'GRNLessPayment', label: 'GRN Less Payment', card: 'balance', altKeys: [] },
+    { key: 'POGRNNetBalance', label: 'PO - GRN Balance', card: 'balance', altKeys: ['POGRNNNetBalance'] },
+];
+
+const GPA_BUDGET_PARTY_SUMMARY_COLUMNS = [
+    { key: 'Project', label: 'Project' },
+    { key: 'SubProject', label: 'Sub Project' },
+].concat(GPA_BUDGET_PARTY_AMOUNT_COLUMNS);
+
+const GPA_BUDGET_PARTY_HISTORY_COLUMNS = [
+    { key: 'DocType', label: 'Type', isType: true, altKeys: ['docType', 'Type', 'type'] },
+    { key: 'DocNo', label: 'Doc No', isCenter: true, altKeys: ['docNo'] },
+    { key: 'DocDate', label: 'Date', isCenter: true, altKeys: ['docDate'] },
+    { key: 'BillNo', label: 'Bill No', isCenter: true, altKeys: ['billNo'] },
+    { key: 'PONo', label: 'PO No', isCenter: true, altKeys: ['poNo'] },
+    { key: 'Project', label: 'Project' },
+    { key: 'SubProject', label: 'Sub Project' },
+    { key: 'Amount', label: 'Amount' },
+];
+
+const GPA_BUDGET_EMPLOYEE_COLUMNS = [
+    { key: 'Employee', label: 'Employee', altKeys: ['employee'] },
+    { key: 'Project', label: 'Project' },
+    { key: 'SubProject', label: 'Sub Project' },
+    { key: 'OpeningBalance', label: 'Opening', altKeys: ['Opening', 'opening', 'openingBalance'] },
+    { key: 'TotalExpense', label: 'Total Expense', altKeys: ['totalExpense'] },
+    { key: 'TotalPaidAmount', label: 'Total Paid', altKeys: ['totalPaidAmount'] },
+    { key: 'Balance', label: 'Balance', altKeys: ['balance'] },
+];
+
+const GPA_BUDGET_EMPLOYEE_TILES = [
+    { key: 'OpeningBalance', label: 'Opening', card: 'po', altKeys: ['Opening', 'opening', 'openingBalance'] },
+    { key: 'TotalExpense', label: 'Total Expense', card: 'grn', altKeys: ['totalExpense'] },
+    { key: 'TotalPaidAmount', label: 'Total Paid', card: 'payment', altKeys: ['totalPaidAmount'] },
+    { key: 'Balance', label: 'Balance', card: 'balance', altKeys: ['balance'] },
+];
+
+function gpaBudgetAmtCell(val) {
+    return '<td class="text-end">' + gpaHistoryAmt(val ?? 0) + '</td>';
+}
+
+function gpaBudgetTextCell(val) {
+    return '<td>' + EscHtml(val ?? '—') + '</td>';
+}
+
+function gpaBudgetPickRowVal(row, key, altKeys) {
+    if (!row || typeof row !== 'object') return null;
+    const keys = [key].concat(altKeys || []);
+    for (let i = 0; i < keys.length; i += 1) {
+        const k = keys[i];
+        const camel = k.charAt(0).toLowerCase() + k.slice(1);
+        const val = row[k] ?? row[camel] ?? row[k.replace(/([A-Z])/g, '_$1').replace(/^_/, '')];
+        if (val != null && val !== '') return val;
+    }
+    return null;
+}
+
+function gpaBudgetIsEmployeeTotalRow(row) {
+    if (!row || typeof row !== 'object') return false;
+    const emp = String(gpaBudgetPickRowVal(row, 'Employee', ['employee']) ?? '').trim().toUpperCase();
+    if (emp === 'GRAND TOTAL') return true;
+    return emp.endsWith(' TOTAL') && emp !== 'GRAND TOTAL';
+}
+
+function gpaBudgetIsTotalRow(row) {
+    if (!row || typeof row !== 'object') return false;
+    if (gpaBudgetIsEmployeeTotalRow(row)) return true;
+    const proj = String(gpaBudgetPickRowVal(row, 'Project') ?? '').trim().toUpperCase();
+    const sub = String(gpaBudgetPickRowVal(row, 'SubProject') ?? row['Sub Project'] ?? '').trim().toUpperCase();
+    return proj === 'TOTAL' || sub === 'TOTAL';
+}
+
+function gpaBudgetFindEmployeeTileRow(rows, preferGrand) {
+    const list = Array.isArray(rows) ? rows : [];
+    if (preferGrand) {
+        for (let i = list.length - 1; i >= 0; i -= 1) {
+            const emp = String(gpaBudgetPickRowVal(list[i], 'Employee', ['employee']) ?? '').trim().toUpperCase();
+            if (emp === 'GRAND TOTAL') return list[i];
+        }
+    }
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+        if (gpaBudgetIsEmployeeTotalRow(list[i])
+            && String(gpaBudgetPickRowVal(list[i], 'Employee', ['employee']) ?? '').trim().toUpperCase() !== 'GRAND TOTAL') {
+            return list[i];
+        }
+    }
+    return gpaBudgetFindTotalRow(list);
+}
+
+function gpaBudgetFindTotalRow(rows) {
+    const list = Array.isArray(rows) ? rows : [];
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+        if (gpaBudgetIsTotalRow(list[i])) return list[i];
+    }
+    return null;
+}
+
+function gpaSumBudgetEmployeeRows(rows, key) {
+    const list = Array.isArray(rows) ? rows : [];
+    return list.reduce(function (sum, row) {
+        const val = parseFloat(gpaBudgetPickRowVal(row, key) || 0);
+        return sum + (isNaN(val) ? 0 : val);
+    }, 0);
+}
+
+function gpaBuildEmployeeTotalFromRows(rows) {
+    return {
+        OpeningBalance: gpaSumBudgetEmployeeRows(rows, 'OpeningBalance')
+            || gpaSumBudgetEmployeeRows(rows, 'Opening'),
+        TotalExpense: gpaSumBudgetEmployeeRows(rows, 'TotalExpense'),
+        TotalPaidAmount: gpaSumBudgetEmployeeRows(rows, 'TotalPaidAmount'),
+        Balance: gpaSumBudgetEmployeeRows(rows, 'Balance'),
+    };
+}
+
+function gpaBuildPartyTotalFromRows(rows) {
+    const list = Array.isArray(rows) ? rows.filter(function (r) { return !gpaBudgetIsTotalRow(r); }) : [];
+    if (!list.length) return null;
+    const sumKey = function (key) {
+        return list.reduce(function (sum, row) {
+            const val = parseFloat(gpaBudgetPickRowVal(row, key) || 0);
+            return sum + (isNaN(val) ? 0 : val);
+        }, 0);
+    };
+    return {
+        Project: 'TOTAL',
+        SubProject: '',
+        TotalPOAmountWithGST: sumKey('TotalPOAmountWithGST'),
+        TotalGRNBillAmountWithGST: sumKey('TotalGRNBillAmountWithGST'),
+        Deduction: sumKey('Deduction'),
+        NetGRNAmountWithGST: sumKey('NetGRNAmountWithGST'),
+        TDSDeduction: sumKey('TDSDeduction'),
+        PaidAmountFromBank: sumKey('PaidAmountFromBank'),
+        NetPaymentWithTDS: sumKey('NetPaymentWithTDS'),
+        GRNLessPayment: sumKey('GRNLessPayment'),
+        POGRNNetBalance: sumKey('POGRNNetBalance'),
+    };
+}
+
+function gpaSplitBudgetRows(rows, mode) {
+    const list = Array.isArray(rows) ? rows.slice() : (rows ? [rows] : []);
+    if (!list.length) return { total: null, details: [] };
+
+    if (mode === 'employee') {
+        const details = list.filter(function (r) {
+            return !gpaBudgetIsEmployeeTotalRow(r) && !gpaBudgetIsTotalRow(r);
+        });
+        const totalRow = gpaBudgetFindEmployeeTileRow(list, false)
+            || gpaBudgetFindTotalRow(list)
+            || (details.length ? gpaBuildEmployeeTotalFromRows(details) : null);
+        return { total: totalRow, details: details, allRows: list };
+    }
+
+    const totalRow = gpaBudgetFindTotalRow(list);
+    const details = totalRow ? list.filter(function (r) { return !gpaBudgetIsTotalRow(r); }) : list.slice();
+    const total = totalRow || gpaBuildPartyTotalFromRows(details);
+    return { total: total, details: details };
+}
+
+function gpaBudgetTileCardClass(cardType) {
+    if (cardType === 'po') return 'gpa-history-card gpa-history-card--po';
+    if (cardType === 'grn') return 'gpa-history-card gpa-history-card--grn';
+    if (cardType === 'payment') return 'gpa-history-card gpa-history-card--payment';
+    if (cardType === 'balance') return 'gpa-history-card gpa-history-card--balance';
+    return 'gpa-budget-card';
+}
+
+function gpaBudgetTileValue(key, val) {
+    if (key === 'Balance' || key === 'POGRNNetBalance' || key === 'GRNLessPayment') {
+        return gpaHistoryBalanceDisplay(val ?? 0);
+    }
+    return gpaHistoryAmt(val ?? 0);
+}
+
+function gpaBudgetSummaryCard(label, valHtml, cardType) {
+    return '<div class="' + gpaBudgetTileCardClass(cardType) + '">'
+        + '<div class="gpa-history-card-lbl">' + EscHtml(label) + '</div>'
+        + '<div class="gpa-history-card-val">' + valHtml + '</div></div>';
+}
+
+function gpaBudgetAmountCellHtml(key, val) {
+    if (key === 'Balance' || key === 'POGRNNetBalance' || key === 'GRNLessPayment') {
+        return '<td class="text-end">' + gpaHistoryBalanceDisplay(val ?? 0) + '</td>';
+    }
+    return gpaBudgetAmtCell(val);
+}
+
+function gpaPaymentBudgetViewMode(payment) {
+    const p = payment || G_CurrentPayment;
+    if (typeof window.gpaMasterIsEmployeePayment === 'function' && window.gpaMasterIsEmployeePayment(p)) {
+        return 'employee';
+    }
+    const empCode = p?.MarketingManMaster_Code ?? p?.marketingManMaster_Code
+        ?? p?.F_MarketingManMaster_Code ?? p?.f_MarketingManMaster_Code;
+    const empN = parseInt(String(empCode ?? '0'), 10);
+    const accCode = p?.AccountMaster_Code ?? p?.accountMaster_Code;
+    const accN = parseInt(String(accCode ?? '0'), 10);
+    if (Number.isFinite(empN) && empN > 0 && (!Number.isFinite(accN) || accN <= 0)) {
+        return 'employee';
+    }
+    return 'party';
+}
+
+function gpaBudgetCounterpartyDisplayName(payment, mode) {
+    const p = payment || G_CurrentPayment;
+    if (mode === 'employee') {
+        const emp = String(
+            p?.Employee ?? p?.employee
+            ?? p?.EmployeeName ?? p?.employeeName
+            ?? p?.MarketingManMaster ?? p?.marketingManMaster
+            ?? p?.MarketingManName ?? p?.marketingManName ?? ''
+        ).trim();
+        if (emp) return emp;
+    }
+    return getPartyName(p);
+}
+
+function gpaApplyBudgetViewChrome(mode) {
+    const isEmployee = mode === 'employee';
+    $('#gpaBudgetCounterpartyLbl').text(isEmployee ? 'Employee' : 'Party');
+    $('#gpaBudgetBtnPartyWise').toggle(!isEmployee).toggleClass('active', !isEmployee);
+    $('#gpaBudgetBtnEmployeeWise').toggle(isEmployee).toggleClass('active', isEmployee);
+    $('#gpaBudgetTypeFilterWrap').toggle(!isEmployee);
+    $('.gpa-budget-view-toggle').toggle(true);
+}
+
+function gpaBudgetNormalizeDocType(docType) {
+    const t = String(docType || '').trim().toLowerCase();
+    if (t === 'po') return 'po';
+    if (t === 'grn' || t === 'mrn') return 'grn';
+    if (t === 'payment' || t === 'pay') return 'payment';
+    return t || 'payment';
+}
+
+function gpaBudgetDocTypeFromRow(row) {
+    const raw = gpaBudgetPickRowVal(row, 'DocType', ['docType', 'Type', 'type']);
+    return gpaBudgetNormalizeDocType(raw);
+}
+
+function gpaBudgetDocTypeLabel(code) {
+    if (code === 'po') return 'PO';
+    if (code === 'grn') return 'GRN';
+    if (code === 'payment') return 'Payment';
+    return String(code || '').toUpperCase();
+}
+
+function gpaCollectBudgetHistoryDocTypes(rows) {
+    const order = ['po', 'grn', 'payment'];
+    const found = new Set();
+    (Array.isArray(rows) ? rows : []).forEach(function (r) {
+        const code = gpaBudgetDocTypeFromRow(r);
+        if (code) found.add(code);
+    });
+    return order.filter(function (c) { return found.has(c); });
+}
+
+function gpaFilterBudgetHistoryByType(rows, typeVal) {
+    const list = Array.isArray(rows) ? rows : [];
+    const filter = gpaBudgetNormalizeDocType(typeVal);
+    if (!filter) return list.slice();
+    return list.filter(function (r) {
+        return gpaBudgetDocTypeFromRow(r) === filter;
+    });
+}
+
+function gpaBindBudgetTypeFilter(historyRows, options) {
+    const opts = options || {};
+    const $type = $('#gpaBudgetDdlType');
+    const prev = opts.preserve ? String($type.val() || '') : '';
+    const types = gpaCollectBudgetHistoryDocTypes(historyRows);
+
+    $type.html('<option value="">All Types</option>');
+    types.forEach(function (code) {
+        $type.append(
+            '<option value="' + EscHtml(code) + '">' + EscHtml(gpaBudgetDocTypeLabel(code)) + '</option>'
+        );
+    });
+
+    if (opts.preserve && prev && $type.find('option').filter(function () {
+        return String(this.value) === prev;
+    }).length) {
+        $type.val(prev);
+    } else {
+        $type.val('');
+    }
+    $type.prop('disabled', !types.length);
+}
+
+function gpaBudgetPanel(mode) {
+    const isEmployee = mode === 'employee';
+    const cap = isEmployee ? 'Employee' : 'Party';
+    return {
+        panel: '#gpaBudget' + cap + 'Panel',
+        summary: '#gpaBudget' + cap + 'Summary',
+        loading: '#gpaBudget' + cap + 'Loading',
+        empty: '#gpaBudget' + cap + 'Empty',
+        tableWrap: '#gpaBudget' + cap + 'TableWrap',
+        tableHead: 'gpaBudget' + cap + 'TableHead',
+        tableBody: 'gpaBudget' + cap + 'TableBody',
+    };
+}
+
+function gpaToggleBudgetPanels(mode) {
+    const isEmployee = mode === 'employee';
+
+    $('#gpaBudgetPartyPanel').toggleClass('is-active', !isEmployee);
+    $('#gpaBudgetEmployeePanel').toggleClass('is-active', isEmployee);
+    gpaApplyBudgetViewChrome(mode);
+}
+
+function renderGpaBudgetTotalTiles(totalRow, mode) {
+    const row = totalRow || {};
+    const p = gpaBudgetPanel(mode);
+    let html = '';
+    const tiles = mode === 'employee' ? GPA_BUDGET_EMPLOYEE_TILES : GPA_BUDGET_PARTY_TILES;
+    tiles.forEach(function (t) {
+        const val = gpaBudgetPickRowVal(row, t.key, t.altKeys);
+        html += gpaBudgetSummaryCard(t.label, gpaBudgetTileValue(t.key, val), t.card);
+    });
+    $(p.summary).html(html);
+}
+
+function gpaBudgetRowIsHistoryRow(row) {
+    if (!row || typeof row !== 'object') return false;
+    const docType = gpaBudgetPickRowVal(row, 'DocType', ['docType', 'Type', 'type']);
+    const docNo = gpaBudgetPickRowVal(row, 'DocNo', ['docNo']);
+    return !!(String(docType || '').trim() || String(docNo || '').trim());
+}
+
+function gpaBudgetPayloadHasData(payload) {
+    if (!payload) return false;
+    if (Array.isArray(payload)) return payload.length > 0;
+    if (payload.summaryRow && typeof payload.summaryRow === 'object') return true;
+    return (payload.budgetRows && payload.budgetRows.length > 0)
+        || (payload.historyRows && payload.historyRows.length > 0);
+}
+
+function gpaBudgetPayloadSummaryRow(payload) {
+    if (!payload || Array.isArray(payload)) return null;
+    if (payload.summaryRow && typeof payload.summaryRow === 'object') return payload.summaryRow;
+    return null;
+}
+
+function gpaBudgetPayloadBudgetRows(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload.filter(function (r) { return !gpaBudgetRowIsHistoryRow(r); });
+    if (Array.isArray(payload.budgetRows) && payload.budgetRows.length) {
+        return payload.budgetRows;
+    }
+    if (payload.summaryRow) return [payload.summaryRow];
+    return [];
+}
+
+function gpaBudgetPayloadHistoryRows(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload.filter(gpaBudgetRowIsHistoryRow);
+    return Array.isArray(payload.historyRows) ? payload.historyRows : [];
+}
+
+function gpaParseJsonIfString(v) {
+    if (typeof v !== 'string') return v;
+    const s = v.trim();
+    if (!s || (s[0] !== '{' && s[0] !== '[')) return v;
+    try {
+        return JSON.parse(s);
+    } catch (e) {
+        return v;
+    }
+}
+
+function gpaUnwrapApiRoot(res) {
+    let v = gpaParseJsonIfString(res);
+    if (v == null) return v;
+    for (let i = 0; i < 4; i += 1) {
+        if (Array.isArray(v)) return v;
+        if (!v || typeof v !== 'object') return v;
+        const next = v.Data ?? v.data ?? v.Result ?? v.result ?? v.Value ?? v.value;
+        if (next === undefined || next === null) return v;
+        v = gpaParseJsonIfString(next);
+    }
+    return v;
+}
+
+function gpaRowLooksLikePartyBudgetRow(row) {
+    if (!row || typeof row !== 'object') return false;
+    if (gpaBudgetRowIsHistoryRow(row)) return false;
+    return row.TotalPOAmountWithGST != null || row.totalPOAmountWithGST != null
+        || row.TotalGRNBillAmountWithGST != null || row.totalGRNBillAmountWithGST != null
+        || row.NetGRNAmountWithGST != null || row.netGRNAmountWithGST != null
+        || row.PaidAmountFromBank != null || row.paidAmountFromBank != null
+        || row.POGRNNetBalance != null || row.pOGRNNetBalance != null
+        || (row.Project != null && row.SubProject != null);
+}
+
+function gpaExtractSummaryHistoryPayload(root) {
+    if (!root || typeof root !== 'object' || Array.isArray(root)) return null;
+
+    const summaryRaw = root.Summary ?? root.summary;
+    const historyRaw = root.History ?? root.history ?? root.HistoryRows ?? root.historyRows;
+    const historyRows = Array.isArray(historyRaw) ? historyRaw : [];
+
+    if (Array.isArray(summaryRaw) && summaryRaw.length) {
+        const budgetRows = summaryRaw.filter(function (r) {
+            return gpaRowLooksLikePartyBudgetRow(r) || gpaBudgetIsTotalRow(r);
+        });
+        const rows = budgetRows.length ? budgetRows : summaryRaw.slice();
+        const totalRow = gpaBudgetFindTotalRow(rows);
+        return {
+            budgetRows: rows,
+            historyRows: historyRows,
+            summaryRow: totalRow || null,
+        };
+    }
+
+    const summary = summaryRaw && typeof summaryRaw === 'object' && !Array.isArray(summaryRaw)
+        ? summaryRaw
+        : null;
+
+    const hasSummary = !!(summary && (
+        gpaRowLooksLikePartyBudgetRow(summary)
+        || gpaBudgetIsTotalRow(summary)
+        || summary.TotalPOAmountWithGST != null
+        || summary.totalPOAmountWithGST != null
+    ));
+
+    if (!hasSummary && !historyRows.length) return null;
+
+    return {
+        budgetRows: hasSummary ? [summary] : [],
+        historyRows: historyRows,
+        summaryRow: hasSummary ? summary : null,
+    };
+}
+
+function gpaExtractPartyBudgetTables(root) {
+    const pickArray = function (v) {
+        if (Array.isArray(v)) return v;
+        if (v && typeof v === 'object') return [v];
+        return [];
+    };
+    if (!root || typeof root !== 'object') {
+        return { budgetRows: [], historyRows: [], summaryRow: null };
+    }
+    const budgetRows = pickArray(
+        root.PartyRows ?? root.partyRows ?? root.Party ?? root.party
+        ?? root.BudgetRows ?? root.budgetRows ?? root.PartyBudget ?? root.partyBudget
+        ?? root.Table ?? root.table ?? root.Table0 ?? root.table0
+    );
+    const historyRows = pickArray(
+        root.HistoryRows ?? root.historyRows ?? root.BudgetHistory ?? root.budgetHistory
+        ?? root.History ?? root.history ?? root.Table1 ?? root.table1 ?? root.Table2 ?? root.table2
+    );
+    return { budgetRows: budgetRows, historyRows: historyRows, summaryRow: null };
+}
+
+function gpaSplitMixedPartyBudgetRows(rows) {
+    const list = Array.isArray(rows) ? rows : [];
+    const historyRows = list.filter(gpaBudgetRowIsHistoryRow);
+    const budgetRows = list.filter(function (r) {
+        if (gpaBudgetRowIsHistoryRow(r)) return false;
+        return gpaRowLooksLikePartyBudgetRow(r) || gpaBudgetIsTotalRow(r);
+    });
+    if (budgetRows.length) {
+        return { budgetRows: budgetRows, historyRows: historyRows, summaryRow: null };
+    }
+    return {
+        budgetRows: list.filter(function (r) { return !gpaBudgetRowIsHistoryRow(r); }),
+        historyRows: historyRows,
+        summaryRow: null,
+    };
+}
+
+function normalizeGpaPartyBudgetResponse(res) {
+    const empty = { budgetRows: [], historyRows: [], summaryRow: null };
+    if (res == null) return empty;
+
+    const root = gpaUnwrapApiRoot(res);
+
+    if (Array.isArray(root)) {
+        if (root.length >= 2 && Array.isArray(root[0])) {
+            return {
+                budgetRows: root[0] || [],
+                historyRows: root[1] || [],
+                summaryRow: null,
+            };
+        }
+        if (root.length && (gpaBudgetRowsLookLikeParty(root) || gpaBudgetIsTotalRow(root[root.length - 1]))) {
+            return gpaSplitMixedPartyBudgetRows(root);
+        }
+        if (root.length && gpaBudgetRowIsHistoryRow(root[0])) {
+            return { budgetRows: [], historyRows: root, summaryRow: null };
+        }
+        return gpaSplitMixedPartyBudgetRows(root);
+    }
+
+    if (root && typeof root === 'object') {
+        const tables = gpaExtractPartyBudgetTables(root);
+        const hasTableData = tables.budgetRows.length || tables.historyRows.length;
+
+        if (hasTableData) {
+            const summaryPayload = gpaExtractSummaryHistoryPayload(root);
+            const budgetRows = tables.budgetRows.length
+                ? tables.budgetRows
+                : (summaryPayload && summaryPayload.budgetRows.length ? summaryPayload.budgetRows : []);
+            return {
+                budgetRows: budgetRows,
+                historyRows: tables.historyRows.length
+                    ? tables.historyRows
+                    : (summaryPayload ? summaryPayload.historyRows : []),
+                summaryRow: summaryPayload ? summaryPayload.summaryRow : null,
+            };
+        }
+
+        const summaryPayload = gpaExtractSummaryHistoryPayload(root);
+        if (summaryPayload) return summaryPayload;
+    }
+
+    const flat = normalizeGpaModalApiRows(res);
+    if (flat.length) {
+        return gpaSplitMixedPartyBudgetRows(flat);
+    }
+
+    return empty;
+}
+
+function gpaRenderBudgetTableHead(mode, tableKind) {
+    const cols = mode === 'employee'
+        ? GPA_BUDGET_EMPLOYEE_COLUMNS
+        : (tableKind === 'history' ? GPA_BUDGET_PARTY_HISTORY_COLUMNS : GPA_BUDGET_PARTY_SUMMARY_COLUMNS);
+    const headId = mode === 'employee'
+        ? gpaBudgetPanel(mode).tableHead
+        : (tableKind === 'history' ? 'gpaBudgetPartyHistoryTableHead' : gpaBudgetPanel(mode).tableHead);
+    const head = document.getElementById(headId);
+    if (!head) return;
+    let html = '<tr>';
+    cols.forEach(function (c) {
+        const isText = c.key === 'Employee' || c.key === 'Project' || c.key === 'SubProject' || c.isType || c.isCenter;
+        let align = '';
+        if (c.isType || c.isCenter) align = ' text-center';
+        else if (!isText) align = ' text-end';
+        html += '<th class="' + align.trim() + '">' + EscHtml(c.label) + '</th>';
+    });
+    html += '</tr>';
+    head.innerHTML = html;
+}
+
+function gpaBudgetTypeCell(row) {
+    const docType = gpaBudgetPickRowVal(row, 'DocType', ['docType', 'Type', 'type']);
+    if (docType) {
+        return '<td class="text-center">' + gpaHistoryDocTypeBadge(docType) + '</td>';
+    }
+    return '<td class="text-center">—</td>';
+}
+
+function gpaRenderBudgetTableBody(rows, mode, tableKind) {
+    const cols = mode === 'employee'
+        ? GPA_BUDGET_EMPLOYEE_COLUMNS
+        : (tableKind === 'history' ? GPA_BUDGET_PARTY_HISTORY_COLUMNS : GPA_BUDGET_PARTY_SUMMARY_COLUMNS);
+    const p = gpaBudgetPanel(mode);
+    const tbodyId = mode === 'employee'
+        ? p.tableBody
+        : (tableKind === 'history' ? 'gpaBudgetPartyHistoryTableBody' : p.tableBody);
+    const wrapSel = tableKind === 'history' ? '#gpaBudgetPartyHistoryTableWrap' : p.tableWrap;
+    const emptySel = tableKind === 'history' ? '#gpaBudgetPartyHistoryEmpty' : p.empty;
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    const list = Array.isArray(rows) ? rows : (rows ? [rows] : []);
+    if (!list.length) {
+        tbody.innerHTML = '';
+        $(wrapSel).hide();
+        if (tableKind !== 'history') {
+            $(p.empty).show();
+        } else {
+            $(emptySel).show();
+        }
+        return;
+    }
+
+    let html = '';
+    list.forEach(function (row) {
+        const isTotal = tableKind === 'summary' && gpaBudgetIsTotalRow(row);
+        html += '<tr' + (isTotal ? ' class="gpa-budget-total-row"' : '') + '>';
+        cols.forEach(function (c) {
+            const val = gpaBudgetPickRowVal(row, c.key, c.altKeys);
+            if (c.isType) {
+                html += gpaBudgetTypeCell(row);
+            } else if (c.isCenter) {
+                html += '<td class="text-center">' + EscHtml(val ?? '—') + '</td>';
+            } else if (c.key === 'Project' || c.key === 'SubProject' || c.key === 'Employee') {
+                html += gpaBudgetTextCell(val ?? row['Sub Project']);
+            } else if (tableKind === 'history' && (c.key === 'Amount' || c.key === 'TotalPO' || c.key === 'TotalGRN' || c.key === 'TotalPayment')) {
+                html += gpaBudgetAmtCell(val);
+            } else {
+                html += gpaBudgetAmountCellHtml(c.key, val);
+            }
+        });
+        html += '</tr>';
+    });
+
+    tbody.innerHTML = html;
+    $(emptySel).hide();
+    $(wrapSel).show();
+    if (tableKind !== 'history') {
+        $(p.empty).hide();
+    }
+}
+
+function gpaBudgetFindPartyTileRow(budgetRows, summaryRow, split) {
+    const total = (split && split.total) || gpaBudgetFindTotalRow(budgetRows) || summaryRow;
+    if (total) return total;
+    const list = Array.isArray(budgetRows)
+        ? budgetRows.filter(function (r) { return !gpaBudgetIsTotalRow(r); })
+        : [];
+    if (list.length === 1 && gpaRowLooksLikePartyBudgetRow(list[0])) return list[0];
+    return gpaBuildPartyTotalFromRows(list);
+}
+
+function gpaResetBudgetHistoryShell() {
+    const head = document.getElementById('gpaBudgetPartyHistoryTableHead');
+    const tbody = document.getElementById('gpaBudgetPartyHistoryTableBody');
+    if (head) head.innerHTML = '';
+    if (tbody) tbody.innerHTML = '';
+    $('#gpaBudgetPartyHistoryTableWrap').hide();
+    $('#gpaBudgetPartyHistoryEmpty').hide();
+    $('#gpaBudgetPartyHistorySection').hide();
+}
+
+function gpaResetBudgetPanelShell(mode) {
+    const viewMode = mode === 'employee' ? 'employee' : 'party';
+    const p = gpaBudgetPanel(viewMode);
+    $(p.summary).html('');
+    if (viewMode === 'employee') {
+        const head = document.getElementById(p.tableHead);
+        const tbody = document.getElementById(p.tableBody);
+        if (head) head.innerHTML = '';
+        if (tbody) tbody.innerHTML = '';
+        $(p.tableWrap).hide();
+    }
+    $(p.empty).hide();
+    $(p.loading).hide();
+    if (viewMode === 'party') {
+        gpaResetBudgetHistoryShell();
+    }
+}
+
+function gpaResetBudgetViewShell(mode) {
+    gpaToggleBudgetPanels(mode);
+    gpaResetBudgetPanelShell('party');
+    gpaResetBudgetPanelShell('employee');
+}
+
+function gpaCancelBudgetPendingRequests() {
+    G_GpaBudgetActiveRequest.party += 1;
+    G_GpaBudgetActiveRequest.employee += 1;
+}
+
+function gpaApplyBudgetRowsToGrid(payload, mode) {
+    const viewMode = mode === 'employee' ? 'employee' : 'party';
+    if (viewMode !== G_GpaBudgetViewMode) return;
+
+    const p = gpaBudgetPanel(viewMode);
+    gpaResetBudgetPanelShell(viewMode);
+
+    const budgetRows = gpaBudgetPayloadBudgetRows(payload);
+    const allHistoryRows = viewMode === 'party' ? gpaBudgetPayloadHistoryRows(payload) : [];
+    const filters = gpaSelectedBudgetFilterLabels();
+    const historyRows = viewMode === 'party'
+        ? gpaFilterBudgetHistoryByType(allHistoryRows, filters.docTypeFilter)
+        : [];
+    const summaryRow = gpaBudgetPayloadSummaryRow(payload);
+    const split = gpaSplitBudgetRows(budgetRows, viewMode);
+    const preferGrandTotal = !filters.projectMasterCode && !filters.subProjectMasterCode;
+
+    const tileRow = viewMode === 'employee'
+        ? (gpaBudgetFindEmployeeTileRow(budgetRows, preferGrandTotal) || split.total || summaryRow)
+        : gpaBudgetFindPartyTileRow(budgetRows, summaryRow, split);
+    if (tileRow) {
+        renderGpaBudgetTotalTiles(tileRow, viewMode);
+    }
+
+    let summaryRows = [];
+    if (viewMode === 'employee') {
+        gpaRenderBudgetTableHead(viewMode, 'summary');
+        summaryRows = split.details.length
+            ? split.details.slice()
+            : (summaryRow && !gpaBudgetIsEmployeeTotalRow(summaryRow) && !gpaBudgetIsTotalRow(summaryRow)
+                ? [summaryRow] : []);
+        gpaRenderBudgetTableBody(summaryRows, viewMode, 'summary');
+    }
+
+    if (viewMode === 'party') {
+        gpaBindBudgetTypeFilter(allHistoryRows, { preserve: true });
+        if (allHistoryRows.length) {
+            $('#gpaBudgetPartyHistorySection').show();
+            gpaRenderBudgetTableHead(viewMode, 'history');
+            gpaRenderBudgetTableBody(historyRows, viewMode, 'history');
+        } else {
+            gpaResetBudgetHistoryShell();
+        }
+    }
+
+    const isEmpty = viewMode === 'party'
+        ? (!tileRow && !allHistoryRows.length)
+        : (!summaryRows.length && !tileRow);
+    if (isEmpty) {
+        $(p.empty).show();
+        if (viewMode === 'employee') {
+            $(p.tableWrap).hide();
+        }
+    }
+
+    $(p.loading).hide();
+    gpaSyncBudgetFilterCombos(budgetRows.concat(allHistoryRows, summaryRow ? [summaryRow] : []));
+}
+
+function gpaReapplyBudgetPartyFromCache() {
+    if (G_GpaBudgetViewMode !== 'party') return;
+    const cached = G_GpaBudgetCache.party;
+    if (!gpaBudgetPayloadHasData(cached)) return;
+    gpaApplyBudgetRowsToGrid(cached, 'party');
+}
+
+function gpaBudgetRowsLookLikeEmployee(rows) {
+    const r = Array.isArray(rows) && rows.length ? rows[0] : null;
+    if (!r || typeof r !== 'object') return false;
+    return r.OpeningBalance != null || r.openingBalance != null
+        || r.Opening != null || r.opening != null
+        || r.TotalExpense != null || r.totalExpense != null
+        || r.TotalPaidAmount != null || r.totalPaidAmount != null
+        || r.Balance != null || r.balance != null;
+}
+
+function gpaBudgetRowsLookLikeParty(rows) {
+    const r = Array.isArray(rows) && rows.length ? rows[0] : null;
+    if (!r || typeof r !== 'object') return false;
+    return r.TotalPOAmountWithGST != null || r.totalPOAmountWithGST != null
+        || r.TotalGRNBillAmountWithGST != null || r.totalGRNBillAmountWithGST != null
+        || r.NetGRNAmountWithGST != null || r.netGRNAmountWithGST != null;
+}
+
+function gpaRowLooksLikeEmployeeBudgetRow(row) {
+    if (!row || typeof row !== 'object') return false;
+    if (gpaBudgetRowIsHistoryRow(row)) return false;
+    return row.OpeningBalance != null || row.openingBalance != null
+        || row.Opening != null || row.opening != null
+        || row.TotalExpense != null || row.totalExpense != null
+        || row.TotalPaidAmount != null || row.totalPaidAmount != null
+        || row.Balance != null || row.balance != null;
+}
+
+function gpaNormalizeEmployeeBudgetRow(row) {
+    if (!row || typeof row !== 'object') return row;
+    const out = Object.assign({}, row);
+    if (out.OpeningBalance == null && out.openingBalance == null
+        && (out.Opening != null || out.opening != null)) {
+        out.OpeningBalance = out.Opening ?? out.opening;
+    }
+    return out;
+}
+
+function gpaExtractEmployeeSummaryHistoryPayload(root) {
+    if (!root || typeof root !== 'object' || Array.isArray(root)) return null;
+
+    const summaryRaw = root.Summary ?? root.summary;
+    const historyRaw = root.History ?? root.history ?? root.HistoryRows ?? root.historyRows;
+    const historyRows = Array.isArray(historyRaw) ? historyRaw : [];
+
+    if (Array.isArray(summaryRaw) && summaryRaw.length) {
+        const budgetRows = summaryRaw.map(gpaNormalizeEmployeeBudgetRow).filter(function (r) {
+            return gpaRowLooksLikeEmployeeBudgetRow(r)
+                || gpaBudgetIsTotalRow(r)
+                || gpaBudgetIsEmployeeTotalRow(r)
+                || gpaBudgetPickRowVal(r, 'Employee', ['employee'])
+                || gpaBudgetPickRowVal(r, 'Project');
+        });
+        if (budgetRows.length) {
+            return { budgetRows: budgetRows, historyRows: historyRows, summaryRow: null };
+        }
+    }
+
+    const summary = summaryRaw && typeof summaryRaw === 'object' && !Array.isArray(summaryRaw)
+        ? gpaNormalizeEmployeeBudgetRow(summaryRaw)
+        : null;
+
+    const hasSummary = !!(summary && (
+        gpaRowLooksLikeEmployeeBudgetRow(summary)
+        || gpaBudgetIsTotalRow(summary)
+        || gpaBudgetIsEmployeeTotalRow(summary)
+    ));
+
+    if (!hasSummary && !historyRows.length) return null;
+
+    return {
+        budgetRows: hasSummary ? [summary] : [],
+        historyRows: historyRows,
+        summaryRow: hasSummary ? summary : null,
+    };
+}
+
+function gpaExtractEmployeeBudgetTables(root) {
+    const pickArray = function (v) {
+        if (Array.isArray(v)) return v;
+        if (v && typeof v === 'object') return [v];
+        return [];
+    };
+    if (!root || typeof root !== 'object') {
+        return { budgetRows: [], historyRows: [], summaryRow: null };
+    }
+    const budgetRows = pickArray(
+        root.Rows ?? root.rows
+        ?? root.EmployeeRows ?? root.employeeRows ?? root.EmployeeBudget ?? root.employeeBudget
+        ?? root.BudgetRows ?? root.budgetRows
+        ?? root.Table ?? root.table ?? root.Table0 ?? root.table0
+    ).map(gpaNormalizeEmployeeBudgetRow);
+    const historyRows = pickArray(
+        root.HistoryRows ?? root.historyRows ?? root.BudgetHistory ?? root.budgetHistory
+        ?? root.History ?? root.history ?? root.Table1 ?? root.table1 ?? root.Table2 ?? root.table2
+    );
+    return { budgetRows: budgetRows, historyRows: historyRows, summaryRow: null };
+}
+
+function normalizeGpaEmployeeBudgetResponse(res) {
+    const empty = { budgetRows: [], historyRows: [], summaryRow: null };
+    if (res == null) return empty;
+
+    const root = gpaUnwrapApiRoot(res);
+
+    if (Array.isArray(root)) {
+        if (root.length >= 2 && Array.isArray(root[0])) {
+            return {
+                budgetRows: (root[0] || []).map(gpaNormalizeEmployeeBudgetRow),
+                historyRows: root[1] || [],
+                summaryRow: null,
+            };
+        }
+        const rows = root.map(gpaNormalizeEmployeeBudgetRow).filter(function (r) {
+            return gpaRowLooksLikeEmployeeBudgetRow(r)
+                || gpaBudgetIsTotalRow(r)
+                || gpaBudgetIsEmployeeTotalRow(r);
+        });
+        if (rows.length) {
+            return { budgetRows: rows, historyRows: [], summaryRow: null };
+        }
+        return empty;
+    }
+
+    if (root && typeof root === 'object') {
+        const tables = gpaExtractEmployeeBudgetTables(root);
+        const hasTableData = tables.budgetRows.length || tables.historyRows.length;
+
+        if (hasTableData) {
+            const summaryPayload = gpaExtractEmployeeSummaryHistoryPayload(root);
+            return {
+                budgetRows: tables.budgetRows,
+                historyRows: tables.historyRows.length
+                    ? tables.historyRows
+                    : (summaryPayload ? summaryPayload.historyRows : []),
+                summaryRow: summaryPayload ? summaryPayload.summaryRow : null,
+            };
+        }
+
+        const summaryPayload = gpaExtractEmployeeSummaryHistoryPayload(root);
+        if (summaryPayload) return summaryPayload;
+    }
+
+    return empty;
+}
+
+function normalizeGpaBudgetBalanceResponse(res, mode) {
+    if (mode === 'party') {
+        return normalizeGpaPartyBudgetResponse(res);
+    }
+    return normalizeGpaEmployeeBudgetResponse(res);
+}
+
+function gpaEnsureBudgetProjectCache() {
+    if (Array.isArray(G_GpaBudgetProjectCache)) return Promise.resolve(G_GpaBudgetProjectCache);
+    return GRNPaymentEntryDataService.GetProjectMasterList()
+        .then(function (res) {
+            G_GpaBudgetProjectCache = normalizeGpaModalApiRows(res);
+            return G_GpaBudgetProjectCache;
+        })
+        .catch(function () {
+            G_GpaBudgetProjectCache = [];
+            return G_GpaBudgetProjectCache;
+        });
+}
+
+function gpaSyncBudgetFilterCombos(rows) {
+    return gpaEnsureBudgetProjectCache().then(function (cache) {
+        const base = G_GpaBudgetFilterCombos.length
+            ? G_GpaBudgetFilterCombos
+            : (G_GpaBudgetState?.lineCombos || []);
+        const fromBudget = gpaCollectCombosFromRows(rows, cache);
+        const merged = gpaMergeFilterCombos(base, fromBudget);
+        if (G_GpaBudgetState) G_GpaBudgetState.lineCombos = merged;
+        G_GpaBudgetBindingFilters = true;
+        gpaBindBudgetFilterDropdowns(merged, { preserve: true });
+        G_GpaBudgetBindingFilters = false;
+        return merged;
+    });
+}
+
+function gpaBindBudgetFilterDropdowns(combos, options) {
+    const opts = options || {};
+    const $proj = $('#gpaBudgetDdlProject');
+    const $sub = $('#gpaBudgetDdlSubProject');
+    const list = Array.isArray(combos) ? combos : [];
+    G_GpaBudgetFilterCombos = list.slice();
+
+    const prevProj = opts.preserve ? (parseInt($proj.val(), 10) || 0) : 0;
+    const prevSub = opts.preserve ? (parseInt($sub.val(), 10) || 0) : 0;
+
+    $proj.html('<option value="0">All Projects</option>');
+    const seenProj = new Map();
+    list.forEach(function (c) {
+        const pc = c.projectMasterCode || 0;
+        const name = c.projectName || ('Project ' + pc);
+        const key = pc > 0 ? String(pc) : ('name:' + name.toLowerCase());
+        if (seenProj.has(key)) return;
+        seenProj.set(key, true);
+        $proj.append(
+            '<option value="' + (pc || 0) + '">' + EscHtml(name) + '</option>'
+        );
+    });
+
+    function refillSubProject() {
+        const pc = parseInt($proj.val(), 10) || 0;
+        $sub.html('<option value="0">All Sub Projects</option>');
+        const filtered = pc > 0
+            ? list.filter(function (c) { return c.projectMasterCode === pc; })
+            : list;
+
+        const byName = new Map();
+        filtered.forEach(function (c) {
+            const name = String(c.subProjectName || '').trim();
+            if (!name || name.toLowerCase() === 'all sub projects') return;
+            const norm = name.toLowerCase();
+            const sc = parseInt(String(c.subProjectMasterCode || 0), 10) || 0;
+            const prev = byName.get(norm);
+            if (!prev || (!prev.subProjectMasterCode && sc)) {
+                byName.set(norm, { subProjectMasterCode: sc, subProjectName: name });
+            }
+        });
+
+        let codedCount = 0;
+        Array.from(byName.values())
+            .sort(function (a, b) { return a.subProjectName.localeCompare(b.subProjectName); })
+            .forEach(function (entry) {
+                if (!entry.subProjectMasterCode) return;
+                codedCount += 1;
+                $sub.append(
+                    '<option value="' + entry.subProjectMasterCode + '">' + EscHtml(entry.subProjectName) + '</option>'
+                );
+            });
+        $sub.prop('disabled', codedCount === 0);
+    }
+
+    $proj.off('change.gpaBudget').on('change.gpaBudget', function () {
+        if (G_GpaBudgetBindingFilters) return;
+        refillSubProject();
+        gpaClearBudgetCache();
+        loadGpaBudgetBalanceForActiveMode();
+    });
+    $sub.off('change.gpaBudget').on('change.gpaBudget', function () {
+        if (G_GpaBudgetBindingFilters) return;
+        gpaClearBudgetCache();
+        loadGpaBudgetBalanceForActiveMode();
+    });
+
+    $('#gpaBudgetDdlType').off('change.gpaBudget').on('change.gpaBudget', function () {
+        if (G_GpaBudgetBindingFilters) return;
+        gpaReapplyBudgetPartyFromCache();
+    });
+
+    if (opts.preserve && prevProj > 0 && $proj.find('option[value="' + prevProj + '"]').length) {
+        $proj.val(String(prevProj));
+    } else {
+        $proj.val('0');
+    }
+    refillSubProject();
+    if (opts.preserve && prevSub > 0 && $sub.find('option[value="' + prevSub + '"]').length) {
+        $sub.val(String(prevSub));
+    }
+}
+
+function gpaSelectedBudgetFilterLabels() {
+    const projVal = parseInt($('#gpaBudgetDdlProject').val(), 10) || 0;
+    const subVal = parseInt($('#gpaBudgetDdlSubProject').val(), 10) || 0;
+    const docTypeFilter = String($('#gpaBudgetDdlType').val() || '').trim();
+    return { projectMasterCode: projVal, subProjectMasterCode: subVal, docTypeFilter: docTypeFilter };
+}
+
+function gpaBudgetFilterCacheKey() {
+    const state = G_GpaBudgetState;
+    const filters = gpaSelectedBudgetFilterLabels();
+    return [
+        state?.paymentMasterCode || 0,
+        state?.accountMasterCode || 0,
+        filters.projectMasterCode,
+        filters.subProjectMasterCode,
+    ].join('|');
+}
+
+function gpaClearBudgetCache() {
+    G_GpaBudgetCache = { party: null, employee: null, filterKey: '' };
+}
+
+function gpaShowBudgetGridLoading(show, mode) {
+    const viewMode = mode === 'employee' ? 'employee' : (mode === 'party' ? 'party' : G_GpaBudgetViewMode);
+    const p = gpaBudgetPanel(viewMode);
+    $(p.loading).toggle(!!show);
+    if (show) {
+        if (viewMode === 'employee') {
+            $(p.tableWrap).hide();
+        }
+        $(p.empty).hide();
+        $(p.summary).html('');
+        if (viewMode === 'party') {
+            gpaResetBudgetHistoryShell();
+        }
+    }
+}
+
+function gpaStoreBudgetCache(viewMode, cacheKey, rows) {
+    if (G_GpaBudgetCache.filterKey === cacheKey || !G_GpaBudgetCache.filterKey) {
+        G_GpaBudgetCache[viewMode] = rows;
+        G_GpaBudgetCache.filterKey = cacheKey;
+        return;
+    }
+    G_GpaBudgetCache = { party: null, employee: null, filterKey: cacheKey };
+    G_GpaBudgetCache[viewMode] = rows;
+}
+
+function loadGpaBudgetBalanceData(options) {
+    const opts = options || {};
+    const viewMode = opts.mode === 'employee' ? 'employee' : (opts.mode === 'party' ? 'party' : G_GpaBudgetViewMode);
+    const state = G_GpaBudgetState;
+    if (!state || !state.accountMasterCode) return Promise.resolve();
+
+    const filters = gpaSelectedBudgetFilterLabels();
+    const apiMode = viewMode === 'employee' ? 'E' : 'P';
+    const cacheKey = gpaBudgetFilterCacheKey();
+    const reqId = ++G_GpaBudgetActiveRequest[viewMode];
+    const isActiveView = viewMode === G_GpaBudgetViewMode;
+
+    if (isActiveView) {
+        gpaShowBudgetGridLoading(true, viewMode);
+    }
+
+    return GRNPaymentApprovalService.GetGRNPaymentBudgetBalance(
+        state.paymentMasterCode,
+        state.accountMasterCode,
+        filters.projectMasterCode,
+        filters.subProjectMasterCode,
+        apiMode
+    )
+        .then(function (response) {
+            if (reqId !== G_GpaBudgetActiveRequest[viewMode]) return;
+            if (viewMode !== G_GpaBudgetViewMode) return;
+
+            const payload = normalizeGpaBudgetBalanceResponse(response, viewMode);
+            gpaStoreBudgetCache(viewMode, cacheKey, payload);
+
+            if (viewMode === G_GpaBudgetViewMode) {
+                gpaShowBudgetGridLoading(false, viewMode);
+                gpaApplyBudgetRowsToGrid(payload, viewMode);
+            }
+        })
+        .catch(function (err) {
+            if (reqId !== G_GpaBudgetActiveRequest[viewMode]) return;
+            if (viewMode !== G_GpaBudgetViewMode) return;
+            console.error('GetGRNPaymentBudgetBalance', err);
+            gpaShowBudgetGridLoading(false, viewMode);
+            $(gpaBudgetPanel(viewMode).empty).show();
+            if (typeof toastr !== 'undefined') toastr.error('Failed to load budget balance.');
+        });
+}
+
+function loadGpaBudgetBalanceForActiveMode() {
+    if (!G_GpaBudgetState) return;
+    loadGpaBudgetBalanceData({ mode: G_GpaBudgetViewMode });
+}
+
+function SetGpaBudgetViewMode(mode) {
+    const entryMode = gpaPaymentBudgetViewMode(G_CurrentPayment);
+    const requested = String(mode || '').toLowerCase() === 'employee' ? 'employee' : 'party';
+    if (requested !== entryMode) return;
+    G_GpaBudgetViewMode = entryMode;
+
+    gpaToggleBudgetPanels(entryMode);
+
+    if (!G_GpaBudgetState) {
+        return;
+    }
+
+    gpaCancelBudgetPendingRequests();
+    gpaResetBudgetPanelShell(entryMode);
+    gpaShowBudgetGridLoading(true, entryMode);
+
+    const cacheKey = gpaBudgetFilterCacheKey();
+    const cachedPayload = G_GpaBudgetCache[entryMode];
+    if (gpaBudgetPayloadHasData(cachedPayload) && G_GpaBudgetCache.filterKey === cacheKey) {
+        gpaShowBudgetGridLoading(false, entryMode);
+        gpaApplyBudgetRowsToGrid(cachedPayload, entryMode);
+        return;
+    }
+
+    loadGpaBudgetBalanceData({ mode: entryMode });
+}
+
+function OpenGpaBudgetBalance() {
+    const ctx = gpaResolveHistoryPartyContext(G_CurrentPayment);
+    if (!ctx.accountMasterCode) {
+        const viewMode = gpaPaymentBudgetViewMode(G_CurrentPayment);
+        const msg = viewMode === 'employee'
+            ? 'Employee is required to load budget balance.'
+            : 'Party is required to load budget balance.';
+        if (typeof toastr !== 'undefined') toastr.warning(msg);
+        return;
+    }
+
+    const viewMode = gpaPaymentBudgetViewMode(G_CurrentPayment);
+    G_GpaBudgetState = ctx;
+    G_GpaBudgetViewMode = viewMode;
+    G_GpaBudgetFilterCombos = [];
+    gpaClearBudgetCache();
+    gpaCancelBudgetPendingRequests();
+    gpaApplyBudgetViewChrome(viewMode);
+    $('#gpaBudgetPartyName').text(gpaBudgetCounterpartyDisplayName(G_CurrentPayment, viewMode) || '—');
+
+    gpaEnsureBudgetProjectCache().then(function () {
+        const combos = gpaCollectHistoryLineCombos(G_CurrentPayment);
+        G_GpaBudgetBindingFilters = true;
+        gpaBindBudgetFilterDropdowns(combos);
+        gpaBindBudgetTypeFilter([], { preserve: false });
+        G_GpaBudgetBindingFilters = false;
+
+        gpaResetBudgetViewShell(viewMode);
+        gpaShowBudgetGridLoading(true, viewMode);
+        $('#modalGpaBudgetBalance').modal('show');
+        loadGpaBudgetBalanceForActiveMode();
+    });
+}
+
+function CloseGpaBudgetBalanceModal() {
+    G_GpaBudgetState = null;
+    G_GpaBudgetFilterCombos = [];
+    gpaClearBudgetCache();
+    gpaCancelBudgetPendingRequests();
+    gpaResetBudgetViewShell('party');
+    $('#gpaBudgetCounterpartyLbl').text('Party');
+    $('#gpaBudgetBtnPartyWise').show().addClass('active');
+    $('#gpaBudgetBtnEmployeeWise').show().removeClass('active');
+    gpaBindBudgetTypeFilter([], { preserve: false });
+    $('#modalGpaBudgetBalance').modal('hide');
+}
+
+$(document).on('click', '#gpaBudgetBtnPartyWise', function (e) {
+    e.preventDefault();
+    SetGpaBudgetViewMode('party');
+});
+$(document).on('click', '#gpaBudgetBtnEmployeeWise', function (e) {
+    e.preventDefault();
+    SetGpaBudgetViewMode('employee');
+});
 
 function CloseConfirmModal() {
     $('#modalGpaConfirm').modal('hide');
@@ -2762,6 +4063,14 @@ document.addEventListener('DOMContentLoaded', function () {
             FilterGpaCards(this.value);
         });
     }
+
+    const budgetBtn = document.getElementById('gpaBtnBudgetBalanceAction');
+    if (budgetBtn) {
+        budgetBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            OpenGpaBudgetBalance();
+        });
+    }
 });
 
 window.LoadPaymentList = LoadPaymentList;
@@ -2779,5 +4088,9 @@ window.OpenGRNPaymentApprovalAttachment = OpenGRNPaymentApprovalAttachment;
 window.OpenGRNPaymentApprovalAttachmentFromModal = OpenGRNPaymentApprovalAttachmentFromModal;
 window.OpenGpaApprovalHistory = OpenGpaApprovalHistory;
 window.CloseGpaApprovalHistoryModal = CloseGpaApprovalHistoryModal;
+window.OpenGpaBudgetBalance = OpenGpaBudgetBalance;
+window.OpenGpoBudgetBalance = OpenGpaBudgetBalance; /* typo alias */
+window.CloseGpaBudgetBalanceModal = CloseGpaBudgetBalanceModal;
+window.SetGpaBudgetViewMode = SetGpaBudgetViewMode;
 window.gpaCanActOnPayment = gpaCanActOnPayment;
 window.gpaModalIsViewOnly = gpaModalIsViewOnly;

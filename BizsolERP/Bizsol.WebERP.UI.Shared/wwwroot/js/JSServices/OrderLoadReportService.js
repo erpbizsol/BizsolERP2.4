@@ -1,6 +1,7 @@
 ﻿import { UrlService } from '../URL.js';
 import { environment } from '../environment.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
+import { stripFormTypeQuotes } from '../OrderLoadFormTypeUtil.js';
 
 function templeteReportApiBase() {
     if (UrlService.API_ENDPOINT_TEMPLETE_REPORT) {
@@ -22,8 +23,9 @@ function getAuthUserCode() {
 const OrderLoadReportService = {
 
     GetTempleteList: function GetTempleteList(formType) {
+        var resolved = stripFormTypeQuotes(formType);
         var URL = templeteReportApiBase()
-            + '/GetTempleteList?FormType=' + encodeURIComponent(formType || 'OrderLoad');
+            + '/GetTempleteList?FormType=' + encodeURIComponent(resolved || 'OrderLoad');
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
 
@@ -34,25 +36,37 @@ const OrderLoadReportService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
 
+    GetDefaultReportDates: function GetDefaultReportDates(templeteMasterCode, reportType) {
+        var URL = templeteReportApiBase()
+            + '/GetDefaultReportDates?TempleteMasterCode=' + encodeURIComponent(templeteMasterCode || 0)
+            + '&ReportType=' + encodeURIComponent(reportType || '');
+        return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
+    },
+
     GetOrderLoadReport: function GetOrderLoadReport(params) {
         var userMasterCode = params.userMasterCode || getAuthUserCode();
-        var URL = templeteReportApiBase()
-            + '/GetOrderLoadReport'
-            + '?ReportType=' + encodeURIComponent(params.reportType || '')
-            + '&TempleteMasterCode=' + encodeURIComponent(params.templateCode || 0)
-            + '&FilterCondition=' + encodeURIComponent(params.filterCondition || '')
-            + '&QueryCondition=' + encodeURIComponent(params.queryCondition || '')
-            + '&FromDate=' + encodeURIComponent(params.fromDate || '')
-            + '&ToDate=' + encodeURIComponent(params.toDate || '')
-            + '&UserMasterCode=' + encodeURIComponent(userMasterCode)
-            + '&MarketingManMasterCode=' + encodeURIComponent(params.marketingManMasterCode || 0)
-            + '&GodownMaster_Code=' + encodeURIComponent(params.godownMasterCode || 0)
-            + '&ItemGroupMaster_Code=' + encodeURIComponent(params.itemGroupMasterCode || 0)
-            + '&ProcessMaster_Code=' + encodeURIComponent(params.processMasterCode || 0)
-            + '&ItemTypeMaster_Code=' + encodeURIComponent(params.itemTypeMasterCode || 0)
-            + '&ItemMaster_Code=' + encodeURIComponent(params.itemMasterCode || 0)
-            + '&BuyerPOMaster_Code=' + encodeURIComponent(params.buyerPOMasterCode || 0);
-        return promiseAjaxCallApi.CallAPI('GET', URL, '');
+        var itemSizeMasterCodes = String(params.itemSizeMasterCodes || '').trim();
+        var URL = templeteReportApiBase() + '/GetOrderLoadReport';
+        var payload = {
+            ReportType: params.reportType || '',
+            TempleteMasterCode: params.templateCode || 0,
+            FilterCondition: params.filterCondition || '',
+            QueryCondition: params.queryCondition || '',
+            FromDate: params.fromDate || '',
+            ToDate: params.toDate || '',
+            UserMasterCode: userMasterCode,
+            MarketingManMasterCode: params.marketingManMasterCode || 0,
+            GodownMaster_Code: params.godownMasterCode || 0,
+            ItemGroupMaster_Code: params.itemGroupMasterCode || 0,
+            ProcessMaster_Code: params.processMasterCode || 0,
+            ItemTypeMaster_Code: params.itemTypeMasterCode || 0,
+            ItemMaster_Code: params.itemMasterCode || 0,
+            BuyerPOMaster_Code: params.buyerPOMasterCode || 0,
+            ItemSizeMaster_Codes: itemSizeMasterCodes
+        };
+
+        // POST avoids IIS/browser URL length limits when ItemSizeMaster_Codes is large.
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload), { suppressErrorToast: true });
     },
 
     GetNestedMarketingManList: function GetNestedMarketingManList(userMasterCode, marketingManMasterCode) {
@@ -106,9 +120,10 @@ const OrderLoadReportService = {
 
     // masterTemplete: 'Y' => master templates (ADD), 'N' => user templates (EDIT)
     GetManageTemplateList: function GetManageTemplateList(masterTemplete, formType) {
+        var resolved = stripFormTypeQuotes(formType);
         var URL = templeteReportApiBase()
             + '/GetManageTemplateList'
-            + '?FormType=' + encodeURIComponent(formType || 'OrderLoad')
+            + '?FormType=' + encodeURIComponent(resolved || 'OrderLoad')
             + '&MasterTemplete=' + encodeURIComponent(masterTemplete || 'Y');
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
@@ -129,6 +144,10 @@ const OrderLoadReportService = {
         var URL = templeteReportApiBase()
             + '/DeleteTemplate?TempleteMasterCode=' + encodeURIComponent(templeteMasterCode || 0);
         return promiseAjaxCallApi.CallAPI('POST', URL, '');
+    },
+
+    GetCompanylist: function GetCompanylist() {
+        return promiseAjaxCallApi.CallAPI('GET', templeteReportApiBase() + '/GetCompanylist', '');
     }
 };
 
