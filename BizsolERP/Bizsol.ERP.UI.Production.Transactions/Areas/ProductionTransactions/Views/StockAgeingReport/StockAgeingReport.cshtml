@@ -202,6 +202,19 @@
     #StockAgeingReport thead th .dropdown-content {
         z-index: 45;
     }
+    #StockAgeingReport a.ls-drilldown-link {
+        color: #2563eb;
+        font-weight: 600;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    #StockAgeingReport a.ls-drilldown-link:hover {
+        color: #1d4ed8;
+    }
+    #LogicalStockDetailModal .modal-body {
+        max-height: 70vh;
+        overflow: auto;
+    }
 </style>
 <script>
     document.body.classList.add('sar-report-page');
@@ -324,6 +337,31 @@
         </div>
     </div>
 </div>
+</div>
+
+<div class="modal fade" id="LogicalStockDetailModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="LogicalStockDetailModalTitle">Details</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseLogicalStockDetailModal()" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper">
+                    <table id="LogicalStockDetail" class="fixed-width-table table table-bordered table-sm mb-0">
+                        <thead id="table-head-LogicalStockDetail"></thead>
+                        <tbody id="table-body-LogicalStockDetail"></tbody>
+                    </table>
+                </div>
+                <div class="paginator px-2 py-2 border-top bg-light" id="paginator-LogicalStockDetail"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-height" onclick="CloseLogicalStockDetailModal()" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
