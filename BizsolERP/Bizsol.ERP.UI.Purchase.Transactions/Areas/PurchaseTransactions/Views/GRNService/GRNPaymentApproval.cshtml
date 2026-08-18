@@ -1,9 +1,9 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentApproval.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentEntry.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js" asp-append-version="true"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentApproval.js" asp-append-version="true"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentEntry.js" asp-append-version="true"></script>
 
 
 <style>
@@ -703,6 +703,15 @@
         padding: 16px 18px; background: #fff; flex: 1 1 auto; overflow: hidden;
         display: flex; flex-direction: column; min-height: 0;
     }
+    #modalGpaBudgetBalance .gpa-history-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 18px;
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+    }
     #modalGpaBudgetBalance .gpa-budget-table-scroll-wrap {
         flex: 1 1 auto; overflow: auto; min-height: 120px;
         max-height: min(420px, calc(100vh - 380px));
@@ -722,17 +731,25 @@
         border-bottom: 1px solid #f3f4f6; color: #374151;
     }
     #modalGpaBudgetBalance .gpa-budget-table tbody tr:hover td { background: #f0f9ff; }
-    #modalGpaBudgetBalance .gpa-budget-summary {
-        display: flex;
+    #modalGpaBudgetBalance .gpa-budget-summary,
+    #modalGpaBudgetBalance #gpaBudgetPartySummary,
+    #modalGpaBudgetBalance #gpaBudgetEmployeeSummary {
+        display: flex !important;
+        flex-direction: row;
         flex-wrap: nowrap;
+        align-items: stretch;
         gap: 8px;
         margin-bottom: 12px;
         overflow-x: auto;
+        overflow-y: hidden;
         padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+        grid-template-columns: none !important;
     }
     #modalGpaBudgetBalance .gpa-budget-summary > * {
-        flex: 1 1 0;
-        min-width: 108px;
+        flex: 1 0 118px;
+        min-width: 118px;
+        max-width: none;
     }
     #modalGpaBudgetBalance .gpa-budget-summary .gpa-history-card,
     #modalGpaBudgetBalance .gpa-budget-summary .gpa-budget-card {
@@ -745,48 +762,121 @@
     #modalGpaBudgetBalance .gpa-budget-summary .gpa-history-card-val {
         font-size: 0.82rem;
     }
+    #modalGpaBudgetBalance .gpa-budget-summary--party:empty {
+        display: none !important;
+        margin: 0;
+    }
     #modalGpaBudgetBalance .gpa-budget-party-summary-section {
-        margin-bottom: 12px;
+        margin-bottom: 10px;
+        flex-shrink: 0;
     }
     #modalGpaBudgetBalance .gpa-budget-party-summary-scroll {
-        overflow-x: auto;
-        border: 1px solid #bae6fd;
-        border-radius: 8px;
+        overflow-x: hidden;
+        overflow-y: visible;
+        flex: none;
+        min-height: auto;
+        max-height: none;
+        border: 1px solid #000;
+        border-radius: 0;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+        border: 1px solid #000;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table col {
+        width: 11.11%;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table th,
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table td {
+        border: 1px solid #000;
+        padding: 4px 2px;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.2;
+        font-size: 0.6rem;
+        color: #111;
+        background: #fff;
+        vertical-align: middle;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table .gpa-budget-col-party,
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table .gpa-budget-party-group-row th.gpa-budget-col-party {
+        background: #ffff00;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table .gpa-budget-party-col-hdr {
+        font-weight: 700;
+        text-align: center;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table .gpa-budget-party-group-row th {
+        font-weight: 700;
+        text-align: center;
+        background: #f3f4f6;
+        font-size: 0.62rem;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table .gpa-budget-party-summary-row td {
+        text-align: right;
+        font-weight: 600;
+        font-size: 0.65rem;
+        white-space: nowrap;
+        padding-left: 1px;
+        padding-right: 1px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-mode-panel.is-active {
+        display: flex !important;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+    #modalGpaBudgetBalance .gpa-budget-history-section {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        margin-top: 14px;
+        overflow: hidden;
+    }
+    #modalGpaBudgetBalance .gpa-budget-history-scroll-wrap {
+        flex: 1 1 auto;
+        min-height: 140px;
+        max-height: none;
+        overflow: auto;
+    }
+    #modalGpaBudgetBalance #gpaBudgetEmployeePanel .gpa-history-table-section {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+    #modalGpaBudgetBalance #gpaBudgetEmployeePanel .gpa-budget-table-scroll-wrap {
+        flex: 1 1 auto;
+        min-height: 140px;
         max-height: none;
     }
-    #modalGpaBudgetBalance .gpa-budget-party-summary-table thead tr.gpa-budget-party-group-row th {
-        background: #e0f2fe;
-        color: #0c4a6e;
-        font-size: 0.72rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        border-bottom: 1px solid #bae6fd;
-        padding: 8px 10px;
-    }
-    #modalGpaBudgetBalance .gpa-budget-party-summary-table thead tr.gpa-budget-party-label-row th {
-        background: #f0f9ff;
-        color: #0369a1;
-        font-size: 0.68rem;
-        font-weight: 700;
-        white-space: nowrap;
-        padding: 8px 10px;
-        border-bottom: 2px solid #bae6fd;
-    }
-    #modalGpaBudgetBalance .gpa-budget-party-summary-table tbody tr.gpa-budget-party-summary-row td {
-        background: #fff;
-        font-weight: 700;
-        font-size: 0.8rem;
-        white-space: nowrap;
-    }
-    #modalGpaBudgetBalance .gpa-budget-party-summary-table tbody tr.gpa-budget-party-summary-row:hover td {
-        background: #f0f9ff;
+    #modalGpaBudgetBalance .gpa-budget-summary,
+    #modalGpaBudgetBalance #gpaBudgetPartySummary,
+    #modalGpaBudgetBalance #gpaBudgetEmployeeSummary {
+        flex-shrink: 0;
     }
     @@media (max-width: 992px) {
-        #modalGpaBudgetBalance .gpa-budget-summary { flex-wrap: nowrap; }
+        #modalGpaBudgetBalance .gpa-budget-summary,
+        #modalGpaBudgetBalance #gpaBudgetPartySummary,
+        #modalGpaBudgetBalance #gpaBudgetEmployeeSummary {
+            flex-wrap: nowrap;
+        }
     }
     @@media (max-width: 576px) {
-        #modalGpaBudgetBalance .gpa-budget-summary { flex-wrap: nowrap; }
+        #modalGpaBudgetBalance .gpa-budget-summary,
+        #modalGpaBudgetBalance #gpaBudgetPartySummary,
+        #modalGpaBudgetBalance #gpaBudgetEmployeeSummary {
+            flex-wrap: nowrap;
+        }
+        #modalGpaBudgetBalance .gpa-budget-summary > * {
+            flex: 0 0 112px;
+            min-width: 112px;
+        }
     }
     .gpa-budget-card {
         background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
@@ -800,24 +890,38 @@
     #modalGpaBudgetBalance .gpa-history-table-section > .gpa-items-title {
         color: #0369a1;
     }
+    #modalGpaBudgetBalance .gpa-budget-history-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
     #modalGpaBudgetBalance .gpa-budget-table .gpa-history-type {
         display: inline-block;
         min-width: 62px;
         text-align: center;
     }
-    #modalGpaBudgetBalance .gpa-budget-history-section {
-        margin-top: 14px;
+    #modalGpaBudgetBalance .gpa-budget-status {
+        display: inline-block;
+        min-width: 72px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
     }
-    #modalGpaBudgetBalance .gpa-budget-history-scroll-wrap {
-        max-height: min(300px, calc(100vh - 520px));
-    }
+    #modalGpaBudgetBalance .gpa-budget-status--approved { background: #dcfce7; color: #15803d; }
+    #modalGpaBudgetBalance .gpa-budget-status--pending { background: #dbeafe; color: #1d4ed8; }
+    #modalGpaBudgetBalance .gpa-budget-status--rejected { background: #fee2e2; color: #b91c1c; }
+    #modalGpaBudgetBalance .gpa-budget-status--hold { background: #ffedd5; color: #c2410c; }
+    #modalGpaBudgetBalance .gpa-budget-status--other { background: #f3f4f6; color: #374151; }
     #modalGpaBudgetBalance .gpa-budget-table tbody tr.gpa-budget-total-row td {
         background: #f0f9ff;
         font-weight: 800;
         border-top: 2px solid #bae6fd;
     }
     .gpa-budget-mode-panel { display: none !important; }
-    .gpa-budget-mode-panel.is-active { display: block !important; }
     .btn-gpa-reject {
         display:inline-flex; align-items:center; gap:5px;
         background:linear-gradient(135deg,#dc2626,#ef4444);
@@ -1227,11 +1331,11 @@
                         <span class="gpa-history-filter-lbl" id="gpaBudgetCounterpartyLbl">Party</span>
                         <strong id="gpaBudgetPartyName">—</strong>
                     </div>
-                    <div>
+                    <div id="gpaBudgetProjectFilterWrap">
                         <label class="gpa-history-filter-lbl" for="gpaBudgetDdlProject">Project</label>
                         <select id="gpaBudgetDdlProject" class="gpa-history-filter-select form-select form-select-sm"></select>
                     </div>
-                    <div>
+                    <div id="gpaBudgetSubProjectFilterWrap">
                         <label class="gpa-history-filter-lbl" for="gpaBudgetDdlSubProject">Sub Project</label>
                         <select id="gpaBudgetDdlSubProject" class="gpa-history-filter-select form-select form-select-sm"></select>
                     </div>
@@ -1242,31 +1346,19 @@
                         </select>
                     </div>
                 </div>
-                <div class="gpa-budget-view-toggle" role="group" aria-label="Budget view mode">
-                    <button type="button" id="gpaBudgetBtnPartyWise" class="gpa-budget-view-btn active">Party Wise</button>
-                    <button type="button" id="gpaBudgetBtnEmployeeWise" class="gpa-budget-view-btn">Employee Wise</button>
-                </div>
 
                 <div id="gpaBudgetPartyPanel" class="gpa-budget-mode-panel is-active">
-                    <div id="gpaBudgetPartySummary" class="gpa-history-summary gpa-budget-summary gpa-budget-summary--party"></div>
-                    <div id="gpaBudgetPartySummaryTableWrap" class="gpa-budget-party-summary-section" style="display:none;">
-                        <div class="gpa-budget-table-scroll-wrap gpa-budget-party-summary-scroll">
-                            <table class="gpa-budget-table gpa-budget-party-summary-table">
-                                <thead id="gpaBudgetPartySummaryTableHead"></thead>
-                                <tbody id="gpaBudgetPartySummaryTableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <div id="gpaBudgetPartySummary" class="gpa-budget-summary gpa-budget-summary--party"></div>
                     <div id="gpaBudgetPartyLoading" style="display:none;text-align:center;padding:24px;color:#64748b;">
                         <i class="fa fa-spinner fa-spin me-2"></i>Loading budget balance…
                     </div>
                     <div id="gpaBudgetPartyEmpty" style="display:none;text-align:center;padding:24px;color:#94a3b8;font-size:0.85rem;">
-                        No budget balance data found.
+                        No budget balance data found for the selected project and sub project.
                     </div>
                     <div class="gpa-history-table-section gpa-budget-history-section" id="gpaBudgetPartyHistorySection" style="display:none;">
                         <div class="gpa-items-title">Budget History</div>
                         <div id="gpaBudgetPartyHistoryEmpty" style="display:none;text-align:center;padding:20px;color:#94a3b8;font-size:0.85rem;">
-                            No budget history found for the selected project and sub project.
+                            No budget history found for the selected project, sub project and type.
                         </div>
                         <div class="gpa-budget-table-scroll-wrap gpa-budget-history-scroll-wrap" id="gpaBudgetPartyHistoryTableWrap" style="display:none;">
                             <table class="gpa-budget-table">
@@ -1278,14 +1370,14 @@
                 </div>
 
                 <div id="gpaBudgetEmployeePanel" class="gpa-budget-mode-panel">
-                    <div id="gpaBudgetEmployeeSummary" class="gpa-history-summary gpa-budget-summary gpa-budget-summary--employee"></div>
+                    <div id="gpaBudgetEmployeeSummary" class="gpa-budget-summary gpa-budget-summary--employee"></div>
                     <div class="gpa-history-table-section">
                         <div class="gpa-items-title">Employee Wise Budget</div>
                         <div id="gpaBudgetEmployeeLoading" style="display:none;text-align:center;padding:24px;color:#64748b;">
                             <i class="fa fa-spinner fa-spin me-2"></i>Loading budget balance…
                         </div>
                         <div id="gpaBudgetEmployeeEmpty" style="display:none;text-align:center;padding:24px;color:#94a3b8;font-size:0.85rem;">
-                            No employee wise budget data found.
+                            No employee wise budget data found for the selected project and sub project.
                         </div>
                         <div class="gpa-budget-table-scroll-wrap" id="gpaBudgetEmployeeTableWrap" style="display:none;">
                             <table class="gpa-budget-table">
