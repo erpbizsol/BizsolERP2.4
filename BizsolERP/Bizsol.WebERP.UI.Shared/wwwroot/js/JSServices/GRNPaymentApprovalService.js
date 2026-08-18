@@ -80,6 +80,36 @@ const GRNPaymentApprovalService = {
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
+    /** ViewMode: P = Party wise, E = Employee wise (SP: GETGRNPAYMENTBUDGETBALANCE).
+     *
+     * GET {BASE_URL}/GRNPaymentLevelsApproval/GetGRNPaymentBudgetBalance
+     * Query:
+     *   GRNPaymentMaster_Code   — payment entry code
+     *   AccountMaster_Code      — party / employee account code
+     *   ProjectMaster_Code      — 0 = all projects
+     *   SubProjectMaster_Code   — 0 = all sub projects
+     *   ViewMode                — P = Party wise | E = Employee wise
+     *
+     * Response formats (employee ViewMode=E):
+     *   A) { Table: [detail rows, Employee TOTAL, GRAND TOTAL], History: [] }
+     *   B) { Summary: [ ...same rows as array... ], History: [] }
+     *   C) { Rows: [ ... ], History: [] }
+     *   D) { Summary: { single filtered row } }  — legacy; grid shows 1 row only
+     *
+     * UI binding (employee):
+     *   Top tiles       → GRAND TOTAL (All Projects) or Employee TOTAL row
+     *   Employee grid   → all Table/Rows/Summary[] rows
+     */
+    GetGRNPaymentBudgetBalance: function GetGRNPaymentBudgetBalance(grnPaymentMasterCode, accountMasterCode, projectMasterCode, subProjectMasterCode, viewMode) {
+        const url = UrlService.API_ENDPOINT_GRNPaymentLevelsApproval +
+            `/GetGRNPaymentBudgetBalance?GRNPaymentMaster_Code=${encodeURIComponent(grnPaymentMasterCode || 0)}` +
+            `&AccountMaster_Code=${encodeURIComponent(accountMasterCode || 0)}` +
+            `&ProjectMaster_Code=${encodeURIComponent(projectMasterCode || 0)}` +
+            `&SubProjectMaster_Code=${encodeURIComponent(subProjectMasterCode || 0)}` +
+            `&ViewMode=${encodeURIComponent(viewMode || 'P')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
 };
 
 export { GRNPaymentApprovalService };

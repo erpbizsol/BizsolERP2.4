@@ -4,6 +4,8 @@
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     padding: 4px 0 32px;
     height: calc(100vh - 174px);
+    height: calc(100dvh - 174px);
+    min-height: 320px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -21,6 +23,7 @@
     box-shadow: 0 4px 24px rgba(102, 126, 234, 0.22);
     flex-shrink: 0;
     margin-bottom: 14px;
+    overflow: visible;
 }
 
 .ol-list-header-top {
@@ -46,6 +49,7 @@
     flex: 1 1 auto;
     margin-left: auto;
     flex-wrap: wrap;
+    overflow: visible;
 }
 
 /* Template + action buttons inside purple header */
@@ -79,6 +83,52 @@
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
 }
 
+/* Report Template — Y = green, N = orange (no text prefix) */
+#ddlTemplate.ol-tpl-selected-y {
+    color: #16a34a;
+    font-weight: 700;
+}
+
+#ddlTemplate.ol-tpl-selected-n {
+    color: #ea580c;
+    font-weight: 700;
+}
+
+#ddlTemplate option.ol-tpl-master-y {
+    color: #16a34a;
+    font-weight: 600;
+    background: #ecfdf5;
+}
+
+#ddlTemplate option.ol-tpl-master-n {
+    color: #ea580c;
+    font-weight: 600;
+    background: #fff7ed;
+}
+
+/* Manage Template dropdown — same Y/N colors, no M/N prefix */
+#ddlMtMaster.ol-tpl-selected-y {
+    color: #16a34a;
+    font-weight: 700;
+}
+
+#ddlMtMaster.ol-tpl-selected-n {
+    color: #ea580c;
+    font-weight: 700;
+}
+
+#ddlMtMaster option.ol-tpl-master-y {
+    color: #16a34a;
+    font-weight: 600;
+    background: #ecfdf5;
+}
+
+#ddlMtMaster option.ol-tpl-master-n {
+    color: #ea580c;
+    font-weight: 600;
+    background: #fff7ed;
+}
+
 .ol-header-filter-actions {
     margin-left: 0;
     padding-bottom: 0;
@@ -87,7 +137,11 @@
 .ol-list-header .ol-btn-filter,
 .ol-list-header .ol-btn-reset,
 .ol-list-header .ol-btn-show,
-.ol-list-header .ol-btn-manage {
+.ol-list-header .ol-btn-manage,
+.ol-list-header .ol-btn-download,
+.ol-list-header .ol-btn-print,
+.ol-list-header .ol-btn-preview,
+.ol-list-header .ol-btn-size-param {
     height: 34px;
 }
 
@@ -285,9 +339,20 @@
     overflow: hidden;
 }
 
-/* Keep checkbox menus above Bootstrap modal (1055) */
-body > .ol-cd-menu {
-    z-index: 2000 !important;
+/* Keep checkbox menus above Bootstrap modal content */
+body > .ol-cd-menu,
+#olFilterModal > .ol-cd-menu {
+    z-index: 10060 !important;
+}
+
+#olFilterModal.show {
+    overflow: visible;
+}
+
+#olFilterModal.show .modal-dialog,
+#olFilterModal.show .modal-content,
+#olFilterModal.show .modal-body {
+    overflow: visible;
 }
 
 .ol-cd-search-wrap {
@@ -315,6 +380,22 @@ body > .ol-cd-menu {
     max-height: 220px;
     overflow-y: auto;
     padding: 4px 0;
+}
+
+.ol-cd-options.ol-cd-options-large {
+    max-height: 320px;
+}
+
+.ol-cd-no-results {
+    padding: 10px 12px;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.82rem;
+    border-top: 1px solid #eef0fa;
+}
+
+.ol-cd-no-results.is-hidden {
+    display: none !important;
 }
 
 .ol-cd-option {
@@ -352,13 +433,51 @@ body > .ol-cd-menu {
     color: #4f46e5;
 }
 
+.ol-cd-option.ol-cd-option-hidden {
+    display: none !important;
+}
+
+.ol-cd-selection-hint {
+    margin-right: auto;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #4f46e5;
+}
+
+.ol-cd-selection-hint.is-hidden {
+    display: none !important;
+}
+
 .ol-cd-footer {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 8px 10px;
     border-top: 1px solid #eef0fa;
     background: #fafaff;
+}
+
+.ol-cd-btn-select-visible,
+.ol-cd-btn-clear-visible {
+    border: none;
+    background: transparent;
+    color: #4f46e5;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 8px;
+    cursor: pointer;
+}
+
+.ol-cd-btn-select-visible:hover,
+.ol-cd-btn-clear-visible:hover {
+    color: #3730a3;
+    text-decoration: underline;
+}
+
+.ol-cd-footer .ol-cd-btn-ok {
+    margin-left: auto;
 }
 
 .ol-cd-btn-ok {
@@ -500,14 +619,16 @@ body > .ol-cd-menu {
 }
 
 .ol-list-header .ol-btn-manage {
-    background: rgba(255, 255, 255, 0.18);
-    color: #fff;
-    border: 1.5px solid rgba(255, 255, 255, 0.75);
+    background: #fff;
+    color: #4338ca;
+    border: 1.5px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
 }
 
 .ol-list-header .ol-btn-manage:hover:not(:disabled) {
-    background: #fff;
-    color: #4338ca;
+    background: #f0f4ff;
+    color: #3730a3;
+    border-color: #fff;
 }
 
 .ol-list-header .ol-btn-show {
@@ -520,6 +641,124 @@ body > .ol-cd-menu {
 .ol-list-header .ol-btn-show:hover:not(:disabled) {
     background: #f0f4ff;
     color: #3730a3;
+}
+
+.ol-list-header .ol-btn-size-param {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 3px 10px rgba(249, 115, 22, 0.35);
+    white-space: nowrap;
+}
+
+.ol-list-header .ol-btn-size-param:hover:not(:disabled) {
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    color: #fff;
+    filter: brightness(1.05);
+}
+
+.ol-list-header .ol-btn-size-param.ol-filter-applied {
+    background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+    box-shadow: 0 3px 12px rgba(234, 88, 12, 0.5);
+}
+
+.ol-list-header .ol-btn-size-param .ol-size-filter-badge {
+    margin-left: 4px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.ol-size-param-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.ol-btn-size-param-clear {
+    min-width: 34px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    background: #fff;
+    color: #ea580c;
+    border: 1.5px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.ol-btn-size-param-clear:hover:not(:disabled) {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.ol-empty-size-filter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+.ol-empty-size-filter .ol-btn-size-param {
+    margin-top: 4px;
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 3px 10px rgba(249, 115, 22, 0.35);
+}
+
+.ol-list-header .ol-download-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.ol-list-header .ol-btn-download {
+    background: rgba(255, 255, 255, 0.28);
+    color: rgba(255, 255, 255, 0.88);
+    border: 1.5px dashed rgba(255, 255, 255, 0.55);
+    box-shadow: none;
+}
+
+.ol-list-header .ol-download-wrap:not(.ol-download-ready) {
+    pointer-events: none;
+}
+
+.ol-list-header .ol-download-wrap:not(.ol-download-ready) .ol-btn-download {
+    background: rgba(255, 255, 255, 0.28);
+    color: rgba(255, 255, 255, 0.88);
+    border: 1.5px dashed rgba(255, 255, 255, 0.55);
+    box-shadow: none;
+    opacity: 1;
+}
+
+.ol-list-header .ol-download-wrap:not(.ol-download-ready) .ol-download-icon-excel {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.ol-list-header .ol-download-wrap.ol-download-ready .ol-btn-download {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: #fff;
+    border: 1.5px solid #15803d;
+    box-shadow: 0 3px 12px rgba(22, 163, 74, 0.45);
+}
+
+.ol-list-header .ol-download-wrap.ol-download-ready .ol-btn-download:hover:not(:disabled) {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: #fff;
+    border-color: #14532d;
+    filter: brightness(1.03);
+}
+
+.ol-list-header .ol-download-wrap.ol-download-ready .ol-download-icon-excel {
+    color: #fff;
 }
 
 .ol-btn-filter {
@@ -678,10 +917,10 @@ body > .ol-cd-menu {
     border-radius: 14px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
-    overflow: visible;
+    overflow: hidden;
     margin-bottom: 8px;
     position: relative;
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -698,40 +937,353 @@ body > .ol-cd-menu {
 }
 
 .ol-grid-panel {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .ol-grid-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 14px;
+    gap: 12px;
+    padding: 10px 14px;
     border-bottom: 1px solid #e2e8f0;
     flex-shrink: 0;
     background: #fafbff;
+    overflow: visible;
+}
+
+.ol-grid-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+.ol-size-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+#olSearchSlot {
+    min-width: 0;
+    flex: 0 1 280px;
+    margin-left: auto;
 }
 
 .ol-record-badge {
     font-size: 12px;
     font-weight: 700;
     color: #667eea;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ol-download-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.ol-download-wrap:not(.ol-download-ready) {
+    pointer-events: none;
+}
+
+.ol-download-wrap:not(.ol-download-ready) .ol-btn-download {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ol-download-wrap.ol-download-ready {
+    pointer-events: auto;
+}
+
+.ol-btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    color: #4338ca;
+    border: 1.5px solid #667eea;
+    height: 34px;
+    padding: 0 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 8px;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.ol-download-wrap.ol-download-ready .ol-btn-download:hover:not(:disabled) {
+    background: #667eea;
+    color: #fff;
+    border-color: #667eea;
+}
+
+.ol-btn-print {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    color: #4338ca;
+    border: 1.5px solid #667eea;
+    height: 34px;
+    padding: 0 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 8px;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.ol-btn-print:hover:not(:disabled) {
+    background: #667eea;
+    color: #fff;
+    border-color: #667eea;
+}
+
+.ol-btn-print:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ol-btn-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    color: #4338ca;
+    border: 1.5px solid #667eea;
+    height: 34px;
+    padding: 0 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 8px;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.ol-btn-preview:hover:not(:disabled) {
+    background: #667eea;
+    color: #fff;
+    border-color: #667eea;
+}
+
+.ol-btn-preview:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* ── Print preview modal ─────────────────────────────────────────────── */
+.ol-print-preview-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.ol-print-preview-modal.is-hidden {
+    display: none;
+}
+
+.ol-print-preview-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.ol-print-preview-panel {
+    position: relative;
+    z-index: 1;
+    width: min(98vw, 1280px);
+    height: min(96vh, 900px);
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+.ol-print-preview-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    flex-shrink: 0;
+}
+
+.ol-print-preview-title {
+    margin: 0;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.ol-print-preview-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ol-print-preview-toolbar .ol-btn {
+    min-height: 34px;
+}
+
+#olPrintPreviewFrame {
+    flex: 1 1 auto;
+    width: 100%;
+    border: none;
+    background: #d1d5db;
+}
+
+body.ol-print-preview-open {
+    overflow: hidden;
+}
+
+.ol-print-hidden-frame {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 297mm;
+    height: 210mm;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    .ol-print-preview-panel {
+        width: 100vw;
+        height: 100vh;
+        max-height: 100dvh;
+        border-radius: 0;
+    }
+
+    .ol-print-preview-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ol-print-preview-actions {
+        width: 100%;
+    }
+
+    .ol-print-preview-actions .ol-btn {
+        flex: 1 1 0;
+        justify-content: center;
+    }
+}
+
+.ol-download-caret {
+    font-size: 0.65rem;
+    opacity: 0.75;
+}
+
+.ol-download-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 148px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+    z-index: 120;
+    overflow: hidden;
+}
+
+.ol-download-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    text-align: left;
+}
+
+.ol-download-menu button:hover {
+    background: #f1f5f9;
+}
+
+.ol-download-icon-excel {
+    color: #1d6f42;
+}
+
+.ol-download-icon-csv {
+    color: #2563eb;
 }
 
 .ol-table-wrapper {
-    flex: 1;
-    min-height: 0;
+    flex: 1 1 auto;
+    min-height: 160px;
+    max-height: none;
     overflow: auto;
     position: relative;
     width: 100%;
+    isolation: isolate;
     -webkit-overflow-scrolling: touch;
+}
+
+/* Override global .fixed-height-table caps from app/responsive CSS */
+#OrderLoadReportPage .fixed-height-table,
+#OrderLoadReportPage .ol-table-wrapper.fixed-height-table {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
 }
 
 .ol-table-wrapper .table {
     margin-bottom: 0;
     font-size: 13.5px;
+}
+
+#OrderLoadReportPage #OrderLoadReport {
+    table-layout: auto;
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#OrderLoadReportPage #OrderLoadReport th.ol-align-right,
+#OrderLoadReportPage #OrderLoadReport td.ol-align-right {
+    text-align: right !important;
+}
+
+#OrderLoadReportPage #OrderLoadReport th.ol-align-left,
+#OrderLoadReportPage #OrderLoadReport td.ol-align-left {
+    text-align: left !important;
+}
+
+#OrderLoadReportPage #OrderLoadReport thead th.ol-align-right .filter-table-heading-div {
+    justify-content: flex-end;
 }
 
 #OrderLoadReportPage #global-search-wrap-OrderLoadReport {
@@ -750,17 +1302,15 @@ body > .ol-cd-menu {
 }
 
 #OrderLoadReportPage #OrderLoadReport thead {
-    position: sticky;
-    top: 0;
-    z-index: 4;
-    background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    position: relative;
+    z-index: 10;
 }
 
 #OrderLoadReportPage #OrderLoadReport thead th {
     position: sticky;
     top: 0;
-    z-index: 2;
-    background: transparent !important;
+    z-index: 10;
+    background: linear-gradient(135deg, #4f46e5, #667eea) !important;
     color: #fff !important;
     font-size: 12px;
     font-weight: 700;
@@ -770,6 +1320,12 @@ body > .ol-cd-menu {
     letter-spacing: 0.04em;
 }
 
+#OrderLoadReportPage #OrderLoadReport thead th .filter-table-heading,
+#OrderLoadReportPage #OrderLoadReport thead th .filter-table-heading-div,
+#OrderLoadReportPage #OrderLoadReport thead th .fa-filter {
+    color: #fff !important;
+}
+
 #OrderLoadReportPage #OrderLoadReport tbody td {
     padding: 10px 14px !important;
     font-size: 12px;
@@ -777,6 +1333,57 @@ body > .ol-cd-menu {
     border-bottom: 1px solid #e2e8f0 !important;
     vertical-align: middle;
     background: transparent !important;
+}
+
+#OrderLoadReportPage #OrderLoadReport th.ol-col-wrap,
+#OrderLoadReportPage #OrderLoadReport td.ol-col-wrap {
+    white-space: normal !important;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: normal;
+    vertical-align: top;
+    min-width: 110px;
+    max-width: 220px;
+    width: auto;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+}
+
+#OrderLoadReportPage #OrderLoadReport th.ol-col-no-break,
+#OrderLoadReportPage #OrderLoadReport td.ol-col-no-break {
+    white-space: nowrap !important;
+    word-wrap: normal !important;
+    overflow-wrap: normal !important;
+    word-break: keep-all !important;
+    min-width: max-content;
+    max-width: none;
+    width: auto;
+    vertical-align: middle;
+}
+
+#OrderLoadReportPage #OrderLoadReport th.ol-col-no-break .filter-table-heading,
+#OrderLoadReportPage #OrderLoadReport th.ol-col-no-break .filter-table-heading-div {
+    white-space: nowrap !important;
+}
+
+#OrderLoadReportPage #OrderLoadReport th.ol-col-wrap-wide,
+#OrderLoadReportPage #OrderLoadReport td.ol-col-wrap-wide {
+    min-width: 140px;
+    max-width: 300px;
+}
+
+.ol-grid-cell-inner {
+    display: block;
+    width: 100%;
+    white-space: normal !important;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.ol-grid-cell-break {
+    line-height: 1.35;
 }
 
 #OrderLoadReportPage #OrderLoadReport tbody tr:nth-child(even):not(.total-row):not(.grand-total-row) td {
@@ -795,9 +1402,58 @@ body > .ol-cd-menu {
     font-weight: bold;
 }
 
+/* Excel-style freeze panes — sticky columns left of FreezeFromColumn */
+#OrderLoadReportPage #OrderLoadReport th.ol-col-frozen,
+#OrderLoadReportPage #OrderLoadReport td.ol-col-frozen {
+    position: sticky;
+    background-clip: padding-box;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+#OrderLoadReportPage #OrderLoadReport thead th.ol-col-frozen {
+    top: 0;
+    z-index: 22;
+    background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    color: #fff !important;
+}
+
+#OrderLoadReportPage #OrderLoadReport tbody td.ol-col-frozen {
+    z-index: 6;
+    background: #fff !important;
+}
+
+#OrderLoadReportPage #OrderLoadReport tbody tr:nth-child(even):not(.total-row):not(.grand-total-row) td.ol-col-frozen {
+    background: #f8fafc !important;
+}
+
+#OrderLoadReportPage #OrderLoadReport tbody tr:not(.total-row):not(.grand-total-row):hover td.ol-col-frozen {
+    background: #eef2ff !important;
+}
+
+#OrderLoadReportPage #OrderLoadReport tbody tr.total-row td.ol-col-frozen,
+#OrderLoadReportPage #OrderLoadReport tbody tr.grand-total-row td.ol-col-frozen {
+    background-color: #ede9fe !important;
+    z-index: 7;
+}
+
+#OrderLoadReportPage #OrderLoadReport th.ol-col-frozen-last,
+#OrderLoadReportPage #OrderLoadReport td.ol-col-frozen-last {
+    box-shadow: 4px 0 10px rgba(15, 23, 42, 0.16);
+    border-right: 2px solid rgba(79, 70, 229, 0.45) !important;
+}
+
+#OrderLoadReportPage #OrderLoadReport thead th.ol-col-frozen-last {
+    z-index: 23;
+}
+
+#OrderLoadReportPage #OrderLoadReport tbody td:not(.ol-col-frozen) {
+    position: relative;
+    z-index: 1;
+}
+
 .ol-col-order-no { font-weight: 600; color: #667eea; }
 .ol-col-date { color: #64748b; }
-.ol-col-party { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .ol-status-badge {
     display: inline-block;
@@ -816,10 +1472,77 @@ body > .ol-cd-menu {
 .ol-empty-cell { color: #cbd5e1; }
 
 #OrderLoadReportPage #paginator-OrderLoadReport {
-    padding: 10px 16px;
+    padding: 0;
+    width: 100%;
+    min-width: 0;
+    margin-top: 0;
+    border-top: none;
+    background: transparent;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px 12px;
+}
+
+#OrderLoadReportPage #paginator-OrderLoadReport .page-size-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    flex: 0 1 auto;
+}
+
+#OrderLoadReportPage #paginator-OrderLoadReport .page-size-select label {
+    margin: 0;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+}
+
+#OrderLoadReportPage #paginator-OrderLoadReport .page-size-select select {
+    min-height: 34px;
+    font-size: 13px;
+}
+
+#OrderLoadReportPage #paginator-OrderLoadReport .page-info {
+    margin: 0 8px;
+    flex: 1 1 120px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+#OrderLoadReportPage #paginator-OrderLoadReport .paginator-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    min-height: 36px;
+    margin: 0;
+    padding: 4px 8px;
+    flex: 0 0 auto;
+}
+
+.ol-grid-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 14px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
     border-top: 1px solid #e2e8f0;
     background: #fafbff;
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
 }
 
 .ol-empty {
@@ -894,6 +1617,25 @@ body > .ol-cd-menu {
 
 /* ── Responsive ──────────────────────────────────────────────────────── */
 
+/* Medium laptop / tablet landscape */
+@media (max-width: 1280px) {
+    .ol-list-header-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .ol-header-template {
+        max-width: 100%;
+    }
+}
+
+@media (max-height: 820px) {
+    #OrderLoadReportPage.ol-page {
+        height: calc(100dvh - 160px);
+        min-height: 280px;
+    }
+}
+
 /* Tablet / small laptop: keep the compact single-row layout but let fields wrap in pairs */
 @media (max-width: 1024px) {
     .ol-filter-field.ol-filter-multiselect {
@@ -909,18 +1651,27 @@ body > .ol-cd-menu {
     .ol-page {
         height: auto;
         min-height: calc(100vh - 174px);
+        min-height: calc(100dvh - 174px);
         overflow: visible;
-        padding: 4px 0 16px;
+        padding: 4px 0 calc(16px + env(safe-area-inset-bottom, 0px));
     }
 
     .ol-list-grid-wrap {
-        min-height: 380px;
+        min-height: 320px;
+        overflow: visible;
+    }
+
+    .ol-grid-panel {
+        min-height: 0;
         overflow: visible;
     }
 
     .ol-table-wrapper {
-        max-height: 55vh;
+        max-height: none;
+        min-height: 220px;
+        max-height: min(58vh, calc(100dvh - 320px));
         -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
     }
 
     .ol-list-header {
@@ -966,27 +1717,35 @@ body > .ol-cd-menu {
         grid-column: 1 / -1;
         width: 100%;
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 8px;
         margin: 0;
         padding: 0;
     }
 
-    .ol-header-filter-actions .ol-btn {
+    .ol-header-filter-actions .ol-btn,
+    .ol-list-header-actions > .ol-btn-manage,
+    .ol-list-header-actions > .ol-btn-reset,
+    .ol-list-header-actions > .ol-btn-preview,
+    .ol-list-header-actions > .ol-btn-print,
+    .ol-list-header-actions > .ol-download-wrap .ol-btn-download {
         width: 100%;
         flex: none;
         justify-content: center;
         min-width: 0;
-        padding: 0 8px;
+        min-height: 44px;
+        padding: 0 10px;
         font-size: 0.78rem;
     }
 
-    .ol-list-header-actions > .ol-btn-manage,
-    .ol-list-header-actions > .ol-btn-reset {
+    .ol-list-header-actions > .ol-download-wrap {
+        display: flex;
         width: 100%;
-        justify-content: center;
-        font-size: 0.78rem;
-        padding: 0 8px;
+        pointer-events: auto;
+    }
+
+    .ol-list-header-actions > .ol-download-wrap:not(.ol-download-ready) {
+        pointer-events: none;
     }
 
     .ol-list-header .ol-list-action-btn {
@@ -1012,38 +1771,145 @@ body > .ol-cd-menu {
         max-width: 100%;
     }
 
-    /* Grid toolbar: stack record count + search on their own rows */
+    /* Grid toolbar: record count + search */
     .ol-grid-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+    }
+
+    #olSearchSlot {
+        width: 100%;
+        flex: 1 1 100%;
+        margin-left: 0;
     }
 
     #OrderLoadReportPage #global-search-wrap-OrderLoadReport {
         max-width: 100%;
         width: 100%;
+        height: 40px;
+    }
+
+    #OrderLoadReportPage .bizsol-global-search-input {
+        height: 36px !important;
+        font-size: 16px !important;
+    }
+
+    /* Footer: pagination — stack controls on mobile */
+    .ol-grid-footer {
+        position: relative;
+        bottom: auto;
+        box-shadow: none;
+        padding: 12px 10px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        justify-content: center;
     }
 
     #OrderLoadReportPage #paginator-OrderLoadReport {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 8px;
+        width: 100%;
+        justify-items: stretch;
+    }
+
+    #OrderLoadReportPage #paginator-OrderLoadReport > .page-size-select {
+        grid-column: 1 / -1;
+        width: 100%;
+        justify-content: space-between;
+        padding-bottom: 8px;
+        margin-bottom: 2px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    #OrderLoadReportPage #paginator-OrderLoadReport > .page-size-select select {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 140px;
+        font-size: 16px;
+    }
+
+    #OrderLoadReportPage #paginator-OrderLoadReport > *:nth-child(2) { grid-column: 1; grid-row: 2; }
+    #OrderLoadReportPage #paginator-OrderLoadReport > *:nth-child(3) { grid-column: 2; grid-row: 2; }
+    #OrderLoadReportPage #paginator-OrderLoadReport > .page-info {
+        grid-column: 3;
+        grid-row: 2;
+        margin: 0;
+        align-self: center;
+        justify-self: center;
+        font-size: 11px;
+        white-space: normal;
+        line-height: 1.25;
+        padding: 0 2px;
+    }
+    #OrderLoadReportPage #paginator-OrderLoadReport > *:nth-child(5) { grid-column: 4; grid-row: 2; }
+    #OrderLoadReportPage #paginator-OrderLoadReport > *:nth-child(6) { grid-column: 5; grid-row: 2; }
+
+    #OrderLoadReportPage #paginator-OrderLoadReport .paginator-btn {
+        width: 100%;
+        min-height: 44px;
+        margin: 0;
+    }
+
+    /* Filter modal: full width on phones */
+    #olFilterModal .modal-dialog {
+        max-width: calc(100vw - 12px);
+        margin: 8px auto;
+    }
+
+    #olFilterModal .modal-body {
+        max-height: calc(100dvh - 180px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .ol-filter-modal-footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+    }
+
+    .ol-filter-modal-footer .ol-btn {
+        min-height: 44px;
+        flex: 1 1 0;
     }
 }
 
 @media (max-width: 576px) {
+    .ol-page {
+        padding-left: max(4px, env(safe-area-inset-left, 0px));
+        padding-right: max(4px, env(safe-area-inset-right, 0px));
+    }
+
+    .ol-list-header {
+        margin-left: 0;
+        margin-right: 0;
+        border-radius: 10px;
+    }
+
     .ol-list-header-title {
-        font-size: 0.95rem;
+        font-size: 0.92rem;
+        line-height: 1.3;
     }
 
     .ol-list-header-sub {
-        font-size: 0.72rem;
+        font-size: 0.68rem;
+        line-height: 1.35;
+    }
+
+    .ol-list-header-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .ol-header-filter-actions {
+        grid-template-columns: 1fr;
     }
 
     .ol-list-header .ol-list-action-btn {
-        flex: 1 1 calc(50% - 4px);
-        padding: 8px 12px;
+        flex: 1 1 100%;
+        padding: 10px 12px;
         font-size: 0.78rem;
     }
 
@@ -1056,6 +1922,7 @@ body > .ol-cd-menu {
     .ol-filter-actions .ol-btn {
         width: 100%;
         flex: 1 1 100%;
+        min-height: 44px;
     }
 
     .ol-filter-modal-grid {
@@ -1070,6 +1937,10 @@ body > .ol-cd-menu {
         max-height: 45vh;
     }
 
+    .ol-table-wrapper {
+        max-height: min(52vh, calc(100dvh - 380px));
+    }
+
     .ol-table-wrapper .table {
         font-size: 12px;
     }
@@ -1077,15 +1948,40 @@ body > .ol-cd-menu {
     #OrderLoadReportPage #OrderLoadReport thead th {
         padding: 10px 10px !important;
         font-size: 11px;
+        white-space: nowrap;
     }
 
     #OrderLoadReportPage #OrderLoadReport tbody td {
         padding: 8px 10px !important;
         font-size: 11.5px;
+        white-space: nowrap;
     }
 
-    .ol-col-party {
-        max-width: 160px;
+    #OrderLoadReportPage #OrderLoadReport tbody td.ol-col-wrap {
+        white-space: normal !important;
+        max-width: 180px;
+        vertical-align: top;
+    }
+
+    #OrderLoadReportPage #OrderLoadReport tbody td.ol-col-wrap-wide {
+        max-width: 220px;
+    }
+
+    #OrderLoadReportPage #OrderLoadReport thead th.ol-col-wrap {
+        white-space: normal !important;
+    }
+
+    .ol-empty {
+        padding: 24px 16px;
+        min-height: 160px;
+    }
+
+    .ol-empty h4 {
+        font-size: 13px;
+    }
+
+    .ol-empty p {
+        font-size: 11px;
     }
 }
 
@@ -1096,11 +1992,48 @@ body > .ol-cd-menu {
 
     .ol-btn {
         padding: 0 12px;
-        font-size: 0.78rem;
+        font-size: 0.76rem;
+        min-height: 44px;
     }
 
     .ol-btn-show {
         min-width: 0;
+    }
+
+    .ol-header-template .form-control,
+    .ol-header-template select {
+        font-size: 16px;
+        height: 40px !important;
+    }
+
+    .ol-record-badge {
+        font-size: 11px;
+    }
+
+    #OrderLoadReportPage #paginator-OrderLoadReport > .page-info {
+        font-size: 10px;
+    }
+
+    #OrderLoadReportPage #paginator-OrderLoadReport .paginator-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    #OrderLoadReportPage #paginator-OrderLoadReport button,
+    #OrderLoadReportPage #paginator-OrderLoadReport select {
+        min-height: 44px;
+        font-size: 16px;
+    }
+}
+
+/* iPhone / small phones landscape */
+@media (max-width: 768px) and (orientation: landscape) {
+    .ol-table-wrapper {
+        max-height: min(45vh, calc(100dvh - 220px));
+    }
+
+    .ol-list-header-sub {
+        display: none;
     }
 }
 
@@ -1157,6 +2090,10 @@ body > .ol-cd-menu {
     gap: 3px;
 }
 
+.ol-mt-toolbar #ddlMtMaster {
+    font-weight: 600;
+}
+
 .ol-mt-grid-wrap {
     position: relative;
     max-height: 52vh;
@@ -1207,6 +2144,15 @@ body > .ol-cd-menu {
 
 .ol-mt-table input[type="number"] {
     text-align: right;
+}
+
+.ol-mt-table input:disabled,
+.ol-mt-table input[readonly],
+.ol-mt-card-row input[readonly],
+.ol-mt-card-flags input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: #f8fafc;
 }
 
 .ol-mt-empty {
@@ -1415,6 +2361,63 @@ body > .ol-cd-menu {
 
     #olMtCards.ol-mt-cards {
         display: block;
+    }
+
+    .ol-mt-card {
+        padding: 8px 10px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+    }
+
+    .ol-mt-card-head {
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+    }
+
+    .ol-mt-card-check {
+        gap: 8px;
+    }
+
+    .ol-mt-card-check input {
+        width: 16px;
+        height: 16px;
+        margin-top: 1px;
+    }
+
+    .ol-mt-card-title {
+        font-size: 12px;
+        line-height: 1.3;
+    }
+
+    .ol-mt-card-row {
+        margin-bottom: 6px;
+        gap: 2px;
+    }
+
+    .ol-mt-card-label {
+        font-size: 10px;
+    }
+
+    .ol-mt-card-row input[type="text"],
+    .ol-mt-card-row input[type="number"] {
+        height: 32px;
+        padding: 0 8px;
+        font-size: 12px;
+        border-radius: 6px;
+    }
+
+    .ol-mt-card-flags {
+        gap: 6px 10px;
+    }
+
+    .ol-mt-card-flags label {
+        font-size: 11px;
+        gap: 4px;
+    }
+
+    .ol-mt-card-flags input {
+        width: 16px;
+        height: 16px;
     }
 
     .ol-filter-modal-footer {

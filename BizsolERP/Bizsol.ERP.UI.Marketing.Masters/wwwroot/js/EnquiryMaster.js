@@ -744,31 +744,49 @@ function filterEnquiryListBySalesAndStatus(data, salesPerson, status, leadType) 
         return salesMatch && statusMatch && leadMatch;
     });
 }
+function normalizeEnquiryStatus(value) {
+    return String(value ?? '').trim().toLowerCase().replace(/\s+/g, '-');
+}
+
+function isEnquiryStatusClosed(item) {
+    if (!item) return false;
+    const statusVal = normalizeEnquiryStatus(item.Status);
+    const leadType = normalizeEnquiryStatus(item['Lead Type'] ?? item.LeadType);
+    const entryStatus = normalizeEnquiryStatus(item['Entry Status'] ?? item.EntryStatus);
+    return statusVal === 'closed' || statusVal === 'close'
+        || leadType === 'closed' || leadType === 'close'
+        || entryStatus === 'closed' || entryStatus === 'close';
+}
+
+function isEnquiryStatusInProcess(item) {
+    if (!item) return false;
+    const statusVal = normalizeEnquiryStatus(item.Status);
+    return statusVal === 'in-process' || statusVal === 'inprocess';
+}
+
 /**
- * Row colour class — only special rows get colour; everything else stays white.
- * Closed (grey) | Unassigned (amber) | Assigned (green) | else "" (white)
- * Overdue (red) is applied separately and overrides.
+ * Row colour class from STATUS (overdue is applied separately, except Closed).
+ * Closed (dark green) | In-Process (light green) | Unassigned (amber) | Assigned / else (white)
  */
 function getEnquiryListRowClass(item) {
     if (!item) return '';
-    const statusVal = String(item.Status ?? '').trim().toLowerCase();
-    const leadType = String(item['Lead Type'] ?? item.LeadType ?? '').trim().toLowerCase();
-    const entryStatus = String(item['Entry Status'] ?? item.EntryStatus ?? '').trim().toLowerCase();
+    const statusVal = normalizeEnquiryStatus(item.Status);
+    const leadType = normalizeEnquiryStatus(item['Lead Type'] ?? item.LeadType);
     const salesPersonLc = String(item['Sales Person'] ?? item.SalesPerson ?? '').trim().toLowerCase();
     const mktCode = item.MarketingPersonMaster_Code;
     const mktNum = mktCode === null || mktCode === undefined || mktCode === ''
         ? NaN
         : Number(mktCode);
 
-    // Closed — Status / Lead Type / Entry Status
-    const isClosed =
-        statusVal === 'closed' || statusVal === 'close'
-        || leadType === 'closed' || leadType === 'close'
-        || entryStatus === 'closed' || entryStatus === 'close';
-    if (isClosed) return 'enq-row-closed';
+    // Closed — always dark green (overdue must not override)
+    if (isEnquiryStatusClosed(item)) return 'enq-row-closed';
 
-    // Explicit Assigned / Unassigned labels on Status or Lead Type
-    if (statusVal === 'assigned' || leadType === 'assigned') return 'enq-row-assigned';
+    // In-Process — light green (overdue pink still overrides this later)
+    if (isEnquiryStatusInProcess(item)) return 'enq-row-inprocess';
+
+    // Assigned — white (no class)
+    if (statusVal === 'assigned') return '';
+
     if (statusVal === 'unassigned' || leadType === 'unassigned') return 'enq-row-unassigned';
 
     // Unassigned — no sales person assigned
@@ -784,7 +802,6 @@ function getEnquiryListRowClass(item) {
     const noMktCode = Number.isNaN(mktNum) || mktNum <= 0;
     if (noSalesPerson && noMktCode) return 'enq-row-unassigned';
 
-    // Assigned / In-Process / Hot / etc. → white (no class)
     return '';
 }
 
@@ -2850,7 +2867,7 @@ function applyEnquiryListStatusRowColors() {
     const paginatorOn = !!window[`Paginator_${tableId}`];
     const currentPage = window[`currentPage_${tableId}`] || 1;
     const itemsPerPage = parseInt($(`#pageSize-${tableId}`).val(), 10) || 10;
-    const statusClasses = ["enq-row-assigned", "enq-row-unassigned", "enq-row-closed", "enq-row-draft"];
+    const statusClasses = ["enq-row-assigned", "enq-row-inprocess", "enq-row-unassigned", "enq-row-closed", "enq-row-draft"];
 
     tbody.querySelectorAll("tr").forEach(function (row, rowIdx) {
         // Skip empty / total rows
@@ -3479,7 +3496,7 @@ function parseEnquiryListGridDateCell(text) {
     return null;
 }
 
-/** If Next Follow Up Date is strictly before today, highlight the whole row (light red) */
+/** If Next Follow Up Date is strictly before today, highlight the whole row (light red). Closed rows stay dark green. */
 function applyEnquiryListOverdueNextFollowUpRowHighlight() {
     const tbody = document.getElementById("table-body");
     if (!tbody) return;
@@ -3490,6 +3507,8 @@ function applyEnquiryListOverdueNextFollowUpRowHighlight() {
     const rows = tbody.querySelectorAll("tr");
     rows.forEach(function (row) {
         row.classList.remove("enq-row-overdue");
+        // Closed is status-only: never apply overdue colour
+        if (row.classList.contains("enq-row-closed")) return;
         const tds = row.querySelectorAll("td");
         if (tds.length <= colIdx) return;
         // Prefer heading text from filter label (avoids matching filter-menu junk)
