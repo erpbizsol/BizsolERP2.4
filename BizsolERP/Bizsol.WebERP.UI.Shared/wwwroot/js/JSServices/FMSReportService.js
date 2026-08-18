@@ -21,7 +21,8 @@ const FMSReportService = {
     },
     FMSReportApproved: function FMSReportApproved(Code, Status) {
         let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_FMSReport + "/FMSReportApproved?Code=" + Code + "&UserMaster_Code=" + userCode + "&Status=" + Status;
+        let GroupMaster_Code = JSON.parse(sessionStorage.getItem('UserDetails'))[0].GroupMaster_Code;
+        var URL = UrlService.API_ENDPOINT_FMSReport + "/FMSReportApproved?Code=" + Code + "&UserMaster_Code=" + userCode + "&Status=" + Status+ "&GroupMaster_Code=" + GroupMaster_Code;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
