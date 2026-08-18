@@ -825,7 +825,13 @@
     /* Row status colours — colour TD cells (Bootstrap table-hover paints cells, not TR) */
     #table.enq-list-table tbody tr.enq-row-assigned > td,
     #table.enq-list-table.table-hover tbody tr.enq-row-assigned:hover > td {
-        background-color: #dcfce7 !important; /* Assigned — green */
+        background-color: #fff !important; /* Assigned — white */
+        --bs-table-bg: #fff;
+        --bs-table-accent-bg: #fff;
+    }
+    #table.enq-list-table tbody tr.enq-row-inprocess > td,
+    #table.enq-list-table.table-hover tbody tr.enq-row-inprocess:hover > td {
+        background-color: #dcfce7 !important; /* In-Process — light green */
         --bs-table-bg: #dcfce7;
         --bs-table-accent-bg: #dcfce7;
     }
@@ -835,24 +841,28 @@
         --bs-table-bg: #fef3c7;
         --bs-table-accent-bg: #fef3c7;
     }
-    #table.enq-list-table tbody tr.enq-row-closed > td,
-    #table.enq-list-table.table-hover tbody tr.enq-row-closed:hover > td {
-        background-color: #e2e8f0 !important; /* Closed — slate */
-        --bs-table-bg: #e2e8f0;
-        --bs-table-accent-bg: #e2e8f0;
-    }
     #table.enq-list-table tbody tr.enq-row-draft > td,
     #table.enq-list-table.table-hover tbody tr.enq-row-draft:hover > td {
         background-color: #bcdbf3 !important; /* Draft — blue */
         --bs-table-bg: #bcdbf3;
         --bs-table-accent-bg: #bcdbf3;
     }
-    /* Overdue next follow-up — strongest highlight */
+    /* Overdue next follow-up — existing light red (does not apply to Closed) */
     #table.enq-list-table tbody tr.enq-row-overdue > td,
     #table.enq-list-table.table-hover tbody tr.enq-row-overdue:hover > td {
         background-color: #fecaca !important;
         --bs-table-bg: #fecaca;
         --bs-table-accent-bg: #fecaca;
+    }
+    /* Closed — dark green; wins over overdue */
+    #table.enq-list-table tbody tr.enq-row-closed > td,
+    #table.enq-list-table tbody tr.enq-row-closed.enq-row-overdue > td,
+    #table.enq-list-table.table-hover tbody tr.enq-row-closed:hover > td,
+    #table.enq-list-table.table-hover tbody tr.enq-row-closed.enq-row-overdue:hover > td {
+        background-color: #166534 !important; /* Closed — dark green */
+        color: #fff !important;
+        --bs-table-bg: #166534;
+        --bs-table-accent-bg: #166534;
     }
     .enq-row-legend {
         display: flex;
@@ -879,8 +889,9 @@
         flex-shrink: 0;
     }
     .enq-leg-assigned { background: #fff; border-color: #cbd5e1; }
+    .enq-leg-inprocess { background: #dcfce7; }
     .enq-leg-unassigned { background: #fef3c7; }
-    .enq-leg-closed { background: #e2e8f0; }
+    .enq-leg-closed { background: #166534; }
     .enq-leg-overdue { background: #fecaca; }
     /* Action column: flex cell + display:contents wrapper = all buttons one row, centered */
     #dvLoad #table.enq-list-table thead th:last-child {
@@ -1852,7 +1863,8 @@
             <div class="enq-grid-toolbar">
                 <p class="enq-grid-title"><i class="fa fa-table-list"></i> Enquiry list</p>
                 <ul class="enq-row-legend" aria-label="Row colour legend">
-                    <li><span class="enq-leg-swatch enq-leg-assigned"></span> Other (white)</li>
+                    <li><span class="enq-leg-swatch enq-leg-assigned"></span> Assigned (white)</li>
+                    <li><span class="enq-leg-swatch enq-leg-inprocess"></span> In-Process</li>
                     <li><span class="enq-leg-swatch enq-leg-unassigned"></span> Unassigned</li>
                     <li><span class="enq-leg-swatch enq-leg-closed"></span> Closed</li>
                     <li><span class="enq-leg-swatch enq-leg-overdue"></span> Overdue follow-up</li>
