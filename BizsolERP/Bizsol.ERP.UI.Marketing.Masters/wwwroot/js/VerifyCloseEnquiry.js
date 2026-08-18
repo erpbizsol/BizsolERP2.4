@@ -1,13 +1,14 @@
 import { LeadMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_LeadMasterService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 
 function setVerifyCloseEnquiryHeading() {
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
     if (!$('#ERPHeading').text().trim()) {
-        $('#ERPHeading').text('Verify Close Enquiry');
+        $('#ERPHeading').text('Enquiry Closure');
     }
     // Keep page card title in sync with dynamic menu heading
-    var heading = ($('#ERPHeading').text() || '').trim() || 'Verify Close Enquiry';
+    var heading = ($('#ERPHeading').text() || '').trim() || 'Enquiry Closure';
     $('.vce-header h5').each(function () {
         var $h = $(this);
         var $icon = $h.find('.vce-title-icon').first().detach();
@@ -15,6 +16,16 @@ function setVerifyCloseEnquiryHeading() {
         if ($icon.length) $h.append($icon);
         $h.append(document.createTextNode(' ' + heading));
     });
+}
+
+function getFinancialYear() {
+    var currentDate = new Date();
+    var currentMonth = currentDate.getMonth();
+    var startYear = currentDate.getFullYear();
+    if (currentMonth < 3) {
+        startYear = startYear - 1;
+    }
+    return startYear + "-" + (startYear + 1);
 }
 
 $(document).ready(function () {
@@ -150,27 +161,39 @@ function OpenVerifyCloseAction(Code, action) {
         return;
     }
     var isReject = action === "reject";
-    $("#txtVerifyCloseCode").val(Code);
-    $("#txtVerifyCloseAction").val(action);
-    $("#txtVerifyCloseReason").val("");
-    $("#VerifyCloseModalTitle").text(isReject ? "Reject Close Enquiry" : "Verify Close Enquiry");
-    $("#VerifyCloseModalHeader").toggleClass("vce-modal-reject", isReject);
-    $("#lblVerifyCloseReasonReq").toggle(isReject);
-    $("#txtVerifyCloseReason").attr("placeholder", isReject ? "Enter reject reason (required)" : "Enter reason (optional)");
-    $("#btnVerifyCloseOk")
-        .toggleClass("is-reject", isReject)
-        .html(isReject
-            ? '<i class="fa fa-times me-1"></i>Reject'
-            : '<i class="fa fa-check me-1"></i>Verify');
+    var ModuleName = ($('#ERPHeading').text() || '').trim(),
+        OptionName = isReject ? "Reject" : "Verify",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
 
-    var el = document.getElementById("VerifyCloseModal");
-    if (!el) {
-        toastr.error("Verify modal not found.");
-        return;
-    }
-    var modal = bootstrap.Modal.getOrCreateInstance(el);
-    modal.show();
-    setTimeout(function () { $("#txtVerifyCloseReason").focus(); }, 200);
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        }
+
+        $("#txtVerifyCloseCode").val(Code);
+        $("#txtVerifyCloseAction").val(action);
+        $("#txtVerifyCloseReason").val("");
+        $("#VerifyCloseModalTitle").text(isReject ? "Reject Close Enquiry" : "Verify Close Enquiry");
+        $("#VerifyCloseModalHeader").toggleClass("vce-modal-reject", isReject);
+        $("#lblVerifyCloseReasonReq").toggle(isReject);
+        $("#txtVerifyCloseReason").attr("placeholder", isReject ? "Enter reject reason (required)" : "Enter reason (optional)");
+        $("#btnVerifyCloseOk")
+            .toggleClass("is-reject", isReject)
+            .html(isReject
+                ? '<i class="fa fa-times me-1"></i>Reject'
+                : '<i class="fa fa-check me-1"></i>Verify');
+
+        var el = document.getElementById("VerifyCloseModal");
+        if (!el) {
+            toastr.error("Verify modal not found.");
+            return;
+        }
+        var modal = bootstrap.Modal.getOrCreateInstance(el);
+        modal.show();
+        setTimeout(function () { $("#txtVerifyCloseReason").focus(); }, 200);
+    });
 }
 
 function ConfirmVerifyCloseAction() {
