@@ -73,6 +73,14 @@ th {
     width: 200px;
 }
 
+/* Floated above scroll/zoom containers — position set in Filter.js */
+.filter-dropdown.bizsol-filter-floating,
+.filter-dropdown-double.bizsol-filter-floating,
+.filter-division.bizsol-filter-floating {
+    z-index: 10050 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
 .filter-inputs {
     margin-top: 10px;
     display: flex;

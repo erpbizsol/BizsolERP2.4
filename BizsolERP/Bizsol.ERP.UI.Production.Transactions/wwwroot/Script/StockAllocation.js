@@ -456,7 +456,7 @@ function bindBOMMasterOrderWiseGrid(response) {
         return;
     }
 
-    const stringFilterColumn = ["Order No", "Mark No", "Grade", "Client Name","Section Size"];
+    const stringFilterColumn = ["Order No", "Mark No", "Grade", "Client Name", "Section Size", "Item Name"];
     const numericFilterColumn = ["Width", "Thickness"];
     const dateFilterColumn = ["Order Date", "Dispatch Date"];
     const button = false;
