@@ -3224,6 +3224,16 @@ function gpaCommitRowBillNo(tr, billNo) {
     return normalized;
 }
 
+function gpaRowSkipBillAutoBind(tr) {
+    return !!(tr && tr.dataset.gpaSkipBillAutoBind === '1');
+}
+
+function gpaSetRowSkipBillAutoBind(tr, skip) {
+    if (!tr) return;
+    if (skip) tr.dataset.gpaSkipBillAutoBind = '1';
+    else delete tr.dataset.gpaSkipBillAutoBind;
+}
+
 function gpaBillNoFromRow(tr) {
     if (!tr) return '';
     const hidden = tr.querySelector('.inp-bill-no')?.value?.trim();
@@ -3894,6 +3904,7 @@ function applyBillApiFieldsOnly(tr, r) {
         const billNo = gpaBillNoFromRecord(r);
         gpaCommitRowBillNo(tr, billNo);
         gpaFillBillSelectOptions(billSel, billNo);
+        gpaSetRowSkipBillAutoBind(tr, false);
     }
     const bdt = r.BillDate ?? r.billDate ?? r.ReceiveDate ?? r.receiveDate;
     if (bd) bd.value = formatDateInput(bdt);
@@ -3964,6 +3975,7 @@ async function onBillRowBillChange(tr) {
     const v = billSel?.value ?? '';
     if (v === '') {
         gpaCommitRowBillNo(tr, '');
+        gpaSetRowSkipBillAutoBind(tr, true);
         const mrnHidden = tr.querySelector('.inp-mrn-code');
         if (mrnHidden) mrnHidden.value = '';
         gpaRefreshRowPayableEditable(tr);
@@ -3972,6 +3984,7 @@ async function onBillRowBillChange(tr) {
     }
     const billNo = gpaBillNoFromSelect(billSel);
     gpaCommitRowBillNo(tr, billNo);
+    gpaSetRowSkipBillAutoBind(tr, false);
     if (!billNo) return;
     const r = (gpaPartyBillRowsCache || []).find(function (row) {
         return gpaBillNoFromRecord(row) === billNo;
@@ -3989,6 +4002,7 @@ async function onBillRowBillChange(tr) {
 
 async function onBillRowProjectSubChange(tr) {
     if (!tr || editMode) return;
+    if (gpaRowSkipBillAutoBind(tr)) return;
     const partyKey = getGpaCounterpartyKey();
     const pj = tr.querySelector('.inp-project-ddl');
     const sp = tr.querySelector('.inp-subproject-ddl');
@@ -5015,6 +5029,7 @@ function applyBillDetailRow(tr, r) {
         const billNo = gpaBillNoFromRecord(r);
         gpaCommitRowBillNo(tr, billNo);
         gpaFillBillSelectOptions(billSel, billNo);
+        gpaSetRowSkipBillAutoBind(tr, false);
     }
     const bdt = r.BillDate ?? r.billDate ?? r.ReceiveDate ?? r.receiveDate;
     if (bd) bd.value = formatDateInput(bdt);
@@ -5093,6 +5108,16 @@ async function onPartyChange() {
     await loadGpaPoListForGrid(code);
     if (!isGpaFillGridChecked()) {
         addBillRows(DEFAULT_BILL_ROW_COUNT);
+        try {
+            const result = await GRNPaymentApprovalService.GetBillDetails(code);
+            const billRows = normalizeApiRows(result);
+            gpaPartyBillRowsCache = billRows;
+            gpaPoListCache = gpaMergePoListRows(gpaPoListCache, gpaExtractPoListFromBillRows(billRows));
+            gpaRefreshAllBillRowBillDropdowns(false);
+        } catch (e) {
+            console.warn('onPartyChange bill list', e);
+            gpaPartyBillRowsCache = [];
+        }
         gpaApplyPoListToAllDropdowns(true);
         recalcFooter();
         return;
@@ -5135,6 +5160,16 @@ async function onGpaEmployeeChange() {
     await loadGpaPoListForGrid(code);
     if (!isGpaFillGridChecked()) {
         addBillRows(DEFAULT_BILL_ROW_COUNT);
+        try {
+            const result = await GRNPaymentApprovalService.GetBillDetails(code);
+            const billRows = normalizeApiRows(result);
+            gpaPartyBillRowsCache = billRows;
+            gpaPoListCache = gpaMergePoListRows(gpaPoListCache, gpaExtractPoListFromBillRows(billRows));
+            gpaRefreshAllBillRowBillDropdowns(false);
+        } catch (e) {
+            console.warn('onGpaEmployeeChange bill list', e);
+            gpaPartyBillRowsCache = [];
+        }
         gpaApplyPoListToAllDropdowns(true);
         recalcFooter();
         return;
