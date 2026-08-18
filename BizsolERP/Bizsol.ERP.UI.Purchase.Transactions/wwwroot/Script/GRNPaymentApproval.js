@@ -2787,7 +2787,7 @@ function renderGpaApprovalHistoryDetails(details, targets) {
             + '<td>' + EscHtml(r.Project ?? r.project ?? '—') + '</td>'
             + '<td>' + EscHtml(r['Sub Project'] ?? r.SubProject ?? r.subProject ?? '—') + '</td>'
             + '<td class="text-end">' + gpaHistoryAmt(r.Amount ?? r.amount ?? 0) + '</td>'
-            + '<td class="text-center">' + EscHtml(r.Status ?? r.status ?? '—') + '</td>'
+            + gpaBudgetStatusCell(r)
             + '</tr>';
     });
 
@@ -3654,19 +3654,23 @@ function gpaBudgetHistoryStatusLabel(row) {
         'status', 'ApprovalStatus', 'approvalStatus', 'DocStatus', 'docStatus', 'EntryStatus',
     ]);
     if (raw == null || String(raw).trim() === '') return '—';
-    const mapped = getApprovalStatus({ Status: raw, ApprovalStatus: raw });
-    return mapped || String(raw);
+    return String(raw).trim();
+}
+
+function gpaBudgetHistoryStatusClass(label) {
+    const n = gpaNormStatus(label);
+    if (n === 'approved') return 'gpa-budget-status gpa-budget-status--approved';
+    if (n === 'completed' || n === 'complete') return 'gpa-budget-status gpa-budget-status--completed';
+    if (n === 'rejected') return 'gpa-budget-status gpa-budget-status--rejected';
+    if (n === 'hold') return 'gpa-budget-status gpa-budget-status--hold';
+    if (n === 'pending') return 'gpa-budget-status gpa-budget-status--pending';
+    return 'gpa-budget-status gpa-budget-status--other';
 }
 
 function gpaBudgetStatusCell(row) {
     const label = gpaBudgetHistoryStatusLabel(row);
     if (label === '—') return '<td class="text-center">—</td>';
-    const n = gpaNormStatus(label);
-    let cls = 'gpa-budget-status gpa-budget-status--other';
-    if (n === 'approved') cls = 'gpa-budget-status gpa-budget-status--approved';
-    else if (n === 'rejected') cls = 'gpa-budget-status gpa-budget-status--rejected';
-    else if (n === 'hold') cls = 'gpa-budget-status gpa-budget-status--hold';
-    else if (n === 'pending') cls = 'gpa-budget-status gpa-budget-status--pending';
+    const cls = gpaBudgetHistoryStatusClass(label);
     return '<td class="text-center"><span class="' + cls + '">' + EscHtml(label) + '</span></td>';
 }
 
