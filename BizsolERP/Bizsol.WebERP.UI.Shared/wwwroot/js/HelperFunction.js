@@ -150,6 +150,34 @@ const BizSolHelperFunction = {
             var attendanceModal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
             attendanceModal.show();
         }
+    },
+    /**
+     * Applies alphanumeric-only + uppercase enforcement to one or more inputs.
+     * Blocks non-alphanumeric keypresses and auto-uppercases on input/paste.
+     * @param {string|HTMLElement|jQuery} selector - CSS selector, DOM element, or jQuery object.
+     */
+    applyAlphaNumUppercase: function applyAlphaNumUppercase(selector) {
+        var elements;
+        if (typeof selector === 'string') {
+            elements = document.querySelectorAll(selector);
+        } else if (selector instanceof HTMLElement) {
+            elements = [selector];
+        } else if (selector && selector.jquery) {
+            elements = selector.toArray();
+        } else {
+            return;
+        }
+        elements.forEach(function (input) {
+            input.addEventListener('keypress', function (e) {
+                var char = String.fromCharCode(e.which);
+                if (!/[a-zA-Z0-9]/.test(char)) {
+                    e.preventDefault();
+                }
+            });
+            input.addEventListener('input', function () {
+                this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            });
+        });
     }
 }
 

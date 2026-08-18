@@ -1,16 +1,26 @@
 import { OrderLoadReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderLoadReportService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { getOrderLoadFormTypeFromQuery } from '../../Bizsol.WebERP.UI.Shared/js/OrderLoadFormTypeUtil.js';
 
 /*
   Manage Template for Order Load Report.
 
-  ADD  -> "Master Template" dropdown = templates with MasterTemplete = 'Y'.
-          Selecting one seeds the editable grid from its F_TempleteTransaction
-          fields; Save creates a brand new user template (MasterTemplete = 'N').
-  EDIT -> dropdown = user templates (MasterTemplete = 'N'). Loads the saved
-          config to edit / delete.
+  ADD  -> Master Template dropdown (Y). Save requires Template Name; creates user template (N).
+  EDIT -> Master + user templates. Master: Show/Hide editable. User template: full edit.
+          All changes saved only on Save click. Dropdown colored green (Y) / orange (N).
+  Show Total disabled only for varchar/string DataType.
 */
 
-var G_MT_FORM_TYPE = 'OrderLoad';
+function getManageTemplateFormType() {
+    var urlParams = BizSolHelperFunction.getUrlVars();
+    var formType = getOrderLoadFormTypeFromQuery(
+        urlParams['FormType'] || urlParams['formtype'] || '',
+        urlParams['ModuleDesp'] || urlParams['moduledesp'] || ''
+    );
+    return formType || window.G_OL_FORM_TYPE || 'OrderLoad';
+}
+
+var G_MT_FORM_TYPE = getManageTemplateFormType();
 var G_MT_Mode = 'ADD';                // 'ADD' | 'EDIT'
 var G_MT_Rows = [];                   // working copy of grid rows
 var G_MT_Loading = false;
@@ -50,6 +60,20 @@ function setMode(mode) {
 
     $('#lblMtMaster').text(mode === 'ADD' ? 'Master Template' : 'Template');
     $('#txtMtTemplateName').val('').prop('readonly', false);
+    $('#olMtTemplateNameField').show();
+    $('#ddlMtFreezeColumn').prop('disabled', false);
+
+    if (mode === 'ADD') {
+        $('.ol-mt-name-optional').hide();
+        $('#txtMtTemplateName')
+            .attr('placeholder', 'Enter template name')
+            .prop('required', true);
+    } else {
+        $('.ol-mt-name-optional').show();
+        $('#txtMtTemplateName')
+            .attr('placeholder', 'Leave blank to update master · enter name for new copy')
+            .prop('required', false);
+    }
 
     clearGrid();
     loadTemplateDropdown();
@@ -58,25 +82,39 @@ function setMode(mode) {
 /* ─────────────────────────── dropdowns ─────────────────────────── */
 
 function loadTemplateDropdown() {
-    var masterTemplete = (G_MT_Mode === 'ADD') ? 'Y' : 'N';
     var $ddl = $('#ddlMtMaster')
         .prop('disabled', true)
         .empty()
         .append($('<option/>').val('').text('Loading...'));
 
-    OrderLoadReportService.GetManageTemplateList(masterTemplete, G_MT_FORM_TYPE)
+    var loadPromise = (G_MT_Mode === 'ADD')
+        ? OrderLoadReportService.GetManageTemplateList('Y', G_MT_FORM_TYPE)
+        : Promise.all([
+            OrderLoadReportService.GetManageTemplateList('Y', G_MT_FORM_TYPE),
+            OrderLoadReportService.GetManageTemplateList('N', G_MT_FORM_TYPE)
+        ]).then(function (results) {
+            return unwrapApiList(results[0]).concat(unwrapApiList(results[1]));
+        });
+
+    loadPromise
         .then(function (res) {
-            var list = unwrapApiList(res);
+            var list = Array.isArray(res) ? res : unwrapApiList(res);
             $ddl.empty().append($('<option/>').val('').text('-- Select --'));
             list.forEach(function (row) {
+                var masterFlag = normalizeMasterTemplete(prop(row, ['MasterTemplete', 'masterTemplete', 'MasterTemplate', 'masterTemplate']));
+                var desp = prop(row, ['Desp', 'desp']);
                 $ddl.append(
                     $('<option/>')
                         .val(prop(row, ['Code', 'code']))
-                        .text(prop(row, ['Desp', 'desp']))
+                        .text(String(desp || '').trim())
+                        .attr('data-desp', desp)
+                        .attr('data-master-templete', masterFlag)
                         .attr('data-freeze', prop(row, ['FreezeFromColumn', 'freezeFromColumn']) || '')
+                        .addClass(getManageTemplateOptionClass(masterFlag))
                 );
             });
             $ddl.prop('disabled', false);
+            updateManageTemplateSelectStyle();
         })
         .catch(function () {
             $ddl.empty().append($('<option/>').val('').text('-- Error --')).prop('disabled', false);
@@ -84,22 +122,43 @@ function loadTemplateDropdown() {
         });
 }
 
+function getManageTemplateOptionClass(masterFlag) {
+    return masterFlag === 'Y' ? 'ol-tpl-master-y' : 'ol-tpl-master-n';
+}
+
+function updateManageTemplateSelectStyle() {
+    var $ddl = $('#ddlMtMaster');
+    var $opt = $ddl.find('option:selected');
+    var flag = normalizeMasterTemplete($opt.attr('data-master-templete'));
+
+    $ddl.removeClass('ol-tpl-selected-y ol-tpl-selected-n');
+    if ($ddl.val()) {
+        $ddl.addClass(flag === 'Y' ? 'ol-tpl-selected-y' : 'ol-tpl-selected-n');
+    }
+}
+
 function onMasterTemplateChange() {
     var code = parseInt($('#ddlMtMaster').val(), 10) || 0;
     var isEdit = (G_MT_Mode === 'EDIT');
 
-    $('#btnMtDelete').prop('disabled', !(isEdit && code));
-
     if (!code) {
         clearGrid();
         if (isEdit) $('#txtMtTemplateName').val('');
+        updateManageTemplateSelectStyle();
+        applyHeaderFieldStates();
         return;
     }
 
     if (isEdit) {
-        $('#txtMtTemplateName').val($('#ddlMtMaster option:selected').text());
+        if (!isMasterManageTemplateSelected()) {
+            $('#txtMtTemplateName').val(getSelectedManageTemplateName());
+        } else {
+            $('#txtMtTemplateName').val('');
+        }
     }
 
+    updateManageTemplateSelectStyle();
+    applyHeaderFieldStates();
     loadTemplateTransaction(code);
 }
 
@@ -163,12 +222,13 @@ function renderGrid() {
 
     G_MT_Rows.forEach(function (row, i) {
         var selected = row.Selected === 'Y';
+        var totalAttrs = buildShowTotalInputAttrs(row);
         $body.append(
             '<tr data-idx="' + i + '" class="' + (selected ? 'ol-mt-selected' : '') + '">' +
                 '<td class="text-center"><input type="checkbox" class="ol-mt-row-select" ' + (selected ? 'checked' : '') + ' /></td>' +
                 '<td class="ol-mt-name">' + escapeHtml(row.FieldName) + '</td>' +
                 '<td><input type="text" class="ol-mt-display" value="' + escapeHtml(row.FieldNameAs) + '" /></td>' +
-                '<td class="text-center"><input type="checkbox" class="ol-mt-total" ' + (row.ShowTotal === 'Y' ? 'checked' : '') + ' /></td>' +
+                '<td class="text-center"><input type="checkbox" class="ol-mt-total" ' + totalAttrs + ' /></td>' +
                 '<td class="text-center"><input type="checkbox" class="ol-mt-filter" ' + (row.ApplyFilter === 'Y' ? 'checked' : '') + ' /></td>' +
                 '<td class="text-center"><input type="number" step="0.01" class="ol-mt-sort" value="' + row.SortOrder + '" /></td>' +
                 '<td class="text-center"><input type="checkbox" class="ol-mt-print" ' + (row.ShowInPrint === 'Y' ? 'checked' : '') + ' /></td>' +
@@ -192,7 +252,7 @@ function renderGrid() {
                     '<input type="number" step="0.01" class="ol-mt-sort" value="' + row.SortOrder + '" />' +
                 '</div>' +
                 '<div class="ol-mt-card-flags">' +
-                    '<label><input type="checkbox" class="ol-mt-total" ' + (row.ShowTotal === 'Y' ? 'checked' : '') + ' /> Show Total</label>' +
+                    '<label><input type="checkbox" class="ol-mt-total" ' + totalAttrs + ' /> Show Total</label>' +
                     '<label><input type="checkbox" class="ol-mt-filter" ' + (row.ApplyFilter === 'Y' ? 'checked' : '') + ' /> Filter</label>' +
                     '<label><input type="checkbox" class="ol-mt-print" ' + (row.ShowInPrint === 'Y' ? 'checked' : '') + ' /> Print</label>' +
                 '</div>' +
@@ -203,6 +263,7 @@ function renderGrid() {
     bindRowEvents();
     syncSelectAllState();
     rebuildFreezeColumnOptions();
+    applyGridFieldStates();
 }
 
 function bindRowEvents() {
@@ -222,6 +283,7 @@ function bindRowEvents() {
         rebuildFreezeColumnOptions();
     });
     $wrap.on('change.mt', '.ol-mt-total', function () {
+        if (this.disabled) return;
         var idx = rowIndex(this);
         var on = this.checked;
         G_MT_Rows[idx].ShowTotal = on ? 'Y' : 'N';
@@ -297,38 +359,95 @@ function clearGrid() {
     $('#olMtEmpty').text('Select a template to load its fields.').show();
     $('#chkMtSelectAll').prop('checked', false);
     $('#ddlMtFreezeColumn').empty().append($('<option/>').val('').text('-- None --'));
+    updateManageTemplateSelectStyle();
+    applyHeaderFieldStates();
 }
 
-/* ─────────────────────────── save / delete ─────────────────────────── */
+function isMasterTemplateEditMode() {
+    return G_MT_Mode === 'EDIT' && isMasterManageTemplateSelected();
+}
 
-function saveTemplate() {
-    if (G_MT_Loading) return;
+function isVarcharDataType(dataType) {
+    var dt = String(dataType || 'S').trim().toUpperCase();
+    return dt === 'S'
+        || dt === 'VARCHAR'
+        || dt === 'NVARCHAR'
+        || dt === 'CHAR'
+        || dt === 'NCHAR'
+        || dt === 'STRING'
+        || dt === 'TEXT';
+}
 
-    var name = ($('#txtMtTemplateName').val() || '').trim();
-    if (!name) {
-        toastr.warning('Please enter a Template Name.');
-        $('#txtMtTemplateName').focus();
-        return;
+function canEnableShowTotal(row) {
+    return !isVarcharDataType(row.DataType);
+}
+
+function buildShowTotalInputAttrs(row) {
+    var enabled = canEnableShowTotal(row);
+    if (!enabled) {
+        row.ShowTotal = 'N';
+        return 'disabled';
+    }
+    return row.ShowTotal === 'Y' ? 'checked' : '';
+}
+
+function applyHeaderFieldStates() {
+    var hideTemplateName = isMasterTemplateEditMode();
+
+    $('#olMtTemplateNameField').toggle(!hideTemplateName);
+    $('#txtMtTemplateName').prop('readonly', false);
+    $('#ddlMtFreezeColumn').prop('disabled', false);
+    $('#btnMtDelete').prop('disabled', isMasterManageTemplateSelected() || !(parseInt($('#ddlMtMaster').val(), 10) || 0));
+}
+
+function isMasterTemplateSave() {
+    return G_MT_Mode === 'EDIT' && isMasterManageTemplateSelected();
+}
+
+function resolveTemplateSaveName(isMasterSave) {
+    if (isMasterSave) {
+        return getSelectedManageTemplateName()
+            || String($('#ddlMtMaster option:selected').text() || '').trim();
+    }
+    return ($('#txtMtTemplateName').val() || '').trim();
+}
+
+function applyGridFieldStates() {
+    applyHeaderFieldStates();
+
+    G_MT_Rows.forEach(function (row, i) {
+        var $hosts = $('.ol-mt-grid-wrap [data-idx="' + i + '"]');
+        var showTotalEnabled = canEnableShowTotal(row);
+
+        if (!showTotalEnabled) {
+            row.ShowTotal = 'N';
+        }
+
+        $hosts.find('.ol-mt-total')
+            .prop('disabled', !showTotalEnabled)
+            .prop('checked', showTotalEnabled && row.ShowTotal === 'Y');
+        $hosts.find('.ol-mt-display').prop('readonly', false);
+        $hosts.find('.ol-mt-filter').prop('disabled', false);
+        $hosts.find('.ol-mt-sort').prop('readonly', false);
+        $hosts.find('.ol-mt-print').prop('disabled', false);
+        $hosts.find('.ol-mt-row-select').prop('disabled', false);
+    });
+
+    $('#chkMtSelectAll').prop('disabled', false);
+}
+
+function buildSavePayload(selectedCode, name, isMasterSave, visibilityOnly) {
+    var saveMode = 'SAVETEMPLATE';
+    if (isMasterSave) {
+        saveMode = visibilityOnly ? 'SAVEMASTERVISIBILITY' : 'SAVEMASTERTEMPLATE';
     }
 
-    var selectedCode = parseInt($('#ddlMtMaster').val(), 10) || 0;
-    if (!selectedCode) {
-        toastr.warning(G_MT_Mode === 'ADD' ? 'Please select a Master Template.' : 'Please select a Template.');
-        return;
-    }
-    if (!G_MT_Rows.length) {
-        toastr.warning('No fields to save.');
-        return;
-    }
-    if (!G_MT_Rows.some(function (r) { return r.Selected === 'Y'; })) {
-        toastr.warning('Select at least one field.');
-        return;
-    }
-
-    var payload = {
+    return {
+        Mode: saveMode,
         FormType: G_MT_FORM_TYPE,
-        F_TempleteMaster_Code: (G_MT_Mode === 'EDIT') ? selectedCode : 0,
-        SourceTemplateCode: (G_MT_Mode === 'ADD') ? selectedCode : 0,
+        MasterTemplete: isMasterSave ? 'Y' : 'N',
+        F_TempleteMaster_Code: (G_MT_Mode === 'EDIT' || isMasterSave) ? selectedCode : 0,
+        SourceTemplateCode: (G_MT_Mode === 'ADD' && !isMasterSave) ? selectedCode : 0,
         Desp: name,
         FreezeFromColumn: $('#ddlMtFreezeColumn').val() || '',
         Rows: G_MT_Rows.map(function (r, i) {
@@ -352,16 +471,49 @@ function saveTemplate() {
             };
         })
     };
+}
 
-    G_MT_Loading = true;
+/* ─────────────────────────── save / delete ─────────────────────────── */
+
+function saveTemplate() {
+    if (G_MT_Loading) return;
+
+    var masterEdit = isMasterTemplateEditMode();
+    var isMasterSave = masterEdit || isMasterTemplateSave();
+    var name = resolveTemplateSaveName(isMasterSave);
+
+    if (!name && !isMasterSave) {
+        toastr.warning(G_MT_Mode === 'ADD'
+            ? 'Please enter a Template Name.'
+            : 'Please enter a Template Name for the new copy.');
+        $('#txtMtTemplateName').focus();
+        return;
+    }
+
+    var selectedCode = parseInt($('#ddlMtMaster').val(), 10) || 0;
+    if (!selectedCode) {
+        toastr.warning(G_MT_Mode === 'ADD' ? 'Please select a Master Template.' : 'Please select a Template.');
+        return;
+    }
+    if (!G_MT_Rows.length) {
+        toastr.warning('No fields to save.');
+        return;
+    }
+    if (!G_MT_Rows.some(function (r) { return r.Selected === 'Y'; })) {
+        toastr.warning('Select at least one field.');
+        return;
+    }
+
+    var visibilityOnly = isMasterSave;
+    var payload = buildSavePayload(selectedCode, name, isMasterSave, visibilityOnly);
     setGridLoader(true);
     $('#btnMtSave').prop('disabled', true);
 
     OrderLoadReportService.SaveTemplate(payload)
         .then(function (res) {
             var row = unwrapApiList(res)[0] || {};
-            var newCode = parseInt(prop(row, ['Code', 'code']), 10) || 0;
-            toastr.success('Template saved successfully.');
+            var newCode = parseInt(prop(row, ['Code', 'code']), 10) || selectedCode;
+            toastr.success(isMasterSave ? 'Master template saved.' : 'Template saved successfully.');
             closeModal();
             refreshMainTemplates(newCode);
         })
@@ -376,18 +528,31 @@ function saveTemplate() {
 }
 
 function deleteTemplate() {
-    if (G_MT_Mode !== 'EDIT') return;
     var code = parseInt($('#ddlMtMaster').val(), 10) || 0;
-    if (!code) return;
+    if (!code) {
+        toastr.warning('Please select a template.');
+        return;
+    }
 
-    if (!window.confirm('Delete template "' + $('#ddlMtMaster option:selected').text() + '"?')) return;
+    if (isMasterManageTemplateSelected()) {
+        toastr.warning('Master template not delete.');
+        return;
+    }
+
+    if (G_MT_Mode !== 'EDIT') {
+        toastr.warning('Switch to Edit mode to delete user template.');
+        return;
+    }
+
+    var templateName = getSelectedManageTemplateName();
+    if (!window.confirm('Delete user template "' + templateName + '"?')) return;
 
     G_MT_Loading = true;
     setGridLoader(true);
 
     OrderLoadReportService.DeleteTemplate(code)
         .then(function () {
-            toastr.success('Template deleted.');
+            toastr.success('User template delete.');
             $('#txtMtTemplateName').val('');
             clearGrid();
             loadTemplateDropdown();
@@ -400,6 +565,26 @@ function deleteTemplate() {
             G_MT_Loading = false;
             setGridLoader(false);
         });
+}
+
+function isMasterManageTemplateSelected() {
+    if (G_MT_Mode === 'ADD') {
+        return true;
+    }
+
+    var $opt = $('#ddlMtMaster option:selected');
+    return normalizeMasterTemplete($opt.attr('data-master-templete')) === 'Y';
+}
+
+function getSelectedManageTemplateName() {
+    var $opt = $('#ddlMtMaster option:selected');
+    return String($opt.attr('data-desp') || $opt.text() || '').trim();
+}
+
+function normalizeMasterTemplete(value) {
+    if (value === true || value === 1) return 'Y';
+    if (value === false || value === 0) return 'N';
+    return String(value || 'N').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
 }
 
 function refreshMainTemplates(selectCode) {

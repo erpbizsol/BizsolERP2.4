@@ -1,0 +1,564 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/ProductionOrder.js"></script>
+<style>
+    .pla-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 18px rgba(102,126,234,0.28);
+    }
+    .pla-header h5  { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .pla-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; margin-top: 3px; }
+
+    .pla-stat-chip {
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 10px;
+        padding: 5px 14px;
+        text-align: center;
+        min-width: 78px;
+    }
+    .pla-stat-chip .val { font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1; }
+    .pla-stat-chip .lbl { font-size: 0.64rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    .section-entry-animation { animation: fadeSlideIn 0.3s ease both; }
+    @@keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .pro-list-wrap { margin-bottom: 14px; }
+    .pro-cards { display: flex; flex-direction: column; gap: 1rem; }
+
+    .pro-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        border: 1px solid #eef0f4;
+        border-left: 4px solid #667eea;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease, transform 0.15s ease;
+    }
+    .pro-card:hover {
+        box-shadow: 0 6px 22px rgba(102, 126, 234, 0.16);
+        transform: translateY(-1px);
+    }
+    .pro-card-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem 1.15rem 0.85rem;
+        border-bottom: 1px solid #f0f2f6;
+    }
+    .pro-po-badge {
+        flex: 0 0 auto;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border-radius: 12px;
+        padding: 0.45rem 0.75rem;
+        min-width: 7.5rem;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+    }
+    .pro-po-label {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        opacity: 0.9;
+        text-transform: uppercase;
+    }
+    .pro-po-no {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 800;
+        line-height: 1.2;
+        word-break: break-all;
+    }
+    .pro-company-block { flex: 1 1 200px; min-width: 0; }
+    .pro-company-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.35;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.4rem;
+    }
+    .pro-company-title .fa-building,
+    .pro-company-title .fa-cogs { color: #667eea; margin-top: 0.15rem; flex-shrink: 0; }
+    .pro-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 0.85rem;
+        margin-top: 0.35rem;
+        font-size: 0.78rem;
+        color: #64748b;
+    }
+    .pro-meta .fa-calendar-alt { margin-right: 0.25rem; opacity: 0.85; }
+    .pro-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.15rem 0.45rem;
+        border-radius: 6px;
+        border: 1px solid rgba(102, 126, 234, 0.18);
+        background: rgba(102, 126, 234, 0.08);
+        color: #667eea;
+        font-weight: 600;
+        font-size: 0.72rem;
+    }
+    .pro-amount-block { flex: 0 0 auto; text-align: right; min-width: 7rem; }
+    .pro-amount { font-size: 1.05rem; font-weight: 800; color: #667eea; line-height: 1.2; }
+    .pro-process-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #4338ca;
+        line-height: 1.25;
+        margin-bottom: 0.2rem;
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .pro-warehouse-name {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #475569;
+        line-height: 1.25;
+        margin-bottom: 0.35rem;
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .pro-warehouse-name .fa-building { color: #667eea; }
+    .pro-status {
+        display: inline-block;
+        margin-top: 0.35rem;
+        padding: 0.2rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    .pro-status--pending { background: #fef3c7; color: #b45309; }
+    .pro-status--process { background: #dbeafe; color: #1d4ed8; }
+    .pro-status--done { background: #d1fae5; color: #047857; }
+
+    .pro-card-foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        padding: 0.65rem 1.15rem 1rem;
+        background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+        border-top: 1px solid #f0f2f6;
+    }
+    .pro-submeta {
+        font-size: 0.72rem;
+        color: #64748b;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.75rem;
+    }
+
+    .pro-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        padding: 0.45rem 1rem;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+        background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+    .pro-btn:hover { color: #fff; box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4); }
+
+    .pro-empty {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #64748b;
+        font-size: 0.9rem;
+        background: #fff;
+        border-radius: 14px;
+        border: 1px dashed #e2e8f0;
+    }
+    .pro-empty i { font-size: 2.4rem; display: block; margin-bottom: 0.6rem; color: #c4b5fd; }
+
+    .pro-loading {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #667eea;
+        font-weight: 600;
+    }
+
+    .pro-paginator {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem 1rem;
+        margin-top: 1rem;
+        padding: 0.5rem 0;
+    }
+    .pro-paginator__info { font-size: 0.8125rem; color: #475569; font-weight: 600; }
+    .pro-paginator__nav { display: flex; align-items: center; gap: 0.35rem; }
+    .pro-paginator__btn {
+        width: 32px; height: 32px; border-radius: 50%; border: none;
+        background: #667eea; color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 0.7rem;
+    }
+    .pro-paginator__btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .pro-page-size {
+        display: flex; align-items: center; gap: 0.35rem;
+        font-size: 0.8125rem; color: #475569;
+    }
+    .pro-page-size select {
+        padding: 0.2rem 0.4rem; border-radius: 6px; border: 1px solid #cbd5e1;
+    }
+
+    @@media (max-width: 575.98px) {
+        .pro-card-head { flex-direction: column; align-items: stretch; }
+        .pro-company-block { flex: 0 0 auto; }
+        .pro-amount-block { text-align: left; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+        .pro-status { margin-top: 0; }
+        .pro-card-foot { flex-direction: column; align-items: stretch; }
+        .pro-btn { width: 100%; justify-content: center; }
+    }
+
+    /* ── VERIFY DETAIL MODAL (PO Approval style) ───────────────────────────── */
+    body.modal-open { overflow: hidden !important; }
+
+    #proModal .modal-dialog {
+        max-width: 940px;
+        height: calc(100vh - 2.5rem);
+        max-height: 880px;
+        margin: 1.25rem auto;
+    }
+    #proModal .modal-content {
+        border: none;
+        border-radius: 14px;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.22);
+    }
+    #proModal .modal-header {
+        position: relative;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border-bottom: none;
+        padding: 0.85rem 3.25rem 0.85rem 1.25rem;
+        gap: 0.75rem;
+    }
+    #proModal .pro-modal-header-main {
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: center;
+    }
+    #proModal .modal-header .modal-title {
+        margin: 0;
+        padding: 0 0.25rem;
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: 0.02em;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #proModal .pro-modal-header-date {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        margin-top: 0.2rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.92);
+        flex-wrap: wrap;
+    }
+    #proModal .pro-modal-header-date .pro-od-chip {
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: 6px;
+        padding: 0.12rem 0.55rem;
+        font-weight: 700;
+    }
+    #proModal .modal-header .btn-close {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        margin: 0;
+        opacity: 1;
+    }
+    #proModal .pro-modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: #fff;
+    }
+    #proModal .pro-modal-header-panel { flex-shrink: 0; }
+    #proModal .pro-items-section {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    #proModal .pro-items-title {
+        flex-shrink: 0;
+        margin-bottom: 8px;
+        padding-left: 0.45rem;
+        border-left: 3px solid #667eea;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    #proModal .pro-items-table-wrap {
+        flex: 1 1 auto;
+        min-height: 120px;
+        overflow-y: auto;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+    }
+    #proModal .modal-footer {
+        flex-shrink: 0;
+        padding: 10px 16px;
+        background: #fafbff;
+        border-top: 1px solid #eef0f8;
+        gap: 8px;
+        flex-wrap: wrap;
+        display: flex;
+        align-items: center;
+    }
+
+    .pro-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 4px;
+    }
+    .pro-info-grid--4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .pro-info-grid--4 .pro-info-val {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .pro-info-item {
+        background: #fafbff;
+        border: 1px solid #eef0f8;
+        border-radius: 10px;
+        padding: 8px 12px;
+    }
+    .pro-info-lbl {
+        font-size: 0.7rem; font-weight: 600; color: #64748b;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        display: block; margin-bottom: 3px;
+    }
+    .pro-info-val { font-size: 0.84rem; font-weight: 700; color: #1e293b; }
+
+    .pro-items-table { width: 100%; border-collapse: collapse; }
+    .pro-items-table thead tr th {
+        background: #4f46e5;
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        padding: 8px 10px;
+        white-space: nowrap;
+        border: none;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+    .pro-items-table thead tr th:first-child { border-radius: 8px 0 0 0; }
+    .pro-items-table thead tr th:last-child  { border-radius: 0 8px 0 0; }
+    .pro-items-table tbody tr:hover { background: #f5f3ff; }
+    .pro-items-table tbody tr td {
+        padding: 7px 10px;
+        vertical-align: middle;
+        border: 1px solid #ede9fe;
+        font-size: 0.8rem;
+        color: #374151;
+        white-space: nowrap;
+    }
+    #proItemsTable tbody tr td {
+        white-space: nowrap !important;
+        max-width: none;
+    }
+
+    .btn-pro-approve {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none; color: #fff; border-radius: 9px; padding: 9px 22px;
+        font-size: 0.85rem; font-weight: 700;
+        box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-pro-approve:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(16, 185, 129, 0.5); color: #fff; }
+    .btn-pro-close {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none; color: #fff; border-radius: 9px; padding: 9px 20px;
+        font-size: 0.85rem; font-weight: 700;
+        box-shadow: 0 3px 12px rgba(245, 158, 11, 0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-pro-close:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(245, 158, 11, 0.5); color: #fff; }
+
+    @@media (max-width: 768px) {
+        .pro-info-grid { grid-template-columns: repeat(2, 1fr); }
+        .pro-info-grid--4 { grid-template-columns: repeat(2, 1fr); }
+        #proModal .modal-dialog {
+            max-width: 100%;
+            width: 100%;
+            height: 100dvh;
+            max-height: 100dvh;
+            margin: 0;
+        }
+        #proModal .modal-content { border-radius: 0; }
+        #proModal .modal-header .modal-title { white-space: normal; font-size: 0.9rem; }
+    }
+</style>
+
+<div class="pla-header section-entry-animation">
+    <div>
+        <h5><i class="fa fa-industry me-2"></i><span id="proPageTitle">Production Order</span></h5>
+        <small id="proPageSubtitle">Review and verify pending production orders</small>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <div class="pla-stat-chip">
+            <div class="val" id="statPendingProductionOrder">—</div>
+            <div class="lbl">Pending</div>
+        </div>
+    </div>
+</div>
+
+<div id="proLoading" class="pro-loading" style="display:none;">
+    <i class="fa fa-spinner fa-spin fa-2x"></i>
+    <div class="mt-2">Loading production orders…</div>
+</div>
+
+<div id="ProductionOrderList" class="pro-list-wrap section-entry-animation">
+    <div id="ProductionOrderCards" class="pro-cards" role="list"></div>
+    <div id="pro-cards-paginator" class="pro-paginator"></div>
+</div>
+
+<div id="proEmpty" class="pro-empty" style="display:none;">
+    <i class="fa fa-clipboard-list"></i>
+    No pending production orders found.
+</div>
+
+<div class="modal fade" id="proModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="pro-modal-header-main">
+                    <h5 class="modal-title mb-0" id="proModalTitle">View Details</h5>
+                    <div class="pro-modal-header-date" id="proModalDateWrap" style="display:none;">
+                        <i class="fa fa-calendar-alt" aria-hidden="true"></i>
+                        <span>Entry Date:</span>
+                        <span class="pro-od-chip" id="proModalDate"></span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white"
+                        onclick="CloseProModal()" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body pro-modal-body">
+                <div id="proModalHeader" class="pro-modal-header-panel"></div>
+
+                <div class="pro-items-section">
+                    <div class="pro-items-title">
+                        <i class="fa fa-industry me-1"></i>Production Order Items
+                    </div>
+                    <div class="pro-items-table-wrap table-responsive">
+                        <table class="pro-items-table" id="proItemsTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Order No</th>
+                                    <th>Cust. Code</th>
+                                    <th>Order Item Name</th>
+                                    <th>Order Item Size</th>
+                                    <th>Order Qty PC</th>
+                                    <th>Order Qty KG</th>
+                                    <th>I/P Item Name</th>
+                                    <th>Input Roll</th>
+                                    <th>I/P Item Size</th>
+                                    <th>I/P Weight</th>
+                                    <th>Target Coat Weight</th>
+                                    <th>Chemical Weight</th>
+                                    <th>WIP Item Name</th>
+                                    <th>WIP Item Size</th>
+                                    <th>WIP Qty KG</th>
+                                    <th>Priority</th>
+                                    <th>Remark</th>
+                                    <th>Profile</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="proModalItemsBody">
+                                <tr>
+                                    <td colspan="20" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                        <i class="fa fa-spinner fa-spin me-1"></i>Loading items…
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <input type="hidden" id="hfProCode" value="0" />
+                <button type="button" id="btnProModalVerify" class="btn-pro-approve" onclick="ProModalVerify()">
+                    <i class="fa fa-check"></i><span id="btnProModalVerifyLabel">Verify</span>
+                </button>
+                <button type="button" class="btn-pro-close ms-auto" onclick="CloseProModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

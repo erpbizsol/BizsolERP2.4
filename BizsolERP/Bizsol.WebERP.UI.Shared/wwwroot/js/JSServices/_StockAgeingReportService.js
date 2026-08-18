@@ -10,6 +10,14 @@ const StockAgeingReportService = {
             }
         );
     },
+    GetLogicalStockDetail: function GetLogicalStockDetail(Payload) {
+        var URL = UrlService.API_DOCUMENT_StockAgeingReport + "/GetStockAgeingReportList";
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(Payload)).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetCategoryList: function GetCategoryList() {
         var URL = UrlService.API_DOCUMENT_StockAgeingReport + "/GetCategoryList";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(

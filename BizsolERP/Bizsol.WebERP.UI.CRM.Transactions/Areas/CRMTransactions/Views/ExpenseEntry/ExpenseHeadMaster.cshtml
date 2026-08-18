@@ -33,18 +33,22 @@
     <form>
         <input type="hidden" name="Code" id="Code" value="0">
         <div class="row g-3 align-items-end">
-            <div class="col-12 col-sm-6 col-md-4">
+            <div class="col-12 col-sm-6 col-md-3">
                 <label for="txtExpenseDescription" class="form-label fw-bold">Expense Description <span class="text-danger">*</span></label>
                 <input id="txtExpenseDescription" type="text" name="txtExpenseDescription" class="box_border form-control form-control-sm" autocomplete="off" placeholder="Expense Description" maxlength="50" required />
             </div>
-            <div class="col-12 col-sm-6 col-md-4 without-label-field" style="margin-bottom:0.8rem">
-                <button type="button" id="btnExpenseEntryListBack" class="btn btn-secondary btn-height" title="Back" onclick="ExpenseHeadMaster_Back()">Back</button>
+            <div class="col-12 col-sm-6 col-md-3 mb-2">
+                <label for="ddlExpenseGroup" class="form-label fw-bold">Expense Group <span class="text-danger">*</span></label>
+                <select id="ddlExpenseGroup" class="form-control form-control-sm box_border"></select>
             </div>
             <div class="col-12 col-sm-auto d-flex align-items-end" style="margin-bottom:0.9rem">
                 <div class="form-check form-switch ms-1">
                     <input class="form-check-input" type="checkbox" id="chkIsKMApplicable" onchange="ToggleKMApplicableLabel()" />
                     <label class="form-check-label fw-bold" for="chkIsKMApplicable">Is KM Applicable</label>
                 </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-auto without-label-field" style="margin-bottom:0.8rem">
+                <button type="button" id="btnExpenseEntryListBack" class="btn btn-secondary btn-height" title="Back" onclick="ExpenseHeadMaster_Back()">Back</button>
             </div>
         </div>
     </form>

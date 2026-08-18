@@ -397,7 +397,9 @@
     }
     #poaItemsTable thead tr th:nth-child(2),
     #poaItemsTable tbody tr td:nth-child(2),
-    #poaItemsTable tbody tr td:nth-child(13) {
+    #poaItemsTable thead tr th:nth-child(3),
+    #poaItemsTable tbody tr td:nth-child(3),
+    #poaItemsTable tbody tr td:nth-child(14) {
         white-space: normal;
         min-width: 140px;
         max-width: 220px;
@@ -521,7 +523,7 @@
 
 <div class="poa-header section-entry-animation">
     <div>
-        <h5><i class="fa fa-check-circle me-2"></i>PO Store</h5>
+        <h5><i class="fa fa-check-circle me-2"></i><span id="poaPageTitle">PO Approval</span></h5>
         
     </div>
     <div class="d-flex align-items-center gap-2 flex-shrink-0">
@@ -578,6 +580,7 @@
                                 <tr>
                                     <th>Item Code</th>
                                     <th>Item Description</th>
+                                    <th>Size Description</th>
                                     <th>PO Qty</th>
                                     <th>Tolerance %</th>
                                     <th>Rate</th>
@@ -597,7 +600,7 @@
                             </thead>
                             <tbody id="poaModalItemsBody">
                                 <tr>
-                                    <td colspan="17" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                    <td colspan="18" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
                                         <i class="fa fa-spinner fa-spin me-1"></i>Loading items…
                                     </td>
                                 </tr>

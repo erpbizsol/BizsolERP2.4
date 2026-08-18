@@ -19,6 +19,14 @@ const ExpenseHeadMasterService = {
             }
         );
     },
+    GetExpenseGroupList: function GetExpenseGroupList() {
+        var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + "/GetExpenseGroupList";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetExpenseHeadMasterByCode: function GetExpenseHeadMasterByCode(Code) {
         var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + "/GetExpenseHeadMasterByCode?Code=" + Code;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
