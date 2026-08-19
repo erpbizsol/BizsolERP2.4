@@ -36,7 +36,7 @@
 
     .summary-kpi-scroll {
         display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: repeat(7, minmax(0, 1fr));
         gap: 10px;
         margin-bottom: 14px;
     }
@@ -983,12 +983,6 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="salesComparison-tab" data-bs-toggle="tab" data-bs-target="#salesComparison" type="button" role="tab" aria-controls="salesComparison" aria-selected="false">
-            <i class="fas fa-chart-bar"></i>Sales Comparison
-        </button>
-    </li>
-
-    <li class="nav-item" role="presentation">
         <button class="nav-link" id="partyScoring-tab" data-bs-toggle="tab" data-bs-target="#partyScoring" type="button" role="tab" aria-controls="partyScoring" aria-selected="false">
             <i class="fas fa-star"></i>Party Scoring
         </button>
@@ -1025,7 +1019,7 @@
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="targetVsGrowth-tab" data-bs-toggle="tab" data-bs-target="#targetVsGrowth" type="button" role="tab" aria-controls="targetVsGrowth" aria-selected="false">
-            <i class="fas fa-bullseye"></i>TARGET Vs GROWTH
+            <i class="fas fa-bullseye"></i>Target and Growth
         </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -1067,7 +1061,6 @@
                             <div class="summary-kpi-icon icon-blue"><i class="fas fa-shopping-cart"></i></div>
                             <div class="summary-kpi-value-wrap">
                                 <div id="skpi-total-sale" class="summary-kpi-value">0 MT</div>
-                                <div id="skpi-total-sale-trend" class="summary-kpi-trend trend-neutral">—</div>
                             </div>
                         </div>
                     </div>
@@ -1077,7 +1070,15 @@
                             <div class="summary-kpi-icon icon-red"><i class="fas fa-user-times"></i></div>
                             <div class="summary-kpi-value-wrap">
                                 <div id="skpi-lost-client" class="summary-kpi-value">0</div>
-                                <div id="skpi-lost-client-trend" class="summary-kpi-trend trend-neutral">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Total No. of Parties</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-indigo"><i class="fas fa-users"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-total-parties" class="summary-kpi-value value-blue">0</div>
                             </div>
                         </div>
                     </div>
@@ -1087,17 +1088,24 @@
                             <div class="summary-kpi-icon icon-teal"><i class="fas fa-bullseye"></i></div>
                             <div class="summary-kpi-value-wrap">
                                 <div id="skpi-manifest-score" class="summary-kpi-value">0.00%</div>
-                                <div id="skpi-manifest-score-trend" class="summary-kpi-trend trend-neutral">—</div>
                             </div>
                         </div>
                     </div>
                     <div class="summary-kpi-card">
-                        <div class="summary-kpi-header">Lost Freight (MT)</div>
+                        <div class="summary-kpi-header">Total Manifested (MT)</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-green"><i class="fas fa-clipboard-list"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-total-manifested" class="summary-kpi-value">0 MT</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Lost Freight (₹)</div>
                         <div class="summary-kpi-body">
                             <div class="summary-kpi-icon icon-orange"><i class="fas fa-truck"></i></div>
                             <div class="summary-kpi-value-wrap">
-                                <div id="skpi-lost-freight" class="summary-kpi-value value-red">0.00 MT</div>
-                                <div id="skpi-lost-freight-trend" class="summary-kpi-trend trend-neutral">—</div>
+                                <div id="skpi-lost-freight" class="summary-kpi-value value-red">₹ 0</div>
                             </div>
                         </div>
                     </div>
@@ -1114,7 +1122,7 @@
                         </div>
                         <div class="summary-kpi-footer">Total : <strong id="skpi-nbd-crr-total">0</strong></div>
                     </div>
-                    <div class="summary-kpi-card">
+                    <div class="summary-kpi-card d-none" id="skpi-ready-dispatch-card">
                         <div class="summary-kpi-header">Ready to Dispatch Stock</div>
                         <div class="summary-kpi-body">
                             <div class="summary-kpi-icon icon-indigo"><i class="fas fa-box-open"></i></div>
@@ -1169,50 +1177,6 @@
                             </tbody>
                         </table>
                         <div class="paginator" id="paginator-summaryReportTable">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="tab-pane fade" id="salesComparison" role="tabpanel" aria-labelledby="salesComparison-tab">
-        <div class="container-fluid px-0">
-            <div class="tvg-panel sc-panel">
-                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Sales Comparison</h5>
-                    <span class="regional-level-badge">Month Wise – Last vs Current Month</span>
-                </div>
-
-                <div class="sc-summary-row">
-                    <div class="sc-summary-card previous">
-                        <div class="label" id="scPreviousPeriodTitle">Last Month</div>
-                        <div id="scPreviousTotal" class="value">0.00 MT</div>
-                    </div>
-                    <div class="sc-summary-card current">
-                        <div class="label" id="scCurrentPeriodTitle">Current Month</div>
-                        <div id="scCurrentTotal" class="value">0.00 MT</div>
-                    </div>
-                    <div class="sc-summary-card">
-                        <div class="label">Growth</div>
-                        <div id="scGrowthValue" class="value">0.00%</div>
-                    </div>
-                </div>
-
-                <div class="summary-chart-card">
-                    <div class="summary-chart-header">Total Sale (MT) – Month Wise Comparison</div>
-                    <div class="sc-chart-wrap">
-                        <div id="scGrowthBadge" class="sc-growth-badge neutral">—</div>
-                        <canvas id="salesComparisonBarChart"></canvas>
-                    </div>
-                    <div class="sc-period-labels">
-                        <div class="sc-period-label">
-                            <strong>Last Month</strong>
-                            <span id="scPreviousPeriodRange">—</span>
-                        </div>
-                        <div class="sc-period-label">
-                            <strong>Current Month</strong>
-                            <span id="scCurrentPeriodRange">—</span>
                         </div>
                     </div>
                 </div>
@@ -1538,10 +1502,10 @@
             </div>
         </div>
 
-        <!-- Order Sheet Data Table -->
+        <!-- Invoice Details Table -->
         <div class="card mb-3">
             <div class="card-body">
-                <h5 class="card-title">Order Sheet Data</h5>
+                <h5 class="card-title">Invoice Details</h5>
                 <div class="table-responsive mt-2">
                     <table id="orderSheetTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
                         <thead class="table-secondary" id="orderSheetTableHeader">
@@ -1608,10 +1572,10 @@
             </div>
         </div>
 
-        <!-- Order Details Table -->
+        <!-- Invoice Details Table -->
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Order Details</h5>
+                <h5 class="card-title">Invoice Details</h5>
                 <div class="table-responsive mt-2">
                     <table id="nbdCrrOrderDetailsTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
                         <thead class="table-secondary" id="nbdCrrOrderDetailsTableHeader">
@@ -1982,7 +1946,7 @@
         <div class="container-fluid">
             <div class="tvg-panel">
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">TARGET Vs GROWTH</h5>
+                    <h5 class="mb-0">Target and Growth</h5>
                     <span class="regional-level-badge">Manifest vs Actual</span>
                 </div>
 

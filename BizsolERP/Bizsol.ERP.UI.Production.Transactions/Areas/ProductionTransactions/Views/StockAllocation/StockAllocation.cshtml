@@ -222,6 +222,7 @@
         overflow-x: auto;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
         max-height: calc(100vh - 320px);
     }
 
@@ -377,6 +378,86 @@
         border-radius: 14px;
         border: none;
         overflow: hidden;
+    }
+
+    #DetailModal .sa-detail-modal-dialog {
+        max-width: 1140px;
+        width: calc(100% - 2rem);
+        height: calc(100vh - 2rem);
+        max-height: calc(100vh - 2rem);
+        margin: 1rem auto;
+    }
+
+    #DetailModal .sa-detail-modal-dialog.modal-dialog {
+        display: flex;
+        flex-direction: column;
+    }
+
+    #DetailModal .modal-content {
+        height: 100%;
+        max-height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #DetailModal .modal-header,
+    #DetailModal .modal-footer {
+        flex-shrink: 0;
+    }
+
+    #DetailModal .modal-footer {
+        background: #fff;
+        border-top: 1px solid #e2e8f0;
+        padding: 10px 16px;
+        z-index: 3;
+    }
+
+    #DetailModal .modal-body {
+        overflow: hidden;
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding-bottom: 8px;
+    }
+
+    #DetailModal #dvCoilInfo,
+    #DetailModal #dvCoilFilter {
+        flex-shrink: 0;
+    }
+
+    #DetailModal #paginator-DetailTable {
+        flex-shrink: 0;
+        margin-top: 0;
+        padding: 0;
+        min-height: 0;
+    }
+
+    #DetailModal #paginator-DetailTable:empty {
+        display: none;
+    }
+
+    #DetailModal .sa-coil-detail-grid {
+        flex: 1 1 auto;
+        min-height: 120px;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+    }
+
+    #DetailModal .sa-coil-detail-grid .table thead {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #fff;
+    }
+
+    #DetailModal .sa-coil-detail-grid .table thead th {
+        background: #f8fafc !important;
+        color: #1e293b !important;
+        border-bottom: 1px solid #e2e8f0 !important;
     }
 
     /* Select Coil / Identification modal — Stock Allocation theme */
@@ -776,8 +857,8 @@
     </div>
 </div>
 
-<div class="modal fade rps-detail-modal" id="DetailModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="false">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
+<div class="modal fade rps-detail-modal" id="DetailModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-bs-scroll="true">
+    <div class="modal-dialog modal-xl sa-detail-modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Coil Details</h5>
@@ -841,7 +922,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="sa-table-wrapper" style="min-height:200px !important; max-height: 360px;">
+                <div class="sa-table-wrapper sa-coil-detail-grid">
                     <table id="DetailTable" class="fixed-width-table table">
                         <thead id="DetailTable-head"></thead>
                         <tbody id="DetailTable-body"></tbody>
