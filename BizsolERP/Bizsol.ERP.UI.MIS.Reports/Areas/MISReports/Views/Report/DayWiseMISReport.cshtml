@@ -239,6 +239,17 @@
         min-width: 180px;
         max-width: 320px;
     }
+
+    /* Side-by-side Receiving + Dispatch */
+    .mis-split-row > [class*="col-"] {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mis-split-row .mis-section {
+        width: 100%;
+        height: calc(100% - 16px);
+    }
 </style>
 
 <div class="mis-wrap">
@@ -274,17 +285,39 @@
     <!-- Report Sections (all shown together) -->
     <div id="divReportSections" style="display:none;">
 
-        <!-- Receiving -->
-        <div class="mis-section">
-            <div class="mis-section-head"><i class="fa-solid fa-truck-ramp-box"></i> Receiving (MRN)</div>
-            <div class="mis-panel">
-                <div class="mis-table-wrapper">
-                    <table id="tblMRNReceive" class="table mis-table">
-                        <thead><tr id="tblMRNReceive-header"></tr></thead>
-                        <tbody id="tblMRNReceive-body"></tbody>
-                    </table>
-                    <div id="noMRN" class="mis-empty" style="display:none;">
-                        <i class="fa-regular fa-folder-open"></i> No data available.
+        <div class="row mis-split-row">
+            <!-- Receiving (left) -->
+            <div class="col-md-6">
+                <div class="mis-section">
+                    <div class="mis-section-head"><i class="fa-solid fa-truck-ramp-box"></i> Receiving (MRN)</div>
+                    <div class="mis-panel">
+                        <div class="mis-table-wrapper">
+                            <table id="tblMRNReceive" class="table mis-table">
+                                <thead><tr id="tblMRNReceive-header"></tr></thead>
+                                <tbody id="tblMRNReceive-body"></tbody>
+                            </table>
+                            <div id="noMRN" class="mis-empty" style="display:none;">
+                                <i class="fa-regular fa-folder-open"></i> No data available.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dispatch (right) -->
+            <div class="col-md-6">
+                <div class="mis-section">
+                    <div class="mis-section-head"><i class="fa-solid fa-truck-fast"></i> Dispatch / Sales</div>
+                    <div class="mis-panel">
+                        <div class="mis-table-wrapper">
+                            <table id="tblDispatch" class="table mis-table">
+                                <thead><tr id="tblDispatch-header"></tr></thead>
+                                <tbody id="tblDispatch-body"></tbody>
+                            </table>
+                            <div id="noDispatch" class="mis-empty" style="display:none;">
+                                <i class="fa-regular fa-folder-open"></i> No data available.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -300,22 +333,6 @@
                         <tbody id="tblProduction-body"></tbody>
                     </table>
                     <div id="noProduction" class="mis-empty" style="display:none;">
-                        <i class="fa-regular fa-folder-open"></i> No data available.
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Dispatch -->
-        <div class="mis-section">
-            <div class="mis-section-head"><i class="fa-solid fa-truck-fast"></i> Dispatch / Sales</div>
-            <div class="mis-panel">
-                <div class="mis-table-wrapper">
-                    <table id="tblDispatch" class="table mis-table">
-                        <thead><tr id="tblDispatch-header"></tr></thead>
-                        <tbody id="tblDispatch-body"></tbody>
-                    </table>
-                    <div id="noDispatch" class="mis-empty" style="display:none;">
                         <i class="fa-regular fa-folder-open"></i> No data available.
                     </div>
                 </div>

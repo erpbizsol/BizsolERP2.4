@@ -6,19 +6,6 @@
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BuyingCapacity.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-    /* Aligned with Layout - Hide page scrollbar */
-    html {
-        overflow: hidden !important;
-        height: 100% !important;
-    }
-
-    body {
-        overflow: hidden !important;
-        height: 100vh !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
     /* Card - Layout style (dashboard-card) */
     #BuyingCapacityPage .card {
         margin: 0 0 1rem 0 !important;
@@ -34,16 +21,18 @@
         padding: 1rem 1.25rem !important;
     }
 
-    .fixed-width-table th,
-    .fixed-width-table td {
-        white-space: nowrap;
-        min-width: auto;
+    #BuyingCapacityPage .fixed-width-table th,
+    #BuyingCapacityPage .fixed-width-table td {
+        white-space: normal;
+        overflow-wrap: break-word;
+        min-width: 0 !important;
     }
 
     /* Table wrapper - Layout vars, dynamic height */
     #BuyingCapacityPage .table-wrapper {
         position: relative;
-        overflow: auto;
+        overflow-x: hidden;
+        overflow-y: auto;
         max-height: calc(100vh - 260px);
         min-height: 300px;
         margin: 0 !important;
@@ -51,13 +40,107 @@
         border-radius: 16px;
         border: 1px solid var(--border-color);
         box-shadow: var(--shadow-sm);
+        -webkit-overflow-scrolling: touch;
     }
 
     #BuyingCapacity {
         width: 100%;
+        min-width: 0;
+        table-layout: fixed;
         margin: 0 !important;
         margin-bottom: 0 !important;
         color: var(--text-dark);
+    }
+
+    #BuyingCapacity .form-control,
+    #BuyingCapacity .select2-container {
+        width: 100% !important;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    #BuyingCapacity thead th,
+    #BuyingCapacity tbody td {
+        padding: 0.4rem 0.4rem !important;
+        vertical-align: middle;
+    }
+
+    /* S.No. */
+    #BuyingCapacity th:nth-child(1),
+    #BuyingCapacity td:nth-child(1) {
+        width: 4%;
+        text-align: right;
+    }
+
+    /* Party Name */
+    #BuyingCapacity th:nth-child(2),
+    #BuyingCapacity td:nth-child(2) {
+        width: 18%;
+    }
+
+    /* Mkt Person */
+    #BuyingCapacity th:nth-child(3),
+    #BuyingCapacity td:nth-child(3) {
+        width: 10%;
+    }
+
+    /* Country */
+    #BuyingCapacity th:nth-child(4),
+    #BuyingCapacity td:nth-child(4) {
+        width: 6%;
+    }
+
+    /* State */
+    #BuyingCapacity th:nth-child(5),
+    #BuyingCapacity td:nth-child(5) {
+        width: 9%;
+    }
+
+    /* City */
+    #BuyingCapacity th:nth-child(6),
+    #BuyingCapacity td:nth-child(6) {
+        width: 8%;
+    }
+
+    /* PinCode — keep header on one line */
+    #BuyingCapacity th:nth-child(7),
+    #BuyingCapacity td:nth-child(7) {
+        width: 8%;
+        min-width: 90px !important;
+        text-align: right;
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+    }
+
+    #BuyingCapacity th:nth-child(7) .filter-table-heading,
+    #BuyingCapacity th:nth-child(7) .filter-table-heading-div {
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+    }
+
+    /* Buying Frequency */
+    #BuyingCapacity th:nth-child(8),
+    #BuyingCapacity td:nth-child(8) {
+        width: 10%;
+    }
+
+    /* Monthly Req(Qty) */
+    #BuyingCapacity th:nth-child(9),
+    #BuyingCapacity td:nth-child(9) {
+        width: 9%;
+        text-align: right;
+    }
+
+    /* Customer Rating */
+    #BuyingCapacity th:nth-child(10),
+    #BuyingCapacity td:nth-child(10) {
+        width: 9%;
+    }
+
+    /* GP Rolling */
+    #BuyingCapacity th:nth-child(11),
+    #BuyingCapacity td:nth-child(11) {
+        width: 9%;
     }
 
     /* Sticky header — ProjectMaster / Layout indigo-purple */
@@ -75,10 +158,20 @@
         top: 0;
         z-index: 11;
         border-bottom: 2px solid var(--border-color);
-        padding: 0.5rem 1rem !important;
+        padding: 0.4rem 0.35rem !important;
         font-weight: 600;
-        font-size: 0.875rem;
-        letter-spacing: 0.02em;
+        font-size: 0.75rem;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        line-height: 1.25;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #BuyingCapacity thead th .filter-table-heading {
+        width: auto;
+        white-space: nowrap !important;
+        word-break: keep-all !important;
     }
 
     #BuyingCapacity tbody td {
@@ -118,36 +211,156 @@
         font-weight: 500;
     }
 
-    /* Responsive height adjustments */
-    @@media (max-height: 800px) {
+    #BuyingCapacityPage .bc-toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    @@media (max-height: 800px) and (min-width: 992px) {
         #BuyingCapacityPage .table-wrapper {
             max-height: calc(100vh - 200px);
             min-height: 300px;
         }
     }
 
-    @@media (max-height: 600px) {
+    @@media (max-height: 600px) and (min-width: 992px) {
         #BuyingCapacityPage .table-wrapper {
             max-height: calc(100vh - 180px);
             min-height: 250px;
+        }
+    }
+
+    /* Phone / tablet: keep a real table, swipe sideways, stack the filter bar */
+    @@media (max-width: 991.98px) {
+        #BuyingCapacityPage .card {
+            margin-bottom: 0.65rem !important;
+            border-radius: 12px;
+        }
+
+        #BuyingCapacityPage .card-body {
+            padding: 0.7rem 0.75rem !important;
+        }
+
+        #BuyingCapacityPage .bc-toolbar-actions {
+            width: 100%;
+        }
+
+        #BuyingCapacityPage .bc-toolbar-actions .btn {
+            flex: 1 1 0;
+            min-height: 40px;
+            width: auto;
+        }
+
+        #BuyingCapacityPage .table-wrapper {
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+            max-height: calc(100dvh - 250px) !important;
+            min-height: 180px !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #BuyingCapacityPage .fixed-width-table th,
+        #BuyingCapacityPage .fixed-width-table td {
+            min-width: unset !important;
+        }
+
+        #BuyingCapacity {
+            table-layout: auto !important;
+            width: max-content !important;
+            min-width: max-content !important;
+        }
+
+        #BuyingCapacity thead {
+            display: table-header-group;
+        }
+
+        #BuyingCapacity tbody {
+            display: table-row-group;
+        }
+
+        #BuyingCapacity tbody tr {
+            display: table-row;
+        }
+
+        #BuyingCapacity thead th,
+        #BuyingCapacity tbody td {
+            display: table-cell;
+            width: auto !important;
+            font-size: 0.78rem;
+            padding: 0.45rem 0.5rem !important;
+            white-space: nowrap;
+        }
+
+        #BuyingCapacity th:nth-child(1),
+        #BuyingCapacity td:nth-child(1) { min-width: 52px; }
+        #BuyingCapacity th:nth-child(2),
+        #BuyingCapacity td:nth-child(2) {
+            min-width: 170px;
+            white-space: normal;
+            max-width: 220px;
+        }
+        #BuyingCapacity th:nth-child(3),
+        #BuyingCapacity td:nth-child(3) { min-width: 120px; }
+        #BuyingCapacity th:nth-child(4),
+        #BuyingCapacity td:nth-child(4) { min-width: 80px; }
+        #BuyingCapacity th:nth-child(5),
+        #BuyingCapacity td:nth-child(5) { min-width: 110px; }
+        #BuyingCapacity th:nth-child(6),
+        #BuyingCapacity td:nth-child(6) { min-width: 100px; }
+        #BuyingCapacity th:nth-child(7),
+        #BuyingCapacity td:nth-child(7) { min-width: 96px !important; }
+        #BuyingCapacity th:nth-child(8),
+        #BuyingCapacity td:nth-child(8) { min-width: 140px; }
+        #BuyingCapacity th:nth-child(9),
+        #BuyingCapacity td:nth-child(9) { min-width: 130px; }
+        #BuyingCapacity th:nth-child(10),
+        #BuyingCapacity td:nth-child(10) { min-width: 130px; }
+        #BuyingCapacity th:nth-child(11),
+        #BuyingCapacity td:nth-child(11) {
+            min-width: 140px;
+            width: 1%;
+            max-width: 160px;
+        }
+
+        /* 16px prevents iOS input zoom */
+        #BuyingCapacity .form-control,
+        #BuyingCapacityPage #ddlMarketingMan,
+        #BuyingCapacityPage .select2-selection__rendered {
+            font-size: 16px !important;
+        }
+
+        #BuyingCapacity td .form-control,
+        #BuyingCapacity td .select2-container {
+            width: 132px !important;
+            min-width: 132px !important;
+            max-width: 132px !important;
+        }
+
+        #paginator-BuyingCapacity {
+            padding-bottom: 0.75rem;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        #BuyingCapacityPage .table-wrapper {
+            max-height: calc(100dvh - 270px) !important;
         }
     }
 </style>
 <div id="BuyingCapacityPage">
     <div class="card">
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-3">
+            <div class="row g-2 align-items-end bc-toolbar">
+                <div class="col-12 col-md-4 col-lg-3">
                     <label for="ddlMarketingMan" class="form-label">Sales Person <span class="text-danger">*</span></label>
                     <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" autocomplete="off" required></select>
                 </div>
 
-                <div class="col-md-3 without-label-field">
-                    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
-                </div>
-
-                <div class="col text-md-end without-label-field">
-                    <button type="button" id="btnExportExcel" class="btn btn-primary btn-height" onclick="ExportExcel();">
+                <div class="col-12 col-md-8 col-lg-9 bc-toolbar-actions">
+                    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width" disabled>Show</button>
+                    <button type="button" id="btnExportExcel" class="btn btn-primary btn-height ms-md-auto" onclick="ExportExcel();" disabled>
                         <i class="fas fa-download"></i> Download
                     </button>
                 </div>
