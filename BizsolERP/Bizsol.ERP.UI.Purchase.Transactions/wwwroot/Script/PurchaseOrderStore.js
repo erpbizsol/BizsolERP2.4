@@ -1383,6 +1383,7 @@ window.AddItemRow = function (silent) {
             <input type="hidden" id="frmHfTolOnQty_${rowId}" value="N" />
             <input type="hidden" id="frmHfTolOnRate_${rowId}" value="N" />
             <input type="hidden" id="frmHfTolOnAmount_${rowId}" value="N" />
+            <input type="hidden" id="frmHfSavedLineQty_${rowId}" value="0" />
             <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
         </td>
     </tr>`;
@@ -1409,23 +1410,76 @@ function RenumberRows() {
 
 // ─── TOLERANCE HELPERS ───────────────────────────────────────────────────────
 
+function GetToleranceBaseQty(item, savedLineQty) {
+    if (!item) return 0;
+    const savedQty = parseFloat(savedLineQty) || 0;
+    if (item.QtyRequired !== undefined && item.QtyRequired !== null && item.QtyRequired !== '') {
+        const remaining = parseFloat(item.QtyRequired);
+        if (!isNaN(remaining)) {
+            return remaining + savedQty;
+        }
+    }
+    return parseFloat(item.Qty || 0);
+}
+
+function ComputeToleranceLimits(baseQty, savedLineQty, baseRate, qtyTol, rateTol) {
+    const savedQty = parseFloat(savedLineQty) || 0;
+    const bomQty = parseFloat(baseQty);
+    const safeBaseQty = isNaN(bomQty) ? 0 : bomQty;
+    let effectiveQty = safeBaseQty;
+    if (effectiveQty <= 0 && savedQty > 0) {
+        effectiveQty = savedQty;
+    }
+    const maxQty = effectiveQty > 0
+        ? parseFloat((effectiveQty * (1 + qtyTol / 100)).toFixed(3))
+        : 0;
+    const maxRate = baseRate > 0
+        ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2))
+        : 0;
+    const maxAmount = (maxQty > 0 && maxRate > 0)
+        ? parseFloat((maxQty * maxRate).toFixed(2))
+        : 0;
+    return { effectiveQty, maxQty, maxRate, maxAmount };
+}
+
+function ShowBomQtyToleranceWarning(rowId, tol) {
+    if (tol.baseQty === 0) {
+        const itemName = rowId ? $(`#frmDdlItem_${rowId} option:selected`).text().trim() : '';
+        const itemLabel = itemName ? ' (' + itemName + ')' : '';
+        const prefix = rowId ? 'Row ' + rowId + itemLabel + ': ' : '';
+        toastr.warning(prefix + 'You use all BOM Qty. Please increase Qty in BOM first to make PO.');
+        return true;
+    }
+    if (tol.baseQty < 0) {
+        const itemName = rowId ? $(`#frmDdlItem_${rowId} option:selected`).text().trim() : '';
+        const itemLabel = itemName ? ' (' + itemName + ')' : '';
+        const prefix = rowId ? 'Row ' + rowId + itemLabel + ': ' : '';
+        toastr.warning(prefix + 'BOM Qty is ' + tol.baseQty + '. Please increase Qty in BOM first to make PO.');
+        return true;
+    }
+    return false;
+}
+
 function GetRowToleranceInfo(rowId) {
-    const baseQty     = parseFloat($(`#frmHfBaseQty_${rowId}`).val())       || 0;
+    const rawBaseQty  = parseFloat($(`#frmHfBaseQty_${rowId}`).val());
+    const baseQty     = isNaN(rawBaseQty) ? 0 : rawBaseQty;
+    const savedLineQty = parseFloat($(`#frmHfSavedLineQty_${rowId}`).val()) || 0;
     const qtyTol      = parseFloat($(`#frmHfQtyTolerance_${rowId}`).val())  || 0;
     const baseRate    = parseFloat($(`#frmHfBaseRate_${rowId}`).val())      || 0;
     const rateTol     = parseFloat($(`#frmHfRateTolerance_${rowId}`).val()) || 0;
     const tolOnQty    = $(`#frmHfTolOnQty_${rowId}`).val()    || 'N';
     const tolOnRate   = $(`#frmHfTolOnRate_${rowId}`).val()   || 'N';
     const tolOnAmount = $(`#frmHfTolOnAmount_${rowId}`).val() || 'N';
-    const maxQty      = baseQty  > 0 ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
-    const maxRate     = baseRate > 0 ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
-    const maxAmount   = (baseQty > 0 && baseRate > 0)
-        ? parseFloat((baseQty * (1 + qtyTol / 100) * baseRate * (1 + rateTol / 100)).toFixed(2))
-        : 0;
-    return { baseQty, qtyTol, baseRate, rateTol, maxQty, maxRate, maxAmount, tolOnQty, tolOnRate, tolOnAmount };
+    const limits = ComputeToleranceLimits(baseQty, savedLineQty, baseRate, qtyTol, rateTol);
+    return {
+        baseQty, savedLineQty, qtyTol, baseRate, rateTol,
+        maxQty: limits.maxQty, maxRate: limits.maxRate, maxAmount: limits.maxAmount,
+        effectiveQty: limits.effectiveQty,
+        tolOnQty, tolOnRate, tolOnAmount
+    };
 }
 
-function ApplyToleranceToRow(rowId, item) {
+function ApplyToleranceToRow(rowId, item, savedLineQty) {
     const againstProject = $('#frmChkAgainstProject').is(':checked');
     if (!againstProject) {
         $(`#frmHfBaseQty_${rowId}`).val(0);
@@ -1439,7 +1493,10 @@ function ApplyToleranceToRow(rowId, item) {
         $(`#frmTxtRate_${rowId}`).removeAttr('title');
         return;
     }
-    const baseQty     = item ? (parseFloat(item.QtyRequired  || item.Qty          || 0)) : 0;
+    const lineQty = savedLineQty !== undefined
+        ? (parseFloat(savedLineQty) || 0)
+        : (parseFloat($(`#frmHfSavedLineQty_${rowId}`).val()) || 0);
+    const baseQty     = GetToleranceBaseQty(item, lineQty);
     const qtyTol      = item ? (parseFloat(item.QtyTolerance || item.Tolerance     || 0)) : 0;
     const baseRate    = item ? (parseFloat(item.Rate         || item.EstimatedRate || 0)) : 0;
     const rateTol     = item ? (parseFloat(item.RateTolerance                      || 0)) : 0;
@@ -1455,8 +1512,10 @@ function ApplyToleranceToRow(rowId, item) {
     $(`#frmHfTolOnRate_${rowId}`).val(tolOnRate);
     $(`#frmHfTolOnAmount_${rowId}`).val(tolOnAmount);
 
-    const maxQty  = baseQty  > 0 ? parseFloat((baseQty  * (1 + qtyTol  / 100)).toFixed(3)) : 0;
-    const maxRate = baseRate > 0 ? parseFloat((baseRate * (1 + rateTol / 100)).toFixed(2)) : 0;
+    const savedQty = lineQty;
+    const limits = ComputeToleranceLimits(baseQty, savedQty, baseRate, qtyTol, rateTol);
+    const maxQty  = limits.maxQty;
+    const maxRate = limits.maxRate;
 
     if (tolOnQty === 'Y' && maxQty > 0) {
         const qtyTitle = qtyTol > 0 ? 'Max Qty (' + qtyTol + '% tolerance): ' + maxQty : 'Max Qty (no tolerance): ' + maxQty;
@@ -1482,6 +1541,7 @@ window.OnItemChange = function (rowId) {
         $(`#frmTxtGSTRate_${rowId}`).val(item.GSTRate || 0);
     }
     $(`#frmTxtSpecification_${rowId}`).val(item ? (item.ItemSpecificationDesp || '') : '');
+    $(`#frmHfSavedLineQty_${rowId}`).val(0);
     ApplyToleranceToRow(rowId, item || null);
     CalcRowValue(rowId);
 };
@@ -1493,15 +1553,8 @@ window.CalcRowValue = function (rowId) {
     const againstProject = $('#frmChkAgainstProject').is(':checked');
     if (againstProject) {
         const tol = GetRowToleranceInfo(rowId);
-        if (tol.tolOnQty === 'Y')
-        {
-
-            if (tol.baseQty == 0) {
-                toastr.warning('You use all BOM Qty. Please increase Qty in BOM first to make PO.');
-            }
-            if (tol.baseQty < 0) {
-                toastr.warning('BOM Qty is ' + tol.baseQty + '. Please increase Qty in BOM first to make PO.');
-            }
+        if (tol.tolOnQty === 'Y' || tol.tolOnAmount === 'Y') {
+            ShowBomQtyToleranceWarning(rowId, tol);
         }
         if (tol.tolOnQty === 'Y' && tol.maxQty > 0 && qty > tol.maxQty) {
             const qtyMsg = tol.qtyTol > 0
@@ -1523,6 +1576,9 @@ window.CalcRowValue = function (rowId) {
             const enteredAmount = parseFloat((qty * rate).toFixed(2));
             if (enteredAmount > tol.maxAmount) {
                 toastr.warning('Amount ' + enteredAmount + ' exceeds the maximum allowed amount of ' + tol.maxAmount + '.');
+                if (tol.tolOnQty !== 'Y' && tol.tolOnRate !== 'Y') {
+                    return;
+                }
             }
         }
     }
@@ -1613,20 +1669,13 @@ window.SavePO = function () {
 
         if (agaistProject === 'Y') {
             const saveTol = GetRowToleranceInfo(rowId);
-            if (saveTol.tolOnQty === 'Y')
-            {
-                if (saveTol.baseQty == 0) {
-                    const itemName = $(`#frmDdlItem_${rowId} option:selected`).text().trim();
-                    const itemLabel = itemName ? ' (' + itemName + ')' : '';
-                    toastr.warning('Row ' + rowId + itemLabel + ':You use All BOM Qty. Please increase Qty in BOM first to make PO.');
+            if (saveTol.tolOnQty === 'Y') {
+                if (saveTol.baseQty === 0 || saveTol.baseQty < 0) {
+                    ShowBomQtyToleranceWarning(rowId, saveTol);
                     itemValid = false; return false;
                 }
-                if (saveTol.baseQty < 0) {
-                    const itemName = $(`#frmDdlItem_${rowId} option:selected`).text().trim();
-                    const itemLabel = itemName ? ' (' + itemName + ')' : '';
-                    toastr.warning('Row ' + rowId + itemLabel + ': BOM Qty is ' + saveTol.baseQty + '. Please increase Qty in BOM first to make PO.');
-                    itemValid = false; return false;
-                }
+            } else if (saveTol.tolOnAmount === 'Y' && (saveTol.baseQty === 0 || saveTol.baseQty < 0)) {
+                ShowBomQtyToleranceWarning(rowId, saveTol);
             }
             if (saveTol.tolOnQty === 'Y' && saveTol.maxQty > 0 && qty > saveTol.maxQty) {
                 const saveQtyMsg = saveTol.qtyTol > 0
@@ -1850,12 +1899,27 @@ function LoadPOForEdit(code) {
                     <input type="hidden" id="frmHfTolOnQty_${rowId}" value="N" />
                     <input type="hidden" id="frmHfTolOnRate_${rowId}" value="N" />
                     <input type="hidden" id="frmHfTolOnAmount_${rowId}" value="N" />
-                    <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
+                    <input type="hidden" id="frmHfSavedLineQty_${rowId}" value="0" />
+            <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
                 </td>
             </tr>`;
             $('#tblPOItemsBody').append(row);
+            $(`#frmHfSavedLineQty_${rowId}`).val(det.QtyMT || 0);
             const tolItem = editItems.find(i => String(i.Code) === String(det.ItemMaster_Code));
             ApplyToleranceToRow(rowId, tolItem || null);
+            const preloadQty  = parseFloat($(`#frmTxtQty_${rowId}`).val())  || 0;
+            const preloadRate = parseFloat($(`#frmTxtRate_${rowId}`).val()) || 0;
+            $(`#frmTxtValue_${rowId}`).val(parseFloat((preloadQty * preloadRate).toFixed(2)));
+            const tol = GetRowToleranceInfo(rowId);
+            if ((tol.tolOnQty === 'Y' || tol.tolOnAmount === 'Y') && (tol.baseQty === 0 || tol.baseQty < 0)) {
+                ShowBomQtyToleranceWarning(rowId, tol);
+            }
+            if (tol.tolOnAmount === 'Y' && tol.maxAmount > 0) {
+                const rowAmount = parseFloat((preloadQty * preloadRate).toFixed(2));
+                if (rowAmount > tol.maxAmount) {
+                    toastr.warning('Row ' + rowId + ': Amount ' + rowAmount + ' exceeds the maximum allowed amount of ' + tol.maxAmount + '.');
+                }
+            }
         });
 
         if (details.length === 0) AddItemRow(true);
@@ -2220,7 +2284,9 @@ function MobileItemModalConfirm() {
     if ($('#frmChkAgainstProject').is(':checked')) {
         const mobileItem = GetFilteredItemList().find(i => String(i.Code) === String(itemCode));
         if (mobileItem) {
-            const mbBaseQty     = parseFloat(mobileItem.QtyRequired  || mobileItem.Qty          || 0);
+            const mobileRowId = G_MobileItemEditRowId;
+            const savedQty = mobileRowId ? (parseFloat($(`#frmHfSavedLineQty_${mobileRowId}`).val()) || 0) : 0;
+            const mbBaseQty     = GetToleranceBaseQty(mobileItem, savedQty);
             const mbQtyTol      = parseFloat(mobileItem.QtyTolerance || mobileItem.Tolerance     || 0);
             const mbBaseRate    = parseFloat(mobileItem.Rate         || mobileItem.EstimatedRate || 0);
             const mbRateTol     = parseFloat(mobileItem.RateTolerance                             || 0);
@@ -2228,11 +2294,14 @@ function MobileItemModalConfirm() {
             const mbTolOnRate   = mobileItem.ToleranceApplicableOnPORate   || 'N';
             const mbTolOnAmount = mobileItem.ToleranceApplicableOnPOAmount || 'N';
             const mobileRate    = parseFloat($('#mobileItemTxtRate').val()) || 0;
-            const mbMaxQty      = mbBaseQty  > 0 ? parseFloat((mbBaseQty  * (1 + mbQtyTol  / 100)).toFixed(3)) : 0;
-            const mbMaxRate     = mbBaseRate > 0 ? parseFloat((mbBaseRate * (1 + mbRateTol / 100)).toFixed(2)) : 0;
-            const mbMaxAmount   = (mbBaseQty > 0 && mbBaseRate > 0)
-                ? parseFloat((mbBaseQty * (1 + mbQtyTol / 100) * mbBaseRate * (1 + mbRateTol / 100)).toFixed(2))
-                : 0;
+            const mbLimits      = ComputeToleranceLimits(mbBaseQty, savedQty, mbBaseRate, mbQtyTol, mbRateTol);
+            const mbMaxQty      = mbLimits.maxQty;
+            const mbMaxRate     = mbLimits.maxRate;
+            const mbMaxAmount   = mbLimits.maxAmount;
+            const mbTolInfo     = { baseQty: mbBaseQty, tolOnQty: mbTolOnQty, tolOnAmount: mbTolOnAmount };
+            if (mbTolOnQty === 'Y' || mbTolOnAmount === 'Y') {
+                ShowBomQtyToleranceWarning(mobileRowId, mbTolInfo);
+            }
             if (mbTolOnQty === 'Y' && mbMaxQty > 0 && qty > mbMaxQty) {
                 toastr.warning(`Qty exceeds the ${mbQtyTol}% tolerance. Maximum allowed Qty is ${mbMaxQty}.`);
                 $('#mobileItemTxtQty').val(mbMaxQty);
@@ -2285,7 +2354,8 @@ function MobileItemModalConfirm() {
                 <input type="hidden" id="frmHfTolOnQty_${rowId}" value="N" />
                 <input type="hidden" id="frmHfTolOnRate_${rowId}" value="N" />
                 <input type="hidden" id="frmHfTolOnAmount_${rowId}" value="N" />
-                <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
+                <input type="hidden" id="frmHfSavedLineQty_${rowId}" value="0" />
+            <button type="button" class="del-row-btn" title="Remove" onclick="DeleteItemRow(${rowId})"><i class="fa fa-times-circle"></i></button>
             </td>
         </tr>`;
         $('#tblPOItemsBody').append(row);
