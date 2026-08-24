@@ -10,12 +10,6 @@ const IndentMasterService = {
 
     /**
      * Generic GET helper that maps every parameter to a query-string key.
-     * @param {string}  Mode       - Procedure mode (LOCATE, SHOWDATA, DELETE, …)
-     * @param {number}  [Code]     - Master-record code (default 0)
-     * @param {string}  [FromDate] - ISO date yyyy-mm-dd
-     * @param {string}  [ToDate]   - ISO date yyyy-mm-dd
-     * @param {string}  [LocateType] - 'Default' | 'Detail'
-     * @param {string}  [VerifyStatus] - optional status filter
      */
     Getddl: function Getddl(Mode, Code, FromDate, ToDate, LocateType, VerifyStatus) {
         Code         = Code         || 0;
@@ -36,68 +30,93 @@ const IndentMasterService = {
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(value => value);
     },
 
-    /**
-     * LOCATE – Execute the F_LocateConfiguration-driven dynamic query.
-     * @param {string} FromDate
-     * @param {string} ToDate
-     * @param {string} [LocateType='Default']
-     * @param {string} [VerifyStatus='']
-     */
     GetIndentList: function GetIndentList(FromDate, ToDate, LocateType, VerifyStatus) {
         return IndentMasterService.Getddl('LOCATE', 0, FromDate, ToDate, LocateType, VerifyStatus);
     },
 
-    /**
-     * DDL_LOCATETYPELIST – Returns { Code, LocateType } rows from
-     * F_LocateConfiguration for 'Indent/Material Requirement (Store)'.
-     * Used to populate the View-Type dropdown on the page.
-     */
     GetLocateTypeList: function GetLocateTypeList() {
         return IndentMasterService.Getddl('DDL_LOCATETYPELIST', 0, '', '', '', '');
     },
 
-    /**
-     * GETLOCATECONFIG – Returns full F_LocateConfiguration rows
-     * (LocateType, CodeFieldName, RowColorCodeString, SortOrder …).
-     */
     GetLocateConfig: function GetLocateConfig() {
         return IndentMasterService.Getddl('GETLOCATECONFIG', 0, '', '', '', '');
     },
 
-    /**
-     * SHOWDATA – Returns master header + transaction detail rows for one Code.
-     * @param {number} code
-     */
+    GetConfig: function GetConfig() {
+        return IndentMasterService.Getddl('GETCONFIG');
+    },
+
+    GetNextIndentNo: function GetNextIndentNo() {
+        return IndentMasterService.Getddl('GETNEXTINDENTNO');
+    },
+
+    GetWarehouseList: function GetWarehouseList() {
+        return IndentMasterService.Getddl('DDL_WAREHOUSELIST');
+    },
+
+    GetCategoryList: function GetCategoryList() {
+        return IndentMasterService.Getddl('DDL_CATEGORYLIST');
+    },
+
+    GetUserList: function GetUserList() {
+        return IndentMasterService.Getddl('DDL_USERLIST');
+    },
+
+    GetDepartmentList: function GetDepartmentList() {
+        return IndentMasterService.Getddl('GETDEPARTMENTLIST');
+    },
+
+    GetVendorList: function GetVendorList() {
+        return IndentMasterService.Getddl('DDL_VENDORLIST');
+    },
+
+    GetCurrencyList: function GetCurrencyList() {
+        return IndentMasterService.Getddl('DDL_CURRENCYLIST');
+    },
+
+    GetUOMList: function GetUOMList() {
+        return IndentMasterService.Getddl('DDL_UOMLIST');
+    },
+
+    GetDivisionList: function GetDivisionList() {
+        return IndentMasterService.Getddl('DDL_DIVISIONLIST');
+    },
+
+    GetSubDivisionList: function GetSubDivisionList(divisionCode) {
+        return IndentMasterService.Getddl('DDL_SUBDIVISIONLIST', divisionCode || 0);
+    },
+
+    GetSubDepartmentList: function GetSubDepartmentList(departmentCode) {
+        return IndentMasterService.Getddl('DDL_SUBDEPARTMENTLIST', departmentCode || 0);
+    },
+
+    GetItemStock: function GetItemStock(itemCode) {
+        return IndentMasterService.Getddl('GETITEMSTOCK', itemCode || 0);
+    },
+
+    GetItemList: function GetItemList(categoryCode) {
+        return IndentMasterService.Getddl('GETITEMLIST', categoryCode || 0);
+    },
+
     GetIndentById: function GetIndentById(code) {
         return IndentMasterService.Getddl('SHOWDATA', code);
     },
 
-    /**
-     * VERIFY – Set Verified status on all transactions of a master record.
-     * @param {number} code
-     * @param {string} verifyStatus   'Y' | 'R' | 'H'
-     */
     VerifyIndent: function VerifyIndent(code, verifyStatus) {
         return IndentMasterService.Getddl('VERIFY', code, '', '', '', verifyStatus);
     },
 
-    /**
-     * DELETE – Remove an Indent master + its transactions.
-     * @param {number} code
-     */
     DeleteIndent: function DeleteIndent(code) {
         return IndentMasterService.Getddl('DELETE', code);
     },
 
     /**
-     * DDL helpers
+     * SAVE – POST XML payload. API should call USP_WebAPI_IndentMaster
+     * with Mode='SAVE' and @OtherParameter = payload XML.
      */
-    GetDepartmentList: function GetDepartmentList() {
-        return IndentMasterService.Getddl('GETDEPARTMENTLIST');
-    },
-
-    GetItemList: function GetItemList() {
-        return IndentMasterService.Getddl('GETITEMLIST');
+    SaveIndentMaster: function SaveIndentMaster(payload) {
+        let url = UrlService.API_ENDPOINT_IndentMaster + `/SaveIndentMaster`;
+        return promiseAjaxCallApi.CallAPI('POST', url, payload).then(value => value);
     },
 };
 
