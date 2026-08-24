@@ -896,12 +896,14 @@
         justify-content: space-between;
         gap: 10px;
     }
-    #modalGpaBudgetBalance .gpa-budget-table .gpa-history-type {
+    #modalGpaBudgetBalance .gpa-budget-table .gpa-history-type,
+    #modalGpaHistory .gpa-history-table .gpa-history-type {
         display: inline-block;
         min-width: 62px;
         text-align: center;
     }
-    #modalGpaBudgetBalance .gpa-budget-status {
+    #modalGpaBudgetBalance .gpa-budget-status,
+    #modalGpaHistory .gpa-budget-status {
         display: inline-block;
         min-width: 72px;
         padding: 3px 8px;
@@ -911,11 +913,18 @@
         text-transform: uppercase;
         letter-spacing: 0.03em;
     }
-    #modalGpaBudgetBalance .gpa-budget-status--approved { background: #dcfce7; color: #15803d; }
-    #modalGpaBudgetBalance .gpa-budget-status--pending { background: #dbeafe; color: #1d4ed8; }
-    #modalGpaBudgetBalance .gpa-budget-status--rejected { background: #fee2e2; color: #b91c1c; }
-    #modalGpaBudgetBalance .gpa-budget-status--hold { background: #ffedd5; color: #c2410c; }
-    #modalGpaBudgetBalance .gpa-budget-status--other { background: #f3f4f6; color: #374151; }
+    #modalGpaBudgetBalance .gpa-budget-status--approved,
+    #modalGpaHistory .gpa-budget-status--approved { background: #dcfce7; color: #15803d; }
+    #modalGpaBudgetBalance .gpa-budget-status--completed,
+    #modalGpaHistory .gpa-budget-status--completed { background: #e0f2fe; color: #0369a1; }
+    #modalGpaBudgetBalance .gpa-budget-status--pending,
+    #modalGpaHistory .gpa-budget-status--pending { background: #dbeafe; color: #1d4ed8; }
+    #modalGpaBudgetBalance .gpa-budget-status--rejected,
+    #modalGpaHistory .gpa-budget-status--rejected { background: #fee2e2; color: #b91c1c; }
+    #modalGpaBudgetBalance .gpa-budget-status--hold,
+    #modalGpaHistory .gpa-budget-status--hold { background: #ffedd5; color: #c2410c; }
+    #modalGpaBudgetBalance .gpa-budget-status--other,
+    #modalGpaHistory .gpa-budget-status--other { background: #f3f4f6; color: #374151; }
     #modalGpaBudgetBalance .gpa-budget-table tbody tr.gpa-budget-total-row td {
         background: #f0f9ff;
         font-weight: 800;

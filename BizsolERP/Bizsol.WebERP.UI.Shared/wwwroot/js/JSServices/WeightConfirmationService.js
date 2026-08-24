@@ -26,6 +26,15 @@ const WeightConfirmationService = {
         );
     },
 
+    GetFixedParaMeter: function GetFixedParaMeter() {
+        var URL = UrlService.API_ENDPOINT_WeightConfirmation + '/GetFixedParaMeter';
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+
 }
 
 export { WeightConfirmationService }
