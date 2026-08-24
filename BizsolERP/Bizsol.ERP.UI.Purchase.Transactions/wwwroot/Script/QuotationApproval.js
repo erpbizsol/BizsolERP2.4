@@ -271,6 +271,40 @@ function GetRateAsPerCostSheetFromRow(row) {
     return 0;
 }
 
+function IsRateColumnKey(k) {
+    return k === 'Rate';
+}
+
+function ParseRateNumber(val) {
+    if (val == null || val === '') return NaN;
+    const s = String(val).replace(/,/g, '').trim();
+    const m = s.match(/[-+]?\d*\.?\d+/);
+    if (!m) return NaN;
+    return parseFloat(m[0]);
+}
+
+function GetRateFromRow(row) {
+    if (row == null) return '';
+    if (row.Rate != null && row.Rate !== '') return row.Rate;
+    if (row['Rate'] != null && row['Rate'] !== '') return row['Rate'];
+    return '';
+}
+
+/** Dark green = equal, red = cost sheet > rate, violet-blue = rate > cost sheet. */
+function GetRateCompareClass(row) {
+    if (G_RateAsPerCostSheet !== 'Y' || row == null) return '';
+    const costRaw = (row['Rate As Per Cost Sheet'] != null && row['Rate As Per Cost Sheet'] !== '')
+        ? row['Rate As Per Cost Sheet']
+        : (row.RateAsPerCostSheet != null && row.RateAsPerCostSheet !== '' ? row.RateAsPerCostSheet : null);
+    if (costRaw == null) return '';
+    const rate = ParseRateNumber(GetRateFromRow(row));
+    const costSheet = ParseRateNumber(costRaw);
+    if (isNaN(rate) || isNaN(costSheet)) return '';
+    if (Math.abs(rate - costSheet) < 0.0001) return 'qa-rate-eq';
+    if (costSheet > rate) return 'qa-rate-cs-higher';
+    return 'qa-rate-cs-lower';
+}
+
 function CalcRateAsPerCostSheetInFC(rateAsPerCostSheet, conversionRate) {
     const rate = parseFloat(String(rateAsPerCostSheet ?? '').replace(/,/g, ''));
     if (isNaN(rate)) return 0;
@@ -370,10 +404,11 @@ function BuildLineItemMobileCard(row, keys, index) {
         const isNum = QA_ITEM_NUMERIC.has(k);
         const lbl = QA_COST_SHEET_LABELS[k] || k;
         const full = lbl.length > 14 || String(val).length > 18 ? ' qa-li-mobile-kv--full' : '';
+        const rateCls = IsRateColumnKey(k) ? GetRateCompareClass(row) : '';
         return (
             '<div class="qa-li-mobile-kv' + full + '">' +
             '<span class="qa-li-mobile-lbl">' + EscHtml(lbl) + '</span>' +
-            '<span class="qa-li-mobile-val' + (isNum ? ' is-num' : '') + '">' + EscHtml(String(val)) + '</span></div>'
+            '<span class="qa-li-mobile-val' + (isNum ? ' is-num' : '') + (rateCls ? ' ' + rateCls : '') + '">' + EscHtml(String(val)) + '</span></div>'
         );
     }).join('');
     return (
@@ -424,7 +459,9 @@ function RenderModalItems(rows, quotation) {
         return '<tr>' + keys.map(function (k) {
             const val = row[k] == null ? '' : row[k];
             const align = QA_ITEM_NUMERIC.has(k) ? ' style="text-align:right;"' : '';
-            return '<td' + align + '>' + EscHtml(String(val)) + '</td>';
+            const rateCls = IsRateColumnKey(k) ? GetRateCompareClass(row) : '';
+            const cls = rateCls ? ' class="' + rateCls + '"' : '';
+            return '<td' + align + cls + '>' + EscHtml(String(val)) + '</td>';
         }).join('') + '</tr>';
     }).join('');
 
