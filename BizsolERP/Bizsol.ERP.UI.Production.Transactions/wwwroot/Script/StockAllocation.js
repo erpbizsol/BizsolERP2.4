@@ -31,6 +31,7 @@ $(document).ready(function () {
     GetRawMaterialDropDown();
     GetStockAllocationList();
     initCoilFilterInputs();
+    bindSaScrollHeightHandlers();
     $("#btnStockAllocationShow").click(function () {
         GetBOMMasterDataOrderWiselist();
     });
@@ -73,6 +74,7 @@ function GetStockAllocationList() {
             });
 
             BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            setTimeout(adjustSaPageGridScrollHeights, 0);
         } else {
             G_StockAllocationList = [];
             toastr.info('No Data Found');
@@ -134,12 +136,14 @@ function ShowGrid() {
     $("#dvFrom").hide();
     $("#saHeaderActions").show();
     $("#saPageHeader").removeClass("sa-list-header--with-filter");
+    setTimeout(adjustSaPageGridScrollHeights, 0);
 }
 function HideGrid() {
     $("#dvGrid").hide();
     $("#dvFrom").show();
     $("#saHeaderActions").hide();
     $("#saPageHeader").addClass("sa-list-header--with-filter");
+    setTimeout(adjustSaPageGridScrollHeights, 0);
 }
 function GetRawMaterialDropDown() {
     StockAllocationService.GetRawMaterialDropDown().then(function (response) {
@@ -515,6 +519,7 @@ function bindBOMMasterOrderWiseGrid(response) {
     );
     forceRefreshEditableGridTotals();
     tightenEditableGridActionColumn();
+    setTimeout(adjustSaPageGridScrollHeights, 0);
 }
 
 function GetBOMMasterDataOrderWise(ddlClientName, ddlOrderNo) {
@@ -812,6 +817,7 @@ function addNewEditableRow() {
     // Update all Identification dropdowns to disable already selected options
     updateAllIdentificationDropdowns();
     updateDetailTableFooterSum();
+    setTimeout(adjustCoilDetailGridScrollHeight, 0);
 }
 function updateRowNumbers() {
     const $tbody = $('#DetailTable-body');
@@ -1619,9 +1625,9 @@ function getTotalCoilWtExcludingRow(excludeRow) {
 }
 
 function getRemainingBalanceForRow(excludeRow) {
-    const maxAllowed = G_InitialBalanceWt > 0 ? G_InitialBalanceWt : (G_ToAllocateWt || 0);
+    const toAllocate = G_ToAllocateWt || parseFloat($('#txtToAllocateWt').val()) || 0;
     const usedByOthers = getTotalCoilWtExcludingRow(excludeRow);
-    return Math.max(0, maxAllowed - usedByOthers);
+    return Math.max(0, toAllocate - usedByOthers);
 }
 
 function setRowCoilWt($coilWt, weight) {
@@ -1826,9 +1832,77 @@ function UpdateCoilDetail(Grade_Code, Code, balanceToInspectWt) {
         }
     });
 }
+function adjustSaPageGridScrollHeights() {
+    $('#dvGrid:visible .sa-table-wrapper, #dvFrom:visible .sa-table-wrapper').each(function () {
+        var el = this;
+        var $wrapper = $(el);
+        var top = el.getBoundingClientRect().top;
+        var paginatorHeight = $wrapper.siblings('.paginator').outerHeight() || 48;
+        var available = window.innerHeight - top - paginatorHeight - 20;
+        available = Math.max(220, available);
+        $wrapper.css({
+            height: available + 'px',
+            maxHeight: available + 'px',
+            overflowY: 'auto',
+            overflowX: 'auto'
+        });
+    });
+}
+
+function adjustCoilDetailGridScrollHeight() {
+    var $modal = $('#DetailModal');
+    if (!$modal.length || !$modal.hasClass('show')) {
+        return;
+    }
+
+    var $body = $modal.find('.modal-body');
+    var $grid = $modal.find('.sa-coil-detail-grid');
+    if (!$body.length || !$grid.length) {
+        return;
+    }
+
+    var bodyHeight = $body[0].clientHeight;
+    var usedHeight = 0;
+    $body.children().not('.sa-coil-detail-grid').each(function () {
+        usedHeight += $(this).outerHeight(true) || 0;
+    });
+
+    var available = bodyHeight - usedHeight - 4;
+    available = Math.max(120, available);
+
+    $grid.css({
+        height: available + 'px',
+        maxHeight: available + 'px',
+        overflowY: 'auto',
+        overflowX: 'auto'
+    });
+}
+
+function bindSaScrollHeightHandlers() {
+    if (window._saScrollHeightHandlersBound) {
+        return;
+    }
+    window._saScrollHeightHandlersBound = true;
+
+    $(window).on('resize.saGridScroll orientationchange.saGridScroll', function () {
+        adjustSaPageGridScrollHeights();
+        adjustCoilDetailGridScrollHeight();
+    });
+
+    $('#DetailModal').on('shown.bs.modal.saGridScroll', function () {
+        adjustCoilDetailGridScrollHeight();
+    }).on('hidden.bs.modal.saGridScroll', function () {
+        $('#DetailModal .sa-coil-detail-grid').css({ height: '', maxHeight: '' });
+    });
+}
+
 function OpenModal() {
     $('#DetailModal').modal({ backdrop: 'static' });
     $('#DetailModal').modal('show');
+    $('#DetailModal').one('shown.bs.modal.saOpen', function () {
+        adjustCoilDetailGridScrollHeight();
+        setTimeout(adjustCoilDetailGridScrollHeight, 100);
+    });
 }
 function CloseModal() {
     const tfoot = document.getElementById('DetailTable-foot');
@@ -1927,9 +2001,9 @@ function SaveStockAllocation() {
             return sum + (parseFloat(item.weight) || 0);
         }, 0);
 
-        const maxAllowed = G_InitialBalanceWt > 0 ? G_InitialBalanceWt : G_ToAllocateWt;
-        if (maxAllowed > 0 && totalCoilWt > maxAllowed) {
-            toastr.error('Total Coil Wt. (' + formatAllocationWt(totalCoilWt) + ') cannot be greater than Balance (Wt.) (' + formatAllocationWt(maxAllowed) + ').');
+        const toAllocate = G_ToAllocateWt || parseFloat($('#txtToAllocateWt').val()) || 0;
+        if (toAllocate > 0 && totalCoilWt > toAllocate) {
+            toastr.error('Total Coil Wt. (' + formatAllocationWt(totalCoilWt) + ') cannot be greater than To Allocate (Wt.) (' + formatAllocationWt(toAllocate) + ').');
             return;
         }
     } catch (e) {

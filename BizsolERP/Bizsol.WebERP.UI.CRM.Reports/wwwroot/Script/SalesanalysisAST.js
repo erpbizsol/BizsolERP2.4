@@ -410,6 +410,7 @@ function aggregateSummaryMetrics(rows, summaryRow) {
     const lostClientParties = new Set();
     const nbdParties = new Set();
     const crrParties = new Set();
+    const uniqueParties = new Set();
     let totalSaleMt = 0;
     let manifestedTotal = 0;
     let lostFreight = 0;
@@ -424,6 +425,8 @@ function aggregateSummaryMetrics(rows, summaryRow) {
         const lostClient = (row['Lost Client'] || row.LostClient || '').toString().trim();
         const status = (row['Status'] || row.Status || '').toString().toUpperCase();
         const freight = parseFloat(row['Lost Freight'] || row.LostFreight || row['LostFreight'] || 0) || 0;
+
+        if (party) uniqueParties.add(party.toLowerCase());
 
         totalSaleMt += weight;
         manifestedTotal += manifestation;
@@ -447,6 +450,10 @@ function aggregateSummaryMetrics(rows, summaryRow) {
     const teamSaleMt = parseFloat(sr.TeamSale || sr.TeamSaleMT || sr['Team Sale'] || totalSaleMt) || totalSaleMt;
     const lostClients = parseFloat(sr.LostClients || sr.LostClient || sr['Lost Clients'] || lostClientParties.size) || lostClientParties.size;
     lostFreight = parseFloat(sr.LostFreight || sr['Lost Freight'] || lostFreight) || lostFreight;
+    const totalParties = parseInt(
+        sr.TotalClients || sr.TotalParties || sr['Total Parties'] || sr.TotalClient || sr['Total Clients'] || sr.NoOfParties || uniqueParties.size,
+        10
+    ) || uniqueParties.size;
     const nbdCount = parseInt(sr.NBDCount || sr.NBD || sr['NBD Count'] || nbdParties.size, 10) || nbdParties.size;
     const crrCount = parseInt(sr.CRRCount || sr.CRR || sr['CRR Count'] || crrParties.size, 10) || crrParties.size;
     const totalManifested = parseFloat(sr.TotalManifested || sr.totalManifested || manifestedTotal) || manifestedTotal;
@@ -458,6 +465,7 @@ function aggregateSummaryMetrics(rows, summaryRow) {
         totalSaleMt,
         teamSaleMt,
         lostClients,
+        totalParties,
         manifestActualScore,
         lostFreight,
         nbdCount,
@@ -478,22 +486,16 @@ function clearSummaryDashboard() {
 
     setText('skpi-total-sale', '0 MT');
     setText('skpi-lost-client', '0');
+    setText('skpi-total-parties', '0');
     setText('skpi-manifest-score', '0.00%');
-    setText('skpi-lost-freight', '0.00 MT');
+    setText('skpi-total-manifested', '0 MT');
+    setText('skpi-lost-freight', '₹ 0');
     setText('skpi-nbd-count', '0');
     setText('skpi-crr-count', '0');
     setText('skpi-nbd-crr-total', '0');
     setText('skpi-ready-dispatch', '0 MT');
     setText('skpi-ready-dispatch-value', '₹ 0.00 L');
     setText('summaryNbdCrrDonutTotal', '0');
-
-    ['skpi-total-sale-trend', 'skpi-lost-client-trend', 'skpi-manifest-score-trend', 'skpi-lost-freight-trend'].forEach(function (id) {
-        const el = document.getElementById(id);
-        if (el) {
-            el.className = 'summary-kpi-trend trend-neutral';
-            el.textContent = '—';
-        }
-    });
 
     const gpLegend = document.getElementById('summaryGpLegend');
     const nbdLegend = document.getElementById('summaryNbdCrrLegend');
@@ -683,7 +685,7 @@ function renderSummaryNbdCrrDonutChart(nbdCount, crrCount) {
     });
 }
 
-function renderSummaryDashboard(metrics, previousMetrics) {
+function renderSummaryDashboard(metrics) {
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
@@ -691,25 +693,15 @@ function renderSummaryDashboard(metrics, previousMetrics) {
 
     setText('skpi-total-sale', `${formatNumber(metrics.totalSaleMt)} MT`);
     setText('skpi-lost-client', formatInteger(metrics.lostClients));
+    setText('skpi-total-parties', formatInteger(metrics.totalParties));
     setText('skpi-manifest-score', `${metrics.manifestActualScore.toFixed(2)}%`);
-    setText('skpi-lost-freight', `${formatNumber(metrics.lostFreight)} MT`);
+    setText('skpi-total-manifested', `${formatNumber(metrics.totalManifested)} MT`);
+    setText('skpi-lost-freight', formatIndianCurrency(metrics.lostFreight));
     setText('skpi-nbd-count', formatInteger(metrics.nbdCount));
     setText('skpi-crr-count', formatInteger(metrics.crrCount));
     setText('skpi-nbd-crr-total', formatInteger(metrics.nbdCrrTotal));
     setText('skpi-ready-dispatch', `${formatNumber(metrics.readyDispatch)} MT`);
     setText('skpi-ready-dispatch-value', formatLakhsValue(metrics.readyDispatchValue));
-
-    if (previousMetrics) {
-        setSummaryKpiTrend('skpi-total-sale-trend', metrics.totalSaleMt, previousMetrics.totalSaleMt, true);
-        setSummaryKpiTrend('skpi-lost-client-trend', metrics.lostClients, previousMetrics.lostClients, false);
-        setSummaryKpiTrend('skpi-manifest-score-trend', metrics.manifestActualScore, previousMetrics.manifestActualScore, true);
-        setSummaryKpiTrend('skpi-lost-freight-trend', metrics.lostFreight, previousMetrics.lostFreight, false);
-    } else {
-        setSummaryKpiTrend('skpi-total-sale-trend', metrics.totalSaleMt, null, true);
-        setSummaryKpiTrend('skpi-lost-client-trend', metrics.lostClients, null, false);
-        setSummaryKpiTrend('skpi-manifest-score-trend', metrics.manifestActualScore, null, true);
-        setSummaryKpiTrend('skpi-lost-freight-trend', metrics.lostFreight, null, false);
-    }
 
     renderSummaryGpPieChart(metrics.gpMtMap);
     renderSummaryNbdCrrDonutChart(metrics.nbdCount, metrics.crrCount);
@@ -936,8 +928,7 @@ function renderSummaryReport() {
     Showloader();
     updateReportDateRangeDisplay();
 
-    const lastMonthRange = getLastMonthAsOnDateRange(filters.fromDate, filters.toDate);
-    const currentPromise = SalesanalysisASTService.GetMultipleTableSalesAnalysisData(
+    SalesanalysisASTService.GetMultipleTableSalesAnalysisData(
         'SUMMARY_REPORT',
         filters.dealerCodes,
         filters.fromDate,
@@ -948,28 +939,9 @@ function renderSummaryReport() {
         filters.gp,
         filters.industryType,
         filters.notPurchaseFromDays
-    );
-
-    const lastMonthPromise = lastMonthRange
-        ? SalesanalysisASTService.GetMultipleTableSalesAnalysisData(
-            'SUMMARY_REPORT',
-            filters.dealerCodes,
-            lastMonthRange.fromDate,
-            lastMonthRange.toDate,
-            filters.salesPersons,
-            filters.cities,
-            filters.status,
-            filters.gp,
-            filters.industryType,
-            filters.notPurchaseFromDays
-        )
-        : Promise.resolve(null);
-
-    Promise.all([currentPromise, lastMonthPromise]).then(function (results) {
+    ).then(function (response) {
         HideLoader();
 
-        const response = results[0];
-        const lastResponse = results[1];
         const parsed = parseSummaryReportResponse(response);
 
         if (!parsed.rows || parsed.rows.length === 0) {
@@ -983,13 +955,7 @@ function renderSummaryReport() {
         }
 
         const metrics = aggregateSummaryMetrics(parsed.rows, parsed.summaryRow);
-        let previousMetrics = null;
-        if (lastResponse) {
-            const lastParsed = parseSummaryReportResponse(lastResponse);
-            previousMetrics = aggregateSummaryMetrics(lastParsed.rows, lastParsed.summaryRow);
-        }
-
-        renderSummaryDashboard(metrics, previousMetrics);
+        renderSummaryDashboard(metrics);
 
         const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "NBD/CRR", "Lost Client"];
         const NumericFilterColumn = [];
@@ -1607,7 +1573,7 @@ function clearManifestationTables() {
     document.getElementById('manifesteTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
     document.getElementById('manifesteTableHeader').innerHTML = '';
 
-    // Clear Order Sheet Data table
+    // Clear Invoice Details table
     document.getElementById('orderSheetTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
     document.getElementById('orderSheetTableHeader').innerHTML = '';
 
@@ -1648,7 +1614,7 @@ function separateAndRenderManifestationData(data) {
             k.includes('not achieved') || k.includes('not done')
         );
 
-        // Order Sheet Data has Invoice related columns
+        // Invoice Details has Invoice related columns
         const hasOrderSheetColumns = keys.some(k =>
             k.includes('invoice date') || k.includes('invoicedate') ||
             k.includes('invoice amount') || k.includes('invoiceamount') ||
@@ -4510,9 +4476,6 @@ function SalesanalysisAST_ShowReport() {
     if (document.querySelector('#summaryReport')?.classList.contains('show') || document.querySelector('#summaryReport')?.classList.contains('active')) {
         renderSummaryReport();
     }
-    if (document.querySelector('#salesComparison')?.classList.contains('show') || document.querySelector('#salesComparison')?.classList.contains('active')) {
-        renderSalesComparison();
-    }
     if (document.querySelector('#partyScoring')?.classList.contains('show') || document.querySelector('#partyScoring')?.classList.contains('active')) {
         renderPartyScoring();
     }
@@ -4554,13 +4517,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (summaryTabBtn) {
         summaryTabBtn.addEventListener('shown.bs.tab', function () {
             renderSummaryReport();
-        });
-    }
-
-    const salesComparisonTabBtn = document.getElementById('salesComparison-tab');
-    if (salesComparisonTabBtn) {
-        salesComparisonTabBtn.addEventListener('shown.bs.tab', function () {
-            renderSalesComparison();
         });
     }
 
@@ -4645,9 +4601,6 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(function () {
         if (document.querySelector('#summaryReport') && document.querySelector('#summaryReport').classList.contains('show')) {
             renderSummaryReport();
-        }
-        if (document.querySelector('#salesComparison') && document.querySelector('#salesComparison').classList.contains('show')) {
-            renderSalesComparison();
         }
         if (document.querySelector('#partyScoring') && document.querySelector('#partyScoring').classList.contains('show')) {
             renderPartyScoring();
