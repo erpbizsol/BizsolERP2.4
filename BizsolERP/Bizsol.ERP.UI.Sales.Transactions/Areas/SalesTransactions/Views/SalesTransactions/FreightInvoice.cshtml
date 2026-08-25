@@ -224,6 +224,12 @@
         width: 95px;
     }
 
+    #FreightInvoicePage #tblFreightInvoice col.fi-col-party,
+    #FreightInvoicePage #tblFreightInvoice th.fi-col-party,
+    #FreightInvoicePage #tblFreightInvoice td.fi-col-party {
+        width: 160px;
+    }
+
     #FreightInvoicePage #tblFreightInvoice col.fi-col-grn,
     #FreightInvoicePage #tblFreightInvoice th.fi-col-grn,
     #FreightInvoicePage #tblFreightInvoice td.fi-col-grn {
@@ -246,6 +252,12 @@
     #FreightInvoicePage #tblFreightInvoice th.fi-col-transporter,
     #FreightInvoicePage #tblFreightInvoice td.fi-col-transporter {
         width: 150px;
+    }
+
+    #FreightInvoicePage #tblFreightInvoice:not(.fi-all-transporters) col.fi-col-transporter,
+    #FreightInvoicePage #tblFreightInvoice:not(.fi-all-transporters) th.fi-col-transporter,
+    #FreightInvoicePage #tblFreightInvoice:not(.fi-all-transporters) td.fi-col-transporter {
+        display: none;
     }
 
     #FreightInvoicePage #tblFreightInvoice col.fi-col-combo,
@@ -479,6 +491,23 @@
         text-align: center;
     }
 
+    /* Sticky Select column — stays visible when scrolling wide grid horizontally */
+    #FreightInvoicePage #tblFreightInvoice thead th.fi-col-check {
+        position: sticky !important;
+        left: 0;
+        z-index: 8;
+        background: #4f46e5 !important;
+        box-shadow: 2px 0 6px rgba(15, 23, 42, 0.18);
+    }
+
+    #FreightInvoicePage #tblFreightInvoice tbody td.fi-col-check {
+        position: sticky !important;
+        left: 0;
+        z-index: 3;
+        background: #fff !important;
+        box-shadow: 2px 0 4px rgba(15, 23, 42, 0.1);
+    }
+
     #FreightInvoicePage #tblFreightInvoice .fi-row-select,
     #FreightInvoicePage #tblFreightInvoice .fi-select-all {
         width: 15px;
@@ -487,6 +516,12 @@
         cursor: pointer;
         vertical-align: middle;
         accent-color: var(--accent-primary, #667eea);
+    }
+
+    #FreightInvoicePage #tblFreightInvoice .fi-row-select:disabled,
+    #FreightInvoicePage #tblFreightInvoice .fi-select-all:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
     }
 
     #FreightInvoicePage #tblFreightInvoice thead th.fi-col-check .fi-head-check-box {
@@ -714,7 +749,7 @@
         width: 100%;
         border-collapse: collapse;
         font-size: 12.5px;
-        min-width: 860px;
+        min-width: 1100px;
     }
 
     #FreightInvoicePage .fi-list-grid-wrap #tblFiSavedList thead {
@@ -817,6 +852,18 @@
         background: rgba(16, 185, 129, 0.08);
     }
 
+    #FreightInvoicePage .fi-list-grid-wrap .pm-icon-btn.approve {
+        background: #fff;
+        color: #d97706;
+        border: 1.5px dashed rgba(245, 158, 11, 0.55);
+    }
+
+    #FreightInvoicePage .fi-list-grid-wrap .pm-icon-btn.approve:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+        background: rgba(245, 158, 11, 0.08);
+    }
+
     #FreightInvoicePage .fi-list-grid-wrap .fi-verified-badge {
         width: 32px;
         height: 32px;
@@ -825,7 +872,6 @@
         align-items: center;
         justify-content: center;
         font-size: 13px;
-        cursor: help;
         flex: 0 0 32px;
     }
 
@@ -833,6 +879,7 @@
         background: rgba(16, 185, 129, 0.18);
         color: #047857;
         border: 1px solid rgba(16, 185, 129, 0.35);
+        cursor: pointer;
     }
 
     #FreightInvoicePage .fi-list-grid-wrap .fi-verified-badge--pending {
@@ -840,6 +887,33 @@
         color: #94a3b8;
         border: 1px dashed rgba(148, 163, 184, 0.45);
         cursor: default;
+    }
+
+    #FreightInvoicePage .fi-list-grid-wrap .fi-approved-badge {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex: 0 0 32px;
+    }
+
+    #FreightInvoicePage .fi-list-grid-wrap .fi-approved-badge--done {
+        background: rgba(245, 158, 11, 0.18);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        cursor: pointer;
+    }
+
+    #FreightInvoicePage .fi-list-grid-wrap .fi-approved-badge--waiting,
+    #FreightInvoicePage .fi-list-grid-wrap .fi-approved-badge--pending {
+        background: rgba(148, 163, 184, 0.12);
+        color: #94a3b8;
+        border: 1px dashed rgba(148, 163, 184, 0.45);
+        cursor: default;
+        opacity: 0.85;
     }
 
     #FreightInvoicePage .fi-list-grid-wrap .pm-empty {
@@ -931,13 +1005,20 @@
         background: rgba(16, 185, 129, 0.14);
         color: #047857;
         border: 1px solid rgba(16, 185, 129, 0.28);
-        cursor: help;
+        cursor: pointer;
     }
 
     #dvFiViewModal .fi-view-status--pending {
         background: rgba(148, 163, 184, 0.12);
         color: #64748b;
         border: 1px dashed rgba(148, 163, 184, 0.4);
+    }
+
+    #dvFiViewModal .fi-view-status--approved {
+        background: rgba(245, 158, 11, 0.14);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.28);
+        cursor: pointer;
     }
 
     #dvFiViewModal .fi-view-verify-badge {
