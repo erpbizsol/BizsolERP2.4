@@ -1843,6 +1843,12 @@
             <div class="po-step-num" style="background:linear-gradient(135deg,#10b981,#059669);">3</div>
             <span class="po-step-title">GRN Item Details</span>
             <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+                <div class="d-flex align-items-center gap-2 ap-toggle-wrap" id="divAgainstPOCheck">
+                    <span class="ap-lbl">Against PO</span>
+                    <input type="checkbox" class="form-check-input" id="chkAgainstPO" checked
+                           onchange="toggleAgainstPO(this)" autocomplete="off">
+                    <span class="ap-lbl active" id="apPoLblOn">ON</span>
+                </div>
                 <div class="d-flex align-items-center gap-2 ap-toggle-wrap" id="divFillGridCheck" style="display:none;">
                     <input type="checkbox" class="form-check-input" id="chkFillGrid" checked onchange="onFillGridChange()">
                     <label class="form-check-label mb-0 ap-lbl" for="chkFillGrid" style="font-size:0.8rem;font-weight:600;">Fill Grid</label>
@@ -1920,6 +1926,13 @@
             <p class="text-muted small mb-0 mt-1" style="font-size:0.78rem;">
                 <i class="fa fa-paperclip me-1"></i>Use <strong>Attachment</strong> on the bar below to add files (same as Payment Entry).
             </p>
+            <div class="row g-2 mt-1">
+                <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">Freight Charges</label>
+                    <input type="number" id="txtFreightCharges" class="form-control form-control-sm po-input-amount-right" placeholder="0.00" autocomplete="off" min="0" step="any"
+                           onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcTotalBillAmount();">
+                </div>
+            </div>
             <div class="row g-2 mt-1">
 
                 <div class="col-md-3">
@@ -2192,15 +2205,17 @@
                     <span id="addItemModalHintText"></span>
                 </div>
                 <div id="addItemModalForm">
-                    <div class="mb-2">
-                        <label class="form-label mb-1" style="font-size:0.8rem;font-weight:600;">PO No <span class="text-danger">*</span></label>
+                    <div class="mb-2" id="addItemModalPOWrap">
+                        <label class="form-label mb-1" style="font-size:0.8rem;font-weight:600;">PO No</label>
                         <select id="addItemModalPO" class="form-control form-control-sm" onchange="onAddItemModalPOChange()">
-                            <option value="">-- Select PO --</option>
+                            <option value="">-- Select PO (optional) --</option>
                         </select>
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1" style="font-size:0.8rem;font-weight:600;">Item Name <span class="text-danger">*</span></label>
-                        <select id="addItemModalItem" class="form-control form-control-sm" onchange="onAddItemModalItemChange()">
+                        <select id="addItemModalItem" class="form-control form-control-sm"
+                                onfocus="onAddItemModalItemFocus()"
+                                onchange="onAddItemModalItemChange()">
                             <option value="">-- Select Item --</option>
                         </select>
                     </div>
