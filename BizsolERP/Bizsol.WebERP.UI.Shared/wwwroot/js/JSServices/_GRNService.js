@@ -159,6 +159,15 @@ const GRNService = {
             });
     },
 
+    /** Item master list for item-wise GRN entry (Code, ItemName). */
+    GetItemList: function GetItemList() {
+        let url = UrlService.API_ENDPOINT_GRNService + `/GetItemList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
+
 }
 
 export { GRNService }
