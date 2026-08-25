@@ -4,6 +4,91 @@ window.escapeId = function escapeId(id) {
 }
 
 /**
+ * Keep column filter panels visible when the grid scrolls or the page is zoomed.
+ * Uses fixed positioning relative to the header cell so panels are not clipped
+ * by overflow on .table-wrapper / .sa-table-wrapper.
+ */
+window.bizsolGetFilterAnchor = function bizsolGetFilterAnchor($panel) {
+    if (!$panel || !$panel.length) {
+        return $();
+    }
+    var $anchor = $panel.closest('th');
+    if (!$anchor.length) {
+        $anchor = $panel.closest('.filter-table-heading-div');
+    }
+    return $anchor;
+};
+
+window.bizsolFloatFilterPanel = function bizsolFloatFilterPanel($panel) {
+    if (!$panel || !$panel.length || !$panel.is(':visible')) {
+        return;
+    }
+
+    var $anchor = bizsolGetFilterAnchor($panel);
+    if (!$anchor.length) {
+        return;
+    }
+
+    $panel.data('bizsol-filter-anchor', $anchor);
+
+    var rect = $anchor[0].getBoundingClientRect();
+    var panelWidth = $panel.outerWidth() || 200;
+    var panelHeight = $panel.outerHeight() || 280;
+    var top = rect.bottom + 2;
+    var left = rect.left;
+
+    if (left + panelWidth > window.innerWidth - 10) {
+        left = Math.max(10, rect.right - panelWidth);
+    }
+    if (top + panelHeight > window.innerHeight - 10) {
+        top = Math.max(10, rect.top - panelHeight - 2);
+    }
+
+    $panel.addClass('bizsol-filter-floating').css({
+        position: 'fixed',
+        top: Math.round(top) + 'px',
+        left: Math.round(left) + 'px',
+        right: 'auto',
+        zIndex: 10050
+    });
+};
+
+window.bizsolResetFloatFilterPanel = function bizsolResetFloatFilterPanel($panel) {
+    if (!$panel || !$panel.length) {
+        return;
+    }
+    $panel.removeClass('bizsol-filter-floating').css({
+        position: '',
+        top: '',
+        left: '',
+        right: '',
+        zIndex: ''
+    }).removeData('bizsol-filter-anchor');
+};
+
+window.repositionAllFloatingFilters = function repositionAllFloatingFilters() {
+    $('.filter-dropdown.bizsol-filter-floating:visible, .filter-dropdown-double.bizsol-filter-floating:visible, .filter-division.bizsol-filter-floating:visible').each(function () {
+        bizsolFloatFilterPanel($(this));
+    });
+};
+
+window.bizsolBindFilterFloatListeners = function bizsolBindFilterFloatListeners() {
+    if (window._bizsolFilterFloatListenersBound) {
+        return;
+    }
+    window._bizsolFilterFloatListenersBound = true;
+
+    var reposition = function () {
+        repositionAllFloatingFilters();
+    };
+
+    $(window).on('scroll.bizsolFilterFloat resize.bizsolFilterFloat', reposition);
+    document.addEventListener('scroll', reposition, true);
+};
+
+bizsolBindFilterFloatListeners();
+
+/**
  * Format a number with Indian comma grouping  e.g. 2,00,000.00
  * @param {number|string} value    - numeric value
  * @param {number}        decimals - decimal places (default 2)
@@ -152,8 +237,15 @@ window.toggleFilter = function (columnName, bodyId) {
     const escapedId = escapeId(uniqueId);
     $('#filter-' + escapedId).toggle();
     $('#filterDropdown-' + escapedId).toggle();
+    var $filterPanel = $('#filter-' + escapedId);
+    if ($filterPanel.is(':visible')) {
+        bizsolFloatFilterPanel($filterPanel);
+    }
 };
 window.closeAllFilters = function closeAllFilters() {
+    $('.filter-dropdown, .filter-division').each(function () {
+        bizsolResetFloatFilterPanel($(this));
+    });
     $('.filter-dropdown').hide();
     $('.filter-input').val('');
     $('.filter-dropdown-double').hide();
@@ -200,6 +292,10 @@ window.toggleFilterDouble = function (columnName, bodyId) {
     $('#filter-double-' + escapedId).toggle();
     $('.filter-dropdown').hide();
     $('#filterDropdown-' + escapedId).toggle();
+    var $filterPanel = $('#filter-double-' + escapedId);
+    if ($filterPanel.is(':visible')) {
+        bizsolFloatFilterPanel($filterPanel);
+    }
 };
 
 $(document).click(function (event) {
@@ -234,6 +330,10 @@ const escapedId = escapeId(uniqueId);
     
 $('#filter-' + escapedId).toggle();
 $('#filterDropdown-' + escapedId).toggle();
+var $filterPanel = $('#filter-' + escapedId);
+if ($filterPanel.is(':visible')) {
+    bizsolFloatFilterPanel($filterPanel);
+}
 var uniqueDates = new Set();
 window[`filteredData_${tableId}`].forEach(function (row) {
     if (row.hasOwnProperty(columnName)) {
@@ -319,6 +419,9 @@ checkboxContainer1.find('.month-checkbox').change(function () {
         $('#' + escapedTargetId).toggle();
         $(this).toggleClass('fa-plus fa-minus');
     });
+    if ($filterPanel.is(':visible')) {
+        bizsolFloatFilterPanel($filterPanel);
+    }
 }
 window.applyFilters = function applyFilters(bodyId) {
     var column1 = "";
@@ -379,6 +482,10 @@ window.toggleFilterNumeric = function (filterId, ColumnName, bodyId) {
     $('#filterDropdown-' + escapedId).toggle();
     $('#' + escapedFilterId).toggle();
     toggleNumericInputs(ColumnName, tableId);
+    var $filterPanel = $('#' + escapedFilterId);
+    if ($filterPanel.is(':visible')) {
+        bizsolFloatFilterPanel($filterPanel);
+    }
 };
 window.toggleNumericInputs = function (columnName, tableId) {
     const colId = columnName.replace(/\s+/g, '');
@@ -446,6 +553,9 @@ const maxValue = parseFloat($('#max-value-' + escapedId).val());
     closeAllFilters();
 };
 window.ClearFilter = function ClearFilter(bodyId) {
+    $('.filter-dropdown, .filter-dropdown-double, .filter-division').each(function () {
+        bizsolResetFloatFilterPanel($(this));
+    });
     $('.filter-dropdown').hide();
     $('.filter-input').val('');
     $('.filter-input-double').val('');
@@ -672,6 +782,9 @@ if (useCheckboxFilter || useTextFilter) {
     closeAllFiltersDouble();
 };
 window.closeAllFiltersDouble = function closeAllFiltersDouble() {
+    $('.filter-dropdown-double').each(function () {
+        bizsolResetFloatFilterPanel($(this));
+    });
     $('.filter-dropdown-double').hide();
     $('.checkbox-container-double').hide();
 }
@@ -1255,13 +1368,21 @@ window.OpenFilter = function OpenFilter(columnName, event) {
     }
     
     // Close all other filter divisions first
+    $(".filter-division").each(function () {
+        bizsolResetFloatFilterPanel($(this));
+    });
     $(".filter-division").hide();
     
     // Show the clicked filter division
     const escapedId = escapeId(columnName);
-    $("#filterDropdown-" + escapedId).show();
+    var $filterDivision = $("#filterDropdown-" + escapedId);
+    $filterDivision.show();
+    bizsolFloatFilterPanel($filterDivision);
 }
 window.CloseFilter = function CloseFilter() {
+    $(".filter-division").each(function () {
+        bizsolResetFloatFilterPanel($(this));
+    });
     $(".filter-division").hide();
 }
 

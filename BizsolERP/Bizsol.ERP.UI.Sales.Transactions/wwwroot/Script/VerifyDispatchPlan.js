@@ -1142,7 +1142,7 @@ function ExportExcel() {
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(omitTransporterHiddenExportColumns(parsed.result1)), 'Result1_DO');
             }
             if (has2) {
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(omitTransporterHiddenExportColumns(parsed.result2)), 'Result2_Transporter');
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(omitTransporterHiddenExportColumns(renameTransporterSummaryColumns(parsed.result2))), 'Result2_Transporter');
             }
             XLSX.writeFile(wb, 'TransporterReport.xlsx');
             toastr.success('Export completed successfully.');
@@ -1211,14 +1211,7 @@ function ExportExcel() {
         Showloader();
         VerifyDispatchPlanService.GetFreightLossReport(fromDate, toDate).then(function (response) {
             HideLoader();
-            var rows = [];
-            if (Array.isArray(response)) {
-                rows = response;
-            } else if (response) {
-                var parsed = parseTransporterReportResults(response);
-                rows = parsed.result1 || [];
-            }
-            rows = mapNullsToEmptyStrings(rows || []);
+            var rows = formatFreightLossQtyColumns(mapNullsToEmptyStrings(normalizeFreightLossRows(response)));
             if (!rows.length) {
                 toastr.info('No data to export.');
                 return;
@@ -2433,6 +2426,18 @@ function omitTransporterHiddenExportColumns(rows) {
     });
 }
 
+function renameTransporterSummaryColumns(rows) {
+    if (!rows || !rows.length) return rows || [];
+    return rows.map(function (row) {
+        var out = {};
+        Object.keys(row).forEach(function (k) {
+            var newKey = /^total\s*count$/i.test(String(k).trim()) ? 'Quotation Count Received' : k;
+            out[newKey] = row[k];
+        });
+        return out;
+    });
+}
+
 function getTransporterReportColumnFilters(rows) {
     if (!rows || rows.length === 0) {
         return { stringFilterColumn: [], numericFilterColumn: [], dateFilterColumn: [] };
@@ -2512,7 +2517,7 @@ function ShowTransporterReportList() {
             return;
         }
         const r1Clean = mapNullsToEmptyStrings(parsed.result1 || []);
-        const r2Clean = mapNullsToEmptyStrings(parsed.result2 || []);
+        const r2Clean = renameTransporterSummaryColumns(mapNullsToEmptyStrings(parsed.result2 || []));
         G_DispatchPlanlist = hasR2 ? r2Clean : r1Clean;
         bindTransporterResultGrid('table-head-transporter-r1', 'table-body-transporter-r1', r1Clean, 'transporterR1NoData');
         bindTransporterResultGrid('table-head-transporter-r2', 'table-body-transporter-r2', r2Clean, 'transporterR2NoData');
@@ -2727,6 +2732,64 @@ function normalizeFreightLossRows(response) {
     return parsed.result1 || [];
 }
 
+function isFreightLossQtyColumn(columnName) {
+    var name = String(columnName || '').replace(/[₹()]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!name) return false;
+    return /dispatch\s*advice\s*(mt|qty)/i.test(name)
+        || /^lorry\s*capacity/i.test(name)
+        || /dispatch\s*qty/i.test(name)
+        || /freight\s*loss\s*(mt|$)/i.test(name)
+        || /freight\s*rate/i.test(name)
+        || /freight\s*loss\s*amount/i.test(name);
+}
+
+function getFreightLossQtyColumns(rows) {
+    var keys = (rows && rows.length) ? Object.keys(rows[0]) : [];
+    var matched = keys.filter(isFreightLossQtyColumn);
+    if (matched.length) return matched;
+    return [
+        'Dispatch advice MT',
+        'Lorry capacity',
+        'Dispatch Qty MT',
+        'Dispatch Qty (MT)',
+        'Freight Loss MT',
+        'Freight Loss (MT)',
+        'Freight Rate MT',
+        'Freight Rate (₹/MT)',
+        'Freight Loss Amount',
+        'Freight Loss Amount (₹)'
+    ];
+}
+
+function getFreightLossAmountColumn(rows) {
+    var keys = (rows && rows.length) ? Object.keys(rows[0]) : [];
+    for (var i = 0; i < keys.length; i++) {
+        var name = String(keys[i] || '').replace(/[₹()]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (/freight\s*loss\s*amount/i.test(name)) return keys[i];
+    }
+    return keys.indexOf('Freight Loss Amount') >= 0 ? 'Freight Loss Amount' : '';
+}
+
+function formatFreightLossQtyValue(val) {
+    if (val === null || val === undefined || val === '') return val;
+    var n = typeof val === 'number' ? val : Number(String(val).replace(/,/g, ''));
+    if (isNaN(n) || !isFinite(n)) return val;
+    return n.toFixed(3);
+}
+
+function formatFreightLossQtyColumns(rows) {
+    var qtyCols = getFreightLossQtyColumns(rows);
+    return (rows || []).map(function (row) {
+        var next = Object.assign({}, row);
+        qtyCols.forEach(function (col) {
+            if (Object.prototype.hasOwnProperty.call(next, col)) {
+                next[col] = formatFreightLossQtyValue(next[col]);
+            }
+        });
+        return next;
+    });
+}
+
 function ShowFreightLossReportList() {
     var fromDate = $('#txtFromDate').val();
     var toDate = $('#txtToDate').val();
@@ -2743,7 +2806,7 @@ function ShowFreightLossReportList() {
         HideLoader();
         ensureStandardGridLayout();
         $("#dvDelayReportCards").hide();
-        var rows = mapNullsToEmptyStrings(normalizeFreightLossRows(response));
+        var rows = formatFreightLossQtyColumns(mapNullsToEmptyStrings(normalizeFreightLossRows(response)));
         if (!rows.length) {
             $("#dvTableDispatch").hide();
             toastr.info('No data found for Freight Loss Report.');
@@ -2751,14 +2814,15 @@ function ShowFreightLossReportList() {
         }
         G_DispatchPlanlist = rows;
         const filters = getTransporterReportColumnFilters(rows);
-        const columnAlignment = {
-            'Dispatch advice MT': 'right',
-            'Lorry capacity': 'right',
-            'Dispatch Qty (MT)': 'right',
-            'Freight Loss (MT)': 'right',
-            'Freight Rate (₹/MT)': 'right',
-            'Freight Loss Amount (₹)': 'right'
-        };
+        const qtyColumns = getFreightLossQtyColumns(rows);
+        const amountColumn = getFreightLossAmountColumn(rows);
+        const columnAlignment = {};
+        const fixedDecimalvalue = {};
+        qtyColumns.forEach(function (col) {
+            columnAlignment[col] = 'right';
+            fixedDecimalvalue[col] = 3;
+        });
+        const totalColumns = amountColumn ? [amountColumn] : [];
         BizsolCustomFilterGrid.CreateDataTable(
             'table-head',
             'table-body',
@@ -2771,7 +2835,12 @@ function ShowFreightLossReportList() {
             [],
             [],
             columnAlignment,
-            false
+            false,
+            totalColumns,
+            fixedDecimalvalue,
+            null,
+            false,
+            true
         );
         const tableHead = document.getElementById('table-head');
         if (tableHead) {

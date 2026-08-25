@@ -29,6 +29,364 @@
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
+    /* Summary Dashboard KPI Cards */
+    .summary-panel {
+        padding: 16px;
+    }
+
+    .summary-kpi-scroll {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .summary-kpi-card {
+        background: #fff;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        overflow: hidden;
+        min-width: 0;
+    }
+
+    .summary-kpi-header {
+        background: linear-gradient(135deg, #365e9a 0%, #1e3a6e 100%);
+        color: #fff;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        padding: 7px 10px;
+        line-height: 1.25;
+        min-height: 34px;
+    }
+
+    .summary-kpi-header small {
+        display: block;
+        font-size: 8px;
+        opacity: 0.88;
+        font-weight: 500;
+        margin-top: 2px;
+        text-transform: none;
+    }
+
+    .summary-kpi-body {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .summary-kpi-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .summary-kpi-icon.icon-blue { background: #4e73df; }
+    .summary-kpi-icon.icon-green { background: #1cc88a; }
+    .summary-kpi-icon.icon-red { background: #e74a3b; }
+    .summary-kpi-icon.icon-teal { background: #36b9cc; }
+    .summary-kpi-icon.icon-orange { background: #f6c23e; }
+    .summary-kpi-icon.icon-purple { background: #6f42c1; }
+    .summary-kpi-icon.icon-indigo { background: #224abe; }
+
+    .summary-kpi-value-wrap {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .summary-kpi-value {
+        font-size: 15px;
+        font-weight: 800;
+        color: #1a202c;
+        line-height: 1.15;
+        word-break: break-word;
+    }
+
+    .summary-kpi-value.value-red { color: #e74a3b; }
+    .summary-kpi-value.value-blue { color: #224abe; }
+
+    .summary-kpi-trend {
+        font-size: 9px;
+        font-weight: 700;
+        margin-top: 4px;
+        line-height: 1.2;
+    }
+
+    .summary-kpi-trend span {
+        font-weight: 500;
+        color: #718096;
+    }
+
+    .summary-kpi-trend.trend-positive { color: #1cc88a; }
+    .summary-kpi-trend.trend-negative { color: #e74a3b; }
+    .summary-kpi-trend.trend-neutral { color: #718096; }
+
+    .summary-kpi-lines {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 11px;
+        color: #2d3748;
+    }
+
+    .summary-kpi-lines strong {
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .summary-kpi-footer {
+        border-top: 1px solid #edf2f7;
+        padding: 6px 10px 8px;
+        font-size: 11px;
+        color: #2d3748;
+    }
+
+    .summary-kpi-footer strong {
+        color: #224abe;
+        font-weight: 800;
+    }
+
+    .summary-chart-card {
+        background: #fff;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .summary-chart-header {
+        background: linear-gradient(135deg, #365e9a 0%, #1e3a6e 100%);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        padding: 8px 12px;
+        text-align: center;
+    }
+
+    .summary-chart-body {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        min-height: 210px;
+    }
+
+    .summary-chart-canvas {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+        height: 190px;
+    }
+
+    .summary-chart-legend {
+        flex: 0 0 130px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .summary-legend-item {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .summary-legend-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    .summary-legend-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #1a202c;
+        line-height: 1.2;
+    }
+
+    .summary-legend-meta {
+        font-size: 9px;
+        color: #718096;
+        margin-top: 1px;
+    }
+
+    .summary-donut-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        text-align: center;
+    }
+
+    .summary-donut-center .label {
+        font-size: 11px;
+        color: #718096;
+        font-weight: 600;
+    }
+
+    .summary-donut-center .value {
+        font-size: 22px;
+        font-weight: 800;
+        color: #1a202c;
+        line-height: 1.1;
+    }
+
+    .summary-grid-card {
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .summary-grid-card .card-body {
+        padding: 14px;
+    }
+
+    .summary-grid-card .card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1e3a6e;
+        margin-bottom: 10px;
+    }
+
+    @@media (max-width: 1400px) {
+        .summary-kpi-scroll {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 991px) {
+        .summary-kpi-scroll {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .summary-chart-body {
+            flex-direction: column;
+            min-height: auto;
+        }
+
+        .summary-chart-canvas {
+            width: 100%;
+            height: 180px;
+        }
+
+        .summary-chart-legend {
+            flex: 1 1 auto;
+            width: 100%;
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .summary-kpi-scroll {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Sales Comparison */
+    .sc-panel {
+        padding: 16px;
+    }
+
+    .sc-chart-wrap {
+        position: relative;
+        height: 360px;
+        padding: 12px 8px 0;
+    }
+
+    .sc-growth-badge {
+        position: absolute;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+        font-size: 14px;
+        font-weight: 800;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        pointer-events: none;
+    }
+
+    .sc-growth-badge.positive { color: #1cc88a; }
+    .sc-growth-badge.negative { color: #e74a3b; }
+    .sc-growth-badge.neutral { color: #718096; }
+
+    .sc-period-labels {
+        display: flex;
+        justify-content: space-around;
+        gap: 12px;
+        padding: 0 12px 12px;
+        text-align: center;
+    }
+
+    .sc-period-label {
+        flex: 1;
+        font-size: 12px;
+        color: #4a5568;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
+    .sc-period-label strong {
+        display: block;
+        color: #1e3a6e;
+        font-size: 13px;
+        margin-bottom: 2px;
+    }
+
+    .sc-summary-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .sc-summary-card {
+        flex: 1 1 180px;
+        background: #fff;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        padding: 12px 14px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .sc-summary-card .label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .sc-summary-card .value {
+        font-size: 22px;
+        font-weight: 800;
+        color: #1a202c;
+        margin-top: 4px;
+    }
+
+    .sc-summary-card.current .value { color: #4e73df; }
+    .sc-summary-card.previous .value { color: #6c757d; }
     /* Summary grid styling */
     .sticky-top {
         position: sticky;
@@ -624,7 +982,6 @@
             <i class="fas fa-file-alt"></i>Summary Report
         </button>
     </li>
-
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="partyScoring-tab" data-bs-toggle="tab" data-bs-target="#partyScoring" type="button" role="tab" aria-controls="partyScoring" aria-selected="false">
             <i class="fas fa-star"></i>Party Scoring
@@ -637,7 +994,7 @@
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="manifestation-tab" data-bs-toggle="tab" data-bs-target="#manifestation" type="button" role="tab" aria-controls="manifestation" aria-selected="false">
-            <i class="fas fa-clipboard-check"></i>Manifestation
+            <i class="fas fa-clipboard-check"></i>Manifestation Vs Actual
         </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -662,7 +1019,7 @@
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="targetVsGrowth-tab" data-bs-toggle="tab" data-bs-target="#targetVsGrowth" type="button" role="tab" aria-controls="targetVsGrowth" aria-selected="false">
-            <i class="fas fa-bullseye"></i>TARGET Vs GROWTH
+            <i class="fas fa-bullseye"></i>Target and Growth
         </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -694,70 +1051,133 @@
 <!-- Tab Content -->
 <div class="tab-content pt-3" id="salesAnalysisTabsContent">
     <div class="tab-pane fade show active" id="summaryReport" role="tabpanel" aria-labelledby="summaryReport-tab">
-        <!-- KPI Cards Row -->
-        <div class="row g-2">
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">Parties</small>
-                        <div id="kpi-parties" class="fw-bold" style="font-size:28px; color:#28a745; margin-top:4px;">0</div>
+        <div class="container-fluid px-0">
+            <div class="tvg-panel summary-panel">
+                <!-- KPI Cards -->
+                <div class="summary-kpi-scroll">
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Total Sale (MT)<small>Current Month</small></div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-blue"><i class="fas fa-shopping-cart"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-total-sale" class="summary-kpi-value">0 MT</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Lost Client (Count)</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-red"><i class="fas fa-user-times"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-lost-client" class="summary-kpi-value">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Total No. of Parties</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-indigo"><i class="fas fa-users"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-total-parties" class="summary-kpi-value value-blue">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Manifest vs Actual Score (%)</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-teal"><i class="fas fa-bullseye"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-manifest-score" class="summary-kpi-value">0.00%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Total Manifested (MT)</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-green"><i class="fas fa-clipboard-list"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-total-manifested" class="summary-kpi-value">0 MT</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Lost Freight (₹)</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-orange"><i class="fas fa-truck"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-lost-freight" class="summary-kpi-value value-red">₹ 0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">NBD / CRR Count</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-purple"><i class="fas fa-file-alt"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div class="summary-kpi-lines">
+                                    <div>NBD : <strong id="skpi-nbd-count">0</strong></div>
+                                    <div>CRR : <strong id="skpi-crr-count">0</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-kpi-footer">Total : <strong id="skpi-nbd-crr-total">0</strong></div>
+                    </div>
+                    <div class="summary-kpi-card d-none" id="skpi-ready-dispatch-card">
+                        <div class="summary-kpi-header">Ready to Dispatch Stock</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-indigo"><i class="fas fa-box-open"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-ready-dispatch" class="summary-kpi-value">0 MT</div>
+                            </div>
+                        </div>
+                        
                     </div>
                 </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">High GP</small>
-                        <div id="kpi-high-gp" class="fw-bold" style="font-size:28px; color:#17a2b8; margin-top:4px;">0</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">Lost Client</small>
-                        <div id="kpi-lost-client" class="fw-bold" style="font-size:28px; color:#dc3545; margin-top:4px;">0</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">Manifested Sales</small>
-                        <div id="kpi-manifested-sales" class="fw-bold" style="font-size:28px; color:#fd7e14; margin-top:4px;">0</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">Total Manifested</small>
-                        <div id="kpi-total-manifested" class="fw-bold" style="font-size:28px; color:#20c997; margin-top:4px;">0</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">Actual Sale</small>
-                        <div id="kpi-actual-sale" class="fw-bold" style="font-size:28px; color:#6f42c1; margin-top:4px;">0</div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Summary Report Table -->
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Summary Report</h5>
-                <div class="table-responsive mt-2">
-                    <table id="summaryReportTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="summaryReportTableHeader">
-                        </thead>
-                        <tbody id="summaryReportTableBody">
-                        </tbody>
-                    </table>
-                    <div class="paginator" id="paginator-summaryReportTable">
+                <!-- Charts Row -->
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-7">
+                        <div class="summary-chart-card">
+                            <div class="summary-chart-header">GP Wise Sale Distribution (MT)</div>
+                            <div class="summary-chart-body">
+                                <div class="summary-chart-canvas">
+                                    <canvas id="summaryGpPieChart"></canvas>
+                                </div>
+                                <div id="summaryGpLegend" class="summary-chart-legend"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="summary-chart-card">
+                            <div class="summary-chart-header">NBD / CRR Count Details</div>
+                            <div class="summary-chart-body">
+                                <div class="summary-chart-canvas">
+                                    <canvas id="summaryNbdCrrDonutChart"></canvas>
+                                    <div class="summary-donut-center">
+                                        <div class="label">Total</div>
+                                        <div id="summaryNbdCrrDonutTotal" class="value">0</div>
+                                    </div>
+                                </div>
+                                <div id="summaryNbdCrrLegend" class="summary-chart-legend"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Report Table -->
+            <div class="card summary-grid-card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Summary Report</h5>
+                    <div class="table-responsive mt-2">
+                        <table id="summaryReportTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
+                            <thead class="table-secondary" id="summaryReportTableHeader">
+                            </thead>
+                            <tbody id="summaryReportTableBody">
+                            </tbody>
+                        </table>
+                        <div class="paginator" id="paginator-summaryReportTable">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1082,10 +1502,10 @@
             </div>
         </div>
 
-        <!-- Order Sheet Data Table -->
+        <!-- Invoice Details Table -->
         <div class="card mb-3">
             <div class="card-body">
-                <h5 class="card-title">Order Sheet Data</h5>
+                <h5 class="card-title">Invoice Details</h5>
                 <div class="table-responsive mt-2">
                     <table id="orderSheetTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
                         <thead class="table-secondary" id="orderSheetTableHeader">
@@ -1152,10 +1572,10 @@
             </div>
         </div>
 
-        <!-- Order Details Table -->
+        <!-- Invoice Details Table -->
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Order Details</h5>
+                <h5 class="card-title">Invoice Details</h5>
                 <div class="table-responsive mt-2">
                     <table id="nbdCrrOrderDetailsTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
                         <thead class="table-secondary" id="nbdCrrOrderDetailsTableHeader">
@@ -1526,7 +1946,7 @@
         <div class="container-fluid">
             <div class="tvg-panel">
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">TARGET Vs GROWTH</h5>
+                    <h5 class="mb-0">Target and Growth</h5>
                     <span class="regional-level-badge">Manifest vs Actual</span>
                 </div>
 

@@ -1,15 +1,55 @@
 import { WeightConfirmationService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/WeightConfirmationService.js';
+import { WeighmentService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/WeighmentService.js';
 
 let baseUrl = sessionStorage.getItem('AppBaseURL') || '';
+let enableManualWeightByConveyor = 'Y';
+let defaultMachineName = '';
+let isAutoProcessing = false;
 
 $(document).ready(async function () {
     $("#ERPHeading").text("Weight Confirmation");
-    await LoadProcessList();
+    await Promise.all([LoadProcessList(), LoadFixedParameters()]);
 });
 
 // ─────────────────────────────────────────────
 // Load Process Dropdown + Select2
 // ─────────────────────────────────────────────
+async function LoadFixedParameters() {
+    try {
+        let response = await WeightConfirmationService.GetFixedParaMeter();
+        if (response && response.length > 0) {
+            const param = response.find(x => x.PeramaterName === 'EnableManualWeightByConveyor');
+            if (param && param.PeramaterValue) {
+                enableManualWeightByConveyor = param.PeramaterValue.toString().trim().toUpperCase();
+            }
+        }
+    } catch (err) {
+        enableManualWeightByConveyor = 'Y';
+    }
+    ApplyActualWeightReadonly();
+    if (enableManualWeightByConveyor === 'N') {
+        await LoadDefaultMachine();
+    }
+}
+
+async function LoadDefaultMachine() {
+    try {
+        let response = await WeighmentService.GetMachinesList();
+        if (response && response.length > 0) {
+            defaultMachineName = response.length === 1
+                ? response[0].MachineNo
+                : (response[0].MachineNo || '');
+        }
+    } catch (err) {
+        defaultMachineName = '';
+    }
+}
+
+function ApplyActualWeightReadonly() {
+    const isReadonly = enableManualWeightByConveyor === 'N';
+    $('#txtActualWeight').prop('readonly', isReadonly);
+}
+
 async function LoadProcessList() {
     try {
         let response = await WeightConfirmationService.GetProcessList();
@@ -45,9 +85,70 @@ function WeightConfirmation_btnScanQR() {
 }
 
 function WeightConfirmation_CallbackScanQRCode() {
+    WeightConfirmation_onIdentificationComplete();
+}
+
+function WeightConfirmation_onIdentificationComplete() {
     let identNo = $('#txtIdentificationNo').val().trim();
     if (identNo === '') return;
+
+    if (enableManualWeightByConveyor === 'N') {
+        WeightConfirmation_AutoGetWeightAndUpdate();
+        return;
+    }
+
     $('#txtActualWeight').focus();
+}
+
+async function WeightConfirmation_AutoGetWeightAndUpdate() {
+    if (isAutoProcessing) return;
+
+    let selectedProcessValue = ($('#ddlProcess').val() || '').toString().trim();
+    let identificationNo = $('#txtIdentificationNo').val().trim();
+
+    if (selectedProcessValue === '' || selectedProcessValue === '0') {
+        toastr.warning('Please select a Process.');
+        $('#ddlProcess').focus();
+        return;
+    }
+    if (identificationNo === '') {
+        toastr.warning('Please enter or scan an Identification No.');
+        $('#txtIdentificationNo').focus();
+        return;
+    }
+    if (!defaultMachineName) {
+        toastr.error('No weighment machine configured. Please contact administrator.');
+        return;
+    }
+
+    isAutoProcessing = true;
+    Showloader();
+    try {
+        let weightResponse = await WeighmentService.GetMachineWeight(defaultMachineName);
+        if (!weightResponse || weightResponse.Status !== 'Y') {
+            HideLoader();
+            toastr.error((weightResponse && weightResponse.Msg) || 'Failed to get weight from scale.');
+            $('#txtIdentificationNo').focus().select();
+            return;
+        }
+
+        let actualWeight = parseFloat(weightResponse.Msg) || 0;
+        if (actualWeight <= 0) {
+            HideLoader();
+            toastr.warning('Invalid weight received from scale.'+actualWeight);
+            $('#txtIdentificationNo').focus().select();
+            return;
+        }
+
+        $('#txtActualWeight').val(actualWeight);
+        await WeightConfirmation_UpdateWeight(true);
+    } catch (err) {
+        HideLoader();
+        toastr.error(err.Msg || 'Error getting weight from scale.');
+        $('#txtIdentificationNo').focus().select();
+    } finally {
+        isAutoProcessing = false;
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -61,7 +162,7 @@ function WeightConfirmation_onIdentificationKeyDown(event) {
             toastr.warning('Please enter an Identification No.');
             return;
         }
-        $('#txtActualWeight').focus();
+        WeightConfirmation_onIdentificationComplete();
     }
 }
 
@@ -86,7 +187,7 @@ function WeightConfirmation_openScaleWeightModal() {
 // ─────────────────────────────────────────────
 // Call UpdateWeight API and build grid
 // ─────────────────────────────────────────────
-async function WeightConfirmation_UpdateWeight() {
+async function WeightConfirmation_UpdateWeight(isAutoMode = false) {
     let selectedProcessValue = ($('#ddlProcess').val() || '').toString().trim();
     let processMaster_Code = selectedProcessValue;
     let identificationNo = $('#txtIdentificationNo').val().trim();
@@ -94,23 +195,27 @@ async function WeightConfirmation_UpdateWeight() {
 
     if (selectedProcessValue === '' || selectedProcessValue === '0') {
         toastr.warning('Please select a Process.');
-        return;
+        return false;
     }
     if (identificationNo === '') {
         toastr.warning('Please enter or scan an Identification No.');
         $('#txtIdentificationNo').focus();
-        return;
+        return false;
     }
     if (actualWeight <= 0) {
         toastr.warning('Please enter a valid Actual Weight.');
-        $('#txtActualWeight').focus();
-        return;
+        if (!isAutoMode) {
+            $('#txtActualWeight').focus();
+        }
+        return false;
     }
 
     let authKey = JSON.parse(sessionStorage.getItem('authKey') || '{}');
     let userMaster_Code = authKey.UserMaster_Code || 0;
 
-    Showloader();
+    if (!isAutoMode) {
+        Showloader();
+    }
     try {
         let response = await WeightConfirmationService.UpdateWeight(
             0,
@@ -123,13 +228,25 @@ async function WeightConfirmation_UpdateWeight() {
 
         if (response && response.length > 0) {
             BuildWeightConfirmationGrid(response);
-        } else {
-            toastr.info('No data returned.');
-            ClearWeightConfirmationGrid();
+
+            if (isAutoMode || enableManualWeightByConveyor === 'N') {
+                $('#txtIdentificationNo').val('');
+                $('#txtActualWeight').val('0.000');
+                $('#txtIdentificationNo').focus();
+            }
+            return true;
         }
+
+        toastr.info('No data returned.');
+        ClearWeightConfirmationGrid();
+        return false;
     } catch (err) {
         HideLoader();
         toastr.error(err.Msg || 'Error updating weight.');
+        if (isAutoMode || enableManualWeightByConveyor === 'N') {
+            $('#txtIdentificationNo').focus().select();
+        }
+        return false;
     }
 }
 

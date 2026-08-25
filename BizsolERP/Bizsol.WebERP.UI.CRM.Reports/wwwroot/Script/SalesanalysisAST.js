@@ -19,6 +19,9 @@ let productSizeChartInstance = null;
 let productThicknessChartInstance = null;
 let tvgLostClientBarChartInstance = null;
 let tvgManifestActualPieChartInstance = null;
+let summaryGpPieChartInstance = null;
+let summaryNbdCrrDonutChartInstance = null;
+let salesComparisonBarChartInstance = null;
 
 // Regional Analysis data and drill-down state
 let G_RegionalAnalysisData = [];
@@ -325,6 +328,385 @@ function formatNumber(v) {
     return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatInteger(v) {
+    return Number(v || 0).toLocaleString('en-US');
+}
+
+function formatIndianCurrency(v) {
+    return '₹ ' + Number(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+}
+
+function formatLakhsValue(v) {
+    const lakhs = Number(v || 0) / 100000;
+    return `₹ ${lakhs.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L`;
+}
+
+function getSummaryTrendInfo(current, previous, higherIsBetter = true) {
+    const curr = parseFloat(current) || 0;
+    const prev = parseFloat(previous) || 0;
+
+    if (prev === 0 && curr === 0) {
+        return { pct: 0, symbol: '=', isPositive: true };
+    }
+
+    const pct = prev === 0 ? 100 : Math.abs(((curr - prev) / prev) * 100);
+    const increased = curr > prev;
+    const isPositive = higherIsBetter ? increased : !increased;
+
+    return {
+        pct,
+        symbol: curr > prev ? '▲' : (curr < prev ? '▼' : '='),
+        isPositive
+    };
+}
+
+function setSummaryKpiTrend(elementId, current, previous, higherIsBetter = true) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    if (previous === null || previous === undefined) {
+        el.className = 'summary-kpi-trend trend-neutral';
+        el.innerHTML = '<span>Current Month</span>';
+        return;
+    }
+
+    const trend = getSummaryTrendInfo(current, previous, higherIsBetter);
+    el.className = `summary-kpi-trend ${trend.isPositive ? 'trend-positive' : 'trend-negative'}`;
+    el.innerHTML = `${trend.symbol} ${trend.pct.toFixed(1)}% <span>vs Last Month</span>`;
+}
+
+function parseSummaryReportResponse(response) {
+    let rows = [];
+    let summaryRow = null;
+
+    if (!response) {
+        return { rows, summaryRow };
+    }
+
+    if (Array.isArray(response)) {
+        if (Array.isArray(response[0])) {
+            rows = response[0] || [];
+            summaryRow = (response[1] && response[1][0]) ? response[1][0] : null;
+        } else if (response.length > 0) {
+            rows = response;
+        }
+    } else if (response.Table || response.Table1) {
+        rows = response.Table || response.Table1 || [];
+        summaryRow = (response.Table2 && response.Table2[0]) ? response.Table2[0] : null;
+    }
+
+    return { rows: rows || [], summaryRow: summaryRow || null };
+}
+
+function categorizeGpForSummary(gpValue) {
+    const gp = (gpValue || '').toString().trim().toLowerCase();
+    if (gp.includes('super high') || gp.includes('high')) return 'high';
+    if (gp.includes('medium') || gp.includes('med')) return 'medium';
+    if (gp.includes('low')) return 'low';
+    return 'other';
+}
+
+function aggregateSummaryMetrics(rows, summaryRow) {
+    const lostClientParties = new Set();
+    const nbdParties = new Set();
+    const crrParties = new Set();
+    const uniqueParties = new Set();
+    let totalSaleMt = 0;
+    let manifestedTotal = 0;
+    let lostFreight = 0;
+    const gpMtMap = { high: 0, medium: 0, low: 0, other: 0 };
+
+    (rows || []).forEach(function (row, index) {
+        const weight = parseFloat(row['Weight'] || row.weight || row.QtyMT || 0) || 0;
+        const manifestation = parseFloat(row['Manifestation'] || row.Manifestation || 0) || 0;
+        const party = (row['Party Name'] || row.PartyName || '').trim();
+        const gpCategory = categorizeGpForSummary(row['GP'] || row.GP);
+        const nbdCrr = (row['NBD/CRR'] || row.NBD_CRRType || row.NbdCrr || '').toString().trim().toUpperCase();
+        const lostClient = (row['Lost Client'] || row.LostClient || '').toString().trim();
+        const status = (row['Status'] || row.Status || '').toString().toUpperCase();
+        const freight = parseFloat(row['Lost Freight'] || row.LostFreight || row['LostFreight'] || 0) || 0;
+
+        if (party) uniqueParties.add(party.toLowerCase());
+
+        totalSaleMt += weight;
+        manifestedTotal += manifestation;
+        lostFreight += freight;
+        gpMtMap[gpCategory] = (gpMtMap[gpCategory] || 0) + weight;
+
+        if (lostClient || status.includes('LOST')) {
+            if (party) lostClientParties.add(party.toLowerCase());
+        }
+
+        const rowKey = (party || `row-${index}`).toLowerCase();
+        if (nbdCrr.includes('NBD')) {
+            nbdParties.add(rowKey);
+        } else if (nbdCrr.includes('CRR')) {
+            crrParties.add(rowKey);
+        }
+    });
+
+    const sr = summaryRow || {};
+    totalSaleMt = parseFloat(sr.TotalSale || sr.TotalSales || sr.TotalActualSales || sr['Total Sale'] || totalSaleMt) || totalSaleMt;
+    const teamSaleMt = parseFloat(sr.TeamSale || sr.TeamSaleMT || sr['Team Sale'] || totalSaleMt) || totalSaleMt;
+    const lostClients = parseFloat(sr.LostClients || sr.LostClient || sr['Lost Clients'] || lostClientParties.size) || lostClientParties.size;
+    lostFreight = parseFloat(sr.LostFreight || sr['Lost Freight'] || lostFreight) || lostFreight;
+    const totalParties = parseInt(
+        sr.TotalClients || sr.TotalParties || sr['Total Parties'] || sr.TotalClient || sr['Total Clients'] || sr.NoOfParties || uniqueParties.size,
+        10
+    ) || uniqueParties.size;
+    const nbdCount = parseInt(sr.NBDCount || sr.NBD || sr['NBD Count'] || nbdParties.size, 10) || nbdParties.size;
+    const crrCount = parseInt(sr.CRRCount || sr.CRR || sr['CRR Count'] || crrParties.size, 10) || crrParties.size;
+    const totalManifested = parseFloat(sr.TotalManifested || sr.totalManifested || manifestedTotal) || manifestedTotal;
+    const readyDispatch = parseFloat(sr.ReadyToDispatch || sr.ReadyToDispatchStock || sr['Ready To Dispatch'] || 0) || 0;
+    const readyDispatchValue = parseFloat(sr.ReadyToDispatchValue || sr['Ready To Dispatch Value'] || sr.ReadyDispatchValue || 0) || 0;
+    const manifestActualScore = totalManifested > 0 ? (totalSaleMt / totalManifested) * 100 : 0;
+
+    return {
+        totalSaleMt,
+        teamSaleMt,
+        lostClients,
+        totalParties,
+        manifestActualScore,
+        lostFreight,
+        nbdCount,
+        crrCount,
+        nbdCrrTotal: nbdCount + crrCount,
+        readyDispatch,
+        readyDispatchValue,
+        gpMtMap,
+        totalManifested
+    };
+}
+
+function clearSummaryDashboard() {
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setText('skpi-total-sale', '0 MT');
+    setText('skpi-lost-client', '0');
+    setText('skpi-total-parties', '0');
+    setText('skpi-manifest-score', '0.00%');
+    setText('skpi-total-manifested', '0 MT');
+    setText('skpi-lost-freight', '₹ 0');
+    setText('skpi-nbd-count', '0');
+    setText('skpi-crr-count', '0');
+    setText('skpi-nbd-crr-total', '0');
+    setText('skpi-ready-dispatch', '0 MT');
+    setText('skpi-ready-dispatch-value', '₹ 0.00 L');
+    setText('summaryNbdCrrDonutTotal', '0');
+
+    const gpLegend = document.getElementById('summaryGpLegend');
+    const nbdLegend = document.getElementById('summaryNbdCrrLegend');
+    if (gpLegend) gpLegend.innerHTML = '';
+    if (nbdLegend) nbdLegend.innerHTML = '';
+
+    if (summaryGpPieChartInstance) {
+        try { summaryGpPieChartInstance.destroy(); } catch (e) { /* ignore */ }
+        summaryGpPieChartInstance = null;
+    }
+    if (summaryNbdCrrDonutChartInstance) {
+        try { summaryNbdCrrDonutChartInstance.destroy(); } catch (e) { /* ignore */ }
+        summaryNbdCrrDonutChartInstance = null;
+    }
+}
+
+function renderSummaryGpLegend(items) {
+    const legend = document.getElementById('summaryGpLegend');
+    if (!legend) return;
+
+    legend.innerHTML = items.map(function (item) {
+        return `
+            <div class="summary-legend-item">
+                <span class="summary-legend-swatch" style="background:${item.color};"></span>
+                <div>
+                    <div class="summary-legend-label">${escapeHtml(item.label)}</div>
+                    <div class="summary-legend-meta">${escapeHtml(item.criteria)}</div>
+                    <div class="summary-legend-meta">${formatNumber(item.value)} MT</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderSummaryNbdCrrLegend(nbdCount, crrCount) {
+    const legend = document.getElementById('summaryNbdCrrLegend');
+    if (!legend) return;
+
+    const total = nbdCount + crrCount;
+    const nbdPct = total > 0 ? ((nbdCount / total) * 100).toFixed(0) : '0';
+    const crrPct = total > 0 ? ((crrCount / total) * 100).toFixed(0) : '0';
+
+    legend.innerHTML = `
+        <div class="summary-legend-item">
+            <span class="summary-legend-swatch" style="background:#6f42c1;"></span>
+            <div>
+                <div class="summary-legend-label">NBD</div>
+                <div class="summary-legend-meta">${formatInteger(nbdCount)} (${nbdPct}%)</div>
+            </div>
+        </div>
+        <div class="summary-legend-item">
+            <span class="summary-legend-swatch" style="background:#4e73df;"></span>
+            <div>
+                <div class="summary-legend-label">CRR</div>
+                <div class="summary-legend-meta">${formatInteger(crrCount)} (${crrPct}%)</div>
+            </div>
+        </div>
+    `;
+}
+
+function renderSummaryGpPieChart(gpMtMap) {
+    const canvas = document.getElementById('summaryGpPieChart');
+    if (!canvas) return;
+
+    if (summaryGpPieChartInstance) {
+        try { summaryGpPieChartInstance.destroy(); } catch (e) { /* ignore */ }
+        summaryGpPieChartInstance = null;
+    }
+
+    if (typeof ChartDataLabels !== 'undefined') {
+        try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
+    }
+
+    const chartItems = [
+        { key: 'high', label: 'High GP', criteria: '(> 12%)', color: '#1cc88a' },
+        { key: 'medium', label: 'Medium GP', criteria: '(5% – 12%)', color: '#f6c23e' },
+        { key: 'low', label: 'Low GP', criteria: '(< 5%)', color: '#e74a3b' }
+    ];
+
+    const visibleItems = chartItems
+        .map(function (item) {
+            return {
+                ...item,
+                value: gpMtMap[item.key] || 0
+            };
+        })
+        .filter(function (item) { return item.value > 0; });
+
+    if (visibleItems.length === 0) {
+        renderSummaryGpLegend([]);
+        return;
+    }
+
+    const labels = visibleItems.map(function (item) { return item.label; });
+    const values = visibleItems.map(function (item) { return item.value; });
+    const colors = visibleItems.map(function (item) { return item.color; });
+    const total = values.reduce(function (sum, val) { return sum + val; }, 0);
+
+    renderSummaryGpLegend(visibleItems);
+
+    summaryGpPieChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const value = context.parsed || 0;
+                            const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                            return `${context.label}: ${formatNumber(value)} MT (${pct}%)`;
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 12 },
+                    formatter: function (value) {
+                        const pct = total > 0 ? ((value / total) * 100).toFixed(0) : '0';
+                        return `${pct}%`;
+                    }
+                }
+            }
+        },
+        plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : []
+    });
+}
+
+function renderSummaryNbdCrrDonutChart(nbdCount, crrCount) {
+    const canvas = document.getElementById('summaryNbdCrrDonutChart');
+    if (!canvas) return;
+
+    if (summaryNbdCrrDonutChartInstance) {
+        try { summaryNbdCrrDonutChartInstance.destroy(); } catch (e) { /* ignore */ }
+        summaryNbdCrrDonutChartInstance = null;
+    }
+
+    const total = nbdCount + crrCount;
+    const totalEl = document.getElementById('summaryNbdCrrDonutTotal');
+    if (totalEl) totalEl.textContent = formatInteger(total);
+
+    renderSummaryNbdCrrLegend(nbdCount, crrCount);
+
+    if (total === 0) return;
+
+    summaryNbdCrrDonutChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['NBD', 'CRR'],
+            datasets: [{
+                data: [nbdCount, crrCount],
+                backgroundColor: ['#6f42c1', '#4e73df'],
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '68%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const value = context.parsed || 0;
+                            const pct = total > 0 ? ((value / total) * 100).toFixed(0) : '0';
+                            return `${context.label}: ${formatInteger(value)} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderSummaryDashboard(metrics) {
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setText('skpi-total-sale', `${formatNumber(metrics.totalSaleMt)} MT`);
+    setText('skpi-lost-client', formatInteger(metrics.lostClients));
+    setText('skpi-total-parties', formatInteger(metrics.totalParties));
+    setText('skpi-manifest-score', `${metrics.manifestActualScore.toFixed(2)}%`);
+    setText('skpi-total-manifested', `${formatNumber(metrics.totalManifested)} MT`);
+    setText('skpi-lost-freight', formatIndianCurrency(metrics.lostFreight));
+    setText('skpi-nbd-count', formatInteger(metrics.nbdCount));
+    setText('skpi-crr-count', formatInteger(metrics.crrCount));
+    setText('skpi-nbd-crr-total', formatInteger(metrics.nbdCrrTotal));
+    setText('skpi-ready-dispatch', `${formatNumber(metrics.readyDispatch)} MT`);
+    setText('skpi-ready-dispatch-value', formatLakhsValue(metrics.readyDispatchValue));
+
+    renderSummaryGpPieChart(metrics.gpMtMap);
+    renderSummaryNbdCrrDonutChart(metrics.nbdCount, metrics.crrCount);
+}
+
 function formatDateYYYYMMDD(date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -544,87 +926,36 @@ function renderSummaryReport() {
     }
 
     Showloader();
+    updateReportDateRangeDisplay();
 
-    //SalesanalysisASTService.GetSalesAnalysisData('SUMMARY_REPORT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays).then(function (response) {
-    SalesanalysisASTService.GetMultipleTableSalesAnalysisData('SUMMARY_REPORT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays).then(function (response) {
+    SalesanalysisASTService.GetMultipleTableSalesAnalysisData(
+        'SUMMARY_REPORT',
+        filters.dealerCodes,
+        filters.fromDate,
+        filters.toDate,
+        filters.salesPersons,
+        filters.cities,
+        filters.status,
+        filters.gp,
+        filters.industryType,
+        filters.notPurchaseFromDays
+    ).then(function (response) {
         HideLoader();
 
-        if (!response || response[0].length === 0) {
+        const parsed = parseSummaryReportResponse(response);
+
+        if (!parsed.rows || parsed.rows.length === 0) {
             console.warn('No summary report data received');
-            // Clear KPIs
-            document.getElementById('kpi-parties').textContent = '0';
-            document.getElementById('kpi-high-gp').textContent = '0';
-            document.getElementById('kpi-lost-client').textContent = '0';
-            document.getElementById('kpi-manifested-sales').textContent = '0';
-            document.getElementById('kpi-actual-sale').textContent = '0';
-            document.getElementById('kpi-total-manifested').textContent = '0';
-            // Clear grid
+            clearSummaryDashboard();
             const hdr = document.getElementById('summaryReportTableHeader');
             const bdy = document.getElementById('summaryReportTableBody');
             if (hdr) hdr.innerHTML = '';
             if (bdy) bdy.innerHTML = '<tr><td class="text-center">No data available</td></tr>';
-            updateReportDateRangeDisplay();
             return;
         }
 
-        // Calculate KPI values from the grid data
-        const uniqueParties = new Set();
-        let highGPCount = 0;
-        let lostClientCount = 0;
-        let manifestedSalesTotal = 0;
-        let actualSaleTotal = 0;
-
-        response[0].forEach(function (row) {
-            // Count unique parties
-            const partyName = row['Party Name'] || row.PartyName || '';
-            if (partyName) {
-                uniqueParties.add(partyName.trim());
-            }
-
-            // Count High GP (check if Status or GP column contains "High GP")
-            const status = (row['Status'] || row.Status || '').toString().toUpperCase();
-            const gp = (row['GP'] || row.GP || '').toString().toUpperCase();
-            if (gp.includes('HIGH')) {
-                highGPCount++;
-            }
-
-            // Count Lost Clients
-            if (status.includes('LOST CLIENT')) {
-                lostClientCount++;
-            }
-
-            // Sum Manifestation values
-            const manifestation = parseFloat(row['Manifestation'] || row.Manifestation || 0);
-            if (!isNaN(manifestation)) {
-                manifestedSalesTotal += manifestation;
-            }
-
-            // Sum Weight as Actual Sale (based on your image showing Weight column)
-            const weight = parseFloat(row['Weight'] || row.weight || 0);
-            if (!isNaN(weight)) {
-                actualSaleTotal += weight;
-            }
-        });
-
-        // Read TotalManifested from response[1]
-        let totalManifested = 0;
-        if (response[1]) {
-            const r1 = Array.isArray(response[1]) ? response[1][0] : response[1];
-            if (r1 && r1.TotalManifested !== undefined && r1.TotalManifested !== null) {
-                totalManifested = parseFloat(r1.TotalManifested) || 0;
-            }
-        }
-
-        // Update KPI values
-        document.getElementById('kpi-parties').textContent = uniqueParties.size.toString();
-        document.getElementById('kpi-high-gp').textContent = highGPCount.toString();
-        document.getElementById('kpi-lost-client').textContent = lostClientCount.toString();
-        document.getElementById('kpi-manifested-sales').textContent = formatNumber(manifestedSalesTotal);
-        document.getElementById('kpi-actual-sale').textContent = formatNumber(actualSaleTotal);
-        document.getElementById('kpi-total-manifested').textContent = formatNumber(totalManifested);
-
-        // Update date range display
-        updateReportDateRangeDisplay();
+        const metrics = aggregateSummaryMetrics(parsed.rows, parsed.summaryRow);
+        renderSummaryDashboard(metrics);
 
         const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "NBD/CRR", "Lost Client"];
         const NumericFilterColumn = [];
@@ -642,11 +973,12 @@ function renderSummaryReport() {
         };
 
         if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("summaryReportTableHeader", "summaryReportTableBody", response[0], Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            BizsolCustomFilterGrid.CreateDataTable("summaryReportTableHeader", "summaryReportTableBody", parsed.rows, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
         }
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching summary report data:', err);
+        clearSummaryDashboard();
     });
 }
 
@@ -1241,7 +1573,7 @@ function clearManifestationTables() {
     document.getElementById('manifesteTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
     document.getElementById('manifesteTableHeader').innerHTML = '';
 
-    // Clear Order Sheet Data table
+    // Clear Invoice Details table
     document.getElementById('orderSheetTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
     document.getElementById('orderSheetTableHeader').innerHTML = '';
 
@@ -1282,7 +1614,7 @@ function separateAndRenderManifestationData(data) {
             k.includes('not achieved') || k.includes('not done')
         );
 
-        // Order Sheet Data has Invoice related columns
+        // Invoice Details has Invoice related columns
         const hasOrderSheetColumns = keys.some(k =>
             k.includes('invoice date') || k.includes('invoicedate') ||
             k.includes('invoice amount') || k.includes('invoiceamount') ||
@@ -1324,6 +1656,79 @@ function separateAndRenderManifestationData(data) {
     renderItemWeightTable(itemWeightData);
 }
 
+function getMonthIndexFromWeekLabel(weekLabel, fallbackDateStr) {
+    const monthNames = [
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+    const label = (weekLabel || '').toString().trim().toLowerCase();
+    const monthPart = label.split('-')[0].trim();
+
+    let monthIndex = monthNames.findIndex(function (name) {
+        return monthPart === name || monthPart.startsWith(name.substring(0, 3));
+    });
+
+    if (monthIndex === -1 && fallbackDateStr && fallbackDateStr !== '0') {
+        const d = new Date(fallbackDateStr);
+        if (!isNaN(d.getTime())) {
+            monthIndex = d.getMonth();
+        }
+    }
+
+    return monthIndex;
+}
+
+function getDaysInMonthForWeekLabel(weekLabel, fallbackDateStr) {
+    const monthIndex = getMonthIndexFromWeekLabel(weekLabel, fallbackDateStr);
+    if (monthIndex === -1) return 30;
+
+    let year = new Date().getFullYear();
+    if (fallbackDateStr && fallbackDateStr !== '0') {
+        const d = new Date(fallbackDateStr);
+        if (!isNaN(d.getTime())) {
+            year = d.getFullYear();
+        }
+    }
+
+    return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function getDaysInWeekForWeekLabel(weekLabel) {
+    const label = (weekLabel || '').toString().trim();
+    const weekMatch = label.match(/W(\d+)/i);
+    if (!weekMatch) return 7;
+
+    const weekNumber = parseInt(weekMatch[1], 10);
+    const monthIndex = getMonthIndexFromWeekLabel(weekLabel, fromDate !== '0' ? fromDate : toDate);
+    if (monthIndex === -1) return 7;
+
+    let year = new Date().getFullYear();
+    const fallbackDateStr = fromDate !== '0' ? fromDate : toDate;
+    if (fallbackDateStr && fallbackDateStr !== '0') {
+        const d = new Date(fallbackDateStr);
+        if (!isNaN(d.getTime())) {
+            year = d.getFullYear();
+        }
+    }
+
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const startDay = ((weekNumber - 1) * 7) + 1;
+    if (startDay > daysInMonth) return 0;
+    return Math.min(7, daysInMonth - startDay + 1);
+}
+
+function calculateWeeklyManifestTarget(totalManifestTarget, weekLabel) {
+    const totalTarget = parseFloat(totalManifestTarget) || 0;
+    if (!totalTarget) return 0;
+
+    const fallbackDateStr = fromDate !== '0' ? fromDate : toDate;
+    const daysInMonth = getDaysInMonthForWeekLabel(weekLabel, fallbackDateStr);
+    const daysInWeek = getDaysInWeekForWeekLabel(weekLabel) || 7;
+
+    if (!daysInMonth) return 0;
+    return (totalTarget / daysInMonth) * daysInWeek;
+}
+
 function renderWeekWeightTable(data) {
     if (!data || data.length === 0) {
         document.getElementById('weekWeightTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
@@ -1357,7 +1762,6 @@ function renderWeekWeightTable(data) {
 
     // Week columns = everything that is not the person key and not a summary column
     const weekColumns = allKeys.filter(k => k !== personKey && !isSummaryKey(k));
-    const numWeeks = weekColumns.length;
 
     // ---- Build two-row header ----
     const headerBg  = '#4472C4';
@@ -1371,7 +1775,7 @@ function renderWeekWeightTable(data) {
         row1 += `<th colspan="3" class="text-center" style="background-color:${headerBg};color:white;white-space:nowrap;${sepStyle}">${escapeHtml(wk)}</th>`;
     });
     if (actualTotalKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;${sepStyle}">Actual Total</th>`;
-    if (targetTotalKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Target Total</th>`;
+    if (targetTotalKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Total Manifest Target</th>`;
     if (varianceKey)    row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Variance</th>`;
     if (achievementKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Achievement %</th>`;
     row1 += `</tr>`;
@@ -1379,7 +1783,7 @@ function renderWeekWeightTable(data) {
     let row2 = `<tr>`;
     weekColumns.forEach(() => {
         row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;${sepStyle}">Actual Sales</th>`;
-        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;">Week Target</th>`;
+        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;">Weekly Manifest Target</th>`;
         row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;">Achievement %</th>`;
     });
     row2 += `</tr>`;
@@ -1399,10 +1803,8 @@ function renderWeekWeightTable(data) {
         const personName  = row[personKey] || '';
         const actualTotal = parseFloat(row[actualTotalKey] || 0);
         const targetTotal = parseFloat(row[targetTotalKey] || 0);
-        const variance    = parseFloat(row[varianceKey]    || 0);
+        const variance    = parseFloat(row[varianceKey]    || (actualTotal - targetTotal));
 
-        // Distribute total target equally across weeks
-        const weekTarget       = numWeeks > 0 ? targetTotal / numWeeks : 0;
         const overallAchievement = targetTotal > 0 ? (actualTotal / targetTotal) * 100 : 0;
 
         grandActualTotal += actualTotal;
@@ -1411,7 +1813,8 @@ function renderWeekWeightTable(data) {
         let rowHTML = `<td style="white-space:nowrap;">${escapeHtml(personName)}</td>`;
 
         weekColumns.forEach(wk => {
-            const actualSales  = parseFloat(row[wk] || 0);
+            const actualSales = parseFloat(row[wk] || 0);
+            const weekTarget = calculateWeeklyManifestTarget(targetTotal, wk);
             const wkAchievement = weekTarget > 0 ? (actualSales / weekTarget) * 100 : 0;
             grandWeekActuals[wk] += actualSales;
             grandWeekTargets[wk] += weekTarget;
@@ -3560,6 +3963,458 @@ function renderClientAnalysis() {
         HideLoader();
         console.error('Error fetching Client Analysis data:', err);
         clearClientAnalysisDashboard();
+    });
+}
+
+function formatComparisonPeriodLabel(fromDate, toDate) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const fmt = function (d) {
+        return `${months[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`;
+    };
+    return `(${fmt(fromDate)} – ${fmt(toDate)}, ${toDate.getFullYear()})`;
+}
+
+function formatMonthYearLabel(date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function clipDateToMonthDay(year, month, day) {
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    return new Date(year, month, Math.min(Math.max(day, 1), lastDay));
+}
+
+function buildSalesComparisonMonthPair(year, month, rangeFrom, rangeTo) {
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0);
+
+    const currentFrom = new Date(Math.max(monthStart.getTime(), rangeFrom.getTime()));
+    const currentTo = new Date(Math.min(monthEnd.getTime(), rangeTo.getTime()));
+
+    const prevYear = month === 0 ? year - 1 : year;
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const previousFrom = clipDateToMonthDay(prevYear, prevMonth, currentFrom.getDate());
+    const previousTo = clipDateToMonthDay(prevYear, prevMonth, currentTo.getDate());
+
+    return {
+        label: formatMonthYearLabel(monthStart),
+        current: {
+            from: currentFrom,
+            to: currentTo,
+            fromDate: formatDateYYYYMMDD(currentFrom),
+            toDate: formatDateYYYYMMDD(currentTo),
+            title: formatMonthYearLabel(monthStart),
+            rangeLabel: formatComparisonPeriodLabel(currentFrom, currentTo)
+        },
+        previous: {
+            from: previousFrom,
+            to: previousTo,
+            fromDate: formatDateYYYYMMDD(previousFrom),
+            toDate: formatDateYYYYMMDD(previousTo),
+            title: formatMonthYearLabel(new Date(prevYear, prevMonth, 1)),
+            rangeLabel: formatComparisonPeriodLabel(previousFrom, previousTo)
+        }
+    };
+}
+
+function getSalesComparisonMonthWiseConfig(fromDateStr, toDateStr) {
+    const now = new Date();
+    let rangeFrom;
+    let rangeTo;
+    let monthPairs = [];
+
+    if (!fromDateStr || fromDateStr === '0' || !toDateStr || toDateStr === '0') {
+        const currentFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+        const currentTo = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const previousFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const previousTo = new Date(now.getFullYear(), now.getMonth(), 0);
+
+        monthPairs.push({
+            label: formatMonthYearLabel(currentFrom),
+            current: {
+                from: currentFrom,
+                to: currentTo,
+                fromDate: formatDateYYYYMMDD(currentFrom),
+                toDate: formatDateYYYYMMDD(currentTo),
+                title: formatMonthYearLabel(currentFrom),
+                rangeLabel: formatComparisonPeriodLabel(currentFrom, currentTo)
+            },
+            previous: {
+                from: previousFrom,
+                to: previousTo,
+                fromDate: formatDateYYYYMMDD(previousFrom),
+                toDate: formatDateYYYYMMDD(previousTo),
+                title: formatMonthYearLabel(previousFrom),
+                rangeLabel: formatComparisonPeriodLabel(previousFrom, previousTo)
+            }
+        });
+    } else {
+        rangeFrom = new Date(fromDateStr);
+        rangeTo = new Date(toDateStr);
+
+        let cursor = new Date(rangeFrom.getFullYear(), rangeFrom.getMonth(), 1);
+        const endCursor = new Date(rangeTo.getFullYear(), rangeTo.getMonth(), 1);
+
+        while (cursor.getTime() <= endCursor.getTime()) {
+            monthPairs.push(buildSalesComparisonMonthPair(cursor.getFullYear(), cursor.getMonth(), rangeFrom, rangeTo));
+            cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+        }
+    }
+
+    if (monthPairs.length === 0) {
+        rangeFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+        rangeTo = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        monthPairs.push(buildSalesComparisonMonthPair(now.getFullYear(), now.getMonth(), rangeFrom, rangeTo));
+    }
+
+    let fetchFromDate = monthPairs[0].previous.fromDate;
+    let fetchToDate = monthPairs[monthPairs.length - 1].current.toDate;
+
+    monthPairs.forEach(function (pair) {
+        if (pair.previous.fromDate < fetchFromDate) fetchFromDate = pair.previous.fromDate;
+        if (pair.current.toDate > fetchToDate) fetchToDate = pair.current.toDate;
+    });
+
+    const firstPair = monthPairs[0];
+    const lastPair = monthPairs[monthPairs.length - 1];
+
+    return {
+        monthPairs,
+        fetchFromDate,
+        fetchToDate,
+        summaryPreviousRange: monthPairs.length === 1
+            ? firstPair.previous.rangeLabel
+            : `${firstPair.previous.title} – ${monthPairs[monthPairs.length - 1].previous.title}`,
+        summaryCurrentRange: monthPairs.length === 1
+            ? firstPair.current.rangeLabel
+            : `${firstPair.current.title} – ${lastPair.current.title}`
+    };
+}
+
+function normalizeSalesComparisonRow(row) {
+    const dateValue = row.Date || row.DATE || row['Invoice Date'] || row.RemovalDate || row['Removal Date'];
+    const qty = parseFloat(row.QtyMT || row.QTY || row.Qty || row.Weight || row['Weight'] || 0) || 0;
+    if (!dateValue) return null;
+
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return null;
+
+    return { date, qty };
+}
+
+function parseSalesComparisonRows(response) {
+    let rows = [];
+
+    if (!response) return rows;
+
+    if (Array.isArray(response)) {
+        if (Array.isArray(response[0])) {
+            rows = response[0] || [];
+        } else {
+            rows = response;
+        }
+    } else if (response.Table || response.Table1) {
+        rows = response.Table || response.Table1 || [];
+    }
+
+    return (rows || []).map(normalizeSalesComparisonRow).filter(Boolean);
+}
+
+function isDateWithinPeriod(date, periodFrom, periodTo) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const from = new Date(periodFrom.getFullYear(), periodFrom.getMonth(), periodFrom.getDate()).getTime();
+    const to = new Date(periodTo.getFullYear(), periodTo.getMonth(), periodTo.getDate()).getTime();
+    return d >= from && d <= to;
+}
+
+function sumSalesComparisonQty(rows, periodFrom, periodTo) {
+    return (rows || []).reduce(function (sum, item) {
+        if (isDateWithinPeriod(item.date, periodFrom, periodTo)) {
+            return sum + item.qty;
+        }
+        return sum;
+    }, 0);
+}
+
+function getSalesComparisonGrowthInfo(currentTotal, previousTotal) {
+    if (previousTotal === 0 && currentTotal === 0) {
+        return { pct: 0, symbol: '=', cssClass: 'neutral', text: '= 0.0%' };
+    }
+
+    const pct = previousTotal === 0 ? 100 : Math.abs(((currentTotal - previousTotal) / previousTotal) * 100);
+    const increased = currentTotal > previousTotal;
+    const symbol = currentTotal > previousTotal ? '▲' : (currentTotal < previousTotal ? '▼' : '=');
+    const cssClass = currentTotal >= previousTotal ? 'positive' : 'negative';
+
+    return {
+        pct,
+        symbol,
+        cssClass,
+        text: `${symbol} ${pct.toFixed(1)}%`
+    };
+}
+
+function clearSalesComparisonDashboard() {
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setText('scPreviousTotal', '0.00 MT');
+    setText('scCurrentTotal', '0.00 MT');
+    setText('scGrowthValue', '0.00%');
+    setText('scPreviousPeriodRange', '—');
+    setText('scCurrentPeriodRange', '—');
+    setText('scPreviousPeriodTitle', 'Last Month');
+    setText('scCurrentPeriodTitle', 'Current Month');
+
+    const growthBadge = document.getElementById('scGrowthBadge');
+    if (growthBadge) {
+        growthBadge.className = 'sc-growth-badge neutral';
+        growthBadge.textContent = '—';
+        growthBadge.style.display = 'block';
+    }
+
+    if (salesComparisonBarChartInstance) {
+        try { salesComparisonBarChartInstance.destroy(); } catch (e) { /* ignore */ }
+        salesComparisonBarChartInstance = null;
+    }
+}
+
+function buildSalesComparisonMonthResults(rows, config) {
+    const monthResults = (config.monthPairs || []).map(function (pair) {
+        const previousTotal = sumSalesComparisonQty(rows, pair.previous.from, pair.previous.to);
+        const currentTotal = sumSalesComparisonQty(rows, pair.current.from, pair.current.to);
+        return {
+            ...pair,
+            previousTotal,
+            currentTotal
+        };
+    });
+
+    const previousTotal = monthResults.reduce(function (sum, item) { return sum + item.previousTotal; }, 0);
+    const currentTotal = monthResults.reduce(function (sum, item) { return sum + item.currentTotal; }, 0);
+
+    return { monthResults, previousTotal, currentTotal };
+}
+
+function renderSalesComparisonChart(monthResults, previousTotal, currentTotal) {
+    const canvas = document.getElementById('salesComparisonBarChart');
+    if (!canvas) return;
+
+    if (salesComparisonBarChartInstance) {
+        try { salesComparisonBarChartInstance.destroy(); } catch (e) { /* ignore */ }
+        salesComparisonBarChartInstance = null;
+    }
+
+    if (typeof ChartDataLabels !== 'undefined') {
+        try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
+    }
+
+    const growth = getSalesComparisonGrowthInfo(currentTotal, previousTotal);
+    const growthBadge = document.getElementById('scGrowthBadge');
+    if (growthBadge) {
+        growthBadge.className = `sc-growth-badge ${growth.cssClass}`;
+        growthBadge.textContent = monthResults.length === 1 ? growth.text : '';
+        growthBadge.style.display = monthResults.length === 1 ? 'block' : 'none';
+    }
+
+    const isMultiMonth = monthResults.length > 1;
+    let chartConfig;
+
+    if (isMultiMonth) {
+        chartConfig = {
+            type: 'bar',
+            data: {
+                labels: monthResults.map(function (item) { return item.label; }),
+                datasets: [
+                    {
+                        label: 'Last Month',
+                        data: monthResults.map(function (item) { return item.previousTotal; }),
+                        backgroundColor: '#cbd5e0',
+                        borderRadius: 6,
+                        maxBarThickness: 52
+                    },
+                    {
+                        label: 'Current Month',
+                        data: monthResults.map(function (item) { return item.currentTotal; }),
+                        backgroundColor: '#4e73df',
+                        borderRadius: 6,
+                        maxBarThickness: 52
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { boxWidth: 12, font: { size: 11, weight: '600' } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return `${context.dataset.label}: ${formatNumber(context.parsed.y)} MT`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        color: '#1a202c',
+                        font: { weight: 'bold', size: 10 },
+                        formatter: function (value) {
+                            return value > 0 ? `${formatNumber(value)}` : '';
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11, weight: '600' }, color: '#4a5568' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#edf2f7' },
+                        ticks: {
+                            color: '#718096',
+                            callback: function (value) {
+                                if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                                return value;
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : []
+        };
+    } else {
+        const pair = monthResults[0] || { previousTotal: 0, currentTotal: 0, previous: {}, current: {} };
+        chartConfig = {
+            type: 'bar',
+            data: {
+                labels: ['Last Month', 'Current Month'],
+                datasets: [{
+                    data: [pair.previousTotal, pair.currentTotal],
+                    backgroundColor: ['#cbd5e0', '#4e73df'],
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 88
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return `${formatNumber(context.parsed.y)} MT`;
+                            },
+                            afterLabel: function (context) {
+                                return context.dataIndex === 0 ? pair.previous.rangeLabel : pair.current.rangeLabel;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        color: '#1a202c',
+                        font: { weight: 'bold', size: 13 },
+                        formatter: function (value) {
+                            return `${formatNumber(value)} MT`;
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 12, weight: '600' }, color: '#4a5568' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#edf2f7' },
+                        ticks: {
+                            color: '#718096',
+                            callback: function (value) {
+                                if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                                return value;
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : []
+        };
+    }
+
+    salesComparisonBarChartInstance = new Chart(canvas.getContext('2d'), chartConfig);
+}
+
+function renderSalesComparisonDashboard(comparisonResult, config) {
+    const previousTotal = comparisonResult.previousTotal;
+    const currentTotal = comparisonResult.currentTotal;
+    const growth = getSalesComparisonGrowthInfo(currentTotal, previousTotal);
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    const isMultiMonth = comparisonResult.monthResults.length > 1;
+
+    setText('scPreviousPeriodTitle', isMultiMonth ? 'Last Month Total' : 'Last Month');
+    setText('scCurrentPeriodTitle', isMultiMonth ? 'Current Month Total' : 'Current Month');
+    setText('scPreviousTotal', `${formatNumber(previousTotal)} MT`);
+    setText('scCurrentTotal', `${formatNumber(currentTotal)} MT`);
+    setText('scGrowthValue', `${growth.symbol} ${growth.pct.toFixed(1)}%`);
+    setText('scPreviousPeriodRange', config.summaryPreviousRange);
+    setText('scCurrentPeriodRange', config.summaryCurrentRange);
+
+    renderSalesComparisonChart(comparisonResult.monthResults, previousTotal, currentTotal);
+}
+
+function renderSalesComparison() {
+    const filters = GetAllFilters();
+
+    if (filters.dealerCodes == '') {
+        return;
+    }
+
+    updateReportDateRangeDisplay();
+    Showloader();
+
+    const config = getSalesComparisonMonthWiseConfig(filters.fromDate, filters.toDate);
+
+    SalesanalysisASTService.GetSalesAnalysisData(
+        'Sales_Comparison',
+        filters.dealerCodes,
+        config.fetchFromDate,
+        config.fetchToDate,
+        filters.salesPersons,
+        filters.cities,
+        filters.status,
+        filters.gp,
+        filters.industryType,
+        filters.notPurchaseFromDays
+    ).then(function (response) {
+        HideLoader();
+
+        const rows = parseSalesComparisonRows(response);
+        if (!rows.length) {
+            console.warn('No Sales Comparison data received');
+            clearSalesComparisonDashboard();
+            return;
+        }
+
+        const comparisonResult = buildSalesComparisonMonthResults(rows, config);
+        renderSalesComparisonDashboard(comparisonResult, config);
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching Sales Comparison data:', err);
+        clearSalesComparisonDashboard();
     });
 }
 
