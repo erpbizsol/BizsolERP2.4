@@ -49,6 +49,12 @@ const FreightInvoiceService = {
         return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
             return value;
         });
+    },
+    ApproveFreightInvoice: function ApproveFreightInvoice(code) {
+        var URL = UrlService.API_ENDPOINT_FreightInvoice + '/ApproveFreightInvoice?Code=' + (code || 0);
+        return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
+            return value;
+        });
     }
 };
 
