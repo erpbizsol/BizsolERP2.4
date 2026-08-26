@@ -18,6 +18,7 @@ var G_DivisionList      = [];
 var G_ItemRowCount      = 0;
 var G_FormReady         = false;
 var G_EditMode          = 'New';
+var G_SkipCategoryChange = false;
 
 $(document).ready(function () {
     var urlParams = typeof getUrlVars === 'function'
@@ -549,16 +550,52 @@ window.OnIndentDepartmentChange = function (rowId, selectedSub) {
 };
 
 window.OnIndentCategoryChange = function () {
-    var cat = parseInt($('#frmDdlCategory').val() || 0, 10) || 0;
-    IndentMasterService.GetItemList(cat).then(function (list) {
+    if (G_SkipCategoryChange) return;
+    /* Item Category value is CategoryName (e.g. Consumables); GETITEMLIST accepts name or code */
+    var cat = ($('#frmDdlCategory').val() || '').toString().trim();
+    IndentMasterService.GetItemList(cat || 0).then(function (list) {
         G_ItemList = _toList(list);
         $('#tblIndentItemsBody tr').each(function () {
             var id = String($(this).attr('id') || '').replace('indentItemRow_', '');
             var current = $('#frmDdlItem_' + id).val();
             $('#frmDdlItem_' + id).replaceWith(_buildItemSelect(id, current));
         });
+    }).catch(function (err) {
+        console.error('GETITEMLIST failed:', err);
     });
 };
+
+/** Set Item Category by CategoryName or CategoryMaster.Code (legacy rows). */
+function _setCategoryDropdown(category, silent) {
+    var $ddl = $('#frmDdlCategory');
+    var val = String(category == null ? '' : category).trim();
+    var apply = function (v) {
+        if (silent) G_SkipCategoryChange = true;
+        try {
+            $ddl.val(v).trigger('change');
+        } finally {
+            G_SkipCategoryChange = false;
+        }
+    };
+    if (!val) {
+        apply('');
+        return;
+    }
+    if ($ddl.find('option').filter(function () { return String($(this).val()) === val; }).length) {
+        apply(val);
+        return;
+    }
+    var byText = $ddl.find('option').filter(function () {
+        return $.trim($(this).text()) === val;
+    }).first();
+    if (byText.length) {
+        apply(byText.val());
+        return;
+    }
+    /* Unknown saved value — keep selectable so edit still shows it */
+    $ddl.append($('<option>').val(val).text(val));
+    apply(val);
+}
 
 window.OpenIndentForm = function (mode, code, statusHint) {
     var ModuleName = $('#ERPHeading').text().trim();
@@ -658,7 +695,6 @@ function _loadIndentForEdit(code) {
         $('#frmTxtIndentNo').val(header.IndentNoWithPrefix || header.IndentNo || '');
         $('#frmTxtIndentDate').val(header.IndentDate ? String(header.IndentDate).substring(0, 10) : '');
         $('#frmDdlWarehouse').val(String(header.GodownMaster_Code || '')).trigger('change');
-        $('#frmDdlCategory').val(String(header.Category || '')).trigger('change');
         $('#frmTxtStatus').val(header.Status || 'Pending');
         $('#frmTxtFinYear').val(header.FinYear || '');
         $('#frmTxtDueDate').val(header.DueDate ? String(header.DueDate).substring(0, 10) : '');
@@ -679,8 +715,12 @@ function _loadIndentForEdit(code) {
         $('.cfg-verified').show();
         $('#floatIndentNo').text($('#frmTxtIndentNo').val() || ('#' + code));
 
-        if (header.Category) {
-            IndentMasterService.GetItemList(header.Category).then(function (list) {
+        /* Bind Item Category (DDL_CATEGORYLIST), then filter items (GETITEMLIST) */
+        _setCategoryDropdown(header.Category, true);
+
+        var catKey = ($('#frmDdlCategory').val() || header.Category || '').toString().trim();
+        if (catKey) {
+            IndentMasterService.GetItemList(catKey).then(function (list) {
                 G_ItemList = _toList(list);
                 _fillDetailRows(details);
             }).catch(function () { _fillDetailRows(details); });

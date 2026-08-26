@@ -139,6 +139,13 @@ const PurchaseOrderStoreService = {
     UpdateMailSend: function UpdateMailSend(code) {
         let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/UpdateMailSend?Code=${encodeURIComponent(code)}`;
         return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
+    },
+
+    GetPO_GRNDetails: function GetPO_GRNDetails(purchaseOrderMasterCode, itemMasterCode) {
+        let url = UrlService.API_ENDPOINT_PurchaseOrderMaster +
+            `/GetPO_GRNDetails?PurchaseOrderMaster_Code=${encodeURIComponent(purchaseOrderMasterCode || 0)}` +
+            `&ItemMaster_Code=${encodeURIComponent(itemMasterCode || 0)}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     }
 
 }
