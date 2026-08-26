@@ -1107,6 +1107,38 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════
+     PO GRN DETAILS MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalPOGrnDetails" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;padding:14px 20px;">
+                <h5 class="modal-title" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-truck-loading me-2"></i>GRN Details
+                    <span id="modalPOGrnDetailsItemName" style="font-weight:500;opacity:0.9;font-size:0.82rem;"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:16px 18px;">
+                <div class="po-grid-wrap" style="margin-bottom:0;">
+                    <div class="table-wrapper po-table-scroll" style="max-height:360px;">
+                        <table id="tblPOGrnDetails" class="table table-sm table-hover mb-0">
+                            <thead id="tblPOGrnDetailsHeader"></thead>
+                            <tbody id="tblPOGrnDetailsBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="paginator px-3 py-2" id="paginator-tblPOGrnDetails"></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top:1px solid #eef2ff;padding:10px 20px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
      MOBILE ITEM ENTRY MODAL
 ═══════════════════════════════════════════════════ -->
 <div class="modal fade" id="modalMobileItemEntry" tabindex="-1" aria-hidden="true"
