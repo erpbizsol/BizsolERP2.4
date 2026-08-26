@@ -591,6 +591,7 @@ function Approval(Code) {
     POApprovalService.POApproved(Code, FrmAction, FrmType).then(function (approvedata) {
         if (approvedata.Status === "Y") {
             toastr.success(approvedata.Msg);
+            CloseModal();
             unApprovedPO();
             GetWebNotificationList();
         }
