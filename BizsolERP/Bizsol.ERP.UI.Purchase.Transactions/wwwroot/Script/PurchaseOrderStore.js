@@ -2035,6 +2035,13 @@ window.ViewPO = function (code) {
                 <td class="text-end">${det.QtyMT || 0}</td>
                 <td class="text-end">${parseFloat(det.Rate || 0).toFixed(2)}</td>
                 <td class="text-end">${parseFloat(det.Amount || 0).toFixed(2)}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm" title="GRN Details"
+                        style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;border:none;border-radius:6px;font-size:0.72rem;padding:4px 10px;"
+                        onclick="ViewPOGrnDetails('${header.Code}','${det.ItemMaster_Code}')">
+                        <i class="fa fa-truck-loading me-1"></i>GRN Details
+                    </button>
+                </td>
             </tr>`;
             });
 
@@ -2117,6 +2124,7 @@ window.ViewPO = function (code) {
                             <th class="text-end">Qty</th>
                             <th class="text-end">Rate</th>
                             <th class="text-end">Value</th>
+                            <th class="text-center">GRN Details</th>
                         </tr>
                     </thead>
                     <tbody>${detailRows}</tbody>
@@ -2128,6 +2136,70 @@ window.ViewPO = function (code) {
             toastr.error('Error loading PO details.');
             console.error(err);
         });
+    });
+};
+
+function NormalizePOGrnDetailsResponse(data) {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.Table)) return data.Table;
+    if (Array.isArray(data.table)) return data.table;
+    if (Array.isArray(data[0])) return data[0];
+    return [];
+}
+
+window.ViewPOGrnDetails = function (purchaseOrderMasterCode, itemMasterCode) {
+    const itemName = (G_ItemMasterList.find(i => String(i.Code) === String(itemMasterCode)) || {}).Name || '';
+    $('#modalPOGrnDetailsItemName').text(itemName ? ' — ' + itemName : '');
+    $('#tblPOGrnDetailsHeader').html('');
+    $('#tblPOGrnDetailsBody').html('<tr><td colspan="5" class="text-center text-muted py-3">Loading GRN details...</td></tr>');
+    $('#paginator-tblPOGrnDetails').html('');
+    $('#modalPOGrnDetails').modal('show');
+
+    PurchaseOrderStoreService.GetPO_GRNDetails(purchaseOrderMasterCode, itemMasterCode).then(function (data) {
+        const rows = NormalizePOGrnDetailsResponse(data);
+        if (!rows.length) {
+            $('#tblPOGrnDetailsHeader').html('');
+            $('#tblPOGrnDetailsBody').html('<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa fa-inbox fa-2x d-block mb-2"></i>No GRN details found.</td></tr>');
+            $('#paginator-tblPOGrnDetails').html('');
+            return;
+        }
+        const displayData = rows;
+
+        const stringFilterColumn = ['GRN No', 'Bill No'];
+        const numericFilterColumn = ['Billed Qty', 'Accepted Qty'];
+        const dateFilterColumn = ['GRN Date'];
+        const columnAlignment = {
+            'GRN No': 'center',
+            'GRN Date': 'center',
+            'Billed Qty': 'right',
+            'Accepted Qty': 'right'
+        };
+
+        BizsolCustomFilterGrid.CreateDataTable(
+            'tblPOGrnDetailsHeader',
+            'tblPOGrnDetailsBody',
+            displayData,
+            false,
+            [],
+            stringFilterColumn,
+            numericFilterColumn,
+            dateFilterColumn,
+            [],
+            [],
+            columnAlignment,
+            false,
+            null,
+            null,
+            null,
+            'Search GRN No, Bill No...'
+        );
+    }).catch(function (err) {
+        toastr.error('Error loading GRN details.');
+        console.error(err);
+        $('#tblPOGrnDetailsHeader').html('');
+        $('#tblPOGrnDetailsBody').html('<tr><td colspan="5" class="text-center text-danger py-3">Error loading GRN details.</td></tr>');
+        $('#paginator-tblPOGrnDetails').html('');
     });
 };
 
@@ -3024,6 +3096,7 @@ window.CalcRowValue = CalcRowValue;
 window.CalcTotals = CalcTotals;
 window.SavePO = SavePO;
 window.ViewPO = ViewPO;
+window.ViewPOGrnDetails = ViewPOGrnDetails;
 window.InitDeletePO = InitDeletePO;
 window.ConfirmDeletePO = ConfirmDeletePO;
 window.LoadSubProjects = LoadSubProjects;

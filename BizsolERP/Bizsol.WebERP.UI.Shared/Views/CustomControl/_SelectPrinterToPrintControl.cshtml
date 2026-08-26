@@ -31,12 +31,20 @@
 
      import { SelectPrinterToPrintService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/SelectPrinterToPrintService.js';
 
-      // $(document).ready(function () {
-      //                      $("#SelectPrinterToPrintControlModal").modal({
-      //                          backdrop: 'static',
-      //                      });
-      //                      $("#SelectPrinterToPrintControlModal").modal('show');
-      //              });
+     const selectPrinterPrintText = document.querySelector('#SelectPrinterToPrintControlModal #hfPrintText')?.value || '';
+
+     function cleanupSelectPrinterToPrintModal(modalEl) {
+         if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+             bootstrap.Modal.getInstance(modalEl)?.dispose();
+         }
+         if (modalEl) {
+             modalEl.remove();
+         }
+         document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+         document.body.classList.remove('modal-open');
+         document.body.style.removeProperty('overflow');
+         document.body.style.removeProperty('padding-right');
+     }
 
      function getddlPrinters() {
          SelectPrinterToPrintService.GetPrinterList().then(function (respone) {
@@ -55,6 +63,11 @@
                     });
 
                   $(document).ready(function () {
+                          const modalEl = document.getElementById('SelectPrinterToPrintControlModal');
+                          modalEl.addEventListener('hidden.bs.modal', function () {
+                              cleanupSelectPrinterToPrintModal(modalEl);
+                          }, { once: true });
+
                           $("#SelectPrinterToPrintControlModal").modal({
                               backdrop: 'static',
                           });
@@ -93,14 +106,12 @@
 
                 let file =   await fetch("../../_content/Bizsol.WebERP.UI.Shared/PrinterPRNFile/LabelInframat.txt")
                 let printtext= await file.text();
-                  debugger;
-                   
-
+        debugger;
           if (printerIP === '0' || printerIP === '') {
              toastr.error('Please select a printer');
              return;
          }
-          let printText = $('#hfPrintText').val();
+          let printText = selectPrinterPrintText || $('#SelectPrinterToPrintControlModal #hfPrintText').val();
            if (printText === '') {
              toastr.error('Print text is empty');
              return;
@@ -173,7 +184,8 @@
                                                       .replace(/#ItemName#/g, item.ItemName)
                                                             .replace(/#Weight#/g, parseFloat(item.QtyMT).toFixed(3)+" MT"+ "(Aprox), PCS("+item.Grade+")")
                                                       .replace(/#Size#/g, item.SizeDesp)
-                                                       .replace(/#Date#/g, new Date(item.GenerationDate).toISOString().slice(0, 10))
+                                                       //.replace(/#Date#/g, new Date(item.GenerationDate).toISOString().slice(0, 10))
+                                                       .replace(/#Date#/g, new Date().toISOString().slice(0, 10))
                                                     .replace(/#MotherID#/g, item.ParentIDNo)
                                                    .replace(/#Time#/g,  new Date().toTimeString().slice(0,5))
                                                .replace(/#Shift#/g, item.Shift)
