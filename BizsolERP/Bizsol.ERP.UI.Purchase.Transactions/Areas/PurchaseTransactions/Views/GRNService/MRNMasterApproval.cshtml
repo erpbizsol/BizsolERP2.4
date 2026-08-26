@@ -273,6 +273,46 @@
         padding: 7px 10px; vertical-align: middle;
         border: 1px solid #ede9fe; font-size: 0.8rem; color: #374151;
     }
+    .gpa-amount-summary-wrap { margin-bottom: 14px; }
+    .gpa-amount-summary {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 12px;
+    }
+    .gpa-amount-item {
+        background: #fff;
+        border: 1px solid #eef0f8;
+        border-radius: 8px;
+        padding: 8px 10px;
+        text-align: right;
+    }
+    .gpa-amount-lbl {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+        text-align: left;
+    }
+    .gpa-amount-val {
+        display: block;
+        font-size: 0.86rem;
+        font-weight: 800;
+        color: #1e293b;
+    }
+    .gpa-amount-item--net .gpa-amount-val { color: #667eea; font-size: 0.92rem; }
+    @@media (max-width: 992px) {
+        .gpa-amount-summary { grid-template-columns: repeat(2, 1fr); }
+    }
+    @@media (max-width: 576px) {
+        .gpa-amount-summary { grid-template-columns: 1fr; }
+    }
     .gpa-remarks-wrap  { margin-bottom: 14px; }
     .gpa-remarks-lbl { font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 5px; display: block; }
     .gpa-remarks-wrap textarea { font-size: 0.82rem; resize: vertical; }
@@ -353,6 +393,177 @@
         box-shadow:0 3px 10px rgba(22,163,74,0.35);
     }
     .btn-gpa-modal-attach.gpa-attach-has-files:hover { box-shadow:0 5px 14px rgba(22,163,74,0.45); }
+    .btn-gpa-history {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#6366f1,#4f46e5);
+        border:none; color:#fff; border-radius:9px; padding:9px 18px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(99,102,241,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-history:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(99,102,241,0.5); color:#fff; }
+    .gpa-history-summary {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    @@media (max-width: 992px) { .gpa-history-summary { grid-template-columns: repeat(2, 1fr); } }
+    @@media (max-width: 576px) { .gpa-history-summary { grid-template-columns: 1fr; } }
+    .mrn-history-summary-8 {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    @@media (max-width: 1400px) {
+        .mrn-history-summary-8 {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .mrn-history-summary-8 .gpa-history-card {
+            flex: 0 0 150px;
+            min-width: 150px;
+        }
+    }
+    .mrn-history-summary-8 .gpa-history-card-lbl {
+        font-size: 0.62rem;
+        line-height: 1.35;
+        min-height: 2.4em;
+        letter-spacing: 0.02em;
+    }
+    .mrn-history-budget-table thead tr th.text-end { text-align: right; }
+    .gpa-history-card {
+        border-radius: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .gpa-history-card-lbl {
+        font-size: 0.68rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
+    }
+    .gpa-history-card-val { font-size: 0.95rem; font-weight: 800; line-height: 1.3; }
+    .gpa-history-card--po { background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1px solid #93c5fd; }
+    .gpa-history-card--po .gpa-history-card-lbl { color: #1d4ed8; }
+    .gpa-history-card--po .gpa-history-card-val { color: #1e3a8a; }
+    .gpa-history-card--grn { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #86efac; }
+    .gpa-history-card--grn .gpa-history-card-lbl { color: #166534; }
+    .gpa-history-card--grn .gpa-history-card-val { color: #15803d; }
+    .gpa-history-card--payment { background: linear-gradient(135deg, #faf5ff, #f3e8ff); border: 1px solid #d8b4fe; }
+    .gpa-history-card--payment .gpa-history-card-lbl { color: #7c3aed; }
+    .gpa-history-card--payment .gpa-history-card-val { color: #6d28d9; }
+    .gpa-history-card--balance { background: linear-gradient(135deg, #fff7ed, #ffedd5); border: 1px solid #fdba74; }
+    .gpa-history-card--balance .gpa-history-card-lbl { color: #c2410c; }
+    .gpa-history-card--balance .gpa-history-card-val { color: #ea580c; }
+    .gpa-history-meta {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr 0.85fr;
+        gap: 10px 14px;
+        margin-bottom: 14px;
+        padding: 12px 14px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        font-size: 0.82rem; color: #475569;
+        align-items: end;
+    }
+    @@media (max-width: 992px) { .gpa-history-meta { grid-template-columns: 1fr 1fr; } }
+    @@media (max-width: 768px) { .gpa-history-meta { grid-template-columns: 1fr; } }
+    .gpa-history-meta strong, .gpa-history-meta-value {
+        display: block; color: #166534; font-weight: 700;
+        font-size: 0.82rem; line-height: 1.35; word-break: break-word;
+    }
+    .gpa-history-meta-code {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #64748b;
+        letter-spacing: 0.02em;
+    }
+    .gpa-history-filter-lbl {
+        display: block;
+        font-size: 0.68rem; font-weight: 700; color: #166534;
+        text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;
+    }
+    .gpa-history-filter-select {
+        width: 100%; font-size: 0.82rem;
+        border: 1px solid #bbf7d0; border-radius: 8px;
+        padding: 6px 10px; background: #fff; color: #1e293b;
+    }
+    .gpa-history-table { width: 100%; border-collapse: collapse; margin-bottom: 0; font-size: 0.78rem; }
+    .gpa-history-table thead tr th {
+        background: #f0fdf4; color: #166534;
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        text-align: center; vertical-align: middle;
+        padding: 10px 10px; white-space: nowrap;
+        border-bottom: 2px solid #bbf7d0;
+        position: sticky; top: 0; z-index: 2;
+    }
+    .gpa-history-table tbody tr td {
+        padding: 9px 10px; vertical-align: middle;
+        border-bottom: 1px solid #f3f4f6; color: #374151;
+    }
+    .gpa-history-table tbody tr:hover td { background: #f0fdf4; }
+    .gpa-history-type {
+        display: inline-block; font-size: 0.68rem; font-weight: 700;
+        padding: 3px 8px; border-radius: 6px; letter-spacing: 0.03em;
+    }
+    .gpa-history-type-po { background: #dbeafe; color: #1d4ed8; }
+    .gpa-history-type-grn { background: #d1fae5; color: #047857; }
+    .gpa-history-type-other { background: #f3f4f6; color: #64748b; }
+    .gpa-budget-status {
+        display: inline-block; font-size: 0.68rem; font-weight: 700;
+        padding: 3px 8px; border-radius: 6px; text-transform: capitalize;
+    }
+    .gpa-budget-status--approved { background: #dcfce7; color: #15803d; }
+    .gpa-budget-status--pending { background: #dbeafe; color: #1d4ed8; }
+    .gpa-budget-status--rejected { background: #fee2e2; color: #b91c1c; }
+    .gpa-budget-status--other { background: #f3f4f6; color: #374151; }
+    #modalMrnHistory .modal-dialog {
+        max-width: min(1480px, calc(100vw - 2rem));
+        margin: 1.5rem auto;
+        max-height: calc(100vh - 2rem);
+    }
+    #modalMrnHistory .modal-content {
+        border-radius: 18px; border: none;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+        overflow: hidden; display: flex; flex-direction: column;
+        max-height: calc(100vh - 2rem);
+    }
+    #modalMrnHistory .mrn-history-modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 22px 16px; border: none;
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #fff;
+    }
+    #modalMrnHistory .mrn-history-modal-close {
+        background: rgba(255, 255, 255, 0.18); border: none; color: #fff;
+        width: 32px; height: 32px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 14px; flex-shrink: 0;
+    }
+    #modalMrnHistory .mrn-history-modal-close:hover { background: rgba(255, 255, 255, 0.32); }
+    #modalMrnHistory .mrn-history-modal-body {
+        padding: 16px 18px; background: #fff;
+        flex: 1 1 auto; overflow: hidden;
+        display: flex; flex-direction: column; min-height: 0;
+    }
+    #modalMrnHistory .gpa-history-table-scroll-wrap {
+        flex: 0 1 auto; overflow: auto; min-height: 80px;
+        max-height: min(240px, calc(100vh - 520px));
+        border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px;
+    }
+    #modalMrnHistory .mrn-history-budget-scroll {
+        max-height: min(320px, calc(100vh - 560px));
+        margin-bottom: 14px;
+    }
+    #modalMrnHistory .gpa-items-title {
+        font-size: 0.78rem; font-weight: 700; color: #166534;
+        text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+    }
     #AttachmentControlmodal { z-index:1080 !important; }
     .btn-gpa-back {
         display: inline-flex; align-items: center; gap: 6px;
@@ -497,7 +708,6 @@
                             <thead>
                                 <tr>
                                     <th style="width:40px;">#</th>
-                                    <th>Bill no</th>
                                     <th style="width:90px;">PO no</th>
                                     <th>Item</th>
                                     <th style="width:72px;">Bill Qty</th>
@@ -509,13 +719,17 @@
                             </thead>
                             <tbody id="gpaModalItemsBody">
                                 <tr>
-                                    <td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                    <td colspan="8" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
                                         <i class="fa fa-spinner fa-spin me-1"></i>Loading…
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <div class="gpa-amount-summary-wrap">
+                    <div id="gpaModalAmountSummary"></div>
                 </div>
 
                 <div class="gpa-remarks-wrap">
@@ -552,6 +766,10 @@
                         onclick="SubmitApproval('Approve')" style="display:none;">
                     <i class="fa fa-check"></i>Approve
                 </button>
+                <button type="button" id="gpaBtnHistoryAction" class="btn-gpa-history"
+                        onclick="OpenMrnApprovalHistory()" title="Party / Project history">
+                    <i class="fa fa-history"></i>History
+                </button>
                 <button type="button" class="btn-gpa-close ms-auto" onclick="CloseDetailModal()">
                     <i class="fa fa-times-circle"></i>Close
                 </button>
@@ -582,3 +800,90 @@
 </div>
 
 <div id="MRNApproval_AttachmentControlmodal"></div>
+
+<div class="modal fade" id="modalMrnHistory" tabindex="-1" role="dialog"
+     aria-hidden="true" style="z-index:1070;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header mrn-history-modal-header">
+                <h5 class="modal-title mb-0" style="font-size:1rem;font-weight:700;">
+                    <i class="fa fa-history me-2"></i>Party / Project History
+                </h5>
+                <button type="button" class="mrn-history-modal-close" data-bs-dismiss="modal"
+                        aria-label="Close" onclick="CloseMrnApprovalHistoryModal()" title="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body mrn-history-modal-body">
+                <div id="mrnHistoryMeta" class="gpa-history-meta">
+                    <div>
+                        <span class="gpa-history-filter-lbl">Party</span>
+                        <strong id="mrnHistPartyName">—</strong>
+                    </div>
+                    <div>
+                        <span class="gpa-history-filter-lbl">Project</span>
+                        <span id="mrnHistProjectName" class="gpa-history-meta-value">—</span>
+                    </div>
+                    <div>
+                        <span class="gpa-history-filter-lbl">Sub Project</span>
+                        <span id="mrnHistSubProjectName" class="gpa-history-meta-value">—</span>
+                    </div>
+                    
+                </div>
+                <div id="mrnHistorySummary" class="mrn-history-summary-8"></div>
+                <div id="mrnHistoryLoading" style="display:none;text-align:center;padding:24px;color:#64748b;">
+                    <i class="fa fa-spinner fa-spin me-2"></i>Loading history…
+                </div>
+                <div id="mrnHistoryEmpty" style="display:none;text-align:center;padding:24px;color:#94a3b8;font-size:0.85rem;">
+                    No history found for this party, project and sub project.
+                </div>
+                <div class="gpa-items-title">Item Budget History</div>
+                <div class="gpa-history-table-scroll-wrap mrn-history-budget-scroll" id="mrnHistoryBudgetWrap" style="display:none;">
+                    <table class="gpa-history-table mrn-history-budget-table">
+                        <thead>
+                            <tr>
+                                <th>BOS Type</th>
+                                <th>Item Name</th>
+                                <th class="text-end">(A) Total PO/WO Qty</th>
+                                <th class="text-end">(B) Total PO Amt With Gst</th>
+                                <th class="text-end">(C) Old GRN QTY With Gst</th>
+                                <th class="text-end">(D) Old GRN AMT with GST</th>
+                                <th class="text-end">(E) Current GRN QTY</th>
+                                <th class="text-end">(F) Current GRN Amount with gst</th>
+                                <th class="text-end">(G) Net GRN Amount (D+F)</th>
+                                <th class="text-end">(H) Balance GRN Amt (B-G)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mrnHistoryBudgetBody"></tbody>
+                    </table>
+                </div>
+             @*    <div class="gpa-items-title" style="margin-top:4px;">Transaction History</div>
+                <div id="mrnHistoryTxnEmpty" style="display:none;text-align:center;padding:16px;color:#94a3b8;font-size:0.82rem;">
+                    No PO / GRN transaction history found.
+                </div> *@
+                <div class="gpa-history-table-scroll-wrap" id="mrnHistoryTableWrap" style="display:none;">
+                    <table class="gpa-history-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Doc No</th>
+                                <th>Date</th>
+                                <th>BOS Type</th>
+                                <th>Item Name</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mrnHistoryTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding:12px 18px;background:#fff;border-top:1px solid #e5e7eb;">
+                <button type="button" class="btn-gpa-close" onclick="CloseMrnApprovalHistoryModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
