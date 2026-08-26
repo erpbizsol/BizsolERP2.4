@@ -35,11 +35,241 @@ function applyAllowManualWeightState() {
     }
 }
 
+const PLAN_SELECT2_FIELDS = '#PlannedMyModal select.ddlItemNameRow, #PlannedMyModal select.ddlSlitWidthRow, #PlannedMyModal select.ddlODWidthRow, #PlannedMyModal select#ddlMachineNo';
+const PLAN_DROPDOWN_MAX_LIST_HEIGHT = 220;
+const PLAN_DROPDOWN_MIN_LIST_HEIGHT = 96;
+// Search box + borders that sit above the option list inside the dropdown.
+const PLAN_DROPDOWN_CHROME_HEIGHT = 54;
+
+function isPlanCompactView() {
+    return window.matchMedia('(max-width: 991.98px)').matches;
+}
+
+function getPlanSelect2Container($select) {
+    return $select.next('.select2-container');
+}
+
+// Select2 renders the open list into a wrapper appended to the dropdownParent,
+// so the open one is always a direct child of the plan modal.
+function getPlanOpenDropdown() {
+    const $wrapper = $('#PlannedMyModal').children('.select2-container--open').last();
+    if (!$wrapper.length) {
+        return null;
+    }
+    const $dropdown = $wrapper.find('.select2-dropdown').first();
+    return $dropdown.length ? { $wrapper: $wrapper, $dropdown: $dropdown } : null;
+}
+
+// Measured the same way Select2 measures the viewport when it picks a direction.
+function getPlanRoomBelow($container) {
+    return document.documentElement.clientHeight - $container[0].getBoundingClientRect().bottom;
+}
+
+function applyPlanDropdownListHeight($container) {
+    const modal = document.getElementById('PlannedMyModal');
+    if (!modal) {
+        return;
+    }
+    const usable = Math.floor(getPlanRoomBelow($container) - PLAN_DROPDOWN_CHROME_HEIGHT);
+    const listHeight = Math.max(PLAN_DROPDOWN_MIN_LIST_HEIGHT, Math.min(PLAN_DROPDOWN_MAX_LIST_HEIGHT, usable));
+    modal.style.setProperty('--plan-dd-list-height', listHeight + 'px');
+}
+
+// Select2 flips the list above the field when the space below it is smaller than
+// the list. Scrolling the modal body before the list is rendered gives it that
+// space, so it keeps opening downwards on small screens.
+function reservePlanDropdownSpace($select) {
+    const $container = getPlanSelect2Container($select);
+    if (!$container.length) {
+        return;
+    }
+    const scroller = document.querySelector('#PlannedMyModal .modal-body');
+    const wanted = PLAN_DROPDOWN_MAX_LIST_HEIGHT + PLAN_DROPDOWN_CHROME_HEIGHT;
+    const roomBelow = getPlanRoomBelow($container);
+    if (scroller && roomBelow < wanted) {
+        // Never scroll so far that the field itself leaves the modal body.
+        const roomAboveField = $container[0].getBoundingClientRect().top - scroller.getBoundingClientRect().top - 8;
+        const scrollLeftOver = Math.max(scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop, 0);
+        const shift = Math.min(wanted - roomBelow, roomAboveField, scrollLeftOver);
+        if (shift > 0) {
+            scroller.scrollTop += shift;
+        }
+    }
+    applyPlanDropdownListHeight($container);
+}
+
+function forcePlanDropdownBelow($container) {
+    const open = getPlanOpenDropdown();
+    if (!open || !open.$dropdown.hasClass('select2-dropdown--above')) {
+        return;
+    }
+    const $modal = $('#PlannedMyModal');
+    if (!$modal.length) {
+        return;
+    }
+    const modalOffset = $modal.offset();
+    const containerOffset = $container.offset();
+
+    open.$dropdown.removeClass('select2-dropdown--above').addClass('select2-dropdown--below');
+    $container.removeClass('select2-container--above').addClass('select2-container--below');
+    open.$wrapper.css({
+        top: containerOffset.top + $container.outerHeight(false) - modalOffset.top,
+        left: containerOffset.left - modalOffset.left
+    });
+}
+
+// The list is wider than the narrow grid columns it belongs to, so keep it from
+// spilling out of the modal (the modal clips horizontally).
+function clampPlanDropdownHorizontally() {
+    const open = getPlanOpenDropdown();
+    const $modal = $('#PlannedMyModal');
+    if (!open || !$modal.length) {
+        return;
+    }
+    const maxLeft = $modal.outerWidth() - open.$dropdown.outerWidth(false) - 8;
+    const currentLeft = parseFloat(open.$wrapper.css('left')) || 0;
+    open.$wrapper.css('left', Math.max(8, Math.min(currentLeft, maxLeft)));
+}
+
+function alignPlanDropdown($select) {
+    const $container = getPlanSelect2Container($select);
+    if (!$container.length) {
+        return;
+    }
+    applyPlanDropdownListHeight($container);
+    forcePlanDropdownBelow($container);
+    clampPlanDropdownHorizontally();
+}
+
+function bindPlanSelect2DropDirection() {
+    if (window.__rmStockPlanSelect2DirectionBound) {
+        return;
+    }
+    window.__rmStockPlanSelect2DirectionBound = true;
+
+    $(document)
+        .on('select2:opening', PLAN_SELECT2_FIELDS, function () {
+            // Phone uses the layout bottom sheet. Do not scroll/reposition the
+            // field or the sheet closes before a tap can land on an option.
+            if (isPlanCompactView()) {
+                return;
+            }
+            reservePlanDropdownSpace($(this));
+        })
+        .on('select2:open', PLAN_SELECT2_FIELDS, function () {
+            if (isPlanCompactView()) {
+                return;
+            }
+            const $select = $(this);
+            alignPlanDropdown($select);
+            $(window).off('.planDropdown').on('resize.planDropdown orientationchange.planDropdown', function () {
+                if (!getPlanSelect2Container($select).hasClass('select2-container--open')) {
+                    return;
+                }
+                alignPlanDropdown($select);
+            });
+        })
+        .on('select2:close', PLAN_SELECT2_FIELDS, function () {
+            $(window).off('.planDropdown');
+            const modal = document.getElementById('PlannedMyModal');
+            if (modal) {
+                modal.style.removeProperty('--plan-dd-list-height');
+            }
+        });
+}
+
+function getPlanSelect2InitOpts() {
+    var opts = {
+        dropdownParent: $('#PlannedMyModal'),
+        width: '100%'
+    };
+    if (isPlanCompactView()) {
+        // Layout auto-focuses the search box, which opens the keyboard and
+        // immediately closes this modal's sheet. Hide search on the phone.
+        opts.minimumResultsForSearch = Infinity;
+    }
+    return opts;
+}
+
+function initPlanSelect2($el) {
+    if (!$el || !$el.length || !$.fn.select2) {
+        return;
+    }
+    $el.each(function () {
+        var $one = $(this);
+        try {
+            if ($one.data('select2')) {
+                try { $one.select2('close'); } catch (eClose) { }
+                $one.select2('destroy');
+            }
+        } catch (eDestroy) { }
+        $one.select2(getPlanSelect2InitOpts());
+    });
+}
+
+// Phone: the opening tap is replayed onto .select2-backdrop (~300ms later) and
+// Select2/layout treat that as "click outside" so the sheet closes before a
+// choice can be made. Hold the Plan modal list open through that ghost tap.
+function bindPlanSelect2MobileHoldOpen() {
+    if (window.__rmStockPlanSelect2HoldOpenBound) {
+        return;
+    }
+    window.__rmStockPlanSelect2HoldOpenBound = true;
+
+    var holdOpenUntil = 0;
+
+    function planModalIsOpen() {
+        return $('#PlannedMyModal').hasClass('show');
+    }
+
+    function shouldHoldPlanDropdown() {
+        return isPlanCompactView() && planModalIsOpen() && Date.now() < holdOpenUntil;
+    }
+
+    function blockGhostBackdropClose(e) {
+        if (!shouldHoldPlanDropdown()) {
+            return;
+        }
+        var t = e.target;
+        if (!t || !t.closest || !t.closest('.select2-backdrop')) {
+            return;
+        }
+        e.stopImmediatePropagation();
+        e.preventDefault();
+    }
+
+    ['pointerdown', 'mousedown', 'touchstart', 'touchend', 'click'].forEach(function (type) {
+        document.addEventListener(type, blockGhostBackdropClose, true);
+    });
+
+    $(document).on('select2:open', PLAN_SELECT2_FIELDS, function () {
+        if (!isPlanCompactView() || !planModalIsOpen()) {
+            return;
+        }
+        holdOpenUntil = Date.now() + 500;
+        var $backdrop = $('.select2-backdrop');
+        if ($backdrop.length) {
+            $backdrop.css('pointer-events', 'none');
+            window.setTimeout(function () {
+                $('.select2-backdrop').css('pointer-events', '');
+            }, 500);
+        }
+    });
+
+    $(document).on('select2:closing', PLAN_SELECT2_FIELDS, function (e) {
+        if (shouldHoldPlanDropdown()) {
+            e.preventDefault();
+        }
+    });
+}
+
 $(document).ready(function () {
     loadYieldConfiguration();
     let isInitialLoad = true;
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     bindRMStockFilterTotalHooks();
+    bindPlanSelect2DropDirection();
+    bindPlanSelect2MobileHoldOpen();
    
     $('#current-stock').show();
     $('#unApproved-planned').hide();
@@ -385,24 +615,9 @@ function fillTableWithExistingData(response) {
                 $row.find('input.txtWeightPerSlitRow').val(weightPerSlitVal.toFixed(3));
                 $row.find('input.txtTotalWeightRow').val(weightVal);
             });
-            if ($('.ddlItemNameRow').length) {
-                $('.ddlItemNameRow').select2({
-                    dropdownParent: $('#PlannedMyModal'),
-                    width: '-webkit-fill-available'
-                });
-            }
-            if ($('.ddlSlitWidthRow').length) {
-                $('.ddlSlitWidthRow').select2({
-                    dropdownParent: $('#PlannedMyModal'),
-                    width: '-webkit-fill-available'
-                });
-            }
-            if ($('.ddlODWidthRow').length) {
-                $('.ddlODWidthRow').select2({
-                    dropdownParent: $('#PlannedMyModal'),
-                    width: '-webkit-fill-available'
-                });
-            }
+            initPlanSelect2($('#RMStockCurrentPlanned select.ddlItemNameRow'));
+            initPlanSelect2($('#RMStockCurrentPlanned select.ddlSlitWidthRow'));
+            initPlanSelect2($('#RMStockCurrentPlanned select.ddlODWidthRow'));
             enableNewRowAddition();
             applyAllowManualWeightState();
         } else {
@@ -445,12 +660,7 @@ function enableNewRowAddition() {
 
     GetRMStockItemNameList().then(function (itemNameList) {
         BindSelectList1($row.find('select.ddlItemNameRow')[0], itemNameList);
-        if ($('.ddlItemNameRow').length) {
-            $('.ddlItemNameRow').select2({
-                dropdownParent: $('#PlannedMyModal'),
-                width: '-webkit-fill-available'
-            });
-        }
+        initPlanSelect2($ddlItem);
         if (itemNameList && itemNameList.length === 1) {
             var $itemDropdown = $row.find('select.ddlItemNameRow');
             if ($itemDropdown.length) {
@@ -469,18 +679,8 @@ function enableNewRowAddition() {
     Promise.all([GetRMStockWidthList(), GetRMStockODSizeList()]).then(function ([slitWidthList, odSizeList]) {
         BindSelectList1($row.find('select.ddlSlitWidthRow')[0], slitWidthList);
         BindSelectList1($row.find('select.ddlODWidthRow')[0], odSizeList);
-        if ($('.ddlSlitWidthRow').length) {
-            $('.ddlSlitWidthRow').select2({
-                dropdownParent: $('#PlannedMyModal'),
-                width: '-webkit-fill-available'
-            });
-        }
-        if ($('.ddlODWidthRow').length) {
-            $('.ddlODWidthRow').select2({
-                dropdownParent: $('#PlannedMyModal'),
-                width: '-webkit-fill-available'
-            });
-        }
+        initPlanSelect2($ddlWidth);
+        initPlanSelect2($odDropdown);
         applyAllowManualWeightState();
     });
 }
@@ -723,11 +923,7 @@ function GetRMStockMachineNoList() {
         if (response && response.length > 0) {
             var machineList = response.map((item) => ({ Code: item.Code, Desp: item.MachineNo }));
             BindSelectList1($('#ddlMachineNo')[0], machineList);
-
-            $('#ddlMachineNo').select2({
-                dropdownParent: $('#PlannedMyModal'),
-                width: '-webkit-fill-available'
-            });
+            initPlanSelect2($('#ddlMachineNo'));
 
             if (response.length === 1) {
                 var firstMachineCode = response[0].Code;
@@ -939,30 +1135,9 @@ function copyFromPrevious() {
                         $newRow.find('#txtWeightPerSlit_' + rowId).val(weightPerSlitVal.toFixed(3));
                         $newRow.find('#txtTotalWeight_' + rowId).val(weightVal);
 
-                        if ($('.ddlItemNameRow').length) {
-                            $('.ddlItemNameRow').select2({
-                                dropdownParent: $('#PlannedMyModal'),
-                                width: '-webkit-fill-available'
-                            });
-                        }
-                        if ($('.ddlSlitWidthRow').length) {
-                            $('.ddlSlitWidthRow').select2({
-                                dropdownParent: $('#PlannedMyModal'),
-                                width: '-webkit-fill-available'
-                            });
-                        }
-                        if ($('.ddlODWidthRow').length) {
-                            $('.ddlODWidthRow').select2({
-                                dropdownParent: $('#PlannedMyModal'),
-                                width: '-webkit-fill-available'
-                            });
-                        }
-                        if ($.fn.select2) {
-                            try {
-                                $ddlItem.select2({ dropdownParent: $('#PlannedMyModal'), width: '-webkit-fill-available' });
-                                $ddlWidth.select2({ dropdownParent: $('#PlannedMyModal'), width: '-webkit-fill-available' });
-                            } catch (e) { }
-                        }
+                        initPlanSelect2($ddlItem);
+                        initPlanSelect2($ddlWidth);
+                        initPlanSelect2($newRow.find('select.ddlODWidthRow'));
                     });
 
                     setTimeout(function() {
