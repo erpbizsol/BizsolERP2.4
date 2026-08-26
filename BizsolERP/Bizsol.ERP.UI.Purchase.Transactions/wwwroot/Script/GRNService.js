@@ -730,7 +730,12 @@ function mapGRNRowsToGrid(rows) {
             '<i class="fas fa-paperclip"></i></button>' +
             '<button class="im-btn-delete" title="Delete" onclick="confirmDeleteGRN(' + code + ', \'' + (item.GRNo ?? item.MRNNo ?? '') + '\')">' +
             '<i class="fas fa-trash-can"></i></button>';
-        var patch = { Action: btns };
+        // Explicit numeric field for Total Bill Amount — used by TotalColumns for footer grand total
+        const billAmt = parseFloat(String(
+            item.TotalBillAmountManual ?? item.totalBillAmountManual
+            ?? item['Total Bill Amount'] ?? item['TOTAL BILL AMOUNT'] ?? 0
+        ).replace(/,/g, '')) || 0;
+        var patch = { 'Total Bill Amount': billAmt, Action: btns };
         return Object.assign({}, item, patch);
     });
 }
@@ -753,11 +758,16 @@ function getGRNListHiddenColumns() {
     ];
     cols.push("Verify");
     cols.push("__bizsolRowClass");
+    // Hide raw API field variants so only our mapped 'Total Bill Amount' column shows
+    cols.push("TotalBillAmountManual");
+    cols.push("totalBillAmountManual");
+    cols.push("TOTAL BILL AMOUNT");
     return cols;
 }
 
 function getGRNListColumnAlignment() {
     return {
+        'Total Bill Amount': 'right',
         Action: "center;min-width:360px;white-space:nowrap;",
     };
 }
@@ -940,6 +950,8 @@ function refreshGRNListGrid() {
     const StringdoubleFilterColumn = [];
     const hiddenColumns = getGRNListHiddenColumns();
     const ColumnAlignment = getGRNListColumnAlignment();
+    const TotalColumns = ['Total Bill Amount'];
+    const CommaColumns = ['Total Bill Amount'];
 
     if (typeof window.columnFilters === "object" && window.columnFilters !== null) {
         window.columnFilters = {};
@@ -959,9 +971,9 @@ function refreshGRNListGrid() {
         hiddenColumns,
         ColumnAlignment,
         true,
+        TotalColumns,
         null,
-        null,
-        null,
+        CommaColumns,
         "Search by MRN No, Bill No, Party, Project..."
     );
 }
@@ -1030,7 +1042,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Allow only positive numbers with decimals in amount fields
-    ['txtFreightCharges', 'txtTotalBillAmountManual', 'txtTDSAmount', 'txtDedution'].forEach(id => {
+    ['txtFreightCharges', 'txtFreightChargesGrid', 'txtTotalBillAmountManual', 'txtTotalBillAmountManualGrid', 'txtTDSAmount', 'txtDedution'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('keypress', e => {
@@ -1041,7 +1053,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         el.addEventListener('input', () => {
             el.value = el.value.replace(/[^\d.]/g, '').replace(/(\..*?)\..*/g, '$1');
-            if (id === 'txtFreightCharges') calcTotalBillAmount();
+            if (id === 'txtFreightCharges' || id === 'txtFreightChargesGrid') onGrnFreightAmountInput(el);
+            else if (id === 'txtTotalBillAmountManual' || id === 'txtTotalBillAmountManualGrid') onGrnTotalBillAmountInput(el);
             else calcNetPayable();
         });
     });
@@ -3044,6 +3057,25 @@ function calcRowAmount(tr) {
     updateMobileCards();
 }
 
+function setGrnAmountMirrorPair(primaryId, mirrorId, value) {
+    [primaryId, mirrorId].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.value = value;
+    });
+}
+
+function onGrnFreightAmountInput(el) {
+    if (!el) return;
+    setGrnAmountMirrorPair('txtFreightCharges', 'txtFreightChargesGrid', el.value);
+    calcTotalBillAmount();
+}
+
+function onGrnTotalBillAmountInput(el) {
+    if (!el) return;
+    setGrnAmountMirrorPair('txtTotalBillAmountManual', 'txtTotalBillAmountManualGrid', el.value);
+    calcNetPayable();
+}
+
 function calcTotal() {
     let total = 0;
     document.querySelectorAll('#itemTbody tr').forEach(tr => {
@@ -3058,8 +3090,7 @@ function calcTotal() {
 function calcTotalBillAmount() {
     const lineTotal = parseFloat(document.getElementById('txtTotalAmount')?.value) || 0;
     const freight   = parseFloat(document.getElementById('txtFreightCharges')?.value) || 0;
-    const elManual  = document.getElementById('txtTotalBillAmountManual');
-    if (elManual) elManual.value = (lineTotal + freight).toFixed(2);
+    setGrnAmountMirrorPair('txtTotalBillAmountManual', 'txtTotalBillAmountManualGrid', (lineTotal + freight).toFixed(2));
     calcNetPayable();
 }
 
@@ -4337,24 +4368,34 @@ function grnPrintBuildItemTableRowsHtml(detailRows) {
 function grnResolvePrintTotals(listRow, lineTotal) {
     const deduction = grnPrintDetailNum(listRow, ['Deduction', 'deduction', 'Dedution', 'dedution']);
     const tdsAmount = grnPrintDetailNum(listRow, ['TDSAmount', 'tdsAmount']);
-    const manualTotal = grnPrintDetailNum(listRow, ['TotalBillAmountManual', 'totalBillAmountManual']);
-    const freightCharges = grnPrintDetailNum(listRow, ['FreightCharges', 'freightCharges'])
-        || (manualTotal > (lineTotal || 0) ? manualTotal - (lineTotal || 0) : 0);
-    const totalBillAmt = manualTotal || ((lineTotal || 0) + freightCharges) || lineTotal || 0;
+    const lineTotalAmt = lineTotal || 0;
+    const freightCharges = grnPrintDetailNum(listRow, ['FreightCharges', 'freightCharges']);
+    const savedBillAmt = grnPrintDetailNum(listRow, ['TotalBillAmountManual', 'totalBillAmountManual']);
 
-    // Net Payable must follow Total Taxable Amount (manual), not line sum or stale stored NetPayable.
+    // Use savedBillAmountManual when available (preserves manually-entered totals).
+    // Do NOT back-calculate freight from the difference — TotalBillAmountManual may
+    // have been set independently and back-calc would produce a false freight value.
+    let totalBillAmt;
+    if (savedBillAmt > 0) {
+        totalBillAmt = savedBillAmt;
+    } else if (lineTotalAmt > 0) {
+        totalBillAmt = lineTotalAmt + freightCharges;
+    } else {
+        totalBillAmt = freightCharges;
+    }
+
     let netPayable = 0;
     if (totalBillAmt > 0) {
         netPayable = Math.max(0, totalBillAmt - tdsAmount - deduction);
     } else {
         netPayable = grnPrintDetailNum(listRow, ['NetPayable', 'netPayable']);
-        if (!netPayable && lineTotal) {
-            netPayable = Math.max(0, lineTotal - tdsAmount - deduction);
+        if (!netPayable && lineTotalAmt) {
+            netPayable = Math.max(0, lineTotalAmt - tdsAmount - deduction);
         }
     }
 
     return {
-        lineTotalAmt: lineTotal || 0,
+        lineTotalAmt: lineTotalAmt,
         freightCharges: freightCharges,
         totalBillAmt: totalBillAmt,
         deduction: deduction,
@@ -4481,6 +4522,7 @@ function grnBuildPrintReportInnerHtml(listRow, detailRows, codeNum, companyInfo)
     const totals = grnResolvePrintTotals(listRow, tableBuilt.totalAmt);
     const tableFooterAmt = totals.lineTotalAmt || tableBuilt.totalAmt || 0;
     const freightAmt = totals.freightCharges || 0;
+    const totalBillAmt = totals.totalBillAmt || 0;
     const tableFooterHtml = '<tr class="grn-total-row">'
         + '<td colspan="' + totalColspan + '" class="grn-total-label">Total Taxable Amount</td>'
         + '<td class="grn-tc">Rs</td>'
@@ -4491,6 +4533,12 @@ function grnBuildPrintReportInnerHtml(listRow, detailRows, codeNum, companyInfo)
         + '<td colspan="' + totalColspan + '" class="grn-total-label">Freight Charges</td>'
         + '<td class="grn-tc">Rs</td>'
         + '<td class="grn-tr">' + grnPrintFmtCurrency(freightAmt) + '</td>'
+        + '<td>&nbsp;</td>'
+        + '</tr>'
+        + '<tr class="grn-total-row">'
+        + '<td colspan="' + totalColspan + '" class="grn-total-label">Total Bill Amount</td>'
+        + '<td class="grn-tc">Rs</td>'
+        + '<td class="grn-tr">' + grnPrintFmtCurrency(totalBillAmt) + '</td>'
         + '<td>&nbsp;</td>'
         + '</tr>';
 
@@ -4784,8 +4832,22 @@ async function editGRN(code) {
                     const n = parseFloat(String(v).replace(/,/g, ''));
                     return isNaN(n) ? '0.00' : n.toFixed(2);
                 };
-                const savedBillAmt = parseFloat(String(master.TotalBillAmountManual ?? 0).replace(/,/g, '')) || 0;
-                const freightFromApi = parseFloat(String(master.FreightCharges ?? master.freightCharges ?? '').replace(/,/g, ''));
+                // Parse FreightCharges from all known field-name variants the SP might use
+                const _freightApiVariants = [
+                    master.FreightCharges, master.freightCharges,
+                    master.Freight, master.freight,
+                    master.FreightAmount, master.freightAmount,
+                    master.FrieghtCharges, master.frieghtCharges
+                ];
+                const _firstFreightVal = _freightApiVariants.find(v => v !== undefined && v !== null && v !== '');
+                const freightFromApi = _firstFreightVal !== undefined
+                    ? parseFloat(String(_firstFreightVal).replace(/,/g, ''))
+                    : NaN;
+                // Saved TotalBillAmountManual — used for back-calculation when FreightCharges is 0
+                // (old records saved before FreightCharges column was tracked have 0 in DB)
+                const savedBillFromApi = parseFloat(String(
+                    master.TotalBillAmountManual ?? master.totalBillAmountManual ?? ''
+                ).replace(/,/g, ''));
                 set('txtTDSAmount', amtStr(master.TDSAmount ?? master.tdsAmount));
                 set('txtDedution', amtStr(master.Dedution));
                 set('txtDedutionRemark', master.DedutionRemark ?? master.dedutionRemark ?? master.DeductionRemark ?? '');
@@ -4935,16 +4997,21 @@ async function editGRN(code) {
                 updateAgainstPoToggleLabel(hasPoRows);
                 applyAgainstPoToAllRows();
 
-                let freightVal = !isNaN(freightFromApi) && freightFromApi > 0 ? freightFromApi : 0;
-                if (freightVal === 0 && savedBillAmt > 0) {
-                    let lineSum = 0;
-                    document.querySelectorAll('#itemTbody tr').forEach(tr => {
-                        lineSum += parseFloat(tr.querySelector('.amount')?.value) || 0;
-                    });
-                    freightVal = Math.max(0, savedBillAmt - lineSum);
-                }
+                const freightVal = isNaN(freightFromApi) ? 0 : freightFromApi;
                 set('txtFreightCharges', amtStr(freightVal));
+                setGrnAmountMirrorPair('txtFreightCharges', 'txtFreightChargesGrid', amtStr(freightVal));
                 calcTotal();
+
+                // calcTotal() recalculates TotalBillAmountManual = lineTotal + freight.
+                // If the SP returned a saved TotalBillAmountManual that differs, restore it
+                // so manually-entered bill totals are preserved on edit.
+                if (!isNaN(savedBillFromApi) && savedBillFromApi > 0) {
+                    const calcedBill = parseFloat(document.getElementById('txtTotalBillAmountManual')?.value) || 0;
+                    if (Math.abs(savedBillFromApi - calcedBill) > 0.01) {
+                        setGrnAmountMirrorPair('txtTotalBillAmountManual', 'txtTotalBillAmountManualGrid', savedBillFromApi.toFixed(2));
+                        calcNetPayable();
+                    }
+                }
 
                 renumberRows();
                 document.getElementById('floatModeBadge').textContent = 'EDIT';
@@ -5343,6 +5410,10 @@ function resetForm() {
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     const freightEl = document.getElementById('txtFreightCharges');
     if (freightEl) freightEl.value = '0.00';
+    const freightGridEl = document.getElementById('txtFreightChargesGrid');
+    if (freightGridEl) freightGridEl.value = '0.00';
+    const totalBillGridEl = document.getElementById('txtTotalBillAmountManualGrid');
+    if (totalBillGridEl) totalBillGridEl.value = '0.00';
 
     document.getElementById('ddlPartyName').value             = '';
     const hdnMrn = document.getElementById('hdnMRNMasterCode');
@@ -5553,6 +5624,8 @@ window.blockNonNumeric      = blockNonNumeric;
 window.stripNonNumeric      = stripNonNumeric;
 window.calcNetPayable       = calcNetPayable;
 window.calcTotalBillAmount  = calcTotalBillAmount;
+window.onGrnFreightAmountInput = onGrnFreightAmountInput;
+window.onGrnTotalBillAmountInput = onGrnTotalBillAmountInput;
 window.onPOFocus            = onPOFocus;
 window.onItemFocus          = onItemFocus;
 window.onPOChange           = onPOChange;
