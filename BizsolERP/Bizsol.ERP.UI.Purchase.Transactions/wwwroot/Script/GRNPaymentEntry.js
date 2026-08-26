@@ -4080,6 +4080,21 @@ async function onBillRowBillChange(tr) {
     if (pm && prevPay !== undefined && prevPay !== null && String(prevPay).trim() !== '') {
         pm.value = prevPay;
     }
+    await bindBillRowProjectSubAsync(tr, r);
+    // Bind PO text + category via API when bill record only carries a PO code (no PONo text)
+    const poCode = parseInt(gpaPoCodeFromRecord(r) || '0', 10);
+    if (poCode > 0) {
+        const poSel = tr.querySelector('.inp-po-ddl');
+        const currentPoNo = gpaPoNoFromSelect(poSel);
+        if (!currentPoNo || currentPoNo === String(poCode)) {
+            try {
+                const binding = await gpaLoadPoWiseBindingFromApi(poSel);
+                if (binding) gpaBindPoCategoryOnRow(tr, binding);
+            } catch (e) {
+                console.warn('onBillRowBillChange PO binding', e);
+            }
+        }
+    }
     recalcFooter();
     gpaRefreshRowPayableEditable(tr);
 }

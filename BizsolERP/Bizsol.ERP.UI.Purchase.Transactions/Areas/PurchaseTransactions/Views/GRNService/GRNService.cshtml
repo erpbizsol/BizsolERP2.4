@@ -1555,6 +1555,47 @@
     .gpa-items-table tbody tr { transition: background 0.15s; }
     .gpa-items-table tbody tr:hover { background: #f5f3ff; }
     .gpa-items-table tbody tr td { padding: 7px 10px; vertical-align: middle; border: 1px solid #ede9fe; font-size: 0.8rem; color: #374151; }
+    .gpa-items-table tbody tr.gpa-items-tfoot-row td { background: #f8fafc; border-top: 2px solid #e2e8f0; }
+    .gpa-amount-summary-wrap { margin-bottom: 14px; }
+    .gpa-amount-summary {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 12px;
+    }
+    .gpa-amount-item {
+        background: #fff;
+        border: 1px solid #eef0f8;
+        border-radius: 8px;
+        padding: 8px 10px;
+        text-align: right;
+    }
+    .gpa-amount-lbl {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+        text-align: left;
+    }
+    .gpa-amount-val {
+        display: block;
+        font-size: 0.86rem;
+        font-weight: 800;
+        color: #1e293b;
+    }
+    .gpa-amount-item--net .gpa-amount-val { color: #667eea; font-size: 0.92rem; }
+    @@media (max-width: 992px) {
+        .gpa-amount-summary { grid-template-columns: repeat(2, 1fr); }
+    }
+    @@media (max-width: 576px) {
+        .gpa-amount-summary { grid-template-columns: 1fr; }
+    }
 
     /* Remarks & action buttons */
     .gpa-remarks-wrap  { margin-bottom: 14px; }
@@ -1930,7 +1971,7 @@
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Freight Charges</label>
                     <input type="number" id="txtFreightCharges" class="form-control form-control-sm po-input-amount-right" placeholder="0.00" autocomplete="off" min="0" step="any"
-                           onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcTotalBillAmount();">
+                           onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); onGrnFreightAmountInput(this);">
                 </div>
             </div>
             <div class="row g-2 mt-1">
@@ -1938,7 +1979,7 @@
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Total Bill Amount</label>
                     <input type="number" id="txtTotalBillAmountManual" class="form-control form-control-sm po-input-amount-right" placeholder="Total Bill Amount" autocomplete="off" min="0" step="any"
-                           onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); calcNetPayable();">
+                           onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); onGrnTotalBillAmountInput(this);">
                 </div>
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Dedution <span class="req">*</span></label>
@@ -2122,6 +2163,10 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <div class="gpa-amount-summary-wrap">
+                    <div id="gpaModalAmountSummary"></div>
                 </div>
 
                 <div class="gpa-remarks-wrap">
