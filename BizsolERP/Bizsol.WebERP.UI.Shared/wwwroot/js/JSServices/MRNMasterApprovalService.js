@@ -68,6 +68,17 @@ const MRNMasterApprovalService = {
         const url = UrlService.API_ENDPOINT_MRNMasterLevelsApproval + '/GetFirstPendingBillDate';
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
+    /** itemMasterCodes: comma-separated ItemMaster_Code list — API param name is Itemmaster_code. */
+    GetMRNBudgetBalance: function GetMRNBudgetBalance(mrnMasterCode, accountMasterCode, projectMasterCode, subProjectMasterCode, itemMasterCodes) {
+        const url = UrlService.API_ENDPOINT_MRNMasterLevelsApproval +
+            `/GetMRNBudgetBalance?MRNMaster_Code=${encodeURIComponent(mrnMasterCode || 0)}` +
+            `&AccountMaster_Code=${encodeURIComponent(accountMasterCode || 0)}` +
+            `&ProjectMaster_Code=${encodeURIComponent(projectMasterCode || 0)}` +
+            `&SubProjectMaster_Code=${encodeURIComponent(subProjectMasterCode || 0)}` +
+            `&Itemmaster_code=${encodeURIComponent(itemMasterCodes || '')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
 };
 
 export { MRNMasterApprovalService };

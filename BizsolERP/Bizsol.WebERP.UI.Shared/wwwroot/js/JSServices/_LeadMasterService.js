@@ -16,7 +16,7 @@ const LeadMasterService = {
             distinct: "Y",
             fieldName: "[dbo].[UDF_WebAPI_GetStatusFromEnquiry]([Vw_WebAPI_EnquiryMaster].Code)",
             fieldNameOrderBy: "",
-            filterCondition: "group by [dbo].[UDF_WebAPI_GetStatusFromEnquiry]([Vw_WebAPI_EnquiryMaster].Code)",
+            filterCondition: " AND [dbo].[UDF_WebAPI_GetStatusFromEnquiry]([Vw_WebAPI_EnquiryMaster].Code) <> 'Close Verify Pending' group by [dbo].[UDF_WebAPI_GetStatusFromEnquiry]([Vw_WebAPI_EnquiryMaster].Code)",
             tableName: "Vw_WebAPI_EnquiryMaster",
             UserMaster_Code: userMasterCode
         };

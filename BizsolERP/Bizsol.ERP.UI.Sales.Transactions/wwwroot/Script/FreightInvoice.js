@@ -14,9 +14,11 @@ let fiHasNewRight = false;
 let fiHasEditRight = false;
 let fiHasViewRight = false;
 let fiHasVerifyRight = false;
+let fiHasApproveRight = false;
 let fiHasEditAfterVerifyRight = false;
 let fiAllowEditAfterVerify = false;
-let fiVerifyPendingCode = 0;
+let fiConfirmPendingCode = 0;
+let fiConfirmAction = '';
 let fiGridSortState = { colIndex: -1, dir: 'asc' };
 const FINANCE_DECIMALS = 2;
 
@@ -31,9 +33,11 @@ const FI_SAVED_LIST_COLUMNS = [
     { key: 'Bill Type', apiKey: 'Bill Type', filter: 'string', align: 'center', width: 88, search: true },
     { key: 'GRN No.', apiKey: 'GRN Numbers', filter: 'string', align: 'left', width: 120, maxWidth: 160, ellipsis: true, format: 'compactGrn' },
     { key: 'Transporter', apiKey: 'Transporter', filter: 'string', align: 'left', width: 140, maxWidth: 180, ellipsis: true, format: 'compactTransporter' },
+    { key: 'Other Deduction', apiKey: 'Other Deduction', filter: 'numeric', align: 'right', width: 118, comma: true },
+    { key: 'Other Addition', apiKey: 'Other Addition', filter: 'numeric', align: 'right', width: 118, comma: true },
     { key: 'Total Freight Amount', apiKey: 'Total Amount', filter: 'numeric', align: 'right', width: 130, comma: true },
     { key: 'Code', apiKey: 'Code', hidden: true },
-    { key: 'Action', type: 'action', align: 'center', width: 148 }
+    { key: 'Action', type: 'action', align: 'center', width: 188 }
 ];
 
 /** View modal header summary fields (populated from SHOWMASTER header result set). */
@@ -53,13 +57,19 @@ const FI_GRID_HEADERS = [
     { key: 'select', label: 'Select', colClass: 'fi-col-check', thClass: 'center fi-th-normal fi-col-check', isSelectAll: true, sortType: 'check', view: false },
     { key: 'grnDate', label: 'GRN Date', colClass: 'fi-col-date', thClass: 'center fi-col-date', sortType: 'date' },
     { key: 'grnNo', label: 'GRN No.', viewKey: 'GRN Number', colClass: 'fi-col-grn', thClass: 'fi-col-grn', sortType: 'text', viewFormat: 'grn', apiKeys: ['GRN Number', 'GRN No.'] },
+    { key: 'partyName', label: 'Party Name', colClass: 'fi-col-party', thClass: 'fi-col-party', sortType: 'text', apiKeys: ['Party Name', 'Party'] },
+    { key: 'grNo', label: 'GR No', colClass: 'fi-col-grn', thClass: 'fi-col-grn', sortType: 'text', apiKeys: ['GR No'] },
+    { key: 'grDate', label: 'GR Date', colClass: 'fi-col-date', thClass: 'center fi-col-date', sortType: 'date', apiKeys: ['GR Date'] },
+    { key: 'vehicleNo', label: 'Vehicle No', colClass: 'fi-col-grn', thClass: 'fi-col-grn', sortType: 'text', apiKeys: ['Vehicle No', 'Truck No'] },
     { key: 'invoiceDate', label: 'Invoice Date', colClass: 'fi-col-date', thClass: 'center fi-col-date', sortType: 'date' },
     { key: 'invoiceNo', label: 'Invoice No.', viewKey: 'Invoice Number', colClass: 'fi-col-grn', thClass: 'fi-col-grn', sortType: 'text', apiKeys: ['Invoice Number', 'Invoice No.'] },
     { key: 'billNo', label: 'Bill No', colClass: 'fi-col-grn', thClass: 'fi-col-grn', sortType: 'text' },
     { key: 'billDate', label: 'Bill Date', colClass: 'fi-col-date', thClass: 'center fi-col-date', sortType: 'date' },
+    { key: 'freightContractNo', label: 'Fr. Con. No', colClass: 'fi-col-grn', thClass: 'fi-col-grn', sortType: 'number', viewFormat: 'grn', apiKeys: ['Freight Contract No'] },
+    { key: 'transporter', label: 'Transporter', colClass: 'fi-col-transporter', thClass: 'fi-col-transporter', sortType: 'text', apiKeys: ['Transporter'], view: false },
     { key: 'fromCity', label: 'From City', colClass: 'fi-col-city', thClass: 'fi-col-city', sortType: 'text' },
     { key: 'toCity', label: 'To City', colClass: 'fi-col-city', thClass: 'fi-col-city', sortType: 'text' },
-    { key: 'contractType', label: 'Contract Type', colClass: 'fi-col-combo', thClass: 'fi-col-combo', sortType: 'text' },
+    { key: 'contractType', label: 'Freight Type', colClass: 'fi-col-combo', thClass: 'fi-col-combo', sortType: 'text', apiKeys: ['Contract Type', 'Freight Type'] },
     { key: 'vehicleType', label: 'Vehicle Type', colClass: 'fi-col-vehicle', thClass: 'fi-col-vehicle', sortType: 'text' },
     { key: 'rateWt', label: 'Rate / Wt', colClass: 'fi-col-num', thClass: 'fi-col-num', sortType: 'number', viewFormat: 'qty', apiKeys: ['Rate / Wt', 'Rate Per Wt'] },
     { key: 'rateVehicle', label: 'Rate / Vehicle', colClass: 'fi-col-num', thClass: 'fi-col-num', sortType: 'number', view: false },
@@ -384,6 +394,10 @@ function mapShowMasterDetailsToGridRows(details) {
             AccountMaster_Code: getFiApiValue(row, 'AccountMaster_Code'),
             'GRN Date': getFiApiValue(row, 'GRN Date'),
             'GRN Number': getFiApiValue(row, 'GRN Number'),
+            'Party Name': getFiApiValue(row, 'Party Name') || getFiApiValue(row, 'Party'),
+            'GR No': getFiApiValue(row, 'GR No'),
+            'GR Date': getFiApiValue(row, 'GR Date'),
+            'Vehicle No': getFiApiValue(row, 'Vehicle No') || getFiApiValue(row, 'Truck No'),
             'Invoice Date': getFiApiValue(row, 'Invoice Date'),
             'Invoice Number': getFiApiValue(row, 'Invoice Number'),
             'Bill No': getFiApiValue(row, 'Bill No'),
@@ -400,13 +414,15 @@ function mapShowMasterDetailsToGridRows(details) {
             'Rate Per Wt': getFiApiValue(row, 'Rate Per Wt'),
             'Rate Per Vehicle': getFiApiValue(row, 'Rate Per Vehicle'),
             'Min Qty': getFiApiValue(row, 'Min Qty'),
+            'Deduction On': getFiApiValue(row, 'Deduction On'),
             'Tolerance Value': getFiApiValue(row, 'Tolerance Value'),
+            'Tolerance Type': getFiApiValue(row, 'Tolerance Type'),
             'Tolerance Nature': getFiApiValue(row, 'Tolerance Nature'),
             'Billed Qty': getFiApiValue(row, 'Billed Qty'),
             'Qty(Received)': getFiQtyReceived(row),
             'Total Weight': getFiApiValue(row, 'Total Weight'),
             'Invoice Qty': getFiApiValue(row, 'Invoice Qty'),
-            'Reached Qty': getFiApiValue(row, 'Reached Qty'),
+            'Reached Qty': getFiQtyReceived(row),
             'Freight Billed Qty': getFiApiValue(row, 'Freight Billed Qty'),
             'Freight Amount': getFiApiValue(row, 'Freight Amount'),
             'Tolerance Qty': getFiApiValue(row, 'Tolerance Qty'),
@@ -496,7 +512,6 @@ function openFiEditForm(code, header, details) {
     $('#ddlFiTransporter').val('0');
 
     setGridVisible(true);
-    $('#btnFiSaveAll').prop('disabled', false);
 
     return bindSpreadFromData(gridRows, {
         preserveSavedAmounts: true,
@@ -609,6 +624,18 @@ function isFiEntryVerified(item) {
     return v === 'Y' || v === 'YES' || v === '1' || v === 'TRUE';
 }
 
+function isFiEntryApproved(item) {
+    if (!item) return false;
+    const v = String(getFiApiValue(item, 'Approved') || '').trim().toUpperCase();
+    return v === 'Y' || v === 'YES' || v === '1' || v === 'TRUE';
+}
+
+function fiEntryNeedsApproval(item) {
+    const ded = parseNum(getFiApiValue(item, 'Other Deduction'));
+    const add = parseNum(getFiApiValue(item, 'Other Addition'));
+    return ded !== 0 || add !== 0;
+}
+
 function buildFiVerifiedTooltip(item) {
     const verifiedBy = getFiApiValue(item, 'Verified By');
     const verifiedOn = getFiApiValue(item, 'Verified On');
@@ -618,12 +645,45 @@ function buildFiVerifiedTooltip(item) {
     return parts.length ? parts.join(' · ') : 'Verified';
 }
 
+function showFiVerifiedTip(el) {
+    const $el = $(el);
+    const tip = ($el.attr('data-fi-verify-tip') || $el.attr('title') || 'Verified').trim();
+    if (!tip) return;
+    toastr.info(tip, '', { timeOut: 5000, extendedTimeOut: 2000 });
+}
+
+function buildFiApprovedTooltip(item) {
+    const approvedBy = getFiApiValue(item, 'Approved By');
+    const approvedOn = getFiApiValue(item, 'Approved On');
+    const parts = [];
+    if (approvedBy) parts.push('Approved by: ' + approvedBy);
+    if (approvedOn) parts.push('On: ' + approvedOn);
+    return parts.length ? parts.join(' · ') : 'Approved';
+}
+
+function showFiApprovedTip(el) {
+    const $el = $(el);
+    const tip = ($el.attr('data-fi-approve-tip') || $el.attr('title') || 'Approved').trim();
+    if (!tip) return;
+    toastr.info(tip, '', { timeOut: 5000, extendedTimeOut: 2000 });
+}
+
+function buildFiApprovedStatusHtml(item) {
+    if (!fiEntryNeedsApproval(item)) return '';
+    if (!isFiEntryApproved(item)) {
+        return '<span class="fi-view-status fi-view-status--pending"><i class="far fa-clock"></i> Approval Pending</span>';
+    }
+    const tip = escAttr(buildFiApprovedTooltip(item));
+    return '<span class="fi-view-status fi-view-status--approved js-fi-approved-tip" title="' + tip + '" data-fi-approve-tip="' + tip + '" role="button" tabindex="0" aria-label="Approved details">' +
+        '<i class="fas fa-user-check"></i> Approved</span>';
+}
+
 function buildFiVerifiedStatusHtml(item) {
     if (!isFiEntryVerified(item)) {
         return '<span class="fi-view-status fi-view-status--pending"><i class="far fa-clock"></i> Pending</span>';
     }
     const tip = escAttr(buildFiVerifiedTooltip(item));
-    return '<span class="fi-view-status fi-view-status--verified" title="' + tip + '">' +
+    return '<span class="fi-view-status fi-view-status--verified js-fi-verified-tip" title="' + tip + '" data-fi-verify-tip="' + tip + '" role="button" tabindex="0" aria-label="Verified details">' +
         '<i class="fas fa-check-double"></i> Verified</span>';
 }
 
@@ -643,19 +703,22 @@ function resolveFiModuleRights() {
         MenuService.CheckModuleOptionRight(moduleName, 'Edit', 'N', finYear),
         MenuService.CheckModuleOptionRight(moduleName, 'View', 'N', finYear),
         MenuService.CheckModuleOptionRight(moduleName, 'Verify', 'N', finYear),
+        MenuService.CheckModuleOptionRight(moduleName, 'Approve', 'N', finYear),
         MenuService.CheckModuleOptionRight(moduleName, 'Edit After Verification', 'N', finYear)
     ]).then(function (results) {
         fiHasNewRight = !!(results[0] && results[0].CheckModuleOptionRight === 'Y');
         fiHasEditRight = !!(results[1] && results[1].CheckModuleOptionRight === 'Y');
         fiHasViewRight = !!(results[2] && results[2].CheckModuleOptionRight === 'Y');
         fiHasVerifyRight = !!(results[3] && results[3].CheckModuleOptionRight === 'Y');
-        fiHasEditAfterVerifyRight = !!(results[4] && results[4].CheckModuleOptionRight === 'Y');
+        fiHasApproveRight = !!(results[4] && results[4].CheckModuleOptionRight === 'Y');
+        fiHasEditAfterVerifyRight = !!(results[5] && results[5].CheckModuleOptionRight === 'Y');
         applyFiModuleRightsUi();
     }).catch(function () {
         fiHasNewRight = false;
         fiHasEditRight = false;
         fiHasViewRight = false;
         fiHasVerifyRight = false;
+        fiHasApproveRight = false;
         fiHasEditAfterVerifyRight = false;
         applyFiModuleRightsUi();
     });
@@ -675,19 +738,53 @@ function isFiAlreadyVerifiedMessage(response) {
     return msg.indexOf('already verified') >= 0;
 }
 
-function openFiVerifyConfirm(code) {
-    if (!fiHasVerifyRight) {
-        toastr.warning('You do not have Verify permission.');
+function isFiAlreadyApprovedMessage(response) {
+    const msg = String(response?.Msg || response?.msg || '').toLowerCase();
+    return msg.indexOf('already approved') >= 0;
+}
+
+function openFiConfirmModal(action, code) {
+    if (action === 'verify') {
+        if (!fiHasVerifyRight) {
+            toastr.warning('You do not have Verify permission.');
+            return;
+        }
+        const item = getFiSavedItemByCode(code);
+        if (item && isFiEntryVerified(item)) {
+            toastr.info('This freight invoice is already verified.');
+            return;
+        }
+        fiConfirmAction = 'verify';
+        fiConfirmPendingCode = code;
+        $('#fiVerifyConfirmTitle').text('Verify freight invoice?');
+        $('#fiVerifyConfirmText').text('Mark this freight invoice entry as verified?');
+        $('#btnFiVerifyConfirm').html('<i class="fas fa-check"></i> Yes, Verify');
+    } else if (action === 'approve') {
+        if (!fiHasApproveRight) {
+            toastr.warning('You do not have Approve permission.');
+            return;
+        }
+        const item = getFiSavedItemByCode(code);
+        if (!item || !fiEntryNeedsApproval(item)) {
+            return;
+        }
+        if (!isFiEntryVerified(item)) {
+            toastr.warning('Verify this freight invoice before approval.');
+            return;
+        }
+        if (isFiEntryApproved(item)) {
+            toastr.info('This freight invoice is already approved.');
+            return;
+        }
+        fiConfirmAction = 'approve';
+        fiConfirmPendingCode = code;
+        $('#fiVerifyConfirmTitle').text('Approve freight invoice?');
+        $('#fiVerifyConfirmText').text('This entry has Other Deduction or Other Addition. Mark it as approved?');
+        $('#btnFiVerifyConfirm').html('<i class="fas fa-user-check"></i> Yes, Approve');
+    } else {
         return;
     }
-    const item = getFiSavedItemByCode(code);
-    if (item && isFiEntryVerified(item)) {
-        toastr.info('This freight invoice is already verified.');
-        return;
-    }
-    fiVerifyPendingCode = code;
-    $('#fiVerifyConfirmTitle').text('Verify freight invoice?');
-    $('#fiVerifyConfirmText').text('Mark this freight invoice entry as verified?');
+
     const modalEl = document.getElementById('dvFiVerifyModal');
     if (modalEl && window.bootstrap?.Modal) {
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
@@ -696,8 +793,17 @@ function openFiVerifyConfirm(code) {
     }
 }
 
-function closeFiVerifyConfirm() {
-    fiVerifyPendingCode = 0;
+function openFiVerifyConfirm(code) {
+    openFiConfirmModal('verify', code);
+}
+
+function openFiApproveConfirm(code) {
+    openFiConfirmModal('approve', code);
+}
+
+function closeFiConfirmModal() {
+    fiConfirmPendingCode = 0;
+    fiConfirmAction = '';
     const modalEl = document.getElementById('dvFiVerifyModal');
     if (modalEl && window.bootstrap?.Modal) {
         bootstrap.Modal.getOrCreateInstance(modalEl).hide();
@@ -706,10 +812,22 @@ function closeFiVerifyConfirm() {
     }
 }
 
+function closeFiVerifyConfirm() {
+    closeFiConfirmModal();
+}
+
+function doFiConfirmAction() {
+    if (fiConfirmAction === 'approve') {
+        doFiApprove();
+        return;
+    }
+    doFiVerify();
+}
+
 function doFiVerify() {
-    const code = fiVerifyPendingCode;
+    const code = fiConfirmPendingCode;
     if (!code) {
-        closeFiVerifyConfirm();
+        closeFiConfirmModal();
         return;
     }
 
@@ -717,19 +835,19 @@ function doFiVerify() {
     MenuService.CheckModuleOptionRight(getFiModuleName(), 'Verify', 'Y', finYear).then(function (response) {
         if (response.CheckModuleOptionRight === 'N') {
             toastr.error(response.Msg || 'You do not have Verify permission.');
-            closeFiVerifyConfirm();
+            closeFiConfirmModal();
             return;
         }
 
         showFiLoader();
         return FreightInvoiceService.VerifyFreightInvoice(code).then(function (res) {
             if (isFiVerifyApiSuccess(res)) {
-                closeFiVerifyConfirm();
+                closeFiConfirmModal();
                 toastr.success(res.Msg || 'Freight invoice verified successfully.');
                 return loadFiSavedList();
             }
             if (isFiAlreadyVerifiedMessage(res)) {
-                closeFiVerifyConfirm();
+                closeFiConfirmModal();
                 toastr.info(res.Msg || 'Already verified.');
                 return loadFiSavedList();
             }
@@ -742,13 +860,55 @@ function doFiVerify() {
         });
     }).catch(function () {
         toastr.error('Permission check failed.');
-        closeFiVerifyConfirm();
+        closeFiConfirmModal();
+    });
+}
+
+function doFiApprove() {
+    const code = fiConfirmPendingCode;
+    if (!code) {
+        closeFiConfirmModal();
+        return;
+    }
+
+    const finYear = BizSolHelperFunction.getFinancialYear();
+    MenuService.CheckModuleOptionRight(getFiModuleName(), 'Approve', 'Y', finYear).then(function (response) {
+        if (response.CheckModuleOptionRight === 'N') {
+            toastr.error(response.Msg || 'You do not have Approve permission.');
+            closeFiConfirmModal();
+            return;
+        }
+
+        showFiLoader();
+        return FreightInvoiceService.ApproveFreightInvoice(code).then(function (res) {
+            if (isFiVerifyApiSuccess(res)) {
+                closeFiConfirmModal();
+                toastr.success(res.Msg || 'Freight invoice approved successfully.');
+                return loadFiSavedList();
+            }
+            if (isFiAlreadyApprovedMessage(res)) {
+                closeFiConfirmModal();
+                toastr.info(res.Msg || 'Already approved.');
+                return loadFiSavedList();
+            }
+            toastr.warning(res.Msg || 'Approve failed.');
+        }).catch(function (error) {
+            console.error('ApproveFreightInvoice failed:', error);
+            toastr.error('Error approving freight invoice.');
+        }).finally(function () {
+            hideFiLoader();
+        });
+    }).catch(function () {
+        toastr.error('Permission check failed.');
+        closeFiConfirmModal();
     });
 }
 
 function buildFiListActionHtml(item) {
     const code = parseInt(item?.Code || 0, 10) || 0;
     const verified = isFiEntryVerified(item);
+    const approved = isFiEntryApproved(item);
+    const needsApproval = fiEntryNeedsApproval(item);
     let html = '<div class="pm-actions">';
 
     if (fiHasViewRight) {
@@ -758,7 +918,7 @@ function buildFiListActionHtml(item) {
 
     if (verified) {
         const tip = buildFiVerifiedTooltip(item);
-        html += '<span class="fi-verified-badge fi-verified-badge--done" title="' + escAttr(tip) + '">' +
+        html += '<span class="fi-verified-badge fi-verified-badge--done js-fi-verified-tip" title="' + escAttr(tip) + '" data-fi-verify-tip="' + escAttr(tip) + '" role="button" tabindex="0" aria-label="Verified details">' +
             '<i class="fas fa-check-double"></i></span>';
     } else if (fiHasVerifyRight) {
         html += '<button type="button" class="pm-icon-btn verify js-fi-verify" data-code="' + code + '" title="Verify entry">' +
@@ -766,6 +926,23 @@ function buildFiListActionHtml(item) {
     } else {
         html += '<span class="fi-verified-badge fi-verified-badge--pending" title="Not verified">' +
             '<i class="far fa-circle"></i></span>';
+    }
+
+    if (needsApproval) {
+        if (approved) {
+            const tip = buildFiApprovedTooltip(item);
+            html += '<span class="fi-approved-badge fi-approved-badge--done js-fi-approved-tip" title="' + escAttr(tip) + '" data-fi-approve-tip="' + escAttr(tip) + '" role="button" tabindex="0" aria-label="Approved details">' +
+                '<i class="fas fa-user-check"></i></span>';
+        } else if (!verified) {
+            html += '<span class="fi-approved-badge fi-approved-badge--waiting" title="Verify first">' +
+                '<i class="fas fa-user-check"></i></span>';
+        } else if (fiHasApproveRight) {
+            html += '<button type="button" class="pm-icon-btn approve js-fi-approve" data-code="' + code + '" title="Approve entry">' +
+                '<i class="fas fa-user-check"></i></button>';
+        } else {
+            html += '<span class="fi-approved-badge fi-approved-badge--pending" title="Approval pending">' +
+                '<i class="far fa-circle"></i></span>';
+        }
     }
 
     if (fiHasEditRight) {
@@ -900,8 +1077,9 @@ function enrichViewDetailRow(row) {
     const tolValue = parseNum(getFiApiValue(row, 'Tolerance Value'));
     const tolType = getFiApiValue(row, 'Tolerance Type');
     const tolNature = getFiApiValue(row, 'Tolerance Nature');
+    const deductionOn = getFiApiValue(row, 'Deduction On') || 'Billed Qty';
 
-    const freightBilledQty = roundTo(Math.max(minQty, billedQty), 3);
+    const freightBilledQty = calcFreightBilledQtyFromValues(minQty, billedQty, grnQty, deductionOn);
     let freightAmt = parseNum(getFiApiValue(row, 'Freight Amount'));
     if (!freightAmt) {
         freightAmt = rateVeh > 0 ? rateVeh : rateWt * freightBilledQty;
@@ -968,6 +1146,19 @@ function viewFiSavedEntry(code) {
             }
 
             const viewFields = FI_VIEW_HEADER_FIELDS.slice();
+            if (fiEntryNeedsApproval(header)) {
+                viewFields.push(
+                    { label: 'Other Deduction', keys: ['Other Deduction'], format: 'amount' },
+                    { label: 'Other Addition', keys: ['Other Addition'], format: 'amount' },
+                    { label: 'Approval', keys: ['Approved'], format: 'approvedStatus' }
+                );
+                if (isFiEntryApproved(header)) {
+                    viewFields.push(
+                        { label: 'Approved By', keys: ['Approved By', 'ApprovedBy'] },
+                        { label: 'Approved On', keys: ['Approved On', 'ApprovedOn'] }
+                    );
+                }
+            }
             viewFields.push({ label: 'Status', keys: ['Verified'], format: 'verifiedStatus' });
             if (isFiEntryVerified(header)) {
                 viewFields.push(
@@ -981,7 +1172,9 @@ function viewFiSavedEntry(code) {
                 const val = getFiHeaderValue(header, field);
                 const display = field.format === 'verifiedStatus'
                     ? buildFiVerifiedStatusHtml(header)
-                    : formatFiHeaderValue(val, field.format);
+                    : field.format === 'approvedStatus'
+                        ? buildFiApprovedStatusHtml(header)
+                        : formatFiHeaderValue(val, field.format);
                 $summary.append(
                     '<div class="col-6 col-md-4 col-lg-3 fi-view-item">' +
                     '<div class="fi-view-label">' + escHtml(field.label) + '</div>' +
@@ -1116,11 +1309,50 @@ function setFiField($el, val) {
     }
 }
 
+function updateFiSaveForTransporter() {
+    const gridVisible = !$('#dvFiGridSection').prop('hidden');
+    if (!gridVisible) return;
+
+    const isAll = !fiEditMasterCode && isFiAllTransportersSelected();
+    if (isAll) {
+        $('#btnFiSaveAll').prop('disabled', true);
+        $('#chkFiSelectAll, #tblFreightInvoice tbody .fi-row-select').prop('disabled', true).prop('checked', false);
+        $('#chkFiSelectAll').prop('indeterminate', false);
+    } else {
+        $('#btnFiSaveAll').prop('disabled', false);
+        $('#chkFiSelectAll, #tblFreightInvoice tbody .fi-row-select').prop('disabled', false);
+        syncSelectAllCheckbox();
+    }
+    syncFiTransporterColumnVisibility();
+}
+
+function onFiTransporterChange() {
+    const gridVisible = !$('#dvFiGridSection').prop('hidden');
+    if (gridVisible && !fiEditMasterCode) {
+        $('#tblFreightInvoice tbody').empty();
+        $('#chkFiSelectAll').prop('checked', false).prop('indeterminate', false);
+        setGridVisible(false);
+        return;
+    }
+    updateFiSaveForTransporter();
+}
+
+/** Transporter column visible only when All Transporters filter is selected. */
+function syncFiTransporterColumnVisibility() {
+    $('#tblFreightInvoice').toggleClass('fi-all-transporters', isFiAllTransportersSelected());
+}
+
+function isFiAllTransportersSelected() {
+    return (parseInt($('#ddlFiTransporter').val(), 10) || 0) === 0;
+}
+
 function setGridVisible(visible) {
     $('#dvFiGridSection').prop('hidden', !visible);
-    $('#btnFiSaveAll').prop('disabled', !visible);
     if (!visible) {
         resetFiGridScroll();
+        $('#btnFiSaveAll').prop('disabled', true);
+    } else {
+        updateFiSaveForTransporter();
     }
 }
 
@@ -1183,11 +1415,13 @@ function applyRowFreightRates($tr, row) {
             getFiApiValue(row, 'Tolerance Type'),
             getFiApiValue(row, 'Tolerance Nature')
         );
+        $tr.attr('data-deduction-on', getFiApiValue(row, 'Deduction On') || 'Billed Qty');
         setContractRates($tr, rateWt, rateVeh, minQty);
         return;
     }
 
     setRowTolerance($tr, 0, '', '');
+    $tr.attr('data-deduction-on', 'Billed Qty');
     setRowRateVehicle($tr, rateVeh);
     setFiField($tr.find('.fi-rate-wt'), formatNum(rateWt, 3));
     setFiField($tr.find('.fi-min-qty'), formatNum(minQty, 3));
@@ -1274,10 +1508,11 @@ function bindGridEnterTab() {
 
 // =============================================================================
 // CALCULATIONS — qty sources are separate:
-//   Billed Qty  = MRN SUM(QtyMT) — supplier bill on GRN
-//   Invoice Qty = reserved column (not used in calculations for now)
-//   Qty(Received) = MRN received MT
-//   Freight Billed Qty = MAX(Min Qty, Billed Qty)
+//   Billed Qty  = supplier billed qty on GRN (Billed Qty column)
+//   Qty(Received) = MRN received MT — also used as contract "Reached Qty"
+//   Reached Qty column = same as Qty(Received) for display
+//   Freight Billed Qty = MAX(Min Qty, contract base qty)
+//   Contract base qty from [Deduction On]: Billed Qty | Reached Qty (= Qty Received) | Whichever is Lower
 // Freight Amount = Rate/Vehicle OR Rate/Wt × Freight Billed Qty
 // Tolerance Qty = Billed × Tolerance Value (%) [all types; KG = fixed value]
 // Shortage only when (Billed − Received) > Tolerance Qty:
@@ -1357,10 +1592,47 @@ function calcShortageQty(billedQty, receivedQty, toleranceQty, toleranceType, to
     return roundTo(diff, 3);
 }
 
+function normalizeFiDeductionOn(value) {
+    return String(value || 'Billed Qty').trim().toLowerCase();
+}
+
+/** Contract "Reached Qty" = Qty(Received) on this screen. */
+function getRowReachedQty($tr) {
+    return getRowGrnQty($tr);
+}
+
+/** Contract [Deduction On] → base qty before Min Qty is applied. */
+function getContractBaseQty($tr) {
+    const billedQty = getRowBilledQty($tr);
+    const reachedQty = getRowReachedQty($tr);
+    const deductionOn = normalizeFiDeductionOn($tr.attr('data-deduction-on'));
+
+    if (deductionOn === 'reached qty') {
+        return reachedQty;
+    }
+    if (deductionOn.indexOf('lower') >= 0) {
+        return roundTo(Math.min(billedQty, reachedQty), 3);
+    }
+    return billedQty;
+}
+
+function calcFreightBilledQtyFromValues(minQty, billedQty, receivedQty, deductionOn) {
+    const min = parseNum(minQty);
+    const billed = parseNum(billedQty);
+    const reached = parseNum(receivedQty);
+
+    const ded = normalizeFiDeductionOn(deductionOn);
+    let base = billed;
+    if (ded === 'reached qty') base = reached;
+    else if (ded.indexOf('lower') >= 0) base = Math.min(billed, reached);
+
+    return roundTo(Math.max(min, base), 3);
+}
+
 function getFreightBilledQty($tr) {
     const minQty = parseNum(getFiField($tr.find('.fi-min-qty')));
-    const billedQty = getRowBilledQty($tr);
-    return roundTo(Math.max(minQty, billedQty), 3);
+    const baseQty = getContractBaseQty($tr);
+    return roundTo(Math.max(minQty, baseQty), 3);
 }
 
 function getRowRateVehicle($tr) {
@@ -1415,6 +1687,7 @@ function calculateFreightRow($tr) {
 
     setFiField($tr.find('.fi-billed-qty'), formatNum(billedQty, 3));
     setFiField($tr.find('.fi-grn-qty'), formatNum(receivedQty, 3));
+    setFiField($tr.find('.fi-reached-qty'), formatNum(receivedQty, 3));
     setFiField($tr.find('.fi-freight-billed-qty'), formatNum(freightBilledQty, 3));
     setFiField($tr.find('.fi-freight-amt'), formatNum(freightAmt, FINANCE_DECIMALS));
     setFiField($tr.find('.fi-tolerance-type'), formatToleranceTypeDisplay($tr));
@@ -1596,6 +1869,7 @@ function buildFreightGridHeader() {
     });
     $thead.append($tr);
     updateFiGridSortIcons();
+    syncFiTransporterColumnVisibility();
 }
 
 function getFiGridCellValue($tr, colIndex) {
@@ -1694,10 +1968,16 @@ function buildFreightRowHtml() {
                 <td class="center fi-col-check"><input type="checkbox" class="fi-row-select" title="Select row for save" /></td>
                 <td class="center fi-col-date"><span class="fi-cell fi-grn-date center"></span></td>
                 <td class="fi-col-grn"><span class="fi-cell fi-grn-no"></span></td>
+                <td class="fi-col-party"><span class="fi-cell fi-party-name fi-locked"></span></td>
+                <td class="fi-col-grn"><span class="fi-cell fi-gr-no fi-locked"></span></td>
+                <td class="center fi-col-date"><span class="fi-cell fi-gr-date fi-locked center"></span></td>
+                <td class="fi-col-grn"><span class="fi-cell fi-vehicle-no fi-locked"></span></td>
                 <td class="center fi-col-date"><span class="fi-cell fi-invoice-date center fi-locked"></span></td>
                 <td class="fi-col-grn"><span class="fi-cell fi-invoice-no fi-locked"></span></td>
                 <td class="fi-col-grn"><span class="fi-cell fi-bill-no"></span></td>
                 <td class="center fi-col-date"><span class="fi-cell fi-bill-date center"></span></td>
+                <td class="fi-col-grn"><span class="fi-cell fi-freight-contract-no fi-locked"></span></td>
+                <td class="fi-col-transporter"><span class="fi-cell fi-transporter-name fi-locked"></span></td>
                 <td class="fi-col-city"><span class="fi-cell fi-from-city"></span></td>
                 <td class="fi-col-city"><span class="fi-cell fi-to-city"></span></td>
                 <td class="fi-col-combo"><span class="fi-cell fi-contract-type fi-locked"></span></td>
@@ -1767,19 +2047,25 @@ function bindSpreadFromData(rows, options) {
 
         setFiField($tr.find('.fi-grn-date'), row['GRN Date'] || '');
         setFiField($tr.find('.fi-grn-no'), row['GRN Number'] || '');
+        setFiField($tr.find('.fi-party-name'), getFiApiValue(row, 'Party Name') || getFiApiValue(row, 'Party'));
+        setFiField($tr.find('.fi-gr-no'), getFiApiValue(row, 'GR No'));
+        setFiField($tr.find('.fi-gr-date'), getFiApiValue(row, 'GR Date'));
+        setFiField($tr.find('.fi-vehicle-no'), getFiApiValue(row, 'Vehicle No') || getFiApiValue(row, 'Truck No'));
         setFiField($tr.find('.fi-invoice-date'), row['Invoice Date'] || '');
         setFiField($tr.find('.fi-invoice-no'), row['Invoice Number'] || '');
         setFiField($tr.find('.fi-bill-no'), row['Bill No'] || '');
         setFiField($tr.find('.fi-bill-date'), row['Bill Date'] || '');
+        setFiField($tr.find('.fi-freight-contract-no'), getFiApiValue(row, 'Freight Contract No') || '');
+        setFiField($tr.find('.fi-transporter-name'), getFiApiValue(row, 'Transporter'));
         setFiField($tr.find('.fi-from-city'), row['From City'] || '');
         setFiField($tr.find('.fi-to-city'), row['To City'] || '');
         setRowContractVehicle($tr, row);
         applyRowFreightRates($tr, row);
         setFiField($tr.find('.fi-billed-qty'), billedQty > 0 ? formatNum(billedQty, 3) : '');
+        setFiField($tr.find('.fi-grn-qty'), receivedQty > 0 ? formatNum(receivedQty, 3) : '');
         const invoiceQty = parseNum(row['Invoice Qty']);
-        const reachedQty = parseNum(row['Reached Qty']);
         setFiField($tr.find('.fi-invoice-qty'), invoiceQty > 0 ? formatNum(invoiceQty, 3) : '');
-        setFiField($tr.find('.fi-reached-qty'), reachedQty > 0 ? formatNum(reachedQty, 3) : '');
+        setFiField($tr.find('.fi-reached-qty'), receivedQty > 0 ? formatNum(receivedQty, 3) : '');
         if (options.preserveSavedAmounts) {
             const otherDed = getFiApiValue(row, 'Other Deduction');
             const otherAdd = getFiApiValue(row, 'Other Addition');
@@ -1804,6 +2090,7 @@ function bindSpreadFromData(rows, options) {
         }
         assertFreightGridColumns();
         syncSelectAllCheckbox();
+        updateFiSaveForTransporter();
         bindGridEnterTab();
         bindEditableInputResize($('#tblFreightInvoice tbody'));
         resetFiGridSortState();
@@ -1891,6 +2178,9 @@ function validateFreightData() {
         if (!grnNo) {
             message = 'Invalid row — GRN Number is missing.';
             invalidField = $tr.find('.fi-grn-no');
+        } else if (!String(getFiField($tr.find('.fi-gr-no')) || '').trim()) {
+            message = 'GR No is mandatory. Please enter GR No in GRN ' + grnNo + ' before saving freight.';
+            invalidField = $tr.find('.fi-gr-no');
         } else if (parseInt($tr.attr('data-code') || '0', 10) <= 0) {
             message = 'Invalid row — freight line code is missing for GRN ' + grnNo + '.';
             invalidField = $tr.find('.fi-grn-no');
@@ -1999,7 +2289,7 @@ function saveFreightData(details) {
         return Promise.reject(error);
         }).finally(function () {
             hideFiLoader();
-            $('#btnFiSaveAll').prop('disabled', !$('#dvFiGridSection').is(':visible'));
+            updateFiSaveForTransporter();
         });
     }).catch(function (error) {
         if (!(error && error.handled)) {
@@ -2043,10 +2333,35 @@ function initFreightInvoicePage() {
         .on('click', '#table-body-FiSavedList .js-fi-verify', function () {
             openFiVerifyConfirm(parseInt($(this).data('code') || '0', 10) || 0);
         })
+        .on('click', '#table-body-FiSavedList .js-fi-approve', function () {
+            openFiApproveConfirm(parseInt($(this).data('code') || '0', 10) || 0);
+        })
+        .on('click', '.js-fi-verified-tip', function (e) {
+            e.preventDefault();
+            showFiVerifiedTip(this);
+        })
+        .on('click', '.js-fi-approved-tip', function (e) {
+            e.preventDefault();
+            showFiApprovedTip(this);
+        })
+        .on('keydown', '.js-fi-verified-tip', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                showFiVerifiedTip(this);
+            }
+        })
+        .on('keydown', '.js-fi-approved-tip', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                showFiApprovedTip(this);
+            }
+        })
         .on('input', '#txtFiListSearch', function () {
             filterFiSavedList(($(this).val() || '').toLowerCase().trim());
         })
+        .on('change', '#ddlFiTransporter', onFiTransporterChange)
         .on('change', '#chkFiSelectAll', function () {
+            if (this.disabled) return;
             const checked = $(this).prop('checked');
             $('#tblFreightInvoice tbody .fi-row-select').prop('checked', checked);
             $(this).prop('indeterminate', false);
@@ -2054,8 +2369,8 @@ function initFreightInvoicePage() {
         .on('change', '#tblFreightInvoice tbody .fi-row-select', syncSelectAllCheckbox)
         .on('click', '#tblFreightInvoice thead th.fi-sortable', onFiGridHeaderSortClick);
 
-    $('#btnFiVerifyConfirm').on('click', doFiVerify);
-    $('#btnFiVerifyCancel').on('click', closeFiVerifyConfirm);
+    $('#btnFiVerifyConfirm').on('click', doFiConfirmAction);
+    $('#btnFiVerifyCancel').on('click', closeFiConfirmModal);
 
     resolveFiModuleRights().finally(function () {
         loadFiSavedList();
