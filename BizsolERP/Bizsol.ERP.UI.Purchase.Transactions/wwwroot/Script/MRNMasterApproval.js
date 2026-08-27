@@ -125,37 +125,39 @@ function mrnResolveLineItemsTotal(p) {
 function mrnResolvePaymentAmounts(p) {
     if (!p) return { totalBill: 0, freight: 0, deduction: 0, tds: 0, netPayable: 0 };
 
-    let totalBill = mrnPickPaymentNum(p, [
-        'TotalBillAmountManual', 'totalBillAmountManual',
-        'Total Bill Amount', 'BillAmount', 'billAmount',
-    ]);
     let freight = mrnPickPaymentNum(p, [
         'FreightCharges', 'freightCharges', 'Freight Charges', 'freight charges',
     ]);
+    if (isNaN(freight)) freight = 0;
+
     let deduction = mrnPickPaymentNum(p, [
         'Dedution', 'dedution', 'Deduction', 'deduction',
     ]);
+    if (isNaN(deduction)) deduction = 0;
+
     let tds = mrnPickPaymentNum(p, [
         'TDSAmount', 'tdsAmount', 'TDS Amount', 'tds amount',
     ]);
-    let netPayable = mrnPickPaymentNum(p, [
-        'NetPayable', 'netPayable', 'Net Payable', 'net payable',
-    ]);
+    if (isNaN(tds)) tds = 0;
 
     const lineSum = mrnResolveLineItemsTotal(p);
-    if (isNaN(totalBill)) {
-        if (!isNaN(freight) && lineSum > 0) totalBill = lineSum + freight;
-        else if (lineSum > 0) totalBill = lineSum;
-        else totalBill = getTotalAmount(p);
+    // Always prefer saved TotalBillAmountManual — it may include manual adjustments
+    // beyond lineSum + freight (e.g. records saved before FreightCharges was tracked).
+    const savedManualBill = mrnPickPaymentNum(p, [
+        'TotalBillAmountManual', 'totalBillAmountManual',
+        'Total Bill Amount', 'BillAmount', 'billAmount',
+    ]);
+    let totalBill;
+    if (!isNaN(savedManualBill) && savedManualBill > 0) {
+        totalBill = savedManualBill;
+    } else if (lineSum > 0) {
+        totalBill = lineSum + freight;
+    } else {
+        totalBill = getTotalAmount(p);
+        if (isNaN(totalBill)) totalBill = freight;
     }
-    if (isNaN(freight)) {
-        freight = lineSum > 0 && totalBill > lineSum ? Math.max(0, totalBill - lineSum) : 0;
-    }
-    if (isNaN(deduction)) deduction = 0;
-    if (isNaN(tds)) tds = 0;
-    if (isNaN(netPayable)) {
-        netPayable = Math.max(0, totalBill - deduction - tds);
-    }
+
+    const netPayable = Math.max(0, totalBill - deduction - tds);
 
     return {
         totalBill: totalBill || 0,
@@ -1594,7 +1596,7 @@ function BuildPaymentCard(p) {
     const mrnNo = EscHtml(mrnPlain);
     const vendor = EscHtml(vendorPlain);
     const entryDate = FmtDateDisplay(getEntryDate(p));
-    const amount = FmtCurrency(getTotalAmount(p));
+    const amount = FmtCurrency(mrnResolvePaymentAmounts(p).totalBill);
     const totalLvl = parseInt(p.TotalLevels ?? p.MaxLevel ?? 3, 10) || 1;
     const curLvlNo = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
     const levelChip = EscHtml(getGpaCardLevelChipLabel(p));
@@ -1979,7 +1981,7 @@ function paintModalFromPayment(po) {
     const billNo = EscHtml(getBillNoDisplay(po));
     const vendor = EscHtml(getPartyName(po));
     const entryDate = EscHtml(FmtDateDisplay(getEntryDate(po)) || '—');
-    const amount = FmtCurrency(getTotalAmount(po));
+    const amount = FmtCurrency(mrnResolvePaymentAmounts(po).totalBill);
     const curLvlNo = parseInt(po.CurrentLevelNo ?? po.CurrentLevel ?? 1, 10) || 1;
     const totalLvl = parseInt(po.TotalLevels ?? po.MaxLevel ?? 3, 10) || 1;
     const status = EscHtml(getApprovalStatus(po));
@@ -2028,13 +2030,32 @@ function RenderGpaModalAmountSummary(p) {
     const amounts = mrnResolvePaymentAmounts(p || G_CurrentPayment);
     $el.html(
         '<div class="gpa-amount-summary">' +
-            BuildGpaAmountSummaryItem('Total Bill Amount', FmtCurrency(amounts.totalBill)) +
             BuildGpaAmountSummaryItem('Freight Charges', FmtCurrency(amounts.freight)) +
+            BuildGpaAmountSummaryItem('Total Bill Amount', FmtCurrency(amounts.totalBill)) +
             BuildGpaAmountSummaryItem('Deduction', FmtCurrency(amounts.deduction)) +
             BuildGpaAmountSummaryItem('TDS Amount', FmtCurrency(amounts.tds)) +
             BuildGpaAmountSummaryItem('Net Payable', FmtCurrency(amounts.netPayable), true) +
         '</div>'
     );
+}
+
+function buildGpaModalItemsFooterHtml(master) {
+    const amounts = mrnResolvePaymentAmounts(master || {});
+    const lineSum = mrnResolveLineItemsTotal(master || {});
+    const rowStyle = 'background:#f8fafc;font-weight:700;font-size:0.82rem;color:#475569;';
+    const valStyle = 'text-end;font-weight:800;color:#667eea;';
+    return '<tr class="gpa-items-tfoot-row" style="' + rowStyle + '">' +
+        '<td colspan="7" class="text-end">Total Amount</td>' +
+        '<td style="' + valStyle + '">' + FmtCurrency(lineSum) + '</td>' +
+        '</tr>' +
+        '<tr class="gpa-items-tfoot-row" style="' + rowStyle + '">' +
+        '<td colspan="7" class="text-end">Freight Charges</td>' +
+        '<td style="' + valStyle + '">' + FmtCurrency(amounts.freight) + '</td>' +
+        '</tr>' +
+        '<tr class="gpa-items-tfoot-row" style="' + rowStyle + '">' +
+        '<td colspan="7" class="text-end">Total Bill Amount</td>' +
+        '<td style="' + valStyle + '">' + FmtCurrency(amounts.totalBill) + '</td>' +
+        '</tr>';
 }
 
 function BuildGpaDetailStepper(po) {
