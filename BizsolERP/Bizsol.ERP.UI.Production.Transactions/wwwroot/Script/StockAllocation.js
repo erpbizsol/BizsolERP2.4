@@ -14,6 +14,15 @@ let G_StockAllocationList = [];
 let G_CurrentIdentificationRow = null;
 let G_BomTransactionOrderWise_Code = 0;
 let G_RMInspectionRequestMaster_Code = 0;
+let G_EntryBuyerPOMaster_Code = 0;
+let G_EntryAllocationContext = {
+    buyerPOMaster_Code: 0,
+    sectionSize_Code: 0,
+    width_Code: 0,
+    thickness_Code: 0,
+    grade_Code: 0,
+    itemMaster_Code: 0
+};
 
 let G_DeleteContext = {
     type: '',
@@ -57,13 +66,23 @@ function GetStockAllocationList() {
 
         if (response && response.length > 0) {
             G_StockAllocationList = Array.isArray(response) ? response : [];
-            const stringFilterColumn = ["Order No", "Client Name", "Status"];
+            const stringFilterColumn = ["OrderNo", "Item Name", "Section Size", "Grade"];
             const numericFilterColumn = [];
             const dateFilterColumn = [];
             const button = false;
-            const stringDoubleFilterColumn = [];
+            const stringDoubleFilterColumn = ["Width", "Thickness"];
             const showButtons = [];
-            const hiddenColumns = ["Code", "BuyerPODetail_Code", "Thickness_Code", "Grade_Code", "BuyerPOMaster_Code"];
+            const hiddenColumns = [
+                "Code",
+                "BuyerPODetail_Code",
+                "BuyerPOMaster_Code",
+                "SectionSize_Code",
+                "Width_Code",
+                "Thickness_Code",
+                "Grade_Code",
+                "ItemMaster_Code",
+                "itemMaster_Code"
+            ];
             const columnAlignment = {
             };
             const updatedResponse = (response).map(function (item) {
@@ -99,6 +118,7 @@ function CreateNew() {
         } else {
             G_RMInspectionRequestMaster_Code = 0;
             G_BomTransactionOrderWise_Code = 0;
+            clearEntryAllocationContext();
     
             clearBOMMasterOrderWiseGrid();
             G_GetBOMMasterDataOrderWise = [];
@@ -466,7 +486,7 @@ function bindBOMMasterOrderWiseGrid(response) {
     const button = false;
     const stringDoubleFilterColumn = [];
     const showButtons = [];
-    const hiddenColumns = ["BomTransactionOrderWise_Codes", "Code", "SortPriority", "BuyerPODetail_Code", "Thickness_Code", "Grade_Code", "BuyerPOMaster_Code", "EntryNo", "GodownMaster_Code", "AccountMaster_Code", "EntryDate", "InspectionDate"];
+    const hiddenColumns = ["BomTransactionOrderWise_Codes", "Code", "SortPriority", "BuyerPODetail_Code", "Thickness_Code", "Grade_Code", "Width_Code", "BuyerPOMaster_Code", "EntryNo", "GodownMaster_Code", "AccountMaster_Code", "EntryDate", "InspectionDate", "ItemMaster_Code", "itemMaster_Code", "ItemParaMeterValueCode_SectionSize", "SectionSize_Code", "Section_Size_Code"];
     const columnAlignment = {
         "Client Name": "left;min-width:240px;",
         "Order No": "left;min-width:100px;",
@@ -480,8 +500,19 @@ function bindBOMMasterOrderWiseGrid(response) {
     const totalColumns = ["Qty(Wt.) To Allocate", "Allocated Qty(Wt.)"];
     const updatedResponse = list.map(function (item) {
         const balanceToInspect = parseFloat(item["BalQty"] != null ? item["BalQty"] : item["Qty(Wt.) To Allocate"]) || 0;
-        const actionHtml = '<button class="btn btn-primary icon-height mb-1 sa-grid-action-btn" title="Coil Details" onclick="UpdateCoilDetail('
-            + item.Grade_Code + ',' + item.Code + ',' + balanceToInspect + ')"><i class="fa fa-pencil"></i></button>';
+        const coilAccess = getCoilDetailAccessForRow(item);
+
+        let actionHtml;
+        if (coilAccess.allowed) {
+            actionHtml = '<button class="btn btn-primary icon-height mb-1 sa-grid-action-btn" title="Coil Details" onclick="UpdateCoilDetail('
+                + item.Grade_Code + ',' + item.Code + ',' + balanceToInspect + ')"><i class="fa fa-pencil"></i></button>';
+        } else if (coilAccess.reason === 'entry_exists') {
+            actionHtml = '<button class="btn btn-secondary icon-height mb-1 sa-grid-action-btn" disabled title="Stock Allocation entry already exists for this order and specification. Please edit the existing entry."><i class="fa fa-pencil"></i></button>';
+        } else if (coilAccess.reason === 'different_spec_edit') {
+            actionHtml = '<button class="btn btn-secondary icon-height mb-1 sa-grid-action-btn" disabled title="Different item/specification. Please edit the matching Stock Allocation entry or create a new one."><i class="fa fa-pencil"></i></button>';
+        } else {
+            actionHtml = '<button class="btn btn-secondary icon-height mb-1 sa-grid-action-btn" disabled title="Different order. Please create a new Stock Allocation entry."><i class="fa fa-pencil"></i></button>';
+        }
 
         // Place Action between Qty(Wt.) To Allocate and Allocated Qty(Wt.)
         const ordered = {};
@@ -597,7 +628,6 @@ function buildDetailTableHeader() {
         <tr>
             <th style="width:30px;">SNo</th>
             <th style="width:120px;">Identification No</th>
-            <th style="width:130px;">Order No To</th>
             <th style="width:90px;">Coil Wt.</th>
             <th style="width:220px;">Size</th>
             <th style="width:50px;">Action</th>
@@ -624,17 +654,16 @@ function updateDetailTableFooterSum() {
         
         if ($tbody && $tbody.length) {
             $tbody.find('tr.editable-row').each(function () {
-                const val = parseFloat($(this).find('.coil-wt').val()) || 0;
+                const val = roundAllocationWt($(this).find('.coil-wt').val());
                 total += val;
             });
         }
 
-        // Build footer row (6 columns: SNo, Identification No, Order No To, Coil Wt., Size, Action)
+        // Build footer row (5 columns: SNo, Identification No, Coil Wt., Size, Action)
         const footerHtml = `
             <tr style="background-color: #f8f9fa; font-weight: bold;">
                 <td></td>
                 <td>Total</td>
-                <td></td>
                 <td style="text-align:right;">${total.toFixed(3)}</td>
                 <td></td>
                 <td></td>
@@ -771,7 +800,6 @@ function addNewEditableRow() {
     const currentRowCount = $tbody.find('tr.editable-row').length;
     const newSNo = currentRowCount + 1;
 
-    const defaultOrderNoTo = resolveOrderNoToForRow(null);
     const rowHtml = `
         <tr class="editable-row">
             <td class="row-sno">${newSNo}
@@ -779,14 +807,13 @@ function addNewEditableRow() {
                 <input type="hidden" class="param-width-code" value="0" />
                 <input type="hidden" class="param-thk-code" value="0" />
                 <input type="hidden" class="param-grade-code" value="0" />
+                <input type="hidden" class="param-sectionsize-code" value="0" />
+                <input type="hidden" class="item-master-code" value="0" />
             </td>
             <td>
                 <select class="form-control form-control-sm identification-no">
                     <option value="">Select...</option>
                 </select>
-            </td>
-            <td>
-                <input type="text" class="form-control form-control-sm order-no-to" readonly value="${defaultOrderNoTo.replace(/"/g, '&quot;')}" />
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm coil-wt text-end sa-coil-wt-readonly" readonly disabled />
@@ -953,13 +980,83 @@ function deleteEditableRow($row) {
 }
 function getIdentificationParamCodes(item) {
     if (!item) {
-        return { width: 0, thk: 0, grade: 0 };
+        return { width: 0, thk: 0, grade: 0, sectionSize: 0, itemMasterCode: 0 };
     }
     return {
-        width: parseInt(item.ItemParaMeterValueCode_Width ?? item.itemParameterValueCode_Width ?? item.ItemParameterValueCode_Width ?? 0, 10) || 0,
-        thk: parseInt(item.ItemParaMeterValueCode_Thk ?? item.itemParameterValueCode_Thk ?? item.ItemParameterValueCode_Thk ?? 0, 10) || 0,
-        grade: parseInt(item.ItemParaMeterValueCode_Grade ?? item.itemParameterValueCode_Grade ?? item.ItemParameterValueCode_Grade ?? 0, 10) || 0
+        width: parseInt(item.ItemParaMeterValueCode_Width ?? item.itemParameterValueCode_Width ?? item.ItemParameterValueCode_Width ?? item.Width_Code ?? 0, 10) || 0,
+        thk: parseInt(item.ItemParaMeterValueCode_Thk ?? item.itemParameterValueCode_Thk ?? item.ItemParameterValueCode_Thk ?? item.Thickness_Code ?? 0, 10) || 0,
+        grade: parseInt(item.ItemParaMeterValueCode_Grade ?? item.itemParameterValueCode_Grade ?? item.ItemParameterValueCode_Grade ?? item.Grade_Code ?? 0, 10) || 0,
+        sectionSize: parseInt(item.ItemParaMeterValueCode_SectionSize ?? item.itemParameterValueCode_SectionSize ?? item.ItemParameterValueCode_SectionSize ?? item.SectionSize_Code ?? item.Section_Size_Code ?? 0, 10) || 0,
+        itemMasterCode: parseInt(item.ItemMaster_Code ?? item.itemMaster_Code ?? 0, 10) || 0
     };
+}
+
+function getCurrentGridRow() {
+    return Array.isArray(G_GetBOMMasterDataOrderWise)
+        ? G_GetBOMMasterDataOrderWise.find(function (r) { return String(r.Code) === String(G_BomTransactionOrderWise_Code); })
+        : null;
+}
+
+function getGridRowItemName(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return '';
+    }
+    const itemName = row['Item Name'] != null ? row['Item Name']
+        : (row.ItemName != null ? row.ItemName
+            : (row.Item_Name != null ? row.Item_Name : ''));
+    return itemName != null ? String(itemName) : '';
+}
+
+function getGridRowItemMasterCode(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return 0;
+    }
+    return parseInt(row.ItemMaster_Code ?? row.itemMaster_Code ?? 0, 10) || 0;
+}
+
+function getGridRowWidthCode(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return 0;
+    }
+    return parseInt(row.Width_Code ?? row.ItemParaMeterValueCode_Width ?? row.itemParameterValueCode_Width ?? 0, 10) || 0;
+}
+
+function getGridRowThicknessCode(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return 0;
+    }
+    return parseInt(row.Thickness_Code ?? row.ItemParaMeterValueCode_Thk ?? row.itemParameterValueCode_Thk ?? 0, 10) || 0;
+}
+
+function getGridRowGradeCode(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return 0;
+    }
+    return parseInt(row.Grade_Code ?? row.ItemParaMeterValueCode_Grade ?? row.itemParameterValueCode_Grade ?? 0, 10) || 0;
+}
+
+function getGridRowSectionSizeText(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return '';
+    }
+    return (row['Section Size'] ?? row.SectionSize ?? row.Section_Size ?? '').toString().trim();
+}
+
+function getGridRowSectionSizeCode(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return 0;
+    }
+    return parseInt(
+        row.ItemParaMeterValueCode_SectionSize ?? row.itemParameterValueCode_SectionSize ?? row.SectionSize_Code ?? row.Section_Size_Code ?? 0,
+        10
+    ) || 0;
 }
 
 function getDetailIdentificationNo(detail) {
@@ -1026,14 +1123,31 @@ function mergeSavedDetailsIntoIdentificationList(details) {
             if (!existing.ItemParaMeterValueCode_Grade && codes.grade) {
                 existing.ItemParaMeterValueCode_Grade = codes.grade;
             }
+            if (!existing.ItemParaMeterValueCode_SectionSize && codes.sectionSize) {
+                existing.ItemParaMeterValueCode_SectionSize = codes.sectionSize;
+            }
+            if (!existing.ItemMaster_Code && codes.itemMasterCode) {
+                existing.ItemMaster_Code = codes.itemMasterCode;
+            }
+            if (!existing['Item Name'] && getItemNameFromDetail(detail)) {
+                existing['Item Name'] = getItemNameFromDetail(detail);
+            }
+            if (!existing['Section Size'] && getSectionSizeFromDetail(detail)) {
+                existing['Section Size'] = getSectionSizeFromDetail(detail);
+            }
         } else {
             G_IdentificationList.push({
                 IdentificationNo: id,
                 BalQtyMT: weight,
                 Size: size,
+                'Item Name': getItemNameFromDetail(detail),
+                'Section Size': getSectionSizeFromDetail(detail),
                 ItemParaMeterValueCode_Width: codes.width,
                 ItemParaMeterValueCode_Thk: codes.thk,
-                ItemParaMeterValueCode_Grade: codes.grade
+                ItemParaMeterValueCode_Grade: codes.grade,
+                ItemParaMeterValueCode_SectionSize: codes.sectionSize,
+                SectionSize_Code: codes.sectionSize,
+                ItemMaster_Code: codes.itemMasterCode
             });
         }
     });
@@ -1052,17 +1166,116 @@ function ensureIdentificationOption($identificationNo, identificationNo) {
     }
 }
 
+function getGridRowWidthText(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return '';
+    }
+    const width = row.Width != null ? row.Width : row['Width'];
+    return width != null && width !== '' ? String(width) : '';
+}
+
+function getGridRowThicknessText(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return '';
+    }
+    const thickness = row.Thickness != null ? row.Thickness : row['Thickness'];
+    return thickness != null && thickness !== '' ? String(thickness) : '';
+}
+
+function getGridRowGradeText(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return '';
+    }
+    const grade = row.Grade != null ? row.Grade : row['Grade'];
+    return grade != null && grade !== '' ? String(grade) : '';
+}
+
+function applyModalAllocationContextFromGrid(gridRow) {
+    gridRow = gridRow || getCurrentGridRow();
+    if (!gridRow) {
+        return;
+    }
+
+    const orderNo = gridRow['Order No'] != null ? gridRow['Order No']
+        : (gridRow.OrderNo != null ? gridRow.OrderNo : (gridRow.Order_No != null ? gridRow.Order_No : ''));
+
+    $('#txtCoilOrderNoTo').val(orderNo != null ? String(orderNo) : '');
+    $('#txtCoilItemName').val(getGridRowItemName(gridRow));
+    $('#txtCoilSectionSize').val(getGridRowSectionSizeText(gridRow));
+    $('#txtCoilWidth').val(getGridRowWidthText(gridRow));
+    $('#txtCoilThickness').val(getGridRowThicknessText(gridRow));
+    $('#txtCoilGrade').val(getGridRowGradeText(gridRow));
+    $('#hfCoilWidthCode').val(getGridRowWidthCode(gridRow));
+    $('#hfCoilThkCode').val(getGridRowThicknessCode(gridRow));
+    $('#hfCoilGradeCode').val(getGridRowGradeCode(gridRow));
+    $('#hfCoilSectionSizeCode').val(getGridRowSectionSizeCode(gridRow));
+    $('#hfCoilItemMasterCode').val(getGridRowItemMasterCode(gridRow));
+}
+
+function getModalOrderNoTo() {
+    return ($('#txtCoilOrderNoTo').val() || '').toString().trim();
+}
+
+function getModalParamCode(selector, fallbackFn) {
+    const val = parseInt($(selector).val(), 10) || 0;
+    if (val > 0) {
+        return val;
+    }
+    return typeof fallbackFn === 'function' ? (fallbackFn() || 0) : 0;
+}
+
+function applyRowParamCodesFromModal($row) {
+    if (!$row || !$row.length) {
+        return;
+    }
+
+    $row.find('.param-width-code').val(getModalParamCode('#hfCoilWidthCode', getGridRowWidthCode));
+    $row.find('.param-thk-code').val(getModalParamCode('#hfCoilThkCode', getGridRowThicknessCode));
+    $row.find('.param-grade-code').val(getModalParamCode('#hfCoilGradeCode', getGridRowGradeCode));
+    $row.find('.param-sectionsize-code').val(getModalParamCode('#hfCoilSectionSizeCode', getGridRowSectionSizeCode));
+    $row.find('.item-master-code').val(getModalParamCode('#hfCoilItemMasterCode', getGridRowItemMasterCode));
+}
+
+function filterDetailsForCurrentOrder(details) {
+    const targetOrder = getCurrentGridOrderNo();
+    if (!targetOrder) {
+        return Array.isArray(details) ? details : [];
+    }
+
+    return (Array.isArray(details) ? details : []).filter(function (detail) {
+        const detailOrder = getOrderNoToFromDetail(detail);
+        return !detailOrder || detailOrder === targetOrder;
+    });
+}
+
+function clearCoilModalOrderContext() {
+    $('#txtCoilOrderNoTo').val('');
+    $('#txtCoilItemName').val('');
+    $('#txtCoilSectionSize').val('');
+    $('#txtCoilWidth').val('');
+    $('#txtCoilThickness').val('');
+    $('#txtCoilGrade').val('');
+    $('#hfCoilWidthCode').val('0');
+    $('#hfCoilThkCode').val('0');
+    $('#hfCoilGradeCode').val('0');
+    $('#hfCoilSectionSizeCode').val('0');
+    $('#hfCoilItemMasterCode').val('0');
+}
+
 function setRowIdentificationParamCodes($row, item) {
     const codes = getIdentificationParamCodes(item);
-    $row.find('.param-width-code').val(codes.width);
-    $row.find('.param-thk-code').val(codes.thk);
-    $row.find('.param-grade-code').val(codes.grade);
+    $row.find('.param-width-code').val(codes.width || getGridRowWidthCode());
+    $row.find('.param-thk-code').val(codes.thk || getGridRowThicknessCode());
+    $row.find('.param-grade-code').val(codes.grade || getGridRowGradeCode());
+    $row.find('.param-sectionsize-code').val(codes.sectionSize || getGridRowSectionSizeCode());
+    $row.find('.item-master-code').val(codes.itemMasterCode || getGridRowItemMasterCode());
 }
 
 function clearRowIdentificationParamCodes($row) {
-    $row.find('.param-width-code').val('0');
-    $row.find('.param-thk-code').val('0');
-    $row.find('.param-grade-code').val('0');
+    applyRowParamCodesFromModal($row);
 }
 
 function getStockAllocationEntryDate() {
@@ -1085,15 +1298,32 @@ function initializeEditableRow($row, detail) {
     }
 
     const $identificationNo = $row.find('.identification-no');
-    const $orderNoTo = $row.find('.order-no-to');
     const $coilWt = $row.find('.coil-wt');
     const $coilSize = $row.find('.coil-size');
     const $addBtn = $row.find('.add-row-btn');
     const $deleteBtn = $row.find('.delete-row-btn');
 
-    // Order No To: API value on edit; grid Order No for new rows
-    if ($orderNoTo && $orderNoTo.length) {
-        $orderNoTo.val(resolveOrderNoToForRow(detail));
+    applyRowParamCodesFromModal($row);
+    if (detail) {
+        $row.data('saved-detail', detail);
+        const codes = getIdentificationParamCodes(detail);
+        if (codes.width) {
+            $row.find('.param-width-code').val(codes.width);
+        }
+        if (codes.thk) {
+            $row.find('.param-thk-code').val(codes.thk);
+        }
+        if (codes.grade) {
+            $row.find('.param-grade-code').val(codes.grade);
+        }
+        if (codes.sectionSize) {
+            $row.find('.param-sectionsize-code').val(codes.sectionSize);
+        }
+        if (codes.itemMasterCode) {
+            $row.find('.item-master-code').val(codes.itemMasterCode);
+        }
+    } else {
+        $row.removeData('saved-detail');
     }
 
     // Bind Identification options from GetBOMMasterIdentificationNo result
@@ -1132,6 +1362,7 @@ function initializeEditableRow($row, detail) {
     // On Identification change, auto-set Size and Coil Wt. (read-only)
     function handleIdentificationChange() {
         const selectedId = $identificationNo.val() || '';
+        $row.removeData('saved-detail');
         
         const selectedIds = getSelectedIdentificationNos($row);
         if (selectedId && selectedIds.indexOf(selectedId) >= 0) {
@@ -1150,14 +1381,15 @@ function initializeEditableRow($row, detail) {
             });
 
             if (match) {
+                applyRowParamCodesFromModal($row);
                 setRowIdentificationParamCodes($row, match);
                 $coilSize.val(match.Size || match.size || '');
 
-                const idBalQty = parseFloat(match.BalQtyMT) || 0;
+                const idBalQty = roundAllocationWt(match.BalQtyMT);
                 $coilWt.data('id-bal-qty', idBalQty);
 
                 const maxWt = getMaxCoilWtForRow($row, idBalQty);
-                if (idBalQty > 0 && maxWt > 0 && idBalQty > maxWt) {
+                if (idBalQty > 0 && maxWt > 0 && isAllocationWtExceeded(idBalQty, maxWt)) {
                     toastr.warning('Coil Wt. (' + formatAllocationWt(idBalQty) + ') exceeds available Balance (' + formatAllocationWt(maxWt) + ').');
                 }
 
@@ -1191,8 +1423,6 @@ function initializeEditableRow($row, detail) {
         const existingQty = detail.weight != null ? detail.weight : (detail.Weight != null ? detail.Weight : (detail.qtyMTOffer || detail.QtyMTOffer || ''));
         const existingSize = detail.Size || detail.size || '';
 
-        setRowIdentificationParamCodes($row, detail);
-
         // Always keep saved Identification in dropdown, even outside filter range
         if (existingIdentification) {
             ensureIdentificationOption($identificationNo, existingIdentification);
@@ -1208,13 +1438,11 @@ function initializeEditableRow($row, detail) {
         }
 
         if ($identificationNo.val()) {
-            setRowIdentificationParamCodes($row, detail);
-
             const match = (G_IdentificationList || []).find(function (item) {
                 const idVal = item.IdentificationNo || item.IdentificationNos || '';
                 return idVal === $identificationNo.val();
             });
-            const idBalQty = match ? (parseFloat(match.BalQtyMT) || 0) : (parseFloat(existingQty) || 0);
+            const idBalQty = match ? roundAllocationWt(match.BalQtyMT) : roundAllocationWt(existingQty);
             $coilWt.data('id-bal-qty', idBalQty);
             setRowCoilWt($coilWt, existingQty !== '' ? existingQty : idBalQty);
 
@@ -1235,7 +1463,6 @@ function bindEmptyEditableRow() {
         return;
     }
 
-    const defaultOrderNoTo = resolveOrderNoToForRow(null);
     const rowHtml = `
         <tr class="editable-row">
             <td class="row-sno">1
@@ -1243,14 +1470,13 @@ function bindEmptyEditableRow() {
                 <input type="hidden" class="param-width-code" value="0" />
                 <input type="hidden" class="param-thk-code" value="0" />
                 <input type="hidden" class="param-grade-code" value="0" />
+                <input type="hidden" class="param-sectionsize-code" value="0" />
+                <input type="hidden" class="item-master-code" value="0" />
             </td>
             <td>
                 <select class="form-control form-control-sm identification-no">
                     <option value="">Select...</option>
                 </select>
-            </td>
-            <td>
-                <input type="text" class="form-control form-control-sm order-no-to" readonly value="${defaultOrderNoTo.replace(/"/g, '&quot;')}" />
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm coil-wt text-end sa-coil-wt-readonly" readonly disabled />
@@ -1295,23 +1521,26 @@ function bindExistingEditableRows(detailResponse) {
         const lockedClass = isLocked ? 'locked-row' : '';
         
         const paramCodes = getIdentificationParamCodes(detail);
-        const orderNoTo = resolveOrderNoToForRow(detail).replace(/"/g, '&quot;');
+        const modalWidthCode = getModalParamCode('#hfCoilWidthCode', getGridRowWidthCode);
+        const modalThicknessCode = getModalParamCode('#hfCoilThkCode', getGridRowThicknessCode);
+        const modalGradeCode = getModalParamCode('#hfCoilGradeCode', getGridRowGradeCode);
+        const modalSectionSizeCode = getModalParamCode('#hfCoilSectionSizeCode', getGridRowSectionSizeCode);
+        const modalItemMasterCode = getModalParamCode('#hfCoilItemMasterCode', getGridRowItemMasterCode);
         const rowHtml = `
             <tr class="editable-row ${lockedClass}">
                 <td class="row-sno">${index + 1}
                     <input type="hidden" class="Code" value="${detail.Code || 0}" />
                     <input type="hidden" class="Verify" value="${verifyStatus}" />
-                    <input type="hidden" class="param-width-code" value="${paramCodes.width}" />
-                    <input type="hidden" class="param-thk-code" value="${paramCodes.thk}" />
-                    <input type="hidden" class="param-grade-code" value="${paramCodes.grade}" />
+                    <input type="hidden" class="param-width-code" value="${paramCodes.width || modalWidthCode}" />
+                    <input type="hidden" class="param-thk-code" value="${paramCodes.thk || modalThicknessCode}" />
+                    <input type="hidden" class="param-grade-code" value="${paramCodes.grade || modalGradeCode}" />
+                    <input type="hidden" class="param-sectionsize-code" value="${paramCodes.sectionSize || modalSectionSizeCode}" />
+                    <input type="hidden" class="item-master-code" value="${paramCodes.itemMasterCode || modalItemMasterCode}" />
                 </td>
                 <td>
                     <select class="form-control form-control-sm identification-no" ${isLocked ? 'disabled' : ''}>
                         <option value="">Select...</option>
                     </select>
-                </td>
-                <td>
-                    <input type="text" class="form-control form-control-sm order-no-to" readonly value="${orderNoTo}" />
                 </td>
                 <td>
                     <input type="text" class="form-control form-control-sm coil-wt text-end sa-coil-wt-readonly" readonly disabled />
@@ -1400,7 +1629,7 @@ function initCoilFilterInputs() {
         });
     });
 
-    $(document).off('click.saGradeClose').on('click.saGradeClose', function (e) {
+    $(document).off('click.saFilterDdClose').on('click.saFilterDdClose', function (e) {
         if (!$(e.target).closest('#saGradeDropdown').length) {
             $('#ddlGradeCheckList').hide();
         }
@@ -1473,13 +1702,15 @@ function updateGradeSelectedText() {
 }
 function getCoilFilterValues() {
     const grades = getSelectedGrades();
+    const sectionSize = getGridRowSectionSizeText();
     return {
         WidthFrom: ($('#txtWidthFrom').val() || '').toString().trim().substring(0, 6),
         WidthTo: ($('#txtWidthTo').val() || '').toString().trim().substring(0, 6),
         ThicknessFrom: ($('#txtThicknessFrom').val() || '').toString().trim().substring(0, 6),
         ThicknessTo: ($('#txtThicknessTo').val() || '').toString().trim().substring(0, 6),
         Grades: grades,
-        GradesCsv: grades.join(',')
+        GradesCsv: grades.join(','),
+        SectionSizesCsv: sectionSize
     };
 }
 function fillCoilFiltersFromRow(row) {
@@ -1499,6 +1730,164 @@ function fillCoilFiltersFromRow(row) {
     $('#ddlGradeCheckList').hide();
 }
 
+function emptyAllocationContext() {
+    return {
+        buyerPOMaster_Code: 0,
+        sectionSize_Code: 0,
+        width_Code: 0,
+        thickness_Code: 0,
+        grade_Code: 0,
+        itemMaster_Code: 0
+    };
+}
+
+function clearEntryAllocationContext() {
+    G_EntryAllocationContext = emptyAllocationContext();
+    G_EntryBuyerPOMaster_Code = 0;
+}
+
+function getListRowAllocationCodes(listRow) {
+    if (!listRow) {
+        return emptyAllocationContext();
+    }
+
+    return {
+        buyerPOMaster_Code: parseInt(listRow.BuyerPOMaster_Code ?? listRow.buyerPOMaster_Code ?? 0, 10) || 0,
+        sectionSize_Code: parseInt(listRow.SectionSize_Code ?? listRow.sectionSize_Code ?? listRow.Section_Size_Code ?? 0, 10) || 0,
+        width_Code: parseInt(listRow.Width_Code ?? listRow.width_Code ?? 0, 10) || 0,
+        thickness_Code: parseInt(listRow.Thickness_Code ?? listRow.thickness_Code ?? 0, 10) || 0,
+        grade_Code: parseInt(listRow.Grade_Code ?? listRow.grade_Code ?? 0, 10) || 0,
+        itemMaster_Code: parseInt(listRow.ItemMaster_Code ?? listRow.itemMaster_Code ?? 0, 10) || 0
+    };
+}
+
+function getGridRowAllocationCodes(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return emptyAllocationContext();
+    }
+
+    return {
+        buyerPOMaster_Code: parseInt(row.BuyerPOMaster_Code ?? row.buyerPOMaster_Code ?? 0, 10) || 0,
+        sectionSize_Code: parseInt(row.SectionSize_Code ?? row.sectionSize_Code ?? row.Section_Size_Code ?? row.ItemParaMeterValueCode_SectionSize ?? 0, 10) || 0,
+        width_Code: parseInt(row.Width_Code ?? row.width_Code ?? row.ItemParaMeterValueCode_Width ?? 0, 10) || 0,
+        thickness_Code: parseInt(row.Thickness_Code ?? row.thickness_Code ?? row.ItemParaMeterValueCode_Thk ?? 0, 10) || 0,
+        grade_Code: parseInt(row.Grade_Code ?? row.grade_Code ?? row.ItemParaMeterValueCode_Grade ?? 0, 10) || 0,
+        itemMaster_Code: parseInt(row.ItemMaster_Code ?? row.itemMaster_Code ?? 0, 10) || 0
+    };
+}
+
+function allocationContextKeysMatch(a, b) {
+    const keys = ['buyerPOMaster_Code', 'sectionSize_Code', 'width_Code', 'thickness_Code', 'grade_Code', 'itemMaster_Code'];
+    return keys.every(function (key) {
+        return (a[key] || 0) === (b[key] || 0);
+    });
+}
+
+function setEntryAllocationContextFromListRow(listRow) {
+    G_EntryAllocationContext = getListRowAllocationCodes(listRow);
+    G_EntryBuyerPOMaster_Code = G_EntryAllocationContext.buyerPOMaster_Code;
+}
+
+function setEntryAllocationContextFromGridRow(gridRow) {
+    if (!gridRow) {
+        return;
+    }
+    G_EntryAllocationContext = getGridRowAllocationCodes(gridRow);
+    G_EntryBuyerPOMaster_Code = G_EntryAllocationContext.buyerPOMaster_Code;
+}
+
+function getEntryAllocationContext() {
+    if (G_EntryAllocationContext && G_EntryAllocationContext.buyerPOMaster_Code) {
+        return G_EntryAllocationContext;
+    }
+
+    const masterCode = G_RMInspectionRequestMaster_Code || 0;
+    if (!masterCode) {
+        return emptyAllocationContext();
+    }
+
+    const listRow = (G_StockAllocationList || []).find(function (r) {
+        return String(r.Code) === String(masterCode);
+    });
+    return getListRowAllocationCodes(listRow);
+}
+
+function getEntryBuyerPOMasterCode() {
+    return getEntryAllocationContext().buyerPOMaster_Code || G_EntryBuyerPOMaster_Code || 0;
+}
+
+function getGridRowBuyerPOMasterCode(row) {
+    row = row || getCurrentGridRow();
+    if (!row) {
+        return 0;
+    }
+    return parseInt(row.BuyerPOMaster_Code ?? row.buyerPOMaster_Code ?? 0, 10) || 0;
+}
+
+function isEditingStockAllocationEntry() {
+    return (G_RMInspectionRequestMaster_Code || 0) > 0;
+}
+
+function stockAllocationEntryExistsForRow(gridRow) {
+    const rowCodes = getGridRowAllocationCodes(gridRow);
+    if (!rowCodes.buyerPOMaster_Code) {
+        return false;
+    }
+
+    return (G_StockAllocationList || []).some(function (r) {
+        return allocationContextKeysMatch(getListRowAllocationCodes(r), rowCodes);
+    });
+}
+
+function getCoilDetailAccessForRow(gridRow) {
+    const rowCodes = getGridRowAllocationCodes(gridRow);
+
+    if (isEditingStockAllocationEntry()) {
+        const entryCodes = getEntryAllocationContext();
+        if (!allocationContextKeysMatch(entryCodes, rowCodes)) {
+            if (entryCodes.buyerPOMaster_Code && rowCodes.buyerPOMaster_Code
+                && entryCodes.buyerPOMaster_Code !== rowCodes.buyerPOMaster_Code) {
+                return { allowed: false, reason: 'different_order_edit' };
+            }
+            return { allowed: false, reason: 'different_spec_edit' };
+        }
+        return { allowed: true, reason: '' };
+    }
+
+    if (stockAllocationEntryExistsForRow(gridRow)) {
+        return { allowed: false, reason: 'entry_exists' };
+    }
+
+    return { allowed: true, reason: '' };
+}
+
+function validateCoilDetailOrderForEntry(gridRow) {
+    return getCoilDetailAccessForRow(gridRow).allowed;
+}
+
+function showCoilDetailAccessMessage(access) {
+    if (!access || access.allowed) {
+        return;
+    }
+
+    if (access.reason === 'entry_exists') {
+        toastr.error('Stock Allocation entry already exists for this order and specification. Please edit the existing entry.');
+        return;
+    }
+
+    if (access.reason === 'different_spec_edit') {
+        toastr.error('This Stock Allocation entry is linked to a different item/specification. Please edit the matching entry or create a new Stock Allocation entry.');
+        return;
+    }
+
+    showDifferentOrderAllocationMessage();
+}
+
+function showDifferentOrderAllocationMessage() {
+    toastr.error('This Stock Allocation entry is linked to a different order. Please create a new Stock Allocation entry to allocate coils for this order.');
+}
+
 function getStockAllocationEntryNoDisplay() {
     const masterCode = G_RMInspectionRequestMaster_Code || 0;
     if (!masterCode) {
@@ -1516,9 +1905,7 @@ function getStockAllocationEntryNoDisplay() {
 }
 
 function getCurrentGridOrderNo() {
-    const currentGridRow = Array.isArray(G_GetBOMMasterDataOrderWise)
-        ? G_GetBOMMasterDataOrderWise.find(function (r) { return String(r.Code) === String(G_BomTransactionOrderWise_Code); })
-        : null;
+    const currentGridRow = getCurrentGridRow();
     if (!currentGridRow) {
         return '';
     }
@@ -1526,6 +1913,55 @@ function getCurrentGridOrderNo() {
         : (currentGridRow.OrderNo != null ? currentGridRow.OrderNo
             : (currentGridRow.Order_No != null ? currentGridRow.Order_No : ''));
     return orderNo != null ? String(orderNo) : '';
+}
+
+function getCurrentGridItemName() {
+    const currentGridRow = getCurrentGridRow();
+    if (!currentGridRow) {
+        return '';
+    }
+    const itemName = currentGridRow['Item Name'] != null ? currentGridRow['Item Name']
+        : (currentGridRow.ItemName != null ? currentGridRow.ItemName
+            : (currentGridRow.Item_Name != null ? currentGridRow.Item_Name : ''));
+    return itemName != null ? String(itemName) : '';
+}
+
+function getItemNameFromDetail(detail) {
+    if (!detail) {
+        return '';
+    }
+    const itemName = detail['Item Name'] != null ? detail['Item Name']
+        : (detail.ItemName != null ? detail.ItemName
+            : (detail.itemName != null ? detail.itemName : ''));
+    return itemName != null ? String(itemName) : '';
+}
+
+/** Edit: API Item Name; New row: current BOM grid Item Name */
+function resolveItemNameForRow(detail) {
+    const fromApi = getItemNameFromDetail(detail);
+    if (fromApi !== '') {
+        return fromApi;
+    }
+    return getCurrentGridItemName();
+}
+
+function getSectionSizeFromDetail(detail) {
+    if (!detail) {
+        return '';
+    }
+    const sectionSize = detail['Section Size'] != null ? detail['Section Size']
+        : (detail.SectionSize != null ? detail.SectionSize
+            : (detail.Section_Size != null ? detail.Section_Size : ''));
+    return sectionSize != null ? String(sectionSize) : '';
+}
+
+/** Edit: API Section Size; New row: current BOM grid Section Size */
+function resolveSectionSizeForRow(detail) {
+    const fromApi = getSectionSizeFromDetail(detail);
+    if (fromApi !== '') {
+        return fromApi;
+    }
+    return getGridRowSectionSizeText();
 }
 
 function getOrderNoToFromDetail(detail) {
@@ -1575,6 +2011,15 @@ function formatAllocationWt(value) {
     return num.toFixed(3);
 }
 
+function roundAllocationWt(value) {
+    const num = parseFloat(value) || 0;
+    return Math.round(num * 1000) / 1000;
+}
+
+function isAllocationWtExceeded(actual, limit) {
+    return roundAllocationWt(actual) > roundAllocationWt(limit);
+}
+
 function fillCoilAllocationSummary() {
     const info = getCurrentGridAllocationInfo();
     G_ToAllocateWt = info.toAllocate;
@@ -1619,15 +2064,15 @@ function getTotalCoilWtExcludingRow(excludeRow) {
         if (excludeRow && this === excludeRow[0]) {
             return;
         }
-        total += parseFloat($(this).find('.coil-wt').val()) || 0;
+        total += roundAllocationWt($(this).find('.coil-wt').val());
     });
     return total;
 }
 
 function getRemainingBalanceForRow(excludeRow) {
-    const toAllocate = G_ToAllocateWt || parseFloat($('#txtToAllocateWt').val()) || 0;
+    const toAllocate = roundAllocationWt(G_ToAllocateWt || parseFloat($('#txtToAllocateWt').val()) || 0);
     const usedByOthers = getTotalCoilWtExcludingRow(excludeRow);
-    return Math.max(0, toAllocate - usedByOthers);
+    return Math.max(0, roundAllocationWt(toAllocate - usedByOthers));
 }
 
 function setRowCoilWt($coilWt, weight) {
@@ -1635,7 +2080,7 @@ function setRowCoilWt($coilWt, weight) {
         return;
     }
 
-    const wt = parseFloat(weight) || 0;
+    const wt = roundAllocationWt(weight);
     $coilWt
         .val(wt > 0 ? formatAllocationWt(wt) : '')
         .prop('readonly', true)
@@ -1658,10 +2103,10 @@ function clearRowCoilWt($coilWt) {
 
 function getMaxCoilWtForRow($row, identificationBalQty) {
     const remainingBalance = getRemainingBalanceForRow($row);
-    const idBalQty = parseFloat(identificationBalQty) || 0;
+    const idBalQty = roundAllocationWt(identificationBalQty);
 
     if (idBalQty > 0 && remainingBalance > 0) {
-        return Math.min(remainingBalance, idBalQty);
+        return roundAllocationWt(Math.min(remainingBalance, idBalQty));
     }
     if (idBalQty > 0) {
         return idBalQty;
@@ -1677,6 +2122,7 @@ function fillCoilModalInfo() {
 function clearCoilModalInfo() {
     $('#txtCoilEntryNo').val('');
     clearCoilAllocationSummary();
+    clearCoilModalOrderContext();
 }
 function filterIdentificationListByRange(list) {
     const f = getCoilFilterValues();
@@ -1710,10 +2156,11 @@ function loadIdentificationList(keepDetailRows) {
         f.WidthTo,
         f.ThicknessFrom,
         f.ThicknessTo,
-        f.GradesCsv
+        f.GradesCsv,
+        f.SectionSizesCsv
     ).then(function (response) {
         let list = Array.isArray(response) ? response : [];
-        if (list.length > 0 && (list[0].Width != null || list[0].Thickness != null || list[0].Grade != null)) {
+        if (list.length > 0 && (list[0].Width != null || list[0].Thickness != null || list[0].Grade != null || list[0]['Section Size'] != null || list[0].SectionSize != null)) {
             list = filterIdentificationListByRange(list);
         }
         G_IdentificationList = list;
@@ -1772,6 +2219,13 @@ function UpdateCoilDetail(Grade_Code, Code, balanceToInspectWt) {
             const gridRow = Array.isArray(G_GetBOMMasterDataOrderWise)
                 ? G_GetBOMMasterDataOrderWise.find(function (r) { return String(r.Code) === String(Code); })
                 : null;
+
+            const coilAccess = getCoilDetailAccessForRow(gridRow);
+            if (!coilAccess.allowed) {
+                showCoilDetailAccessMessage(coilAccess);
+                return;
+            }
+
             if (gridRow) {
                 G_ToAllocateWt = parseFloat(gridRow['Qty(Wt.) To Allocate']) || 0;
                 G_AllocatedWt = parseFloat(gridRow['Allocated Qty(Wt.)']) || 0;
@@ -1781,6 +2235,7 @@ function UpdateCoilDetail(Grade_Code, Code, balanceToInspectWt) {
                 G_BalanceToInspectWt = G_InitialBalanceWt;
             }
             fillCoilFiltersFromRow(gridRow);
+            applyModalAllocationContextFromGrid(gridRow);
 
             Showloader();
             loadIdentificationList(true).then(function () {
@@ -1801,6 +2256,8 @@ function UpdateCoilDetail(Grade_Code, Code, balanceToInspectWt) {
                             return String(val) === String(G_BomTransactionOrderWise_Code);
                         });
                     }
+
+                    details = filterDetailsForCurrentOrder(details);
 
                     mergeSavedDetailsIntoIdentificationList(details);
                     fillCoilModalInfo();
@@ -1849,6 +2306,10 @@ function adjustSaPageGridScrollHeights() {
     });
 }
 
+function isCoilDetailMobileLayout() {
+    return window.matchMedia('(max-width: 768px)').matches;
+}
+
 function adjustCoilDetailGridScrollHeight() {
     var $modal = $('#DetailModal');
     if (!$modal.length || !$modal.hasClass('show')) {
@@ -1858,6 +2319,17 @@ function adjustCoilDetailGridScrollHeight() {
     var $body = $modal.find('.modal-body');
     var $grid = $modal.find('.sa-coil-detail-grid');
     if (!$body.length || !$grid.length) {
+        return;
+    }
+
+    if (isCoilDetailMobileLayout()) {
+        $grid.css({
+            height: '',
+            maxHeight: '',
+            minHeight: '260px',
+            overflowY: 'auto',
+            overflowX: 'auto'
+        });
         return;
     }
 
@@ -1873,6 +2345,7 @@ function adjustCoilDetailGridScrollHeight() {
     $grid.css({
         height: available + 'px',
         maxHeight: available + 'px',
+        minHeight: '',
         overflowY: 'auto',
         overflowX: 'auto'
     });
@@ -1902,6 +2375,7 @@ function OpenModal() {
     $('#DetailModal').one('shown.bs.modal.saOpen', function () {
         adjustCoilDetailGridScrollHeight();
         setTimeout(adjustCoilDetailGridScrollHeight, 100);
+        setTimeout(adjustCoilDetailGridScrollHeight, 350);
     });
 }
 function CloseModal() {
@@ -1940,12 +2414,22 @@ function SaveStockAllocation() {
         return;
     }
 
-    const currentGridRow = Array.isArray(G_GetBOMMasterDataOrderWise)
-        ? G_GetBOMMasterDataOrderWise.find(function (r) { return String(r.Code) === String(G_BomTransactionOrderWise_Code); })
-        : null;
+    const currentGridRow = getCurrentGridRow();
+    const coilAccess = getCoilDetailAccessForRow(currentGridRow);
+    if (!coilAccess.allowed) {
+        showCoilDetailAccessMessage(coilAccess);
+        return;
+    }
+
     const buyerPOMaster_Code = currentGridRow
         ? (currentGridRow.BuyerPOMaster_Code || currentGridRow.buyerPOMaster_Code || 0)
         : 0;
+    const defaultItemMasterCode = getModalParamCode('#hfCoilItemMasterCode', function () { return getGridRowItemMasterCode(currentGridRow); });
+    const defaultWidthCode = getModalParamCode('#hfCoilWidthCode', function () { return getGridRowWidthCode(currentGridRow); });
+    const defaultThkCode = getModalParamCode('#hfCoilThkCode', function () { return getGridRowThicknessCode(currentGridRow); });
+    const defaultGradeCode = getModalParamCode('#hfCoilGradeCode', function () { return getGridRowGradeCode(currentGridRow); });
+    const defaultSectionSizeCode = getModalParamCode('#hfCoilSectionSizeCode', function () { return getGridRowSectionSizeCode(currentGridRow); });
+    const modalOrderNoTo = getModalOrderNoTo() || getCurrentGridOrderNo();
 
     const $tbody = $('#DetailTable-body');
     const detailRows = [];
@@ -1959,26 +2443,32 @@ function SaveStockAllocation() {
             
             const $row = $(this);
             const identificationNo = $row.find('.identification-no').val() || '';
-            const coilWt = parseFloat($row.find('.coil-wt').val()) || 0;
-            const orderNoTo = ($row.find('.order-no-to').val() || '').toString().trim() || getCurrentGridOrderNo();
-            const widthCode = parseInt($row.find('.param-width-code').val(), 10) || 0;
-            const thkCode = parseInt($row.find('.param-thk-code').val(), 10) || 0;
-            const gradeCode = parseInt($row.find('.param-grade-code').val(), 10) || 0;
+            const coilWt = roundAllocationWt($row.find('.coil-wt').val());
+            const orderNoTo = modalOrderNoTo;
+            const widthCode = parseInt($row.find('.param-width-code').val(), 10) || defaultWidthCode || 0;
+            const thkCode = parseInt($row.find('.param-thk-code').val(), 10) || defaultThkCode || 0;
+            const gradeCode = parseInt($row.find('.param-grade-code').val(), 10) || defaultGradeCode || 0;
+            const sectionSizeCode = parseInt($row.find('.param-sectionsize-code').val(), 10) || defaultSectionSizeCode || 0;
+            const itemMasterCode = parseInt($row.find('.item-master-code').val(), 10) || defaultItemMasterCode || 0;
+            const detailCode = parseInt($row.find('.Code').val(), 10) || 0;
 
             if (identificationNo !== '' && coilWt > 0) {
                 const maxWt = getMaxCoilWtForRow($row, $row.find('.coil-wt').data('id-bal-qty'));
-                if (maxWt > 0 && coilWt > maxWt) {
+                if (maxWt > 0 && isAllocationWtExceeded(coilWt, maxWt)) {
                     toastr.error('Coil Wt. (' + formatAllocationWt(coilWt) + ') for Identification ' + identificationNo + ' exceeds available Balance (' + formatAllocationWt(maxWt) + ').');
                     validationError = true;
                     return false;
                 }
                 
                 detailRows.push({
+                    code: detailCode,
                     boMorderWiseStockAllocationMaster_Code: G_RMInspectionRequestMaster_Code || 0,
                     buyerPOMaster_Code: buyerPOMaster_Code,
                     itemParameterValueCode_Width: widthCode,
                     itemParameterValueCode_Thk: thkCode,
                     itemParameterValueCode_Grade: gradeCode,
+                    itemParameterValueCode_SectionSize: sectionSizeCode,
+                    itemMaster_Code: itemMasterCode,
                     identificationNo: identificationNo,
                     weight: coilWt,
                     orderNoTo: orderNoTo
@@ -1998,11 +2488,11 @@ function SaveStockAllocation() {
 
     try {
         const totalCoilWt = detailRows.reduce(function (sum, item) {
-            return sum + (parseFloat(item.weight) || 0);
+            return sum + roundAllocationWt(item.weight);
         }, 0);
 
-        const toAllocate = G_ToAllocateWt || parseFloat($('#txtToAllocateWt').val()) || 0;
-        if (toAllocate > 0 && totalCoilWt > toAllocate) {
+        const toAllocate = roundAllocationWt(G_ToAllocateWt || parseFloat($('#txtToAllocateWt').val()) || 0);
+        if (toAllocate > 0 && isAllocationWtExceeded(totalCoilWt, toAllocate)) {
             toastr.error('Total Coil Wt. (' + formatAllocationWt(totalCoilWt) + ') cannot be greater than To Allocate (Wt.) (' + formatAllocationWt(toAllocate) + ').');
             return;
         }
@@ -2028,6 +2518,8 @@ function SaveStockAllocation() {
             toastr.success(response.Msg);
             CloseModal();
             G_RMInspectionRequestMaster_Code = response.Code;
+            setEntryAllocationContextFromGridRow(getCurrentGridRow());
+            GetStockAllocationList();
             GetBOMMasterDataOrderWiselist();
         } else {
             const errorMessage = response && (response.Msg || response.message) ? (response.Msg || response.message) : 'Failed to save data';
@@ -2051,6 +2543,12 @@ function EditStockAllocation(Code) {
             return false;
         } else {
             G_RMInspectionRequestMaster_Code = Code;
+
+            const listRow = (G_StockAllocationList || []).find(function (r) {
+                return String(r.Code) === String(Code);
+            });
+            setEntryAllocationContextFromListRow(listRow);
+
             GetBOMMasterDataOrderWiselist();
             HideGrid();
         }
@@ -2059,6 +2557,7 @@ function EditStockAllocation(Code) {
 function Back() {
     G_RMInspectionRequestMaster_Code = 0;
     G_BomTransactionOrderWise_Code = 0;
+    clearEntryAllocationContext();
     clearBOMMasterOrderWiseGrid();
     G_GetBOMMasterDataOrderWise = [];
 
@@ -2249,7 +2748,9 @@ function ShowIdentificationPickModal() {
                 Size: item.Size || item.size || '',
                 ItemParaMeterValueCode_Width: codes.width,
                 ItemParaMeterValueCode_Thk: codes.thk,
-                ItemParaMeterValueCode_Grade: codes.grade
+                ItemParaMeterValueCode_Grade: codes.grade,
+                ItemParaMeterValueCode_SectionSize: codes.sectionSize,
+                ItemMaster_Code: codes.itemMasterCode || getGridRowItemMasterCode()
             };
         });
 
@@ -2274,7 +2775,9 @@ function ShowIdentificationPickModal() {
             { field: 'Size', header: 'Size' },
             { field: 'ItemParaMeterValueCode_Width', visible: false },
             { field: 'ItemParaMeterValueCode_Thk', visible: false },
-            { field: 'ItemParaMeterValueCode_Grade', visible: false }
+            { field: 'ItemParaMeterValueCode_Grade', visible: false },
+            { field: 'ItemParaMeterValueCode_SectionSize', visible: false },
+            { field: 'ItemMaster_Code', visible: false }
         ]
     };
     initializeObjectlistControl(options);
@@ -2378,14 +2881,10 @@ window.onIdentificationSelected = function (response) {
         }
 
         $targetRow.find('.coil-size').val(sizeVal);
-        // New selection: Order No To = current BOM grid Order No
-        $targetRow.find('.order-no-to').val(getCurrentGridOrderNo());
+        applyRowParamCodesFromModal($targetRow);
         setRowIdentificationParamCodes($targetRow, item);
         $ident.val(identNo).trigger('change.identification');
-        // Keep codes/size from selected modal row if list lookup did not overwrite
-        setRowIdentificationParamCodes($targetRow, item);
         $targetRow.find('.coil-size').val(sizeVal);
-        $targetRow.find('.order-no-to').val(getCurrentGridOrderNo());
         addedCount++;
     });
 
