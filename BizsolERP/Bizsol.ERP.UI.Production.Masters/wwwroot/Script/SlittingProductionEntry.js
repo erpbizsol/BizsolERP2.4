@@ -111,6 +111,53 @@ function SlittingProductionEntry_SortPlansByPriority(list) {
     });
 }
 
+function SlittingProductionEntry_DestroySelect2($el) {
+    if (!$el || !$el.length || !$.fn.select2) {
+        return;
+    }
+    try {
+        if ($el.data('select2')) {
+            $el.select2('close');
+            $el.select2('destroy');
+        }
+    } catch (e) {
+        $el.removeClass('select2-hidden-accessible');
+        $el.removeData('select2');
+        $el.next('.select2-container').remove();
+    }
+}
+
+function SlittingProductionEntry_RefreshSelect2($el) {
+    if (!$el || !$el.length || !$.fn.select2) {
+        return;
+    }
+    SlittingProductionEntry_DestroySelect2($el);
+    $el.select2({
+        width: '-webkit-fill-available'
+    });
+}
+
+function SlittingProductionEntry_ReleaseSelect2ScrollLock() {
+    try {
+        $('select.select2-hidden-accessible').each(function () {
+            var $s = $(this);
+            if ($s.data('select2') && typeof $s.data('select2').isOpen === 'function' && $s.data('select2').isOpen()) {
+                $s.select2('close');
+            }
+        });
+    } catch (e) { }
+    $('.select2-backdrop').remove();
+    var content = document.getElementById('modern-content');
+    if (content) {
+        if (content.style.overflow === 'hidden') {
+            content.style.removeProperty('overflow');
+        }
+        if (content.style.overflowY === 'hidden') {
+            content.style.removeProperty('overflow-y');
+        }
+    }
+}
+
 function SlittingProductionEntry_BuildPlanCardHtml(item, isMainCard) {
     const planNo = SlittingProductionEntry_GetValue(item, ['PlanNo', 'Plan No', 'Plan_No', 'PackingList No'], '');
     const planDate = SlittingProductionEntry_GetValue(item, ['PlanDate', 'Plan Date', 'Date'], '');
@@ -508,10 +555,9 @@ function Bind_ddlIdNo(Mode,ProcessMaster_Code) {
             option1 += '<option value="' + val.Code + '" ProcessMaster_Code="' + val.ProcessMaster_Code + '" >' + val.IdentificationNo + '</option>';
         });
 
+        SlittingProductionEntry_DestroySelect2($('#ddlIdNo'));
         $('#ddlIdNo')[0].innerHTML = option1;
-        $('#ddlIdNo').select2({
-            width: '-webkit-fill-available'
-        });
+        SlittingProductionEntry_RefreshSelect2($('#ddlIdNo'));
 
 
         let option = '<option value="0" ProcessMaster_Code="0"></option>';
@@ -520,10 +566,9 @@ function Bind_ddlIdNo(Mode,ProcessMaster_Code) {
             option += '<option value="' + val.Code + '" ProcessMaster_Code="' + val.ProcessMaster_Code + '" >' + val.PlanNo + '</option>';
         });
 
+        SlittingProductionEntry_DestroySelect2($('#ddlPlanNo'));
         $('#ddlPlanNo')[0].innerHTML = option;
-        $('#ddlPlanNo').select2({
-            width: '-webkit-fill-available'
-        });
+        SlittingProductionEntry_RefreshSelect2($('#ddlPlanNo'));
 
 
         if (response.length == 0) {
@@ -534,13 +579,8 @@ function Bind_ddlIdNo(Mode,ProcessMaster_Code) {
         if (G_SlittingPlanMaster_Code>0) {
             $('#ddlPlanNo').val(G_SlittingPlanMaster_Code);
             $('#ddlIdNo').val(G_SlittingPlanMaster_Code);
-
-            $('#ddlPlanNo').select2({
-                width: '-webkit-fill-available'
-            });
-            $('#ddlIdNo').select2({
-                width: '-webkit-fill-available'
-            });
+            SlittingProductionEntry_RefreshSelect2($('#ddlPlanNo'));
+            SlittingProductionEntry_RefreshSelect2($('#ddlIdNo'));
         }
     });
 }
@@ -967,31 +1007,27 @@ function SlittingProductionEntry_OnChangeddlPlanOrIds(element) {
         ProcessMaster_Code = ddlIdNo.options[ddlIdNo.selectedIndex].attributes["ProcessMaster_Code"].value;
     }
 
-    $('#ddlProcess').val(ProcessMaster_Code);
-    $('#ddlProcess').select2({
-        width: '-webkit-fill-available'
-    });
+    const selectedPlanCode = element.id === 'ddlPlanNo' ? $('#ddlPlanNo').val() : $('#ddlIdNo').val();
 
-    SlittingProductionEntry_OnChangeddlProcess('IdOrPlan');
+    SlittingProductionEntry_ReleaseSelect2ScrollLock();
 
-    G_SlittingPlanMaster_Code = element.id === 'ddlPlanNo' ? $('#ddlPlanNo').val() : $('#ddlIdNo').val();
-    
-    $('#ddlPlanNo').val(G_SlittingPlanMaster_Code);
-    $('#ddlIdNo').val(G_SlittingPlanMaster_Code);
+    window.setTimeout(function () {
+        $('#ddlProcess').val(ProcessMaster_Code);
+        SlittingProductionEntry_RefreshSelect2($('#ddlProcess'));
 
-    $('#ddlPlanNo').select2({
-        width: '-webkit-fill-available'
-    });
-    $('#ddlIdNo').select2({
-        width: '-webkit-fill-available'
-    });
-    
+        SlittingProductionEntry_OnChangeddlProcess('IdOrPlan');
 
-    
+        G_SlittingPlanMaster_Code = selectedPlanCode;
 
-    Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code);
-    
+        $('#ddlPlanNo').val(G_SlittingPlanMaster_Code);
+        $('#ddlIdNo').val(G_SlittingPlanMaster_Code);
 
+        SlittingProductionEntry_RefreshSelect2($('#ddlPlanNo'));
+        SlittingProductionEntry_RefreshSelect2($('#ddlIdNo'));
+
+        Bind_IssueAndReceivedCoilDetail(G_SlittingPlanMaster_Code);
+        SlittingProductionEntry_ReleaseSelect2ScrollLock();
+    }, 0);
 }
 
 function SlittingProductionEntry_OnClick_NewSize(Row) {
