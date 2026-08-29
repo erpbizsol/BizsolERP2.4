@@ -10,14 +10,18 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 var G_IndentList        = [];
 var G_LocateConfig      = [];
 var G_ItemList          = [];
+var G_AllItemList       = [];
+var G_CategoryList      = [];
 var G_DepartmentList    = [];
 var G_VendorList        = [];
 var G_CurrencyList      = [];
 var G_UOMList           = [];
 var G_DivisionList      = [];
+var G_SubDivisionList   = [];
 var G_ItemRowCount      = 0;
 var G_FormReady         = false;
 var G_EditMode          = 'New';
+var G_SkipCategoryChange = false;
 
 $(document).ready(function () {
     var urlParams = typeof getUrlVars === 'function'
@@ -71,6 +75,11 @@ function _toList(res) {
         return res;
     }
     if (Array.isArray(res.Table)) return res.Table;
+    if (Array.isArray(res.table)) return res.table;
+    if (Array.isArray(res.Data)) return res.Data;
+    if (Array.isArray(res.data)) return res.data;
+    if (Array.isArray(res.Result)) return res.Result;
+    if (Array.isArray(res.result)) return res.result;
     return [];
 }
 
@@ -78,7 +87,7 @@ function _fillSelect($el, list, placeholder) {
     $el.empty();
     $el.append($('<option>').val('').text(placeholder || '-- Select --'));
     (list || []).forEach(function (item) {
-        var code = item.Code ?? item.code ?? '';
+        var code = item.Code ?? item.code ?? item.CategoryMaster_Code ?? '';
         var desp = item.Desp ?? item.desp ?? item.GodownName ?? item.CategoryName
                 ?? item.UserName ?? item.ItemName ?? item.DepartmentName ?? '';
         $el.append($('<option>').val(code).text(desp));
@@ -204,7 +213,7 @@ function _renderTable(data, locateType) {
         return copy;
     });
 
-    var hiddenColumns = ['Code', 'code'];
+    var hiddenColumns = ['Code', 'code','__bizsolRowClass'];
     var stringCols    = [];
     var numericCols   = [];
     var dateCols      = [];
@@ -315,17 +324,21 @@ function _ensureFormLookups() {
         IndentMasterService.GetVendorList().catch(function () { return []; }),
         IndentMasterService.GetCurrencyList().catch(function () { return []; }),
         IndentMasterService.GetUOMList().catch(function () { return []; }),
-        IndentMasterService.GetDivisionList().catch(function () { return []; })
+        IndentMasterService.GetDivisionList().catch(function () { return []; }),
+        IndentMasterService.GetSubDivisionList().catch(function () { return []; })
     ]).then(function (results) {
         _fillSelect($('#frmDdlWarehouse'), _toList(results[0]), '-- Select Warehouse --');
-        _fillSelect($('#frmDdlCategory'), _toList(results[1]), '-- All Categories --');
+        G_CategoryList   = _toList(results[1]);
+        _fillCategorySelect($('#frmDdlCategory'), G_CategoryList);
         _fillSelect($('#frmDdlRequestedBy'), _toList(results[2]), '-- Select User --');
         G_DepartmentList = _toList(results[3]);
-        G_ItemList       = _toList(results[4]);
+        G_AllItemList    = _toList(results[4]);
+        G_ItemList       = G_AllItemList.slice();
         G_VendorList     = _toList(results[6]);
         G_CurrencyList   = _toList(results[7]);
         G_UOMList        = _toList(results[8]);
         G_DivisionList   = _toList(results[9]);
+        G_SubDivisionList = _toList(results[10]);
         _applyConfig(_toList(results[5])[0] || {});
         _initSelect2($('#frmDdlWarehouse'));
         _initSelect2($('#frmDdlCategory'));
@@ -363,6 +376,7 @@ function _resetForm() {
     $('#frmTxtIndentDate').val(_isoDate(new Date()));
     $('#frmDdlWarehouse').val('');
     $('#frmDdlCategory').val('');
+    _applyItemCategoryFilter('');
     $('#frmTxtStatus').val('Pending');
     $('#frmTxtFinYear').val(BizSolHelperFunction.getFinancialYear());
     $('#frmTxtDueDate').val('');
@@ -390,14 +404,25 @@ function _resetForm() {
 }
 
 function _optionDesp(item) {
-    return item.Desp ?? item.desp ?? item.Name ?? item.ItemName ?? item.DepartmentName ?? item.UOM ?? '';
+    return item.Desp ?? item.desp
+        ?? item.DivisionDesp ?? item.divisionDesp
+        ?? item.SubDivisionDesp ?? item.subDivisionDesp
+        ?? item.SubDepartmentName ?? item.subDepartmentName
+        ?? item.DepartmentName ?? item.departmentName
+        ?? item.Name ?? item.ItemName ?? item.UOM ?? '';
+}
+
+function _optionCode(item) {
+    return item.Code ?? item.code
+        ?? item.SubDivisionMaster_Code ?? item.subDivisionMaster_Code
+        ?? '';
 }
 
 function _buildLookupSelect(id, list, selected, placeholder, onchange) {
     var html = `<select id="${id}" class="form-control form-control-sm"${onchange ? ` onchange="${onchange}"` : ''}>`;
     html += `<option value="">${placeholder || '-- Select --'}</option>`;
     (list || []).forEach(function (item) {
-        var code = item.Code ?? item.code;
+        var code = _optionCode(item);
         var sel  = String(code) === String(selected) ? ' selected' : '';
         html += `<option value="${code}"${sel}>${_esc(_optionDesp(item))}</option>`;
     });
@@ -408,14 +433,31 @@ function _buildLookupSelect(id, list, selected, placeholder, onchange) {
 function _buildItemSelect(rowId, selected) {
     var html = `<select id="frmDdlItem_${rowId}" class="form-control form-control-sm" onchange="OnIndentItemChange(${rowId})">`;
     html += '<option value="">-- Select Item --</option>';
-    G_ItemList.forEach(function (item) {
-        var code    = item.Code ?? item.code;
+    var seen = {};
+    var appendItem = function (item, forceSelected) {
+        if (!item) return;
+        var code = item.Code ?? item.code;
+        if (code === undefined || code === null || code === '') return;
+        var key = String(code);
+        if (seen[key]) return;
+        seen[key] = true;
         var desp    = item.Desp ?? item.ItemName ?? '';
         var uom     = item.UOM ?? item.uom ?? '';
         var uomCode = item.UOMMaster_Code ?? item.uomMaster_Code ?? '';
-        var sel     = String(code) === String(selected) ? ' selected' : '';
+        var sel     = forceSelected || String(code) === String(selected) ? ' selected' : '';
         html += `<option value="${code}" data-uom="${_esc(uom)}" data-uom-code="${uomCode}"${sel}>${_esc(desp)}</option>`;
-    });
+    };
+    G_ItemList.forEach(function (item) { appendItem(item, false); });
+    if (selected && !seen[String(selected)]) {
+        var extra = (G_AllItemList || []).filter(function (item) {
+            return String(item.Code ?? item.code) === String(selected);
+        })[0];
+        if (extra) {
+            appendItem(extra, true);
+        } else {
+            html += `<option value="${_esc(selected)}" selected>${_esc(selected)}</option>`;
+        }
+    }
     html += '</select>';
     return html;
 }
@@ -437,7 +479,7 @@ window.AddIndentItemRow = function (preset) {
     var subDivCode = preset.SubDivisionMaster_Code || '';
     var deptCode   = preset.DepartmentMaster_Code || '';
     var subDept    = preset.SubDepartmentMaster_Code || '';
-    var remarks    = preset.Remarks || '';
+    var remarks    = preset.LineRemarks || preset.Remarks || '';
     var detCode    = preset.IndentTransaction_Code || preset.Code || 0;
 
     var row = `<tr id="indentItemRow_${rowId}">
@@ -455,8 +497,8 @@ window.AddIndentItemRow = function (preset) {
         <td class="col-stock">
             <input type="text" id="frmTxtStockQty_${rowId}" class="form-control form-control-sm" value="${stockQty}" readonly />
         </td>
-        <td class="col-division">${_buildLookupSelect('frmDdlDivision_' + rowId, G_DivisionList, divCode, '-- Division --', 'OnIndentDivisionChange(' + rowId + ')')}</td>
-        <td class="col-division"><select id="frmDdlSubDivision_${rowId}" class="form-control form-control-sm"><option value="">-- Sub-Division --</option></select></td>
+        <td class="col-division">${_buildLookupSelect('frmDdlDivision_' + rowId, G_DivisionList, divCode, '-- Division --')}</td>
+        <td class="col-division">${_buildLookupSelect('frmDdlSubDivision_' + rowId, G_SubDivisionList, subDivCode, '-- Sub-Division --')}</td>
         <td>${_buildLookupSelect('frmDdlDept_' + rowId, G_DepartmentList, deptCode, '-- Department --', 'OnIndentDepartmentChange(' + rowId + ')')}</td>
         <td><select id="frmDdlSubDept_${rowId}" class="form-control form-control-sm"><option value="">-- Sub-Department --</option></select></td>
         <td><input type="text" id="frmTxtLineRemarks_${rowId}" class="form-control form-control-sm" value="${_esc(remarks)}" maxlength="200" placeholder="Line remarks" /></td>
@@ -467,7 +509,6 @@ window.AddIndentItemRow = function (preset) {
     </tr>`;
     $('#tblIndentItemsBody').append(row);
     _renumberItemRows();
-    if (divCode) OnIndentDivisionChange(rowId, subDivCode);
     if (deptCode) OnIndentDepartmentChange(rowId, subDept);
 };
 
@@ -518,21 +559,6 @@ window.OnIndentItemChange = function (rowId) {
     });
 };
 
-window.OnIndentDivisionChange = function (rowId, selectedSub) {
-    var divCode = parseInt($('#frmDdlDivision_' + rowId).val() || 0, 10) || 0;
-    var $sub = $('#frmDdlSubDivision_' + rowId);
-    $sub.html('<option value="">-- Sub-Division --</option>');
-    if (!divCode) return;
-    IndentMasterService.GetSubDivisionList(divCode).then(function (list) {
-        _toList(list).forEach(function (item) {
-            var code = item.Code ?? item.code;
-            var sel = String(code) === String(selectedSub || '') ? ' selected' : '';
-            $sub.append(`<option value="${code}"${sel}>${_esc(_optionDesp(item))}</option>`);
-        });
-        if (selectedSub) $sub.val(String(selectedSub));
-    }).catch(function () { /* no sub-divisions */ });
-};
-
 window.OnIndentDepartmentChange = function (rowId, selectedSub) {
     var deptCode = parseInt($('#frmDdlDept_' + rowId).val() || 0, 10) || 0;
     var $sub = $('#frmDdlSubDept_' + rowId);
@@ -548,17 +574,108 @@ window.OnIndentDepartmentChange = function (rowId, selectedSub) {
     }).catch(function () { /* no sub-departments */ });
 };
 
-window.OnIndentCategoryChange = function () {
-    var cat = parseInt($('#frmDdlCategory').val() || 0, 10) || 0;
-    IndentMasterService.GetItemList(cat).then(function (list) {
-        G_ItemList = _toList(list);
-        $('#tblIndentItemsBody tr').each(function () {
-            var id = String($(this).attr('id') || '').replace('indentItemRow_', '');
-            var current = $('#frmDdlItem_' + id).val();
-            $('#frmDdlItem_' + id).replaceWith(_buildItemSelect(id, current));
-        });
+function _fillCategorySelect($el, list) {
+    $el.empty();
+    $el.append($('<option>').val('').text('-- All Categories --'));
+    (list || []).forEach(function (item) {
+        var name = String(item.Desp ?? item.desp ?? item.CategoryName ?? item.Category ?? '').trim();
+        var code = item.Code ?? item.code ?? item.CategoryMaster_Code ?? '';
+        if (!name && code !== '' && code != null) name = String(code);
+        if (!name) return;
+        $el.append($('<option>').val(name).attr('data-code', code).text(name));
     });
+}
+
+function _categoryMatchKeys(catKey) {
+    var keys = [];
+    var raw = String(catKey || '').trim();
+    if (!raw) return keys;
+    keys.push(raw);
+    var $opt = $('#frmDdlCategory option').filter(function () {
+        return String($(this).val()) === raw || $.trim($(this).text()) === raw;
+    }).first();
+    if ($opt.length) {
+        if ($opt.val()) keys.push(String($opt.val()).trim());
+        var txt = $.trim($opt.text());
+        if (txt && txt.indexOf('--') !== 0) keys.push(txt);
+        var dc = $opt.attr('data-code');
+        if (dc) keys.push(String(dc).trim());
+    }
+    (G_CategoryList || []).forEach(function (c) {
+        var code = String(c.Code ?? c.code ?? c.CategoryMaster_Code ?? '').trim();
+        var name = String(c.Desp ?? c.desp ?? c.CategoryName ?? c.Category ?? '').trim();
+        if (code === raw || name === raw) {
+            if (code) keys.push(code);
+            if (name) keys.push(name);
+        }
+    });
+    return _dedup(keys.filter(Boolean));
+}
+
+function _applyItemCategoryFilter(catKey) {
+    var keys = _categoryMatchKeys(catKey).map(function (k) { return k.toLowerCase(); });
+    if (!keys.length) {
+        G_ItemList = G_AllItemList.slice();
+        return;
+    }
+    G_ItemList = G_AllItemList.filter(function (item) {
+        var itemCats = [
+            item.Category, item.category,
+            item.CategoryName, item.categoryName,
+            item.CategoryMaster_Code, item.categoryMaster_Code
+        ].map(function (v) { return v != null ? String(v).trim().toLowerCase() : ''; })
+         .filter(Boolean);
+        return itemCats.some(function (c) { return keys.indexOf(c) >= 0; });
+    });
+}
+
+function _refreshItemDropdowns() {
+    $('#tblIndentItemsBody tr').each(function () {
+        var id = String($(this).attr('id') || '').replace('indentItemRow_', '');
+        var current = $('#frmDdlItem_' + id).val();
+        $('#frmDdlItem_' + id).replaceWith(_buildItemSelect(id, current));
+    });
+}
+
+window.OnIndentCategoryChange = function () {
+    if (G_SkipCategoryChange) return;
+    /* Category value is CategoryName (e.g. Consumables). API @Code is INT, so filter locally. */
+    var cat = ($('#frmDdlCategory').val() || '').toString().trim();
+    _applyItemCategoryFilter(cat);
+    _refreshItemDropdowns();
 };
+
+/** Set Item Category by CategoryName or CategoryMaster.Code (legacy rows). */
+function _setCategoryDropdown(category, silent) {
+    var $ddl = $('#frmDdlCategory');
+    var val = String(category == null ? '' : category).trim();
+    var apply = function (v) {
+        if (silent) G_SkipCategoryChange = true;
+        try {
+            $ddl.val(v).trigger('change');
+        } finally {
+            G_SkipCategoryChange = false;
+        }
+    };
+    if (!val) {
+        apply('');
+        return;
+    }
+    if ($ddl.find('option').filter(function () { return String($(this).val()) === val; }).length) {
+        apply(val);
+        return;
+    }
+    var byText = $ddl.find('option').filter(function () {
+        return $.trim($(this).text()) === val;
+    }).first();
+    if (byText.length) {
+        apply(byText.val());
+        return;
+    }
+    /* Unknown saved value — keep selectable so edit still shows it */
+    $ddl.append($('<option>').val(val).text(val));
+    apply(val);
+}
 
 window.OpenIndentForm = function (mode, code, statusHint) {
     var ModuleName = $('#ERPHeading').text().trim();
@@ -627,18 +744,26 @@ function _unwrapShowData(res) {
     var details = [];
     if (!res) return { header: header, details: details };
 
+    var isDetailRow = function (r) {
+        if (!r) return false;
+        return (parseInt(r.ItemMaster_Code || r.itemMaster_Code || 0, 10) || 0) > 0
+            || (parseInt(r.IndentTransaction_Code || r.indentTransaction_Code || 0, 10) || 0) > 0;
+    };
+
     if (Array.isArray(res) && res.length && Array.isArray(res[0])) {
         header  = res[0][0] || null;
-        details = res[1] || [];
+        details = (res[1] && res[1].length) ? res[1] : (res[0] || []).filter(isDetailRow);
     } else if (res.Table && res.Table1) {
         header  = res.Table[0] || null;
         details = res.Table1 || [];
+        if (!details.length) details = (res.Table || []).filter(isDetailRow);
     } else if (res.IndentMaster) {
         header  = (res.IndentMaster && res.IndentMaster[0]) || null;
         details = res.IndentTransactions || [];
-    } else if (Array.isArray(res) && res[0] && !Array.isArray(res[0])) {
-        header = res[0];
-        details = res.slice(1);
+    } else {
+        var rows = _toList(res);
+        header = rows[0] || null;
+        details = rows.filter(isDetailRow);
     }
     return { header: header, details: details };
 }
@@ -658,7 +783,6 @@ function _loadIndentForEdit(code) {
         $('#frmTxtIndentNo').val(header.IndentNoWithPrefix || header.IndentNo || '');
         $('#frmTxtIndentDate').val(header.IndentDate ? String(header.IndentDate).substring(0, 10) : '');
         $('#frmDdlWarehouse').val(String(header.GodownMaster_Code || '')).trigger('change');
-        $('#frmDdlCategory').val(String(header.Category || '')).trigger('change');
         $('#frmTxtStatus').val(header.Status || 'Pending');
         $('#frmTxtFinYear').val(header.FinYear || '');
         $('#frmTxtDueDate').val(header.DueDate ? String(header.DueDate).substring(0, 10) : '');
@@ -679,14 +803,12 @@ function _loadIndentForEdit(code) {
         $('.cfg-verified').show();
         $('#floatIndentNo').text($('#frmTxtIndentNo').val() || ('#' + code));
 
-        if (header.Category) {
-            IndentMasterService.GetItemList(header.Category).then(function (list) {
-                G_ItemList = _toList(list);
-                _fillDetailRows(details);
-            }).catch(function () { _fillDetailRows(details); });
-        } else {
-            _fillDetailRows(details);
-        }
+        /* Bind Item Category, then filter the already-loaded item list (do not call GETITEMLIST with a name). */
+        _setCategoryDropdown(header.Category, true);
+
+        var catKey = ($('#frmDdlCategory').val() || header.Category || '').toString().trim();
+        _applyItemCategoryFilter(catKey);
+        _fillDetailRows(details);
     }).catch(function (err) {
         toastr.error('Error loading Indent.');
         console.error(err);
@@ -747,6 +869,7 @@ window.SaveIndent = function () {
             QtyMT: 0,
             QtyPC: 0,
             Rate: parseFloat($('#frmTxtRate_' + rowId).val()) || 0,
+            UOMMaster_Code: parseInt($('#frmHfUomCode_' + rowId).val() || 0, 10) || 0,
             CurrencyMaster_Code: parseInt($('#frmDdlCurrency_' + rowId).val() || 0, 10) || 0,
             IndentStockOnDate: parseFloat($('#frmTxtStockQty_' + rowId).val()) || 0,
             DivisionMaster_Code: parseInt($('#frmDdlDivision_' + rowId).val() || 0, 10) || 0,
@@ -785,6 +908,7 @@ window.SaveIndent = function () {
                 _xmlTag('QtyMT', d.QtyMT) +
                 _xmlTag('QtyPC', d.QtyPC) +
                 _xmlTag('Rate', d.Rate) +
+                _xmlTag('UOMMaster_Code', d.UOMMaster_Code || 0) +
                 _xmlTag('CurrencyMaster_Code', d.CurrencyMaster_Code) +
                 _xmlTag('IndentStockOnDate', d.IndentStockOnDate) +
                 _xmlTag('DivisionMaster_Code', d.DivisionMaster_Code) +
@@ -797,12 +921,17 @@ window.SaveIndent = function () {
         '</Details></Indent>';
 
     IndentMasterService.SaveIndentMaster(JSON.stringify(payloadXml)).then(function (res) {
-        if (res && (res.Status === 'Y' || res.status === 'Y')) {
-            toastr.success(res.Msg || res.msg || 'Indent saved successfully.');
+        var row = res;
+        if (Array.isArray(res)) row = res[0] || {};
+        var status = String((row && (row.Status != null ? row.Status : row.status)) || '').trim().toUpperCase();
+        var msg = (row && (row.Msg || row.msg)) || '';
+        var code = parseInt((row && (row.Code != null ? row.Code : row.code)) || 0, 10) || 0;
+        if (status === 'Y') {
+            toastr.success(msg || 'Indent saved successfully.');
             CloseIndentForm();
             LoadIndentList();
         } else {
-            toastr.error(res ? (res.Msg || res.msg) : 'Failed to save Indent.');
+            toastr.error(msg || ('Failed to save Indent.' + (code ? (' (Code ' + code + ')') : '')));
         }
     }).catch(function (err) {
         toastr.error('Error saving Indent.');

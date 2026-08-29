@@ -1,5 +1,6 @@
 
 import { GRNPaymentApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GRNPaymentEntryService.js';
+import { GRNService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNService.js';
 import { GRNPaymentApprovalService as GRNPaymentLevelsApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GRNPaymentApprovalService.js';
 import { UrlService } from '../../Bizsol.WebERP.UI.Shared/js/URL.js';
 import { promiseAjaxCallApi } from '../../Bizsol.WebERP.UI.Shared/js/PromiseAjaxCallApi.js';
@@ -3807,6 +3808,89 @@ async function fillSubProjectOptionsForRow(tr, projectCode) {
     }
 }
 
+/** GRN-style: Sub project pick drives Project on the row — does not touch Bill No. */
+async function fillBillRowProjectFromSubProject(tr, subProjectMasterCode) {
+    const pj = tr?.querySelector('.inp-project-ddl');
+    if (!pj) return;
+    const code = String(subProjectMasterCode || '').trim();
+    if (!code) return;
+    try {
+        const raw = await GRNService.GetProjectList(code);
+        const rows = normalizeApiRows(raw);
+        rows.forEach(p => {
+            const pc = String(p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code ?? '').trim();
+            if (!pc) return;
+            if (![...pj.options].some(o => o.value === pc)) {
+                const opt = document.createElement('option');
+                opt.value = pc;
+                opt.text = String(p.ProjectName ?? p.projectName ?? p.Name ?? p.ProjectDesp ?? p.projectDesp ?? '').trim() || pc;
+                pj.appendChild(opt);
+            }
+        });
+        if (rows.length >= 1) {
+            const pick = rows[0];
+            const pc = String(pick.ProjectMaster_Code ?? pick.projectMaster_Code ?? pick.Code ?? pick.code ?? '').trim();
+            if (pc) pj.value = pc;
+        }
+        const sp = tr.querySelector('.inp-subproject-ddl');
+        const prevSub = sp?.value ?? code;
+        if (pj.value) {
+            await fillSubProjectOptionsForRow(tr, pj.value);
+            if (sp) {
+                if (prevSub && [...sp.options].some(o => o.value === String(prevSub))) {
+                    sp.value = String(prevSub);
+                } else if ([...sp.options].some(o => o.value === code)) {
+                    sp.value = code;
+                }
+            }
+        }
+    } catch (e) {
+        console.error('fillBillRowProjectFromSubProject', e);
+    }
+}
+
+async function fillGpaAddBillModalProjectFromSubProject(subProjectMasterCode) {
+    const pSel = document.getElementById('gpaAddBillModalProject');
+    const sSel = document.getElementById('gpaAddBillModalSubProject');
+    if (!pSel) return;
+    const code = String(subProjectMasterCode || '').trim();
+    if (!code) return;
+    try {
+        const raw = await GRNService.GetProjectList(code);
+        const rows = normalizeApiRows(raw);
+        rows.forEach(p => {
+            const pc = String(p.ProjectMaster_Code ?? p.projectMaster_Code ?? p.Code ?? p.code ?? '').trim();
+            if (!pc) return;
+            if (![...pSel.options].some(o => o.value === pc)) {
+                const opt = document.createElement('option');
+                opt.value = pc;
+                opt.text = String(p.ProjectName ?? p.projectName ?? p.Name ?? p.ProjectDesp ?? p.projectDesp ?? '').trim() || pc;
+                pSel.appendChild(opt);
+            }
+        });
+        if (rows.length >= 1) {
+            const pick = rows[0];
+            const pc = String(pick.ProjectMaster_Code ?? pick.projectMaster_Code ?? pick.Code ?? pick.code ?? '').trim();
+            if (pc) pSel.value = pc;
+        }
+        const prevSubText = sSel?.selectedOptions?.[0]?.text?.trim() || '';
+        await fillGpaAddBillModalSubProjects(pSel.value);
+        if (sSel) {
+            if ([...sSel.options].some(o => o.value === code)) {
+                sSel.value = code;
+            } else {
+                const o = document.createElement('option');
+                o.value = code;
+                o.text = prevSubText || code;
+                sSel.appendChild(o);
+                sSel.value = code;
+            }
+        }
+    } catch (e) {
+        console.error('fillGpaAddBillModalProjectFromSubProject', e);
+    }
+}
+
 /** Query params for GetBillDetails: blank / missing → 0 on server. */
 function gpaToBillDetailQueryCode(v) {
     if (v === undefined || v === null) return 0;
@@ -3996,54 +4080,68 @@ async function onBillRowBillChange(tr) {
     if (pm && prevPay !== undefined && prevPay !== null && String(prevPay).trim() !== '') {
         pm.value = prevPay;
     }
+    await bindBillRowProjectSubAsync(tr, r);
+    // Bind PO text + category via API when bill record only carries a PO code (no PONo text)
+    const poCode = parseInt(gpaPoCodeFromRecord(r) || '0', 10);
+    if (poCode > 0) {
+        const poSel = tr.querySelector('.inp-po-ddl');
+        const currentPoNo = gpaPoNoFromSelect(poSel);
+        if (!currentPoNo || currentPoNo === String(poCode)) {
+            try {
+                const binding = await gpaLoadPoWiseBindingFromApi(poSel);
+                if (binding) gpaBindPoCategoryOnRow(tr, binding);
+            } catch (e) {
+                console.warn('onBillRowBillChange PO binding', e);
+            }
+        }
+    }
     recalcFooter();
     gpaRefreshRowPayableEditable(tr);
 }
 
-async function onBillRowProjectSubChange(tr) {
+/** Clear bill row fields when Project/Sub project changes — keeps Project + refreshed Sub project only. */
+function clearBillRowBillFields(tr) {
+    if (!tr) return;
+    gpaCommitRowBillNo(tr, '');
+    gpaSetRowSkipBillAutoBind(tr, true);
+    const mrnHidden = tr.querySelector('.inp-mrn-code');
+    if (mrnHidden) mrnHidden.value = '';
+    const billSel = tr.querySelector('.inp-bill-ddl');
+    if (billSel) gpaFillBillSelectOptions(billSel, '');
+    const poSel = tr.querySelector('.inp-po-ddl');
+    if (poSel) poSel.value = '';
+    const catSel = tr.querySelector('.inp-category-ddl');
+    if (catSel) catSel.value = '';
+    const bd = tr.querySelector('.inp-bill-date');
+    if (bd) bd.value = '';
+    const ba = tr.querySelector('.inp-bill-amt');
+    if (ba) ba.value = '';
+    const ded = tr.querySelector('.inp-deduction');
+    if (ded) ded.value = '';
+    const py = tr.querySelector('.inp-payable');
+    if (py) py.value = '';
+    const pm = tr.querySelector('.inp-payment');
+    if (pm) pm.value = '';
+}
+
+/** Project change: refresh Sub project list only — Bill No / amounts / PO stay blank. */
+async function onBillRowProjectChange(tr) {
     if (!tr || editMode) return;
-    if (gpaRowSkipBillAutoBind(tr)) return;
-    const partyKey = getGpaCounterpartyKey();
+    clearBillRowBillFields(tr);
     const pj = tr.querySelector('.inp-project-ddl');
+    await fillSubProjectOptionsForRow(tr, pj?.value ?? '');
+    gpaRefreshRowPayableEditable(tr);
+    recalcFooter();
+}
+
+/** Sub project change: bind Project only — Bill No / amounts stay manual until user picks a bill. */
+async function onBillRowSubProjectChange(tr) {
+    if (!tr || editMode) return;
     const sp = tr.querySelector('.inp-subproject-ddl');
-    const proj = pj?.value?.trim() ?? '';
     const sub = sp?.value?.trim() ?? '';
-    if (!partyKey) return;
-    if (!proj && !sub) return;
-    const prevPay = tr.querySelector('.inp-payment')?.value ?? '';
-    try {
-        const result = await GRNPaymentApprovalService.GetBillDetails(
-            partyKey,
-            gpaToBillDetailQueryCode(proj),
-            gpaToBillDetailQueryCode(sub)
-        );
-        const rows = normalizeApiRows(result);
-        if (!rows.length) {
-            // Employee (non-vendor): allow manual allocation with Project + Sub project + Amount only (no MRN from server).
-            if (!isGpaPartyMode()) {
-                const mrnHidden = tr.querySelector('.inp-mrn-code');
-                if (mrnHidden) mrnHidden.value = '';
-                const pyEl = tr.querySelector('.inp-payable');
-                if (pyEl && !(parseNum(pyEl) > 0)) {
-                    pyEl.value = '';
-                }
-                return;
-            }
-            showToast('No matching bill for this project/sub-project.', 'info');
-            return;
-        }
-        applyBillApiFieldsOnly(tr, rows[0]);
-        const pm = tr.querySelector('.inp-payment');
-        if (pm && prevPay !== undefined && prevPay !== null && String(prevPay).trim() !== '') {
-            pm.value = prevPay;
-        }
-        recalcFooter();
-    } catch (e) {
-        console.error('onBillRowProjectSubChange', e);
-        showToast('Could not load bill for selected project/sub-project.', 'error');
-    } finally {
-        gpaRefreshRowPayableEditable(tr);
-    }
+    if (!sub) return;
+    await fillBillRowProjectFromSubProject(tr, sub);
+    gpaRefreshRowPayableEditable(tr);
 }
 
 function wireBillTableDelegation() {
@@ -4054,9 +4152,7 @@ function wireBillTableDelegation() {
         const t = e.target;
         if (t.classList.contains('inp-project-ddl')) {
             const tr = t.closest('tr');
-            if (tr) {
-                fillSubProjectOptionsForRow(tr, t.value).then(() => onBillRowProjectSubChange(tr));
-            }
+            if (tr) void onBillRowProjectChange(tr);
         } else if (t.classList.contains('inp-po-ddl')) {
             const tr = t.closest('tr');
             if (tr) void onBillRowPoChange(tr);
@@ -4065,7 +4161,7 @@ function wireBillTableDelegation() {
             if (tr) void onBillRowBillChange(tr);
         } else if (t.classList.contains('inp-subproject-ddl')) {
             const tr = t.closest('tr');
-            if (tr) void onBillRowProjectSubChange(tr);
+            if (tr) void onBillRowSubProjectChange(tr);
         }
     });
     tbody.addEventListener('input', e => {
@@ -4858,14 +4954,18 @@ async function reloadGpaAddBillModalBillsFromFilters() {
 
 async function onGpaAddBillModalProjectPick() {
     gpaResetAddBillModalForProjectAndSubChange();
+    const catSel = document.getElementById('gpaAddBillModalCategory');
+    if (catSel) catSel.value = '';
     const pSel = document.getElementById('gpaAddBillModalProject');
     await fillGpaAddBillModalSubProjects(pSel?.value ?? '');
-    await reloadGpaAddBillModalBillsFromFilters();
 }
 
 async function onGpaAddBillModalSubPick() {
     gpaResetAddBillModalForProjectAndSubChange();
-    await reloadGpaAddBillModalBillsFromFilters();
+    const sub = document.getElementById('gpaAddBillModalSubProject')?.value?.trim() ?? '';
+    if (sub) {
+        await fillGpaAddBillModalProjectFromSubProject(sub);
+    }
 }
 
 function onGpaAddBillModalBillAmtInput() {

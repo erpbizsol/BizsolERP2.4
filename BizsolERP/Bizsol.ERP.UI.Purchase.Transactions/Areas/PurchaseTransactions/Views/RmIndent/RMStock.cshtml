@@ -413,7 +413,8 @@
     }
 
     #stock-summary .table-responsive {
-        overflow: visible;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     #stock-summary .paginator {
@@ -424,6 +425,17 @@
 
     #stock-summary .row {
         --bs-gutter-y: 0.35rem;
+    }
+
+    #stock-summary #SummaryData,
+    #stock-summary #SlittedCoilsStockSummary {
+        width: 100%;
+        min-width: 320px;
+    }
+
+    #stock-summary thead th {
+        position: relative;
+        overflow: visible;
     }
 
     .rms-grand-total {
@@ -562,6 +574,10 @@
     }
 
     @@media (max-width: 991.98px) {
+        #PlannedMyModal.pm-modal {
+            overflow: visible !important;
+        }
+
         #PlannedMyModal.pm-modal .modal-dialog {
             margin: 0.5rem;
             max-width: calc(100% - 1rem);
@@ -572,11 +588,18 @@
             max-height: calc(100vh - 1rem);
             display: flex;
             flex-direction: column;
+            overflow: visible;
         }
 
         #PlannedMyModal.pm-modal .modal-body {
             min-height: 0;
             -webkit-overflow-scrolling: touch;
+        }
+
+        /* Keep this modal's sheet above .select2-backdrop (99998) */
+        #PlannedMyModal > .select2-container--open,
+        #PlannedMyModal > .select2-container--open .select2-dropdown {
+            z-index: 99999 !important;
         }
     }
 
@@ -589,7 +612,8 @@
         #dispatch,
         #slitted,
         #job-work,
-        #stock-summary {
+        #stock-summary,
+        #rm-report {
             max-height: none !important;
             overflow-y: visible !important;
         }
@@ -617,6 +641,73 @@
         #checkBoxHideAndShow {
             margin-top: 0.5rem !important;
         }
+
+        /* Stock Summary — full width + horizontal swipe */
+        #stock-summary .col-12.col-md-6 {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        #stock-summary .table-wrapper,
+        #stock-summary .table-wrapper.filtered {
+            max-height: none !important;
+            min-height: 0 !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #stock-summary .table-responsive {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+        }
+
+        #stock-summary #SummaryData,
+        #stock-summary #SlittedCoilsStockSummary {
+            min-width: 480px;
+            width: max-content;
+            max-width: none;
+        }
+
+        #stock-summary thead th {
+            white-space: nowrap;
+            font-size: 11px !important;
+            padding: 10px 10px !important;
+        }
+
+        #stock-summary tbody td,
+        #stock-summary tfoot td {
+            padding: 8px 10px !important;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .rms-grand-total {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 12px 14px;
+        }
+
+        .rms-grand-total-label {
+            margin-right: 0;
+            width: 100%;
+        }
+
+        /* Plan table Select2 on phone */
+        #PlannedMyModal .plan-table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #PlannedMyModal #RMStockCurrentPlanned {
+            min-width: 720px;
+        }
+
+        #PlannedMyModal #RMStockCurrentPlanned .select2-results__options {
+            max-height: 180px;
+        }
     }
 
     @@media (max-width: 580px) {
@@ -632,6 +723,10 @@
         .pm-btn {
             width: 100%;
             justify-content: center;
+        }
+
+        #rmStockTabContent > .tab-content {
+            padding: 8px;
         }
     }
 </style>

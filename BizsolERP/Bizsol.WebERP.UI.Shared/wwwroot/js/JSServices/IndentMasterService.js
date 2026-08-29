@@ -82,8 +82,8 @@ const IndentMasterService = {
         return IndentMasterService.Getddl('DDL_DIVISIONLIST');
     },
 
-    GetSubDivisionList: function GetSubDivisionList(divisionCode) {
-        return IndentMasterService.Getddl('DDL_SUBDIVISIONLIST', divisionCode || 0);
+    GetSubDivisionList: function GetSubDivisionList() {
+        return IndentMasterService.Getddl('DDL_SUBDIVISIONLIST');
     },
 
     GetSubDepartmentList: function GetSubDepartmentList(departmentCode) {
@@ -95,7 +95,15 @@ const IndentMasterService = {
     },
 
     GetItemList: function GetItemList(categoryCode) {
-        return IndentMasterService.Getddl('GETITEMLIST', categoryCode || 0);
+        /* API @Code is INT — category names like "Consumables" must not be sent. */
+        var code = 0;
+        if (categoryCode !== undefined && categoryCode !== null && String(categoryCode).trim() !== '') {
+            var s = String(categoryCode).trim();
+            if (/^\d+$/.test(s)) {
+                code = parseInt(s, 10);
+            }
+        }
+        return IndentMasterService.Getddl('GETITEMLIST', code);
     },
 
     GetIndentById: function GetIndentById(code) {
