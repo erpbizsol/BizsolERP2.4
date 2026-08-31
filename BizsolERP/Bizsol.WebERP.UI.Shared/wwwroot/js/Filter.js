@@ -12,11 +12,37 @@ window.bizsolGetFilterAnchor = function bizsolGetFilterAnchor($panel) {
     if (!$panel || !$panel.length) {
         return $();
     }
+    var $stored = $panel.data('bizsol-filter-anchor');
+    if ($stored && $stored.length && $stored.closest('body').length) {
+        return $stored;
+    }
     var $anchor = $panel.closest('th');
     if (!$anchor.length) {
         $anchor = $panel.closest('.filter-table-heading-div');
     }
     return $anchor;
+};
+
+window.bizsolMoveFilterPanelToBody = function bizsolMoveFilterPanelToBody($panel) {
+    if (!$panel || !$panel.length || $panel.data('bizsol-filter-placeholder')) {
+        return;
+    }
+    var $placeholder = $('<span class="bizsol-filter-placeholder" aria-hidden="true"></span>');
+    $panel.after($placeholder);
+    $panel.data('bizsol-filter-placeholder', $placeholder);
+    $panel.appendTo(document.body);
+};
+
+window.bizsolRestoreFilterPanel = function bizsolRestoreFilterPanel($panel) {
+    if (!$panel || !$panel.length) {
+        return;
+    }
+    var $placeholder = $panel.data('bizsol-filter-placeholder');
+    if ($placeholder && $placeholder.length) {
+        $placeholder.before($panel);
+        $placeholder.remove();
+    }
+    $panel.removeData('bizsol-filter-placeholder');
 };
 
 window.bizsolFloatFilterPanel = function bizsolFloatFilterPanel($panel) {
@@ -30,10 +56,27 @@ window.bizsolFloatFilterPanel = function bizsolFloatFilterPanel($panel) {
     }
 
     $panel.data('bizsol-filter-anchor', $anchor);
+    bizsolMoveFilterPanelToBody($panel);
 
-    var rect = $anchor[0].getBoundingClientRect();
+    var $posSource = $anchor;
+    if ($panel.hasClass('filter-division')) {
+        var $arrow = $anchor.find('.table-filter-arrow').first();
+        if ($arrow.length) {
+            $posSource = $arrow;
+        }
+    }
+
+    var rect = $posSource[0].getBoundingClientRect();
+    $panel.addClass('bizsol-filter-floating').css({
+        position: 'fixed',
+        top: Math.round(rect.bottom + 2) + 'px',
+        left: Math.round(rect.left) + 'px',
+        right: 'auto',
+        zIndex: 10050
+    });
+
     var panelWidth = $panel.outerWidth() || 200;
-    var panelHeight = $panel.outerHeight() || 280;
+    var panelHeight = $panel.outerHeight() || 140;
     var top = rect.bottom + 2;
     var left = rect.left;
 
@@ -44,12 +87,9 @@ window.bizsolFloatFilterPanel = function bizsolFloatFilterPanel($panel) {
         top = Math.max(10, rect.top - panelHeight - 2);
     }
 
-    $panel.addClass('bizsol-filter-floating').css({
-        position: 'fixed',
+    $panel.css({
         top: Math.round(top) + 'px',
-        left: Math.round(left) + 'px',
-        right: 'auto',
-        zIndex: 10050
+        left: Math.round(left) + 'px'
     });
 };
 
@@ -64,6 +104,7 @@ window.bizsolResetFloatFilterPanel = function bizsolResetFloatFilterPanel($panel
         right: '',
         zIndex: ''
     }).removeData('bizsol-filter-anchor');
+    bizsolRestoreFilterPanel($panel);
 };
 
 window.repositionAllFloatingFilters = function repositionAllFloatingFilters() {
@@ -809,6 +850,12 @@ window.applyfilterdate = function applyfilterdate(columnName, bodyId) {
     closeAllFilters();
 }
 window.renderTableHeader = function renderTableHeader(hiddenColumns, headerId, bodyId, columns, button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn) {
+if (typeof closeAllFilters === 'function') {
+    closeAllFilters();
+}
+if (typeof closeAllFiltersDouble === 'function') {
+    closeAllFiltersDouble();
+}
 const $header = $(`#${headerId}`);
 $header.empty();
 const tableId = $(`#${bodyId}`).closest('table').attr('id');
