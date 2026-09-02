@@ -2685,8 +2685,8 @@
             }
         });
 
-        // Cleanup on close
-        $(document).on('select2:close select2:closing', function () {
+        // Also cleanup on select so re-init during change cannot skip close and leave scroll locked.
+        $(document).on('select2:close select2:closing select2:select', function () {
             _s2ModalEl = null;
             _cleanupSelect2MobileState();
         });

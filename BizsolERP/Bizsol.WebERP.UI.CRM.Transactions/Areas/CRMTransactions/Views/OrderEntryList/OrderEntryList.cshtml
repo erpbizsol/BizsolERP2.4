@@ -17,9 +17,14 @@
     .section-entry-animation {
         animation: oel-fade-slide 0.35s ease both;
     }
+    /* Opacity only — a leftover transform on the grid makes position:fixed
+       filter menus attach to the table instead of the column header. */
     @@keyframes oel-fade-slide {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .oel-grid-wrap.section-entry-animation {
+        animation: none;
     }
     .oel-list-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

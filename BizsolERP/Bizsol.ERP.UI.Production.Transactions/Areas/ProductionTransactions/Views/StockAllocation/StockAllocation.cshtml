@@ -422,8 +422,50 @@
     }
 
     #DetailModal #dvCoilInfo,
+    #DetailModal #dvCoilContextInfo,
     #DetailModal #dvCoilFilter {
         flex-shrink: 0;
+    }
+
+    .sa-coil-context-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 0.95fr) minmax(0, 0.6fr) minmax(0, 0.6fr) minmax(0, 0.6fr);
+        gap: 4px 8px;
+        align-items: end;
+    }
+
+    .sa-coil-ctx-field .form-label {
+        font-size: 0.72rem;
+        margin-bottom: 2px;
+        line-height: 1.15;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .sa-coil-ctx-field .form-control {
+        height: 28px;
+        min-height: 28px;
+        font-size: 0.78rem;
+        padding: 2px 6px;
+        line-height: 1.2;
+    }
+
+    #DetailModal #dvCoilInfo .form-label {
+        font-size: 0.72rem;
+        margin-bottom: 2px;
+        line-height: 1.15;
+    }
+
+    #DetailModal #dvCoilInfo .form-control {
+        height: 28px;
+        min-height: 28px;
+        font-size: 0.78rem;
+        padding: 2px 6px;
+    }
+
+    #DetailModal #DetailTable {
+        min-width: 460px;
     }
 
     #DetailModal #paginator-DetailTable {
@@ -658,6 +700,93 @@
         .sa-list-filter-bar .sa-list-toolbar .btn {
             flex: 1;
         }
+
+        #DetailModal .modal-body {
+            padding: 8px 10px 6px;
+            overflow-y: auto !important;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            display: block;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        #DetailModal .sa-detail-modal-dialog {
+            max-width: 100%;
+            width: 100%;
+            height: 100dvh;
+            max-height: 100dvh;
+            margin: 0;
+        }
+
+        #DetailModal .modal-content {
+            border-radius: 0;
+        }
+
+        #DetailModal #dvCoilInfo {
+            --bs-gutter-y: 0.25rem;
+            --bs-gutter-x: 0.35rem;
+            margin-bottom: 0.35rem !important;
+        }
+
+        #DetailModal #dvCoilInfo > [class*="col-"] {
+            padding-left: 4px;
+            padding-right: 4px;
+        }
+
+        .sa-coil-context-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 4px 5px;
+            margin-bottom: 0.35rem !important;
+        }
+
+        .sa-coil-ctx-order {
+            grid-column: 1 / -1;
+        }
+
+        .sa-coil-ctx-item {
+            grid-column: span 2;
+        }
+
+        .sa-coil-ctx-section {
+            grid-column: span 1;
+        }
+
+        .sa-coil-ctx-field .form-label,
+        #DetailModal #dvCoilInfo .form-label {
+            font-size: 0.66rem;
+        }
+
+        .sa-coil-ctx-field .form-control,
+        #DetailModal #dvCoilInfo .form-control {
+            height: 26px;
+            min-height: 26px;
+            font-size: 0.72rem;
+            padding: 2px 5px;
+        }
+
+        #DetailModal #dvCoilFilter {
+            --bs-gutter-y: 0.25rem;
+            --bs-gutter-x: 0.35rem;
+            margin-bottom: 0.35rem !important;
+        }
+
+        #DetailModal #dvCoilFilter .form-label {
+            font-size: 0.66rem;
+            margin-bottom: 2px;
+        }
+
+        #DetailModal .sa-coil-detail-grid {
+            flex: none;
+            min-height: 260px;
+            height: auto !important;
+            max-height: none !important;
+            margin-top: 6px;
+            margin-bottom: 6px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+        }
     }
 
     .sa-filter-6 {
@@ -865,8 +994,8 @@
                 <button type="button" class="close modal-close" aria-label="Close" data-bs-dismiss="modal"><span aria-hidden="true">x</span></button>
             </div>
             <div class="modal-body">
-                <div class="row g-2 align-items-end mb-2" id="dvCoilInfo">
-                    <div class="col-12 col-md-3">
+                <div class="row g-1 align-items-end mb-1" id="dvCoilInfo">
+                    <div class="col-6 col-md-3">
                         <label for="txtCoilEntryNo" class="form-label fw-semibold mb-1">Stock Allocation Entry No</label>
                         <input type="text" id="txtCoilEntryNo" class="form-control form-control-sm box_border" readonly />
                     </div>
@@ -882,6 +1011,37 @@
                         <label for="txtBalanceWt" class="form-label fw-semibold mb-1">Balance (Wt.)</label>
                         <input type="text" id="txtBalanceWt" class="form-control form-control-sm box_border text-end sa-balance-highlight" readonly />
                     </div>
+                </div>
+                <div class="sa-coil-context-grid mb-1" id="dvCoilContextInfo">
+                    <div class="sa-coil-ctx-field sa-coil-ctx-order">
+                        <label for="txtCoilOrderNoTo" class="form-label fw-semibold mb-1">Order No To</label>
+                        <input type="text" id="txtCoilOrderNoTo" class="form-control form-control-sm box_border" readonly />
+                    </div>
+                    <div class="sa-coil-ctx-field sa-coil-ctx-item">
+                        <label for="txtCoilItemName" class="form-label fw-semibold mb-1">Item Name</label>
+                        <input type="text" id="txtCoilItemName" class="form-control form-control-sm box_border" readonly />
+                    </div>
+                    <div class="sa-coil-ctx-field sa-coil-ctx-section">
+                        <label for="txtCoilSectionSize" class="form-label fw-semibold mb-1">Section Size</label>
+                        <input type="text" id="txtCoilSectionSize" class="form-control form-control-sm box_border" readonly />
+                    </div>
+                    <div class="sa-coil-ctx-field sa-coil-ctx-narrow">
+                        <label for="txtCoilWidth" class="form-label fw-semibold mb-1">Width</label>
+                        <input type="text" id="txtCoilWidth" class="form-control form-control-sm box_border" readonly />
+                    </div>
+                    <div class="sa-coil-ctx-field sa-coil-ctx-narrow">
+                        <label for="txtCoilThickness" class="form-label fw-semibold mb-1">Thickness</label>
+                        <input type="text" id="txtCoilThickness" class="form-control form-control-sm box_border" readonly />
+                    </div>
+                    <div class="sa-coil-ctx-field sa-coil-ctx-narrow">
+                        <label for="txtCoilGrade" class="form-label fw-semibold mb-1">Grade</label>
+                        <input type="text" id="txtCoilGrade" class="form-control form-control-sm box_border" readonly />
+                    </div>
+                    <input type="hidden" id="hfCoilWidthCode" value="0" />
+                    <input type="hidden" id="hfCoilThkCode" value="0" />
+                    <input type="hidden" id="hfCoilGradeCode" value="0" />
+                    <input type="hidden" id="hfCoilSectionSizeCode" value="0" />
+                    <input type="hidden" id="hfCoilItemMasterCode" value="0" />
                 </div>
                 <div class="row g-2 align-items-end mb-3" id="dvCoilFilter">
                     <div class="col-6 col-md-2">
