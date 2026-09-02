@@ -7058,6 +7058,10 @@ function CheckStockAndMarkTransfer(rowNo) {
         : ((Size ? 'Size: <b>' + Size + '</b>' : '') + (Thicknessdesp ? ' &nbsp;|&nbsp; Thickness: <b>' + Thicknessdesp + ' MM</b>' : ''));
     if (sizeLabel) sizeLabel = sizeLabel + '<br>';
 
+    // Reset hidden fields so stale data from a previous check never persists
+    $('#hdnCheckStockRowNo').val('');
+    $('#hdnCheckStockBalQty').val('');
+
     SetCheckStockButtonLoading(rowNo, true);
 
     VisitOrderEntryService.GetLogicalStock(dtDate, ItemMasterCode, Size, Thicknessdesp, AccountDesp, 'Stock', '0', StockDependOnParameters, '', '0').then(function (response) {
@@ -7072,10 +7076,10 @@ function CheckStockAndMarkTransfer(rowNo) {
             }
         }
 
-        // Always fill the Stock textbox with fetched balance qty
+        // Update the Stock textbox only when a valid (> 0) balance was fetched
         var stockInput = ObjCurrRow.find('input[name="txtStock"]');
-        if (stockInput.length) {
-            stockInput.val(balQty > 0 ? balQty.toFixed(3) : 0);
+        if (stockInput.length && balQty > 0) {
+            stockInput.val(balQty.toFixed(3));
         }
 
         if (balQty >= orderQty && orderQty > 0) {
