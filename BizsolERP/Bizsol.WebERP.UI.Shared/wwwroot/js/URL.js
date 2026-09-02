@@ -181,6 +181,7 @@ let UrlService = {
     API_ENDPOINT_TEMPLETE_REPORT: `${environment.BASE_URL}/OrderLoadReport`,
     API_ENDPOINT_DASHBOARD_CONFIGURATION: `${environment.BASE_URL}/DashboardConfiguration`,
     API_ENDPOINT_ProductionOrder: `${environment.BASE_URL}/ProductionOrder`,
+    API_ENDPOINT_CRM_ORDER_IN_TRANSIT: `${environment.BASE_URL}/CRMOrderInTransit`,
 }
 
 export { UrlService  }
