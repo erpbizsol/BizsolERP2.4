@@ -421,21 +421,21 @@ function initializeObjectlistControl(options) {
     // Apply initial search value
     const rawSearch   = (options.searchvalue || '').toString().trim();
     const searchValue = (rawSearch === '.') ? '' : rawSearch;
+    const matchType   = (options.MatchType || 'contains').toString().toLowerCase();
 
     // If a search value is provided, check how many rows match before opening the modal
     if (searchValue !== '') {
         const matchField = (G_ObjectListDefaultColumnFilter || '').trim();
+        const term = searchValue.toLowerCase();
         const preFiltered = G_ObjectListData.filter(function (row) {
             if (matchField !== '') {
-                return String(row[matchField] !== null && row[matchField] !== undefined ? row[matchField] : '')
-                    .toLowerCase()
-                    .includes(searchValue.toLowerCase());
+                const cellValue = String(row[matchField] !== null && row[matchField] !== undefined ? row[matchField] : '');
+                return objListMatchValue(cellValue, term, matchType);
             }
             return arrayObjectListColumns.some(function (col) {
                 if (col.visible === false) return false;
-                return String(row[col.field] !== null && row[col.field] !== undefined ? row[col.field] : '')
-                    .toLowerCase()
-                    .includes(searchValue.toLowerCase());
+                const cellValue = String(row[col.field] !== null && row[col.field] !== undefined ? row[col.field] : '');
+                return objListMatchValue(cellValue, term, matchType);
             });
         });
 
@@ -450,7 +450,7 @@ function initializeObjectlistControl(options) {
     }
 
     $('#objListSearchInput').val(searchValue);
-    $('#objListMatchType').val('contains');
+    $('#objListMatchType').val(matchType === 'startswith' || matchType === 'endswith' ? matchType : 'contains');
     $('#objListTableBody .objlist-row').removeClass('table-primary');
 
     buildObjectListTable(G_ObjectListData, arrayObjectListColumns);
