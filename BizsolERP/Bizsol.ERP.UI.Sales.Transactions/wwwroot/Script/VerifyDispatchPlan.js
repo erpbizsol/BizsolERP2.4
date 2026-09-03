@@ -1331,6 +1331,56 @@ function Verify(Code) {
         }
     });
 }
+function showConfirmDialog(message, title) {
+    return new Promise(function (resolve) {
+        var overlay = document.getElementById('vdpConfirmOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'vdpConfirmOverlay';
+            overlay.innerHTML =
+                '<div class="vdp-confirm-backdrop"></div>' +
+                '<div class="vdp-confirm-box" role="dialog" aria-modal="true">' +
+                '  <div class="vdp-confirm-header">Confirm</div>' +
+                '  <div class="vdp-confirm-body" id="vdpConfirmMsg"></div>' +
+                '  <div class="vdp-confirm-footer">' +
+                '    <button type="button" class="btn btn-secondary btn-sm" id="vdpConfirmCancel">Cancel</button>' +
+                '    <button type="button" class="btn btn-primary btn-sm" id="vdpConfirmOk">OK</button>' +
+                '  </div>' +
+                '</div>';
+            var style = document.createElement('style');
+            style.textContent =
+                '#vdpConfirmOverlay{display:none;position:fixed;inset:0;z-index:20000;align-items:center;justify-content:center;padding:16px;}' +
+                '#vdpConfirmOverlay.vdp-confirm-open{display:flex;}' +
+                '#vdpConfirmOverlay .vdp-confirm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);}' +
+                '#vdpConfirmOverlay .vdp-confirm-box{position:relative;background:#fff;border-radius:8px;width:min(360px,92vw);box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden;}' +
+                '#vdpConfirmOverlay .vdp-confirm-header{background:#558bc0;color:#fff;font-weight:600;padding:10px 14px;}' +
+                '#vdpConfirmOverlay .vdp-confirm-body{padding:16px 14px;font-size:14px;color:#2c3e50;line-height:1.4;}' +
+                '#vdpConfirmOverlay .vdp-confirm-footer{padding:10px 14px 14px;display:flex;justify-content:flex-end;gap:8px;}' +
+                '#vdpConfirmOverlay .vdp-confirm-footer .btn{min-width:72px;min-height:36px;}';
+            document.head.appendChild(style);
+            document.body.appendChild(overlay);
+        }
+        var msgEl = document.getElementById('vdpConfirmMsg');
+        if (msgEl) msgEl.textContent = message || '';
+        var header = overlay.querySelector('.vdp-confirm-header');
+        if (header) header.textContent = title || 'Confirm';
+
+        var settled = false;
+        var finish = function (ok) {
+            if (settled) return;
+            settled = true;
+            overlay.classList.remove('vdp-confirm-open');
+            overlay.style.display = 'none';
+            resolve(!!ok);
+        };
+        document.getElementById('vdpConfirmOk').onclick = function () { finish(true); };
+        document.getElementById('vdpConfirmCancel').onclick = function () { finish(false); };
+        overlay.querySelector('.vdp-confirm-backdrop').onclick = function () { finish(false); };
+
+        overlay.style.display = 'flex';
+        overlay.classList.add('vdp-confirm-open');
+    });
+}
 function VerifyDispatch() {
     var Remark = $("#txtRemark").val();
     if (Remark == '') {
@@ -1338,7 +1388,8 @@ function VerifyDispatch() {
         return;
     }
     var Code = $("#hfCode").val();
-    if (confirm("Are you sure you want to verify ?")) {
+    showConfirmDialog("Are you sure you want to verify ?").then(function (ok) {
+        if (!ok) return;
         Showloader();
         var Status = $("#ddlStatus").val();
         VerifyDispatchPlanService.Verify(Code, Status, Remark).then(function (response) {
@@ -1355,7 +1406,7 @@ function VerifyDispatch() {
             HideLoader();
             toastr.error(error.Message || 'Error During Verify ');
         });
-    }
+    });
 }
 function getFinancialYear() {
     var currentDate = new Date();
@@ -1521,7 +1572,8 @@ function Update() {
         toastr.error('Please select at least one transporter.');
         return;
     }
-    if (confirm("Are you sure you want to update ?")) {
+    showConfirmDialog("Are you sure you want to update ?").then(function (ok) {
+        if (!ok) return;
         Showloader();
         VerifyDispatchPlanService.UpdateTransporter(codes).then(function (response) {
             if (response.Status == 'Y') {
@@ -1535,7 +1587,7 @@ function Update() {
         }).catch(function (error) {
             HideLoader();
         });
-    }
+    });
 }
 function SendMailToTransporter() {
     var ModuleName = "Delivery Order/Despatch Advice (GST)",
@@ -1568,9 +1620,10 @@ function SendMailToTransporter() {
                 toastr.error('Please enter remark.');
                 return;
             }
-            if (confirm("Are you sure you want to verify/send mail ?")) {
+            showConfirmDialog("Are you sure you want to verify/send mail ?").then(function (ok) {
+                if (!ok) return;
                 Showloader();
-                VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo,Remark).then(function (response) {
+                VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo, Remark).then(function (response) {
                     if (response.Status == 'Y') {
                         toastr.success(response.Message);
                         HideLoader();
@@ -1583,7 +1636,7 @@ function SendMailToTransporter() {
                 }).catch(function (error) {
                     HideLoader();
                 });
-            }
+            });
         }
     });
 }

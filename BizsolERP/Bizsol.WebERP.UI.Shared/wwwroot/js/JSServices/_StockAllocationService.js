@@ -18,14 +18,15 @@ const StockAllocationService = {
             }
         );
     },
-    GetBOMMasterIdentificationNo: function GetBOMMasterIdentificationNo(BomTransactionOrderWise_Code, WidthFrom, WidthTo, ThicknessFrom, ThicknessTo, Grades) {
+    GetBOMMasterIdentificationNo: function GetBOMMasterIdentificationNo(BomTransactionOrderWise_Code, WidthFrom, WidthTo, ThicknessFrom, ThicknessTo, Grades, SectionSizes) {
         var URL = UrlService.API_ENDPOINT_StockAllocation
             + `/GetBOMMasterIdentificationNo?BomTransactionOrderWise_Code=${BomTransactionOrderWise_Code}`
             + `&WidthFrom=${encodeURIComponent(WidthFrom ?? '')}`
             + `&WidthTo=${encodeURIComponent(WidthTo ?? '')}`
             + `&ThicknessFrom=${encodeURIComponent(ThicknessFrom ?? '')}`
             + `&ThicknessTo=${encodeURIComponent(ThicknessTo ?? '')}`
-            + `&Grades=${encodeURIComponent(Grades ?? '')}`;
+            + `&Grades=${encodeURIComponent(Grades ?? '')}`
+            + `&SectionSizes=${encodeURIComponent(SectionSizes ?? '')}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
