@@ -546,10 +546,29 @@
 .urd-table-matrix tbody tr:hover td { background: #eef2ff !important; }
 .urd-table-matrix tbody tr:hover .urd-td-access.is-granted { background: #d1fae5 !important; }
 
-/* Permission rows */
-.urd-row-level-2 .urd-td-module { font-weight: 700; font-size: 13px; color: var(--urd-ink); }
-.urd-row-level-3 .urd-td-module { font-size: 12.5px; color: var(--urd-body); }
-.urd-row-level-4 .urd-td-module { font-size: 12px; color: var(--urd-muted); }
+/* Level colours only — no L1/L2 text */
+.urd-row-level-1 .urd-td-module { font-weight: 800; }
+.urd-row-level-2 .urd-td-module {
+    font-weight: 700; font-size: 13px; color: #0e7490;
+    background: #ecfeff; border-left: 3px solid #06b6d4;
+}
+.urd-row-level-3 .urd-td-module {
+    font-weight: 600; font-size: 12.5px; color: #c2410c;
+    background: #fff7ed; border-left: 3px solid #f97316;
+}
+.urd-row-level-4 .urd-td-module {
+    font-weight: 600; font-size: 12px; color: #6d28d9;
+    background: #f5f3ff; border-left: 3px solid #8b5cf6;
+}
+.urd-row-level-2 .urd-icon-m, .urd-row-level-2 .urd-icon-s { color: #0891b2 !important; }
+.urd-row-level-3 .urd-icon-s, .urd-row-level-3 .urd-icon-m { color: #ea580c !important; }
+.urd-row-level-4 .urd-icon-o, .urd-row-level-4 .urd-icon-s { color: #7c3aed !important; }
+.urd-table-matrix tbody tr.urd-row-level-2:nth-child(even) .urd-td-module { background: #e0f2fe; }
+.urd-table-matrix tbody tr.urd-row-level-3:nth-child(even) .urd-td-module { background: #ffedd5; }
+.urd-table-matrix tbody tr.urd-row-level-4:nth-child(even) .urd-td-module { background: #ede9fe; }
+.urd-table-matrix tbody tr.urd-row-level-2:hover .urd-td-module { background: #cffafe !important; }
+.urd-table-matrix tbody tr.urd-row-level-3:hover .urd-td-module { background: #fed7aa !important; }
+.urd-table-matrix tbody tr.urd-row-level-4:hover .urd-td-module { background: #ddd6fe !important; }
 .urd-td-module { padding: 0; font-size: 13px; color: var(--urd-ink); font-weight: 500; overflow: visible; }
 .urd-td-module.urd-td-category { padding: 0; }
 .urd-td-access {
@@ -780,4 +799,4 @@
 </div><!-- /card -->
 </div><!-- /page -->
 
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserRightDashboardScript.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserRightDashboardScript.js?v=20260904g"></script>
