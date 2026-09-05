@@ -178,6 +178,7 @@
         background: linear-gradient(135deg, #4f46e5, #667eea);
         color: #fff; font-size: 0.73rem; font-weight: 600;
         text-align: center; vertical-align: middle; padding: 8px 6px; white-space: nowrap; border: none;
+        position: sticky; top: 0; z-index: 2;
     }
     .items-table thead tr th:first-child { border-radius: 8px 0 0 0; }
     .items-table thead tr th:last-child  { border-radius: 0 8px 0 0; }
@@ -209,7 +210,16 @@
     }
     .add-item-btn:hover { color: #fff; }
 
-    .items-desktop-wrap { display: block; }
+    .items-desktop-wrap {
+        display: block;
+        overflow-x: auto;
+        overflow-y: auto;
+        min-height: 220px;
+        max-height: min(620px, calc(100vh - 240px));
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        background: #fff;
+    }
     .items-mobile-wrap  { display: none; }
     .mobile-item-card {
         background: #fff;
@@ -428,7 +438,7 @@
                 </button>
             </div>
             <div class="indent-step-body" style="padding-top:10px;">
-                <div class="items-desktop-wrap" style="overflow-x:auto;">
+                <div class="items-desktop-wrap">
                     <table class="items-table" id="tblIndentItems">
                         <thead>
                             <tr>
@@ -647,8 +657,8 @@
         <a class="btn-indent-cancel" onclick="CloseIndentForm()">
             <i class="fa fa-arrow-left me-1"></i>Back
         </a>
-        <a class="btn-indent-save" onclick="SaveIndent()">
-            <i class="fa fa-save me-2"></i>Save Indent
+        <a class="btn-indent-save" href="javascript:void(0)" tabindex="0" onclick="SaveIndent()">
+            <i class="fa fa-save me-2"></i>Save 
         </a>
     </div>
 </div>
