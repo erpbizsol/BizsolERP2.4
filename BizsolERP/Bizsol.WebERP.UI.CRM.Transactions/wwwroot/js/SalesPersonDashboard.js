@@ -1,4 +1,5 @@
 import { SalesPersonDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SalesPersonDashboardService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 const METRICS = ['Sales', 'Receipt', 'Visit'];
 const PERIODS = ['Day', 'Month'];
@@ -16,6 +17,10 @@ let chartPaymentDonut = null;
 
 $(document).ready(function () {
     $('#ERPHeading').text('Sales Person Dashboard');
+    BizSolHelperFunction.applyUserDashboardMenuBackButton('#btnBackToUserDashboardMenu');
+    $('#btnBackToUserDashboardMenu').on('click', function () {
+        BizSolHelperFunction.goToUserDashboardMenu();
+    });
     bindTabEvents();
     loadActiveTab();
 });
