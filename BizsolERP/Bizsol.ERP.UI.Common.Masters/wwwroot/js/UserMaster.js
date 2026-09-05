@@ -16,6 +16,7 @@ var G_UserMasterDashboardList = [];
 /** Subproject codes to apply after form modal is visible (Select2 in backdrop). */
 var G_UserModalSubProjectPendingCodes = null;
 
+
 function escHtmlUm(str) {
     return String(str == null ? '' : str)
         .replace(/&/g, '&amp;')
@@ -222,6 +223,90 @@ function tryParseJsonIfString(val) {
     }
 }
 
+/** Read a field from a row (PascalCase / camelCase / case-insensitive). */
+function pickRowVal(row) {
+    if (!row || typeof row !== 'object') return undefined;
+    var names = Array.prototype.slice.call(arguments, 1);
+    var i, n, k, keys, want;
+    for (i = 0; i < names.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(row, names[i]) && row[names[i]] != null)
+            return row[names[i]];
+    }
+    keys = Object.keys(row);
+    for (n = 0; n < names.length; n++) {
+        want = String(names[n]).toLowerCase();
+        for (k = 0; k < keys.length; k++) {
+            if (String(keys[k]).toLowerCase() === want && row[keys[k]] != null)
+                return row[keys[k]];
+        }
+    }
+    return undefined;
+}
+
+/** DataSet list APIs often return [[ {..}, {..} ]] — first table's object rows. */
+function flattenFirstTableRows(res) {
+    if (!res) return [];
+    res = tryParseJsonIfString(res);
+    if (!Array.isArray(res) || !res.length) return [];
+    var pack = Array.isArray(res[0]) ? res[0] : res;
+    if (!Array.isArray(pack)) return [];
+    return pack.filter(function (x) { return x && typeof x === 'object' && !Array.isArray(x); });
+}
+
+/** Peel nested arrays until the first object: [[{row}]] → row. */
+function unwrapNestedToFirstObject(response) {
+    var cur = tryParseJsonIfString(response);
+    var guard = 0;
+    while (Array.isArray(cur) && cur.length && guard++ < 8) {
+        cur = tryParseJsonIfString(cur[0]);
+    }
+    if (cur && typeof cur === 'object' && !Array.isArray(cur)) return cur;
+    return null;
+}
+
+function setSelectValueWhenReady($sel, value, attempts, onSet) {
+    var v = value == null || String(value).trim() === '' ? '' : String(value).trim();
+    attempts = attempts == null ? 12 : attempts;
+    if (!$sel || !$sel.length) {
+        if (typeof onSet === 'function') onSet(v);
+        return;
+    }
+    if (!v) {
+        $sel.val('');
+        if (typeof onSet === 'function') onSet('');
+        return;
+    }
+    var has = $sel.find('option').filter(function () {
+        return String($(this).val()) === v;
+    }).length;
+    if (has) {
+        $sel.val(v);
+        if (typeof onSet === 'function') onSet(v);
+        return;
+    }
+    if (attempts > 0) {
+        setTimeout(function () { setSelectValueWhenReady($sel, v, attempts - 1, onSet); }, 180);
+        return;
+    }
+    $sel.val(v);
+    if (typeof onSet === 'function') onSet(v);
+}
+
+/** JOIN row(s) with WebApiDashboardMaster_Code + FixedParameter_Code on the user object. */
+function collectDashboardJoinRows(rows) {
+    var out = [];
+    if (!Array.isArray(rows)) return out;
+    rows.forEach(function (r) {
+        if (!r || typeof r !== 'object') return;
+        var dc = pickRowVal(r, 'WebApiDashboardMaster_Code', 'webApiDashboardMaster_Code');
+        var cc = pickRowVal(r, 'FixedParameter_Code', 'fixedParameter_Code');
+        if (dc == null || cc == null || isNaN(Number(dc)) || isNaN(Number(cc))) return;
+        if (Number(dc) <= 0) return;
+        out.push(r);
+    });
+    return out;
+}
+
 function rowLooksLikeSubProjectMasterRow(o) {
     if (!o || typeof o !== 'object' || Array.isArray(o)) return false;
     return ('Code' in o) || ('code' in o)
@@ -232,11 +317,17 @@ function rowLooksLikeSubProjectMasterRow(o) {
 function normalizeSubProjectMasterListResponse(res) {
     if (!res) return [];
     res = tryParseJsonIfString(res);
-    if (Array.isArray(res)) return res;
+    if (Array.isArray(res)) {
+        var flatSp = flattenFirstTableRows(res);
+        return flatSp.length ? flatSp : res.filter(function (x) { return x && typeof x === 'object' && !Array.isArray(x); });
+    }
     /* ASP.NET often wraps list in Data / value (string or object) */
     if (res.Data != null) {
         var d = tryParseJsonIfString(res.Data);
-        if (Array.isArray(d)) return d;
+        if (Array.isArray(d)) {
+            var flatD = flattenFirstTableRows(d);
+            return flatD.length ? flatD : d.filter(function (x) { return x && typeof x === 'object' && !Array.isArray(x); });
+        }
         if (d && typeof d === 'object' && !Array.isArray(d)) {
             var inner = normalizeSubProjectMasterListResponse(d);
             if (inner.length) return inner;
@@ -244,7 +335,10 @@ function normalizeSubProjectMasterListResponse(res) {
     }
     if (res.data != null) {
         var d2 = tryParseJsonIfString(res.data);
-        if (Array.isArray(d2)) return d2;
+        if (Array.isArray(d2)) {
+            var flatD2 = flattenFirstTableRows(d2);
+            return flatD2.length ? flatD2 : d2.filter(function (x) { return x && typeof x === 'object' && !Array.isArray(x); });
+        }
         if (d2 && typeof d2 === 'object' && !Array.isArray(d2)) {
             var inner2 = normalizeSubProjectMasterListResponse(d2);
             if (inner2.length) return inner2;
@@ -437,23 +531,35 @@ function pickSubProjectDetailsArrayFromResponseObject(obj) {
 /** True if object looks like a UserMaster row (not a subproject-only row). */
 function isUserMasterRowShape(o) {
     if (!o || typeof o !== 'object' || Array.isArray(o)) return false;
-    if (o.UserID != null && String(o.UserID).trim() !== '') return true;
-    if (o.UserName != null && String(o.UserName).trim() !== '') return true;
-    if (o.Code != null && o.GroupMaster_Code != null && o.FixedParameter_Code != null) return true;
+    var uid = pickRowVal(o, 'UserID', 'userID');
+    var uname = pickRowVal(o, 'UserName', 'userName');
+    if (uid != null && String(uid).trim() !== '') return true;
+    if (uname != null && String(uname).trim() !== '') return true;
+    var code = pickRowVal(o, 'Code', 'code');
+    var g = pickRowVal(o, 'GroupMaster_Code', 'groupMaster_Code');
+    var f = pickRowVal(o, 'FixedParameter_Code', 'fixedParameter_Code');
+    if (code != null && g != null && f != null) return true;
     return false;
 }
 
 /**
- * API shape from multi-result-set: [ [ userRow ], [ subProjectRow, ... ] ].
- * Previously pickEntity returned only the first inner array, so the form never bound.
+ * API shape from multi-result-set: [ [ userRow ], [ subProjectRow, ... ] ]
+ * or a JOIN flatten: [ [ { user + WebApiDashboardMaster_Code + Desp } ] ].
  */
 function pickEntityFromNestedTableArray(outer) {
     if (!Array.isArray(outer) || outer.length < 1) return null;
     var pack0 = outer[0];
     if (!Array.isArray(pack0) || !pack0.length) return null;
-    var user = pack0[0];
-    if (!isUserMasterRowShape(user)) return null;
+    var user = null;
+    var i;
+    for (i = 0; i < pack0.length; i++) {
+        if (isUserMasterRowShape(pack0[i])) { user = pack0[i]; break; }
+    }
+    if (!user) user = unwrapNestedToFirstObject(pack0);
+    if (!user || typeof user !== 'object') return null;
     var merged = Object.assign({}, user);
+    var dashJoin = collectDashboardJoinRows(pack0);
+    if (dashJoin.length) merged.UserDashboardDetails = dashJoin;
     if (outer.length >= 2) {
         var pack1 = outer[1];
         if (Array.isArray(pack1) && pack1.length) {
@@ -468,6 +574,8 @@ function pickEntityFromNestedTableArray(outer) {
         if (Array.isArray(pack2) && pack2.length && rowLooksLikeUserDashboardDetailRow(pack2[0]))
             merged.UserDashboardDetails = pack2;
     }
+    if ((!merged.UserDashboardDetails || !merged.UserDashboardDetails.length) && dashJoin.length)
+        merged.UserDashboardDetails = dashJoin;
     return merged;
 }
 
@@ -661,7 +769,10 @@ function loadSubProjectsForViewModal(companyCode, callback) {
 function normalizeMasterListResponse(res) {
     if (!res) return [];
     res = tryParseJsonIfString(res);
-    if (Array.isArray(res)) return res;
+    if (Array.isArray(res)) {
+        var flat = flattenFirstTableRows(res);
+        return flat.length ? flat : res.filter(function (x) { return x && typeof x === 'object' && !Array.isArray(x); });
+    }
     if (Array.isArray(res.data)) return res.data;
     if (Array.isArray(res.Data)) return res.Data;
     if (Array.isArray(res.value)) return res.value;
@@ -798,11 +909,18 @@ function userDashboardSelectionMapFromUserRow(row) {
     if (Array.isArray(list)) {
         list.forEach(function (x) {
             if (!x) return;
-            var cc = x.FixedParameter_Code != null ? x.FixedParameter_Code : x.fixedParameter_Code;
-            var dc = x.WebApiDashboardMaster_Code != null ? x.WebApiDashboardMaster_Code : x.webApiDashboardMaster_Code;
+            var cc = pickRowVal(x, 'FixedParameter_Code', 'fixedParameter_Code');
+            var dc = pickRowVal(x, 'WebApiDashboardMaster_Code', 'webApiDashboardMaster_Code');
             if (cc == null || dc == null || isNaN(Number(cc)) || isNaN(Number(dc))) return;
+            if (Number(dc) <= 0) return;
             map[String(Number(cc))] = String(Number(dc));
         });
+    }
+    if (!Object.keys(map).length) {
+        var fcc = pickRowVal(row, 'FixedParameter_Code', 'fixedParameter_Code');
+        var fdc = pickRowVal(row, 'WebApiDashboardMaster_Code', 'webApiDashboardMaster_Code');
+        if (fcc != null && fdc != null && !isNaN(Number(fcc)) && !isNaN(Number(fdc)) && Number(fdc) > 0)
+            map[String(Number(fcc))] = String(Number(fdc));
     }
     return map;
 }
@@ -817,7 +935,12 @@ function userDashboardDetailsArrayFromUserRow(row) {
         if (Array.isArray(t2)) list = t2;
     }
     if (list && !Array.isArray(list)) list = [list];
-    return Array.isArray(list) ? list : [];
+    if (Array.isArray(list) && list.length) return list;
+    var fcc = pickRowVal(row, 'FixedParameter_Code', 'fixedParameter_Code');
+    var fdc = pickRowVal(row, 'WebApiDashboardMaster_Code', 'webApiDashboardMaster_Code');
+    if (fcc != null && fdc != null && !isNaN(Number(fcc)) && !isNaN(Number(fdc)) && Number(fdc) > 0)
+        return [row];
+    return [];
 }
 
 function pickUserDashboardDetailCompanyName(x) {
@@ -961,9 +1084,16 @@ function GetUserMasterList() {
     var filterCode = resolveUserMasterListFilterCode();
     UserMasterService.GetUserMasterList(filterCode).then(function (response) {
         var rows = [];
-        if (Array.isArray(response))             rows = response;
-        else if (Array.isArray(response.data))   rows = response.data;
-        else if (Array.isArray(response.Data))   rows = response.Data;
+        if (Array.isArray(response)) {
+            var flatList = flattenFirstTableRows(response);
+            rows = flatList.length ? flatList : response;
+        } else if (Array.isArray(response.data)) {
+            rows = flattenFirstTableRows(response.data);
+            if (!rows.length) rows = response.data;
+        } else if (Array.isArray(response.Data)) {
+            rows = flattenFirstTableRows(response.Data);
+            if (!rows.length) rows = response.Data;
+        }
 
         if (rows.length === 0) {
             toastr.warning('No users found. Add your first user.');
@@ -1008,10 +1138,13 @@ function LoadDropdowns() {
         url: UrlService.API_ENDPOINT_USERMASTER + '/GetGroupMasterList',
         type: 'GET',
         success: function (res) {
-            var groups = Array.isArray(res) ? res : (res.data || res.Data || []);
+            var groups = normalizeMasterListResponse(res);
             var $ddl = $('#ddlGroupName').empty().append('<option value="">— Select Group —</option>');
             groups.forEach(function (g) {
-                $ddl.append($('<option>').val(g.Code).text(g.GroupName));
+                var code = pickRowVal(g, 'Code', 'code');
+                var name = pickRowVal(g, 'GroupName', 'groupName');
+                if (code == null || String(code).trim() === '') return;
+                $ddl.append($('<option>').val(String(code)).text(name != null && String(name).trim() !== '' ? String(name) : String(code)));
             });
         }
     });
@@ -1025,7 +1158,10 @@ function LoadDropdowns() {
             G_UserMasterCompanyList = companies;
             var $ddl = $('#ddlDefaultCompany').empty().append('<option value="">— Select Company —</option>');
             companies.forEach(function (c) {
-                $ddl.append($('<option>').val(c.Code).text(c.CompanyName));
+                var code = pickCompanyRowCode(c);
+                var name = pickCompanyDisplayName(c);
+                if (!code) return;
+                $ddl.append($('<option>').val(code).text(name));
             });
         }
     });
@@ -1088,7 +1224,8 @@ function EditUser(code) {
         row = mergeUserRowWithDetailsFromGetByCodeResponse(row, res);
         PopulateForm(row);
         U_EditRow = Object.assign({}, row);
-        var companyCode = String($('#ddlDefaultCompany').val() || '').trim();
+        var companyCode = pickRowVal(row, 'FixedParameter_Code', 'fixedParameter_Code');
+        companyCode = companyCode != null && String(companyCode).trim() !== '' ? String(companyCode).trim() : '';
         loadSubProjectsForUserMaster(companyCode);
         $('#userDialogBackdrop').addClass('show');
         updateBizsolUserVisibility();
@@ -1110,8 +1247,8 @@ function ViewUser(code) {
         var row = pickEntity(res);
         if (!row) { toastr.error('Failed to load user details.'); return; }
         row = mergeUserRowWithDetailsFromGetByCodeResponse(row, res);
-        var companyCode = row.FixedParameter_Code != null && row.FixedParameter_Code !== ''
-            ? String(row.FixedParameter_Code) : '';
+        var companyCode = pickRowVal(row, 'FixedParameter_Code', 'fixedParameter_Code');
+        companyCode = companyCode != null && String(companyCode).trim() !== '' ? String(companyCode).trim() : '';
         loadSubProjectsForViewModal(companyCode, function () {
             PopulateViewModal(row);
             updateUserDashboardVisibility();
@@ -1121,29 +1258,37 @@ function ViewUser(code) {
 }
 
 function PopulateViewModal(d) {
-    $('#viewUserCode').text(d.Code || '—');
-    $('#viewUserName').text(d.UserName || '—');
-    $('#vf_UserID').text(d.UserID || '—');
-    $('#vf_UserIDVal').text(d.UserID || '—');
-    $('#vf_UserName').text(d.UserName || '—');
-    $('#vf_MobileNo').text(d.UserMobileNo || '—');
-    $('#vf_Group').text(d.GroupName || '—');
-    $('#vf_GroupLabel').text(d.GroupName || '—');
-    $('#vf_Company').text(d.DefaultCompanyName || '—');
+    var code = pickRowVal(d, 'Code', 'code');
+    var userName = pickRowVal(d, 'UserName', 'userName');
+    var userId = pickRowVal(d, 'UserID', 'userID');
+    var mobile = pickRowVal(d, 'UserMobileNo', 'userMobileNo');
+    var groupName = pickRowVal(d, 'GroupName', 'groupName');
+    var companyName = pickRowVal(d, 'DefaultCompanyName', 'defaultCompanyName');
+    var status = String(pickRowVal(d, 'Status', 'status') || '').trim().toUpperCase();
+    $('#viewUserCode').text(code != null && String(code) !== '' ? String(code) : '—');
+    $('#viewUserName').text(userName || '—');
+    $('#vf_UserID').text(userId || '—');
+    $('#vf_UserIDVal').text(userId || '—');
+    $('#vf_UserName').text(userName || '—');
+    $('#vf_MobileNo').text(mobile || '—');
+    $('#vf_Group').text(groupName || '—');
+    $('#vf_GroupLabel').text(groupName || '—');
+    $('#vf_Company').text(companyName || '—');
     $('#vf_SubProjects').text(subProjectNamesDisplayFromUserRow(d));
     $('#vf_DashboardList').html(userDashboardViewHtmlFromUserRow(d));
 
     /* Status badge */
-    var isActive = d.Status === 'A';
+    var isActive = status === 'A';
     $('#vf_StatusBadge')
         .removeClass('badge-active badge-inactive')
         .addClass(isActive ? 'badge-active' : 'badge-inactive')
         .html('<i class="fas fa-' + (isActive ? 'circle-check' : 'circle-xmark') + '" style="margin-right:4px;"></i>' + (isActive ? 'Active' : 'Inactive'));
 
-    if (d.GroupName) $('#vf_GroupBadge').show(); else $('#vf_GroupBadge').hide();
+    if (groupName) $('#vf_GroupBadge').show(); else $('#vf_GroupBadge').hide();
 
-    if (d.PhotoPath) {
-        $('#viewAvatarImg').attr('src', d.PhotoPath).show();
+    var photo = pickRowVal(d, 'PhotoPath', 'photoPath');
+    if (photo) {
+        $('#viewAvatarImg').attr('src', photo).show();
         $('#viewAvatarIcon').hide();
     } else {
         $('#viewAvatarImg').hide();
@@ -1229,6 +1374,10 @@ function BuildPayload() {
     row.UserID = $('#txtUserID').val().trim();
     row.UserName = $('#txtUserName').val().trim();
     row.Password = $('#txtPassword').val().trim();
+    if (!row.Password && U_EditRow) {
+        var keepPwd = pickRowVal(U_EditRow, 'Password', 'password');
+        if (keepPwd != null && String(keepPwd) !== '') row.Password = String(keepPwd);
+    }
     row.GroupMaster_Code = parseInt($('#ddlGroupName').val()) || 0;
     row.FixedParameter_Code = companyKey;
     row.CompanyCode = companyKey;
@@ -1342,20 +1491,38 @@ function ValidateForm() {
 function PopulateForm(d) {
     /* Clear fields only — do not clear U_EditRow / U_EditCode (EditUser sets row after PopulateForm). */
     clearUserFormFieldsOnly();
-    $('#txtUserID').val(d.UserID || '');
-    $('#txtUserName').val(d.UserName || '');
-    $('#txtMobileNo').val(d.UserMobileNo || '');
-    $('#ddlGroupName').val(d.GroupMaster_Code != null && d.GroupMaster_Code !== '' ? String(d.GroupMaster_Code) : '');
-    $('#txtPassword').val('');
-    $('#ddlDefaultCompany').val(d.FixedParameter_Code != null && d.FixedParameter_Code !== '' ? String(d.FixedParameter_Code) : '');
+    var userId = pickRowVal(d, 'UserID', 'userID');
+    var userName = pickRowVal(d, 'UserName', 'userName');
+    var mobile = pickRowVal(d, 'UserMobileNo', 'userMobileNo');
+    var groupCode = pickRowVal(d, 'GroupMaster_Code', 'groupMaster_Code');
+    var companyCode = pickRowVal(d, 'FixedParameter_Code', 'fixedParameter_Code');
+    var pwd = pickRowVal(d, 'Password', 'password');
+    var isBiz = String(pickRowVal(d, 'IsBizSolUser', 'isBizSolUser') || '').trim().toUpperCase();
+    var att = String(pickRowVal(d, 'AttendanceMandatoryInCRM', 'attendanceMandatoryInCRM') || '').trim().toUpperCase();
+    var status = String(pickRowVal(d, 'Status', 'status') || '').trim().toUpperCase();
+
+    $('#txtUserID').val(userId != null ? String(userId) : '');
+    $('#txtUserName').val(userName != null ? String(userName) : '');
+    $('#txtMobileNo').val(mobile != null ? String(mobile) : '');
+    if (pwd != null && String(pwd) !== '') {
+        $('#txtPassword').val(String(pwd));
+        $('#txtConfirmPassword').val(String(pwd));
+    } else {
+        $('#txtPassword').val('');
+        $('#txtConfirmPassword').val('');
+    }
+    setSelectValueWhenReady($('#ddlGroupName'), groupCode, 16);
+    setSelectValueWhenReady($('#ddlDefaultCompany'), companyCode, 16, function (cc) {
+        if (cc) loadSubProjectsForUserMaster(cc);
+    });
     if (canShowBizsolUserOption()) {
-        $('#chkBizsolUser').prop('checked', d.IsBizSolUser === 'Y');
-        $('#chkAttendanceMandatoryInCRM').prop('checked', String(d.AttendanceMandatoryInCRM || '').trim().toUpperCase() === 'Y');
+        $('#chkBizsolUser').prop('checked', isBiz === 'Y' || isBiz === 'YES');
+        $('#chkAttendanceMandatoryInCRM').prop('checked', att === 'Y' || att === 'YES');
     } else {
         $('#chkBizsolUser').prop('checked', false);
         $('#chkAttendanceMandatoryInCRM').prop('checked', false);
     }
-    SetStatus(d.Status === 'A' ? 'Active' : 'Inactive');
+    SetStatus(status === 'A' ? 'Active' : 'Inactive');
 
     var spArr = subProjectCodesArrayFromUserRow(d);
     G_UserModalSubProjectPendingCodes = spArr.length ? spArr.slice() : null;
@@ -1480,19 +1647,29 @@ function pickEntity(response) {
                 return mergeUserRowWithDetailsFromGetByCodeResponse(response[0], response);
             return response[0];
         }
+        var firstObj = unwrapNestedToFirstObject(response);
+        if (firstObj) {
+            if (isUserMasterRowShape(firstObj) || pickRowVal(firstObj, 'UserID', 'userID', 'UserName', 'userName') != null)
+                return mergeUserRowWithDetailsFromGetByCodeResponse(firstObj, response);
+            return firstObj;
+        }
         return null;
     }
 
-    if (response.UserMasterList && response.UserMasterList[0]) {
-        var u0 = response.UserMasterList[0];
+    var listWrap = response.UserMasterList || response.userMasterList;
+    if (listWrap && listWrap[0]) {
+        var u0 = listWrap[0];
         return mergeUserRowWithDetailsFromGetByCodeResponse(u0, response);
     }
     var fromDataSet = pickUserRowFromDataSetShape(response);
     if (fromDataSet) return mergeUserRowWithDetailsFromGetByCodeResponse(fromDataSet, response);
-    if (response.UserID != null || response.UserName != null) {
+    if (pickRowVal(response, 'UserID', 'userID', 'UserName', 'userName') != null) {
         return mergeUserRowWithDetailsFromGetByCodeResponse(response, response);
     }
-    if (response.Code != null && (response.GroupMaster_Code != null || response.FixedParameter_Code != null || response.Status != null))
+    if (pickRowVal(response, 'Code', 'code') != null &&
+        (pickRowVal(response, 'GroupMaster_Code', 'groupMaster_Code') != null
+            || pickRowVal(response, 'FixedParameter_Code', 'fixedParameter_Code') != null
+            || pickRowVal(response, 'Status', 'status') != null))
         return mergeUserRowWithDetailsFromGetByCodeResponse(response, response);
     if (response.data != null) return pickEntity(tryParseJsonIfString(response.data));
     if (response.Data != null) return pickEntity(tryParseJsonIfString(response.Data));
