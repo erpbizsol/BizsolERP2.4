@@ -16,6 +16,7 @@ var G_UserMasterDashboardList = [];
 /** Subproject codes to apply after form modal is visible (Select2 in backdrop). */
 var G_UserModalSubProjectPendingCodes = null;
 
+
 function escHtmlUm(str) {
     return String(str == null ? '' : str)
         .replace(/&/g, '&amp;')
