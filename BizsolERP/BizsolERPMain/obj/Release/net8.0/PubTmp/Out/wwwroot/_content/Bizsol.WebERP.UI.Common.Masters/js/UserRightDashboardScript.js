@@ -21,19 +21,11 @@ var _urdUserListReq = null;
 var _urdUserDebounceTimer = null;
 var URD_USER_DEBOUNCE_MS = 200;
 
-/** Lazy tree — only L1 is in the DOM until a row is expanded. */
-var _urdRowsByParent = {};
-var _urdChildCount = {};
-var _urdGroupCols = [];
-var _urdCatIndex = 0;
-
 // Fixed SP columns — everything else is a group column
 var FIXED_COLS = ['+/-', 'lavel', 'level', 'rowadded', 'rowaddedcount', 'code', 'mastercode', 'sortorder', 'moduletype', 'module'];
-var FIXED_COL_SET = {};
-for (var _fc = 0; _fc < FIXED_COLS.length; _fc++) FIXED_COL_SET[FIXED_COLS[_fc]] = 1;
 
 function isFixedCol(key) {
-    return !!FIXED_COL_SET[String(key || '').toLowerCase()];
+    return FIXED_COLS.indexOf(String(key || '').toLowerCase()) !== -1;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -106,10 +98,11 @@ function getRowLevel(r) {
     return parseInt(lv, 10) || 0;
 }
 
-/** Unique row identity — Code + MasterCode (Lavel is display-only after tree bind). */
+/** Unique row identity for visit dedupe (Code alone can collide across levels). */
 function rowSig(r) {
     return String(toParentKey(gp(r, 'Code'))) + '::' +
-        String(toParentKey(getRowMasterCode(r)));
+        String(toParentKey(getRowMasterCode(r))) + '::' +
+        getRowLevel(r);
 }
 
 /** API may send "1 O", "2 O", or "0" (operation) — normalize to O/M/S/N. */
@@ -127,14 +120,11 @@ var KNOWN_OPERATION_NAMES = {
     save: 1, cancel: 1, approve: 1, reject: 1, add: 1, update: 1
 };
 
-function isOptionTypeO(r) {
-    return normalizeModuleTypeVal(gp(r, 'ModuleType')) === 'O';
-}
-
 function isOperationRow(r) {
     var lavel = getRowLevel(r);
+    var mtype = normalizeModuleTypeVal(gp(r, 'ModuleType'));
     var mod   = normalizeGroupKey(getModuleName(r));
-    return isOptionTypeO(r) || lavel >= 4 || !!KNOWN_OPERATION_NAMES[mod];
+    return mtype === 'O' || lavel >= 4 || !!KNOWN_OPERATION_NAMES[mod];
 }
 
 function rowQualityScore(r) {
@@ -221,22 +211,12 @@ function isRowSeen(r, visited, visitedBind) {
     return !!(visited[rowSig(r)] || visitedBind[rowBindSig(r)]);
 }
 
-/** CRUD names only — do not treat "View Attachments" as a folder-level stub. */
-function isStandardCrudOp(r) {
-    var mod = normalizeGroupKey(getModuleName(r));
-    return !!KNOWN_OPERATION_NAMES[mod];
-}
-
-/** If parent has real screens, drop New/Edit/View stubs on the folder (keep ModuleType O). */
+/** If parent has submodule rows, drop direct operation stubs (API sends ops on parent AND child). */
 function filterDirectOpsWhenSubmodulesExist(children) {
     if (!children || !children.length) return children;
     var hasSubmodule = children.some(function (r) { return !isOperationRow(r); });
     if (!hasSubmodule) return children;
-    return children.filter(function (r) {
-        if (!isOperationRow(r)) return true;
-        if (isOptionTypeO(r)) return true;
-        return !isStandardCrudOp(r);
-    });
+    return children.filter(function (r) { return !isOperationRow(r); });
 }
 
 /** When New/Edit/Delete/View all exist, drop Preview/Print template stubs. */
@@ -307,14 +287,10 @@ function dedupeSiblingRows(rows) {
     return applyOperationRowFilters(out);
 }
 
-function opBindKey(r) {
-    return String(toParentKey(getRowMasterCode(r))) + '::' +
-        normalizeGroupKey(getModuleName(r));
-}
-
 /**
- * SP returns 4 result sets. Drop L3 New/Edit stubs only when L4 has the SAME
- * name for that MasterCode. Keep ModuleType O (View/Add Attachments under 1035).
+ * SP returns 4 result sets by Lavel. Level3 often repeats operation stubs (New/Edit/…)
+ * that Level4 already has for the same master — drop L3 ops when L4 exists for that master.
+ * Modules-only from L3 + all of L4 = correct tree (e.g. Payment Terms Master → 4 ops, not 8).
  */
 function prepareDashboardLevels(level1, level2, level3, level4) {
     level1 = normalizeApiRows(level1 || []);
@@ -322,21 +298,25 @@ function prepareDashboardLevels(level1, level2, level3, level4) {
     level3 = normalizeApiRows(level3 || []);
     level4 = normalizeApiRows(level4 || []);
 
-    var l4OpNames = {};
+    var l4MasterKeys = {};
     level4.forEach(function (r) {
-        l4OpNames[opBindKey(r)] = true;
+        l4MasterKeys[toParentKey(getRowMasterCode(r))] = true;
     });
 
-    function keepUnlessDuplicateL4Stub(r) {
-        if (isOptionTypeO(r) && !isStandardCrudOp(r)) return true;
+    var l3Rows = level3.filter(function (r) {
         if (!isOperationRow(r)) return true;
-        return !l4OpNames[opBindKey(r)];
-    }
+        return !l4MasterKeys[toParentKey(getRowMasterCode(r))];
+    });
+
+    var l2Rows = level2.filter(function (r) {
+        if (!isOperationRow(r)) return true;
+        return !l4MasterKeys[toParentKey(getRowMasterCode(r))];
+    });
 
     return {
         level1: dedupeApiRows(level1),
-        level2: dedupeApiRows(level2.filter(keepUnlessDuplicateL4Stub)),
-        level3: dedupeApiRows(level3.filter(keepUnlessDuplicateL4Stub)),
+        level2: dedupeApiRows(l2Rows),
+        level3: dedupeApiRows(l3Rows),
         level4: dedupeApiRows(level4)
     };
 }
@@ -833,7 +813,10 @@ function LoadDashboard() {
         _dashboardRes = _urdApiResponseCache.payload;
         _collapsedRows = {};
         LoadGroupUsers(selectedCodes);
-        scheduleRenderDashboard(_urdApiResponseCache.payload, selectedCodes);
+        requestAnimationFrame(function () {
+            SetHeaderStep(3);
+            RenderDashboard(_urdApiResponseCache.payload, selectedCodes);
+        });
         return;
     }
 
@@ -845,29 +828,17 @@ function LoadDashboard() {
         .then(function (res) {
             _urdApiResponseCache = { key: apiCacheKey, payload: res, ts: Date.now() };
             _dashboardRes  = res;
-            scheduleRenderDashboard(res, selectedCodes);
+            _collapsedRows = {};
+            RenderDashboard(res, selectedCodes);
         })
         .catch(function (err) {
             console.error('URD error:', err);
             toastr.error('Failed to load User Right Dashboard.');
             ShowPlaceholder('error');
+        })
+        .finally(function () {
             SetLoadingState(false);
         });
-}
-
-/** Yield a frame so the spinner paints, then bind/render off the API JSON. */
-function scheduleRenderDashboard(res, selectedCodes) {
-    SetHeaderStep(3);
-    requestAnimationFrame(function () {
-        try {
-            RenderDashboard(res, selectedCodes);
-        } catch (err) {
-            console.error('URD render:', err);
-            toastr.error('Failed to build User Right Dashboard.');
-            ShowPlaceholder('error');
-        }
-        SetLoadingState(false);
-    });
 }
 
 /* ═══════════════════════════════════════════════════
@@ -941,12 +912,11 @@ function resolveGroupColumnOrder(apiGroups, level1, level2, level3, level4) {
     (apiGroups || []).forEach(addName);
 
     [level1, level2, level3, level4].forEach(function (rows) {
-        var limit = Math.min((rows || []).length, 3);
-        for (var i = 0; i < limit; i++) {
-            Object.keys(rows[i] || {}).forEach(function (k) {
+        (rows || []).forEach(function (row) {
+            Object.keys(row || {}).forEach(function (k) {
                 if (!isFixedCol(k)) addName(k);
             });
-        }
+        });
     });
 
     return order;
@@ -987,7 +957,7 @@ function RenderDashboard(res, selectedGroupCodes) {
     $('#urd-table-wrap').show();
     $('#urd-table-toolbar').show();
 
-    // ─ Column widths — module name + group cols ─
+    // ─ Column widths — fixed module + fixed group cols; table scrolls if wider than viewport ─
     var colModule = 300;
     var colAccessMin = 140;
     var tableW = colModule + groups.length * colAccessMin;
@@ -1017,38 +987,92 @@ function RenderDashboard(res, selectedGroupCodes) {
     });
     $thead.append($hr);
 
-    // ─ Build Body (lazy: only main-menu rows in the DOM) ─
+    // ─ Build Body ─
     var mergedRows = BuildMergedRows(level1, level2, level3, level4);
-    _urdRowsByParent = GroupByParent(mergedRows);
-    _urdChildCount = {};
-    _urdCatIndex = 0;
-    _collapsedRows = {};
-    _urdGroupCols = groups.map(function (gName) {
-        return {
-            name: gName,
-            code: resolveGroupCode(gName, getGroupCodeFromMap(gName))
-        };
-    });
+    var $tbody = $('#urd-tbody').empty();
 
+    var childCountByParent = {};
     mergedRows.forEach(function (r) {
         var pk = toParentKey(getRowMasterCode(r));
         if (pk !== 0 && pk !== '0' && pk !== '') {
-            _urdChildCount[pk] = (_urdChildCount[pk] || 0) + 1;
+            childCountByParent[pk] = (childCountByParent[pk] || 0) + 1;
         }
     });
 
-    var rootHtml = [];
+    var frag = document.createDocumentFragment();
+    var catIndex = 0;
+
     mergedRows.forEach(function (row) {
-        var mc = toParentKey(getRowMasterCode(row));
-        if (mc !== 0 && mc !== '0') return;
-        if (isOperationRow(row)) return;
-        rootHtml.push(buildRowHtml(row));
-        _collapsedRows[rowCollapsedKey(gp(row, 'Code'))] = true;
+        var groupNormMap = buildRowGroupNormMap(row);
+
+        var lavel      = getRowLevel(row) || 1;
+        var code       = gp(row, 'Code');
+        var masterCode = parseInt(getRowMasterCode(row), 10);
+        if (isNaN(masterCode)) masterCode = 0;
+        var moduleType = normalizeModuleTypeVal(gp(row, 'ModuleType'));
+        var moduleName = getModuleName(row).replace(/^\s+/, '');
+        var rowAdded   = String(gp(row, 'RowAdded')   || 'N').trim();
+
+        var codeKey    = toParentKey(code);
+        var hasKids    = (childCountByParent[codeKey] || 0) > 0;
+        var isParent   = (rowAdded !== 'Y') && (lavel === 1 || lavel === 2 || (lavel === 3 && hasKids));
+        var isCategory = lavel === 1 && isParent && rowAdded !== 'Y';
+
+        var $tr = $('<tr>')
+            .addClass('urd-row-level-' + lavel)
+            .attr('data-code',   code)
+            .attr('data-master', masterCode)
+            .attr('data-level',  lavel);
+
+        if (isCategory) {
+            var ci = catIndex % 6;
+            catIndex++;
+            $tr.addClass('urd-row-category urd-cat-' + ci);
+            $tr.append(
+                '<td class="urd-td-module urd-td-category">' +
+                '<div class="urd-mod-row">' +
+                buildToggleBtn(code, lavel) +
+                '<div class="urd-cat-inner">' +
+                '<span class="urd-cat-label">' + GetModuleIcon(moduleType, lavel) + escHtml(moduleName) + '</span>' +
+                '<span class="urd-cat-badge">' + (childCountByParent[toParentKey(code)] || 0) + '</span>' +
+                '</div></div></td>');
+            groups.forEach(function (gName) {
+                var rawVal    = readGroupCell(row, groupNormMap, gName);
+                var val       = isGrantedVal(rawVal) ? 'Y' : 'N';
+                var groupCode = resolveGroupCode(gName, getGroupCodeFromMap(gName));
+                $tr.append(buildAccessCellHtml(val, code, moduleType, groupCode, gName));
+            });
+            frag.appendChild($tr[0]);
+            return;
+        }
+
+        // Module name (+ inline expand toggle when parent)
+        var indent = Math.max(0, lavel - 2) * 12;
+        var toggleHtml = (isParent && rowAdded !== 'Y')
+            ? buildToggleBtn(code, lavel)
+            : '<span class="urd-toggle-spacer"></span>';
+        $tr.append(
+            '<td class="urd-td-module">' +
+            '<div class="urd-mod-row">' +
+            toggleHtml +
+            '<span class="urd-mod-text" style="padding-left:' + indent + 'px">' +
+            GetModuleIcon(moduleType, lavel) + escHtml(moduleName) + '</span>' +
+            '</div></td>');
+
+        // Group access cells — matrix X marks
+        groups.forEach(function (gName) {
+            var rawVal    = readGroupCell(row, groupNormMap, gName);
+            var val       = isGrantedVal(rawVal) ? 'Y' : 'N';
+            var groupCode = resolveGroupCode(gName, getGroupCodeFromMap(gName));
+            $tr.append(buildAccessCellHtml(val, code, moduleType, groupCode, gName));
+        });
+
+        frag.appendChild($tr[0]);
     });
 
-    var $tbody = $('#urd-tbody');
-    $tbody[0].innerHTML = rootHtml.join('');
+    $tbody[0].appendChild(frag);
 
+    // Delegated handlers — one listener each, faster than per-cell binding on large grids
     $tbody.off('click.urdToggle').on('click.urdToggle', '.urd-toggle-btn', function (e) {
         e.stopPropagation();
         var $btn = $(this);
@@ -1060,77 +1084,63 @@ function RenderDashboard(res, selectedGroupCodes) {
         OnCellClick($cell);
     });
 
+    ApplyDefaultCollapsedState($tbody);
     $('#urdModuleSearch').val('');
 }
 
-function buildRowHtml(row) {
-    var groupNormMap = buildRowGroupNormMap(row);
-    var lavel      = getRowLevel(row) || 1;
-    var code       = gp(row, 'Code');
-    var masterCode = parseInt(getRowMasterCode(row), 10);
-    if (isNaN(masterCode)) masterCode = 0;
-    var moduleType = normalizeModuleTypeVal(gp(row, 'ModuleType'));
-    var moduleName = getModuleName(row).replace(/^\s+/, '');
-    var modulePath = Array.isArray(row._urdPath) && row._urdPath.length
-        ? row._urdPath
-        : [moduleName];
-    var rowAdded   = String(gp(row, 'RowAdded') || 'N').trim();
-    var codeKey    = toParentKey(code);
-    var isLeafOp   = isOptionTypeO(row) || isOperationRow(row);
-    var hasKids    = !isLeafOp && (_urdChildCount[codeKey] || 0) > 0;
-    var isCategory = lavel === 1 && masterCode === 0 && rowAdded !== 'Y';
-
-    var cells = '';
-    for (var g = 0; g < _urdGroupCols.length; g++) {
-        var col = _urdGroupCols[g];
-        var rawVal = readGroupCell(row, groupNormMap, col.name);
-        var val = isGrantedVal(rawVal) ? 'Y' : 'N';
-        cells += buildAccessCellHtml(val, code, moduleType, col.code, col.name);
-    }
-
-    var trCls = 'urd-row-level-' + lavel;
-    if (isCategory) {
-        trCls += ' urd-row-category urd-cat-' + (_urdCatIndex % 6);
-        _urdCatIndex++;
-    }
-
-    var tr = '<tr class="' + trCls + '"' +
-        ' data-code="' + escHtml(String(code)) + '"' +
-        ' data-master="' + masterCode + '"' +
-        ' data-level="' + lavel + '"' +
-        ' data-leaf-op="' + (isLeafOp ? '1' : '0') + '"' +
-        ' data-kids-ready="0">';
-
-    if (isCategory) {
-        return tr +
-            '<td class="urd-td-module urd-td-category">' +
-            '<div class="urd-mod-row">' +
-            buildToggleBtn(code, lavel) +
-            '<div class="urd-cat-inner">' +
-            '<span class="urd-cat-label">' + GetModuleIcon(moduleType, lavel) + escHtml(moduleName) + '</span>' +
-            '<span class="urd-cat-badge">' + (_urdChildCount[codeKey] || 0) + '</span>' +
-            '</div></div></td>' + cells + '</tr>';
-    }
-
-    var indent = Math.max(0, lavel - 1) * 18;
-    var toggleHtml = hasKids
-        ? buildToggleBtn(code, lavel)
-        : '<span class="urd-toggle-spacer"></span>';
-    return tr +
-        '<td class="urd-td-module" title="' + escHtml(modulePath.join(' > ')) + '">' +
-        '<div class="urd-mod-row">' +
-        toggleHtml +
-        '<span class="urd-mod-text" style="padding-left:' + indent + 'px">' +
-        GetModuleIcon(moduleType, lavel) + escHtml(moduleName) + '</span>' +
-        '</div></td>' + cells + '</tr>';
+/* ═══════════════════════════════════════════════════
+   BUILD MERGED ROW ORDER — strict L1 → L2 → L3 → L4 tree
+   Matches USP_WebAPI_GetUserRightDashboard(_Test): 4 result sets, each row
+   attaches only to its parent's Code via MasterCode (no flat merge duplicates).
+═══════════════════════════════════════════════════ */
+function childrenOfParent(parentCode, levelRows) {
+    var pk = toParentKey(parentCode);
+    var list = (levelRows || []).filter(function (r) {
+        return toParentKey(getRowMasterCode(r)) === pk;
+    });
+    return dedupeSiblingRows(sortRowsByHierarchy(list));
 }
 
-/* ═══════════════════════════════════════════════════
-   BUILD MERGED ROW ORDER — Level + MasterCode (same as SP)
-   Level 1 AND MasterCode = 0  →  main menu (Masters, Transactions, …)
-   Child.MasterCode === Parent.Code  →  nest under that parent
-   Grid path: Master > Marketing > Payment Terms Master > New
-═══════════════════════════════════════════════════ */
+function BuildMergedRows(level1, level2, level3, level4) {
+    var prepared = prepareDashboardLevels(level1, level2, level3, level4);
+    var l1 = dedupeApiRows(prepared.level1);
+    var l2 = dedupeApiRows(prepared.level2);
+    var l3 = dedupeApiRows(prepared.level3);
+    var l4 = dedupeApiRows(prepared.level4);
+
+    var rows = [];
+    var visited = {};
+
+    function pushRow(r) {
+        if (!r) return;
+        var sig = rowSig(r);
+        if (visited[sig]) return;
+        visited[sig] = true;
+        rows.push(r);
+    }
+
+    sortRowsByHierarchy(l1).forEach(function (r1) {
+        pushRow(r1);
+        var code1 = toParentKey(gp(r1, 'Code'));
+
+        childrenOfParent(code1, l2).forEach(function (r2) {
+            pushRow(r2);
+            var code2 = toParentKey(gp(r2, 'Code'));
+
+            childrenOfParent(code2, l3).forEach(function (r3) {
+                pushRow(r3);
+                var code3 = toParentKey(gp(r3, 'Code'));
+
+                childrenOfParent(code3, l4).forEach(function (r4) {
+                    pushRow(r4);
+                });
+            });
+        });
+    });
+
+    return finalDedupeOperationRows(rows);
+}
+
 function GroupByParent(rows) {
     var map = {};
     (rows || []).forEach(function (r) {
@@ -1144,258 +1154,6 @@ function GroupByParent(rows) {
     return map;
 }
 
-function indexRowsByCode(rows) {
-    var byCode = {};
-    (rows || []).forEach(function (r) {
-        var c = toParentKey(gp(r, 'Code'));
-        if (c === 0 || c === '0') return;
-        var cur = byCode[c];
-        if (!cur) {
-            byCode[c] = r;
-            return;
-        }
-        // Never let an option (O) steal a screen's Code (Vendor Master 1035)
-        if (isOperationRow(cur) && !isOperationRow(r)) {
-            byCode[c] = r;
-            return;
-        }
-        if (!isOperationRow(cur) && isOperationRow(r)) return;
-        if (rowQualityScore(r) > rowQualityScore(cur)) byCode[c] = r;
-    });
-    return byCode;
-}
-
-/** If MasterCode points at a New/Edit stub, walk up to the real screen. Never become 0. */
-function resolveTrueParentCode(row, byCode) {
-    var original = toParentKey(getRowMasterCode(row));
-    var mc = original;
-    var lastGood = original;
-    var seen = {};
-    var hops = 0;
-    while (mc && mc !== 0 && mc !== '0' && !seen[mc] && hops++ < 8) {
-        seen[mc] = true;
-        var parent = byCode[mc];
-        if (!parent) return lastGood;
-        if (!isOperationRow(parent)) return mc;
-        lastGood = mc;
-        var up = toParentKey(getRowMasterCode(parent));
-        if (!up || up === 0 || up === '0') return lastGood;
-        mc = up;
-    }
-    return lastGood || original;
-}
-
-function reparentRowsToRealMaster(rows, byCode) {
-    (rows || []).forEach(function (r) {
-        r.MasterCode = resolveTrueParentCode(r, byCode);
-    });
-    return rows;
-}
-
-/** One New/Edit/View per MasterCode after reparent (L3 stub + L4 row → one row). */
-function collapseOpsByMasterAndName(rows) {
-    var modules = [];
-    var best = {};
-    var opOrder = [];
-    (rows || []).forEach(function (r) {
-        if (!isOperationRow(r)) {
-            modules.push(r);
-            return;
-        }
-        var key = String(toParentKey(getRowMasterCode(r))) + '::@op::' +
-            normalizeGroupKey(getModuleName(r));
-        if (best[key]) {
-            mergeDedupeRows(best[key], r);
-            return;
-        }
-        var copy = Object.assign({}, r);
-        best[key] = copy;
-        opOrder.push(copy);
-    });
-    return modules.concat(opOrder);
-}
-
-function isTopLevelRoot(r) {
-    var mc = toParentKey(getRowMasterCode(r));
-    if (mc !== 0 && mc !== '0') return false;
-    var lv = getRowLevel(r);
-    return lv <= 1;
-}
-
-function BuildMergedRows(level1, level2, level3, level4) {
-    var prepared = prepareDashboardLevels(level1, level2, level3, level4);
-    var all = []
-        .concat(prepared.level1)
-        .concat(prepared.level2)
-        .concat(prepared.level3)
-        .concat(prepared.level4)
-        .map(function (r) { return Object.assign({}, r); });
-
-    var byCode = indexRowsByCode(all);
-    reparentRowsToRealMaster(all, byCode);
-    all = collapseOpsByMasterAndName(dedupeApiRows(all));
-    byCode = indexRowsByCode(all);
-
-    var byParent = GroupByParent(all);
-    var rows = [];
-    var visited = {};
-    var usedBind = {};
-    var pathByCode = {};
-
-    function rememberPath(r) {
-        var ck = toParentKey(gp(r, 'Code'));
-        if (ck !== 0 && ck !== '0' && r._urdPath) pathByCode[ck] = r._urdPath;
-    }
-
-    function indexOfCode(code) {
-        var pk = toParentKey(code);
-        for (var i = 0; i < rows.length; i++) {
-            if (toParentKey(gp(rows[i], 'Code')) === pk) return i;
-        }
-        return -1;
-    }
-
-    /** Last row in the DFS block that belongs under parentCode. */
-    function lastIndexOfSubtree(parentCode) {
-        var start = indexOfCode(parentCode);
-        if (start < 0) return -1;
-        var parentKeys = {};
-        parentKeys[toParentKey(parentCode)] = true;
-        var last = start;
-        for (var i = start + 1; i < rows.length; i++) {
-            var mc = toParentKey(getRowMasterCode(rows[i]));
-            if (!parentKeys[mc]) break;
-            parentKeys[toParentKey(gp(rows[i], 'Code'))] = true;
-            last = i;
-        }
-        return last;
-    }
-
-    function pushRow(r, underParentCode) {
-        if (!r) return false;
-        var sig = rowSig(r);
-        var bind = rowBindSig(r);
-        if (visited[sig]) return false;
-        if (usedBind[bind]) {
-            mergeDedupeRows(usedBind[bind], r);
-            visited[sig] = true;
-            return false;
-        }
-        visited[sig] = true;
-        usedBind[bind] = r;
-        if (underParentCode !== undefined && underParentCode !== null && underParentCode !== '') {
-            var at = lastIndexOfSubtree(underParentCode);
-            if (at < 0) {
-                visited[sig] = false;
-                delete usedBind[bind];
-                return false;
-            }
-            rows.splice(at + 1, 0, r);
-        } else {
-            rows.push(r);
-        }
-        rememberPath(r);
-        return true;
-    }
-
-    function childrenOf(parentCode) {
-        var kids = dedupeSiblingRows((byParent[toParentKey(parentCode)] || []).slice());
-        var optionRows = [];
-        var otherRows = [];
-        kids.forEach(function (r) {
-            if (isOptionTypeO(r)) optionRows.push(r);
-            else otherRows.push(r);
-        });
-        return filterDirectOpsWhenSubmodulesExist(otherRows).concat(
-            sortRowsByHierarchy(optionRows)
-        );
-    }
-
-    function walk(parentCode, depth, pathParts) {
-        childrenOf(parentCode).forEach(function (child) {
-            var node = Object.assign({}, child);
-            var apiLv = getRowLevel(child);
-            node.Lavel = apiLv > 0 ? apiLv : depth;
-            node._urdPath = pathParts.concat(getModuleName(node));
-            if (!pushRow(node)) return;
-            if (isOptionTypeO(node) || isOperationRow(node)) return;
-            walk(gp(node, 'Code'), node.Lavel + 1, node._urdPath);
-        });
-    }
-
-    function findRowByCode(code) {
-        var ck = toParentKey(code);
-        if (byCode[ck]) return byCode[ck];
-        for (var i = 0; i < all.length; i++) {
-            if (toParentKey(gp(all[i], 'Code')) === ck) return all[i];
-        }
-        return null;
-    }
-
-    /** Put missing parent (e.g. Vendor Master) back in the tree, then the option. */
-    function ensureRendered(code, guard) {
-        var ck = toParentKey(code);
-        if (!ck || ck === 0 || ck === '0') return true;
-        if (pathByCode[ck] || indexOfCode(ck) >= 0) return true;
-        if (guard[ck]) return false;
-        guard[ck] = true;
-        var parentRow = findRowByCode(ck);
-        if (!parentRow) return false;
-        var gmc = toParentKey(getRowMasterCode(parentRow));
-        if (gmc && gmc !== 0 && gmc !== '0') {
-            if (!ensureRendered(gmc, guard)) return false;
-        }
-        var node = Object.assign({}, parentRow);
-        var pPath = pathByCode[gmc] || [];
-        node.Lavel = getRowLevel(node) || (pPath.length + 1);
-        node._urdPath = pPath.concat(getModuleName(node));
-        if (gmc && gmc !== 0 && gmc !== '0') return pushRow(node, gmc);
-        return pushRow(node);
-    }
-
-    // Main menu only: Level 1 + MasterCode = 0
-    var roots = sortRowsByHierarchy(all.filter(isTopLevelRoot));
-    if (!roots.length) {
-        roots = sortRowsByHierarchy(all.filter(function (r) {
-            var mc = toParentKey(getRowMasterCode(r));
-            return (mc === 0 || mc === '0') && !isOperationRow(r);
-        }));
-    }
-
-    roots.forEach(function (r) {
-        if (isOperationRow(r)) return;
-        var node = Object.assign({}, r);
-        node.Lavel = 1;
-        node._urdPath = [getModuleName(node)];
-        pushRow(node);
-        walk(gp(node, 'Code'), 2, node._urdPath);
-    });
-
-    // Missed Level 3/4 options — insert under their MasterCode, never after last menu (WEB)
-    all.forEach(function (r) {
-        if (visited[rowSig(r)] || usedBind[rowBindSig(r)]) return;
-        var pk = toParentKey(getRowMasterCode(r));
-        if (!pk || pk === 0 || pk === '0') return;
-        var hopParent = findRowByCode(pk);
-        if (hopParent && isOperationRow(hopParent)) {
-            pk = toParentKey(getRowMasterCode(hopParent));
-            if (!pk || pk === 0 || pk === '0') return;
-        }
-        if (!ensureRendered(pk, {})) return;
-        var node = Object.assign({}, r);
-        var parentPath = pathByCode[pk] || [];
-        var parent = findRowByCode(pk);
-        var parentLv = parent ? (getRowLevel(parent) || parentPath.length) : parentPath.length;
-        node.Lavel = getRowLevel(r) || (parentLv + 1);
-        node._urdPath = parentPath.concat(getModuleName(node));
-        if (!pushRow(node, pk)) return;
-        if (isOptionTypeO(node) || isOperationRow(node)) return;
-        walk(gp(node, 'Code'), node.Lavel + 1, node._urdPath);
-    });
-
-    return finalDedupeOperationRows(rows);
-}
-
 /* ═══════════════════════════════════════════════════
    TOGGLE COLLAPSE / EXPAND
    • Keys use toParentKey so string/number Codes stay consistent.
@@ -1405,69 +1163,43 @@ function rowCollapsedKey(code) {
     return String(toParentKey(code));
 }
 
-function buildDomChildIndex($tbody) {
-    var map = {};
-    var list = $tbody[0] ? $tbody[0].rows : [];
-    for (var i = 0; i < list.length; i++) {
-        var tr = list[i];
-        var m = toParentKey(tr.getAttribute('data-master'));
-        if (!map[m]) map[m] = [];
-        map[m].push(tr);
-    }
-    return map;
+function HideAllDescendants(parentCode, $tbody) {
+    var p = toParentKey(parentCode);
+    $tbody.find('tr').each(function () {
+        var $tr = $(this);
+        if (toParentKey($tr.attr('data-master')) !== p) return;
+        $tr.hide();
+        var cc = $tr.attr('data-code');
+        if (cc !== undefined && cc !== null && cc !== '') {
+            HideAllDescendants(cc, $tbody);
+        }
+    });
 }
 
-function HideAllDescendants(parentCode, $tbody, idx) {
-    idx = idx || buildDomChildIndex($tbody);
-    var kids = idx[toParentKey(parentCode)] || [];
-    for (var i = 0; i < kids.length; i++) {
-        kids[i].style.display = 'none';
-        HideAllDescendants(kids[i].getAttribute('data-code'), $tbody, idx);
-    }
-}
-
-function ShowDescendantsIfExpanded(parentCode, $tbody, idx) {
-    idx = idx || buildDomChildIndex($tbody);
-    var kids = idx[toParentKey(parentCode)] || [];
-    for (var i = 0; i < kids.length; i++) {
-        kids[i].style.display = '';
-        var cc = kids[i].getAttribute('data-code');
-        if (cc === undefined || cc === null || cc === '') continue;
-        if (_collapsedRows[rowCollapsedKey(cc)]) {
-            HideAllDescendants(cc, $tbody, idx);
+/** Show direct children of parentCode; recurse where child is not collapsed. */
+function ShowDescendantsIfExpanded(parentCode, $tbody) {
+    var p = toParentKey(parentCode);
+    $tbody.find('tr').each(function () {
+        var $tr = $(this);
+        if (toParentKey($tr.attr('data-master')) !== p) return;
+        $tr.show();
+        var cc = $tr.attr('data-code');
+        if (cc === undefined || cc === null || cc === '') return;
+        var ck = rowCollapsedKey(cc);
+        if (_collapsedRows[ck]) {
+            HideAllDescendants(cc, $tbody);
         } else {
-            ShowDescendantsIfExpanded(cc, $tbody, idx);
+            ShowDescendantsIfExpanded(cc, $tbody);
         }
-    }
-}
-
-function ensureChildrenInDom($tr) {
-    if (!$tr.length || $tr.attr('data-kids-ready') === '1') return;
-    var kids = _urdRowsByParent[toParentKey($tr.attr('data-code'))] || [];
-    if (kids.length) {
-        var html = '';
-        for (var i = 0; i < kids.length; i++) {
-            html += buildRowHtml(kids[i]);
-            var child = kids[i];
-            var isLeaf = isOptionTypeO(child) || isOperationRow(child);
-            var ck = toParentKey(gp(child, 'Code'));
-            if (!isLeaf && (_urdChildCount[ck] || 0) > 0) {
-                _collapsedRows[rowCollapsedKey(ck)] = true;
-            }
-        }
-        $tr.after(html);
-    }
-    $tr.attr('data-kids-ready', '1');
+    });
 }
 
 function ToggleRow(parentCode, parentLevel, $btn) {
     var $tbody = $('#urd-tbody');
-    var $tr = $btn.closest('tr');
     var pk = rowCollapsedKey(parentCode);
 
     if (_collapsedRows[pk]) {
         delete _collapsedRows[pk];
-        ensureChildrenInDom($tr);
         ShowDescendantsIfExpanded(parentCode, $tbody);
         $btn.find('i').removeClass('fa-plus').addClass('fa-minus');
     } else {
@@ -1477,132 +1209,65 @@ function ToggleRow(parentCode, parentLevel, $btn) {
     }
 }
 
-/* ═══════════════════════════════════════════════════
-   CELL CLICK → SAVE RIGHT
-═══════════════════════════════════════════════════ */
-function collectDescendantDataRows(parentCode) {
-    var out = [];
-    var stack = [toParentKey(parentCode)];
-    var seen = {};
-    while (stack.length) {
-        var p = stack.pop();
-        if (seen[p]) continue;
-        seen[p] = true;
-        var kids = _urdRowsByParent[p] || [];
-        for (var k = 0; k < kids.length; k++) {
-            out.push(kids[k]);
-            stack.push(toParentKey(gp(kids[k], 'Code')));
-        }
-    }
-    return out;
-}
-
-function findGroupCell($tr, gName) {
-    var cells = $tr[0].querySelectorAll('.urd-td-access');
-    for (var i = 0; i < cells.length; i++) {
-        var $c = $(cells[i]);
-        if (String($c.data('group-name') || '') === String(gName || '')) return $c;
-    }
-    return null;
-}
-
-function saveRightPayload(moduleCode, moduleType, groupCode, action) {
-    var authKey = JSON.parse(sessionStorage.getItem('authKey') || '{}');
-    return UserRightDashboardService.SaveUserModuleRight({
-        CompanyCode    : _currentCompanyCode,
-        GroupCode      : groupCode,
-        ModuleCode     : moduleCode,
-        ModuleType     : moduleType,
-        Action         : action,
-        UserMaster_Code: authKey.UserMaster_Code || 0,
-        IPAddress      : '1',
-        Location       : '1'
+/** After load: only top module rows visible; + opens nested rows (less noise at first). */
+function ApplyDefaultCollapsedState($tbody) {
+    _collapsedRows = {};
+    $tbody.find('.urd-toggle-btn').each(function () {
+        var $btn = $(this);
+        var pc = $btn.attr('data-parent-code');
+        if (pc === undefined || pc === '') return;
+        HideAllDescendants(pc, $tbody);
+        $btn.find('i').removeClass('fa-minus').addClass('fa-plus');
+        _collapsedRows[rowCollapsedKey(pc)] = true;
     });
 }
 
-function isSaveOk(res) {
-    return !!(res && (res.Status === 'Success' || res.status === 'Success' || res.Success === true));
-}
-
+/* ═══════════════════════════════════════════════════
+   CELL CLICK → SAVE RIGHT
+═══════════════════════════════════════════════════ */
 function OnCellClick($cell) {
     var moduleCode = parseInt($cell.data('module-code'), 10);
     var moduleType = $cell.data('module-type');
-    var groupName  = $cell.data('group-name');
-    var groupCode  = resolveGroupCode(groupName, $cell.data('group-code'));
+    var groupCode  = resolveGroupCode($cell.data('group-name'), $cell.data('group-code'));
     var currentVal = $cell.data('value');
 
     if (!groupCode || !moduleCode) return;
 
     var newAction = (currentVal === 'Y') ? 'N' : 'Y';
-    var $tr = $cell.closest('tr');
-    var isLeafOp = $tr.attr('data-leaf-op') === '1';
-
-    var cascade = [];
-    if (newAction === 'N' && !isLeafOp) {
-        var dataKids = collectDescendantDataRows($tr.attr('data-code'));
-        var $tbody = $tr.parent();
-        for (var i = 0; i < dataKids.length; i++) {
-            var drow = dataKids[i];
-            var dCode = gp(drow, 'Code');
-            var dType = normalizeModuleTypeVal(gp(drow, 'ModuleType'));
-            var $dtr = $tbody.children('tr[data-code="' + dCode + '"]');
-            var $dcell = $dtr.length ? findGroupCell($dtr, groupName) : null;
-            if ($dcell && $dcell.hasClass('is-readonly')) continue;
-            var wasY = ($dcell && $dcell.data('value') === 'Y') || isGrantedVal(drow[groupName]);
-            if (!wasY) continue;
-            if (drow[groupName] !== undefined) drow[groupName] = 'N';
-            cascade.push({
-                $cell: $dcell,
-                prev: $dcell ? $dcell.data('value') : 'Y',
-                moduleCode: parseInt(dCode, 10),
-                moduleType: dType
-            });
-        }
-    }
-
     $cell.data('value', newAction);
     UpdateCellUI($cell, newAction, true);
-    for (var c = 0; c < cascade.length; c++) {
-        if (!cascade[c].$cell) continue;
-        cascade[c].$cell.data('value', 'N');
-        UpdateCellUI(cascade[c].$cell, 'N', false);
-    }
 
-    var saves = [saveRightPayload(moduleCode, moduleType, groupCode, newAction)];
-    for (var s = 0; s < cascade.length; s++) {
-        saves.push(saveRightPayload(cascade[s].moduleCode, cascade[s].moduleType, groupCode, 'N'));
-    }
+    var authKey  = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+    var userCode = authKey.UserMaster_Code || 0;
 
-    Promise.all(saves)
-        .then(function (results) {
-            var allOk = results.every(isSaveOk);
-            if (allOk) {
-                _urdApiResponseCache = { key: '', payload: null, ts: 0 };
-                UpdateCellUI($cell, newAction, false);
-                toastr.success(cascade.length
-                    ? 'Saved. Options under this menu set to N.'
-                    : ((results[0] && (results[0].Msg || results[0].msg)) || 'Saved.'));
-            } else {
-                $cell.data('value', currentVal);
-                UpdateCellUI($cell, currentVal, false);
-                for (var x = 0; x < cascade.length; x++) {
-                    if (!cascade[x].$cell) continue;
-                    cascade[x].$cell.data('value', cascade[x].prev);
-                    UpdateCellUI(cascade[x].$cell, cascade[x].prev, false);
-                }
-                toastr.error('Failed to save rights.');
-            }
-        })
-        .catch(function () {
+    UserRightDashboardService.SaveUserModuleRight({
+        CompanyCode    : _currentCompanyCode,
+        GroupCode      : groupCode,
+        ModuleCode     : moduleCode,
+        ModuleType     : moduleType,
+        Action         : newAction,
+        UserMaster_Code: userCode,
+        IPAddress      : '1',
+        Location       : '1'
+    })
+    .then(function (res) {
+        var ok  = res && (res.Status === 'Success' || res.status === 'Success' || res.Success === true);
+        var msg = (res && (res.Msg || res.msg)) || (ok ? 'Saved.' : 'Failed.');
+        if (ok) {
+            _urdApiResponseCache = { key: '', payload: null, ts: 0 };
+            UpdateCellUI($cell, newAction, false);
+            toastr.success(msg);
+        } else {
             $cell.data('value', currentVal);
             UpdateCellUI($cell, currentVal, false);
-            for (var x = 0; x < cascade.length; x++) {
-                if (!cascade[x].$cell) continue;
-                cascade[x].$cell.data('value', cascade[x].prev);
-                UpdateCellUI(cascade[x].$cell, cascade[x].prev, false);
-            }
-            toastr.error('Failed to save rights.');
-        });
+            toastr.error(msg);
+        }
+    })
+    .catch(function () {
+        $cell.data('value', currentVal);
+        UpdateCellUI($cell, currentVal, false);
+        toastr.error('Failed to save rights.');
+    });
 }
 
 function UpdateCellUI($cell, val, saving) {
@@ -1658,7 +1323,7 @@ function FilterMatrixRows(query) {
             $tr.removeClass('urd-row-hidden');
             return;
         }
-        var text = ($tr.find('.urd-td-module').text() || $tr.attr('title') || '').toLowerCase();
+        var text = $tr.find('.urd-td-module').text().toLowerCase();
         $tr.toggleClass('urd-row-hidden', text.indexOf(q) === -1);
     });
 }
