@@ -50,7 +50,7 @@ function createObjectlistControlModal(id) {
                         <div class="text-end mt-2 pb-2" style="flex-shrink:0;">
                             <button class="btn btn-primary btn-height" onclick="onObjectList_Done();">Done</button>
                             &nbsp;
-                            <a class="btn btn-danger btn-height" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                            <button type="button" class="btn btn-danger btn-height" data-bs-dismiss="modal" aria-label="Close">Close</button>
                             <input type="hidden" id="hfObjList_CallBackFunctionName" value="" />
                         </div>
                     </div>
@@ -116,6 +116,13 @@ function renderObjectListRows(data, columns) {
             $(this).addClass('table-primary');
         }
         updateObjectListTotals();
+    });
+
+    $('#objListTableBody').off('dblclick', '.objlist-row').on('dblclick', '.objlist-row', function () {
+        $('#objListTableBody .objlist-row').removeClass('table-primary');
+        $(this).addClass('table-primary');
+        updateObjectListTotals();
+        onObjectList_Done();
     });
 
     // Reset totals bar when rows re-render (filter change)
@@ -239,6 +246,13 @@ function buildFilterColumnDropdown(columns, preSelectField) {
 function attachKeyboardNavigation() {
     $(document).off('keydown.objlist').on('keydown.objlist', function (e) {
         if (!$('#objListTableBody').is(':visible')) return;
+
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(`#${G_ObjectListModalId}`).modal('hide');
+            return;
+        }
 
         // Enter on a selected row triggers Done
         if (e.key === 'Enter') {
@@ -465,7 +479,7 @@ function initializeObjectlistControl(options) {
     setTimeout(function () {
         $(`#${modalId}`).modal({
             backdrop: 'static',
-            keyboard: false
+            keyboard: true
         });
         $(`#${modalId}`).modal('show');
 
