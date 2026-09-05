@@ -75,12 +75,11 @@
     .indent-step-icon { color: var(--step-clr, #3b7dd8); font-size: 1rem; }
     .indent-step-body { padding: 16px 18px; }
 
-    .indent-field-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
     .indent-field-lbl {
+        display: block;
         font-size: 0.79rem; font-weight: 600; color: #475569;
-        flex: 0 0 160px; min-width: 0;
+        margin-bottom: 4px;
     }
-    .indent-field-ctrl { flex: 1; min-width: 0; }
     .indent-audit-text { font-size: 0.78rem; color: #334155; font-weight: 600; }
 
     #divIndentForm .form-control, #divIndentForm .form-select {
@@ -101,12 +100,83 @@
         color: #1a56b0;
         cursor: default;
     }
-    #divIndentForm .form-control-sm, #divIndentForm .form-select-sm { height: 30px; padding: 3px 8px; font-size: 0.8rem; }
+    #divIndentForm .form-control-sm, #divIndentForm .form-select-sm { height: 30px; padding: 3px 7px; font-size: 0.8rem; }
     #divIndentForm textarea.form-control-sm { height: auto; }
 
-    .items-table { width: 100%; border-collapse: collapse; }
+    #divIndentList .btn-primary {
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 20px;
+        font-weight: 600;
+        box-shadow: var(--shadow-primary);
+        color: #fff;
+        padding: 0 28px;
+        min-width: 92px;
+    }
+    #divIndentList .btn-primary:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #667eea 100%);
+        box-shadow: 0 12px 32px rgba(102, 126, 234, .45);
+        color: #fff;
+    }
+
+    #IndentMasterTable thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+    #IndentMasterTable thead th {
+        background: transparent !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        border-bottom: 2px solid var(--border-color);
+        padding: 0.4rem 0.35rem !important;
+        font-weight: 600;
+        font-size: 0.75rem;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        line-height: 1.25;
+        vertical-align: middle;
+    }
+    #IndentMasterTable {
+        width: 100% !important;
+        table-layout: auto !important;
+    }
+    #IndentMasterTable thead th,
+    #IndentMasterTable tbody td {
+        width: 1%;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    #IndentMasterTable th:nth-child(1),
+    #IndentMasterTable td:nth-child(1) {
+        width: 36px;
+        min-width: 36px;
+        max-width: 48px;
+        text-align: left !important;
+    }
+    #IndentMasterTable thead th.indent-action-col,
+    #IndentMasterTable tbody td.indent-action-col {
+        width: auto !important;
+        min-width: 88px;
+        text-align: left !important;
+    }
+    #IndentMasterTable tbody td.indent-action-col .btn {
+        margin-right: 4px;
+        margin-bottom: 0 !important;
+    }
+    #IndentMasterTable thead th .filter-table-heading,
+    #IndentMasterTable thead th .table-filter-arrow,
+    #IndentMasterTable thead th .fa-angle-down {
+        color: #fff !important;
+    }
+
+    .items-table { width: max-content !important; max-width: none; table-layout: auto; border-collapse: collapse; }
     .items-table thead tr th {
-        background: #1a56b0; color: #fff; font-size: 0.73rem; font-weight: 600;
+        background: linear-gradient(135deg, #4f46e5, #667eea);
+        color: #fff; font-size: 0.73rem; font-weight: 600;
         text-align: center; vertical-align: middle; padding: 8px 6px; white-space: nowrap; border: none;
     }
     .items-table thead tr th:first-child { border-radius: 8px 0 0 0; }
@@ -114,8 +184,11 @@
     .items-table tbody tr:hover { background: #f5f9ff; }
     .items-table tbody tr td {
         padding: 4px 5px; vertical-align: middle; border: 1px solid #dbe3ef; font-size: 0.79rem;
+        white-space: nowrap; width: 1%;
     }
-    .items-table .form-control-sm, .items-table .form-select-sm { height: 27px; border-radius: 6px; }
+    .items-table .form-control,
+    .items-table select { width: 100%; box-sizing: border-box; min-width: 0; }
+    .items-table .indent-item-lookup-wrap { display: block; }
     .items-table input[type="number"] { text-align: right; }
     .stock-as-on { font-size: 0.62rem; color: #64748b; line-height: 1.2; text-align: center; margin-top: 2px; }
     #tblIndentItems.hide-vendor .col-vendor,
@@ -135,6 +208,60 @@
         padding: 6px 16px; box-shadow: 0 3px 10px rgba(59,125,216,0.35);
     }
     .add-item-btn:hover { color: #fff; }
+
+    .items-desktop-wrap { display: block; }
+    .items-mobile-wrap  { display: none; }
+    .mobile-item-card {
+        background: #fff;
+        border: 1.5px solid #dbe3ef;
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 6px rgba(59,125,216,0.08);
+    }
+    .item-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+    .item-card-num {
+        width: 22px; height: 22px; border-radius: 50%;
+        background: linear-gradient(135deg,#10b981,#059669); color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.7rem; font-weight: 800; flex-shrink: 0;
+    }
+    .item-card-name {
+        flex: 1; font-size: 0.82rem; font-weight: 700; color: #1e293b;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .item-card-actions { display: flex; gap: 5px; flex-shrink: 0; }
+    .item-card-edit-btn, .item-card-del-btn {
+        width: 28px; height: 28px; border-radius: 7px; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem;
+    }
+    .item-card-edit-btn { background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; }
+    .item-card-del-btn { background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; }
+    .item-card-details { display: flex; flex-wrap: wrap; gap: 5px 8px; }
+    .item-card-detail {
+        font-size: 0.73rem; color: #64748b;
+        background: #f8fafc; border: 1px solid #e2e8f0;
+        border-radius: 6px; padding: 2px 7px;
+    }
+    .item-card-value { background: #f0fdf4; border-color: #bbf7d0; color: #059669; font-weight: 700; }
+    .mobile-item-empty { text-align: center; padding: 22px 12px; color: #94a3b8; font-size: 0.82rem; }
+    #indentModalMobileItemEntry .select2-container { width: 100% !important; }
+    #indentModalMobileItemEntry .select2-container .select2-selection--single {
+        height: 30px; border: 1.5px solid #cfe0f5; border-radius: 8px;
+    }
+    #indentModalMobileItemEntry .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 28px; font-size: 0.8rem;
+    }
+    #indentModalMobileItemEntry .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 28px;
+    }
+    @@media (max-width: 768px) {
+        .items-desktop-wrap { display: none !important; }
+        .items-mobile-wrap  { display: block !important; }
+        .indent-float-bar { margin-left: 0; bottom: 30px; padding: 8px 12px; }
+        .indent-float-bar-left { display: none; }
+        .indent-float-bar-right { width: 100%; justify-content: flex-end; }
+    }
 
     .indent-float-bar {
         position: fixed; bottom: 44px; left: 0; right: 0; margin-left: 280px;
@@ -180,7 +307,7 @@
     tr.row-hold         { background-color: #ffeeba !important; }
 
     @@media (max-width: 768px) {
-        .indent-field-lbl { flex: 0 0 110px; font-size: 0.74rem; }
+        .indent-field-lbl { font-size: 0.74rem; }
         .indent-float-bar { bottom: 95px; margin-left: 0; padding: 9px 14px; }
         .indent-float-bar-left { display: none; }
         .indent-create-btn-label { display: none; }
@@ -219,8 +346,8 @@
                 <select id="ddlLocateType" class="form-control form-control-sm box_border"></select>
             </div>
             <div class="col-md-2 mb-2">
-                <button type="button" class="btn btn-primary btn-sm btn-height px-4" onclick="LoadIndentList()">
-                    <i class="fa fa-search me-1"></i> Show
+                <button type="button" id="btnIndentShow" class="btn btn-primary btn-sm btn-height" onclick="LoadIndentList()">
+                  <i class="fa fa-search me-1"></i>  Show
                 </button>
             </div>
         </div>
@@ -228,7 +355,7 @@
 
     <div id="divIndentGrid" class="indent-grid-wrap" style="display:none;">
         <div class="table-wrapper indent-table-scroll">
-            <table id="IndentMasterTable" class="table table-bordered table-hover mb-0" style="width:100%;">
+            <table id="IndentMasterTable" class="table table-bordered table-hover mb-0">
                 <thead id="tblIndentHeader"></thead>
                 <tbody id="tblIndentBody"></tbody>
             </table>
@@ -243,7 +370,7 @@
 <div id="divIndentForm">
     <div class="indent-form-wrap">
 
-        <!-- Step 1 : Indent Information -->
+        <!-- 1 : Indent Information -->
         <div class="indent-step-card" style="--step-clr:#3b7dd8;">
             <div class="indent-step-header">
                 <div class="indent-step-num">1</div>
@@ -251,117 +378,85 @@
                 <i class="fa fa-file-alt indent-step-icon ms-auto"></i>
             </div>
             <div class="indent-step-body">
-                <div class="row g-0">
-                    <div class="col-md-6 pe-md-3">
-                        <div class="indent-field-row">
-                            <span class="indent-field-lbl">Indent No</span>
-                            <div class="indent-field-ctrl">
-                                <input type="text" id="frmTxtIndentNo" class="form-control form-control-sm"
-                                       readonly placeholder="Auto Generate"
-                                       style="font-weight:700;letter-spacing:0.04em;" />
-                                <input type="hidden" id="frmHfCode" value="0" />
-                            </div>
-                        </div>
-                        <div class="indent-field-row">
-                            <span class="indent-field-lbl">Indent Date <span class="req">*</span></span>
-                            <div class="indent-field-ctrl">
-                                <input type="date" id="frmTxtIndentDate" class="form-control form-control-sm" readonly />
-                            </div>
-                        </div>
-                        <div class="indent-field-row cfg-warehouse">
-                            <span class="indent-field-lbl">Warehouse <span class="req">*</span></span>
-                            <div class="indent-field-ctrl">
-                                <select id="frmDdlWarehouse" class="form-control form-control-sm">
-                                    <option value="">-- Select Warehouse --</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="indent-field-row cfg-category">
-                            <span class="indent-field-lbl">Item Category</span>
-                            <div class="indent-field-ctrl">
-                                <select id="frmDdlCategory" class="form-control form-control-sm" onchange="OnIndentCategoryChange()">
-                                    <option value="">-- All Categories --</option>
-                                </select>
-                            </div>
-                        </div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-1">
+                        <label class="indent-field-lbl" for="frmTxtIndentNo">Indent No</label>
+                        <input type="text" id="frmTxtIndentNo" class="form-control form-control-sm"
+                               readonly placeholder="Auto Generate"
+                               style="font-weight:700;letter-spacing:0.04em;" />
+                        <input type="hidden" id="frmHfCode" value="0" />
                     </div>
-                    <div class="col-md-6 ps-md-3" style="border-left:1px dashed #e8eef8;">
-                        <div class="indent-field-row">
-                            <span class="indent-field-lbl">Status</span>
-                            <div class="indent-field-ctrl">
-                                <input type="text" id="frmTxtStatus" class="form-control form-control-sm" readonly value="Pending" />
-                            </div>
-                        </div>
-                        <div class="indent-field-row">
-                            <span class="indent-field-lbl">Financial Year</span>
-                            <div class="indent-field-ctrl">
-                                <input type="text" id="frmTxtFinYear" class="form-control form-control-sm" readonly />
-                            </div>
-                        </div>
-                        <div class="indent-field-row">
-                            <span class="indent-field-lbl">Due Date</span>
-                            <div class="indent-field-ctrl">
-                                <input type="date" id="frmTxtDueDate" class="form-control form-control-sm" />
-                            </div>
-                        </div>
-                        <div class="indent-field-row cfg-verified" style="display:none;">
-                            <span class="indent-field-lbl">Verified</span>
-                            <div class="indent-field-ctrl d-flex align-items-center gap-2">
-                                <input type="checkbox" id="frmChkVerified" disabled />
-                                <span class="indent-audit-text" id="frmTxtVerifiedAudit"></span>
-                            </div>
-                        </div>
+                    <div class="col-12 col-md-2">
+                        <label class="indent-field-lbl" for="frmTxtIndentDate">Indent Date <span class="req">*</span></label>
+                        <input type="date" id="frmTxtIndentDate" class="form-control form-control-sm" readonly />
+                    </div>
+                    <div class="col-12 col-md-2 cfg-category">
+                        <label class="indent-field-lbl" for="frmDdlCategory">Item Category</label>
+                        <select id="frmDdlCategory" class="form-control form-control-sm" onchange="OnIndentCategoryChange()">
+                            <option value="">-- All Categories --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-2 cfg-warehouse">
+                        <label class="indent-field-lbl" for="frmDdlWarehouse">Warehouse <span class="req">*</span></label>
+                        <select id="frmDdlWarehouse" class="form-control form-control-sm">
+                            <option value="">-- Select Warehouse --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-1">
+                        <label class="indent-field-lbl" for="frmTxtStatus">Status</label>
+                        <input type="text" id="frmTxtStatus" class="form-control form-control-sm" readonly value="Pending" />
+                    </div>
+                    <div class="col-12 col-md-1">
+                        <label class="indent-field-lbl" for="frmTxtFinYear">Financial Year</label>
+                        <input type="text" id="frmTxtFinYear" class="form-control form-control-sm" readonly />
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <label class="indent-field-lbl" for="frmTxtDueDate">Due Date</label>
+                        <input type="date" id="frmTxtDueDate" class="form-control form-control-sm" />
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Step 2 : Request / Authorization -->
-        <div class="indent-step-card" style="--step-clr:#0ea5e9;">
+        <!-- 2 : Item Details -->
+        <div class="indent-step-card" style="--step-clr:#10b981;">
             <div class="indent-step-header">
-                <div class="indent-step-num" style="background:#0ea5e9;">2</div>
-                <span class="indent-step-title">Request / Authorization</span>
-                <i class="fa fa-user-check indent-step-icon ms-auto" style="color:#0ea5e9;"></i>
+                <div class="indent-step-num" style="background:#10b981;">2</div>
+                <span class="indent-step-title">Item Details</span>
+                <button type="button" class="add-item-btn ms-auto" onclick="AddIndentItemRow()">
+                    <i class="fa fa-plus me-1"></i>Add Item
+                </button>
             </div>
-            <div class="indent-step-body">
-                <div class="row g-0">
-                    <div class="col-md-6 pe-md-3">
-                        <div class="indent-field-row cfg-requested">
-                            <span class="indent-field-lbl">Requested By</span>
-                            <div class="indent-field-ctrl">
-                                <select id="frmDdlRequestedBy" class="form-control form-control-sm">
-                                    <option value="">-- Select User --</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="indent-field-row cfg-requested">
-                            <span class="indent-field-lbl">Requested Name</span>
-                            <div class="indent-field-ctrl">
-                                <input type="text" id="frmTxtRequestedName" class="form-control form-control-sm"
-                                       maxlength="150" placeholder="If requester is not a system user" autocomplete="off" />
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 ps-md-3" style="border-left:1px dashed #e8eef8;">
-                        <div class="indent-field-row cfg-authorized">
-                            <span class="indent-field-lbl">Authorized By / Client Name</span>
-                            <div class="indent-field-ctrl">
-                                <input type="text" id="frmTxtAuthorizedBy" class="form-control form-control-sm"
-                                       maxlength="150" placeholder="Authorized by / client name" autocomplete="off" />
-                            </div>
-                        </div>
-                        <div class="indent-field-row cfg-dblocation" style="display:none;">
-                            <span class="indent-field-lbl">Database Location</span>
-                            <div class="indent-field-ctrl">
-                                <input type="hidden" id="frmHfDatabaseLocation" value="0" />
-                            </div>
-                        </div>
-                    </div>
+            <div class="indent-step-body" style="padding-top:10px;">
+                <div class="items-desktop-wrap" style="overflow-x:auto;">
+                    <table class="items-table" id="tblIndentItems">
+                        <thead>
+                            <tr>
+                                <th class="col-sno" style="width:36px;">#</th>
+                                <th class="col-item">Item Name <span style="color:#fde68a;">*</span></th>
+                                <th class="col-spec">Specification</th>
+                                <th class="col-vendor">Vendor / Party</th>
+                                <th class="col-uom">UOM</th>
+                                <th class="col-qty">Qty<span style="color:#fde68a;">*</span></th>
+                                <th class="col-rate">Rate</th>
+                                <th class="col-currency">Currency</th>
+                                <th class="col-stock">Stock Qty</th>
+                                <th class="col-division">Division</th>
+                                <th class="col-division">Sub-Division</th>
+                                <th class="col-dept">Department</th>
+                                <th class="col-subdept">Sub-Department</th>
+                                <th class="col-lineremarks">Remarks</th>
+                                <th class="col-action" style="width:38px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblIndentItemsBody"></tbody>
+                    </table>
                 </div>
+                <div id="indentMobileItemCards" class="items-mobile-wrap"></div>
             </div>
         </div>
 
-        <!-- Step 3 : Remarks -->
+        <!-- 3 : Remarks -->
         <div class="indent-step-card" style="--step-clr:#f59e0b;">
             <div class="indent-step-header">
                 <div class="indent-step-num" style="background:#f59e0b;">3</div>
@@ -369,67 +464,55 @@
                 <i class="fa fa-comment-alt indent-step-icon ms-auto" style="color:#f59e0b;"></i>
             </div>
             <div class="indent-step-body">
-                <div class="row g-0">
-                    <div class="col-md-6 pe-md-3">
-                        <div class="indent-field-row">
-                            <span class="indent-field-lbl">Remarks</span>
-                            <div class="indent-field-ctrl">
-                                <textarea id="frmTxtRemarks" class="form-control form-control-sm" rows="3"
-                                          maxlength="500" style="height:auto;resize:vertical;" placeholder="Optional remarks…"></textarea>
-                            </div>
-                        </div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-3">
+                        <label class="indent-field-lbl" for="frmTxtRemarks">Remarks</label>
+                        <textarea id="frmTxtRemarks" class="form-control form-control-sm" rows="3"
+                                  maxlength="500" style="height:auto;resize:vertical;" placeholder="Optional remarks…"></textarea>
                     </div>
-                    <div class="col-md-6 ps-md-3" style="border-left:1px dashed #fef3c7;">
-                        <div class="indent-field-row cfg-special">
-                            <span class="indent-field-lbl">Special Comments</span>
-                            <div class="indent-field-ctrl">
-                                <textarea id="frmTxtSpecialComments" class="form-control form-control-sm" rows="3"
-                                          maxlength="500" style="height:auto;resize:vertical;" placeholder="Approver / special notes…"></textarea>
-                            </div>
-                        </div>
+                    <div class="col-12 col-md-3 cfg-special">
+                        <label class="indent-field-lbl" for="frmTxtSpecialComments">Special Comments</label>
+                        <textarea id="frmTxtSpecialComments" class="form-control form-control-sm" rows="3"
+                                  maxlength="500" style="height:auto;resize:vertical;" placeholder="Approver / special notes…"></textarea>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Step 4 : Item Details (department is row-level) -->
-        <div class="indent-step-card" style="--step-clr:#10b981;">
+        <!-- 4 : Request / Authorization -->
+        <div class="indent-step-card" style="--step-clr:#0ea5e9;">
             <div class="indent-step-header">
-                <div class="indent-step-num" style="background:#10b981;">4</div>
-                <span class="indent-step-title">Item Details</span>
-                <button type="button" class="add-item-btn ms-auto" onclick="AddIndentItemRow()">
-                    <i class="fa fa-plus me-1"></i>Add Item
-                </button>
+                <div class="indent-step-num" style="background:#0ea5e9;">4</div>
+                <span class="indent-step-title">Request / Authorization</span>
+                <i class="fa fa-user-check indent-step-icon ms-auto" style="color:#0ea5e9;"></i>
             </div>
-            <div class="indent-step-body" style="padding-top:10px;">
-                <div style="overflow-x:auto;">
-                    <table class="items-table" id="tblIndentItems">
-                        <thead>
-                            <tr>
-                                <th style="width:36px;">#</th>
-                                <th style="min-width:190px;">Item Name <span style="color:#fde68a;">*</span></th>
-                                <th style="min-width:140px;">Specification</th>
-                                <th class="col-vendor" style="min-width:160px;">Vendor / Party</th>
-                                <th style="min-width:90px;">UOM</th>
-                                <th style="min-width:90px;">Qty (Mtrs) <span style="color:#fde68a;">*</span></th>
-                                <th class="col-rate" style="min-width:90px;">Rate</th>
-                                <th class="col-currency" style="min-width:110px;">Currency</th>
-                                <th class="col-stock" style="min-width:100px;">Stock Qty</th>
-                                <th class="col-division" style="min-width:130px;">Division</th>
-                                <th class="col-division" style="min-width:130px;">Sub-Division</th>
-                                <th style="min-width:140px;">Department</th>
-                                <th style="min-width:140px;">Sub-Department</th>
-                                <th style="min-width:140px;">Remarks</th>
-                                <th style="width:38px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="tblIndentItemsBody"></tbody>
-                    </table>
+            <div class="indent-step-body">
+                <div class="row g-2">
+                    <div class="col-12 col-md-3 cfg-requested">
+                        <label class="indent-field-lbl" for="frmDdlRequestedBy">Requested By</label>
+                        <select id="frmDdlRequestedBy" class="form-control form-control-sm">
+                            <option value="">-- Select User --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3 cfg-requested">
+                        <label class="indent-field-lbl" for="frmTxtRequestedName">Requested Name</label>
+                        <input type="text" id="frmTxtRequestedName" class="form-control form-control-sm"
+                               maxlength="150" placeholder="If requester is not a system user" autocomplete="off" />
+                    </div>
+                    <div class="col-12 col-md-3 cfg-authorized">
+                        <label class="indent-field-lbl" for="frmTxtAuthorizedBy">Authorized By / Client Name</label>
+                        <input type="text" id="frmTxtAuthorizedBy" class="form-control form-control-sm"
+                               maxlength="150" placeholder="Authorized by / client name" autocomplete="off" />
+                    </div>
+                    <div class="col-12 col-md-3 cfg-dblocation" style="display:none;">
+                        <label class="indent-field-lbl">Database Location</label>
+                        <input type="hidden" id="frmHfDatabaseLocation" value="0" />
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Step 5 : Audit (edit only) -->
+        <!-- Audit (edit only) -->
         <div class="indent-step-card cfg-audit" id="divIndentAudit" style="--step-clr:#64748b;display:none;">
             <div class="indent-step-header">
                 <div class="indent-step-num" style="background:#64748b;">5</div>
@@ -437,33 +520,118 @@
                 <i class="fa fa-history indent-step-icon ms-auto" style="color:#64748b;"></i>
             </div>
             <div class="indent-step-body">
-                <div class="row g-0">
-                    <div class="col-md-6 pe-md-3">
-                        <div class="indent-field-row">
-                            <span class="indent-field-lbl">Created By / Date</span>
-                            <div class="indent-field-ctrl">
-                                <input type="text" id="frmTxtCreatedAudit" class="form-control form-control-sm" readonly />
-                            </div>
-                        </div>
-                        <div class="indent-field-row">
-                            <span class="indent-field-lbl">Updated By / On</span>
-                            <div class="indent-field-ctrl">
-                                <input type="text" id="frmTxtUpdatedAudit" class="form-control form-control-sm" readonly />
-                            </div>
-                        </div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-3">
+                        <label class="indent-field-lbl" for="frmTxtCreatedAudit">Created By / Date</label>
+                        <input type="text" id="frmTxtCreatedAudit" class="form-control form-control-sm" readonly />
                     </div>
-                    <div class="col-md-6 ps-md-3">
-                        <div class="indent-field-row">
-                            <span class="indent-field-lbl">Checked By / Approved By</span>
-                            <div class="indent-field-ctrl">
-                                <input type="text" id="frmTxtCheckedAudit" class="form-control form-control-sm" readonly />
-                            </div>
+                    <div class="col-12 col-md-3">
+                        <label class="indent-field-lbl" for="frmTxtUpdatedAudit">Updated By / On</label>
+                        <input type="text" id="frmTxtUpdatedAudit" class="form-control form-control-sm" readonly />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="indent-field-lbl" for="frmTxtCheckedAudit">Checked By / Approved By</label>
+                        <input type="text" id="frmTxtCheckedAudit" class="form-control form-control-sm" readonly />
+                    </div>
+                    <div class="col-12 col-md-3 cfg-verified">
+                        <label class="indent-field-lbl" for="frmChkVerified">Verified</label>
+                        <div class="d-flex align-items-center gap-2" style="height:32px;">
+                            <input type="checkbox" id="frmChkVerified" disabled />
+                            <span class="indent-audit-text" id="frmTxtVerifiedAudit"></span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
+    </div>
+</div>
+
+<div class="modal fade" id="indentModalMobileItemEntry" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:500px;margin:auto 12px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;padding:14px 18px;">
+                <h5 class="modal-title" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-box me-2"></i><span id="indentMobileItemModalTitle">Add Item</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:16px 18px;">
+                <div class="mb-3">
+                    <label class="indent-field-lbl">Item Name <span class="req">*</span></label>
+                    <select id="indentMobileDdlItem" class="form-control form-control-sm"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="indent-field-lbl">Specification</label>
+                    <input type="text" id="indentMobileTxtSpec" class="form-control form-control-sm" placeholder="Item specification…" />
+                </div>
+                <div class="mb-3">
+                    <label class="indent-field-lbl">Vendor / Party</label>
+                    <select id="indentMobileDdlVendor" class="form-control form-control-sm"></select>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="indent-field-lbl">UOM</label>
+                        <input type="text" id="indentMobileTxtUom" class="form-control form-control-sm" readonly />
+                        <input type="hidden" id="indentMobileHfUomCode" value="" />
+                    </div>
+                    <div class="col-6">
+                        <label class="indent-field-lbl">Stock Qty</label>
+                        <input type="text" id="indentMobileTxtStock" class="form-control form-control-sm" value="0" readonly />
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="indent-field-lbl">Qty <span class="req">*</span></label>
+                        <input type="number" id="indentMobileTxtQty" class="form-control form-control-sm" value="0" min="0" step="0.001" oninput="IndentMobileCalcValue()" />
+                    </div>
+                    <div class="col-6">
+                        <label class="indent-field-lbl">Rate</label>
+                        <input type="number" id="indentMobileTxtRate" class="form-control form-control-sm" value="0" min="0" step="0.01" oninput="IndentMobileCalcValue()" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="indent-field-lbl">Currency</label>
+                    <select id="indentMobileDdlCurrency" class="form-control form-control-sm"></select>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="indent-field-lbl">Division</label>
+                        <select id="indentMobileDdlDivision" class="form-control form-control-sm"></select>
+                    </div>
+                    <div class="col-6">
+                        <label class="indent-field-lbl">Sub-Division</label>
+                        <select id="indentMobileDdlSubDivision" class="form-control form-control-sm"></select>
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="indent-field-lbl">Department</label>
+                        <select id="indentMobileDdlDept" class="form-control form-control-sm" onchange="OnIndentMobileDeptChange()"></select>
+                    </div>
+                    <div class="col-6">
+                        <label class="indent-field-lbl">Sub-Department</label>
+                        <select id="indentMobileDdlSubDept" class="form-control form-control-sm"></select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="indent-field-lbl">Remarks</label>
+                    <input type="text" id="indentMobileTxtRemarks" class="form-control form-control-sm" maxlength="200" placeholder="Line remarks" />
+                </div>
+                <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:0.79rem;font-weight:600;color:#059669;"><i class="fa fa-coins me-1"></i>Value</span>
+                    <span id="indentMobileCalcValue" style="font-size:1rem;font-weight:800;color:#059669;">0.00</span>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:12px 16px;background:#f8fafc;gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" onclick="IndentMobileItemModalConfirm()"
+                        style="background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;border-radius:8px;padding:7px 22px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(16,185,129,0.3);">
+                    <i class="fa fa-check me-1"></i><span id="indentMobileItemModalBtnTxt">Add Item</span>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
