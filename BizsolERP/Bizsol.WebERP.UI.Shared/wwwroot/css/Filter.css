@@ -81,6 +81,15 @@ th {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
+/* In-flow menu once the panel is portaled to body (avoids absolute offset to table footer) */
+.filter-division.bizsol-filter-floating .dropdown-content {
+    position: static;
+    top: auto;
+    right: auto;
+    min-width: 160px;
+    box-shadow: none;
+}
+
 .filter-inputs {
     margin-top: 10px;
     display: flex;
