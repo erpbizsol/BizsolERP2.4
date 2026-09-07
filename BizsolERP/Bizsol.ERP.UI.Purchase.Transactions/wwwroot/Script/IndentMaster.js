@@ -63,6 +63,7 @@ $(document).ready(function () {
     }
 
     _setDefaultDates();
+    _bindIndentItemGridKeys();
 
     Promise.all([
         _fillLocateTypeDropdown(),
@@ -645,17 +646,13 @@ function _buildItemSelect(rowId, selected) {
     var name = item ? _itemDisplayName(item) : '';
     return '<div class="indent-item-lookup-wrap">' +
         `<input type="text" id="frmTxtItem_${rowId}" class="form-control form-control-sm indent-item-lookup"` +
-        ` value="${_esc(name)}" placeholder="-- Select Item --" autocomplete="off"` +
-        ` onkeydown="OnIndentItemLookupKey(event, ${rowId})" />` +
+        ` value="${_esc(name)}" placeholder="-- Select Item --" autocomplete="off" />` +
         `<input type="hidden" id="frmDdlItem_${rowId}" value="${_esc(selected || '')}" />` +
         '</div>';
 }
 
 window.OnIndentItemLookupKey = function (e, rowId) {
-    if (e.key !== 'Enter' && e.keyCode !== 13) return;
-    e.preventDefault();
-    e.stopPropagation();
-    ShowIndentItemObjectList(rowId, $('#frmTxtItem_' + rowId).val());
+    _onIndentGridKey(e, rowId, 'item');
 };
 
 function _itemStockValue(item) {
@@ -704,7 +701,7 @@ window.ShowIndentItemObjectList = function (rowId, value) {
         ModalId: INDENT_OBJ_MODAL,
         searchvalue: open.searchValue,
         MatchType: open.matchType,
-        MultiSelect: true,
+        MultiSelect: _isLastIndentItemRow(rowId),
         ClientOrderProjectData: list,
         CallBackFunctionName_btnDone: 'onIndentItemSelected',
         DefaultColumnfilter: 'Item Name',
@@ -734,21 +731,41 @@ window.ShowIndentItemObjectList = function (rowId, value) {
     $itemModal.off('hidden.bs.modal.indentItem').on('hidden.bs.modal.indentItem', function () {
         if (!G_CurrentItemRowId) return;
         var restoreId = G_CurrentItemRowId;
-        var typed = G_IndentObjKeepValue;
         G_CurrentItemRowId = 0;
         G_IndentObjKeepValue = '';
-        if (restoreId === 'mobile') {
-            $('#indentMobileTxtItem').val(typed);
-        } else {
-            $('#frmTxtItem_' + restoreId).val(typed);
-        }
+        _clearIndentItemLookup(restoreId);
     });
 };
 
+function _isLastIndentItemRow(rowId) {
+    if (rowId === 'mobile') return false;
+    var maxId = 0;
+    $('#tblIndentItemsBody tr').each(function () {
+        var id = parseInt(String($(this).attr('id') || '').replace('indentItemRow_', ''), 10) || 0;
+        if (id > maxId) maxId = id;
+    });
+    return parseInt(rowId, 10) === maxId;
+}
+
+function _clearIndentItemLookup(rowId) {
+    if (rowId === 'mobile') {
+        $('#indentMobileTxtItem').val('');
+        $('#indentMobileDdlItem').val('').trigger('change');
+        return;
+    }
+    $('#frmTxtItem_' + rowId).val('');
+    $('#frmDdlItem_' + rowId).val('');
+}
+
 function _raiseIndentObjListZIndex() {
     setTimeout(function () {
-        $('#' + INDENT_OBJ_MODAL).css('z-index', 1080);
+        var $m = $('#' + INDENT_OBJ_MODAL);
+        $m.css('z-index', 1080);
         $('.modal-backdrop').last().css('z-index', 1075);
+        $m.find('[data-bs-dismiss="modal"]').off('click.indentObjClose').on('click.indentObjClose', function (e) {
+            e.preventDefault();
+            $m.modal('hide');
+        });
     }, 120);
 }
 
@@ -769,6 +786,7 @@ window.onIndentItemSelected = function (response) {
         _applyItemFromObj(rowId, item);
     });
     if (_isIndentMobile()) RenderIndentMobileItemCards();
+    if (startId && startId !== 'mobile') _indentFocus('#frmTxtSpec_' + startId);
 };
 
 function _applyItemToMobileModal(item) {
@@ -839,18 +857,142 @@ function _buildVendorSelect(rowId, selected) {
     var name = vendor ? _vendorDisplayName(vendor) : '';
     return '<div class="indent-item-lookup-wrap indent-vendor-lookup-wrap">' +
         `<input type="text" id="frmTxtVendor_${rowId}" class="form-control form-control-sm indent-vendor-lookup"` +
-        ` value="${_esc(name)}" placeholder="-- Vendor --" autocomplete="off"` +
-        ` onkeydown="OnIndentVendorLookupKey(event, ${rowId})" />` +
+        ` value="${_esc(name)}" placeholder="-- Vendor --" autocomplete="off" />` +
         `<input type="hidden" id="frmDdlVendor_${rowId}" value="${_esc(selected || '')}" />` +
         '</div>';
 }
 
 window.OnIndentVendorLookupKey = function (e, rowId) {
+    _onIndentGridKey(e, rowId, 'vendor');
+};
+
+function _shouldOpenIndentObjList(typedVal, selectedCode, selectedName) {
+    var raw = String(typedVal || '').trim();
+    if (!raw) return false;
+    if (raw === '.' || raw === '..' || raw.indexOf('*') === 0) return true;
+    if (!String(selectedCode || '').trim()) return true;
+    return raw !== String(selectedName || '').trim();
+}
+
+function _indentRowFocusOrder(rowId) {
+    return [
+        '#frmTxtItem_' + rowId,
+        '#frmTxtSpec_' + rowId,
+        '#frmTxtVendor_' + rowId,
+        '#frmTxtQty_' + rowId,
+        '#frmTxtRate_' + rowId,
+        '#frmDdlCurrency_' + rowId,
+        '#frmDdlDivision_' + rowId,
+        '#frmDdlSubDivision_' + rowId,
+        '#frmDdlDept_' + rowId,
+        '#frmDdlSubDept_' + rowId,
+        '#frmTxtLineRemarks_' + rowId
+    ];
+}
+
+function _indentRowIdFromEl(el) {
+    return String($(el).closest('tr').attr('id') || '').replace('indentItemRow_', '');
+}
+
+function _indentFocus(sel) {
+    var $el = $(sel);
+    if (!$el.length) return;
+    $el.trigger('focus');
+    if ($el.is('input[type="text"], input[type="number"]') && $el[0].select) {
+        try { $el[0].select(); } catch (ex) { /* ignore */ }
+    }
+}
+
+function _nextIndentRowId(rowId) {
+    var $rows = $('#tblIndentItemsBody tr');
+    var found = false;
+    var next = '';
+    $rows.each(function () {
+        var id = String($(this).attr('id') || '').replace('indentItemRow_', '');
+        if (found && !next) next = id;
+        if (String(id) === String(rowId)) found = true;
+    });
+    return next;
+}
+
+function _focusIndentSaveButton() {
+    var $btn = $('.btn-indent-save').first();
+    if (!$btn.attr('tabindex')) $btn.attr('tabindex', '0');
+    $btn.trigger('focus');
+}
+
+function _indentEnterNext(rowId, el) {
+    var order = _indentRowFocusOrder(rowId);
+    var idx = -1;
+    var currentId = el && el.id ? '#' + el.id : '';
+    if (currentId) idx = order.indexOf(currentId);
+    if (idx < 0) {
+        for (var i = 0; i < order.length; i++) {
+            if ($(el).is(order[i])) { idx = i; break; }
+        }
+    }
+    if (idx >= 0 && idx < order.length - 1) {
+        _indentFocus(order[idx + 1]);
+        return;
+    }
+    if (_isLastIndentItemRow(rowId)) {
+        AddIndentItemRow(null, true);
+        _indentFocus('#frmTxtItem_' + G_ItemRowCount);
+    } else {
+        var nextId = _nextIndentRowId(rowId);
+        if (nextId) _indentFocus('#frmTxtItem_' + nextId);
+    }
+}
+
+function _onIndentGridKey(e, rowId, field) {
+    if (e.key === 'Tab' || e.keyCode === 9) {
+        e.preventDefault();
+        e.stopPropagation();
+        _focusIndentSaveButton();
+        return;
+    }
     if (e.key !== 'Enter' && e.keyCode !== 13) return;
     e.preventDefault();
     e.stopPropagation();
-    ShowIndentVendorObjectList(rowId, $('#frmTxtVendor_' + rowId).val());
-};
+    rowId = rowId || _indentRowIdFromEl(e.target);
+    if (field === 'item') {
+        var itemVal = $(e.target).val();
+        var itemCode = $('#frmDdlItem_' + rowId).val();
+        var itemName = '';
+        if (itemCode) {
+            var selItem = _findItem(itemCode);
+            itemName = selItem ? _itemDisplayName(selItem) : String(itemVal || '').trim();
+        }
+        if (_shouldOpenIndentObjList(itemVal, itemCode, itemName)) {
+            ShowIndentItemObjectList(rowId, itemVal);
+            return;
+        }
+    }
+    if (field === 'vendor') {
+        var vendorVal = $(e.target).val();
+        var vendorCode = $('#frmDdlVendor_' + rowId).val();
+        var vendorName = '';
+        if (vendorCode) {
+            var selVendor = _findVendor(vendorCode);
+            vendorName = selVendor ? _vendorDisplayName(selVendor) : String(vendorVal || '').trim();
+        }
+        if (_shouldOpenIndentObjList(vendorVal, vendorCode, vendorName)) {
+            ShowIndentVendorObjectList(rowId, vendorVal);
+            return;
+        }
+    }
+    _indentEnterNext(rowId, e.target);
+}
+
+function _bindIndentItemGridKeys() {
+    $('#tblIndentItemsBody').off('keydown.indentNav').on('keydown.indentNav', 'input, select', function (e) {
+        var id = this.id || '';
+        var field = '';
+        if (id.indexOf('frmTxtItem_') === 0) field = 'item';
+        else if (id.indexOf('frmTxtVendor_') === 0) field = 'vendor';
+        _onIndentGridKey(e, _indentRowIdFromEl(this), field);
+    });
+}
 
 function _vendorObjListData() {
     return (G_VendorList || []).map(function (v) {
@@ -902,13 +1044,14 @@ window.ShowIndentVendorObjectList = function (rowId, value) {
         $('#' + INDENT_OBJ_MODAL).off('hidden.bs.modal.indentVendor').on('hidden.bs.modal.indentVendor', function () {
             if (!G_CurrentVendorRowId) return;
             var restoreId = G_CurrentVendorRowId;
-            var typed = G_IndentObjKeepValue;
             G_CurrentVendorRowId = 0;
             G_IndentObjKeepValue = '';
             if (restoreId === 'mobile') {
-                $('#indentMobileTxtVendor').val(typed);
+                $('#indentMobileTxtVendor').val('');
+                $('#indentMobileDdlVendor').val('').trigger('change');
             } else {
-                $('#frmTxtVendor_' + restoreId).val(typed);
+                $('#frmTxtVendor_' + restoreId).val('');
+                $('#frmDdlVendor_' + restoreId).val('');
             }
         });
     });
@@ -939,6 +1082,7 @@ function _applyVendorFromObj(rowId, vendor) {
     $('#frmDdlVendor_' + rowId).val(code || '');
     $('#frmTxtVendor_' + rowId).val(desp);
     FitIndentItemColumns();
+    _indentFocus('#frmTxtQty_' + rowId);
 }
 
 window.AddIndentItemRow = function (preset, silent) {
