@@ -1,6 +1,7 @@
 import { SalesanalysisASTService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SalesanalysisASTService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { CRMReportsServices } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CRMReportsService.js';
+import { PurchaseQualityCheckService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PurchaseQualityCheckService.js';
 BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
 // Global variables
@@ -4636,6 +4637,738 @@ document.addEventListener('DOMContentLoaded', function () {
             renderHighGPLostClient();
         }
     }, 300);
+
+    initRmRateModalControls();
 });
 
+let G_RmRateValues = {};
+let G_RmRateFinYearLoaded = false;
+
+const RM_RATE_MONTHS = [
+    { Name: 'April', Number: 4 },
+    { Name: 'May', Number: 5 },
+    { Name: 'June', Number: 6 },
+    { Name: 'July', Number: 7 },
+    { Name: 'August', Number: 8 },
+    { Name: 'September', Number: 9 },
+    { Name: 'October', Number: 10 },
+    { Name: 'November', Number: 11 },
+    { Name: 'December', Number: 12 },
+    { Name: 'January', Number: 1 },
+    { Name: 'February', Number: 2 },
+    { Name: 'March', Number: 3 }
+];
+
+function getCurrentFinYear() {
+    try {
+        const authKey = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        if (authKey.FinYear) {
+            return String(authKey.FinYear);
+        }
+    } catch (e) {
+        console.warn('Unable to read FinYear from authKey', e);
+    }
+    return BizSolHelperFunction.getFinancialYear();
+}
+
+function getDefaultRmRateMonth() {
+    if (fromDate && fromDate !== '0') {
+        const date = new Date(fromDate);
+        if (!isNaN(date.getTime())) {
+            return String(date.getMonth() + 1);
+        }
+    }
+    return String(new Date().getMonth() + 1);
+}
+
+function bindRmRateMonthDropdown() {
+    const ddlMonth = document.getElementById('ddlRmRateMonth');
+    if (!ddlMonth) return;
+
+    const currentValue = ddlMonth.value || getDefaultRmRateMonth();
+    ddlMonth.innerHTML = '<option value="">Please select...</option>' +
+        RM_RATE_MONTHS.map(function (month) {
+            return `<option value="${month.Number}">${month.Name}</option>`;
+        }).join('');
+
+    if (currentValue && ddlMonth.querySelector(`option[value="${currentValue}"]`)) {
+        ddlMonth.value = currentValue;
+    }
+}
+
+function extractFinYearList(response) {
+    const source = Array.isArray(response)
+        ? response
+        : (response?.Table || response?.table || response?.data || response?.Data || []);
+
+    const years = [];
+    (Array.isArray(source) ? source : []).forEach(function (item) {
+        const finYear = typeof item === 'string'
+            ? item
+            : (item?.FinYear || item?.finYear || item?.FinYearValue || item?.Code || item?.Desp || '');
+        if (finYear && !years.includes(String(finYear))) {
+            years.push(String(finYear));
+        }
+    });
+    return years;
+}
+
+function fillRmRateFinYearOptions(years) {
+    const ddlFinYear = document.getElementById('ddlRmRateFinYear');
+    if (!ddlFinYear) return;
+
+    const currentFy = getCurrentFinYear();
+    ddlFinYear.innerHTML = '<option value="">Please select...</option>' +
+        years.map(function (finYear) {
+            return `<option value="${escapeHtml(finYear)}">${escapeHtml(finYear)}</option>`;
+        }).join('');
+
+    G_RmRateFinYearLoaded = years.length > 0;
+    if (currentFy && ddlFinYear.querySelector(`option[value="${currentFy}"]`)) {
+        ddlFinYear.value = currentFy;
+    } else if (years.length > 0) {
+        ddlFinYear.value = years[0];
+    }
+}
+
+function bindRmRateFinYearDropdown() {
+    const ddlFinYear = document.getElementById('ddlRmRateFinYear');
+    if (!ddlFinYear) {
+        return Promise.resolve();
+    }
+
+    if (G_RmRateFinYearLoaded && ddlFinYear.options.length > 1) {
+        if (!ddlFinYear.value) {
+            ddlFinYear.value = getCurrentFinYear();
+        }
+        return Promise.resolve();
+    }
+
+    ddlFinYear.innerHTML = '<option value="">Loading...</option>';
+
+    return PurchaseQualityCheckService.GetFinYear().then(function (response) {
+        const years = extractFinYearList(response);
+        if (years.length > 0) {
+            fillRmRateFinYearOptions(years);
+            return;
+        }
+
+        const currentFy = getCurrentFinYear();
+        const startYear = parseInt(String(currentFy).split('-')[0], 10) || new Date().getFullYear();
+        const fallbackYears = [];
+        for (let i = startYear - 2; i <= startYear + 1; i++) {
+            fallbackYears.push(i + '-' + (i + 1));
+        }
+        fillRmRateFinYearOptions(fallbackYears);
+    }).catch(function (error) {
+        console.error('Error loading Financial Year list:', error);
+        const currentFy = getCurrentFinYear();
+        const startYear = parseInt(String(currentFy).split('-')[0], 10) || new Date().getFullYear();
+        const fallbackYears = [];
+        for (let i = startYear - 2; i <= startYear + 1; i++) {
+            fallbackYears.push(i + '-' + (i + 1));
+        }
+        fillRmRateFinYearOptions(fallbackYears);
+    });
+}
+
+function initRmRateModalControls() {
+    bindRmRateMonthDropdown();
+    bindRmRateFinYearDropdown();
+
+    const rmRateModal = document.getElementById('rmRateModal');
+    if (rmRateModal && !rmRateModal.dataset.rmRateBound) {
+        rmRateModal.dataset.rmRateBound = 'Y';
+        rmRateModal.addEventListener('show.bs.modal', openRmRateModal);
+    }
+
+    const btnRmRate = document.getElementById('btnRmRate');
+    if (btnRmRate && !btnRmRate.dataset.rmRateBound) {
+        btnRmRate.dataset.rmRateBound = 'Y';
+        btnRmRate.addEventListener('click', openRmRateModal);
+    }
+
+    const btnSaveRmRate = document.getElementById('btnSaveRmRate');
+    if (btnSaveRmRate && !btnSaveRmRate.dataset.rmRateBound) {
+        btnSaveRmRate.dataset.rmRateBound = 'Y';
+        btnSaveRmRate.addEventListener('click', saveRmRateModal);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRmRateModalControls);
+} else {
+    initRmRateModalControls();
+}
+
+function renderRmRateTableRows(items) {
+    const tbody = document.getElementById('rmRateTableBody');
+    if (!tbody) return;
+
+    if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No item data available</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = items.map(function (entry) {
+        const name = entry[0];
+        const qty = Number(entry[1] || 0);
+        const savedRate = G_RmRateValues[name] ?? '';
+        return `<tr>
+            <td>${escapeHtml(name)}</td>
+            <td class="text-end">${qty.toFixed(3)}</td>
+            <td>
+                <input type="number" class="form-control form-control-sm rm-rate-input" data-item="${escapeHtml(name)}" value="${escapeHtml(savedRate)}" min="0" step="0.01" />
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function loadRmRateModalData() {
+    const tbody = document.getElementById('rmRateTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>';
+
+    if (G_ProductAnalysisData && G_ProductAnalysisData.length > 0) {
+        renderRmRateTableRows(aggregateProductData(G_ProductAnalysisData, function (row) { return row.itemName; }));
+        return;
+    }
+
+    const filters = GetAllFilters();
+    SalesanalysisASTService.GetSalesAnalysisData(
+        'PRODUCT_ANALYSIS',
+        filters.dealerCodes,
+        filters.fromDate,
+        filters.toDate,
+        filters.salesPersons,
+        filters.cities,
+        filters.status,
+        filters.gp,
+        filters.industryType,
+        filters.notPurchaseFromDays
+    ).then(function (response) {
+        const rows = Array.isArray(response) ? response.map(normalizeProductAnalysisRow) : [];
+        renderRmRateTableRows(aggregateProductData(rows, function (row) { return row.itemName; }));
+    }).catch(function (err) {
+        console.error('Error fetching RM Rate item data:', err);
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load item data</td></tr>';
+    });
+}
+
+function openRmRateModal() {
+    bindRmRateMonthDropdown();
+    bindRmRateFinYearDropdown();
+    loadRmRateModalData();
+}
+
+function saveRmRateModal() {
+    document.querySelectorAll('#rmRateTableBody .rm-rate-input').forEach(function (input) {
+        G_RmRateValues[input.dataset.item] = input.value;
+    });
+
+    if (typeof toastr !== 'undefined') {
+        toastr.success('RM Rate saved');
+    }
+
+    const modalEl = document.getElementById('rmRateModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    }
+}
+
 window.SalesanalysisAST_ShowReport = SalesanalysisAST_ShowReport;
+
+function getRmRateMonthListSortedByNumber() {
+    return RM_RATE_MONTHS.slice().sort(function (a, b) {
+        return Number(a.Number) - Number(b.Number);
+    });
+}
+
+function bindRmRateMonthDropdownBySortNumber() {
+    const ddlMonth = document.getElementById('ddlRmRateMonth');
+    if (!ddlMonth) return;
+
+    const currentValue = ddlMonth.value || getDefaultRmRateMonth();
+    ddlMonth.innerHTML = '<option value="">Please select...</option>' +
+        getRmRateMonthListSortedByNumber().map(function (month) {
+            return `<option value="${month.Number}">${month.Name}</option>`;
+        }).join('');
+
+    if (currentValue && ddlMonth.querySelector(`option[value="${currentValue}"]`)) {
+        ddlMonth.value = currentValue;
+    }
+}
+
+function extractMonthWiseItemRMRateList(response) {
+    if (Array.isArray(response)) {
+        return response;
+    }
+
+    const nested = response?.Table || response?.table || response?.data || response?.Data
+        || response?.Table1 || response?.Result || response?.result || [];
+    return Array.isArray(nested) ? nested : [];
+}
+
+function compactMonthWiseFieldName(name) {
+    return String(name || '').toLowerCase().replace(/[\s_]/g, '');
+}
+
+function getMonthWiseItemRMRateField(row, keys, fallback) {
+    if (!row || typeof row !== 'object') {
+        return fallback;
+    }
+
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+            return row[key];
+        }
+        if (row[key] === 0 || row[key] === '0') {
+            return row[key];
+        }
+    }
+
+    const rowKeys = Object.keys(row);
+    const compactKeys = keys.map(compactMonthWiseFieldName);
+    const matchedKey = rowKeys.find(function (rowKey) {
+        const compactRowKey = compactMonthWiseFieldName(rowKey);
+        return compactKeys.some(function (key) {
+            return compactRowKey === key;
+        });
+    });
+
+    if (!matchedKey) {
+        return fallback;
+    }
+
+    const matchedValue = row[matchedKey];
+    if (matchedValue === 0 || matchedValue === '0' || (matchedValue !== undefined && matchedValue !== null && matchedValue !== '')) {
+        return matchedValue;
+    }
+
+    return fallback;
+}
+
+function getMonthWiseItemRMRateValue(row) {
+    const rate = getMonthWiseItemRMRateField(row, [
+        'RMRate', 'RM_Rate', 'RmRate', 'RM Rate', 'ItemRMRate', 'Item_RMRate',
+        'RMRateValue', 'Rate', 'RawMaterialRate'
+    ], undefined);
+
+    if (rate === 0 || rate === '0' || (rate !== undefined && rate !== null && rate !== '')) {
+        return rate;
+    }
+
+    const keys = Object.keys(row || {});
+    for (let i = 0; i < keys.length; i++) {
+        const compactKey = compactMonthWiseFieldName(keys[i]);
+        if (compactKey === 'rmrate' || compactKey === 'itemrmrate' || compactKey.endsWith('rmrate') || compactKey === 'rate') {
+            return row[keys[i]];
+        }
+    }
+
+    return '';
+}
+
+function formatMonthWiseRmRateInputValue(rate) {
+    if (rate === 0 || rate === '0') {
+        return '0';
+    }
+    if (rate === null || rate === undefined || rate === '') {
+        return '';
+    }
+    const num = Number(rate);
+    if (!isNaN(num)) {
+        return Number.isInteger(num) ? String(num) : num.toFixed(2);
+    }
+    return String(rate).trim();
+}
+
+function onRmRateInput(el) {
+    if (!el) return;
+
+    let value = String(el.value || '').replace(/[^0-9.]/g, '');
+    const dotIndex = value.indexOf('.');
+    if (dotIndex !== -1) {
+        value = value.slice(0, dotIndex + 1) + value.slice(dotIndex + 1).replace(/\./g, '');
+        const parts = value.split('.');
+        value = (parts[0] || '').slice(0, 8) + '.' + (parts[1] || '').slice(0, 2);
+    } else {
+        value = value.slice(0, 8);
+    }
+
+    el.value = value;
+}
+window.onRmRateInput = onRmRateInput;
+
+function focusRmRateElement(el) {
+    if (!el) return;
+    el.focus();
+    if (typeof el.select === 'function') {
+        el.select();
+    }
+}
+
+function onRmRateEnter(el, event) {
+    if (!el || !event || event.key !== 'Enter') {
+        return;
+    }
+
+    event.preventDefault();
+    const inputs = Array.from(document.querySelectorAll('#rmRateTableBody .rm-rate-input'));
+    const currentIndex = inputs.indexOf(el);
+    const nextInput = currentIndex >= 0 ? inputs[currentIndex + 1] : null;
+    if (nextInput) {
+        focusRmRateElement(nextInput);
+        return;
+    }
+
+    focusRmRateElement(document.getElementById('btnSaveRmRate'));
+}
+window.onRmRateEnter = onRmRateEnter;
+
+function onRmRateFilterEnter(event) {
+    if (!event || event.key !== 'Enter') {
+        return;
+    }
+
+    event.preventDefault();
+    const sourceId = event.target ? event.target.id : '';
+    if (sourceId === 'ddlRmRateFinYear') {
+        focusRmRateElement(document.getElementById('ddlRmRateMonth'));
+        return;
+    }
+
+    if (sourceId === 'ddlRmRateMonth') {
+        const firstRmRate = document.querySelector('#rmRateTableBody .rm-rate-input');
+        if (firstRmRate) {
+            focusRmRateElement(firstRmRate);
+            return;
+        }
+        focusRmRateElement(document.getElementById('btnSaveRmRate'));
+    }
+}
+
+function normalizeMonthWiseItemRMRateRow(row) {
+    if (Array.isArray(row)) {
+        return {
+            itemName: row[0] ?? '',
+            qty: Number(row[1] || 0),
+            rmRate: row[2] ?? '',
+            itemMasterCode: Number(row[3] || 0),
+            monthDate: row[4] ?? ''
+        };
+    }
+
+    const mapped = {
+        itemName: getMonthWiseItemRMRateField(row, ['ItemName', 'Item_Name', 'ItemDesp', 'ItemMasterName', 'Item', 'Name', 'Desp'], ''),
+        qty: Number(getMonthWiseItemRMRateField(row, ['QtyMT', 'Qty_MT', 'QtyMt', 'Qty', 'Quantity', 'Weight', 'MT'], 0) || 0),
+        rmRate: getMonthWiseItemRMRateValue(row),
+        itemMasterCode: Number(getMonthWiseItemRMRateField(row, ['ItemMaster_Code', 'ItemMasterCode', 'Item_Code', 'ItemCode', 'Code'], 0) || 0),
+        monthDate: getMonthWiseItemRMRateField(row, ['MonthDate', 'Month_Date', 'AsOnDate'], '')
+    };
+
+    if (mapped.itemName && mapped.itemMasterCode && (mapped.rmRate === 0 || mapped.rmRate)) {
+        return mapped;
+    }
+
+    const keys = Object.keys(row || {});
+    keys.forEach(function (key) {
+        const lowerKey = String(key).toLowerCase();
+        const compactKey = compactMonthWiseFieldName(key);
+        const value = row[key];
+        if (!mapped.itemName && (lowerKey.includes('item') || lowerKey.includes('name') || lowerKey.includes('desp')) && !lowerKey.includes('code')) {
+            mapped.itemName = value ?? '';
+        } else if ((!mapped.qty || mapped.qty === 0) && (lowerKey.includes('qty') || lowerKey.includes('weight') || lowerKey === 'mt')) {
+            mapped.qty = Number(value || 0);
+        } else if ((mapped.rmRate === '' || mapped.rmRate === null || mapped.rmRate === undefined)
+            && (compactKey === 'rmrate' || compactKey.endsWith('rmrate') || compactKey === 'rate' || lowerKey.includes('rate'))) {
+            mapped.rmRate = value ?? '';
+        } else if ((!mapped.itemMasterCode || mapped.itemMasterCode === 0) && lowerKey.includes('code')) {
+            mapped.itemMasterCode = Number(value || 0);
+        } else if (!mapped.monthDate && lowerKey.includes('date')) {
+            mapped.monthDate = value ?? '';
+        }
+    });
+
+    return mapped;
+}
+
+function buildMonthWiseItemRMRateRowHtml(entry, rowIndex) {
+    const name = entry.itemName || '';
+    const qty = Number(entry.qty || 0);
+    const itemMasterCode = Number(entry.itemMasterCode || 0);
+    const monthDate = entry.monthDate || '';
+    const savedRate = formatMonthWiseRmRateInputValue(entry.rmRate);
+
+    return `<tr>
+        <td>${escapeHtml(name)}</td>
+        <td class="text-end">${qty.toFixed(3)}</td>
+        <td class="text-center">
+            <input type="text" class="form-control form-control-sm rm-rate-input" inputmode="decimal" maxlength="11" data-item="${escapeHtml(name)}" data-row="${rowIndex}" data-item-code="${itemMasterCode}" data-qty="${qty}" data-month-date="${escapeHtml(monthDate)}" value="${escapeHtml(savedRate)}" oninput="onRmRateInput(this)" onkeydown="onRmRateEnter(this, event)" />
+        </td>
+    </tr>`;
+}
+
+function renderMonthWiseItemRMRateGrid(items) {
+    const tbody = document.getElementById('rmRateTableBody');
+    if (!tbody) return;
+
+    const rows = (Array.isArray(items) ? items : []).filter(function (entry) {
+        return entry && (entry.itemName || Number(entry.itemMasterCode || 0) > 0);
+    });
+
+    if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No item data available</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = rows.map(function (entry, index) {
+        return buildMonthWiseItemRMRateRowHtml(entry, index);
+    }).join('');
+}
+
+function loadMonthWiseItemRMRateGrid() {
+    const tbody = document.getElementById('rmRateTableBody');
+    const ddlFinYear = document.getElementById('ddlRmRateFinYear');
+    const ddlMonth = document.getElementById('ddlRmRateMonth');
+    if (!tbody || !ddlFinYear || !ddlMonth) return;
+
+    const finYear = ddlFinYear.value;
+    const month = ddlMonth.value;
+    if (!finYear || !month) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Please select Fin Year and Month</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>';
+
+    SalesanalysisASTService.GetMonthWiseItemRMRateData(finYear, month).then(function (response) {
+        const rows = extractMonthWiseItemRMRateList(response).map(normalizeMonthWiseItemRMRateRow);
+        renderMonthWiseItemRMRateGrid(rows);
+    }).catch(function (error) {
+        console.error('Error fetching month wise item RM Rate data:', error);
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load item data</td></tr>';
+    });
+}
+
+function getLoggedInRmRateUserType() {
+    try {
+        const details = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        if (Array.isArray(details) && details[0]) {
+            return String(details[0].UserType || '').toUpperCase();
+        }
+    } catch (e) {
+        console.warn('Unable to read UserType from UserDetails', e);
+    }
+    return '';
+}
+
+function applyRmRateButtonVisibility() {
+    const toolbar = document.getElementById('rmRateToolbar');
+    const btnRmRate = document.getElementById('btnRmRate');
+    const isAdmin = getLoggedInRmRateUserType() === 'A';
+
+    if (toolbar) {
+        toolbar.classList.toggle('d-none', !isAdmin);
+    }
+    if (btnRmRate) {
+        btnRmRate.classList.toggle('d-none', !isAdmin);
+    }
+}
+
+function initMonthWiseItemRMRateBinding() {
+    applyRmRateButtonVisibility();
+    bindRmRateMonthDropdownBySortNumber();
+
+    const ddlMonth = document.getElementById('ddlRmRateMonth');
+    if (ddlMonth && !ddlMonth.dataset.monthWiseRmRateBound) {
+        ddlMonth.dataset.monthWiseRmRateBound = 'Y';
+        ddlMonth.addEventListener('change', loadMonthWiseItemRMRateGrid);
+    }
+    if (ddlMonth && !ddlMonth.dataset.monthWiseRmRateEnterBound) {
+        ddlMonth.dataset.monthWiseRmRateEnterBound = 'Y';
+        ddlMonth.addEventListener('keydown', onRmRateFilterEnter);
+    }
+
+    const ddlFinYear = document.getElementById('ddlRmRateFinYear');
+    if (ddlFinYear && !ddlFinYear.dataset.monthWiseRmRateBound) {
+        ddlFinYear.dataset.monthWiseRmRateBound = 'Y';
+        ddlFinYear.addEventListener('change', function () {
+            if (document.getElementById('ddlRmRateMonth')?.value) {
+                loadMonthWiseItemRMRateGrid();
+            }
+        });
+    }
+    if (ddlFinYear && !ddlFinYear.dataset.monthWiseRmRateEnterBound) {
+        ddlFinYear.dataset.monthWiseRmRateEnterBound = 'Y';
+        ddlFinYear.addEventListener('keydown', onRmRateFilterEnter);
+    }
+
+    const rmRateModal = document.getElementById('rmRateModal');
+    if (rmRateModal && !rmRateModal.dataset.monthWiseRmRateBound) {
+        rmRateModal.dataset.monthWiseRmRateBound = 'Y';
+        rmRateModal.addEventListener('shown.bs.modal', function () {
+            bindRmRateMonthDropdownBySortNumber();
+            loadMonthWiseItemRMRateGrid();
+        });
+    }
+
+    bindMonthWiseItemRMRateSaveButton();
+}
+
+function getSelectedRmRateMonthDate() {
+    const ddlFinYear = document.getElementById('ddlRmRateFinYear');
+    const ddlMonth = document.getElementById('ddlRmRateMonth');
+    const finYear = ddlFinYear ? ddlFinYear.value : '';
+    const month = Number(ddlMonth ? ddlMonth.value : 0);
+    if (!finYear || !month) {
+        return '';
+    }
+
+    const yearParts = String(finYear).split('-');
+    const startYear = parseInt(yearParts[0], 10);
+    const endYear = parseInt(yearParts[1], 10) || (startYear + 1);
+    const year = month >= 4 ? startYear : endYear;
+    if (!year) {
+        return '';
+    }
+
+    return `${year}-${String(month).padStart(2, '0')}-01`;
+}
+
+function collectMonthWiseItemRMRatePayload() {
+    const ddlFinYear = document.getElementById('ddlRmRateFinYear');
+    const finYear = ddlFinYear ? ddlFinYear.value : '';
+    const defaultMonthDate = getSelectedRmRateMonthDate();
+    const payload = [];
+
+    document.querySelectorAll('#rmRateTableBody .rm-rate-input').forEach(function (input) {
+        const itemMasterCode = Number(input.dataset.itemCode || 0);
+        const rmRate = Number(input.value || 0);
+        if (!itemMasterCode || !(rmRate > 0)) {
+            return;
+        }
+
+        payload.push({
+            MonthDate: input.dataset.monthDate || defaultMonthDate,
+            FinYear: finYear,
+            ItemMaster_Code: itemMasterCode,
+            QtyMT: Number(input.dataset.qty || 0),
+            RMRate: rmRate
+        });
+    });
+
+    return payload;
+}
+
+function isMonthWiseItemRMRateSaveSuccess(response) {
+    if (response === true || response === 'Y' || response === 'y') {
+        return true;
+    }
+    if (response === null || response === undefined || response === false) {
+        return false;
+    }
+    if (typeof response === 'string') {
+        const lower = response.toLowerCase();
+        return lower === 'y' || lower.includes('success') || lower.includes('saved');
+    }
+    if (typeof response !== 'object') {
+        return false;
+    }
+
+    const status = response.Status || response.status || response.Flag || response.flag;
+    if (status === 'N' || status === 'n' || status === false || response.Success === false) {
+        return false;
+    }
+
+    return status === 'Y' || status === 'y' || status === true || status === 1 || response.Success === true || status === undefined;
+}
+
+function getMonthWiseItemRMRateSaveMessage(response, fallback) {
+    return response?.Msg || response?.Message || response?.message || response?.Error || fallback;
+}
+
+function saveMonthWiseItemRMRateData() {
+    const ddlFinYear = document.getElementById('ddlRmRateFinYear');
+    const ddlMonth = document.getElementById('ddlRmRateMonth');
+    const finYear = ddlFinYear ? ddlFinYear.value : '';
+    const month = ddlMonth ? ddlMonth.value : '';
+
+    if (!finYear || !month) {
+        if (typeof toastr !== 'undefined') {
+            toastr.error('Please select Fin Year and Month');
+        }
+        return;
+    }
+
+    const payload = collectMonthWiseItemRMRatePayload();
+    if (payload.length === 0) {
+        if (typeof toastr !== 'undefined') {
+            toastr.error('No item with RM Rate greater than 0 to save');
+        }
+        return;
+    }
+
+    const btnSaveRmRate = document.getElementById('btnSaveRmRate');
+    if (btnSaveRmRate) {
+        btnSaveRmRate.disabled = true;
+    }
+
+    SalesanalysisASTService.SaveMonthWiseItemRMRateData(payload).then(function (response) {
+        if (isMonthWiseItemRMRateSaveSuccess(response)) {
+            payload.forEach(function (item) {
+                const input = document.querySelector(`#rmRateTableBody .rm-rate-input[data-item-code="${item.ItemMaster_Code}"]`);
+                if (input && input.dataset.item) {
+                    G_RmRateValues[input.dataset.item] = String(item.RMRate);
+                }
+            });
+
+            if (typeof toastr !== 'undefined') {
+                toastr.success(getMonthWiseItemRMRateSaveMessage(response, 'RM Rate saved'));
+            }
+
+            const modalEl = document.getElementById('rmRateModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+            }
+            return;
+        }
+
+        if (typeof toastr !== 'undefined') {
+            toastr.error(getMonthWiseItemRMRateSaveMessage(response, 'Failed to save RM Rate'));
+        }
+    }).catch(function (error) {
+        console.error('Error saving month wise item RM Rate data:', error);
+        if (typeof toastr !== 'undefined') {
+            toastr.error('Failed to save RM Rate');
+        }
+    }).finally(function () {
+        if (btnSaveRmRate) {
+            btnSaveRmRate.disabled = false;
+        }
+    });
+}
+
+function bindMonthWiseItemRMRateSaveButton() {
+    const btnSaveRmRate = document.getElementById('btnSaveRmRate');
+    if (!btnSaveRmRate || btnSaveRmRate.dataset.monthWiseRmRateSaveBound === 'Y') {
+        return;
+    }
+
+    const newBtn = btnSaveRmRate.cloneNode(true);
+    newBtn.dataset.monthWiseRmRateSaveBound = 'Y';
+    btnSaveRmRate.parentNode.replaceChild(newBtn, btnSaveRmRate);
+    newBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        saveMonthWiseItemRMRateData();
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMonthWiseItemRMRateBinding);
+} else {
+    initMonthWiseItemRMRateBinding();
+}

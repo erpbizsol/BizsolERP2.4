@@ -76,6 +76,18 @@ const SalesanalysisASTService = {
                 return value;
             }
         );
+    },
+    GetMonthWiseItemRMRateData: function GetMonthWiseItemRMRateData(FinYear, Month) {
+        const url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/GetMonthWiseItemRMRateData?FinYear=${encodeURIComponent(FinYear || '')}&Month=${encodeURIComponent(Month || '')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
+            return value;
+        });
+    },
+    SaveMonthWiseItemRMRateData: function SaveMonthWiseItemRMRateData(monthWiseItemRMRateConfigration) {
+        const url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/SaveMonthWiseItemRMRateData`;
+        return promiseAjaxCallApi.CallAPI('POST', url, JSON.stringify(monthWiseItemRMRateConfigration || [])).then(function (value) {
+            return value;
+        });
     }
 }
 
