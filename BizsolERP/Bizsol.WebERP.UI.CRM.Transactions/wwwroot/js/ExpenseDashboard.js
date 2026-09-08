@@ -1,4 +1,5 @@
 import { ExpenseDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseDashboardService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { ExpensesLedgerReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpensesLedgerReportService.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
@@ -15,6 +16,10 @@ const EDASH_MM_RETRY_DELAY_MS = 400;
 
 $(document).ready(function () {
     $('#ERPHeading').text('Expense Dashboard');
+    BizSolHelperFunction.applyUserDashboardMenuBackButton('#btnBackToUserDashboardMenu');
+    $('#btnBackToUserDashboardMenu').on('click', function () {
+        BizSolHelperFunction.goToUserDashboardMenu();
+    });
     $('#btnExport').on('click', exportProjectTable);
     MountFilterPanelToBody();
     InitFilterSidePanelControl();

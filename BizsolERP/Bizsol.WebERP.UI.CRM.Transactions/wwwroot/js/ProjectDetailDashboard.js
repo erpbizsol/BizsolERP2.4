@@ -1,4 +1,6 @@
 ﻿import { ProjectDetailDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectDetailDashboardService.js';
+import { UserDashboardTileRights } from '../../Bizsol.WebERP.UI.Shared/js/UserDashboardTileRights.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 // ── Chart instances (destroyed & recreated on each load) ─────────────────────
 let chartPOStatus        = null;
@@ -112,9 +114,15 @@ function BindKpiNavigation() {
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 $(document).ready(function () {
+    BizSolHelperFunction.applyUserDashboardMenuBackButton('#btnBackToUserDashboardMenu');
+    $('#btnBackToUserDashboardMenu').on('click', function () {
+        BizSolHelperFunction.goToUserDashboardMenu();
+    });
     BindKpiNavigation();
     MountFilterPanelToBody();
-    InitFilterSidePanelControl();
+    UserDashboardTileRights.Apply(document).finally(function () {
+        InitFilterSidePanelControl();
+    });
 });
 
 /** Filter panel on body so offcanvas opens correctly on mobile. */
@@ -237,6 +245,10 @@ function BindProjectChangeInFilter() {
 
 // ── Main loader ───────────────────────────────────────────────────────────────
 function LoadDashboard() {
+    UserDashboardTileRights.Apply(document).then(LoadDashboardAfterRights);
+}
+
+function LoadDashboardAfterRights() {
     const { projectCode, subProjectCode, fromDate, toDate } = GetFilterParams();
 
     if (!fromDate || !toDate) {
@@ -250,22 +262,34 @@ function LoadDashboard() {
 
     SetLoading(true);
     const year = new Date(fromDate).getFullYear();
+    const skipBudget = UserDashboardTileRights.IsTileHidden('Project Budget vs Actual');
+    const skipExpense = UserDashboardTileRights.IsTileHidden('Expense Summary');
 
     Promise.all([
         ProjectDetailDashboardService.GetDashboardSummary(projectCode, subProjectCode, fromDate, toDate),
-        ProjectDetailDashboardService.GetPOStatus(projectCode, subProjectCode, fromDate, toDate),
-        ProjectDetailDashboardService.GetPaymentTrend(projectCode, subProjectCode, year),
-        ProjectDetailDashboardService.GetProjectSummary(projectCode),
-        ProjectDetailDashboardService.GetBudgetVsActual(projectCode, subProjectCode, fromDate, toDate),
-        ProjectDetailDashboardService.GetExpenseSummary(projectCode, subProjectCode, fromDate, toDate),
+        UserDashboardTileRights.IsTileHidden('PO Status')
+            ? Promise.resolve(null)
+            : ProjectDetailDashboardService.GetPOStatus(projectCode, subProjectCode, fromDate, toDate),
+        UserDashboardTileRights.IsTileHidden('Payment Trend')
+            ? Promise.resolve(null)
+            : ProjectDetailDashboardService.GetPaymentTrend(projectCode, subProjectCode, year),
+        UserDashboardTileRights.IsTileHidden('Project Summary')
+            ? Promise.resolve(null)
+            : ProjectDetailDashboardService.GetProjectSummary(projectCode),
+        skipBudget
+            ? Promise.resolve(null)
+            : ProjectDetailDashboardService.GetBudgetVsActual(projectCode, subProjectCode, fromDate, toDate),
+        skipExpense
+            ? Promise.resolve(null)
+            : ProjectDetailDashboardService.GetExpenseSummary(projectCode, subProjectCode, fromDate, toDate),
     ])
     .then(function ([summary, poStatus, paymentTrend, projectSummary, bva, expenseSummary]) {
         RenderKPI(summary);
-        RenderPOStatus(poStatus);
-        RenderPaymentTrend(paymentTrend, year);
-        RenderProjectSummary(projectSummary);
-        RenderBudgetVsActual(bva);
-        RenderExpenseSummary(expenseSummary);
+        if (poStatus) RenderPOStatus(poStatus);
+        if (paymentTrend) RenderPaymentTrend(paymentTrend, year);
+        if (projectSummary) RenderProjectSummary(projectSummary);
+        if (bva) RenderBudgetVsActual(bva);
+        if (expenseSummary) RenderExpenseSummary(expenseSummary);
         document.getElementById('pddDataNote').textContent = NowNote();
     })
     .catch(function (err) {

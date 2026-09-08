@@ -49,18 +49,38 @@ const DashboardConfigurationService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
 
-    /** Dashboards assigned to user → UserWebApiDashboardDetails */
-    GetUserDashboardDetails: function GetUserDashboardDetails(userMasterCode) {
-        const URL =
+    GetUserDashboardDetails: function GetUserDashboardDetails(userMasterCode, webApiDashboardMasterCode) {
+        var URL =
             dashboardConfigurationApiBase() +
             '/GetUserDashboardDetails?UserMaster_Code=' +
-            encodeURIComponent(userMasterCode || 0);
-        return promiseAjaxCallApi.CallAPI('GET', URL, '');
+            encodeURIComponent(userMasterCode || 0) +
+            '&WebApiDashboardMaster_Code=' +
+            encodeURIComponent(webApiDashboardMasterCode || 0) +
+            '&Mode=' +
+            encodeURIComponent('GET_USER_DASHBOARD_DETAILS');
+        return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
     },
 
     SaveDashboardTileDetail: function SaveDashboardTileDetail(model) {
         const URL = dashboardConfigurationApiBase() + '/SaveDashboardTileDetail';
-        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(model || {}));
+        var payload = model && typeof model === 'object' ? model : {};
+        if (!Array.isArray(payload.DashboardTileDetail)) {
+            payload.DashboardTileDetail = [];
+        }
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload));
+    },
+
+    /** Un-assign a user from a dashboard (deletes UserWebApiDashboardDetails + NotApplicable). */
+    ClearDashboardTileDetail: function ClearDashboardTileDetail(userMasterCode, webApiDashboardMasterCode) {
+        const URL =
+            dashboardConfigurationApiBase() +
+            '/ClearDashboardTileDetail?UserMaster_Code=' +
+            encodeURIComponent(userMasterCode || 0) +
+            '&WebApiDashboardMaster_Code=' +
+            encodeURIComponent(webApiDashboardMasterCode || 0) +
+            '&Mode=' +
+            encodeURIComponent('CLEAR');
+        return promiseAjaxCallApi.CallAPI('POST', URL, '', { suppressErrorToast: true });
     },
 };
 

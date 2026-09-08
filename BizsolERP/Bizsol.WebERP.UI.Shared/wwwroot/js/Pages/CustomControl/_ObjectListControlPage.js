@@ -50,7 +50,7 @@ function createObjectlistControlModal(id) {
                         <div class="text-end mt-2 pb-2" style="flex-shrink:0;">
                             <button class="btn btn-primary btn-height" onclick="onObjectList_Done();">Done</button>
                             &nbsp;
-                            <a class="btn btn-danger btn-height" data-bs-dismiss="modal" aria-label="Close">Close</a>
+                            <button type="button" class="btn btn-danger btn-height" data-bs-dismiss="modal" aria-label="Close">Close</button>
                             <input type="hidden" id="hfObjList_CallBackFunctionName" value="" />
                         </div>
                     </div>
@@ -116,6 +116,13 @@ function renderObjectListRows(data, columns) {
             $(this).addClass('table-primary');
         }
         updateObjectListTotals();
+    });
+
+    $('#objListTableBody').off('dblclick', '.objlist-row').on('dblclick', '.objlist-row', function () {
+        $('#objListTableBody .objlist-row').removeClass('table-primary');
+        $(this).addClass('table-primary');
+        updateObjectListTotals();
+        onObjectList_Done();
     });
 
     // Reset totals bar when rows re-render (filter change)
@@ -239,6 +246,13 @@ function buildFilterColumnDropdown(columns, preSelectField) {
 function attachKeyboardNavigation() {
     $(document).off('keydown.objlist').on('keydown.objlist', function (e) {
         if (!$('#objListTableBody').is(':visible')) return;
+
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(`#${G_ObjectListModalId}`).modal('hide');
+            return;
+        }
 
         // Enter on a selected row triggers Done
         if (e.key === 'Enter') {
@@ -421,21 +435,21 @@ function initializeObjectlistControl(options) {
     // Apply initial search value
     const rawSearch   = (options.searchvalue || '').toString().trim();
     const searchValue = (rawSearch === '.') ? '' : rawSearch;
+    const matchType   = (options.MatchType || 'contains').toString().toLowerCase();
 
     // If a search value is provided, check how many rows match before opening the modal
     if (searchValue !== '') {
         const matchField = (G_ObjectListDefaultColumnFilter || '').trim();
+        const term = searchValue.toLowerCase();
         const preFiltered = G_ObjectListData.filter(function (row) {
             if (matchField !== '') {
-                return String(row[matchField] !== null && row[matchField] !== undefined ? row[matchField] : '')
-                    .toLowerCase()
-                    .includes(searchValue.toLowerCase());
+                const cellValue = String(row[matchField] !== null && row[matchField] !== undefined ? row[matchField] : '');
+                return objListMatchValue(cellValue, term, matchType);
             }
             return arrayObjectListColumns.some(function (col) {
                 if (col.visible === false) return false;
-                return String(row[col.field] !== null && row[col.field] !== undefined ? row[col.field] : '')
-                    .toLowerCase()
-                    .includes(searchValue.toLowerCase());
+                const cellValue = String(row[col.field] !== null && row[col.field] !== undefined ? row[col.field] : '');
+                return objListMatchValue(cellValue, term, matchType);
             });
         });
 
@@ -450,7 +464,7 @@ function initializeObjectlistControl(options) {
     }
 
     $('#objListSearchInput').val(searchValue);
-    $('#objListMatchType').val('contains');
+    $('#objListMatchType').val(matchType === 'startswith' || matchType === 'endswith' ? matchType : 'contains');
     $('#objListTableBody .objlist-row').removeClass('table-primary');
 
     buildObjectListTable(G_ObjectListData, arrayObjectListColumns);
@@ -465,7 +479,7 @@ function initializeObjectlistControl(options) {
     setTimeout(function () {
         $(`#${modalId}`).modal({
             backdrop: 'static',
-            keyboard: false
+            keyboard: true
         });
         $(`#${modalId}`).modal('show');
 

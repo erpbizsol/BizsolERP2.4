@@ -422,7 +422,7 @@ function mapShowMasterDetailsToGridRows(details) {
             'Qty(Received)': getFiQtyReceived(row),
             'Total Weight': getFiApiValue(row, 'Total Weight'),
             'Invoice Qty': getFiApiValue(row, 'Invoice Qty'),
-            'Reached Qty': getFiQtyReceived(row),
+            'Reached Qty': '',
             'Freight Billed Qty': getFiApiValue(row, 'Freight Billed Qty'),
             'Freight Amount': getFiApiValue(row, 'Freight Amount'),
             'Tolerance Qty': getFiApiValue(row, 'Tolerance Qty'),
@@ -1509,10 +1509,9 @@ function bindGridEnterTab() {
 // =============================================================================
 // CALCULATIONS — qty sources are separate:
 //   Billed Qty  = supplier billed qty on GRN (Billed Qty column)
-//   Qty(Received) = MRN received MT — also used as contract "Reached Qty"
-//   Reached Qty column = same as Qty(Received) for display
-//   Freight Billed Qty = MAX(Min Qty, contract base qty)
-//   Contract base qty from [Deduction On]: Billed Qty | Reached Qty (= Qty Received) | Whichever is Lower
+//   Qty(Received) = MRN received MT — used internally when Deduction On = Qty(Received)
+//   Reached Qty column = blank for now (display only; SP returns '')
+//   Contract base qty from [Deduction On]: Billed Qty | Qty(Received) | Whichever is Lower
 // Freight Amount = Rate/Vehicle OR Rate/Wt × Freight Billed Qty
 // Tolerance Qty = Billed × Tolerance Value (%) [all types; KG = fixed value]
 // Shortage only when (Billed − Received) > Tolerance Qty:
@@ -1596,22 +1595,17 @@ function normalizeFiDeductionOn(value) {
     return String(value || 'Billed Qty').trim().toLowerCase();
 }
 
-/** Contract "Reached Qty" = Qty(Received) on this screen. */
-function getRowReachedQty($tr) {
-    return getRowGrnQty($tr);
-}
-
-/** Contract [Deduction On] → base qty before Min Qty is applied. */
+/** Contract [Deduction On] from F_CommonValues: Billed Qty | Qty(Received) | Whichever is Lower */
 function getContractBaseQty($tr) {
     const billedQty = getRowBilledQty($tr);
-    const reachedQty = getRowReachedQty($tr);
+    const receivedQty = getRowGrnQty($tr);
     const deductionOn = normalizeFiDeductionOn($tr.attr('data-deduction-on'));
 
-    if (deductionOn === 'reached qty') {
-        return reachedQty;
+    if (deductionOn === 'qty(received)') {
+        return receivedQty;
     }
     if (deductionOn.indexOf('lower') >= 0) {
-        return roundTo(Math.min(billedQty, reachedQty), 3);
+        return roundTo(Math.min(billedQty, receivedQty), 3);
     }
     return billedQty;
 }
@@ -1619,12 +1613,12 @@ function getContractBaseQty($tr) {
 function calcFreightBilledQtyFromValues(minQty, billedQty, receivedQty, deductionOn) {
     const min = parseNum(minQty);
     const billed = parseNum(billedQty);
-    const reached = parseNum(receivedQty);
+    const received = parseNum(receivedQty);
 
     const ded = normalizeFiDeductionOn(deductionOn);
     let base = billed;
-    if (ded === 'reached qty') base = reached;
-    else if (ded.indexOf('lower') >= 0) base = Math.min(billed, reached);
+    if (ded === 'qty(received)') base = received;
+    else if (ded.indexOf('lower') >= 0) base = Math.min(billed, received);
 
     return roundTo(Math.max(min, base), 3);
 }
@@ -1687,7 +1681,6 @@ function calculateFreightRow($tr) {
 
     setFiField($tr.find('.fi-billed-qty'), formatNum(billedQty, 3));
     setFiField($tr.find('.fi-grn-qty'), formatNum(receivedQty, 3));
-    setFiField($tr.find('.fi-reached-qty'), formatNum(receivedQty, 3));
     setFiField($tr.find('.fi-freight-billed-qty'), formatNum(freightBilledQty, 3));
     setFiField($tr.find('.fi-freight-amt'), formatNum(freightAmt, FINANCE_DECIMALS));
     setFiField($tr.find('.fi-tolerance-type'), formatToleranceTypeDisplay($tr));
@@ -2065,7 +2058,6 @@ function bindSpreadFromData(rows, options) {
         setFiField($tr.find('.fi-grn-qty'), receivedQty > 0 ? formatNum(receivedQty, 3) : '');
         const invoiceQty = parseNum(row['Invoice Qty']);
         setFiField($tr.find('.fi-invoice-qty'), invoiceQty > 0 ? formatNum(invoiceQty, 3) : '');
-        setFiField($tr.find('.fi-reached-qty'), receivedQty > 0 ? formatNum(receivedQty, 3) : '');
         if (options.preserveSavedAmounts) {
             const otherDed = getFiApiValue(row, 'Other Deduction');
             const otherAdd = getFiApiValue(row, 'Other Addition');

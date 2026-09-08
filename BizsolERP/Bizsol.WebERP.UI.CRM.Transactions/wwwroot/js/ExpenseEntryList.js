@@ -137,11 +137,6 @@ $(document).ready(function () {
         triggerShowIfValid();
     });
 
-    // Approved chip → open modal with only Approved entries
-    $('#eeStatCardApproved').on('click', function () {
-        openApprovedEntriesModal();
-    });
-
     $('#ddlListStatus').on('change', function () {
         triggerShowIfValid();
     });
