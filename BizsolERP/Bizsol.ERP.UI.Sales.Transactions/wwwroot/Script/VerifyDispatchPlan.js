@@ -45,32 +45,23 @@ function adjustVerifyDispatchPlanTableHeight() {
         const gap = 6;
         const labelReserve = 18;
         const minWrapperPx = 350;
-        const minTwinOuter = minWrapperPx * 2 + gap + labelReserve * 2;
+        const minTwinOuter = minWrapperPx + gap + labelReserve;
         availableHeight = Math.max(minTwinOuter, Math.floor(availableHeight));
         twin.style.height = availableHeight + 'px';
         twin.style.maxHeight = 'none';
-        let contentHeight = availableHeight - gap - labelReserve * 2;
-        let hDetail;
-        let hSummary;
+        let contentHeight = availableHeight - gap - labelReserve;
         if (contentHeight <= 0) {
             return;
         }
-        if (contentHeight < minWrapperPx * 2) {
-            contentHeight = minWrapperPx * 2;
-            availableHeight = contentHeight + gap + labelReserve * 2;
+        if (contentHeight < minWrapperPx) {
+            contentHeight = minWrapperPx;
+            availableHeight = contentHeight + gap + labelReserve;
             twin.style.height = availableHeight + 'px';
         }
-        hDetail = Math.floor(contentHeight / 2);
-        hSummary = contentHeight - hDetail;
         const w1 = document.getElementById('tableWrapperTransporterR1');
-        const w2 = document.getElementById('tableWrapperTransporterR2');
         if (w1) {
-            w1.style.height = hDetail + 'px';
-            w1.style.maxHeight = hDetail + 'px';
-        }
-        if (w2) {
-            w2.style.height = hSummary + 'px';
-            w2.style.maxHeight = hSummary + 'px';
+            w1.style.height = contentHeight + 'px';
+            w1.style.maxHeight = contentHeight + 'px';
         }
         return;
     }
@@ -1331,56 +1322,6 @@ function Verify(Code) {
         }
     });
 }
-function showConfirmDialog(message, title) {
-    return new Promise(function (resolve) {
-        var overlay = document.getElementById('vdpConfirmOverlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'vdpConfirmOverlay';
-            overlay.innerHTML =
-                '<div class="vdp-confirm-backdrop"></div>' +
-                '<div class="vdp-confirm-box" role="dialog" aria-modal="true">' +
-                '  <div class="vdp-confirm-header">Confirm</div>' +
-                '  <div class="vdp-confirm-body" id="vdpConfirmMsg"></div>' +
-                '  <div class="vdp-confirm-footer">' +
-                '    <button type="button" class="btn btn-secondary btn-sm" id="vdpConfirmCancel">Cancel</button>' +
-                '    <button type="button" class="btn btn-primary btn-sm" id="vdpConfirmOk">OK</button>' +
-                '  </div>' +
-                '</div>';
-            var style = document.createElement('style');
-            style.textContent =
-                '#vdpConfirmOverlay{display:none;position:fixed;inset:0;z-index:20000;align-items:center;justify-content:center;padding:16px;}' +
-                '#vdpConfirmOverlay.vdp-confirm-open{display:flex;}' +
-                '#vdpConfirmOverlay .vdp-confirm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);}' +
-                '#vdpConfirmOverlay .vdp-confirm-box{position:relative;background:#fff;border-radius:8px;width:min(360px,92vw);box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden;}' +
-                '#vdpConfirmOverlay .vdp-confirm-header{background:#558bc0;color:#fff;font-weight:600;padding:10px 14px;}' +
-                '#vdpConfirmOverlay .vdp-confirm-body{padding:16px 14px;font-size:14px;color:#2c3e50;line-height:1.4;}' +
-                '#vdpConfirmOverlay .vdp-confirm-footer{padding:10px 14px 14px;display:flex;justify-content:flex-end;gap:8px;}' +
-                '#vdpConfirmOverlay .vdp-confirm-footer .btn{min-width:72px;min-height:36px;}';
-            document.head.appendChild(style);
-            document.body.appendChild(overlay);
-        }
-        var msgEl = document.getElementById('vdpConfirmMsg');
-        if (msgEl) msgEl.textContent = message || '';
-        var header = overlay.querySelector('.vdp-confirm-header');
-        if (header) header.textContent = title || 'Confirm';
-
-        var settled = false;
-        var finish = function (ok) {
-            if (settled) return;
-            settled = true;
-            overlay.classList.remove('vdp-confirm-open');
-            overlay.style.display = 'none';
-            resolve(!!ok);
-        };
-        document.getElementById('vdpConfirmOk').onclick = function () { finish(true); };
-        document.getElementById('vdpConfirmCancel').onclick = function () { finish(false); };
-        overlay.querySelector('.vdp-confirm-backdrop').onclick = function () { finish(false); };
-
-        overlay.style.display = 'flex';
-        overlay.classList.add('vdp-confirm-open');
-    });
-}
 function VerifyDispatch() {
     var Remark = $("#txtRemark").val();
     if (Remark == '') {
@@ -1388,7 +1329,7 @@ function VerifyDispatch() {
         return;
     }
     var Code = $("#hfCode").val();
-    showConfirmDialog("Are you sure you want to verify ?").then(function (ok) {
+    Promise.resolve(confirm("Are you sure you want to verify ?")).then(function (ok) {
         if (!ok) return;
         Showloader();
         var Status = $("#ddlStatus").val();
@@ -1572,7 +1513,7 @@ function Update() {
         toastr.error('Please select at least one transporter.');
         return;
     }
-    showConfirmDialog("Are you sure you want to update ?").then(function (ok) {
+    Promise.resolve(confirm("Are you sure you want to update ?")).then(function (ok) {
         if (!ok) return;
         Showloader();
         VerifyDispatchPlanService.UpdateTransporter(codes).then(function (response) {
@@ -1620,7 +1561,7 @@ function SendMailToTransporter() {
                 toastr.error('Please enter remark.');
                 return;
             }
-            showConfirmDialog("Are you sure you want to verify/send mail ?").then(function (ok) {
+            Promise.resolve(confirm("Are you sure you want to verify/send mail ?")).then(function (ok) {
                 if (!ok) return;
                 Showloader();
                 VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo, Remark).then(function (response) {
@@ -1765,7 +1706,7 @@ function OpenUpdateQtyModal(Code) {
                 const balQtyMTRSDisplay = Number(balQtyMTRS).toFixed(0);
 
                 const rowHtml = `
-                    <tr data-master-code="${masterCode}" data-tran-code="${tranCode}" data-bal-qty-pc="${balQtyPc}" data-bal-qty-mt="${balQtyMT}" data-bal-qty-mtrs="${balQtyMTRRS}">
+                    <tr data-master-code="${masterCode}" data-tran-code="${tranCode}" data-bal-qty-pc="${balQtyPc}" data-bal-qty-mt="${balQtyMT}" data-bal-qty-mtrs="${balQtyMTRS}">
                         <td style="text-align:center;">${index + 1}</td>
                         <td style="text-align:left;">${itemName}</td>
                         <td style="text-align:left;">${sizeDesp}</td>
@@ -2479,13 +2420,24 @@ function omitTransporterHiddenExportColumns(rows) {
     });
 }
 
+function isTransporterSummaryPctColumn(key) {
+    return /%\s*$/.test(String(key || '').trim());
+}
+
+function formatTransporterSummaryPct(v) {
+    if (v === null || v === undefined || v === '') return v;
+    var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, '').replace(/%/g, '').trim());
+    if (isNaN(n) || !isFinite(n)) return v;
+    return n.toFixed(2);
+}
+
 function renameTransporterSummaryColumns(rows) {
     if (!rows || !rows.length) return rows || [];
     return rows.map(function (row) {
         var out = {};
         Object.keys(row).forEach(function (k) {
             var newKey = /^total\s*count$/i.test(String(k).trim()) ? 'Quotation Count Received' : k;
-            out[newKey] = row[k];
+            out[newKey] = isTransporterSummaryPctColumn(newKey) ? formatTransporterSummaryPct(row[k]) : row[k];
         });
         return out;
     });
@@ -2535,8 +2487,22 @@ function bindTransporterResultGrid(headId, bodyId, rows, noDataElId) {
     const button = false;
     const stringDoubleFilterColumn = [];
     const showButtons = [];
-    const columnAlignment = {};
-    BizsolCustomFilterGrid.CreateDataTable(headId, bodyId, rows, button, showButtons, filters.stringFilterColumn, filters.numericFilterColumn, filters.dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+    const columnAlignment = {
+         "Quotation Received":"right",
+        "Approved": "right",
+        "Total Not Approved": "right",
+        "Declined": "right",
+        "Approved %": "right",
+        "Not Approved %": "right",
+        "Declined %": "right"
+    };
+    var fixedDecimal = {};
+    Object.keys(rows[0]).forEach(function (k) {
+        if (isTransporterSummaryPctColumn(k)) {
+            fixedDecimal[k] = 2;
+        }
+    });
+    BizsolCustomFilterGrid.CreateDataTable(headId, bodyId, rows, button, showButtons, filters.stringFilterColumn, filters.numericFilterColumn, filters.dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, null, fixedDecimal);
     const tableHead = document.getElementById(headId);
     if (tableHead) {
         const totalsRow = tableHead.querySelector('.totals-row');
@@ -2560,20 +2526,16 @@ function ShowTransporterReportList() {
         HideLoader();
         ensureTransporterTwinLayout();
         $('.transporter-rpt-label').eq(0).text('Transporter approved details');
-        $('.transporter-rpt-label').eq(1).text('Transporter summary');
         const parsed = parseTransporterReportResults(response);
         const hasR1 = parsed.result1 && parsed.result1.length > 0;
-        const hasR2 = parsed.result2 && parsed.result2.length > 0;
-        if (!hasR1 && !hasR2) {
+        if (!hasR1) {
             $("#dvTableDispatch").hide();
             toastr.info('No data found for Transporter Report.');
             return;
         }
         const r1Clean = mapNullsToEmptyStrings(parsed.result1 || []);
-        const r2Clean = renameTransporterSummaryColumns(mapNullsToEmptyStrings(parsed.result2 || []));
-        G_DispatchPlanlist = hasR2 ? r2Clean : r1Clean;
+        G_DispatchPlanlist = r1Clean;
         bindTransporterResultGrid('table-head-transporter-r1', 'table-body-transporter-r1', r1Clean, 'transporterR1NoData');
-        bindTransporterResultGrid('table-head-transporter-r2', 'table-body-transporter-r2', r2Clean, 'transporterR2NoData');
         $("#dvTableDispatch").show();
         scheduleVerifyDispatchPlanTableHeightAdjust();
     }).catch(function (error) {
@@ -2915,7 +2877,7 @@ window.ShowFreightLossReportList = ShowFreightLossReportList;
 var ATD_CHART = null;
 var ATD_RAW_RESPONSE = null;
 var ATD_NORMALIZED = null;
-var ATD_COLORS = ['#818cf8', '#38bdf8', '#a78bfa', '#34d399', '#f472b6', '#fbbf24', '#94a3b8', '#64748b', '#c084fc', '#2dd4bf'];
+var ATD_COLORS = ['#818cf8', '#38bdf8', '#a78bfa', '#34d399', '#f472b6', '#fbbf24', '#2dd4bf', '#fb7185', '#c084fc', '#60a5fa', '#4ade80', '#f59e0b', '#22d3ee', '#e879f9', '#94a3b8', '#f97316'];
 
 function closeApprovedTransporterDashboard() {
     if (ATD_CHART) {
@@ -3332,7 +3294,7 @@ function atdFormatPct(val, total) {
 function atdWrapPieName(name, maxCharsPerLine) {
     var words = String(name || '').trim().split(/\s+/).filter(Boolean);
     if (!words.length) return ['—'];
-    maxCharsPerLine = maxCharsPerLine || 18;
+    maxCharsPerLine = maxCharsPerLine || 16;
     var lines = [];
     var cur = '';
     words.forEach(function (w) {
@@ -3345,45 +3307,98 @@ function atdWrapPieName(name, maxCharsPerLine) {
         }
     });
     if (cur) lines.push(cur);
-    if (lines.length > 3) {
-        lines = [lines[0], lines[1], lines.slice(2).join(' ')];
+    if (lines.length > 2) {
+        lines = [lines[0], lines.slice(1).join(' ')];
+        if (lines[1].length > maxCharsPerLine + 2) {
+            lines[1] = lines[1].slice(0, maxCharsPerLine) + '…';
+        }
     }
     return lines;
 }
 
-/** Spread Y positions so callout labels never overlap */
-function atdResolveLabelYs(items, canvasH, minGap) {
+function atdPreparePieSlices(labels, data) {
+    var items = [];
+    for (var i = 0; i < labels.length; i++) {
+        var val = Number(data[i]) || 0;
+        if (val <= 0) continue;
+        items.push({ name: labels[i], value: val });
+    }
+    items.sort(function (a, b) { return b.value - a.value; });
+    var total = items.reduce(function (s, x) { return s + x.value; }, 0);
+    return { items: items, total: total };
+}
+
+function atdIsMobileView() {
+    if (window.matchMedia) {
+        return window.matchMedia('(max-width: 767.98px)').matches;
+    }
+    return (window.innerWidth || 0) < 768;
+}
+
+function atdSetShareMode(isMobile) {
+    var root = document.getElementById('dvApprovedTransporterDashboard');
+    if (!root) return;
+    root.classList.toggle('atd-mobile-share-list', !!isMobile);
+    root.classList.toggle('atd-desktop-share-pie', !isMobile);
+}
+
+function atdPieCalloutLines(name, pctTxt, maxChars) {
+    var n = String(name || '').trim() || '—';
+    maxChars = maxChars || 20;
+    var nameLines = atdWrapPieName(n, maxChars);
+    nameLines.push('(' + pctTxt + ')');
+    return nameLines;
+}
+
+function atdEstimatePieHeight(sliceCount) {
+    var perSide = Math.max(1, Math.ceil(sliceCount / 2));
+    var block = 42;
+    var gap = 6;
+    return Math.max(480, Math.min(720, perSide * (block + gap) + 40));
+}
+
+/** Spread callout blocks so names never overlap, using each label's height. */
+function atdResolveLabelBlocks(items, canvasH, minGap) {
     if (!items.length) return;
-    minGap = minGap || 16;
+    minGap = minGap || 6;
     items.sort(function (a, b) { return a.y - b.y; });
-    // forward pass
+    var pad = 8;
+    function half(it) {
+        return Math.max(9, ((it.blockH || 18) / 2));
+    }
+    items[0].y = Math.max(items[0].y, pad + half(items[0]));
     for (var i = 1; i < items.length; i++) {
-        if (items[i].y - items[i - 1].y < minGap) {
-            items[i].y = items[i - 1].y + minGap;
-        }
+        var minY = items[i - 1].y + half(items[i - 1]) + minGap + half(items[i]);
+        if (items[i].y < minY) items[i].y = minY;
     }
-    // pull back if overflow bottom
-    var overflow = items[items.length - 1].y - (canvasH - 8);
-    if (overflow > 0) {
-        for (var j = 0; j < items.length; j++) items[j].y -= overflow;
+    var last = items[items.length - 1];
+    var bottom = last.y + half(last);
+    if (bottom > canvasH - pad) {
+        var shift = bottom - (canvasH - pad);
+        for (var j = 0; j < items.length; j++) items[j].y -= shift;
     }
-    // backward pass for top clamp
-    if (items[0].y < 8) items[0].y = 8;
-    for (var k = 1; k < items.length; k++) {
-        if (items[k].y - items[k - 1].y < minGap) {
-            items[k].y = items[k - 1].y + minGap;
+    if (items[0].y - half(items[0]) < pad) {
+        var totalBlocks = 0;
+        for (var k = 0; k < items.length; k++) totalBlocks += (items[k].blockH || 18);
+        var gaps = Math.max(1, items.length - 1);
+        var avail = canvasH - pad * 2;
+        var extra = Math.max(2, (avail - totalBlocks) / gaps);
+        var y = pad;
+        for (var m = 0; m < items.length; m++) {
+            items[m].y = y + half(items[m]);
+            y += (items[m].blockH || 18) + extra;
         }
     }
 }
 
-function atdRenderHtmlPieLegend(legEl, labels, data, colors, total) {
+function atdRenderHtmlPieLegend(legEl, sliceItems, colors, total) {
     if (!legEl) return;
     legEl.innerHTML = '';
-    if (!labels.length) return;
+    if (!sliceItems || !sliceItems.length) return;
     var wrap = document.createElement('div');
     wrap.className = 'atd-pie-html-legend';
-    labels.forEach(function (name, i) {
-        var pct = atdFormatPct(data[i], total);
+    sliceItems.forEach(function (item, i) {
+        var pct = atdFormatPct(item.value, total);
         var row = document.createElement('div');
         row.className = 'atd-pie-html-legend-item';
         var sw = document.createElement('span');
@@ -3391,10 +3406,16 @@ function atdRenderHtmlPieLegend(legEl, labels, data, colors, total) {
         sw.style.background = colors[i % colors.length];
         var tx = document.createElement('span');
         tx.className = 'atd-pie-html-legend-text';
-        tx.textContent = name + ' (' + pct + '%)';
-        tx.title = name + ' (' + pct + '%)';
+        tx.textContent = item.name + ' · ' + atdFormatInt(item.value) + ' (' + pct + '%)';
+        tx.title = item.name + ': ' + atdFormatInt(item.value) + ' (' + pct + '%)';
         row.appendChild(sw);
         row.appendChild(tx);
+        row.addEventListener('click', function () {
+            var $sel = $('#atdFilterTransporter');
+            if ($sel.find('option').filter(function () { return $(this).val() === item.name; }).length) {
+                $sel.val(item.name).trigger('change');
+            }
+        });
         wrap.appendChild(row);
     });
     legEl.appendChild(wrap);
@@ -3403,54 +3424,82 @@ function atdRenderHtmlPieLegend(legEl, labels, data, colors, total) {
 function atdRenderDonut(norm) {
     var canvas = document.getElementById('atdDonutCanvas');
     var leg = document.getElementById('atdDonutLegend');
-    if (!canvas || typeof Chart === 'undefined') {
-        if (leg) leg.textContent = typeof Chart === 'undefined' ? 'Chart library not loaded.' : '';
-        return;
-    }
+    var hintEl = document.getElementById('atdChartHint');
+    var isMobile = atdIsMobileView();
+    atdSetShareMode(isMobile);
+
     if (ATD_CHART) {
         try {
             ATD_CHART.destroy();
         } catch (e) { /* ignore */ }
         ATD_CHART = null;
     }
+
     var nameKey = norm.nameKey;
     var vkeys = atdVisibleValueKeys(norm);
     var filteredRows = atdGetFilteredDataRows(norm);
-    var labels = [];
-    var data = [];
+    var rawLabels = [];
+    var rawData = [];
     filteredRows.forEach(function (r) {
         var nm = nameKey ? String(r[nameKey] || '').trim() : '';
         if (!nm) nm = '—';
         var t = atdPieRowValue(r, vkeys);
         if (t > 0) {
-            labels.push(nm);
-            data.push(t);
+            rawLabels.push(nm);
+            rawData.push(t);
         }
     });
-    if (!data.length) {
+    if (hintEl) hintEl.textContent = '';
+    if (!rawData.length) {
         if (leg) leg.textContent = 'No numeric data for chart.';
         return;
     }
-    var pieTotal = data.reduce(function (a, b) { return a + b; }, 0);
-    var sliceColors = labels.map(function (_, i) { return ATD_COLORS[i % ATD_COLORS.length]; });
-    var isMobile = window.innerWidth < 768;
-    var isTablet = window.innerWidth < 992;
-    var manySlices = labels.length > 10;
-    // Always second-image style: % inside + name callouts with leader lines (no bottom legend)
-    var sidePad = isMobile ? 88 : (isTablet ? 110 : (manySlices ? 130 : 150));
-    var vertPad = isMobile ? 28 : (manySlices ? 44 : 36);
-    var wrapChars = isMobile ? 12 : (manySlices ? 14 : 16);
-    var labelFontPx = manySlices || isMobile ? 8 : 9;
-    var lineH = manySlices || isMobile ? 10 : 12;
+
+    var prepared = atdPreparePieSlices(rawLabels, rawData);
+    var sliceItems = prepared.items;
+    var labels = sliceItems.map(function (x) { return x.name; });
+    var data = sliceItems.map(function (x) { return x.value; });
+    var pieTotal = prepared.total;
+    var sliceColors = sliceItems.map(function (_, i) { return ATD_COLORS[i % ATD_COLORS.length]; });
+
+    if (hintEl) {
+        hintEl.textContent = isMobile
+            ? (sliceItems.length + ' transporters')
+            : (sliceItems.length + ' transporters · hover a slice for details');
+    }
+
+    if (isMobile) {
+        if (leg) atdRenderHtmlPieLegend(leg, sliceItems, sliceColors, pieTotal);
+        return;
+    }
+
+    if (!canvas || typeof Chart === 'undefined') {
+        if (leg) {
+            if (typeof Chart === 'undefined') {
+                leg.textContent = 'Chart library not loaded.';
+            } else {
+                atdRenderHtmlPieLegend(leg, sliceItems, sliceColors, pieTotal);
+            }
+        }
+        return;
+    }
+
+    if (leg) leg.innerHTML = '';
+
+    var wrapChars = 20;
+    var labelFontPx = 10;
+    var lineH = 13;
+    var sidePad = 152;
+    var vertPad = 20;
     var ctx = canvas.getContext('2d');
 
-    // Make chart area taller automatically when there are many transporters
     var chartWrap = canvas.parentElement;
     if (chartWrap && chartWrap.classList.contains('atd-chart-wrap')) {
-        var h = isMobile ? 300 : (manySlices ? Math.min(520, 320 + labels.length * 10) : 380);
+        var h = atdEstimatePieHeight(sliceItems.length);
         chartWrap.style.minHeight = h + 'px';
         chartWrap.style.height = h + 'px';
         chartWrap.style.maxHeight = 'none';
+        chartWrap.style.overflow = 'visible';
     }
 
     var pieSliceLabels = {
@@ -3477,14 +3526,12 @@ function atdRenderDonut(norm) {
                 var sinM = Math.sin(mid);
                 var pctTxt = atdFormatPct(val, total) + '%';
                 var sliceColor = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : ds.backgroundColor;
+                var midR = arc.innerRadius + (arc.outerRadius - arc.innerRadius) * 0.52;
 
-                // % inside slice (white)
-                if (pct >= 3.5) {
-                    var rIn = arc.innerRadius + (arc.outerRadius - arc.innerRadius) * 0.55;
-                    var ix = arc.x + cosM * rIn;
-                    var iy = arc.y + sinM * rIn;
-                    var fontSize = pct >= 18 ? 14 : (pct >= 8 ? 12 : 10);
-                    if (isMobile) fontSize = Math.max(9, fontSize - 2);
+                if (pct >= 7) {
+                    var ix = arc.x + cosM * midR;
+                    var iy = arc.y + sinM * midR;
+                    var fontSize = pct >= 18 ? 13 : (pct >= 10 ? 11 : 10);
                     g.save();
                     g.textAlign = 'center';
                     g.textBaseline = 'middle';
@@ -3497,8 +3544,7 @@ function atdRenderDonut(norm) {
                 }
 
                 var fullName = String(chartLabels[i] || '').trim() || '—';
-                var nameLines = atdWrapPieName(fullName, wrapChars);
-                nameLines.push('(' + pctTxt + ')');
+                var nameLines = atdPieCalloutLines(fullName, pctTxt, wrapChars);
                 var item = {
                     i: i,
                     arc: arc,
@@ -3506,25 +3552,26 @@ function atdRenderDonut(norm) {
                     sinM: sinM,
                     nameLines: nameLines,
                     sliceColor: sliceColor,
-                    y: arc.y + sinM * (arc.outerRadius + 12),
-                    blockH: nameLines.length * lineH
+                    y: arc.y + sinM * (arc.outerRadius + 16),
+                    blockH: nameLines.length * lineH + 2
                 };
                 if (cosM >= 0) rightItems.push(item);
                 else leftItems.push(item);
             });
 
             function drawSide(items, isRight) {
-                var gap = Math.max(lineH + 2, Math.min(18, Math.floor(canvasH / (items.length + 1))));
-                atdResolveLabelYs(items, canvasH, gap);
+                if (!items.length) return;
+                atdResolveLabelBlocks(items, canvasH, 6);
                 items.forEach(function (it) {
                     var arc = it.arc;
                     var x0 = arc.x + it.cosM * arc.outerRadius;
                     var y0 = arc.y + it.sinM * arc.outerRadius;
-                    var x1 = arc.x + it.cosM * (arc.outerRadius + 10);
-                    var y1 = arc.y + it.sinM * (arc.outerRadius + 10);
-                    var x2 = isRight ? Math.min(canvasW - 8, x1 + (isMobile ? 36 : 52)) : Math.max(8, x1 - (isMobile ? 36 : 52));
+                    var elbow = 14;
+                    var x1 = arc.x + it.cosM * (arc.outerRadius + elbow);
+                    var y1 = arc.y + it.sinM * (arc.outerRadius + elbow);
+                    var x2 = isRight ? Math.min(canvasW - 10, x1 + 36) : Math.max(10, x1 - 36);
                     var y2 = it.y;
-                    var labelPad = 4;
+                    var labelPad = 6;
 
                     g.save();
                     g.font = '700 ' + labelFontPx + "px 'Segoe UI', system-ui, sans-serif";
@@ -3532,15 +3579,16 @@ function atdRenderDonut(norm) {
                     it.nameLines.forEach(function (ln) {
                         maxLineW = Math.max(maxLineW, g.measureText(ln).width);
                     });
-                    if (isRight && x2 + labelPad + maxLineW > canvasW - 3) {
-                        x2 = Math.max(8, canvasW - 3 - maxLineW - labelPad);
+                    if (isRight && x2 + labelPad + maxLineW > canvasW - 4) {
+                        x2 = Math.max(10, canvasW - 4 - maxLineW - labelPad);
                     }
-                    if (!isRight && x2 - labelPad - maxLineW < 3) {
-                        x2 = Math.min(canvasW - 8, 3 + maxLineW + labelPad);
+                    if (!isRight && x2 - labelPad - maxLineW < 4) {
+                        x2 = Math.min(canvasW - 10, 4 + maxLineW + labelPad);
                     }
 
                     g.strokeStyle = it.sliceColor || '#ffffff';
                     g.lineWidth = 1.4;
+                    g.lineJoin = 'round';
                     g.beginPath();
                     g.moveTo(x0, y0);
                     g.lineTo(x1, y1);
@@ -3548,16 +3596,19 @@ function atdRenderDonut(norm) {
                     g.stroke();
                     g.beginPath();
                     g.fillStyle = it.sliceColor || '#ffffff';
-                    g.arc(x0, y0, 2.2, 0, Math.PI * 2);
+                    g.arc(x0, y0, 2.4, 0, Math.PI * 2);
                     g.fill();
 
                     g.textAlign = isRight ? 'left' : 'right';
                     g.textBaseline = 'middle';
-                    g.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                    g.shadowColor = 'rgba(0, 0, 0, 0.85)';
                     g.shadowBlur = 2;
                     g.fillStyle = '#ffffff';
                     var startY = y2 - ((it.nameLines.length - 1) * lineH) / 2;
                     it.nameLines.forEach(function (ln, li) {
+                        var isPct = li === it.nameLines.length - 1;
+                        g.font = (isPct ? '600 ' : '700 ') + labelFontPx + "px 'Segoe UI', system-ui, sans-serif";
+                        g.fillStyle = isPct ? '#cbd5e1' : '#ffffff';
                         g.fillText(ln, x2 + (isRight ? labelPad : -labelPad), startY + li * lineH);
                     });
                     g.restore();
@@ -3578,12 +3629,14 @@ function atdRenderDonut(norm) {
                 data: data,
                 backgroundColor: sliceColors,
                 borderWidth: 2,
-                borderColor: 'rgba(15, 23, 42, 0.95)'
+                borderColor: 'rgba(15, 23, 42, 0.95)',
+                hoverOffset: 8
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            rotation: -90,
             layout: {
                 padding: { top: vertPad, bottom: vertPad, left: sidePad, right: sidePad }
             },
@@ -3592,19 +3645,19 @@ function atdRenderDonut(norm) {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
+                        title: function (items) {
+                            return items && items[0] ? items[0].label : '';
+                        },
                         label: function (c) {
                             var val = typeof c.parsed === 'number' ? c.parsed : (c.raw || 0);
                             var pct = atdFormatPct(val, pieTotal);
-                            return c.label + ': ' + atdFormatInt(val) + ' (' + pct + '%)';
+                            return atdFormatInt(val) + '  (' + pct + '%)';
                         }
                     }
                 }
             }
         }
     });
-
-    // Never show bottom HTML legend list (first-image style)
-    if (leg) leg.innerHTML = '';
 }
 
 function atdRenderAll() {
@@ -3615,6 +3668,12 @@ function atdRenderAll() {
     atdRenderCategoryLegend(atdVisibleValueKeys(ATD_NORMALIZED));
     atdRenderDonut(ATD_NORMALIZED);
     atdRenderDecline(ATD_NORMALIZED);
+}
+
+function bindDashboardTransporterSummary(response) {
+    var parsed = parseTransporterReportResults(response);
+    var r2Clean = renameTransporterSummaryColumns(mapNullsToEmptyStrings(parsed.result2 || []));
+    bindTransporterResultGrid('table-head-transporter-r2', 'table-body-transporter-r2', r2Clean, 'transporterR2NoData');
 }
 
 function openApprovedTransporterDashboard() {
@@ -3634,14 +3693,19 @@ function openApprovedTransporterDashboard() {
     }
 
     Showloader();
-    VerifyDispatchPlanService.GetApprovedTransporterReport(fromDate, toDate).then(function (response) {
+    Promise.all([
+        VerifyDispatchPlanService.GetApprovedTransporterReport(fromDate, toDate),
+        VerifyDispatchPlanService.GetTransporterReport(fromDate, toDate).catch(function () { return null; })
+    ]).then(function (results) {
         HideLoader();
+        var response = results[0];
         ATD_RAW_RESPONSE = response;
         ATD_NORMALIZED = normalizeApprovedTransporterReport(response);
         if (!ATD_NORMALIZED.dataRows.length && !ATD_NORMALIZED.grandRow && !(ATD_NORMALIZED.declineRows && ATD_NORMALIZED.declineRows.length)) {
             toastr.info('No data returned for Approved Transporter report.');
         }
         atdRenderAll();
+        bindDashboardTransporterSummary(results[1]);
     }).catch(function (error) {
         HideLoader();
         toastr.error((error && error.Msg) || (error && error.message) || 'Error loading Approved Transporter report.');
