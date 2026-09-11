@@ -215,7 +215,6 @@ function showEmpty(message) {
 
 function bindDashboardCards(items) {
     var $grid = $('#udm-grid').empty();
-    $('#udm-count').text(String((items || []).length));
 
     if (!items || !items.length) {
         showEmpty('No dashboard is assigned to your user.');
@@ -315,7 +314,6 @@ function maybeOpenDefaultDashboard(items) {
 
 function loadUserDashboards() {
     var userCode = UserDashboardMenuService.GetLoggedInUserMasterCode();
-    $('#udm-user-code').text(userCode || '—');
 
     if (!userCode) {
         showEmpty('Logged-in user code was not found. Please login again.');
