@@ -1,6 +1,7 @@
 import { BizSolHelperFunction } from '../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { CheckListMISService } from '../Bizsol.WebERP.UI.Shared/js/JSServices/CheckListMISService.js';
 import { TaskListMasterService } from '../Bizsol.WebERP.UI.Shared/js/JSServices/TaskListMasterService.js';
+import { TaskUpdationService } from '../Bizsol.WebERP.UI.Shared/js/JSServices/TaskUpdationService.js';
 import { UserMasterService } from '../Bizsol.WebERP.UI.Shared/js/JSServices/_UserMasterService.js';
 
 /* ------------------------- config ------------------------- */
@@ -10,6 +11,7 @@ var CM_MODULE_DESCRIPTION_FOR_REPORT_CONFIG = 'Checklist MIS Report';
 var CM_REPORT_TYPES_DEFAULT = [
     { code: 'GETMIS', label: 'Check List MIS Score', showChart: true },
     { code: 'GETSUMMARY', label: 'CHECK LIST REPORT', showChart: false },
+    { code: 'GETCHECK', label: 'Task List Check Report', showChart: false },
 ];
 var CM_REPORT_TYPES = CM_REPORT_TYPES_DEFAULT.slice();
 
@@ -25,6 +27,9 @@ var G_CM_UserMap = {};
 var G_CM_UserList = [];
 var G_CM_ReportMode = 'GETMIS';
 var G_CM_SummaryVm = null;
+var G_CM_LoadSeq = 0;
+var G_CM_IgnoreFilterChange = false;
+var G_CM_DateTimer = null;
 
 var DONUT_COLORS = [
     '#2563eb', '#7c3aed', '#0ea5e9', '#ef4444', '#f59e0b',
@@ -201,7 +206,7 @@ function loadUserLookup() {
 }
 
 function resolveDoerName(row) {
-    var apiName = String(row.DoerName || '').trim();
+    var apiName = String(row.DoerName || row.UserName || '').trim();
     if (apiName) return apiName;
     var code = row.UserMaster_Code;
     if (code && G_CM_UserMap[code]) return G_CM_UserMap[code];
@@ -239,6 +244,308 @@ function normalizeDetailRow(r) {
         IsDone: String(prop(r, ['IsDone', 'isDone']) || 'N').toUpperCase(),
         OnTime: onTime == null ? 'N' : (num(onTime) === 1 || String(onTime).toUpperCase() === 'Y' ? 'Y' : 'N'),
     };
+}
+
+var CM_WEEKDAY_INDEX = {
+    sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+};
+
+function isWeekdayName(val) {
+    var s = String(val == null ? '' : val).trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(CM_WEEKDAY_INDEX, s);
+}
+
+function weekdayDateInRange(weekdayName, fromDate, toDate) {
+    var want = CM_WEEKDAY_INDEX[String(weekdayName || '').trim().toLowerCase()];
+    if (want == null) return '';
+    var start = parseIsoDate(fromDate);
+    var end = parseIsoDate(toDate);
+    if (!start || !end) return '';
+    var d = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    while (d <= end) {
+        if (d.getDay() === want) return ddmmyyyy(d);
+        d.setDate(d.getDate() + 1);
+    }
+    return '';
+}
+
+function formatCmDate(val) {
+    if (val == null || val === '') return '';
+    if (val instanceof Date && !isNaN(val.getTime())) return ddmmyyyy(val);
+    var s = String(val).trim();
+    if (!s || isWeekdayName(s)) return '';
+    if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) return s.substring(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        var p = s.substring(0, 10).split('-');
+        return p[2] + '/' + p[1] + '/' + p[0];
+    }
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) return ddmmyyyy(d);
+    return '';
+}
+
+function parseCmDate(val) {
+    if (val == null || val === '') return null;
+    if (val instanceof Date && !isNaN(val.getTime())) return val;
+    var s = String(val).trim();
+    if (!s || isWeekdayName(s)) return null;
+    var dm = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (dm) return new Date(parseInt(dm[3], 10), parseInt(dm[2], 10) - 1, parseInt(dm[1], 10));
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        var p = s.substring(0, 10).split('-');
+        return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+    }
+    var d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function delayDaysFromDates(assigned, completion) {
+    var start = parseCmDate(assigned);
+    if (!start) return 0;
+    var end = parseCmDate(completion) || new Date();
+    start = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    end = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    var days = Math.round((end - start) / 86400000);
+    return days < 0 ? 0 : days;
+}
+
+function normalizeCheckRow(r) {
+    var detail = normalizeDetailRow(r);
+    var status = String(prop(r, ['Status', 'status']) || '').trim();
+    var doneFlag = String(prop(r, ['IsDone', 'isDone']) || '').toUpperCase();
+    if (!doneFlag) {
+        doneFlag = /^completed/i.test(status) ? 'Y' : (status ? 'N' : (detail.IsDone || 'N'));
+    }
+    if (!status) {
+        status = doneFlag === 'Y' ? 'Completed' : 'Not Completed';
+    }
+    var rawAssigned = prop(r, [
+        'Assigned Date', 'AssignedDate', 'assignedDate', 'DueDate', 'dueDate',
+        'Date', 'date', 'TaskDate', 'taskDate',
+    ]);
+    var assigned = formatCmDate(rawAssigned);
+    if (!assigned && isWeekdayName(rawAssigned)) {
+        assigned = weekdayDateInRange(rawAssigned, G_CM_FromDate, G_CM_ToDate);
+    }
+    var completion = formatCmDate(prop(r, [
+        'Completion Date', 'CompletionDate', 'completionDate',
+        'CompletedDate', 'completedDate', 'DoneDate', 'doneDate', 'CompletedOn', 'completedOn',
+    ]));
+    var delayRaw = prop(r, ['Delay Days', 'DelayDays', 'delayDays', 'Delay_Days']);
+    var delay = delayRaw != null && delayRaw !== ''
+        ? num(delayRaw)
+        : delayDaysFromDates(assigned, doneFlag === 'Y' ? completion : '');
+    var remarks = String(prop(r, ['Remarks', 'remarks', 'Remark', 'remark']) || '').trim();
+    if (!remarks) {
+        if (doneFlag === 'Y' && detail.OnTime === 'Y') remarks = 'Completed on time';
+        else if (doneFlag === 'Y') remarks = 'Completed late';
+        else remarks = 'Not completed';
+    }
+    return {
+        UserMaster_Code: detail.UserMaster_Code,
+        UserName: String(prop(r, [
+            'User Name', 'UserName', 'userName', 'DoerName', 'doerName',
+            'EmployeeName', 'employeeName', 'Desp', 'desp',
+        ]) || detail.DoerName || '').trim(),
+        TaskName: String(prop(r, ['Task Name', 'TaskName', 'taskName', 'Task', 'task']) || ''),
+        AssignedDate: assigned,
+        CompletionDate: completion,
+        Frequency: String(prop(r, ['Frequency', 'frequency']) || detail.Frequency || ''),
+        Status: status,
+        DelayDays: delay,
+        Remarks: remarks,
+        IsDone: doneFlag,
+    };
+}
+
+function isCheckDataRow(r) {
+    return !!(r && (r.TaskName || r.AssignedDate || r.Frequency));
+}
+
+function checkRowKey(r) {
+    return [
+        r.UserMaster_Code || String(r.UserName || '').trim().toLowerCase(),
+        String(r.TaskName || '').replace(/\s+/g, ' ').trim().toLowerCase(),
+        String(r.AssignedDate || ''),
+        String(r.CompletionDate || ''),
+    ].join('|');
+}
+
+function earlierDate(a, b) {
+    var da = parseCmDate(a);
+    var db = parseCmDate(b);
+    if (da && db) return da <= db ? a : b;
+    if (da) return a;
+    if (db) return b;
+    return '';
+}
+
+function laterDate(a, b) {
+    var da = parseCmDate(a);
+    var db = parseCmDate(b);
+    if (da && db) return da >= db ? a : b;
+    if (da) return a;
+    if (db) return b;
+    return '';
+}
+
+function distinctCheckRows(rows) {
+    var map = {};
+    var order = [];
+    (rows || []).forEach(function (r) {
+        if (!isCheckDataRow(r)) return;
+        var key = checkRowKey(r);
+        if (!map[key]) {
+            map[key] = {
+                UserMaster_Code: r.UserMaster_Code,
+                UserName: r.UserName,
+                TaskName: r.TaskName,
+                AssignedDate: r.AssignedDate,
+                CompletionDate: r.CompletionDate,
+                Frequency: r.Frequency,
+                Status: r.Status,
+                DelayDays: r.DelayDays,
+                Remarks: r.Remarks,
+                IsDone: r.IsDone,
+            };
+            order.push(key);
+            return;
+        }
+        var cur = map[key];
+        cur.AssignedDate = earlierDate(cur.AssignedDate, r.AssignedDate);
+        if (r.IsDone === 'Y' || String(r.Status || '').toLowerCase() === 'completed') {
+            cur.IsDone = 'Y';
+            cur.Status = 'Completed';
+            cur.CompletionDate = cur.CompletionDate
+                ? earlierDate(cur.CompletionDate, r.CompletionDate)
+                : r.CompletionDate;
+        }
+        if (!cur.Frequency && r.Frequency) cur.Frequency = r.Frequency;
+        if (!cur.UserName && r.UserName) cur.UserName = r.UserName;
+    });
+    return order.map(function (key) {
+        var r = map[key];
+        r.DelayDays = delayDaysFromDates(r.AssignedDate, r.IsDone === 'Y' ? r.CompletionDate : '');
+        if (r.IsDone === 'Y') {
+            r.Status = 'Completed';
+            r.Remarks = r.DelayDays > 0 ? 'Completed late' : 'Completed on time';
+        } else {
+            r.Status = 'Not Completed';
+            r.Remarks = 'Not completed';
+        }
+        return r;
+    });
+}
+
+function apiModeForLoad() {
+    return isCheckReportMode() ? 'GETDETAIL' : G_CM_ReportMode;
+}
+
+function apiReportTypeForLoad(reportType) {
+    return isCheckReportMode() ? 'Check List MIS SCORE' : reportType;
+}
+
+function inSelectedDateRange(dateText, fromDate, toDate) {
+    var d = parseCmDate(dateText);
+    if (!d) return false;
+    var iso = toIso(d);
+    if (fromDate && iso < fromDate) return false;
+    if (toDate && iso > toDate) return false;
+    return true;
+}
+
+function checkRowVisibleInRange(row, fromDate, toDate) {
+    if (!row) return false;
+    var assignedIn = inSelectedDateRange(row.AssignedDate, fromDate, toDate);
+    var completionIn = inSelectedDateRange(row.CompletionDate, fromDate, toDate);
+    if (assignedIn || completionIn) return true;
+    return !row.AssignedDate && !row.CompletionDate;
+}
+
+function applyPeriodToCheckRow(row, fromDate, toDate) {
+    if (!row || !row.CompletionDate || inSelectedDateRange(row.CompletionDate, fromDate, toDate)) {
+        return row;
+    }
+    return Object.assign({}, row, {
+        CompletionDate: '',
+        IsDone: 'N',
+        Status: 'Not Completed',
+        Remarks: 'Not completed',
+        DelayDays: delayDaysFromDates(row.AssignedDate, ''),
+    });
+}
+
+function sampleDatesForRange(fromDate, toDate) {
+    var start = parseIsoDate(fromDate);
+    var end = parseIsoDate(toDate);
+    if (!start || !end) return [toDate || fromDate].filter(Boolean);
+    var dates = [];
+    var cursor = new Date(start.getFullYear(), start.getMonth(), 15);
+    var last = new Date(end.getFullYear(), end.getMonth(), 15);
+    while (cursor <= last) {
+        dates.push(toIso(cursor));
+        cursor.setMonth(cursor.getMonth() + 1);
+    }
+    if (dates.indexOf(fromDate) < 0) dates.unshift(fromDate);
+    if (dates.indexOf(toDate) < 0) dates.push(toDate);
+    return dates;
+}
+
+function loadCheckRowsFromTaskUpdation(userCode, fromDate, toDate) {
+    var codes = userCode
+        ? [userCode]
+        : G_CM_UserList.map(function (u) { return u.Code; }).filter(Boolean);
+    if (!codes.length) return Promise.resolve([]);
+
+    var dates = sampleDatesForRange(fromDate, toDate);
+    var jobs = [];
+    codes.forEach(function (code) {
+        dates.forEach(function (iso) {
+            jobs.push(
+                TaskUpdationService.GetTaskListByEmp(code, iso)
+                    .then(function (res) {
+                        return unwrapApiList(res).map(function (r) {
+                            if (r.UserMaster_Code == null && r.userMaster_Code == null) {
+                                r.UserMaster_Code = code;
+                            }
+                            if (!r.DoerName && !r.doerName && G_CM_UserMap[code]) {
+                                r.DoerName = G_CM_UserMap[code];
+                            }
+                            return r;
+                        });
+                    })
+                    .catch(function () {
+                        return [];
+                    })
+            );
+        });
+    });
+
+    return Promise.all(jobs).then(function (groups) {
+        var rows = [];
+        groups.forEach(function (g) {
+            g.map(normalizeCheckRow).forEach(function (r) {
+                if (!isCheckDataRow(r) || !checkRowVisibleInRange(r, fromDate, toDate)) return;
+                rows.push(r);
+            });
+        });
+        rows = distinctCheckRows(rows);
+        rows.sort(function (a, b) {
+            var n = String(a.UserName || '').localeCompare(String(b.UserName || ''));
+            if (n) return n;
+            return String(a.TaskName || '').localeCompare(String(b.TaskName || ''));
+        });
+        return rows;
+    });
+}
+
+function statusBadge(status) {
+    var s = String(status || '').trim();
+    var low = s.toLowerCase();
+    var cls = 'cm-status-no';
+    if (low === 'completed' || low === 'done') cls = 'cm-status-ok';
+    else if (low === 'completed late' || low.indexOf('late') >= 0) cls = 'cm-status-late';
+    return '<span class="' + cls + '">' + escapeHtml(s || '-') + '</span>';
 }
 
 function normalizeSummaryHeader(r) {
@@ -533,9 +840,8 @@ function initDefaultDateRange() {
     var r = weekRange(new Date());
     G_CM_FromDate = toIso(r.start);
     G_CM_ToDate = toIso(r.end);
-    var today = toIso(new Date());
-    $('#cmFromDate').val(G_CM_FromDate).attr('max', today);
-    $('#cmToDate').val(G_CM_ToDate).attr('max', today);
+    $('#cmFromDate').val(G_CM_FromDate).removeAttr('max');
+    $('#cmToDate').val(G_CM_ToDate).removeAttr('max');
 }
 
 function selectedDateRange() {
@@ -570,7 +876,7 @@ function reportTypeLabel(row) {
     ).trim();
 }
 
-/** Map F_ReportConfiguration row ? USP_WebAPI_CheckListMIS @Mode (GETMIS / GETDETAIL). */
+/** Map F_ReportConfiguration row ? USP_WebAPI_CheckListMIS @Mode (GETMIS / GETDETAIL / GETCHECK). */
 function reportTypeMode(row, label) {
     var explicit = prop(row, [
         'ReportMode', 'reportMode', 'Mode', 'mode',
@@ -581,6 +887,9 @@ function reportTypeMode(row, label) {
         if (/^GET/i.test(mode)) return mode;
     }
     var low = String(label || reportTypeLabel(row)).toLowerCase();
+    if (low.indexOf('task list check') >= 0 || low.indexOf('tasklist check') >= 0) {
+        return 'GETCHECK';
+    }
     if (low.indexOf('check list report') >= 0 || low.indexOf('whatsapp') >= 0 || low.indexOf('weekly checklist') >= 0) {
         return 'GETSUMMARY';
     }
@@ -644,8 +953,25 @@ function isWhatsAppSummaryMode() {
     return G_CM_ReportMode === 'GETSUMMARY';
 }
 
+function isCheckReportMode() {
+    return G_CM_ReportMode === 'GETCHECK';
+}
+
 function colCount() {
+    if (isCheckReportMode()) return 9;
     return isSummaryMode() ? 7 : 8;
+}
+
+function ensureCheckReportType(types) {
+    var list = (types || []).slice();
+    var hasCheck = list.some(function (t) {
+        return String(t.code || '').toUpperCase() === 'GETCHECK'
+            || String(t.label || '').toLowerCase().indexOf('task list check') >= 0;
+    });
+    if (!hasCheck) {
+        list.push({ code: 'GETCHECK', label: 'Task List Check Report', showChart: false });
+    }
+    return list;
 }
 
 function destroyCmSelect2($el) {
@@ -670,6 +996,7 @@ function bindReportTypeDropdown() {
     var $rt = $('#cmReportType');
     var selected = $rt.val() || G_CM_ReportMode;
     var types = CM_REPORT_TYPES.length ? CM_REPORT_TYPES : CM_REPORT_TYPES_DEFAULT;
+    G_CM_IgnoreFilterChange = true;
     $rt.empty();
     if (!types.length) {
         $rt.append($('<option/>').attr('value', '').text('-- No report types --'));
@@ -690,6 +1017,7 @@ function bindReportTypeDropdown() {
     if ($rt.data('select2')) {
         $rt.trigger('change.select2');
     }
+    G_CM_IgnoreFilterChange = false;
 }
 
 function loadReportTypeDropdown() {
@@ -698,13 +1026,13 @@ function loadReportTypeDropdown() {
         .then(function (response) {
             var rows = asReportTypeArray(response);
             var parsed = parseReportTypesFromApi(rows);
-            CM_REPORT_TYPES = parsed.length ? parsed : CM_REPORT_TYPES_DEFAULT.slice();
+            CM_REPORT_TYPES = ensureCheckReportType(parsed.length ? parsed : CM_REPORT_TYPES_DEFAULT.slice());
             
             bindReportTypeDropdown();
         })
         .catch(function (err) {
             console.error('GetReportType failed:', err);
-            CM_REPORT_TYPES = CM_REPORT_TYPES_DEFAULT.slice();
+            CM_REPORT_TYPES = ensureCheckReportType(CM_REPORT_TYPES_DEFAULT.slice());
             bindReportTypeDropdown();
             if (typeof toastr !== 'undefined') toastr.error('Could not load report types.');
         });
@@ -749,6 +1077,7 @@ function refreshUserDropdown() {
 function bindUserDropdown() {
     var $uf = $('#cmUserFilter');
     var selected = parseInt($uf.val(), 10) || 0;
+    G_CM_IgnoreFilterChange = true;
     $uf.empty();
     $uf.append(new Option('All Users', '0'));
     G_CM_UserList.forEach(function (u) {
@@ -766,6 +1095,7 @@ function bindUserDropdown() {
     if ($uf.data('select2')) {
         $uf.trigger('change.select2');
     }
+    G_CM_IgnoreFilterChange = false;
 }
 
 function updateLayoutForReportType() {
@@ -783,7 +1113,11 @@ function updateLayoutForReportType() {
         $body.removeClass('cm-whatsapp-mode');
         $('#cmSendWhatsApp').hide();
         $('#cmWhatsAppPanel').hide();
-        $('.cm-subbar .cm-week-note').text('Check List MIS Score, EM Weekly day Monday!!');
+        $('.cm-subbar .cm-week-note').text(
+            isCheckReportMode()
+                ? 'Task List Check Report — assigned vs completed'
+                : 'Check List MIS Score, EM Weekly day Monday!!'
+        );
     }
 
     if (cfg.showChart && !waMode) {
@@ -797,7 +1131,20 @@ function updateLayoutForReportType() {
 
 function renderTableHead() {
     var html;
-    if (isSummaryMode()) {
+    if (isCheckReportMode()) {
+        html =
+            '<tr>' +
+            '<th class="cm-th-num">Sr. No.</th>' +
+            '<th>User Name</th>' +
+            '<th>Task Name</th>' +
+            '<th>Assigned Date</th>' +
+            '<th>Completion Date</th>' +
+            '<th>Frequency</th>' +
+            '<th>Status</th>' +
+            '<th class="cm-th-num">Delay Days</th>' +
+            '<th>Remarks</th>' +
+            '</tr>';
+    } else if (isSummaryMode()) {
         html =
             '<tr>' +
             '<th class="cm-th-num">#</th>' +
@@ -890,7 +1237,13 @@ function renderGrid() {
     var cols = colCount();
 
     if (!G_CM_Filtered.length) {
-        $body.html('<tr><td class="cm-empty" colspan="' + cols + '"><i class="fas fa-inbox"></i> No records for this week.</td></tr>');
+        $body.html(
+            '<tr><td class="cm-empty" colspan="' + cols + '"><i class="fas fa-inbox"></i> ' +
+            (isCheckReportMode()
+                ? 'No task-wise pending / done records for this date range.'
+                : 'No records for this week.') +
+            '</td></tr>'
+        );
         $('#cmPager').html('');
         return;
     }
@@ -902,7 +1255,20 @@ function renderGrid() {
 
     var html = '';
     pageRows.forEach(function (r, i) {
-        if (isSummaryMode()) {
+        if (isCheckReportMode()) {
+            var delay = num(r.DelayDays);
+            html += '<tr>' +
+                '<td class="cm-sno">' + (startIdx + i + 1) + '</td>' +
+                '<td class="cm-doer">' + escapeHtml(r.UserName || resolveDoerName(r)) + '</td>' +
+                '<td>' + escapeHtml(r.TaskName) + '</td>' +
+                '<td class="cm-period">' + escapeHtml(r.AssignedDate) + '</td>' +
+                '<td class="cm-period">' + escapeHtml(r.CompletionDate) + '</td>' +
+                '<td>' + escapeHtml(r.Frequency) + '</td>' +
+                '<td>' + statusBadge(r.Status) + '</td>' +
+                '<td class="cm-numcell' + (delay > 0 ? ' cm-delay-late' : '') + '">' + delay + '</td>' +
+                '<td>' + escapeHtml(r.Remarks) + '</td>' +
+                '</tr>';
+        } else if (isSummaryMode()) {
             html += '<tr>' +
                 '<td class="cm-sno">' + (startIdx + i + 1) + '</td>' +
                 '<td class="cm-period">' + escapeHtml(r.MISPeriod) + '</td>' +
@@ -936,11 +1302,50 @@ function renderGrid() {
     );
 }
 
+function rowMatchesUserFilter(row, userCode) {
+    if (!userCode) return true;
+    var code = num(row.UserMaster_Code);
+    if (code) return code === userCode;
+    var selectedName = String($('#cmUserFilter option:selected').text() || '').trim().toLowerCase();
+    if (!selectedName || selectedName === 'all users') return true;
+    var rowName = String(row.UserName || resolveDoerName(row) || '').trim().toLowerCase();
+    return !rowName || rowName === selectedName;
+}
+
 function applyFilter() {
-    G_CM_Filtered = G_CM_Rows.slice();
+    var userCode = selectedUserCode();
+    var range = selectedDateRange();
+    G_CM_Filtered = G_CM_Rows.filter(function (r) {
+        if (!rowMatchesUserFilter(r, userCode)) return false;
+        if (isCheckReportMode()) {
+            return checkRowVisibleInRange(r, range.fromDate, range.toDate);
+        }
+        return true;
+    }).map(function (r) {
+        return isCheckReportMode() ? applyPeriodToCheckRow(r, range.fromDate, range.toDate) : r;
+    });
     G_CM_Page = 1;
+    renderCheckStats();
     renderGrid();
     renderDonut();
+}
+
+function renderCheckStats() {
+    var $el = $('#cmCheckStats');
+    if (!$el.length) return;
+    if (!isCheckReportMode()) {
+        $el.hide().empty();
+        return;
+    }
+    var total = G_CM_Filtered.length;
+    var done = G_CM_Filtered.filter(function (r) {
+        return r.IsDone === 'Y' || String(r.Status || '').toLowerCase() === 'completed';
+    }).length;
+    $el.show().html(
+        '<span class="cm-stat-chip cm-stat-total">Total ' + total + '</span>' +
+        '<span class="cm-stat-chip cm-stat-done">Done ' + done + '</span>' +
+        '<span class="cm-stat-chip cm-stat-pending">Pending ' + (total - done) + '</span>'
+    );
 }
 
 function selectedUserCode() {
@@ -949,6 +1354,7 @@ function selectedUserCode() {
 
 /* ------------------------- data load ------------------------- */
 function loadMIS(refreshUsers) {
+    var seq = ++G_CM_LoadSeq;
     if (typeof ShowLoader === 'function') ShowLoader();
     updatePeriodBanner();
     updateLayoutForReportType();
@@ -979,14 +1385,28 @@ function loadMIS(refreshUsers) {
 
     return userPromise
         .then(function () {
+            if (seq !== G_CM_LoadSeq) return null;
             if (isWhatsAppSummaryMode()) {
                 return CheckListMISService.GetCheckListSummary(
                     reportType, userCode, range.fromDate, range.toDate, G_CM_ReportMode
                 );
             }
-            return CheckListMISService.GetCheckListMIS(reportType, userCode, range.fromDate, range.toDate, G_CM_ReportMode);
+            if (isCheckReportMode()) {
+                return CheckListMISService.TaskListCheckReport(
+                    reportType, userCode, range.fromDate, range.toDate
+                );
+            }
+            return CheckListMISService.GetCheckListMIS(
+                reportType,
+                userCode,
+                range.fromDate,
+                range.toDate,
+                G_CM_ReportMode
+            );
         })
         .then(function (res) {
+            if (seq !== G_CM_LoadSeq) return;
+            if (res == null) return;
             if (isWhatsAppSummaryMode()) {
                 G_CM_SummaryVm = unwrapSummaryPayload(res);
                 G_CM_Rows = [];
@@ -995,11 +1415,21 @@ function loadMIS(refreshUsers) {
                 return;
             }
             G_CM_SummaryVm = null;
+            if (isCheckReportMode()) {
+                var checkRows = unwrapApiList(res).map(normalizeCheckRow).filter(isCheckDataRow);
+                checkRows = checkRows.filter(function (r) {
+                    return checkRowVisibleInRange(r, range.fromDate, range.toDate);
+                });
+                G_CM_Rows = distinctCheckRows(checkRows);
+                applyFilter();
+                return;
+            }
             var normalizer = isSummaryMode() ? normalizeSummaryRow : normalizeDetailRow;
             G_CM_Rows = unwrapApiList(res).map(normalizer);
             applyFilter();
         })
         .catch(function () {
+            if (seq !== G_CM_LoadSeq) return;
             G_CM_Rows = [];
             G_CM_SummaryVm = null;
             applyFilter();
@@ -1007,7 +1437,7 @@ function loadMIS(refreshUsers) {
             if (typeof toastr !== 'undefined') toastr.error('Could not load Checklist MIS report.');
         })
         .finally(function () {
-            if (typeof HideLoader === 'function') HideLoader();
+            if (seq === G_CM_LoadSeq && typeof HideLoader === 'function') HideLoader();
         });
 }
 
@@ -1024,6 +1454,27 @@ function pctPlain(v) {
 }
 
 function buildPdfTableBody(rows) {
+    if (isCheckReportMode()) {
+        var headersCheck = ['Sr. No.', 'User Name', 'Task Name', 'Assigned Date', 'Completion Date', 'Frequency', 'Status', 'Delay Days', 'Remarks'];
+        var headerRowCheck = headersCheck.map(function (h) {
+            return { text: h, style: 'tableHeader', fillColor: PDF_HEADER_FILL, color: '#ffffff', alignment: 'center', margin: [0, 3, 0, 3] };
+        });
+        var bodyRowsCheck = rows.map(function (r, i) {
+            return [
+                { text: String(i + 1), alignment: 'center' },
+                { text: r.UserName || resolveDoerName(r) },
+                { text: r.TaskName || '' },
+                { text: r.AssignedDate || '', alignment: 'center' },
+                { text: r.CompletionDate || '', alignment: 'center' },
+                { text: r.Frequency || '' },
+                { text: r.Status || '', alignment: 'center' },
+                { text: String(r.DelayDays != null ? r.DelayDays : 0), alignment: 'center' },
+                { text: r.Remarks || '' },
+            ];
+        });
+        return { headers: headersCheck, body: [headerRowCheck].concat(bodyRowsCheck) };
+    }
+
     if (isSummaryMode()) {
         var headers = ['#', 'MIS Period', 'Doer Name', 'Work to be accomplished', 'Accomplished', 'Work Not Done %', 'Not Done On Time %'];
         var headerRow = headers.map(function (h) {
@@ -1399,28 +1850,37 @@ $(document).ready(function () {
         });
 
     $('#cmReportType').on('change', function () {
+        if (G_CM_IgnoreFilterChange) return;
         G_CM_ReportMode = $(this).val() || 'GETMIS';
         loadMIS();
     });
 
     $('#cmUserFilter').on('change', function () {
+        if (G_CM_IgnoreFilterChange) return;
+        applyFilter();
         loadMIS();
     });
 
-    $('#cmFromDate, #cmToDate').on('change', function () {
-        var range = selectedDateRange();
-        if (!isValidDateRange(range.fromDate, range.toDate)) {
-            if (typeof toastr !== 'undefined') toastr.warning('From Date must be less than or equal to To Date.');
-            return;
-        }
-        G_CM_FromDate = range.fromDate;
-        G_CM_ToDate = range.toDate;
-        updatePeriodBanner();
-        loadMIS(true);
+    $('#cmFromDate, #cmToDate').on('change input', function () {
+        if (G_CM_IgnoreFilterChange) return;
+        clearTimeout(G_CM_DateTimer);
+        G_CM_DateTimer = setTimeout(function () {
+            var range = selectedDateRange();
+            if (!isValidDateRange(range.fromDate, range.toDate)) {
+                if (typeof toastr !== 'undefined') toastr.warning('From Date must be less than or equal to To Date.');
+                return;
+            }
+            G_CM_FromDate = range.fromDate;
+            G_CM_ToDate = range.toDate;
+            updatePeriodBanner();
+            applyFilter();
+            loadMIS(false);
+        }, 200);
     });
 
     $('#cmResetFilter').on('click', function () {
         var defaultMode = (CM_REPORT_TYPES[0] && CM_REPORT_TYPES[0].code) || 'GETMIS';
+        G_CM_IgnoreFilterChange = true;
         G_CM_ReportMode = defaultMode;
         G_CM_BaseDate = new Date();
         initDefaultDateRange();
@@ -1430,6 +1890,7 @@ $(document).ready(function () {
         if ($('#cmReportType').hasClass('select2-hidden-accessible')) {
             $('#cmReportType, #cmUserFilter').trigger('change.select2');
         }
+        G_CM_IgnoreFilterChange = false;
         loadMIS(true);
     });
 
