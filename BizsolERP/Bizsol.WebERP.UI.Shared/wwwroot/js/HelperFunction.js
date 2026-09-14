@@ -1,3 +1,18 @@
+import { UserDashboardMenuService } from './JSServices/UserDashboardMenuService.js';
+
+function firstArray(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    if (payload.$values && Array.isArray(payload.$values)) return payload.$values;
+    if (payload.data && Array.isArray(payload.data)) return payload.data;
+    if (payload.Data && Array.isArray(payload.Data)) return payload.Data;
+    if (payload.value && Array.isArray(payload.value)) return payload.value;
+    if (payload.Value && Array.isArray(payload.Value)) return payload.Value;
+    if (payload.result && Array.isArray(payload.result)) return payload.result;
+    if (payload.Result && Array.isArray(payload.Result)) return payload.Result;
+    return [];
+}
+
 const BizSolHelperFunction = {
     ToWithSpace: function ToWithSpace(str) {
         return str.replace(/([a-z])([A-Z])/g, '$1 $2');
@@ -156,6 +171,48 @@ const BizSolHelperFunction = {
      * Blocks non-alphanumeric keypresses and auto-uppercases on input/paste.
      * @param {string|HTMLElement|jQuery} selector - CSS selector, DOM element, or jQuery object.
      */
+    getUserDashboardMenuUrl: function getUserDashboardMenuUrl() {
+        var base = (sessionStorage.getItem('AppBaseURL') || window.location.origin || '').replace(/\/+$/, '');
+        var url = base + '/CommonMasters/UserDashboardMenu/UserDashboardMenu?ModuleDesp=' + encodeURIComponent('User Dashboard Menu');
+        sessionStorage.setItem('udmMenuUrl', url);
+        return url;
+    },
+    rememberUserDashboardCount: function rememberUserDashboardCount(count) {
+        var n = parseInt(count, 10) || 0;
+        sessionStorage.setItem('udmDashboardCount', String(n));
+        sessionStorage.setItem('udmHasMultipleDashboards', n > 1 ? '1' : '0');
+        this.getUserDashboardMenuUrl();
+        return n;
+    },
+    hasMultipleUserDashboards: function hasMultipleUserDashboards() {
+        return sessionStorage.getItem('udmHasMultipleDashboards') === '1';
+    },
+    applyUserDashboardMenuBackButton: function applyUserDashboardMenuBackButton(selector) {
+        var $btn = $(selector || '#btnBackToUserDashboardMenu');
+        if (!$btn.length) return;
+
+        if (this.hasMultipleUserDashboards()) {
+            $btn.show();
+        } else {
+            $btn.hide();
+        }
+
+        var self = this;
+        UserDashboardMenuService.GetUserDashboardDetails()
+            .then(function (res) {
+                var count = self.rememberUserDashboardCount(firstArray(res).length);
+                if (count > 1) {
+                    $btn.show();
+                } else {
+                    $btn.hide();
+                }
+            })
+            .catch(function () { /* keep current visibility */ });
+    },
+    goToUserDashboardMenu: function goToUserDashboardMenu() {
+        sessionStorage.setItem('udmFromDashboard', '1');
+        window.location.assign(this.getUserDashboardMenuUrl());
+    },
     applyAlphaNumUppercase: function applyAlphaNumUppercase(selector) {
         var elements;
         if (typeof selector === 'string') {

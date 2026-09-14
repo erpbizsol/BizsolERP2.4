@@ -3031,7 +3031,9 @@ function gpaBuildPartyTotalFromHistoryRows(rows) {
     let paidFromBank = 0;
     list.forEach(function (row) {
         const type = gpaBudgetDocTypeFromRow(row);
-        const amt = parseFloat(gpaBudgetPickRowVal(row, 'Amount') || 0) || 0;
+        const amt = parseFloat(gpaBudgetPickRowVal(row, 'Amount', [
+            'amount', 'NetAmount', 'netAmount', 'AmountWithGST', 'amountWithGST', 'DocAmount', 'docAmount',
+        ]) || 0) || 0;
         const totalPoAmt = parseFloat(gpaBudgetPickRowVal(row, 'TotalPO', ['TotalPOAmount', 'totalPOAmount']) || 0) || 0;
         const totalGrnAmt = parseFloat(gpaBudgetPickRowVal(row, 'TotalGRN', ['totalGRN']) || 0) || 0;
         const totalPayAmt = parseFloat(gpaBudgetPickRowVal(row, 'TotalPayment', ['totalPayment']) || 0) || 0;
@@ -3732,30 +3734,55 @@ function gpaRenderBudgetTableBody(rows, mode, tableKind) {
     }
 }
 
+function gpaHasBudgetClientFilters(filters) {
+    const f = filters || gpaSelectedBudgetFilterLabels();
+    return (f.projectMasterCode || 0) > 0
+        || (f.subProjectMasterCode || 0) > 0
+        || !!gpaBudgetSubProjectNormName(f.subProjectName)
+        || !!gpaBudgetNormalizeDocType($('#gpaBudgetDdlType').val() || '');
+}
+
+function gpaPartyTileRowHasAmounts(row) {
+    if (!row || typeof row !== 'object') return false;
+    const keys = [
+        'TotalPOAmountWithGST', 'TotalGRNBillAmountWithGST', 'Deduction',
+        'NetGRNAmountWithGST', 'TDSDeduction', 'PaidAmountFromBank',
+        'NetPaymentWithTDS', 'GRNLessPayment', 'POGRNNetBalance',
+    ];
+    for (let i = 0; i < keys.length; i += 1) {
+        const n = parseFloat(gpaBudgetPickRowVal(row, keys[i]) || 0);
+        if (!isNaN(n) && Math.abs(n) > 0.00001) return true;
+    }
+    return false;
+}
+
 function gpaBudgetFindPartyTileRow(budgetRows, summaryRow, split, historyRows, filters) {
     const f = filters || gpaSelectedBudgetFilterLabels();
-    const hasFilter = (f.projectMasterCode || 0) > 0
-        || (f.subProjectMasterCode || 0) > 0
-        || !!gpaBudgetSubProjectNormName(f.subProjectName);
+    const hasFilter = gpaHasBudgetClientFilters(f);
     const list = Array.isArray(budgetRows)
         ? budgetRows.filter(function (r) { return !gpaBudgetIsTotalRow(r); })
         : [];
+    const fromHistory = gpaBuildPartyTotalFromHistoryRows(historyRows);
 
-    if (hasFilter && list.length) {
+    if (hasFilter) {
+        if (fromHistory) return fromHistory;
         const matched = list.filter(function (r) { return gpaBudgetRowMatchesFilters(r, f); });
-        if (matched.length === 1) return matched[0];
+        if (matched.length === 1 && gpaPartyTileRowHasAmounts(matched[0])) return matched[0];
         if (matched.length > 1) {
             const built = gpaBuildPartyTotalFromRows(matched);
-            if (built) return built;
+            if (built && gpaPartyTileRowHasAmounts(built)) return built;
         }
+        return fromHistory;
     }
 
     const total = (split && split.total) || gpaBudgetFindTotalRow(budgetRows) || summaryRow;
+    if (total && gpaPartyTileRowHasAmounts(total)) return total;
+    if (fromHistory) return fromHistory;
     if (total) return total;
     if (list.length === 1 && gpaRowLooksLikePartyBudgetRow(list[0])) return list[0];
     const built = gpaBuildPartyTotalFromRows(list);
     if (built) return built;
-    return gpaBuildPartyTotalFromHistoryRows(historyRows);
+    return fromHistory;
 }
 
 function gpaBudgetRowMatchesFilters(row, filters) {
@@ -3863,14 +3890,17 @@ function gpaApplyBudgetRowsToGrid(payload, mode) {
         && !filters.subProjectMasterCode
         && !gpaBudgetSubProjectNormName(filters.subProjectName);
 
-    const tileRow = viewMode === 'employee'
+    let tileRow = viewMode === 'employee'
         ? (gpaBudgetFindEmployeeTileRow(budgetRows, preferGrandTotal, filters) || split.total || summaryRow)
         : gpaBudgetFindPartyTileRow(budgetRows, summaryRow, split, historyRows, filters);
+    if (viewMode === 'party' && (!tileRow || !gpaPartyTileRowHasAmounts(tileRow)) && historyRows.length) {
+        tileRow = gpaBuildPartyTotalFromHistoryRows(historyRows) || tileRow;
+    }
     if (tileRow || (viewMode === 'party' && (allHistoryRows.length || summaryRow || budgetRows.length))) {
         renderGpaBudgetTotalTiles(tileRow || {}, viewMode);
     }
 
-    if (viewMode === 'party' && (tileRow || summaryRow)) {
+    if (viewMode === 'party' && (tileRow || summaryRow || historyRows.length)) {
         gpaEnsureBudgetPartySummaryShell();
         gpaRenderBudgetPartySummaryTable(tileRow || summaryRow || {});
         $('#gpaBudgetPartySummaryTableWrap').show();
@@ -3928,11 +3958,18 @@ function gpaApplyBudgetRowsToGrid(payload, mode) {
     }
 }
 
+function gpaReapplyBudgetFromCache() {
+    const viewMode = G_GpaBudgetViewMode === 'employee' ? 'employee' : 'party';
+    const cached = G_GpaBudgetCache[viewMode];
+    if (gpaBudgetPayloadHasData(cached)) {
+        gpaApplyBudgetRowsToGrid(cached, viewMode);
+        return;
+    }
+    loadGpaBudgetBalanceData({ mode: viewMode });
+}
+
 function gpaReapplyBudgetPartyFromCache() {
-    if (G_GpaBudgetViewMode !== 'party') return;
-    const cached = G_GpaBudgetCache.party;
-    if (!gpaBudgetPayloadHasData(cached)) return;
-    gpaApplyBudgetRowsToGrid(cached, 'party');
+    gpaReapplyBudgetFromCache();
 }
 
 function gpaBudgetRowsLookLikeEmployee(rows) {
@@ -4187,13 +4224,11 @@ function gpaBindBudgetFilterDropdowns(combos, options) {
     $proj.off('change.gpaBudget').on('change.gpaBudget', function () {
         if (G_GpaBudgetBindingFilters) return;
         refillSubProject();
-        gpaClearBudgetCache();
-        loadGpaBudgetBalanceForActiveMode();
+        gpaReapplyBudgetFromCache();
     });
     $sub.off('change.gpaBudget').on('change.gpaBudget', function () {
         if (G_GpaBudgetBindingFilters) return;
-        gpaClearBudgetCache();
-        loadGpaBudgetBalanceForActiveMode();
+        gpaReapplyBudgetFromCache();
     });
 
     if (opts.preserve && prevProj > 0 && $proj.find('option[value="' + prevProj + '"]').length) {
@@ -4237,13 +4272,9 @@ function gpaSelectedBudgetFilterLabels() {
 
 function gpaBudgetFilterCacheKey() {
     const state = G_GpaBudgetState;
-    const filters = gpaSelectedBudgetFilterLabels();
     return [
         state?.paymentMasterCode || 0,
         state?.accountMasterCode || 0,
-        filters.projectMasterCode,
-        filters.subProjectMasterCode,
-        gpaBudgetSubProjectNormName(filters.subProjectName),
     ].join('|');
 }
 
@@ -4285,7 +4316,6 @@ function loadGpaBudgetBalanceData(options) {
     const state = G_GpaBudgetState;
     if (!state || !state.accountMasterCode) return Promise.resolve();
 
-    const filters = gpaSelectedBudgetFilterLabels();
     const apiMode = viewMode === 'employee' ? 'E' : 'P';
     const cacheKey = gpaBudgetFilterCacheKey();
     const reqId = ++G_GpaBudgetActiveRequest[viewMode];
@@ -4298,8 +4328,8 @@ function loadGpaBudgetBalanceData(options) {
     return GRNPaymentApprovalService.GetGRNPaymentBudgetBalance(
         state.paymentMasterCode,
         state.accountMasterCode,
-        filters.projectMasterCode,
-        filters.subProjectMasterCode,
+        0,
+        0,
         apiMode
     )
         .then(function (response) {

@@ -834,6 +834,14 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
+
+    .pdd-tile-hidden {
+        display: none !important;
+    }
+    .pdd-wrap:not(.pdd-rights-ready) .pdd-chart-card[data-tile-desp],
+    .pdd-wrap:not(.pdd-rights-ready) .pdd-kpi-card[data-tile-desp] {
+        visibility: hidden;
+    }
 </style>
 
 <!-- Loading overlay -->
@@ -861,6 +869,9 @@
                         </div>
                     </div>
                     <div class="pdd-header-actions">
+                        <button type="button" class="pdd-header-reset" id="btnBackToUserDashboardMenu" title="Back to User Dashboard Menu" style="display:none;">
+                            <i class="fa-solid fa-arrow-left"></i> <span class="pdd-reset-text">Back</span>
+                        </button>
                         <button type="button" class="pdd-filter-btn" id="btnPddFilter" onclick="OpenPddFilterPanel()" title="Filters" aria-label="Open Filters">
                             <i class="fa-solid fa-filter"></i>
                         </button>
@@ -879,7 +890,7 @@
 
             <!-- ── KPI CARDS ────────────────────────────────────────── -->
             <div class="pdd-kpi-grid" id="pddKpiGrid">
-                <div class="pdd-kpi-card kpi-red pdd-kpi-click" id="kpiCardPO" title="Open PO Approval" role="button" tabindex="0">
+                <div class="pdd-kpi-card kpi-red pdd-kpi-click" id="kpiCardPO" data-tile-desp="Pending PO Approvals" title="Open PO Approval" role="button" tabindex="0">
                     <div class="pdd-kpi-top">
                         <div class="pdd-kpi-icon"><i class="fa-solid fa-cart-shopping"></i></div>
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-triangle-exclamation fa-xs"></i> High Priority</span>
@@ -889,7 +900,7 @@
                         <div class="pdd-kpi-label">Pending PO Approvals</div>
                     </div>
                 </div>
-                <div class="pdd-kpi-card kpi-amber pdd-kpi-click" id="kpiCardPayment" title="Open GRN Payment Approval" role="button" tabindex="0">
+                <div class="pdd-kpi-card kpi-amber pdd-kpi-click" id="kpiCardPayment" data-tile-desp="Pending Payment Approvals" title="Open GRN Payment Approval" role="button" tabindex="0">
                     <div class="pdd-kpi-top">
                         <div class="pdd-kpi-icon"><i class="fa-solid fa-credit-card"></i></div>
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-bell fa-xs"></i> Attention</span>
@@ -899,7 +910,7 @@
                         <div class="pdd-kpi-label">Pending Payment Approvals</div>
                     </div>
                 </div>
-                <div class="pdd-kpi-card kpi-purple pdd-kpi-click" id="kpiCardExpense" title="Open Expense Entry Approval" role="button" tabindex="0">
+                <div class="pdd-kpi-card kpi-purple pdd-kpi-click" id="kpiCardExpense" data-tile-desp="Pending Expense Approvals" title="Open Expense Entry Approval" role="button" tabindex="0">
                     <div class="pdd-kpi-top">
                         <div class="pdd-kpi-icon"><i class="fa-solid fa-file-invoice"></i></div>
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-triangle-exclamation fa-xs"></i> High Priority</span>
@@ -909,7 +920,7 @@
                         <div class="pdd-kpi-label">Pending Expense Approvals</div>
                     </div>
                 </div>
-                <div class="pdd-kpi-card kpi-teal pdd-kpi-click" id="kpiCardGRN" title="Open GRN Approval" role="button" tabindex="0">
+                <div class="pdd-kpi-card kpi-teal pdd-kpi-click" id="kpiCardGRN" data-tile-desp="Pending GRN Approval" title="Open GRN Approval" role="button" tabindex="0">
                     <div class="pdd-kpi-top">
                         <div class="pdd-kpi-icon"><i class="fa-solid fa-clipboard-check"></i></div>
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-bell fa-xs"></i> Attention</span>
@@ -919,7 +930,7 @@
                         <div class="pdd-kpi-label">Pending GRN Approval</div>
                     </div>
                 </div>
-                <div class="pdd-kpi-card kpi-green">
+                <div class="pdd-kpi-card kpi-green" data-tile-desp="Total Projects">
                     <div class="pdd-kpi-top">
                         <div class="pdd-kpi-icon"><i class="fa-solid fa-briefcase"></i></div>
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-circle-check fa-xs"></i> Active</span>
@@ -929,7 +940,7 @@
                         <div class="pdd-kpi-label">Total Projects</div>
                     </div>
                 </div>
-                <div class="pdd-kpi-card kpi-blue pdd-kpi-click" id="kpiCardReconciled" title="Open Bank Statement Import" role="button" tabindex="0">
+                <div class="pdd-kpi-card kpi-blue pdd-kpi-click" id="kpiCardReconciled" data-tile-desp="Un Reconciled" title="Open Bank Statement Import" role="button" tabindex="0">
                     <div class="pdd-kpi-top">
                         <div class="pdd-kpi-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
                         <span class="pdd-kpi-badge"><i class="fa-solid fa-link-slash fa-xs"></i> Un Reconciled</span>
@@ -944,7 +955,7 @@
             <!-- ── ROW 2: PO STATUS + PAYMENT TREND ────────────────── -->
             <div class="pdd-chart-row">
                 <!-- PO Status Donut -->
-                <div class="pdd-chart-card accent-emerald">
+                <div class="pdd-chart-card accent-emerald" data-tile-desp="PO Status">
                     <div class="pdd-chart-header">
                         <div class="pdd-chart-title-wrap">
                             <div class="pdd-chart-title-icon ti-emerald"><i class="fa-solid fa-circle-dot"></i></div>
@@ -976,7 +987,7 @@
                 </div>
 
                 <!-- Payment Trend Bar -->
-                <div class="pdd-chart-card accent-indigo">
+                <div class="pdd-chart-card accent-indigo" data-tile-desp="Payment Trend">
                     <div class="pdd-chart-header">
                         <div class="pdd-chart-title-wrap">
                             <div class="pdd-chart-title-icon ti-indigo"><i class="fa-solid fa-chart-bar"></i></div>
@@ -993,7 +1004,7 @@
             <!-- ── ROW 3: PROJECT SUMMARY + BUDGET VS ACTUAL + EXPENSE SUMMARY ── -->
             <div class="pdd-chart-row-3">
                 <!-- Project Summary -->
-                <div class="pdd-chart-card accent-violet">
+                <div class="pdd-chart-card accent-violet" data-tile-desp="Project Summary">
                     <div class="pdd-chart-header">
                         <div class="pdd-chart-title-wrap">
                             <div class="pdd-chart-title-icon ti-violet"><i class="fa-solid fa-layer-group"></i></div>
@@ -1029,7 +1040,7 @@
                 </div>
 
                 <!-- Budget vs Actual -->
-                <div class="pdd-chart-card accent-indigo">
+                <div class="pdd-chart-card accent-indigo" data-tile-desp="Project Budget vs Actual">
                     <div class="pdd-chart-header">
                         <div class="pdd-chart-title-wrap">
                             <div class="pdd-chart-title-icon ti-indigo"><i class="fa-solid fa-scale-balanced"></i></div>
@@ -1068,7 +1079,7 @@
                 </div>
 
                 <!-- Expense Summary -->
-                <div class="pdd-chart-card accent-rose">
+                <div class="pdd-chart-card accent-rose" data-tile-desp="Expense Summary">
                     <div class="pdd-chart-header">
                         <div class="pdd-chart-title-wrap">
                             <div class="pdd-chart-title-icon ti-rose"><i class="fa-solid fa-file-invoice-dollar"></i></div>
