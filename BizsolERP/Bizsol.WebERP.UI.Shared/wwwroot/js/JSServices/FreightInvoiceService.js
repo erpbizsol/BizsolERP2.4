@@ -55,6 +55,12 @@ const FreightInvoiceService = {
         return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
             return value;
         });
+    },
+    CheckEntryExistInServiceGRBillDetail: function CheckEntryExistInServiceGRBillDetail(masterTableName, masterTableCode, transTableCode) {
+        var URL = UrlService.API_ENDPOINT_FreightInvoice + '/CheckEntryExistInServiceGRBillDetail?MasterTableName=' + encodeURIComponent(masterTableName || 'FreightInvoiceMaster') + '&MasterTableCode=' + (masterTableCode || 0) + '&TransTableCode=' + (transTableCode || 0);
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
     }
 };
 
