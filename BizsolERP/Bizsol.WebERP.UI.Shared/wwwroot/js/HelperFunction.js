@@ -153,8 +153,7 @@ const BizSolHelperFunction = {
         // Condition 2: IsUserMarkDayAttendance value passed in from the caller
         if (isUserMarkDayAttendance !== 'N') return;
 
-        var baseUrl = sessionStorage.getItem('AppBaseURL') || '';
-        var checkinUrl = baseUrl + '/' + CHECKIN_FORM;
+        var checkinUrl = this.buildAppUrl(CHECKIN_FORM);
 
         $('#btnGoToCheckIn').off('click.attendance').on('click.attendance', function () {
             window.location.href = checkinUrl;
@@ -166,14 +165,107 @@ const BizSolHelperFunction = {
             attendanceModal.show();
         }
     },
-    /**
-     * Applies alphanumeric-only + uppercase enforcement to one or more inputs.
-     * Blocks non-alphanumeric keypresses and auto-uppercases on input/paste.
-     * @param {string|HTMLElement|jQuery} selector - CSS selector, DOM element, or jQuery object.
-     */
+    inferAppPathBase: function inferAppPathBase() {
+        var path = (window.location.pathname || '').replace(/\/+$/, '') || '/';
+        var lower = path.toLowerCase();
+
+        if (lower === '/' || lower === '') return '';
+        if (lower.endsWith('/home/index')) {
+            return path.slice(0, -('/home/index'.length)).replace(/\/+$/, '');
+        }
+        if (lower.endsWith('/home')) {
+            return path.slice(0, -('/home'.length)).replace(/\/+$/, '');
+        }
+
+        var segments = path.split('/').filter(Boolean);
+        if (segments.length === 0) return '';
+        if (segments.length === 1) return '/' + segments[0];
+
+        var knownAreas = {
+            commonmasters: 1, crmtransactions: 1, crmreports: 1, uitools: 1,
+            salestransactions: 1, salesreports: 1, salestest: 1,
+            productiontransactions: 1, productionreports: 1, productionmasters: 1,
+            marketingmasters: 1, marketingtransactions: 1, marketingreports: 1,
+            purchasetransactions: 1, purchasemasters: 1, purchasereports: 1,
+            commonreports: 1, misreports: 1, financemasters: 1, financetransactions: 1,
+            customcontrol: 1, home: 1, account: 1
+        };
+        var first = segments[0].toLowerCase();
+        if (!knownAreas[first]) {
+            return '/' + segments[0];
+        }
+        return '';
+    },
+    getAppBaseUrl: function getAppBaseUrl() {
+        var appBase = (sessionStorage.getItem('AppBaseURL') || '').trim();
+        if (!appBase) {
+            appBase = window.location.origin || '';
+        }
+        try {
+            var parsed = new URL(appBase, window.location.href);
+            appBase = parsed.origin + parsed.pathname.replace(/\/+$/, '');
+        } catch (e) {
+            appBase = appBase.replace(/\/+$/, '');
+        }
+
+        var basePath = '';
+        try {
+            basePath = new URL(appBase, window.location.href).pathname.replace(/\/+$/, '');
+        } catch (e) { }
+
+        if (!basePath) {
+            var inferred = this.inferAppPathBase();
+            if (inferred) {
+                appBase = window.location.origin + inferred;
+            }
+        }
+
+        return appBase.replace(/\/+$/, '');
+    },
+    buildAppUrl: function buildAppUrl(relativeOrAbsoluteUrl) {
+        var url = (relativeOrAbsoluteUrl || '').trim();
+        var appBase = this.getAppBaseUrl();
+        if (!url) {
+            return appBase + '/';
+        }
+
+        var pathBase = '';
+        try {
+            pathBase = new URL(appBase, window.location.href).pathname.replace(/\/+$/, '');
+        } catch (e) { }
+
+        if (/^https?:\/\//i.test(url)) {
+            try {
+                var abs = new URL(url);
+                var app = new URL(appBase, window.location.href);
+                if (abs.origin === app.origin && pathBase
+                    && abs.pathname.toLowerCase().indexOf(pathBase.toLowerCase()) !== 0) {
+                    url = abs.pathname.replace(/^\/+/, '') + abs.search + abs.hash;
+                } else {
+                    return url;
+                }
+            } catch (e) {
+                return url;
+            }
+        }
+
+        url = url.replace(/^\/+/, '');
+        if (pathBase) {
+            var virtualPrefix = pathBase.replace(/^\/+/, '') + '/';
+            if (url.toLowerCase().indexOf(virtualPrefix) === 0) {
+                url = url.substring(virtualPrefix.length);
+            }
+        }
+
+        try {
+            return new URL(url, appBase + '/').href;
+        } catch (e) {
+            return appBase + '/' + url;
+        }
+    },
     getUserDashboardMenuUrl: function getUserDashboardMenuUrl() {
-        var base = (sessionStorage.getItem('AppBaseURL') || window.location.origin || '').replace(/\/+$/, '');
-        var url = base + '/CommonMasters/UserDashboardMenu/UserDashboardMenu?ModuleDesp=' + encodeURIComponent('User Dashboard Menu');
+        var url = this.buildAppUrl('CommonMasters/UserDashboardMenu/UserDashboardMenu');
+        url += (url.indexOf('?') !== -1 ? '&' : '?') + 'ModuleDesp=' + encodeURIComponent('User Dashboard Menu');
         sessionStorage.setItem('udmMenuUrl', url);
         return url;
     },
@@ -213,6 +305,11 @@ const BizSolHelperFunction = {
         sessionStorage.setItem('udmFromDashboard', '1');
         window.location.assign(this.getUserDashboardMenuUrl());
     },
+    /**
+     * Applies alphanumeric-only + uppercase enforcement to one or more inputs.
+     * Blocks non-alphanumeric keypresses and auto-uppercases on input/paste.
+     * @param {string|HTMLElement|jQuery} selector - CSS selector, DOM element, or jQuery object.
+     */
     applyAlphaNumUppercase: function applyAlphaNumUppercase(selector) {
         var elements;
         if (typeof selector === 'string') {
