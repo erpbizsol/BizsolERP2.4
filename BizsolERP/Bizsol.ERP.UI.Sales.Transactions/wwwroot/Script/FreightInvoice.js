@@ -534,24 +534,27 @@ function editFiSavedEntry(code) {
 
         function loadAndOpenEdit() {
             showFiLoader();
-            return loadFilterDropdowns()
-                .then(function () {
-                    return FreightInvoiceService.GetSavedFreightInvoiceByCode(code);
-                })
-                .then(function (response) {
-                    const header = response.Header || response.header || {};
-                    const details = dedupeFiViewDetails(
-                        response.Details || response.details || toList(response.FreightMovementDetail)
-                    );
+            return checkFiEntryExistInServiceGRBill(code, 0, 'Y').then(function (isBlocked) {
+                if (isBlocked) return Promise.reject({ handled: true });
+                return loadFilterDropdowns()
+                    .then(function () {
+                        return FreightInvoiceService.GetSavedFreightInvoiceByCode(code);
+                    })
+                    .then(function (response) {
+                        const header = response.Header || response.header || {};
+                        const details = dedupeFiViewDetails(
+                            response.Details || response.details || toList(response.FreightMovementDetail)
+                        );
 
-                    if (isFiEntryVerified(header)) {
-                        return ensureFiCanEditVerifiedEntry('Y').then(function (canEdit) {
-                            if (!canEdit) return Promise.reject({ handled: true });
-                            return openFiEditForm(code, header, details);
-                        });
-                    }
-                    return openFiEditForm(code, header, details);
-                })
+                        if (isFiEntryVerified(header)) {
+                            return ensureFiCanEditVerifiedEntry('Y').then(function (canEdit) {
+                                if (!canEdit) return Promise.reject({ handled: true });
+                                return openFiEditForm(code, header, details);
+                            });
+                        }
+                        return openFiEditForm(code, header, details);
+                    });
+            })
                 .catch(function (error) {
                     if (!(error && error.handled)) {
                         console.error('editFiSavedEntry failed:', error);
@@ -693,6 +696,57 @@ function getFiSavedItemByCode(code) {
     return (fiSavedList || []).find(function (item) {
         return parseInt(item.Code || item.code || 0, 10) === n;
     }) || null;
+}
+
+/** WinForms MsgBox parity — UDF returns CHAR(13) lines; web title = Cannot Edit. */
+function formatFiGrBillBlockHtml(msg) {
+    return String(msg || '')
+        .replace(/\r\n?|\n/g, '\n')
+        .split('\n')
+        .map(function (line) { return line.trim(); })
+        .filter(function (line) { return line.length > 0; })
+        .map(function (line) {
+            line = line.replace(/Edit\/Delete/i, 'Edit');
+            if (/^Entry Date \(/i.test(line) && !/\)\s*$/.test(line)) {
+                line = line + ')';
+            }
+            return line;
+        })
+        .join('<br>');
+}
+
+function isFiGrBillBlockMessage(msg) {
+    return /^Sorry ! You Can not/i.test(String(msg || '').trim());
+}
+
+function showFiGrBillBlockMessage(msg) {
+    const text = formatFiGrBillBlockHtml(msg);
+    if (!text) return;
+    toastr.warning(text, 'Cannot Edit', {
+        timeOut: 9000,
+        closeButton: true,
+        escapeHtml: false,
+        toastClass: 'toast fi-gr-bill-toast'
+    });
+}
+
+function checkFiEntryExistInServiceGRBill(code, transTableCode, showMsg) {
+    const masterCode = parseInt(code, 10) || 0;
+    if (!masterCode) return Promise.resolve(false);
+
+    return FreightInvoiceService.CheckEntryExistInServiceGRBillDetail('FreightInvoiceMaster', masterCode, transTableCode || 0)
+        .then(function (res) {
+            const msg = String((res && (res.Msg || res.msg)) || '').trim();
+            if (msg) {
+                if (showMsg !== 'N') showFiGrBillBlockMessage(msg);
+                return true;
+            }
+            return false;
+        })
+        .catch(function () {
+            if (showMsg !== 'N') toastr.error('Unable to verify Service/GR Bill link.');
+            return true;
+        });
 }
 
 function resolveFiModuleRights() {
@@ -2242,47 +2296,59 @@ function saveFreightData(details) {
             return Promise.reject({ handled: true });
         }
 
-        const authKey = JSON.parse(sessionStorage.getItem('authKey') || '{}');
-        const payload = {
-            Master: [{
-                Code: fiEditMasterCode || 0,
-                UserMaster_Code: parseInt(authKey.UserMaster_Code, 10) || 0,
-                BillTypeCode: parseInt($('#ddlFiBillType').val(), 10) || 0,
-                AllowEditAfterVerify: fiAllowEditAfterVerify ? 'Y' : 'N',
-                FinYear: finYear || '',
-                DataBaseLocation_Code: 0
-            }],
-            Details: details
-        };
+        function proceedSave() {
+            const authKey = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+            const payload = {
+                Master: [{
+                    Code: fiEditMasterCode || 0,
+                    UserMaster_Code: parseInt(authKey.UserMaster_Code, 10) || 0,
+                    BillTypeCode: parseInt($('#ddlFiBillType').val(), 10) || 0,
+                    AllowEditAfterVerify: fiAllowEditAfterVerify ? 'Y' : 'N',
+                    FinYear: finYear || '',
+                    DataBaseLocation_Code: 0
+                }],
+                Details: details
+            };
 
-        showFiLoader();
-        $('#btnFiSaveAll').prop('disabled', true);
+            showFiLoader();
+            $('#btnFiSaveAll').prop('disabled', true);
 
-        return FreightInvoiceService.SaveFreightInvoice(payload).then(function (response) {
-        const status = String(response.Status || response.status || '').toLowerCase();
-        const msg = response.Msg || response.msg || 'Freight invoice saved.';
-        if (status === 'success') {
-            toastr.success(msg);
-            fiEditMasterCode = 0;
-            fiAllowEditAfterVerify = false;
-            $('#dvFiEntry').removeClass('fi-entry-visible');
-            $('#dvFiList').removeClass('fi-list-hidden');
-            const fromDate = $('#txtFiListFromDate').val();
-            const toDate = $('#txtFiListToDate').val();
-            return reloadFiSavedListData(fromDate, toDate);
+            return FreightInvoiceService.SaveFreightInvoice(payload).then(function (response) {
+                const status = String(response.Status || response.status || '').toLowerCase();
+                const msg = response.Msg || response.msg || 'Freight invoice saved.';
+                if (status === 'success') {
+                    toastr.success(msg);
+                    fiEditMasterCode = 0;
+                    fiAllowEditAfterVerify = false;
+                    $('#dvFiEntry').removeClass('fi-entry-visible');
+                    $('#dvFiList').removeClass('fi-list-hidden');
+                    const fromDate = $('#txtFiListFromDate').val();
+                    const toDate = $('#txtFiListToDate').val();
+                    return reloadFiSavedListData(fromDate, toDate);
+                }
+                if (isFiGrBillBlockMessage(msg)) showFiGrBillBlockMessage(msg);
+                else toastr.warning(msg || 'Save failed.');
+                return Promise.reject({ handled: true });
+            }).catch(function (error) {
+                if (!(error && error.handled)) {
+                    console.error('SaveFreightInvoice failed:', error);
+                    toastr.error('Error saving freight invoice.');
+                }
+                return Promise.reject(error);
+            }).finally(function () {
+                hideFiLoader();
+                updateFiSaveForTransporter();
+            });
         }
-        toastr.warning(msg || 'Save failed.');
-        return Promise.reject({ handled: true });
-    }).catch(function (error) {
-        if (!(error && error.handled)) {
-            console.error('SaveFreightInvoice failed:', error);
-            toastr.error('Error saving freight invoice.');
+
+        if (isEdit) {
+            return checkFiEntryExistInServiceGRBill(fiEditMasterCode, 0, 'Y').then(function (isBlocked) {
+                if (isBlocked) return Promise.reject({ handled: true });
+                return proceedSave();
+            });
         }
-        return Promise.reject(error);
-        }).finally(function () {
-            hideFiLoader();
-            updateFiSaveForTransporter();
-        });
+
+        return proceedSave();
     }).catch(function (error) {
         if (!(error && error.handled)) {
             toastr.error('Permission check failed.');

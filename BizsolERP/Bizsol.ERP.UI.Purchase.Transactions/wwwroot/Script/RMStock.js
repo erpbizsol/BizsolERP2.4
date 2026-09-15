@@ -2187,19 +2187,33 @@ function rmsNum(row, candidates) {
     return isNaN(n) ? 0 : n;
 }
 
+const RMS_ITEM_TOTAL_COL = 'Total Weight';
+
 const RMS_SUMMARY_COLS = {
-    item:    ['Item Name'],
-    pcs:     ['PCS/Coil'],
-    weight:  ['Weight in MT', 'Total Weight'],
-    pending: ['Job Work RM Weight', 'Pending Weight']
+    item:      ['Item Name'],
+    pcs:       ['PCS/Coil'],
+    weight:    ['Weight in MT'],
+    pending:   ['Job Work RM Weight', 'Pending Weight'],
+    itemTotal: [RMS_ITEM_TOTAL_COL]
 };
 
 const RMS_SLITTED_COLS = {
-    item:    ['Item Name'],
-    pcs:     ['PCS'],
-    weight:  ['Weight in MT', 'Weight'],
-    pending: ['Job Work RM Weight', 'Pending on Job Work Weight']
+    item:      ['Item Name'],
+    pcs:       ['PCS'],
+    weight:    ['Weight in MT', 'Weight'],
+    pending:   ['Job Work RM Weight', 'Pending on Job Work Weight'],
+    itemTotal: [RMS_ITEM_TOTAL_COL]
 };
+
+function rmsApplyItemTotalWeight(rows, weightCols, pendingCols) {
+    if (!Array.isArray(rows)) return rows;
+    rows.forEach(function (r) {
+        var stockWt = rmsNum(r, weightCols);
+        var pendingWt = rmsNum(r, pendingCols);
+        r[RMS_ITEM_TOTAL_COL] = +(stockWt + pendingWt).toFixed(3);
+    });
+    return rows;
+}
 
 function loadStockSummaryData() {
     calculateStockSummary();
@@ -2214,20 +2228,22 @@ function loadStockSummaryData() {
             const COL_PCS_GR    = rmsPickColumn(sample, RMS_SUMMARY_COLS.pcs);
             const COL_WT_GR     = rmsPickColumn(sample, RMS_SUMMARY_COLS.weight);
             const COL_PENDING   = rmsPickColumn(sample, RMS_SUMMARY_COLS.pending);
+            rmsApplyItemTotalWeight(response, RMS_SUMMARY_COLS.weight, RMS_SUMMARY_COLS.pending);
 
             const stringFilterColumn  = [COL_ITEM];
-            const numericFilterColumn = [COL_PCS_GR, COL_WT_GR, COL_PENDING];
+            const numericFilterColumn = [COL_PCS_GR, COL_WT_GR, COL_PENDING, RMS_ITEM_TOTAL_COL];
             const columnAlignment = {
-                [COL_ITEM]:    ';min-width:130px',
-                [COL_PCS_GR]:  'right;min-width:70px',
-                [COL_WT_GR]:   'right;min-width:100px',
-                [COL_PENDING]: 'right;min-width:130px',
+                [COL_ITEM]:           'left',
+                [COL_PCS_GR]:         'right',
+                [COL_WT_GR]:          'right',
+                [COL_PENDING]:        'right',
+                [RMS_ITEM_TOTAL_COL]: 'right',
             };
 
             G_SummaryData = response;
             calculateTotalFooterStockSummary(response, COL_PCS_GR, COL_WT_GR, COL_PENDING);
             updateStockSummaryGrandTotal();
-            const FixedDecimalvalue = { [COL_WT_GR]: 3, [COL_PENDING]: 3 };
+            const FixedDecimalvalue = { [COL_WT_GR]: 3, [COL_PENDING]: 3, [RMS_ITEM_TOTAL_COL]: 3 };
             BizsolCustomFilterGrid.CreateDataTable(
                 'table-header-SummaryData', 'table-body-SummaryData',
                 response, false, [],
@@ -2260,18 +2276,20 @@ function loadStockSlittedCoilsStockSummary() {
             const COL_PCS  = rmsPickColumn(sample, RMS_SLITTED_COLS.pcs);
             const COL_WT   = rmsPickColumn(sample, RMS_SLITTED_COLS.weight);
             const COL_JW   = rmsPickColumn(sample, RMS_SLITTED_COLS.pending);
+            rmsApplyItemTotalWeight(response, RMS_SLITTED_COLS.weight, RMS_SLITTED_COLS.pending);
 
             const stringFilterColumn  = [COL_ITEM];
-            const numericFilterColumn = [COL_PCS, COL_WT, COL_JW];
+            const numericFilterColumn = [COL_PCS, COL_WT, COL_JW, RMS_ITEM_TOTAL_COL];
             const columnAlignment = {
-                [COL_ITEM]: ';min-width:130px',
-                [COL_PCS]:  'right;min-width:70px',
-                [COL_WT]:   'right;min-width:100px',
-                [COL_JW]:   'right;min-width:130px',
+                [COL_ITEM]:           'left',
+                [COL_PCS]:            'right',
+                [COL_WT]:             'right',
+                [COL_JW]:             'right',
+                [RMS_ITEM_TOTAL_COL]: 'right',
             };
 
-            const TotalColumns = [COL_PCS, COL_WT, COL_JW];
-            const FixedDecimalvalue = { [COL_PCS]: 0, [COL_WT]: 3, [COL_JW]: 3 };
+            const TotalColumns = [COL_PCS, COL_WT, COL_JW, RMS_ITEM_TOTAL_COL];
+            const FixedDecimalvalue = { [COL_PCS]: 0, [COL_WT]: 3, [COL_JW]: 3, [RMS_ITEM_TOTAL_COL]: 3 };
 
             G_SlittedSummaryData = response;
             updateStockSummaryGrandTotal();
@@ -2303,18 +2321,23 @@ function calculateTotalFooterStockSummary(rows, pcCoilGreterKey, totalWtGreterKe
         let totalPcsGreter  = 0;
         let totalWtGreter   = 0;
         let totalPending    = 0;
+        let totalItemTotal  = 0;
 
         if (rows && rows.length) {
             rows.forEach(function (r) {
+                var rowWt      = rmsNum(r, [colWtGreter].concat(RMS_SUMMARY_COLS.weight));
+                var rowPending = rmsNum(r, [colPending].concat(RMS_SUMMARY_COLS.pending));
                 totalPcsGreter  += rmsNum(r, [colPcsGreter].concat(RMS_SUMMARY_COLS.pcs));
-                totalWtGreter   += rmsNum(r, [colWtGreter].concat(RMS_SUMMARY_COLS.weight));
-                totalPending    += rmsNum(r, [colPending].concat(RMS_SUMMARY_COLS.pending));
+                totalWtGreter   += rowWt;
+                totalPending    += rowPending;
+                totalItemTotal  += rowWt + rowPending;
             });
         }
 
         if ($('#totalPCSGreterThen').length)  $('#totalPCSGreterThen').text(totalPcsGreter);
         if ($('#totalWeightGreterThen').length) $('#totalWeightGreterThen').text(totalWtGreter.toFixed(3));
         if ($('#totalPendingJobWork').length) $('#totalPendingJobWork').text(totalPending.toFixed(3));
+        if ($('#totalItemTotalWeight').length) $('#totalItemTotalWeight').text(totalItemTotal.toFixed(3));
     } catch (e) {
     }
 }
@@ -2325,23 +2348,30 @@ function updateStockSummaryGrandTotal(summaryRows, slittedRows) {
     try {
         var summary = Array.isArray(summaryRows) ? summaryRows : (G_SummaryData || []);
         var slitted = Array.isArray(slittedRows) ? slittedRows : (G_SlittedSummaryData || []);
-        var grandPcs = 0, grandWt = 0, grandPending = 0;
+        var grandPcs = 0, grandWt = 0, grandPending = 0, grandItemTotal = 0;
 
         summary.forEach(function (r) {
-            grandPcs     += rmsNum(r, RMS_SUMMARY_COLS.pcs);
-            grandWt      += rmsNum(r, RMS_SUMMARY_COLS.weight);
-            grandPending += rmsNum(r, RMS_SUMMARY_COLS.pending);
+            var rowWt      = rmsNum(r, RMS_SUMMARY_COLS.weight);
+            var rowPending = rmsNum(r, RMS_SUMMARY_COLS.pending);
+            grandPcs       += rmsNum(r, RMS_SUMMARY_COLS.pcs);
+            grandWt        += rowWt;
+            grandPending   += rowPending;
+            grandItemTotal += rowWt + rowPending;
         });
 
         slitted.forEach(function (r) {
-            grandPcs     += rmsNum(r, RMS_SLITTED_COLS.pcs);
-            grandWt      += rmsNum(r, RMS_SLITTED_COLS.weight);
-            grandPending += rmsNum(r, RMS_SLITTED_COLS.pending);
+            var rowWt      = rmsNum(r, RMS_SLITTED_COLS.weight);
+            var rowPending = rmsNum(r, RMS_SLITTED_COLS.pending);
+            grandPcs       += rmsNum(r, RMS_SLITTED_COLS.pcs);
+            grandWt        += rowWt;
+            grandPending   += rowPending;
+            grandItemTotal += rowWt + rowPending;
         });
 
         if ($('#grandTotalPCS').length)     $('#grandTotalPCS').text(grandPcs);
         if ($('#grandTotalWeight').length)  $('#grandTotalWeight').text(grandWt.toFixed(3));
         if ($('#grandTotalPending').length) $('#grandTotalPending').text(grandPending.toFixed(3));
+        if ($('#grandTotalItemTotal').length) $('#grandTotalItemTotal').text(grandItemTotal.toFixed(3));
     } catch (e) {
     }
 }
@@ -2463,7 +2493,10 @@ function Verify(Code,Level) {
     });
 }
 function VerifyPlan(Code, Level) {
-    if (confirm("Are you sure you want to verify ?")) {
+    Promise.resolve(confirm("Are you sure you want to verify ?")).then(function (ok) {
+        if (!ok) {
+            return;
+        }
         Showloader();
         RMStockService.VerifySlittingPlan(Code, Level).then(function (response) {
             if (response[0].Status = 'Y') {
@@ -2478,7 +2511,7 @@ function VerifyPlan(Code, Level) {
             HideLoader();
             toastr.error(error.Msg || 'Error During Verify ');
         });
-    }
+    });
 }
 function getFinancialYear() {
     var currentDate = new Date();
