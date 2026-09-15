@@ -117,23 +117,15 @@ function getDashboardIcon(label) {
     return 'fa-gauge-high';
 }
 
-function getAppBaseUrl() {
-    return (window.location.origin || '').replace(/\/+$/, '');
-}
-
 function buildDashboardHref(url, desp) {
     var path = (url || '').trim();
     if (!path) return '';
 
-    if (/^https?:\/\//i.test(path)) {
-        var absSep = path.indexOf('?') !== -1 ? '&' : '?';
-        return path + (desp ? absSep + 'ModuleDesp=' + encodeURIComponent(desp) : '');
+    var href = BizSolHelperFunction.buildAppUrl(path);
+    if (desp) {
+        var sep = href.indexOf('?') !== -1 ? '&' : '?';
+        href += sep + 'ModuleDesp=' + encodeURIComponent(desp);
     }
-
-    path = path.replace(/^\/+/, '');
-    var sep = path.indexOf('?') !== -1 ? '&' : '?';
-    var href = getAppBaseUrl() + '/' + path;
-    if (desp) href += sep + 'ModuleDesp=' + encodeURIComponent(desp);
     return href;
 }
 
@@ -268,10 +260,7 @@ function rememberDashboardChoice(items) {
     var count = (items || []).length;
     sessionStorage.setItem('udmDashboardCount', String(count));
     sessionStorage.setItem('udmHasMultipleDashboards', count > 1 ? '1' : '0');
-    sessionStorage.setItem(
-        'udmMenuUrl',
-        getAppBaseUrl() + '/CommonMasters/UserDashboardMenu/UserDashboardMenu?ModuleDesp=' + encodeURIComponent('User Dashboard Menu')
-    );
+    sessionStorage.setItem('udmMenuUrl', BizSolHelperFunction.getUserDashboardMenuUrl());
 }
 
 function openDashboard(href, replaceHistory) {

@@ -1,7 +1,7 @@
-import { CRMOrderInTransitService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/CRMOrderInTransitService.js';
-import { VisitOrderEntryService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
-import { MenuService } from '/_content/Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
-import { BizSolHelperFunction } from '/_content/Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { CRMOrderInTransitService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CRMOrderInTransitService.js';
+import { VisitOrderEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
+import { MenuService } from '../..//Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 const LIST_MODE = 'SHOW_PendingOrders';
 const SAVE_MODE_UPDATE = 'Update';

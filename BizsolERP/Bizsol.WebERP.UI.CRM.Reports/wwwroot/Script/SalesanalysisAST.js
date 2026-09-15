@@ -22,7 +22,15 @@ let tvgLostClientBarChartInstance = null;
 let tvgManifestActualPieChartInstance = null;
 let summaryGpPieChartInstance = null;
 let summaryNbdCrrDonutChartInstance = null;
+let summaryGpWiseManPieChartInstance = null;
 let salesComparisonBarChartInstance = null;
+let partyScoreDonutChartInstance = null;
+let caProductPieChartInstance = null;
+let G_SummaryReportRows = [];
+let G_PartyScoringRows = [];
+let G_PartyScoringLastMonthMap = {};
+let G_PartySaleMap = {};
+const HIGH_GP_SALE_TARGET_PCT = 60;
 
 // Regional Analysis data and drill-down state
 let G_RegionalAnalysisData = [];
@@ -62,9 +70,13 @@ function initFilterSidePanelControl() {
         return;
     }
 
+    const monthToDateRange = getCurrentMonthToDateRange();
+    fromDate = monthToDateRange.fromDate;
+    toDate = monthToDateRange.toDate;
+
     // Initialize with empty filters first
     const filters = [
-        { id: 'dateRange', type: 'daterange', label: 'Date Range' },
+        { id: 'dateRange', type: 'daterange', label: 'Date Range', defaultFrom: monthToDateRange.fromDate, defaultTo: monthToDateRange.toDate },
         { id: 'chkShowRecursive', type: 'checkbox', label: 'Show Recursive Marketing Man', checkboxLabel: 'Show Recursive Marketing Man', defaultChecked: true },
         { id: 'ddlSalesPersonlist', type: 'multiselect', label: 'Sales Person', data: [] },
         { id: 'ddlDealerNamelist', type: 'multiselect', label: 'Dealer Name', data: [] },
@@ -76,50 +88,14 @@ function initFilterSidePanelControl() {
     ];
 
     console.log('Setting filters:', filters);
-    filterPanel.setFilters(filters);
+    filterPanel.setFilters(filters, { useCommaToken: true });
+    applyDefaultDateRangeToFilter(filterPanel);
+    updateReportDateRangeDisplay();
 
-    // Set default date range: Current Month by default, Financial Year if ?range=thisyear
+    // Re-apply default so the To date stays today even if the control initializes later
     setTimeout(() => {
-        console.log('Setting default date range...');
-        try {
-            const dateRangeEl = filterPanel.shadowRoot?.getElementById('dateRange');
-            if (dateRangeEl) {
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = now.getMonth(); // 0-based
-
-                // Read URL query parameter ?range=thisyear
-                const urlParams = new URLSearchParams(window.location.search);
-                let rangeParam = (urlParams.get('range') || '').toLowerCase();
-                //rangeParam='thisyear'
-                let rangeFrom, rangeTo;
-
-                if (rangeParam === 'thisyear') {
-                    // Financial Year (April 1 – March 31)
-                    const fyStartYear = (month >= 3) ? year : (year - 1); // month >= 3 means April onwards (0-based)
-                    const fyEndYear = fyStartYear + 1;
-                    rangeFrom = `${fyStartYear}-04-01`;
-                    rangeTo = `${fyEndYear}-03-31`;
-                    console.log(`Setting financial year range: ${rangeFrom} to ${rangeTo}`);
-                } else {
-                    // Current Month (default)
-                    const mm = String(month + 1).padStart(2, '0');
-                    const lastDay = new Date(year, month + 1, 0).getDate();
-                    rangeFrom = `${year}-${mm}-01`;
-                    rangeTo = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`;
-                    console.log(`Setting current month range: ${rangeFrom} to ${rangeTo}`);
-                }
-
-                dateRangeEl.setRange({ fromDate: rangeFrom, toDate: rangeTo });
-                fromDate = rangeFrom;
-                toDate = rangeTo;
-                console.log('Date range set successfully');
-            } else {
-                console.warn('DateRange element not found in shadow DOM');
-            }
-        } catch (e) {
-            console.error('Failed to set default date range:', e);
-        }
+        applyDefaultDateRangeToFilter(filterPanel);
+        updateReportDateRangeDisplay();
     }, 500);
 
     // Listen to filter apply event
@@ -401,7 +377,8 @@ function parseSummaryReportResponse(response) {
 
 function categorizeGpForSummary(gpValue) {
     const gp = (gpValue || '').toString().trim().toLowerCase();
-    if (gp.includes('super high') || gp.includes('high')) return 'high';
+    if (gp.includes('super')) return 'superHigh';
+    if (gp.includes('high')) return 'high';
     if (gp.includes('medium') || gp.includes('med')) return 'medium';
     if (gp.includes('low')) return 'low';
     return 'other';
@@ -415,7 +392,7 @@ function aggregateSummaryMetrics(rows, summaryRow) {
     let totalSaleMt = 0;
     let manifestedTotal = 0;
     let lostFreight = 0;
-    const gpMtMap = { high: 0, medium: 0, low: 0, other: 0 };
+    const gpMtMap = { superHigh: 0, high: 0, medium: 0, low: 0, other: 0 };
 
     (rows || []).forEach(function (row, index) {
         const weight = parseFloat(row['Weight'] || row.weight || row.QtyMT || 0) || 0;
@@ -449,7 +426,10 @@ function aggregateSummaryMetrics(rows, summaryRow) {
     const sr = summaryRow || {};
     totalSaleMt = parseFloat(sr.TotalSale || sr.TotalSales || sr.TotalActualSales || sr['Total Sale'] || totalSaleMt) || totalSaleMt;
     const teamSaleMt = parseFloat(sr.TeamSale || sr.TeamSaleMT || sr['Team Sale'] || totalSaleMt) || totalSaleMt;
-    const lostClients = parseFloat(sr.LostClients || sr.LostClient || sr['Lost Clients'] || lostClientParties.size) || lostClientParties.size;
+    const apiLostClientCount = sr.LostClientCount ?? sr.LostClients ?? sr.LostClient ?? sr['Lost Clients'];
+    const lostClients = (apiLostClientCount !== undefined && apiLostClientCount !== null && apiLostClientCount !== '')
+        ? (parseFloat(apiLostClientCount) || 0)
+        : lostClientParties.size;
     lostFreight = parseFloat(sr.LostFreight || sr['Lost Freight'] || lostFreight) || lostFreight;
     const totalParties = parseInt(
         sr.TotalClients || sr.TotalParties || sr['Total Parties'] || sr.TotalClient || sr['Total Clients'] || sr.NoOfParties || uniqueParties.size,
@@ -457,10 +437,17 @@ function aggregateSummaryMetrics(rows, summaryRow) {
     ) || uniqueParties.size;
     const nbdCount = parseInt(sr.NBDCount || sr.NBD || sr['NBD Count'] || nbdParties.size, 10) || nbdParties.size;
     const crrCount = parseInt(sr.CRRCount || sr.CRR || sr['CRR Count'] || crrParties.size, 10) || crrParties.size;
-    const totalManifested = parseFloat(sr.TotalManifested || sr.totalManifested || manifestedTotal) || manifestedTotal;
-    const readyDispatch = parseFloat(sr.ReadyToDispatch || sr.ReadyToDispatchStock || sr['Ready To Dispatch'] || 0) || 0;
+    const totalManifested = parseFloat(sr.TotalManifested || sr.totalManifested || sr['Total Manifested'] || manifestedTotal) || manifestedTotal;
+    const asOnDate = (toDate && toDate !== '0') ? new Date(toDate) : new Date();
+    const validAsOn = isNaN(asOnDate.getTime()) ? new Date() : asOnDate;
+    const daysInMonth = new Date(validAsOn.getFullYear(), validAsOn.getMonth() + 1, 0).getDate();
+    const daysAsOnDate = Math.max(1, Math.min(validAsOn.getDate(), daysInMonth));
+    const manifestedAsOnDate = daysInMonth > 0
+        ? (totalManifested / daysInMonth) * daysAsOnDate
+        : totalManifested;
+    const readyDispatch = parseFloat(sr.ReadyToDispatch || sr.ReaddyToDispatch || sr.ReadyToDispatchStock || sr['Ready To Dispatch'] || 0) || 0;
     const readyDispatchValue = parseFloat(sr.ReadyToDispatchValue || sr['Ready To Dispatch Value'] || sr.ReadyDispatchValue || 0) || 0;
-    const manifestActualScore = totalManifested > 0 ? (totalSaleMt / totalManifested) * 100 : 0;
+    const manifestActualScore = manifestedAsOnDate > 0 ? (totalSaleMt / manifestedAsOnDate) * 100 : 0;
 
     return {
         totalSaleMt,
@@ -475,7 +462,8 @@ function aggregateSummaryMetrics(rows, summaryRow) {
         readyDispatch,
         readyDispatchValue,
         gpMtMap,
-        totalManifested
+        totalManifested,
+        manifestedAsOnDate
     };
 }
 
@@ -490,6 +478,7 @@ function clearSummaryDashboard() {
     setText('skpi-total-parties', '0');
     setText('skpi-manifest-score', '0.00%');
     setText('skpi-total-manifested', '0 MT');
+    setText('skpi-manifest-asondate', '0 MT');
     setText('skpi-lost-freight', '₹ 0');
     setText('skpi-nbd-count', '0');
     setText('skpi-crr-count', '0');
@@ -511,6 +500,15 @@ function clearSummaryDashboard() {
         try { summaryNbdCrrDonutChartInstance.destroy(); } catch (e) { /* ignore */ }
         summaryNbdCrrDonutChartInstance = null;
     }
+    if (summaryGpWiseManPieChartInstance) {
+        try { summaryGpWiseManPieChartInstance.destroy(); } catch (e) { /* ignore */ }
+        summaryGpWiseManPieChartInstance = null;
+    }
+    const gpWiseLegend = document.getElementById('summaryGpWiseManLegend');
+    if (gpWiseLegend) gpWiseLegend.innerHTML = '';
+    G_SummaryReportRows = [];
+    renderSummaryTop10Clients([]);
+    renderSummaryHighGpAchievement([]);
 }
 
 function renderSummaryGpLegend(items) {
@@ -571,7 +569,8 @@ function renderSummaryGpPieChart(gpMtMap) {
     }
 
     const chartItems = [
-        { key: 'high', label: 'High GP', criteria: '(> 12%)', color: '#1cc88a' },
+        { key: 'superHigh', label: 'Super High GP', criteria: '(> 15%)', color: '#224abe' },
+        { key: 'high', label: 'High GP', criteria: '(12% – 15%)', color: '#1cc88a' },
         { key: 'medium', label: 'Medium GP', criteria: '(5% – 12%)', color: '#f6c23e' },
         { key: 'low', label: 'Low GP', criteria: '(< 5%)', color: '#e74a3b' }
     ];
@@ -697,7 +696,18 @@ function renderSummaryDashboard(metrics) {
     setText('skpi-total-parties', formatInteger(metrics.totalParties));
     setText('skpi-manifest-score', `${metrics.manifestActualScore.toFixed(2)}%`);
     setText('skpi-total-manifested', `${formatNumber(metrics.totalManifested)} MT`);
+    setText('skpi-manifest-asondate', `${formatNumber(metrics.manifestedAsOnDate)} MT`);
     setText('skpi-lost-freight', formatIndianCurrency(metrics.lostFreight));
+
+    const saleAsOnLabel = document.getElementById('skpi-total-sale-label');
+    const asOnLabel = document.getElementById('skpi-manifested-asondate-label');
+    const asOnText = toDate && toDate !== '0' ? formatDateForDisplay(toDate) : 'Current date';
+    if (saleAsOnLabel) {
+        saleAsOnLabel.textContent = `As on ${asOnText}`;
+    }
+    if (asOnLabel) {
+        asOnLabel.textContent = asOnText;
+    }
     setText('skpi-nbd-count', formatInteger(metrics.nbdCount));
     setText('skpi-crr-count', formatInteger(metrics.crrCount));
     setText('skpi-nbd-crr-total', formatInteger(metrics.nbdCrrTotal));
@@ -706,6 +716,179 @@ function renderSummaryDashboard(metrics) {
 
     renderSummaryGpPieChart(metrics.gpMtMap);
     renderSummaryNbdCrrDonutChart(metrics.nbdCount, metrics.crrCount);
+    renderSummaryTop10Clients(G_SummaryReportRows);
+    renderSummaryHighGpAchievement(G_SummaryReportRows);
+}
+
+function parseSummaryGpPercent(row) {
+    const raw = row['GP%'] || row['GP %'] || row.GPPercent || row.GPPer || row['Gross Profit %'] || row.GrossProfitPct;
+    const num = parseFloat(raw);
+    if (!Number.isNaN(num)) {
+        return num;
+    }
+    return null;
+}
+
+function aggregateTop10Clients(rows) {
+    const partyMap = new Map();
+
+    (rows || []).forEach(function (row) {
+        const party = (row['Party Name'] || row.PartyName || row.PARTY_NAME || '').toString().trim();
+        if (!party) return;
+
+        const weight = parseFloat(row['Weight'] || row.weight || row.QtyMT || 0) || 0;
+        const gpPct = parseSummaryGpPercent(row);
+        const key = party.toLowerCase();
+        if (!partyMap.has(key)) {
+            partyMap.set(key, { partyName: party, saleMt: 0, gpPctSum: 0, gpPctCount: 0, gpLabel: (row['GP'] || row.GP || '').toString() });
+        }
+        const item = partyMap.get(key);
+        item.saleMt += weight;
+        if (gpPct !== null) {
+            item.gpPctSum += gpPct;
+            item.gpPctCount += 1;
+        }
+    });
+
+    return Array.from(partyMap.values())
+        .sort((a, b) => b.saleMt - a.saleMt)
+        .slice(0, 10)
+        .map(function (item) {
+            return {
+                partyName: item.partyName,
+                saleMt: item.saleMt,
+                gpPct: item.gpPctCount > 0 ? (item.gpPctSum / item.gpPctCount) : null,
+                gpLabel: item.gpLabel
+            };
+        });
+}
+
+function renderSummaryTop10Clients(rows) {
+    const tbody = document.getElementById('summaryTop10ClientsBody');
+    if (!tbody) return;
+
+    const items = aggregateTop10Clients(rows);
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = items.map(function (item, index) {
+        const gpText = item.gpPct !== null ? `${item.gpPct.toFixed(2)}%` : escapeHtml(item.gpLabel || '-');
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td class="client-name">${escapeHtml(item.partyName)}</td>
+                <td class="text-end">${formatNumber(item.saleMt)}</td>
+                <td class="text-end">${gpText}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function aggregateHighGpAchievement(rows) {
+    let highGpSale = 0;
+    let totalSale = 0;
+    const manMap = new Map();
+
+    (rows || []).forEach(function (row) {
+        const weight = parseFloat(row['Weight'] || row.weight || row.QtyMT || 0) || 0;
+        const manifested = parseFloat(row['Manifestation'] || row.Manifestation || 0) || 0;
+        const gpCategory = categorizeGpForSummary(row['GP'] || row.GP);
+        const marketingMan = (row['Marketing Man'] || row.MarketingMan || row['MGKT Person'] || row.Person || 'Unknown').toString().trim() || 'Unknown';
+        const isHighGp = gpCategory === 'superHigh' || gpCategory === 'high';
+
+        totalSale += weight;
+        if (isHighGp) highGpSale += weight;
+
+        if (!manMap.has(marketingMan)) {
+            manMap.set(marketingMan, { highGpSale: 0, totalSale: 0, manifested: 0 });
+        }
+        const man = manMap.get(marketingMan);
+        man.totalSale += weight;
+        man.manifested += manifested;
+        if (isHighGp) man.highGpSale += weight;
+    });
+
+    const achievedPct = totalSale > 0 ? (highGpSale / totalSale) * 100 : 0;
+    const marketingRows = Array.from(manMap.entries())
+        .map(function ([marketingMan, data]) {
+            const achieved = data.totalSale > 0 ? (data.highGpSale / data.totalSale) * 100 : 0;
+            return {
+                marketingMan,
+                achieved,
+                manifested: data.manifested,
+                status: achieved >= HIGH_GP_SALE_TARGET_PCT ? 'Achieved' : 'Not Achieved'
+            };
+        })
+        .sort((a, b) => b.achieved - a.achieved);
+
+    return { highGpSale, totalSale, achievedPct, marketingRows };
+}
+
+function renderSummaryHighGpGauge(achievedPct) {
+    const meterArc = document.getElementById('summaryHighGpMeterArc');
+    const valueEl = document.getElementById('summaryHighGpGaugeValue');
+    const statusEl = document.getElementById('summaryHighGpGaugeStatus');
+    const achieved = Math.max(0, achievedPct || 0);
+    const isAchieved = achieved >= HIGH_GP_SALE_TARGET_PCT;
+    const meterLength = 251.3;
+    const shown = Math.min(achieved, 100);
+
+    if (valueEl) {
+        valueEl.textContent = `${achieved.toFixed(0)}%`;
+        valueEl.classList.toggle('not-achieved', !isAchieved);
+    }
+    if (statusEl) {
+        statusEl.textContent = isAchieved ? 'Achieved' : 'Not Achieved';
+        statusEl.classList.toggle('not-achieved', !isAchieved);
+    }
+    if (meterArc) {
+        meterArc.classList.toggle('not-achieved', !isAchieved);
+        meterArc.style.strokeDasharray = String(meterLength);
+        meterArc.style.strokeDashoffset = String(meterLength - ((shown / 100) * meterLength));
+    }
+}
+
+function renderSummaryHighGpManTable(marketingRows) {
+    const table = document.querySelector('.summary-highgp-table');
+    const tbody = document.getElementById('summaryHighGpManBody');
+    if (!tbody) return;
+
+    if (table) {
+        const thead = table.querySelector('thead');
+        if (thead) {
+            thead.innerHTML = `
+                <tr>
+                    <th>Marketing Man</th>
+                    <th class="text-end">Achieved (%)</th>
+                    <th>Status</th>
+                </tr>
+            `;
+        }
+    }
+
+    if (!marketingRows || marketingRows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No data available</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = marketingRows.map(function (row) {
+        const statusClass = row.status === 'Achieved' ? 'achieved' : 'not-achieved';
+        return `
+            <tr>
+                <td>${escapeHtml(row.marketingMan)}</td>
+                <td class="text-end">${row.achieved.toFixed(0)}%</td>
+                <td class="summary-highgp-status ${statusClass}">${row.status}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderSummaryHighGpAchievement(rows) {
+    const data = aggregateHighGpAchievement(rows);
+    renderSummaryHighGpGauge(data.achievedPct);
+    renderSummaryHighGpManTable(data.marketingRows);
 }
 
 function formatDateYYYYMMDD(date) {
@@ -873,8 +1056,8 @@ function GetAllFilters() {
             gp: filterValues.ddlGPlist?.joined || '0',
             industryType: filterValues.ddlIndustryTypelist?.joined || '0',
             notPurchaseFromDays: (rawNotPurchaseFromDays === undefined || rawNotPurchaseFromDays === null || String(rawNotPurchaseFromDays).trim() === '') ? '60' : String(rawNotPurchaseFromDays).trim(),
-            fromDate: filterValues.dateRange?.fromDate || fromDate || '0',
-            toDate: filterValues.dateRange?.toDate || toDate || '0'
+            fromDate: resolveFilterDate(filterValues.dateRange?.fromDate, fromDate),
+            toDate: resolveFilterDate(filterValues.dateRange?.toDate, toDate)
         };
 
         console.log('Processed filters:', filters);
@@ -895,17 +1078,75 @@ function GetAllFilters() {
     }
 }
 
+function getCurrentMonthToDateRange() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const urlParams = new URLSearchParams(window.location.search);
+    const rangeParam = (urlParams.get('range') || '').toLowerCase();
+
+    if (rangeParam === 'thisyear') {
+        const fyStartYear = (month >= 3) ? year : (year - 1);
+        return {
+            fromDate: `${fyStartYear}-04-01`,
+            toDate: `${fyStartYear + 1}-03-31`
+        };
+    }
+
+    const mm = String(month + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    return {
+        fromDate: `${year}-${mm}-01`,
+        toDate: `${year}-${mm}-${dd}`
+    };
+}
+
+function applyDefaultDateRangeToFilter(filterPanel) {
+    const range = getCurrentMonthToDateRange();
+    fromDate = range.fromDate;
+    toDate = range.toDate;
+
+    const dateRangeEl = filterPanel?.shadowRoot?.getElementById('dateRange');
+    if (dateRangeEl && typeof dateRangeEl.setRange === 'function') {
+        dateRangeEl.setRange({ fromDate: range.fromDate, toDate: range.toDate });
+        console.log(`Setting current month-to-date range: ${range.fromDate} to ${range.toDate}`);
+        return true;
+    }
+
+    console.warn('DateRange element not found in shadow DOM');
+    return false;
+}
+
+function resolveFilterDate(filterValue, fallbackValue) {
+    if (filterValue && filterValue !== '0') {
+        return filterValue;
+    }
+    if (fallbackValue && fallbackValue !== '0') {
+        return fallbackValue;
+    }
+    return '0';
+}
+
 // Helper function to format date for display
 function formatDateForDisplay(dateStr) {
     if (!dateStr || dateStr === '0') return '';
     try {
+        const parts = String(dateStr).split('-');
+        if (parts.length === 3) {
+            const year = parseInt(parts[0], 10);
+            const monthIndex = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
+                'july', 'august', 'september', 'october', 'november', 'december'];
+            if (!Number.isNaN(year) && monthIndex >= 0 && monthIndex <= 11 && !Number.isNaN(day)) {
+                return `${day} ${monthNames[monthIndex]} ${year}`;
+            }
+        }
         const date = new Date(dateStr);
         const day = date.getDate();
         const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
             'july', 'august', 'september', 'october', 'november', 'december'];
-        const month = monthNames[date.getMonth()];
-        const year = date.getFullYear();
-        return `${day} ${month} ${year}`;
+        return `${day} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
     } catch (e) {
         return dateStr;
     }
@@ -948,39 +1189,503 @@ function renderSummaryReport() {
         if (!parsed.rows || parsed.rows.length === 0) {
             console.warn('No summary report data received');
             clearSummaryDashboard();
-            const hdr = document.getElementById('summaryReportTableHeader');
-            const bdy = document.getElementById('summaryReportTableBody');
-            if (hdr) hdr.innerHTML = '';
-            if (bdy) bdy.innerHTML = '<tr><td class="text-center">No data available</td></tr>';
+            renderGPWiseSummary({ manageLoader: false });
             return;
         }
 
+        G_SummaryReportRows = parsed.rows;
         const metrics = aggregateSummaryMetrics(parsed.rows, parsed.summaryRow);
         renderSummaryDashboard(metrics);
-
-        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "NBD/CRR", "Lost Client"];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = [];
-        const ColumnAlignment = {
-            'Weight': 'right',
-            'Manifestation': 'right',
-            'Total Sales': 'right',
-            'Growth (%)': 'right',
-            'Target': 'right'
-        };
-
-        if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("summaryReportTableHeader", "summaryReportTableBody", parsed.rows, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
-        }
+        renderGPWiseSummary({ manageLoader: false });
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching summary report data:', err);
         clearSummaryDashboard();
+        renderGPWiseSummary({ manageLoader: false });
     });
+}
+
+const PARTY_SCORE_RANGES = [
+    { key: 'veryPoor', min: 0, max: 15, label: '0 - 15 (Very Poor)', color: '#e74a3b' },
+    { key: 'poor', min: 15, max: 20, label: '15 - 20 (Poor)', color: '#e67e22' },
+    { key: 'average', min: 20, max: 25, label: '20 - 25 (Average)', color: '#f6c23e' },
+    { key: 'good', min: 25, max: 30, label: '25 - 30 (Good)', color: '#1cc88a' },
+    { key: 'veryGood', min: 30, max: 35, label: '30 - 35 (Very Good)', color: '#4e73df' },
+    { key: 'excellent', min: 35, max: 40, label: '35 - 40 (Excellent)', color: '#6f42c1' }
+];
+
+const PARTY_SCORE_CATEGORY_BY_RANGE = {
+    veryPoor: { label: 'Poor', css: 'ps-badge-poor' },
+    poor: { label: 'Needs Attention', css: 'ps-badge-attention' },
+    average: { label: 'Average', css: 'ps-badge-average' },
+    good: { label: 'Good', css: 'ps-badge-good' },
+    veryGood: { label: 'Very Good', css: 'ps-badge-verygood' },
+    excellent: { label: 'Excellent', css: 'ps-badge-excellent' }
+};
+
+function getPartyField(row, names) {
+    for (let i = 0; i < names.length; i++) {
+        const key = names[i];
+        if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+            return row[key];
+        }
+    }
+    return '';
+}
+
+function getPartyName(row) {
+    return String(getPartyField(row, ['Party Name', 'PartyName', 'Parties', 'Dealer Name', 'DealerName']) || '').trim();
+}
+
+function getPartyKey(row) {
+    const key = getPartyField(row, ['Party ID', 'PartyID', 'Party Code', 'PartyCode', 'Party Name', 'PartyName']);
+    return String(key || '').trim().toUpperCase();
+}
+
+function getPartySaleMt(row) {
+    const direct = parseFloat(getPartyField(row, ['Weight', 'Sale MT', 'SaleMT', 'Sales', 'Total Sale', 'TotalSale', 'Sale'])) || 0;
+    if (direct > 0) return direct;
+
+    const gst = String(getPartyField(row, ['Party GST', 'PartyGST', 'GSTNo', 'GSTIN']) || '').trim().toUpperCase();
+    const name = getPartyName(row).toUpperCase();
+    if (gst && G_PartySaleMap[gst] > 0) return G_PartySaleMap[gst];
+    if (name && G_PartySaleMap[name] > 0) return G_PartySaleMap[name];
+    return 0;
+}
+
+function buildPartySaleMap(summaryRows) {
+    const map = {};
+    (summaryRows || []).forEach(function (row) {
+        const weight = parseFloat(row['Weight'] || row.weight || row.QtyMT || 0) || 0;
+        if (!weight) return;
+
+        const name = String(row['Party Name'] || row.PartyName || '').trim().toUpperCase();
+        const gst = String(row['Party GST'] || row.PartyGST || row.GSTNo || row.GSTIN || '').trim().toUpperCase();
+        if (name) map[name] = (map[name] || 0) + weight;
+        if (gst) map[gst] = (map[gst] || 0) + weight;
+    });
+    return map;
+}
+
+function getPartyRawScore(row) {
+    const raw = parseFloat(getPartyField(row, ['Score', 'Party Score', 'PartyScore', 'Total Score']));
+    return Number.isFinite(raw) ? raw : 0;
+}
+
+function detectPartyScoreScale(rows) {
+    let max = 0;
+    (rows || []).forEach(function (row) {
+        const score = getPartyRawScore(row);
+        if (score > max) max = score;
+    });
+    return max > 40 ? 100 : 40;
+}
+
+function toPartyScore40(rawScore, scale) {
+    const score = Number(rawScore) || 0;
+    if (scale === 100) {
+        return Math.max(0, Math.min(40, (score / 100) * 40));
+    }
+    return Math.max(0, Math.min(40, score));
+}
+
+function toPartyScore100(rawScore, scale) {
+    const score = Number(rawScore) || 0;
+    if (scale === 100) {
+        return Math.max(0, Math.min(100, score));
+    }
+    return Math.max(0, Math.min(100, (score / 40) * 100));
+}
+
+function getPartyScoreRangeKey(score40) {
+    const score = Number(score40) || 0;
+    for (let i = 0; i < PARTY_SCORE_RANGES.length; i++) {
+        const range = PARTY_SCORE_RANGES[i];
+        const isLast = i === PARTY_SCORE_RANGES.length - 1;
+        if (score > range.min && score <= range.max) {
+            return range.key;
+        }
+        if (i === 0 && score >= range.min && score <= range.max) {
+            return range.key;
+        }
+        if (isLast && score > range.max) {
+            return range.key;
+        }
+    }
+    return PARTY_SCORE_RANGES[0].key;
+}
+
+function formatPartyMt(value) {
+    return Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+function formatPartyScore(value) {
+    return Number(value || 0).toFixed(2);
+}
+
+function buildPartyScoreLastMonthMap(rows) {
+    const scale = detectPartyScoreScale(rows);
+    const map = {};
+    (rows || []).forEach(function (row) {
+        const key = getPartyKey(row);
+        if (!key) return;
+        const existing = map[key];
+        const sale = getPartySaleMt(row);
+        const apiScore = getPartyRawScore(row);
+        const score100 = toPartyScore100(apiScore, scale);
+        if (!existing) {
+            map[key] = { score100: score100, apiScore: apiScore, sale: sale };
+            return;
+        }
+        existing.sale += sale;
+        existing.score100 = Math.max(existing.score100, score100);
+        existing.apiScore = Math.max(existing.apiScore || 0, apiScore);
+    });
+    return map;
+}
+
+function aggregatePartyScoringRows(rows) {
+    const scale = detectPartyScoreScale(rows);
+    const partyMap = new Map();
+
+    (rows || []).forEach(function (row) {
+        const key = getPartyKey(row) || getPartyName(row).toUpperCase();
+        if (!key) return;
+
+        const apiScore = getPartyRawScore(row);
+        const score100 = toPartyScore100(apiScore, scale);
+        const gst = String(getPartyField(row, ['Party GST', 'PartyGST', 'GSTNo', 'GSTIN']) || '').trim().toUpperCase();
+        const existing = partyMap.get(key);
+        if (!existing) {
+            partyMap.set(key, {
+                key: key,
+                partyName: getPartyName(row) || key,
+                gst: gst,
+                sale: 0,
+                apiScore: apiScore,
+                score100: score100,
+                score40: toPartyScore40(apiScore, scale)
+            });
+            return;
+        }
+        if (gst && !existing.gst) existing.gst = gst;
+        if (apiScore > (existing.apiScore || 0)) {
+            existing.apiScore = apiScore;
+            existing.score100 = score100;
+            existing.score40 = toPartyScore40(apiScore, scale);
+        }
+    });
+
+    partyMap.forEach(function (party) {
+        const nameKey = String(party.partyName || '').trim().toUpperCase();
+        party.sale = G_PartySaleMap[party.gst] || G_PartySaleMap[party.key] || G_PartySaleMap[nameKey] || 0;
+    });
+
+    const parties = Array.from(partyMap.values()).map(function (party) {
+        const rangeKey = getPartyScoreRangeKey(party.score40);
+        return {
+            ...party,
+            rangeKey: rangeKey,
+            category: PARTY_SCORE_CATEGORY_BY_RANGE[rangeKey]
+        };
+    }).sort(function (a, b) {
+        if (b.score100 !== a.score100) return b.score100 - a.score100;
+        return b.sale - a.sale;
+    });
+
+    const rangeStats = PARTY_SCORE_RANGES.map(function (range) {
+        return { ...range, sale: 0, parties: 0 };
+    });
+    const rangeIndex = {};
+    rangeStats.forEach(function (range, idx) { rangeIndex[range.key] = idx; });
+
+    let totalSale = 0;
+    let totalScore = 0;
+    let topScore = 0;
+    let lowScore = parties.length ? Number.POSITIVE_INFINITY : 0;
+    let goodCount = 0;
+
+    parties.forEach(function (party) {
+        totalSale += party.sale;
+        totalScore += party.score100;
+        if (party.score100 > topScore) topScore = party.score100;
+        if (party.score100 < lowScore) lowScore = party.score100;
+        if (party.score100 >= 70) goodCount += 1;
+        const idx = rangeIndex[party.rangeKey];
+        if (idx !== undefined) {
+            rangeStats[idx].sale += party.sale;
+            rangeStats[idx].parties += 1;
+        }
+    });
+
+    return {
+        parties: parties,
+        rangeStats: rangeStats,
+        totalSale: totalSale,
+        totalParties: parties.length,
+        avgScore: parties.length ? (totalScore / parties.length) : 0,
+        topScore: topScore,
+        lowScore: parties.length ? lowScore : 0,
+        goodCount: goodCount,
+        attentionCount: parties.length - goodCount
+    };
+}
+
+function clearPartyScoringDashboard() {
+    G_PartyScoringRows = [];
+    G_PartyScoringLastMonthMap = {};
+    G_PartySaleMap = {};
+
+    if (partyScoreDonutChartInstance) {
+        try { partyScoreDonutChartInstance.destroy(); } catch (e) { /* ignore */ }
+        partyScoreDonutChartInstance = null;
+    }
+
+    const setText = function (id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setText('psDonutTotalSale', '0 MT');
+    setText('psDonutTotalParties', '(0 Parties)');
+    setText('psRangeTotalSale', '0');
+    setText('psRangeTotalParties', '0');
+    setText('psAvgScore', '0.00');
+    setText('psTopScore', '0.00');
+    setText('psLowScore', '0.00');
+    setText('psGoodCount', '0');
+    setText('psGoodPct', '0.00%');
+    setText('psAttentionCount', '0');
+    setText('psAttentionPct', '0.00%');
+
+    const rangeBody = document.getElementById('psScoreRangeBody');
+    if (rangeBody) {
+        rangeBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No data available</td></tr>';
+    }
+    const partyHeader = document.getElementById('partyScoreTableHeader');
+    const partyBody = document.getElementById('partyScoreTableBody');
+    const partyPager = document.getElementById('paginator-partyScoreTable');
+    if (partyHeader) partyHeader.innerHTML = '';
+    if (partyBody) {
+        partyBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No data available</td></tr>';
+    }
+    if (partyPager) partyPager.innerHTML = '';
+}
+
+function renderPartyScoreRangeTable(rangeStats, totalSale, totalParties) {
+    const tbody = document.getElementById('psScoreRangeBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = rangeStats.map(function (range) {
+        return `<tr>
+            <td><span class="ps-dot" style="background:${range.color}"></span>${escapeHtml(range.label)}</td>
+            <td class="text-end">${formatPartyMt(range.sale)}</td>
+            <td class="text-end">${formatInteger(range.parties)}</td>
+        </tr>`;
+    }).join('');
+
+    const saleEl = document.getElementById('psRangeTotalSale');
+    const partyEl = document.getElementById('psRangeTotalParties');
+    if (saleEl) saleEl.textContent = formatPartyMt(totalSale);
+    if (partyEl) partyEl.textContent = formatInteger(totalParties);
+}
+
+function renderPartyScoreDonutChart(rangeStats, totalSale, totalParties) {
+    const canvas = document.getElementById('partyScoreDonutChart');
+    const saleEl = document.getElementById('psDonutTotalSale');
+    const partyEl = document.getElementById('psDonutTotalParties');
+    if (saleEl) saleEl.textContent = `${formatPartyMt(totalSale)} MT`;
+    if (partyEl) partyEl.textContent = `(${formatInteger(totalParties)} Parties)`;
+    if (!canvas) return;
+
+    if (partyScoreDonutChartInstance) {
+        try { partyScoreDonutChartInstance.destroy(); } catch (e) { /* ignore */ }
+        partyScoreDonutChartInstance = null;
+    }
+
+    const visible = rangeStats.filter(function (range) { return range.sale > 0; });
+    if (visible.length === 0) return;
+
+    partyScoreDonutChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: visible.map(function (range) { return range.label; }),
+            datasets: [{
+                data: visible.map(function (range) { return range.sale; }),
+                backgroundColor: visible.map(function (range) { return range.color; }),
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '64%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const value = context.parsed || 0;
+                            const pct = totalSale > 0 ? ((value / totalSale) * 100).toFixed(2) : '0.00';
+                            return `${context.label}: ${formatPartyMt(value)} MT (${pct}%)`;
+                        }
+                    }
+                },
+                datalabels: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function renderPartyScoreSummaryKpis(summary) {
+    const setText = function (id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setText('psAvgScore', formatPartyScore(summary.avgScore));
+    setText('psTopScore', formatPartyScore(summary.topScore));
+    setText('psLowScore', formatPartyScore(summary.lowScore));
+
+    const goodPct = summary.totalParties > 0 ? (summary.goodCount / summary.totalParties) * 100 : 0;
+    const attentionPct = summary.totalParties > 0 ? (summary.attentionCount / summary.totalParties) * 100 : 0;
+    setText('psGoodCount', formatInteger(summary.goodCount));
+    setText('psGoodPct', `${goodPct.toFixed(2)}%`);
+    setText('psAttentionCount', formatInteger(summary.attentionCount));
+    setText('psAttentionPct', `${attentionPct.toFixed(2)}%`);
+}
+
+function getPartyScoreTrendHtml(party) {
+    const lastMonth = G_PartyScoringLastMonthMap[party.key];
+    if (!lastMonth || lastMonth.apiScore === undefined) {
+        return '<span class="ps-trend-flat">-</span>';
+    }
+
+    const diff = (party.apiScore || 0) - lastMonth.apiScore;
+    if (Math.abs(diff) < 0.005) {
+        return '<span class="ps-trend-flat">0.00</span>';
+    }
+    if (diff > 0) {
+        return `<span class="ps-trend-up">↑ ${formatPartyScore(diff)}</span>`;
+    }
+    return `<span class="ps-trend-down">↓ ${formatPartyScore(diff)}</span>`;
+}
+
+function decoratePartyScoreCategoryCells() {
+    const categoryCss = {
+        'Excellent': 'ps-badge-excellent',
+        'Very Good': 'ps-badge-verygood',
+        'Good': 'ps-badge-good',
+        'Average': 'ps-badge-average',
+        'Needs Attention': 'ps-badge-attention',
+        'Poor': 'ps-badge-poor'
+    };
+
+    document.querySelectorAll('#partyScoreTableBody td:nth-child(6)').forEach(function (td) {
+        if (td.querySelector('.ps-badge')) return;
+        const label = (td.textContent || '').trim();
+        if (!label) return;
+        const css = categoryCss[label] || 'ps-badge-average';
+        td.innerHTML = `<span class="ps-badge ${css}">${escapeHtml(label)}</span>`;
+    });
+}
+
+function bindPartyScoreTableDecorate() {
+    const tbody = document.getElementById('partyScoreTableBody');
+    if (!tbody || tbody.dataset.decorated === '1') return;
+    tbody.dataset.decorated = '1';
+    const observer = new MutationObserver(function () {
+        decoratePartyScoreCategoryCells();
+    });
+    observer.observe(tbody, { childList: true });
+}
+
+function renderPartyWiseScoreTable(parties) {
+    const tbody = document.getElementById('partyScoreTableBody');
+    const thead = document.getElementById('partyScoreTableHeader');
+    if (!tbody || !thead) return;
+
+    bindPartyScoreTableDecorate();
+
+    if (!parties.length) {
+        thead.innerHTML = '';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No data available</td></tr>';
+        const pager = document.getElementById('paginator-partyScoreTable');
+        if (pager) pager.innerHTML = '';
+        return;
+    }
+
+    const rows = parties.map(function (party, index) {
+        const category = party.category || { label: '-' };
+        return {
+            'S.No.': index + 1,
+            'Party Name': party.partyName,
+            'Total Sale (MT)': formatPartyMt(party.sale),
+            'Total Score (Out of 100)': formatPartyScore(party.apiScore),
+            'Score %': `${formatPartyScore(party.apiScore)}%`,
+            'Score Category': category.label || '-',
+            'Score Trend (vs Last Month)': getPartyScoreTrendHtml(party)
+        };
+    });
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable(
+            'partyScoreTableHeader',
+            'partyScoreTableBody',
+            rows,
+            false,
+            [],
+            ['Party Name', 'Score Category'],
+            [],
+            [],
+            [],
+            [],
+            {
+                'S.No.': 'center',
+                'Total Sale (MT)': 'right',
+                'Total Score (Out of 100)': 'center',
+                'Score %': 'center',
+                'Score Category': 'center',
+                'Score Trend (vs Last Month)': 'center'
+            },
+            true
+        );
+        decoratePartyScoreCategoryCells();
+        return;
+    }
+
+    tbody.innerHTML = rows.map(function (row) {
+        const cssMap = {
+            'Excellent': 'ps-badge-excellent',
+            'Very Good': 'ps-badge-verygood',
+            'Good': 'ps-badge-good',
+            'Average': 'ps-badge-average',
+            'Needs Attention': 'ps-badge-attention',
+            'Poor': 'ps-badge-poor'
+        };
+        const css = cssMap[row['Score Category']] || 'ps-badge-average';
+        return `<tr>
+            <td class="ps-center">${row['S.No.']}</td>
+            <td class="ps-name">${escapeHtml(row['Party Name'])}</td>
+            <td class="ps-num">${row['Total Sale (MT)']}</td>
+            <td class="ps-center">${row['Total Score (Out of 100)']}</td>
+            <td class="ps-center">${row['Score %']}</td>
+            <td class="ps-center"><span class="ps-badge ${css}">${escapeHtml(row['Score Category'])}</span></td>
+            <td class="ps-center">${row['Score Trend (vs Last Month)']}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderPartyScoringDashboard() {
+    const summary = aggregatePartyScoringRows(G_PartyScoringRows);
+    renderPartyScoreRangeTable(summary.rangeStats, summary.totalSale, summary.totalParties);
+    renderPartyScoreDonutChart(summary.rangeStats, summary.totalSale, summary.totalParties);
+    renderPartyScoreSummaryKpis(summary);
+    renderPartyWiseScoreTable(summary.parties);
 }
 
 function renderPartyScoring() {
@@ -990,84 +1695,44 @@ function renderPartyScoring() {
         return;
     }
 
-    // Update date range display for this tab
     updateReportDateRangeDisplay();
-
     Showloader();
 
-    SalesanalysisASTService.GetSalesAnalysisData('PARTY_SCORING', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays).then(function (response) {
-        HideLoader();
+    const lastMonthRange = getLastMonthAsOnDateRange(filters.fromDate, filters.toDate);
+    const currentPromise = SalesanalysisASTService.GetSalesAnalysisData('PARTY_SCORING', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays);
+    const lastMonthPromise = lastMonthRange
+        ? SalesanalysisASTService.GetSalesAnalysisData('PARTY_SCORING', filters.dealerCodes, lastMonthRange.fromDate, lastMonthRange.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays)
+        : Promise.resolve([]);
+    const salePromise = SalesanalysisASTService.GetMultipleTableSalesAnalysisData(
+        'SUMMARY_REPORT',
+        filters.dealerCodes,
+        filters.fromDate,
+        filters.toDate,
+        filters.salesPersons,
+        filters.cities,
+        filters.status,
+        filters.gp,
+        filters.industryType,
+        filters.notPurchaseFromDays
+    );
 
-        if (!response || response.length === 0) {
+    Promise.all([currentPromise, lastMonthPromise, salePromise]).then(function ([response, lastMonthResponse, saleResponse]) {
+        HideLoader();
+        G_PartyScoringRows = Array.isArray(response) ? response : [];
+        G_PartyScoringLastMonthMap = buildPartyScoreLastMonthMap(Array.isArray(lastMonthResponse) ? lastMonthResponse : []);
+        G_PartySaleMap = buildPartySaleMap(parseSummaryReportResponse(saleResponse).rows);
+
+        if (!G_PartyScoringRows.length) {
             console.warn('No party scoring data received');
-            // Clear summary grids
-            document.getElementById('locationSummaryBody').innerHTML = '<tr><td colspan="2" class="text-center">No data available</td></tr>';
-            document.getElementById('mgktPersonSummaryBody').innerHTML = '<tr><td colspan="2" class="text-center">No data available</td></tr>';
-            document.getElementById('partyIdSummaryBody').innerHTML = '<tr><td colspan="2" class="text-center">No data available</td></tr>';
+            clearPartyScoringDashboard();
             return;
         }
 
-        // Calculate summary data from grid response
-        const locationCounts = new Map();
-        const mgktPersonCounts = new Map();
-        const partyIdCounts = new Map();
-
-        response.forEach(function (row) {
-            // Count by Location
-            const location = row['Location'] || row.Location || '';
-            if (location) {
-                locationCounts.set(location, (locationCounts.get(location) || 0) + 1);
-            }
-
-            // Count by Marketing Person
-            const mgktPerson = row['Marketing Man'] || row.MarketingMan || row['MGKT Person'] || '';
-            if (mgktPerson) {
-                mgktPersonCounts.set(mgktPerson, (mgktPersonCounts.get(mgktPerson) || 0) + 1);
-            }
-
-            //// Count by Party ID
-            //const partyId = row['Party ID'] || row.PartyID || row['Party Name'] || '';
-            //if (partyId) {
-            //    partyIdCounts.set(partyId, (partyIdCounts.get(partyId) || 0) + 1);
-            //}
-            // Count by Party ID
-            const partyId = row['Party ID'] || row.PartyID || row['Party Name'] || '';
-            if (partyId) {
-                const parsed = parseInt(row['Score'], 10);
-                partyIdCounts.set(partyId, Number.isNaN(parsed) ? 0 : parsed);
-            }
-        });
-
-        // Populate Location Summary Grid
-        populateSummaryGrid('locationSummaryBody', locationCounts, 'Location');
-
-        // Populate MGKT Person Summary Grid
-        populateSummaryGrid('mgktPersonSummaryBody', mgktPersonCounts, 'MGKT Person');
-
-        // Populate Party ID Summary Grid
-        populateSummaryGrid('partyIdSummaryBody', partyIdCounts, 'Parties');
-
-        // Render main Party Scoring table
-        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location"];
-        const NumericFilterColumn = ["Score"];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = [];
-        const ColumnAlignment = {
-            'Score': 'right',
-            'Sales': 'right',
-            'Transactions': 'right',
-            'Weight': 'right'
-        };
-
-        if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("partyScoringTableHeader", "partyScoringTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
-        }
+        renderPartyScoringDashboard();
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching party scoring data:', err);
+        clearPartyScoringDashboard();
     });
 }
 
@@ -1110,6 +1775,71 @@ function populateSummaryGrid(tbodyId, dataMap, columnName) {
     }
 }
 
+function getGpFilterCheckboxes() {
+    const filterPanel = document.getElementById('filterPanel');
+    const wrapper = filterPanel?.shadowRoot?.getElementById('ddlGPlist');
+    if (!wrapper) return { checkboxes: [], selectAll: null };
+    return {
+        checkboxes: Array.from(wrapper.querySelectorAll('.ddlGPlist_chk')),
+        selectAll: wrapper.querySelector('#ddlGPlist_all')
+    };
+}
+
+function isHighGpFilterValue(value) {
+    const gp = (value || '').toString().trim().toLowerCase();
+    return gp.includes('high') && !gp.includes('super');
+}
+
+function isSuperHighGpFilterValue(value) {
+    return (value || '').toString().trim().toLowerCase().includes('super');
+}
+
+function applyAllGpFilter() {
+    const { checkboxes, selectAll } = getGpFilterCheckboxes();
+    checkboxes.forEach(function (chk) {
+        chk.checked = true;
+    });
+    if (selectAll) {
+        selectAll.checked = true;
+    }
+}
+
+function applyGoldenCircleDefaultGpFilter() {
+    const { checkboxes, selectAll } = getGpFilterCheckboxes();
+    if (!checkboxes.length) return;
+
+    checkboxes.forEach(function (chk) {
+        chk.checked = isSuperHighGpFilterValue(chk.value) || isHighGpFilterValue(chk.value);
+    });
+    if (selectAll) {
+        selectAll.checked = false;
+    }
+}
+
+function getDefaultGoldenCircleGpJoined() {
+    const { checkboxes } = getGpFilterCheckboxes();
+    const defaultCodes = checkboxes
+        .map(function (chk) { return chk.value; })
+        .filter(function (value) { return isSuperHighGpFilterValue(value) || isHighGpFilterValue(value); });
+    return defaultCodes.length ? defaultCodes.join(',') : 'Super High,High';
+}
+
+function resolveGoldenCircleGp(gp) {
+    if (!gp || gp === '0') {
+        return getDefaultGoldenCircleGpJoined();
+    }
+    return gp;
+}
+
+function syncGpFilterForTab(tabTarget) {
+    const target = String(tabTarget || '').replace('#', '').toLowerCase();
+    if (target === 'goldencircle') {
+        applyGoldenCircleDefaultGpFilter();
+        return;
+    }
+    applyAllGpFilter();
+}
+
 function renderGoldenCircleClient() {
     const filters = GetAllFilters();
 
@@ -1117,48 +1847,20 @@ function renderGoldenCircleClient() {
         return;
     }
 
-    // Update date range display for this tab
     updateReportDateRangeDisplay();
-
     Showloader();
 
-    SalesanalysisASTService.GetSalesAnalysisData('GOLDEN_CIRCLE', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays).then(function (response) {
+    const goldenCircleGp = resolveGoldenCircleGp(filters.gp);
+    SalesanalysisASTService.GetSalesAnalysisData('GOLDEN_CIRCLE', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, goldenCircleGp, filters.industryType, filters.notPurchaseFromDays).then(function (response) {
         HideLoader();
 
         if (!response || response.length === 0) {
             console.warn('No golden circle client data received');
-            // Clear all visualizations
             clearGoldenCircleDashboard();
             return;
         }
 
-        // Process data for visualizations
         processGoldenCircleData(response);
-
-        // Render original data table
-        const StringFilterColumn = ["Party Name", "Item Name", "Marketing Man", "GP"];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = [];
-        const ColumnAlignment = {
-            'Weight': 'right',
-            'GP': 'right',
-            'Sales': 'right',
-            'Growth (%)': 'right'
-        };
-
-        if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("goldenCircleTableHeader", "goldenCircleTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
-        }
-
-        const goldenCircleNote = document.getElementById('goldenCircleGpFilterNote');
-        if (goldenCircleNote) {
-            goldenCircleNote.classList.remove('alert-warning');
-            goldenCircleNote.classList.add('alert-info');
-        }
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching golden circle data:', err);
@@ -1166,52 +1868,46 @@ function renderGoldenCircleClient() {
     });
 }
 
+function setGcText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
 function clearGoldenCircleDashboard() {
-    // Clear charts
     if (baseSalesPieChartInstance) {
-        baseSalesPieChartInstance.destroy();
+        try { baseSalesPieChartInstance.destroy(); } catch (e) { /* ignore */ }
         baseSalesPieChartInstance = null;
     }
     if (partySharePieChartInstance) {
-        partySharePieChartInstance.destroy();
+        try { partySharePieChartInstance.destroy(); } catch (e) { /* ignore */ }
         partySharePieChartInstance = null;
     }
 
-    // Clear tables
-    document.getElementById('mgktPersonWeightBody').innerHTML = '<tr><td colspan="2" class="text-center text-muted">No data available</td></tr>';
-    document.getElementById('baseWeightBody').innerHTML = '<tr><td colspan="2" class="text-center text-muted">No data available</td></tr>';
-    document.getElementById('gpWeightBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
-
-    const goldenCircleHeader = document.getElementById('goldenCircleTableHeader');
-    const goldenCircleBody = document.getElementById('goldenCircleTableBody');
-    const goldenCirclePaginator = document.getElementById('paginator-goldenCircleTable');
-    const noDataMessage = 'No data available. Please apply GP filter and select <strong>Super High</strong> to view Golden Circle Client data.';
-
-    if (goldenCircleHeader) goldenCircleHeader.innerHTML = '';
-    if (goldenCircleBody) goldenCircleBody.innerHTML = `<tr><td colspan="100%" class="text-center text-muted">${noDataMessage}</td></tr>`;
-    if (goldenCirclePaginator) goldenCirclePaginator.innerHTML = '';
-
-    const goldenCircleNote = document.getElementById('goldenCircleGpFilterNote');
-    if (goldenCircleNote) {
-        goldenCircleNote.classList.remove('alert-info');
-        goldenCircleNote.classList.add('alert-warning');
+    const gpSalesBody = document.getElementById('gcGpSalesBody');
+    if (gpSalesBody) gpSalesBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No data available</td></tr>';
+    const gpSalesFooter = document.getElementById('gcGpSalesFooter');
+    if (gpSalesFooter) {
+        gpSalesFooter.innerHTML = '<tr class="gc-total"><td>Grand Total</td><td class="text-end">0.00</td><td class="text-end">0.00</td><td class="text-end">0.00</td><td class="text-end">0.00</td></tr>';
     }
 
-    // Reset footers
-    const mgktFooter = document.getElementById('mgktPersonWeightFooter');
-    if (mgktFooter) {
-        mgktFooter.innerHTML = '<tr><td class="col-width-2-name"><strong>Grand total</strong></td><td class="text-end col-width-2-value"><strong>0.00</strong></td></tr>';
-    }
+    const shareBody = document.getElementById('gcMktShareBody');
+    if (shareBody) shareBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No data available</td></tr>';
+    setGcText('gcMktShareTotal', '0 MT');
 
-    const baseFooter = document.getElementById('baseWeightFooter');
-    if (baseFooter) {
-        baseFooter.innerHTML = '<tr><td class="col-width-2-name"><strong>Grand total</strong></td><td class="text-end col-width-2-value"><strong>0.00</strong></td></tr>';
-    }
+    const baseLegend = document.getElementById('gcBaseLegend');
+    if (baseLegend) baseLegend.innerHTML = '<div class="text-muted">No data available</div>';
 
-    const gpFooter = document.getElementById('gpWeightFooter');
-    if (gpFooter) {
-        gpFooter.innerHTML = '<tr><td class="col-width-4-party"><strong>Grand total</strong></td><td class="text-end col-width-4-value"><strong>0.00</strong></td><td class="text-end col-width-4-value"><strong>0.00</strong></td><td class="text-end col-width-4-value"><strong>0.00</strong></td></tr>';
-    }
+    const itemBody = document.getElementById('gcItemShareBody');
+    if (itemBody) itemBody.innerHTML = '<div class="text-center text-muted py-3">No data available</div>';
+
+    setGcText('gcKpiSuperHigh', '0.00 MT');
+    setGcText('gcKpiSuperHighPct', '0.00% of Total Sale');
+    setGcText('gcKpiHigh', '0.00 MT');
+    setGcText('gcKpiHighPct', '0.00% of Total Sale');
+    setGcText('gcKpiCombo', '0.00 MT');
+    setGcText('gcKpiComboPct', '0.00% of Total Sale');
+    const gpBody = document.getElementById('gcGpCategoryBody');
+    if (gpBody) gpBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
 }
 
 // Helper function to create pie charts using Chart.js
@@ -1283,207 +1979,299 @@ function generateColors(count) {
 }
 
 function processGoldenCircleData(data) {
-    // Clear existing charts
     if (baseSalesPieChartInstance) {
-        baseSalesPieChartInstance.destroy();
+        try { baseSalesPieChartInstance.destroy(); } catch (e) { /* ignore */ }
+        baseSalesPieChartInstance = null;
     }
     if (partySharePieChartInstance) {
-        partySharePieChartInstance.destroy();
+        try { partySharePieChartInstance.destroy(); } catch (e) { /* ignore */ }
+        partySharePieChartInstance = null;
     }
 
-    // Aggregations
     const mgktPersonWeight = new Map();
     const baseWeight = new Map();
-    const partyWeight = new Map();
-    const gpByParty = new Map(); // Map<partyCode, {High: 0, Low: 0, Medium: 0}>
+    const itemWeight = new Map();
+    const gpSale = { superHigh: 0, high: 0, medium: 0, low: 0, other: 0 };
+    const gpParties = {
+        superHigh: new Set(),
+        high: new Set(),
+        medium: new Set(),
+        low: new Set(),
+        other: new Set()
+    };
+    const gpByParty = new Map();
 
-    data.forEach(function (row) {
-        // Marketing Person aggregation
+    (data || []).forEach(function (row) {
         const marketingMan = row['Marketing Man'] || row.MarketingMan || row['MGKT Person'] || 'Unknown';
-        const weight = parseFloat(row['Weight'] || row.weight || 0);
+        const weight = parseFloat(row['Weight'] || row.weight || 0) || 0;
+        const itemName = row['Item Name'] || row.ItemName || 'Unknown';
+        const baseName = row['Base'] || row.BASE || row['Item Group'] || row.ItemGroup || itemName;
+        const partyName = (row['Party Name'] || row.PartyName || '').toString().trim() || 'Unknown';
+        const gpKey = categorizeGpForSummary(row['GP'] || row.GP || row.gp);
+
         mgktPersonWeight.set(marketingMan, (mgktPersonWeight.get(marketingMan) || 0) + weight);
-
-        // Base (Item Name) aggregation
-        const itemName = row['Item Name'] || row.ItemName || row.BASE || 'Unknown';
-        baseWeight.set(itemName, (baseWeight.get(itemName) || 0) + weight);
-
-        // Party aggregation for pie chart
-        const partyName = row['Party Name'] || row.PartyName || 'Unknown';
-        partyWeight.set(partyName, (partyWeight.get(partyName) || 0) + weight);
-
-        // GP by Party aggregation
-        const partyCode = row['Party Name'] || row.PartyName || row['PARTY_CODE'] || 'Unknown';
-        const gp = (row['GP'] || row.gp || '').toString().toUpperCase();
-
-        if (!gpByParty.has(partyCode)) {
-            gpByParty.set(partyCode, { High: 0, Low: 0, Medium: 0 });
+        baseWeight.set(baseName, (baseWeight.get(baseName) || 0) + weight);
+        itemWeight.set(itemName, (itemWeight.get(itemName) || 0) + weight);
+        gpSale[gpKey] = (gpSale[gpKey] || 0) + weight;
+        if (partyName) {
+            gpParties[gpKey].add(partyName.toUpperCase());
         }
-
-        const gpData = gpByParty.get(partyCode);
-        if (gp.includes('HIGH') || gp.includes('HRC') || gp.includes('CRCA') || gp.includes('HRPO')) {
-            gpData.High += weight;
-        } else if (gp.includes('LOW') || gp.includes('GI') || gp.includes('CRFH')) {
-            gpData.Low += weight;
-        } else if (gp.includes('MEDIUM') || gp.includes('GP')) {
-            gpData.Medium += weight;
+        if (!gpByParty.has(partyName)) {
+            gpByParty.set(partyName, { SuperHigh: 0, High: 0, Medium: 0, Low: 0 });
+        }
+        const partyGp = gpByParty.get(partyName);
+        if (gpKey === 'superHigh') {
+            partyGp.SuperHigh += weight;
+        } else if (gpKey === 'high') {
+            partyGp.High += weight;
+        } else if (gpKey === 'medium') {
+            partyGp.Medium += weight;
+        } else {
+            partyGp.Low += weight;
         }
     });
 
-    // Render Marketing Person Weight Table
-    renderMgktPersonWeightTable(mgktPersonWeight);
-
-    // Render Base Weight Table and Pie Chart
-    renderBaseWeightTable(baseWeight);
+    renderGcMarketingShare(mgktPersonWeight);
     renderBaseSalesPieChart(baseWeight);
-
-    // Render Party Share Pie Chart
-    renderPartySharePieChart(partyWeight);
-
-    // Render GP / Weight Table
-    renderGPWeightTable(gpByParty);
+    renderGcItemShareBars(itemWeight);
+    renderGcGpContribution(gpSale, gpParties);
+    renderGcGpSalesGrid(gpByParty);
 }
 
-function renderMgktPersonWeightTable(mgktPersonWeight) {
-    const tbody = document.getElementById('mgktPersonWeightBody');
-    const tfoot = document.getElementById('mgktPersonWeightFooter');
+function sortWeightMap(weightMap) {
+    return Array.from(weightMap.entries()).sort(function (a, b) { return b[1] - a[1]; });
+}
+
+function renderGcGpSalesGrid(gpByParty) {
+    const tbody = document.getElementById('gcGpSalesBody');
+    const tfoot = document.getElementById('gcGpSalesFooter');
     if (!tbody) return;
 
-    tbody.innerHTML = '';
-
-    // Sort by weight descending
-    const sorted = Array.from(mgktPersonWeight.entries())
-        .sort((a, b) => b[1] - a[1]);
-
-    let grandTotal = 0;
-    sorted.forEach(function ([person, weight]) {
-        grandTotal += weight;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="col-width-2-name">${escapeHtml(person)}</td>
-            <td class="text-end col-width-2-value">${formatNumber(weight)}</td>
-        `;
-        tbody.appendChild(tr);
+    const sorted = Array.from(gpByParty.entries()).sort(function (a, b) {
+        const totalA = a[1].SuperHigh + a[1].High + a[1].Medium + a[1].Low;
+        const totalB = b[1].SuperHigh + b[1].High + b[1].Medium + b[1].Low;
+        return totalB - totalA;
     });
 
-    // Update grand total in footer
+    let totalSuperHigh = 0;
+    let totalHigh = 0;
+    let totalMedium = 0;
+    let totalLow = 0;
+
+    tbody.innerHTML = sorted.map(function ([party, gpData]) {
+        totalSuperHigh += gpData.SuperHigh;
+        totalHigh += gpData.High;
+        totalMedium += gpData.Medium;
+        totalLow += gpData.Low;
+        return `<tr>
+            <td>${escapeHtml(party)}</td>
+            <td class="text-end">${formatNumber(gpData.SuperHigh)}</td>
+            <td class="text-end">${formatNumber(gpData.High)}</td>
+            <td class="text-end">${formatNumber(gpData.Medium)}</td>
+            <td class="text-end">${formatNumber(gpData.Low)}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="5" class="text-center text-muted">No data available</td></tr>';
+
     if (tfoot) {
-        tfoot.innerHTML = `
-            <tr>
-                <td class="col-width-2-name"><strong>Grand total</strong></td>
-                <td class="text-end col-width-2-value"><strong>${formatNumber(grandTotal)}</strong></td>
-            </tr>
-        `;
+        tfoot.innerHTML = `<tr class="gc-total">
+            <td>Grand Total</td>
+            <td class="text-end">${formatNumber(totalSuperHigh)}</td>
+            <td class="text-end">${formatNumber(totalHigh)}</td>
+            <td class="text-end">${formatNumber(totalMedium)}</td>
+            <td class="text-end">${formatNumber(totalLow)}</td>
+        </tr>`;
     }
 }
 
-function renderBaseWeightTable(baseWeight) {
-    const tbody = document.getElementById('baseWeightBody');
-    const tfoot = document.getElementById('baseWeightFooter');
-    if (!tbody) return;
+function renderGcMarketingShare(mgktPersonWeight) {
+    const tbody = document.getElementById('gcMktShareBody');
+    const sorted = sortWeightMap(mgktPersonWeight);
+    const total = sorted.reduce(function (sum, item) { return sum + item[1]; }, 0);
+    const colors = generateColors(sorted.length);
+    setGcText('gcMktShareTotal', `${formatNumber(total)} MT`);
 
-    tbody.innerHTML = '';
-
-    // Sort by weight descending
-    const sorted = Array.from(baseWeight.entries())
-        .sort((a, b) => b[1] - a[1]);
-
-    let grandTotal = 0;
-    sorted.forEach(function ([base, weight]) {
-        grandTotal += weight;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="col-width-2-name">${escapeHtml(base)}</td>
-            <td class="text-end col-width-2-value">${formatNumber(weight)}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-
-    // Update grand total in footer
-    if (tfoot) {
-        tfoot.innerHTML = `
-            <tr>
-                <td class="col-width-2-name"><strong>Grand total</strong></td>
-                <td class="text-end col-width-2-value"><strong>${formatNumber(grandTotal)}</strong></td>
-            </tr>
-        `;
+    if (tbody) {
+        tbody.innerHTML = sorted.map(function ([person, weight], index) {
+            const pct = total > 0 ? ((weight / total) * 100).toFixed(2) : '0.00';
+            return `<tr>
+                <td><span class="gc-dot" style="background:${colors[index]}"></span> ${escapeHtml(person)}</td>
+                <td class="text-end">${formatNumber(weight)}</td>
+                <td class="text-end">${pct}%</td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="3" class="text-center text-muted">No data available</td></tr>';
     }
+
+    const canvas = document.getElementById('gcMktShareDonutChart');
+    if (!canvas || total <= 0) return;
+
+    partySharePieChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: sorted.map(function (item) { return item[0]; }),
+            datasets: [{
+                data: sorted.map(function (item) { return item[1]; }),
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: {
+                legend: { display: false },
+                datalabels: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const value = context.parsed || 0;
+                            const pct = total > 0 ? ((value / total) * 100).toFixed(2) : '0.00';
+                            return `${context.label}: ${formatNumber(value)} MT (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 function renderBaseSalesPieChart(baseWeight) {
-    const sorted = Array.from(baseWeight.entries())
-        .sort((a, b) => b[1] - a[1]);
-
-    const labels = sorted.map(item => item[0]);
-    const data = sorted.map(item => item[1]);
-
-    baseSalesPieChartInstance = createPieChart('baseSalesPieChart', labels, data, 'Base wise Sales % with weight');
-}
-
-function renderPartySharePieChart(partyWeight) {
-    // Sort by weight descending
-    const sorted = Array.from(partyWeight.entries())
-        .sort((a, b) => b[1] - a[1]);
-
-    // Take top 10 parties and group the rest as "Others"
-    const topParties = sorted.slice(0, 10);
-    const othersWeight = sorted.slice(10).reduce((sum, item) => sum + item[1], 0);
-
-    const labels = topParties.map(item => item[0]);
-    const data = topParties.map(item => item[1]);
-
-    if (othersWeight > 0) {
-        labels.push('Others');
-        data.push(othersWeight);
+    const sorted = sortWeightMap(baseWeight);
+    const total = sorted.reduce(function (sum, item) { return sum + item[1]; }, 0);
+    const colors = generateColors(sorted.length);
+    const legend = document.getElementById('gcBaseLegend');
+    if (legend) {
+        legend.innerHTML = sorted.map(function ([name, weight], index) {
+            const pct = total > 0 ? ((weight / total) * 100).toFixed(2) : '0.00';
+            return `<div class="gc-legend-row">
+                <span class="gc-sq" style="background:${colors[index]}"></span>
+                <span>${escapeHtml(name)}</span>
+                <span class="ms-auto">${pct}%</span>
+            </div>`;
+        }).join('') || '<div class="text-muted">No data available</div>';
     }
 
-    partySharePieChartInstance = createPieChart('partySharePieChart', labels, data, 'Partywise Share % in Sales');
-}
+    const canvas = document.getElementById('baseSalesPieChart');
+    if (!canvas || total <= 0) return;
 
-function renderGPWeightTable(gpByParty) {
-    const tbody = document.getElementById('gpWeightBody');
-    const tfoot = document.getElementById('gpWeightFooter');
-    if (!tbody) return;
+    if (typeof ChartDataLabels !== 'undefined') {
+        try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
+    }
 
-    tbody.innerHTML = '';
-
-    // Sort by total weight descending
-    const sorted = Array.from(gpByParty.entries())
-        .sort((a, b) => {
-            const totalA = a[1].High + a[1].Low + a[1].Medium;
-            const totalB = b[1].High + b[1].Low + b[1].Medium;
-            return totalB - totalA;
-        });
-
-    let grandTotalHigh = 0;
-    let grandTotalLow = 0;
-    let grandTotalMedium = 0;
-
-    sorted.forEach(function ([party, gpData]) {
-        grandTotalHigh += gpData.High;
-        grandTotalLow += gpData.Low;
-        grandTotalMedium += gpData.Medium;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="col-width-4-party">${escapeHtml(party)}</td>
-            <td class="text-end col-width-4-value">${formatNumber(gpData.High)}</td>
-            <td class="text-end col-width-4-value">${formatNumber(gpData.Low)}</td>
-            <td class="text-end col-width-4-value">${formatNumber(gpData.Medium)}</td>
-        `;
-        tbody.appendChild(tr);
+    baseSalesPieChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: sorted.map(function (item) { return item[0]; }),
+            datasets: [{
+                data: sorted.map(function (item) { return item[1]; }),
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const value = context.parsed || 0;
+                            const pct = total > 0 ? ((value / total) * 100).toFixed(2) : '0.00';
+                            return `${context.label}: ${formatNumber(value)} MT (${pct}%)`;
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 10 },
+                    formatter: function (value) {
+                        const pct = total > 0 ? (value / total) * 100 : 0;
+                        return pct >= 8 ? `${pct.toFixed(2)}%` : '';
+                    }
+                }
+            }
+        },
+        plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : []
     });
+}
 
-    // Update grand total in footer
-    if (tfoot) {
-        tfoot.innerHTML = `
-            <tr>
-                <td class="col-width-4-party"><strong>Grand total</strong></td>
-                <td class="text-end col-width-4-value"><strong>${formatNumber(grandTotalHigh)}</strong></td>
-                <td class="text-end col-width-4-value"><strong>${formatNumber(grandTotalLow)}</strong></td>
-                <td class="text-end col-width-4-value"><strong>${formatNumber(grandTotalMedium)}</strong></td>
-            </tr>
-        `;
+function renderGcItemShareBars(itemWeight) {
+    const box = document.getElementById('gcItemShareBody');
+    if (!box) return;
+
+    const sorted = sortWeightMap(itemWeight);
+    const total = sorted.reduce(function (sum, item) { return sum + item[1]; }, 0);
+    const max = sorted.length ? sorted[0][1] : 0;
+
+    box.innerHTML = sorted.map(function ([name, weight]) {
+        const pct = total > 0 ? ((weight / total) * 100).toFixed(2) : '0.00';
+        const barPct = max > 0 ? ((weight / max) * 100) : 0;
+        return `<div class="gc-bar-row">
+            <div>${escapeHtml(name)}</div>
+            <div class="gc-bar-track"><div class="gc-bar-fill" style="width:${barPct}%"></div></div>
+            <div class="text-end">${formatNumber(weight)}</div>
+            <div class="text-end">${pct}%</div>
+        </div>`;
+    }).join('') || '<div class="text-center text-muted py-3">No data available</div>';
+}
+
+function renderGcGpContribution(gpSale, gpParties) {
+    const rows = [
+        { key: 'superHigh', label: 'Super High GP', icon: 'fa-star', color: '#1cc88a' },
+        { key: 'high', label: 'High GP', icon: 'fa-thumbs-up', color: '#e67e22' },
+        { key: 'medium', label: 'Medium GP', icon: 'fa-chart-pie', color: '#4e73df' },
+        { key: 'low', label: 'Low GP', icon: 'fa-arrow-down', color: '#e74a3b' }
+    ];
+    const total = rows.reduce(function (sum, row) { return sum + (gpSale[row.key] || 0); }, 0);
+    const superHigh = gpSale.superHigh || 0;
+    const high = gpSale.high || 0;
+    const combo = superHigh + high;
+
+    setGcText('gcKpiSuperHigh', `${formatNumber(superHigh)} MT`);
+    setGcText('gcKpiSuperHighPct', `${total > 0 ? ((superHigh / total) * 100).toFixed(2) : '0.00'}% of Total Sale`);
+    setGcText('gcKpiHigh', `${formatNumber(high)} MT`);
+    setGcText('gcKpiHighPct', `${total > 0 ? ((high / total) * 100).toFixed(2) : '0.00'}% of Total Sale`);
+    setGcText('gcKpiCombo', `${formatNumber(combo)} MT`);
+    setGcText('gcKpiComboPct', `${total > 0 ? ((combo / total) * 100).toFixed(2) : '0.00'}% of Total Sale`);
+
+    const tbody = document.getElementById('gcGpCategoryBody');
+    if (!tbody) return;
+    tbody.innerHTML = rows.map(function (row) {
+        const sale = gpSale[row.key] || 0;
+        const pct = total > 0 ? ((sale / total) * 100).toFixed(2) : '0.00';
+        const parties = gpParties[row.key] ? gpParties[row.key].size : 0;
+        return `<tr>
+            <td><i class="fas ${row.icon} me-1" style="color:${row.color}"></i>${escapeHtml(row.label)}</td>
+            <td class="text-end">${formatNumber(sale)}</td>
+            <td class="text-end">${pct}%</td>
+            <td class="text-end">${formatInteger(parties)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function extractManifestWeekWeightData(response) {
+    if (!response) return [];
+    if (response.weekWeight || response.WeekWeight) {
+        return response.weekWeight || response.WeekWeight || [];
     }
+    if (response.Table || response.Table1) {
+        return response.Table || response.Table1 || [];
+    }
+    if (Array.isArray(response) && response.length > 0) {
+        if (Array.isArray(response[0])) {
+            return response[0] || [];
+        }
+        return response.filter(function (row) {
+            return Object.keys(row || {}).some(function (k) {
+                return k.includes('W1') || k.includes('W2') || k.includes('W3') || k.includes('-W') || k.includes(' - W');
+            });
+        });
+    }
+    return [];
 }
 
 function renderManifestation() {
@@ -1493,12 +2281,17 @@ function renderManifestation() {
         return;
     }
 
-    // Update date range display for this tab
     updateReportDateRangeDisplay();
-
+    updateManifestProrataInfo(filters);
     Showloader();
 
-    SalesanalysisASTService.GetMultipleTableSalesAnalysisData('MANIFESTATION', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays).then(function (response) {
+    const lastMonthRange = getLastMonthAsOnDateRange(filters.fromDate, filters.toDate);
+    const currentPromise = SalesanalysisASTService.GetMultipleTableSalesAnalysisData('MANIFESTATION', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays);
+    const lastMonthPromise = lastMonthRange
+        ? SalesanalysisASTService.GetMultipleTableSalesAnalysisData('MANIFESTATION', filters.dealerCodes, lastMonthRange.fromDate, lastMonthRange.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays)
+        : Promise.resolve([]);
+
+    Promise.all([currentPromise, lastMonthPromise]).then(function ([response, lastMonthResponse]) {
         HideLoader();
 
         if (!response) {
@@ -1507,57 +2300,10 @@ function renderManifestation() {
             return;
         }
 
-        console.log('Manifestation API Response:', response);
-
-        // The API can return data in different formats:
-        // Format 1: { weekWeight: [], manifeste: [], orderSheet: [], itemWeight: [] }
-        // Format 2: { WeekWeight: [], Manifeste: [], OrderSheet: [], ItemWeight: [] }
-        // Format 3: { Table1: [], Table2: [], Table3: [], Table4: [] }
-        // Format 4: Array of 4 separate arrays [[...], [...], [...], [...]]
-        // Format 5: Single array with mixed data
-
-        let weekWeightData = [];
-        let manifesteData = [];
-        let orderSheetData = [];
-        let itemWeightData = [];
-
-        // Try different property name variations
-        if (response.weekWeight || response.WeekWeight) {
-            weekWeightData = response.weekWeight || response.WeekWeight || [];
-            manifesteData = response.manifeste || response.Manifeste || [];
-            orderSheetData = response.orderSheet || response.OrderSheet || [];
-            itemWeightData = response.itemWeight || response.ItemWeight || [];
-        }
-        // Try Table1, Table2, etc.
-        else if (response.Table || response.Table1) {
-            weekWeightData = response.Table || response.Table1 || [];
-            manifesteData = response.Table2 || [];
-            orderSheetData = response.Table3 || [];
-            itemWeightData = response.Table4 || [];
-        }
-        // Try array of arrays
-        else if (Array.isArray(response) && response.length > 0) {
-            if (Array.isArray(response[0])) {
-                // Array of arrays
-                weekWeightData = response[0] || [];
-                manifesteData = response[1] || [];
-                orderSheetData = response[2] || [];
-                itemWeightData = response[3] || [];
-            } else {
-                // Single array - try to separate
-                separateAndRenderManifestationData(response);
-                return;
-            }
-        }
-
-        const actualVsManifestData = Array.isArray(response) && Array.isArray(response[0]) ? (response[4] || []) : [];
-
+        const weekWeightData = extractManifestWeekWeightData(response);
+        const lastMonthWeekData = extractManifestWeekWeightData(lastMonthResponse);
         renderWeekWeightTable(weekWeightData);
-        renderManifesteTable(manifesteData);
-        renderOrderSheetTable(orderSheetData);
-        renderItemWeightTable(itemWeightData);
-        renderActualVsManifestTable(actualVsManifestData);
-
+        renderManifestWeekCompareTable(weekWeightData, lastMonthWeekData);
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching manifestation data:', err);
@@ -1566,95 +2312,13 @@ function renderManifestation() {
 }
 
 function clearManifestationTables() {
-    // Clear Week / WEIGHT table
-    document.getElementById('weekWeightTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
-    document.getElementById('weekWeightTableHeader').innerHTML = '';
+    const weekBody = document.getElementById('weekWeightTableBody');
+    const weekHeader = document.getElementById('weekWeightTableHeader');
+    if (weekBody) weekBody.innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+    if (weekHeader) weekHeader.innerHTML = '';
 
-    // Clear Manifeste table
-    document.getElementById('manifesteTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
-    document.getElementById('manifesteTableHeader').innerHTML = '';
-
-    // Clear Invoice Details table
-    document.getElementById('orderSheetTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
-    document.getElementById('orderSheetTableHeader').innerHTML = '';
-
-    // Clear Item / WEIGHT table
-    document.getElementById('itemWeightTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
-    document.getElementById('itemWeightTableHeader').innerHTML = '';
-
-    // Clear Actual vs Manifested table
-    document.getElementById('actualVsManifestTableBody').innerHTML = '<tr><td colspan="5" class="text-center">No data available</td></tr>';
-    document.getElementById('actualVsManifestTableHeader').innerHTML = '';
-}
-
-function separateAndRenderManifestationData(data) {
-    // This function tries to intelligently separate the data
-    // Based on the properties each row contains
-
-    console.warn('API returned single array. Attempting to separate data by row properties...');
-
-    const weekWeightData = [];
-    const manifesteData = [];
-    const orderSheetData = [];
-    const itemWeightData = [];
-
-    data.forEach(row => {
-        const keys = Object.keys(row).map(k => k.toLowerCase());
-
-        // Week/WEIGHT table has MGKT_PERSON and week columns (April - W1, etc.)
-        const hasWeekColumns = Object.keys(row).some(k =>
-            k.includes('April') || k.includes('August') || k.includes('December') ||
-            k.includes('W1') || k.includes('W2') || k.includes('W3') || k.includes('W4') || k.includes('W5') ||
-            k.includes('-W')
-        );
-
-        // Manifeste table has specific columns
-        const hasManifestColumns = keys.some(k =>
-            k.includes('party codes') || k.includes('partycodes') ||
-            k.includes('mani_current_m') || k.includes('manifested') ||
-            k.includes('not achieved') || k.includes('not done')
-        );
-
-        // Invoice Details has Invoice related columns
-        const hasOrderSheetColumns = keys.some(k =>
-            k.includes('invoice date') || k.includes('invoicedate') ||
-            k.includes('invoice amount') || k.includes('invoiceamount') ||
-            k.includes('nbd/crr') || k.includes('nbdcrr')
-        );
-
-        // Item / WEIGHT - simplest structure with just item and weight
-        const hasItemWeightColumns = keys.length <= 3 &&
-            (keys.includes('item name') || keys.includes('itemname')) &&
-            (keys.includes('weight'));
-
-        // Classify the row
-        if (hasWeekColumns) {
-            weekWeightData.push(row);
-        } else if (hasManifestColumns) {
-            manifesteData.push(row);
-        } else if (hasOrderSheetColumns) {
-            orderSheetData.push(row);
-        } else if (hasItemWeightColumns) {
-            itemWeightData.push(row);
-        } else {
-            // Default: put in order sheet if has weight
-            if (keys.includes('weight')) {
-                orderSheetData.push(row);
-            }
-        }
-    });
-
-    console.log('Separated data:', {
-        weekWeight: weekWeightData.length,
-        manifeste: manifesteData.length,
-        orderSheet: orderSheetData.length,
-        itemWeight: itemWeightData.length
-    });
-
-    renderWeekWeightTable(weekWeightData);
-    renderManifesteTable(manifesteData);
-    renderOrderSheetTable(orderSheetData);
-    renderItemWeightTable(itemWeightData);
+    const compareBody = document.getElementById('mvWeekCompareBody');
+    if (compareBody) compareBody.innerHTML = '<tr><td colspan="10" class="text-center">No data available</td></tr>';
 }
 
 function getMonthIndexFromWeekLabel(weekLabel, fallbackDateStr) {
@@ -1694,17 +2358,53 @@ function getDaysInMonthForWeekLabel(weekLabel, fallbackDateStr) {
     return new Date(year, monthIndex + 1, 0).getDate();
 }
 
+function getManifestProrataInfo() {
+    const filters = GetAllFilters();
+    const to = new Date(filters.toDate || toDate);
+    const from = new Date(filters.fromDate || fromDate);
+    const validTo = isNaN(to.getTime()) ? new Date() : to;
+    const validFrom = isNaN(from.getTime()) ? new Date(validTo.getFullYear(), validTo.getMonth(), 1) : from;
+    const daysInMonth = new Date(validTo.getFullYear(), validTo.getMonth() + 1, 0).getDate();
+    const daysPassed = Math.max(1, Math.min(validTo.getDate(), daysInMonth));
+    const factor = daysInMonth > 0 ? (daysPassed / daysInMonth) : 1;
+    return {
+        fromDate: filters.fromDate,
+        toDate: filters.toDate,
+        daysPassed: daysPassed,
+        daysInMonth: daysInMonth,
+        factor: factor
+    };
+}
+
+function updateManifestProrataInfo(filters) {
+    const info = getManifestProrataInfo();
+    const periodEl = document.getElementById('mvReportPeriod');
+    if (periodEl) {
+        periodEl.textContent = `${formatDateForDisplay(filters.fromDate)} to ${formatDateForDisplay(filters.toDate)}`;
+    }
+    const calcEl = document.getElementById('mvProrataCalc');
+    if (calcEl) {
+        calcEl.textContent = `Prorata Factor = ${info.daysPassed} / ${info.daysInMonth} = ${(info.factor * 100).toFixed(2)}%`;
+    }
+}
+
+function getAchievementClass(pct) {
+    if (pct >= 100) return 'mv-ach-good';
+    if (pct >= 85) return 'mv-ach-avg';
+    return 'mv-ach-poor';
+}
+
 function getDaysInWeekForWeekLabel(weekLabel) {
     const label = (weekLabel || '').toString().trim();
     const weekMatch = label.match(/W(\d+)/i);
     if (!weekMatch) return 7;
 
     const weekNumber = parseInt(weekMatch[1], 10);
-    const monthIndex = getMonthIndexFromWeekLabel(weekLabel, fromDate !== '0' ? fromDate : toDate);
+    const fallbackDateStr = toDate !== '0' ? toDate : fromDate;
+    const monthIndex = getMonthIndexFromWeekLabel(weekLabel, fallbackDateStr);
     if (monthIndex === -1) return 7;
 
     let year = new Date().getFullYear();
-    const fallbackDateStr = fromDate !== '0' ? fromDate : toDate;
     if (fallbackDateStr && fallbackDateStr !== '0') {
         const d = new Date(fallbackDateStr);
         if (!isNaN(d.getTime())) {
@@ -1715,7 +2415,17 @@ function getDaysInWeekForWeekLabel(weekLabel) {
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
     const startDay = ((weekNumber - 1) * 7) + 1;
     if (startDay > daysInMonth) return 0;
-    return Math.min(7, daysInMonth - startDay + 1);
+    const fullWeekDays = Math.min(7, daysInMonth - startDay + 1);
+
+    const to = new Date(fallbackDateStr);
+    if (isNaN(to.getTime()) || to.getMonth() !== monthIndex || to.getFullYear() !== year) {
+        return fullWeekDays;
+    }
+
+    const toDay = to.getDate();
+    if (toDay < startDay) return 0;
+    if (toDay >= startDay + fullWeekDays - 1) return fullWeekDays;
+    return toDay - startDay + 1;
 }
 
 function calculateWeeklyManifestTarget(totalManifestTarget, weekLabel) {
@@ -1724,140 +2434,251 @@ function calculateWeeklyManifestTarget(totalManifestTarget, weekLabel) {
 
     const fallbackDateStr = fromDate !== '0' ? fromDate : toDate;
     const daysInMonth = getDaysInMonthForWeekLabel(weekLabel, fallbackDateStr);
-    const daysInWeek = getDaysInWeekForWeekLabel(weekLabel) || 7;
+    const daysInWeek = getDaysInWeekForWeekLabel(weekLabel) || 0;
 
-    if (!daysInMonth) return 0;
+    if (!daysInMonth || !daysInWeek) return 0;
     return (totalTarget / daysInMonth) * daysInWeek;
 }
 
-function renderWeekWeightTable(data) {
-    if (!data || data.length === 0) {
-        document.getElementById('weekWeightTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
-        document.getElementById('weekWeightTableHeader').innerHTML = '';
-        return;
-    }
+function getManifestWeekMeta(data) {
+    const allKeys = Object.keys(data[0] || {});
+    const personKeyOptions = ['MGKT_PERSON', 'MGKT Person', 'Marketing Man', 'MarketingMan', 'Person'];
+    const personKey = personKeyOptions.find(function (k) { return allKeys.includes(k); }) || allKeys[0];
+    const isSummaryKey = function (k) {
+        const l = k.toLowerCase();
+        return l.includes('actual total') || l === 'actualtotal' ||
+            l.includes('target total') || l === 'targettotal' ||
+            l.includes('variance') ||
+            l.includes('achievement');
+    };
+    const actualTotalKey = allKeys.find(function (k) { return k.toLowerCase().includes('actual total') || k.toLowerCase() === 'actualtotal'; });
+    const targetTotalKey = allKeys.find(function (k) { return k.toLowerCase().includes('target total') || k.toLowerCase() === 'targettotal'; });
+    const weekColumns = allKeys.filter(function (k) { return k !== personKey && !isSummaryKey(k); });
+    return { personKey, actualTotalKey, targetTotalKey, weekColumns };
+}
 
+function getWeekNumberFromLabel(weekLabel) {
+    const match = String(weekLabel || '').match(/W(\d+)/i);
+    return match ? parseInt(match[1], 10) : 0;
+}
+
+function sumManifestWeekActuals(data, weekColumns) {
+    const totals = {};
+    weekColumns.forEach(function (wk) { totals[wk] = 0; });
+    (data || []).forEach(function (row) {
+        weekColumns.forEach(function (wk) {
+            totals[wk] += parseFloat(row[wk] || 0) || 0;
+        });
+    });
+    return totals;
+}
+
+function renderWeekWeightTable(data) {
     const tableHeader = document.getElementById('weekWeightTableHeader');
     const tableBody = document.getElementById('weekWeightTableBody');
     if (!tableHeader || !tableBody) return;
 
-    const allKeys = Object.keys(data[0]);
+    if (!data || data.length === 0) {
+        tableHeader.innerHTML = '';
+        tableBody.innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+        return;
+    }
 
-    // Identify the person column
-    const personKeyOptions = ['MGKT_PERSON', 'MGKT Person', 'Marketing Man', 'MarketingMan', 'Person'];
-    const personKey = personKeyOptions.find(k => allKeys.includes(k)) || allKeys[0];
-
-    // Identify summary columns by keyword match
-    const isSummaryKey = (k) => {
-        const l = k.toLowerCase();
-        return l.includes('actual total') || l === 'actualtotal' ||
-               l.includes('target total') || l === 'targettotal' ||
-               l.includes('variance') ||
-               l.includes('achievement');
-    };
-
-    const actualTotalKey  = allKeys.find(k => k.toLowerCase().includes('actual total')  || k.toLowerCase() === 'actualtotal');
-    const targetTotalKey  = allKeys.find(k => k.toLowerCase().includes('target total')  || k.toLowerCase() === 'targettotal');
-    const varianceKey     = allKeys.find(k => k.toLowerCase().includes('variance'));
-    const achievementKey  = allKeys.find(k => k.toLowerCase().includes('achievement'));
-
-    // Week columns = everything that is not the person key and not a summary column
-    const weekColumns = allKeys.filter(k => k !== personKey && !isSummaryKey(k));
-
-    // ---- Build two-row header ----
-    const headerBg  = '#4472C4';
-    const subBg     = '#5B9BD5';
+    const meta = getManifestWeekMeta(data);
+    const weekColumns = meta.weekColumns;
+    const prorata = getManifestProrataInfo();
+    const headerBg = '#4472C4';
+    const subBg = '#5B9BD5';
     const summaryBg = '#365E9A';
-    const sepStyle  = 'border-left:2px solid rgba(255,255,255,0.4);';
+    const sepStyle = 'border-left:2px solid rgba(255,255,255,0.4);';
 
     let row1 = `<tr>`;
-    row1 += `<th rowspan="2" style="vertical-align:middle;background-color:${headerBg};color:white;white-space:nowrap;">${escapeHtml(personKey)}</th>`;
-    weekColumns.forEach(wk => {
-        row1 += `<th colspan="3" class="text-center" style="background-color:${headerBg};color:white;white-space:nowrap;${sepStyle}">${escapeHtml(wk)}</th>`;
+    row1 += `<th rowspan="2" style="vertical-align:middle;background-color:${headerBg};">${escapeHtml(meta.personKey)}</th>`;
+    row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};${sepStyle}">Actual Total</th>`;
+    row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};">Total Manifest Target (prorata)</th>`;
+    row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};">Difference</th>`;
+    row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};">Mkt Man % Achieved</th>`;
+    weekColumns.forEach(function (wk) {
+        row1 += `<th colspan="3" class="text-center" style="background-color:${headerBg};${sepStyle}">${escapeHtml(wk)}</th>`;
     });
-    if (actualTotalKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;${sepStyle}">Actual Total</th>`;
-    if (targetTotalKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Total Manifest Target</th>`;
-    if (varianceKey)    row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Variance</th>`;
-    if (achievementKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Achievement %</th>`;
     row1 += `</tr>`;
 
     let row2 = `<tr>`;
-    weekColumns.forEach(() => {
-        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;${sepStyle}">Actual Sales</th>`;
-        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;">Weekly Manifest Target</th>`;
-        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;">Achievement %</th>`;
+    weekColumns.forEach(function () {
+        row2 += `<th class="text-end" style="background-color:${subBg};${sepStyle}">Actual Sale (MT)</th>`;
+        row2 += `<th class="text-end" style="background-color:${subBg};">Achievement %</th>`;
+        row2 += `<th class="text-end" style="background-color:${subBg};">Weekly Target (prorata)</th>`;
     });
     row2 += `</tr>`;
-
     tableHeader.innerHTML = row1 + row2;
 
-    // ---- Build body ----
-    tableBody.innerHTML = '';
-
-    const grandWeekActuals  = {};
-    const grandWeekTargets  = {};
-    weekColumns.forEach(wk => { grandWeekActuals[wk] = 0; grandWeekTargets[wk] = 0; });
+    const grandWeekActuals = {};
+    const grandWeekTargets = {};
+    weekColumns.forEach(function (wk) { grandWeekActuals[wk] = 0; grandWeekTargets[wk] = 0; });
     let grandActualTotal = 0;
     let grandTargetTotal = 0;
 
-    data.forEach(row => {
-        const personName  = row[personKey] || '';
-        const actualTotal = parseFloat(row[actualTotalKey] || 0);
-        const targetTotal = parseFloat(row[targetTotalKey] || 0);
-        const variance    = parseFloat(row[varianceKey]    || (actualTotal - targetTotal));
-
+    const personRows = data.map(function (row) {
+        const actualTotal = parseFloat(row[meta.actualTotalKey] || 0) || 0;
+        const rawTargetTotal = parseFloat(row[meta.targetTotalKey] || 0) || 0;
+        const targetTotal = rawTargetTotal * prorata.factor;
+        const variance = actualTotal - targetTotal;
         const overallAchievement = targetTotal > 0 ? (actualTotal / targetTotal) * 100 : 0;
-
         grandActualTotal += actualTotal;
         grandTargetTotal += targetTotal;
 
-        let rowHTML = `<td style="white-space:nowrap;">${escapeHtml(personName)}</td>`;
-
-        weekColumns.forEach(wk => {
-            const actualSales = parseFloat(row[wk] || 0);
-            const weekTarget = calculateWeeklyManifestTarget(targetTotal, wk);
+        const weekCells = weekColumns.map(function (wk) {
+            const actualSales = parseFloat(row[wk] || 0) || 0;
+            const weekTarget = calculateWeeklyManifestTarget(rawTargetTotal, wk);
             const wkAchievement = weekTarget > 0 ? (actualSales / weekTarget) * 100 : 0;
             grandWeekActuals[wk] += actualSales;
             grandWeekTargets[wk] += weekTarget;
-
-            rowHTML += `<td class="text-end" style="${sepStyle}">${formatNumber(actualSales)}</td>`;
-            rowHTML += `<td class="text-end">${formatNumber(weekTarget)}</td>`;
-            rowHTML += `<td class="text-end">${wkAchievement.toFixed(2)}%</td>`;
+            return { actualSales, weekTarget, wkAchievement };
         });
 
-        if (actualTotalKey) rowHTML += `<td class="text-end fw-bold" style="${sepStyle}">${formatNumber(actualTotal)}</td>`;
-        if (targetTotalKey) rowHTML += `<td class="text-end fw-bold">${formatNumber(targetTotal)}</td>`;
-        if (varianceKey)    rowHTML += `<td class="text-end fw-bold">${formatNumber(variance)}</td>`;
-        if (achievementKey) rowHTML += `<td class="text-end fw-bold">${overallAchievement.toFixed(2)}%</td>`;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = rowHTML;
-        tableBody.appendChild(tr);
+        return {
+            personName: row[meta.personKey] || '',
+            actualTotal,
+            targetTotal,
+            variance,
+            overallAchievement,
+            weekCells
+        };
     });
 
-    // ---- Grand Total row ----
-    const grandVariance    = grandActualTotal - grandTargetTotal;
+    const buildWeekCells = function (weekCells) {
+        return weekCells.map(function (cell) {
+            const cls = getAchievementClass(cell.wkAchievement);
+            return `<td class="text-end" style="${sepStyle}">${formatNumber(cell.actualSales)}</td>
+                <td class="text-end ${cls}">${cell.wkAchievement.toFixed(2)}%</td>
+                <td class="text-end">${formatNumber(cell.weekTarget)}</td>`;
+        }).join('');
+    };
+
+    const grandVariance = grandActualTotal - grandTargetTotal;
     const grandAchievement = grandTargetTotal > 0 ? (grandActualTotal / grandTargetTotal) * 100 : 0;
-
-    const grandTotalRow = document.createElement('tr');
-    grandTotalRow.style.cssText = 'background-color:#d4edda;font-weight:bold;border-top:2px solid #333;';
-
-    let grandHTML = `<td style="white-space:nowrap;"><strong>Grand Total</strong></td>`;
-    weekColumns.forEach(wk => {
+    const grandWeekCells = weekColumns.map(function (wk) {
         const gActual = grandWeekActuals[wk] || 0;
         const gTarget = grandWeekTargets[wk] || 0;
-        const gAch    = gTarget > 0 ? (gActual / gTarget) * 100 : 0;
-        grandHTML += `<td class="text-end" style="${sepStyle}"><strong>${formatNumber(gActual)}</strong></td>`;
-        grandHTML += `<td class="text-end"><strong>${formatNumber(gTarget)}</strong></td>`;
-        grandHTML += `<td class="text-end"><strong>${gAch.toFixed(2)}%</strong></td>`;
+        const gAch = gTarget > 0 ? (gActual / gTarget) * 100 : 0;
+        return { actualSales: gActual, weekTarget: gTarget, wkAchievement: gAch };
     });
-    if (actualTotalKey) grandHTML += `<td class="text-end" style="${sepStyle}"><strong>${formatNumber(grandActualTotal)}</strong></td>`;
-    if (targetTotalKey) grandHTML += `<td class="text-end"><strong>${formatNumber(grandTargetTotal)}</strong></td>`;
-    if (varianceKey)    grandHTML += `<td class="text-end"><strong>${formatNumber(grandVariance)}</strong></td>`;
-    if (achievementKey) grandHTML += `<td class="text-end"><strong>${grandAchievement.toFixed(2)}%</strong></td>`;
 
-    grandTotalRow.innerHTML = grandHTML;
-    tableBody.appendChild(grandTotalRow);
+    const buildSummaryCells = function (row) {
+        return `<td class="text-end fw-bold" style="${sepStyle}">${formatNumber(row.actualTotal)}</td>
+            <td class="text-end fw-bold">${formatNumber(row.targetTotal)}</td>
+            <td class="text-end fw-bold">${formatNumber(row.variance)}</td>
+            <td class="text-end fw-bold ${getAchievementClass(row.overallAchievement)}">${row.overallAchievement.toFixed(2)}%</td>`;
+    };
+
+    let html = personRows.map(function (row) {
+        return `<tr>
+            <td>${escapeHtml(row.personName)}</td>
+            ${buildSummaryCells(row)}
+            ${buildWeekCells(row.weekCells)}
+        </tr>`;
+    }).join('');
+
+    html += `<tr class="mv-total-row">
+        <td>Grand Total</td>
+        ${buildSummaryCells({ actualTotal: grandActualTotal, targetTotal: grandTargetTotal, variance: grandVariance, overallAchievement: grandAchievement })}
+        ${buildWeekCells(grandWeekCells)}
+    </tr>`;
+
+    tableBody.innerHTML = html;
+}
+
+function renderManifestWeekCompareTable(currentData, lastMonthData) {
+    const tbody = document.getElementById('mvWeekCompareBody');
+    if (!tbody) return;
+
+    if (!currentData || currentData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center">No data available</td></tr>';
+        return;
+    }
+
+    const currentMeta = getManifestWeekMeta(currentData);
+    const lastMeta = lastMonthData && lastMonthData.length ? getManifestWeekMeta(lastMonthData) : { weekColumns: [], targetTotalKey: null };
+    const currentWeekActuals = sumManifestWeekActuals(currentData, currentMeta.weekColumns);
+    const lastWeekActualsByNo = {};
+    (lastMeta.weekColumns || []).forEach(function (wk) {
+        lastWeekActualsByNo[getWeekNumberFromLabel(wk)] = 0;
+    });
+    (lastMonthData || []).forEach(function (row) {
+        (lastMeta.weekColumns || []).forEach(function (wk) {
+            const weekNo = getWeekNumberFromLabel(wk);
+            lastWeekActualsByNo[weekNo] = (lastWeekActualsByNo[weekNo] || 0) + (parseFloat(row[wk] || 0) || 0);
+        });
+    });
+
+    const prorata = getManifestProrataInfo();
+    let currentTargetTotal = 0;
+    (currentData || []).forEach(function (row) {
+        currentTargetTotal += parseFloat(row[currentMeta.targetTotalKey] || 0) || 0;
+    });
+    let lastTargetTotal = 0;
+    (lastMonthData || []).forEach(function (row) {
+        lastTargetTotal += parseFloat(row[lastMeta.targetTotalKey] || 0) || 0;
+    });
+
+    const currentTotalActual = currentMeta.weekColumns.reduce(function (sum, wk) { return sum + (currentWeekActuals[wk] || 0); }, 0);
+    const lastTotalActual = Object.keys(lastWeekActualsByNo).reduce(function (sum, key) { return sum + (lastWeekActualsByNo[key] || 0); }, 0);
+
+    const rows = currentMeta.weekColumns.map(function (wk) {
+        const thisActual = currentWeekActuals[wk] || 0;
+        const lastActual = (lastWeekActualsByNo[getWeekNumberFromLabel(wk)] || 0) * prorata.factor;
+        const weekTarget = calculateWeeklyManifestTarget(currentTargetTotal, wk);
+        const lastWeekTarget = calculateWeeklyManifestTarget(lastTargetTotal, wk);
+        const thisPct = currentTotalActual > 0 ? (thisActual / currentTotalActual) * 100 : 0;
+        const lastPct = lastTotalActual > 0 ? ((lastWeekActualsByNo[getWeekNumberFromLabel(wk)] || 0) / lastTotalActual) * 100 : 0;
+        const diff = thisActual - lastActual;
+        const vsLastPct = lastActual > 0 ? (diff / lastActual) * 100 : 0;
+        const targetPct = weekTarget > 0 ? (thisActual / weekTarget) * 100 : 0;
+        const thisAch = weekTarget > 0 ? (thisActual / weekTarget) * 100 : 0;
+        const lastAch = lastWeekTarget > 0 ? (lastActual / lastWeekTarget) * 100 : 0;
+        return { wk, thisActual, thisPct, lastActual, lastPct, diff, vsLastPct, weekTarget, targetPct, thisAch, lastAch };
+    });
+
+    const totals = rows.reduce(function (acc, row) {
+        acc.thisActual += row.thisActual;
+        acc.lastActual += row.lastActual;
+        acc.weekTarget += row.weekTarget;
+        return acc;
+    }, { thisActual: 0, lastActual: 0, weekTarget: 0 });
+    const totalDiff = totals.thisActual - totals.lastActual;
+    const totalVsLast = totals.lastActual > 0 ? (totalDiff / totals.lastActual) * 100 : 0;
+    const totalThisAch = totals.weekTarget > 0 ? (totals.thisActual / totals.weekTarget) * 100 : 0;
+    const totalLastAch = totals.weekTarget > 0 ? (totals.lastActual / totals.weekTarget) * 100 : 0;
+
+    const renderRow = function (label, row, isTotal) {
+        return `<tr class="${isTotal ? 'mv-total-row' : ''}">
+            <td>${escapeHtml(label)}</td>
+            <td class="text-end">${formatNumber(row.thisActual)}</td>
+            <td class="text-end">${row.thisPct.toFixed(2)}%</td>
+            <td class="text-end">${formatNumber(row.lastActual)}</td>
+            <td class="text-end">${formatNumber(row.diff)}</td>
+            <td class="text-end ${getAchievementClass(100 + row.vsLastPct)}">${row.vsLastPct.toFixed(2)}%</td>
+            <td class="text-end">${formatNumber(row.weekTarget)}</td>
+            <td class="text-end">${row.targetPct.toFixed(2)}%</td>
+            <td class="text-end ${getAchievementClass(row.thisAch)}">${row.thisAch.toFixed(2)}%</td>
+            <td class="text-end ${getAchievementClass(row.lastAch)}">${row.lastAch.toFixed(2)}%</td>
+        </tr>`;
+    };
+
+    tbody.innerHTML = rows.map(function (row) {
+        return renderRow(row.wk, row, false);
+    }).join('') + renderRow('Grand Total', {
+        thisActual: totals.thisActual,
+        thisPct: 100,
+        lastActual: totals.lastActual,
+        lastPct: 100,
+        diff: totalDiff,
+        vsLastPct: totalVsLast,
+        weekTarget: totals.weekTarget,
+        targetPct: 100,
+        thisAch: totalThisAch,
+        lastAch: totalLastAch
+    }, true);
 }
 
 function renderManifesteTable(data) {
@@ -2385,36 +3206,82 @@ function renderSegmentWiseCollapsibleTable(data, lastMonthData) {
     tbody.appendChild(grandTotalRow);
 }
 
-function renderGPWiseSummary() {
+const GP_WISE_CATEGORIES = [
+    { key: 'SuperHigh', label: 'SUPER HIGH (MT)', cssClass: 'gp-col-superhigh', color: '#224abe' },
+    { key: 'High', label: 'HIGH (MT)', cssClass: 'gp-col-high', color: '#1cc88a' },
+    { key: 'Medium', label: 'MEDIUM (MT)', cssClass: 'gp-col-medium', color: '#f6c23e' },
+    { key: 'Low', label: 'LOW (MT)', cssClass: 'gp-col-low', color: '#e74a3b' }
+];
+
+function categorizeGpWiseBucket(gpValue) {
+    const gpRaw = (gpValue || '').toString().toUpperCase().trim();
+    if (gpRaw.includes('SUPER')) return 'SuperHigh';
+    if (gpRaw.includes('HIGH')) return 'High';
+    if (gpRaw.includes('LOW')) return 'Low';
+    if (gpRaw.includes('MEDIUM') || gpRaw.includes('MED')) return 'Medium';
+    return 'Medium';
+}
+
+function emptyGpWiseBuckets() {
+    return { SuperHigh: 0, High: 0, Medium: 0, Low: 0 };
+}
+
+function getGpWiseRowTotal(gpData) {
+    return GP_WISE_CATEGORIES.reduce(function (sum, cat) {
+        return sum + (gpData[cat.key] || 0);
+    }, 0);
+}
+
+function formatGpSharePct(value, total) {
+    return (total > 0 ? ((value / total) * 100) : 0).toFixed(2) + '%';
+}
+
+function clearGPWiseSummaryView() {
+    const tbody = document.getElementById('gpWiseTableBody');
+    const thead = document.getElementById('gpWiseTableHeader');
+    const legend = document.getElementById('summaryGpWiseManLegend');
+    if (thead) thead.innerHTML = '';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No data available</td></tr>';
+    if (legend) legend.innerHTML = '';
+    if (summaryGpWiseManPieChartInstance) {
+        try { summaryGpWiseManPieChartInstance.destroy(); } catch (e) { /* ignore */ }
+        summaryGpWiseManPieChartInstance = null;
+    }
+}
+
+function renderGPWiseSummary(options) {
+    const manageLoader = !options || options.manageLoader !== false;
     const filters = GetAllFilters();
 
     if (filters.dealerCodes == '') {
         return;
     }
 
-    // Update date range display for this tab
     updateReportDateRangeDisplay();
 
-    Showloader();
+    if (manageLoader) {
+        Showloader();
+    }
 
     SalesanalysisASTService.GetSalesAnalysisData('GP_WISE_SUMMARY', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays).then(function (response) {
-        HideLoader();
+        if (manageLoader) {
+            HideLoader();
+        }
 
         if (!response || response.length === 0) {
             console.warn('No GP wise summary data received');
-            document.getElementById('gpWiseTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
-            document.getElementById('gpWiseTableHeader').innerHTML = '';
+            clearGPWiseSummaryView();
             return;
         }
 
         console.log('GP Wise Summary API Response:', response);
-
-        // Process and render the GP Wise Summary table with fixed header/footer
         renderGPWiseSummaryCustomTable(response);
-
     }).catch(function (err) {
-        HideLoader();
+        if (manageLoader) {
+            HideLoader();
+        }
         console.error('Error fetching GP wise summary data:', err);
+        clearGPWiseSummaryView();
     });
 }
 
@@ -2427,108 +3294,182 @@ function renderGPWiseSummaryCustomTable(data) {
         return;
     }
 
-    // Aggregate data by Marketing Man and GP category
     const aggregatedData = new Map();
 
     data.forEach(function (row) {
-        // Get Marketing Man (try multiple property variations)
         const marketingMan = row['Marketing Man'] || row['MarketingMan'] || row['MARKETING MAN'] ||
             row['MGKT Person'] || row['MGKT_PERSON'] || row['Person'] || 'Unknown';
+        const weight = parseFloat(row['Weight'] || row['WEIGHT'] || row['weight'] || 0) || 0;
+        const gpCategory = categorizeGpWiseBucket(row['GP'] || row['gp']);
 
-        // Get Weight
-        const weight = parseFloat(row['Weight'] || row['WEIGHT'] || row['weight'] || 0);
-
-        // Get GP category and normalize it
-        const gpRaw = (row['GP'] || row['gp'] || '').toString().toUpperCase().trim();
-        let gpCategory = 'Medium'; // default
-
-        if (gpRaw.includes('HIGH')) {
-            gpCategory = 'High';
-        } else if (gpRaw.includes('LOW')) {
-            gpCategory = 'Low';
-        } else if (gpRaw.includes('MEDIUM')) {
-            gpCategory = 'Medium';
-        }
-
-        // Initialize if not exists
         if (!aggregatedData.has(marketingMan)) {
-            aggregatedData.set(marketingMan, { High: 0, Low: 0, Medium: 0 });
+            aggregatedData.set(marketingMan, emptyGpWiseBuckets());
         }
 
-        // Add weight to appropriate category
-        const personData = aggregatedData.get(marketingMan);
-        personData[gpCategory] += weight;
+        aggregatedData.get(marketingMan)[gpCategory] += weight;
     });
 
-    // Create header
+    const headerGroupCells = GP_WISE_CATEGORIES.map(function (cat) {
+        return `<th colspan="2" class="text-center ${cat.cssClass}">${cat.label}</th>`;
+    }).join('');
+    const headerSubCells = GP_WISE_CATEGORIES.map(function (cat) {
+        return `<th class="text-end ${cat.cssClass}">MT</th><th class="text-end ${cat.cssClass}">% of Total (MT)</th>`;
+    }).join('');
+
     thead.innerHTML = `
         <tr>
-            <th rowspan="2" style="vertical-align: middle; background-color: #e9ecef; position: sticky; top: 0; z-index: 10;">MARKETING MAN</th>
-            <th colspan="3" class="text-center" style="background-color: #e9ecef; position: sticky; top: 0; z-index: 10;">GP / WEIGHT</th>
-            <th rowspan="2" class="text-end" style="vertical-align: middle; background-color: #e9ecef; position: sticky; top: 0; z-index: 10;">Total</th>
-            <th rowspan="2" class="text-end" style="vertical-align: middle; background-color: #e9ecef; position: sticky; top: 0; z-index: 10;">% of Total</th>
+            <th rowspan="2">MARKETING MAN</th>
+            ${headerGroupCells}
+            <th rowspan="2" class="text-end">TOTAL (MT)</th>
+            <th rowspan="2" class="text-end">% of Total (MT)</th>
         </tr>
         <tr>
-            <th class="text-end" style="background-color: #e9ecef; position: sticky; top: 38px; z-index: 10;">High</th>
-            <th class="text-end" style="background-color: #e9ecef; position: sticky; top: 38px; z-index: 10;">Low</th>
-            <th class="text-end" style="background-color: #e9ecef; position: sticky; top: 38px; z-index: 10;">Medium</th>
+            ${headerSubCells}
         </tr>
     `;
 
-    // Sort by total weight descending
     const sorted = Array.from(aggregatedData.entries())
-        .sort((a, b) => {
-            const totalA = a[1].High + a[1].Low + a[1].Medium;
-            const totalB = b[1].High + b[1].Low + b[1].Medium;
-            return totalB - totalA;
+        .sort((a, b) => getGpWiseRowTotal(b[1]) - getGpWiseRowTotal(a[1]));
+
+    const overallGrandTotal = sorted.reduce(function (sum, item) {
+        return sum + getGpWiseRowTotal(item[1]);
+    }, 0);
+
+    const grandTotals = emptyGpWiseBuckets();
+    tbody.innerHTML = '';
+
+    sorted.forEach(function ([marketingMan, gpData]) {
+        const rowTotal = getGpWiseRowTotal(gpData);
+        const rowShare = formatGpSharePct(rowTotal, overallGrandTotal);
+
+        GP_WISE_CATEGORIES.forEach(function (cat) {
+            grandTotals[cat.key] += gpData[cat.key] || 0;
         });
 
-    // Calculate overall grand total for percentage calculation
-    let overallGrandTotal = 0;
-    sorted.forEach(function ([marketingMan, gpData]) {
-        overallGrandTotal += gpData.High + gpData.Low + gpData.Medium;
-    });
-
-    // Populate body
-    tbody.innerHTML = '';
-    let grandTotalHigh = 0;
-    let grandTotalLow = 0;
-    let grandTotalMedium = 0;
-    let grandTotal = 0;
-
-    sorted.forEach(function ([marketingMan, gpData]) {
-        const rowTotal = gpData.High + gpData.Low + gpData.Medium;
-        const percentageOfTotal = overallGrandTotal > 0 ? ((rowTotal / overallGrandTotal) * 100) : 0;
-
-        grandTotalHigh += gpData.High;
-        grandTotalLow += gpData.Low;
-        grandTotalMedium += gpData.Medium;
-        grandTotal += rowTotal;
+        const gpCells = GP_WISE_CATEGORIES.map(function (cat) {
+            const value = gpData[cat.key] || 0;
+            return `<td class="text-end">${formatNumber(value)}</td><td class="text-end">${formatGpSharePct(value, rowTotal)}</td>`;
+        }).join('');
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${escapeHtml(marketingMan)}</td>
-            <td class="text-end">${formatNumber(gpData.High)}</td>
-            <td class="text-end">${formatNumber(gpData.Low)}</td>
-            <td class="text-end">${formatNumber(gpData.Medium)}</td>
+            ${gpCells}
             <td class="text-end"><strong>${formatNumber(rowTotal)}</strong></td>
-            <td class="text-end"><strong>${percentageOfTotal.toFixed(2)}%</strong></td>
+            <td class="text-end"><strong>${rowShare}</strong></td>
         `;
         tbody.appendChild(tr);
     });
 
-    // Add grand total row to tbody (sticky at bottom)
+    const grandGpCells = GP_WISE_CATEGORIES.map(function (cat) {
+        const value = grandTotals[cat.key] || 0;
+        return `<td class="text-end"><strong>${formatNumber(value)}</strong></td><td class="text-end"><strong>${formatGpSharePct(value, overallGrandTotal)}</strong></td>`;
+    }).join('');
+
     const grandTotalRow = document.createElement('tr');
     grandTotalRow.style.cssText = 'background-color: #d4edda; font-weight: bold; position: sticky; bottom: 0; border-top: 2px solid #333;';
     grandTotalRow.innerHTML = `
         <td><strong>Grand total</strong></td>
-        <td class="text-end"><strong>${formatNumber(grandTotalHigh)}</strong></td>
-        <td class="text-end"><strong>${formatNumber(grandTotalLow)}</strong></td>
-        <td class="text-end"><strong>${formatNumber(grandTotalMedium)}</strong></td>
-        <td class="text-end"><strong>${formatNumber(grandTotal)}</strong></td>
+        ${grandGpCells}
+        <td class="text-end"><strong>${formatNumber(overallGrandTotal)}</strong></td>
         <td class="text-end"><strong>100.00%</strong></td>
     `;
     tbody.appendChild(grandTotalRow);
+
+    renderSummaryGpWiseManPieChart(sorted, overallGrandTotal);
+}
+
+function renderSummaryGpWiseManPieChart(sortedRows, overallGrandTotal) {
+    const canvas = document.getElementById('summaryGpWiseManPieChart');
+    const legend = document.getElementById('summaryGpWiseManLegend');
+
+    if (summaryGpWiseManPieChartInstance) {
+        try { summaryGpWiseManPieChartInstance.destroy(); } catch (e) { /* ignore */ }
+        summaryGpWiseManPieChartInstance = null;
+    }
+
+    if (!canvas) return;
+
+    const pieItems = (sortedRows || [])
+        .map(function ([marketingMan, gpData]) {
+            return { label: marketingMan, value: getGpWiseRowTotal(gpData) };
+        })
+        .filter(function (item) { return item.value > 0; });
+
+    if (pieItems.length === 0 || overallGrandTotal <= 0) {
+        if (legend) legend.innerHTML = '';
+        return;
+    }
+
+    const maxSlices = 7;
+    let chartItems = pieItems;
+    if (pieItems.length > maxSlices) {
+        const topItems = pieItems.slice(0, maxSlices - 1);
+        const otherValue = pieItems.slice(maxSlices - 1).reduce(function (sum, item) {
+            return sum + item.value;
+        }, 0);
+        chartItems = topItems.concat([{ label: 'Others', value: otherValue }]);
+    }
+
+    const colors = generateColors(chartItems.length);
+
+    if (legend) {
+        legend.innerHTML = chartItems.map(function (item, index) {
+            const pct = formatGpSharePct(item.value, overallGrandTotal);
+            return `
+                <div class="summary-legend-item">
+                    <span class="summary-legend-swatch" style="background:${colors[index]};"></span>
+                    <div>
+                        <div class="summary-legend-label">${escapeHtml(item.label)}</div>
+                        <div class="summary-legend-meta">${formatNumber(item.value)} MT (${pct})</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    if (typeof ChartDataLabels !== 'undefined') {
+        try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
+    }
+
+    summaryGpWiseManPieChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: chartItems.map(function (item) { return item.label; }),
+            datasets: [{
+                data: chartItems.map(function (item) { return item.value; }),
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const value = context.parsed || 0;
+                            const pct = overallGrandTotal > 0 ? ((value / overallGrandTotal) * 100).toFixed(1) : '0.0';
+                            return `${context.label}: ${formatNumber(value)} MT (${pct}%)`;
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 11 },
+                    formatter: function (value) {
+                        const pct = overallGrandTotal > 0 ? ((value / overallGrandTotal) * 100).toFixed(0) : '0';
+                        return Number(pct) >= 8 ? `${pct}%` : '';
+                    }
+                }
+            }
+        },
+        plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : []
+    });
 }
 
 function normalizeRegionalAnalysisRow(row) {
@@ -3697,235 +4638,468 @@ function renderTargetVsGrowth() {
     });
 }
 
-function isClientAnalysisSummaryRow(row) {
+function formatCaInr(v) {
+    return '₹ ' + Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getRowField(row, names) {
+    if (!row) return undefined;
+    for (let i = 0; i < names.length; i++) {
+        if (row[names[i]] !== undefined && row[names[i]] !== null && row[names[i]] !== '') {
+            return row[names[i]];
+        }
+    }
+    const lowerMap = {};
+    Object.keys(row).forEach(function (k) { lowerMap[k.toLowerCase()] = row[k]; });
+    for (let i = 0; i < names.length; i++) {
+        const val = lowerMap[names[i].toLowerCase()];
+        if (val !== undefined && val !== null && val !== '') return val;
+    }
+    return undefined;
+}
+
+function flattenSalesAnalysisTables(response) {
+    const tables = [];
+    if (!response) return tables;
+    if (Array.isArray(response)) {
+        if (response.length && Array.isArray(response[0])) {
+            response.forEach(function (table) {
+                if (Array.isArray(table)) tables.push(table);
+            });
+        } else {
+            tables.push(response);
+        }
+        return tables;
+    }
+    ['Table', 'Table1', 'Table2', 'Table3', 'Table4', 'Table5'].forEach(function (key) {
+        if (Array.isArray(response[key])) tables.push(response[key]);
+    });
+    return tables;
+}
+
+function isOutstandingAnalysisRow(row) {
     if (!row || typeof row !== 'object') return false;
-    const keys = Object.keys(row).map(k => k.toLowerCase());
-    return keys.some(k =>
-        k.includes('totalclient') ||
-        k.includes('lostclient') ||
-        k.includes('salesmt') ||
-        k.includes('avgmt') ||
-        k.includes('sales (mt)') ||
-        k.includes('avg mt/client')
-    );
+    const keys = Object.keys(row).map(function (k) { return k.toLowerCase(); });
+    return keys.includes('vendor/client') ||
+        keys.includes('delaydays') ||
+        keys.includes('delay days') ||
+        (keys.includes('balance') && (keys.includes('amount adjusted') || keys.includes('amountadjusted')));
 }
 
-function normalizeClientAnalysisRow(row) {
-    return {
-        partyName: (row['Party Name'] || row.PartyName || row.Client || row.CLIENT || 'Unknown').toString().trim(),
-        segment: (row['Segment'] || row.Segment || row.Seg || 'Unknown').toString().trim(),
-        gp: (row['GP'] || row.GP || '').toString().trim() || '-',
-        status: (row['Status'] || row.Status || '').toString().trim(),
-        qty: parseFloat(row['Qty'] || row.QTY || row.MT || row.Weight || row['Weight'] || 0) || 0,
-        target: parseFloat(row['Target'] || row.TARGET || row['Target MT'] || 0) || 0,
-        ach: parseFloat(row['Ach.'] || row.Ach || row.Achieved || row['Achieved'] || row['Ach'] || 0) || 0,
-        nofDreamClient: parseInt(row['NofDreamClient'] || row.NofDreamClient || row.nofDreamClient || 0, 10) || 0
-    };
-}
-
-function getNofDreamClientFromTopRow(clientRows) {
-    if (!clientRows || clientRows.length === 0) return 0;
-    const topRow = clientRows[0];
-    return parseInt(topRow['NofDreamClient'] || topRow.NofDreamClient || topRow.nofDreamClient || 0, 10) || 0;
+function isSalesAnalysisRow(row) {
+    if (!row || typeof row !== 'object' || isOutstandingAnalysisRow(row)) return false;
+    const keys = Object.keys(row).map(function (k) { return k.toLowerCase(); });
+    return keys.includes('weight') || keys.includes('party name') || keys.includes('partyname') || keys.includes('gp');
 }
 
 function parseClientAnalysisResponse(response) {
-    let clientRows = [];
-    let summaryRow = null;
+    const tables = flattenSalesAnalysisTables(response);
+    let salesRows = [];
+    let outstandingRows = [];
 
-    if (!response) {
-        return { clientRows, summaryRow };
-    }
-
-    if (Array.isArray(response)) {
-        if (Array.isArray(response[0])) {
-            clientRows = response[0] || [];
-            if (response[1] && response[1].length > 0 && isClientAnalysisSummaryRow(response[1][0])) {
-                summaryRow = response[1][0];
-            }
-        } else if (response.length > 0 && (response[0]['Party Name'] !== undefined || response[0].PartyName !== undefined || response[0].Client !== undefined)) {
-            clientRows = response;
+    tables.forEach(function (table) {
+        if (!table || !table.length) return;
+        if (isOutstandingAnalysisRow(table[0])) {
+            outstandingRows = outstandingRows.concat(table);
+        } else if (isSalesAnalysisRow(table[0])) {
+            salesRows = salesRows.concat(table);
         }
-    } else if (response.Table || response.Table1) {
-        clientRows = response.Table || response.Table1 || [];
-        const table2 = response.Table2 || [];
-        if (table2.length > 0 && isClientAnalysisSummaryRow(table2[0])) {
-            summaryRow = table2[0];
-        }
-    }
-
-    return {
-        clientRows: clientRows || [],
-        summaryRow: summaryRow || null
-    };
-}
-
-function computeClientAnalysisKpis(clientRows, summaryRow) {
-    const normalized = (clientRows || []).map(normalizeClientAnalysisRow);
-    const uniqueParties = new Set();
-    let lostClients = 0;
-    let salesMt = 0;
-
-    normalized.forEach(item => {
-        if (item.partyName && item.partyName !== 'Unknown') {
-            uniqueParties.add(item.partyName.toLowerCase());
-        }
-        const status = item.status.toUpperCase();
-        if (status.includes('LOST')) {
-            lostClients++;
-        }
-        salesMt += item.qty;
     });
 
-    const totalClients = parseFloat(
-        summaryRow?.TotalClients || summaryRow?.['Total Clients'] || summaryRow?.TotalClient || uniqueParties.size
-    ) || uniqueParties.size;
+    return { salesRows: salesRows || [], outstandingRows: outstandingRows || [] };
+}
 
-    lostClients = parseFloat(
-        summaryRow?.LostClients || summaryRow?.['Lost Clients'] || summaryRow?.LostClient || lostClients
-    ) || lostClients;
+function getCaRowWeight(row) {
+    return parseFloat(getRowField(row, ['Weight', 'weight', 'QtyMT', 'Qty', 'QTY', 'MT', 'SalesMT']) || 0) || 0;
+}
 
-    salesMt = parseFloat(
-        summaryRow?.SalesMT || summaryRow?.['Sales (MT)'] || summaryRow?.SalesMt || summaryRow?.TotalSales || salesMt
-    ) || salesMt;
+function getCaRowValue(row) {
+    return parseFloat(getRowField(row, [
+        'TotalBillAmount', 'Total Bill Amount', 'TotalBillAmt',
+        'Invoice Amount', 'InvoiceAmount', 'Sale Value', 'SaleValue', 'Value',
+        'AmountRs', 'Net Amount', 'NetAmount', 'Bill Amount'
+    ]) || 0) || 0;
+}
 
-    let avgMtClient = parseFloat(
-        summaryRow?.AvgMTClient || summaryRow?.['Avg MT/Client'] || summaryRow?.AvgMtClient || 0
-    ) || 0;
+function getCaPartyName(row) {
+    return (getRowField(row, ['Party Name', 'PartyName', 'PARTY_NAME', 'Vendor/Client', 'Client', 'CLIENT']) || 'Unknown').toString().trim();
+}
 
-    if (!avgMtClient && totalClients > 0) {
-        avgMtClient = salesMt / totalClients;
+function getCaSegment(row) {
+    return (getRowField(row, ['Segment', 'SEGMENT', 'Seg', 'IndustryType']) || 'Unknown').toString().trim();
+}
+
+function getCaProduct(row) {
+    return (getRowField(row, ['Item Name', 'ItemName', 'ITEM_NAME', 'Product', 'Product Name', 'Item']) || 'Unknown').toString().trim();
+}
+
+function getCaOutstandingBalance(row) {
+    const amount = parseFloat(getRowField(row, ['Amount']) || 0) || 0;
+    const adjusted = parseFloat(getRowField(row, ['Amount Adjusted', 'AmountAdjusted']) || 0) || 0;
+    const balance = getRowField(row, ['Balance', 'Outstanding', 'Outstanding Amount']);
+    if (balance !== undefined) {
+        return parseFloat(balance) || 0;
+    }
+    return amount - adjusted;
+}
+
+function getCaDelayDays(row) {
+    return parseFloat(getRowField(row, ['Delay Days', 'DelayDays', 'Delay_Days']) || 0) || 0;
+}
+
+function getCaCreditDays(row) {
+    return parseFloat(getRowField(row, ['Credit Days', 'CreditDays', 'Credit_Days']) || 0) || 0;
+}
+
+function isCaOverdueRow(row) {
+    const delay = getCaDelayDays(row);
+    const credit = getCaCreditDays(row);
+    return delay > credit || delay > 0;
+}
+
+function sumCaSales(rows) {
+    let mt = 0;
+    let value = 0;
+    (rows || []).forEach(function (row) {
+        mt += getCaRowWeight(row);
+        value += getCaRowValue(row);
+    });
+    return { mt: mt, value: value, avgRate: mt > 0 ? value / mt : 0 };
+}
+
+function groupCaBy(rows, keyFn) {
+    const map = new Map();
+    (rows || []).forEach(function (row) {
+        const key = keyFn(row) || 'Unknown';
+        if (!map.has(key)) map.set(key, { name: key, mt: 0, value: 0 });
+        const item = map.get(key);
+        item.mt += getCaRowWeight(row);
+        item.value += getCaRowValue(row);
+    });
+    return Array.from(map.values()).sort(function (a, b) { return b.mt - a.mt; });
+}
+
+function groupCaOutstanding(rows, overdueOnly) {
+    const map = new Map();
+    (rows || []).forEach(function (row) {
+        if (overdueOnly && !isCaOverdueRow(row)) return;
+        const party = getCaPartyName(row);
+        if (!party || party === 'Unknown') return;
+        const key = party.toLowerCase();
+        if (!map.has(key)) map.set(key, { name: party, amount: 0 });
+        map.get(key).amount += getCaOutstandingBalance(row);
+    });
+    return Array.from(map.values()).sort(function (a, b) { return b.amount - a.amount; });
+}
+
+function renderCaTrend(id, current, previous) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const curr = parseFloat(current) || 0;
+    const prev = parseFloat(previous) || 0;
+    if (prev === 0 && curr === 0) {
+        el.className = 'summary-kpi-trend trend-neutral';
+        el.innerHTML = '';
+        return;
+    }
+    const pct = prev === 0 ? 100 : Math.abs(((curr - prev) / prev) * 100);
+    const up = curr >= prev;
+    el.className = `summary-kpi-trend ${up ? 'trend-positive' : 'trend-negative'}`;
+    el.innerHTML = `${up ? '▲' : '▼'} ${pct.toFixed(2)}% <span>vs Last Period</span>`;
+}
+
+function renderCaEmptyTable(bodyId, footId, colSpan, message) {
+    const body = document.getElementById(bodyId);
+    const foot = document.getElementById(footId);
+    if (body) body.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-muted">${message || 'No data available'}</td></tr>`;
+    if (foot) foot.innerHTML = '';
+}
+
+function renderCaGpSection(salesRows) {
+    const buckets = { superHigh: { mt: 0, value: 0 }, high: { mt: 0, value: 0 }, medium: { mt: 0, value: 0 }, low: { mt: 0, value: 0 } };
+    (salesRows || []).forEach(function (row) {
+        const key = categorizeGpForSummary(getRowField(row, ['GP', 'gp']) || '');
+        const bucket = buckets[key] || buckets.low;
+        bucket.mt += getCaRowWeight(row);
+        bucket.value += getCaRowValue(row);
+    });
+
+    const rows = [
+        { key: 'superHigh', label: 'Super High GP', mtId: 'caGpSuperMt', pctId: 'caGpSuperPct' },
+        { key: 'high', label: 'High GP', mtId: 'caGpHighMt', pctId: 'caGpHighPct' },
+        { key: 'medium', label: 'Medium GP', mtId: 'caGpMedMt', pctId: 'caGpMedPct' },
+        { key: 'low', label: 'Low GP', mtId: 'caGpLowMt', pctId: 'caGpLowPct' }
+    ];
+    const totalMt = rows.reduce(function (sum, r) { return sum + buckets[r.key].mt; }, 0);
+    const totalValue = rows.reduce(function (sum, r) { return sum + buckets[r.key].value; }, 0);
+
+    rows.forEach(function (r) {
+        const pct = totalMt > 0 ? (buckets[r.key].mt / totalMt) * 100 : 0;
+        const mtEl = document.getElementById(r.mtId);
+        const pctEl = document.getElementById(r.pctId);
+        if (mtEl) mtEl.textContent = formatNumber(buckets[r.key].mt);
+        if (pctEl) pctEl.textContent = `${pct.toFixed(2)}%`;
+    });
+
+    const body = document.getElementById('caGpDetailBody');
+    const foot = document.getElementById('caGpDetailFoot');
+    if (body) {
+        body.innerHTML = rows.map(function (r) {
+            const mtPct = totalMt > 0 ? (buckets[r.key].mt / totalMt) * 100 : 0;
+            const valPct = totalValue > 0 ? (buckets[r.key].value / totalValue) * 100 : 0;
+            return `<tr>
+                <td>${escapeHtml(r.label)}</td>
+                <td class="text-end">${formatNumber(buckets[r.key].mt)}</td>
+                <td class="text-end">${mtPct.toFixed(2)}%</td>
+                <td class="text-end">${formatCaInr(buckets[r.key].value)}</td>
+                <td class="text-end">${valPct.toFixed(2)}%</td>
+            </tr>`;
+        }).join('');
+    }
+    if (foot) {
+        foot.innerHTML = `<tr>
+            <td>Total</td>
+            <td class="text-end">${formatNumber(totalMt)}</td>
+            <td class="text-end">100.00%</td>
+            <td class="text-end">${formatCaInr(totalValue)}</td>
+            <td class="text-end">100.00%</td>
+        </tr>`;
+    }
+}
+
+function renderCaProductSection(salesRows) {
+    const grouped = groupCaBy(salesRows, getCaProduct);
+    const total = grouped.reduce(function (sum, item) { return sum + item.mt; }, 0);
+    const top = grouped.slice(0, 4);
+    const othersMt = grouped.slice(4).reduce(function (sum, item) { return sum + item.mt; }, 0);
+    const items = othersMt > 0 ? top.concat([{ name: 'Others', mt: othersMt, value: 0 }]) : top;
+    const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#858796'];
+
+    const body = document.getElementById('caProductLegendBody');
+    const foot = document.getElementById('caProductLegendFoot');
+    if (!items.length) {
+        renderCaEmptyTable('caProductLegendBody', 'caProductLegendFoot', 3);
+    } else if (body) {
+        body.innerHTML = items.map(function (item, index) {
+            const pct = total > 0 ? (item.mt / total) * 100 : 0;
+            return `<tr>
+                <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${colors[index % colors.length]};margin-right:6px;"></span>${escapeHtml(item.name)}</td>
+                <td class="text-end">${formatNumber(item.mt)}</td>
+                <td class="text-end">${pct.toFixed(2)}%</td>
+            </tr>`;
+        }).join('');
+    }
+    if (foot && items.length) {
+        foot.innerHTML = `<tr><td>Total</td><td class="text-end">${formatNumber(total)}</td><td class="text-end">100.00%</td></tr>`;
     }
 
-    return { totalClients, lostClients, salesMt, avgMtClient };
+    const canvas = document.getElementById('caProductPieChart');
+    if (!canvas) return;
+    if (caProductPieChartInstance) {
+        try { caProductPieChartInstance.destroy(); } catch (e) { /* ignore */ }
+        caProductPieChartInstance = null;
+    }
+    if (!items.length || typeof Chart === 'undefined') return;
+    if (typeof ChartDataLabels !== 'undefined') {
+        try { Chart.register(ChartDataLabels); } catch (e) { /* already registered */ }
+    }
+    caProductPieChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: items.map(function (item) { return item.name; }),
+            datasets: [{
+                data: items.map(function (item) { return item.mt; }),
+                backgroundColor: colors.slice(0, items.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '55%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const value = context.parsed || 0;
+                            const pct = total > 0 ? ((value / total) * 100).toFixed(2) : '0.00';
+                            return `${context.label}: ${formatNumber(value)} MT (${pct}%)`;
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 10 },
+                    formatter: function (value) {
+                        return total > 0 ? `${((value / total) * 100).toFixed(0)}%` : '';
+                    }
+                }
+            }
+        },
+        plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : []
+    });
+}
+
+function renderCaTopAmountTable(bodyId, footId, rows, emptyLabel) {
+    const body = document.getElementById(bodyId);
+    const foot = document.getElementById(footId);
+    const top = (rows || []).slice(0, 5);
+    if (!top.length) {
+        renderCaEmptyTable(bodyId, footId, 3, emptyLabel);
+        return 0;
+    }
+    const total = top.reduce(function (sum, row) { return sum + row.amount; }, 0);
+    if (body) {
+        body.innerHTML = top.map(function (row, index) {
+            return `<tr>
+                <td>${index + 1}</td>
+                <td>${escapeHtml(row.name)}</td>
+                <td class="text-end">${formatCaInr(row.amount)}</td>
+            </tr>`;
+        }).join('');
+    }
+    if (foot) {
+        foot.innerHTML = `<tr><td colspan="2">Total</td><td class="text-end">${formatCaInr(total)}</td></tr>`;
+    }
+    return total;
+}
+
+function renderCaTopPartyMonth(salesRows) {
+    const grouped = groupCaBy(salesRows, getCaPartyName).filter(function (item) { return item.name && item.name !== 'Unknown'; }).slice(0, 5);
+    const body = document.getElementById('caTopPartyMonthBody');
+    const foot = document.getElementById('caTopPartyMonthFoot');
+    if (!grouped.length) {
+        renderCaEmptyTable('caTopPartyMonthBody', 'caTopPartyMonthFoot', 3);
+        return;
+    }
+    const total = grouped.reduce(function (sum, item) { return sum + item.mt; }, 0);
+    if (body) {
+        body.innerHTML = grouped.map(function (item, index) {
+            return `<tr>
+                <td>${index + 1}</td>
+                <td>${escapeHtml(item.name)}</td>
+                <td class="text-end">${formatNumber(item.mt)}</td>
+            </tr>`;
+        }).join('');
+    }
+    if (foot) {
+        foot.innerHTML = `<tr><td colspan="2">Total</td><td class="text-end">${formatNumber(total)}</td></tr>`;
+    }
+}
+
+function renderCaSegmentSection(salesRows) {
+    const grouped = groupCaBy(salesRows, getCaSegment);
+    const totalMt = grouped.reduce(function (sum, item) { return sum + item.mt; }, 0);
+    const totalValue = grouped.reduce(function (sum, item) { return sum + item.value; }, 0);
+    const body = document.getElementById('caSegmentBody');
+    const foot = document.getElementById('caSegmentFoot');
+    if (!grouped.length) {
+        renderCaEmptyTable('caSegmentBody', 'caSegmentFoot', 5);
+        return;
+    }
+    if (body) {
+        body.innerHTML = grouped.map(function (item) {
+            const pct = totalMt > 0 ? (item.mt / totalMt) * 100 : 0;
+            const avg = item.mt > 0 ? item.value / item.mt : 0;
+            return `<tr>
+                <td>${escapeHtml(item.name)}</td>
+                <td class="text-end">${formatNumber(item.mt)}</td>
+                <td class="text-end">${pct.toFixed(2)}%</td>
+                <td class="text-end">${formatCaInr(item.value)}</td>
+                <td class="text-end">${formatCaInr(avg)}</td>
+            </tr>`;
+        }).join('');
+    }
+    if (foot) {
+        const avg = totalMt > 0 ? totalValue / totalMt : 0;
+        foot.innerHTML = `<tr>
+            <td>Total</td>
+            <td class="text-end">${formatNumber(totalMt)}</td>
+            <td class="text-end">100.00%</td>
+            <td class="text-end">${formatCaInr(totalValue)}</td>
+            <td class="text-end">${formatCaInr(avg)}</td>
+        </tr>`;
+    }
 }
 
 function clearClientAnalysisDashboard() {
-    const setText = (id, value) => {
+    const setText = function (id, value) {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
-
-    setText('caKpiTotalClients', '0');
-    setText('caKpiLostClients', '0');
     setText('caKpiSalesMt', '0.00');
-    setText('caKpiAvgMtClient', '0.00');
-    setText('caKpiDreamClients', '0');
-
-    const gpBody = document.getElementById('caGpClientTableBody');
-    const segmentBody = document.getElementById('caSegmentSalesTableBody');
-
-    if (gpBody) gpBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
-    if (segmentBody) segmentBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
-}
-
-function renderClientAnalysisGpTable(clientRows) {
-    const tbody = document.getElementById('caGpClientTableBody');
-    if (!tbody) return;
-
-    const gpOrder = ['Super High', 'High', 'Medium', 'Low'];
-    const items = (clientRows || [])
-        .map(normalizeClientAnalysisRow)
-        .filter(item => item.partyName && item.partyName !== 'Unknown')
-        .sort((a, b) => {
-            const ai = gpOrder.findIndex(x => x.toLowerCase() === a.gp.toLowerCase());
-            const bi = gpOrder.findIndex(x => x.toLowerCase() === b.gp.toLowerCase());
-            if (ai !== bi) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-            return b.qty - a.qty;
-        });
-
-    if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
-        return;
+    setText('caKpiSalesValue', '₹ 0.00');
+    setText('caKpiAvgRate', '₹ 0.00');
+    setText('caKpiSalesMtTrend', '');
+    setText('caKpiSalesValueTrend', '');
+    setText('caKpiAvgRateTrend', '');
+    setText('caGpSuperMt', '0.00');
+    setText('caGpHighMt', '0.00');
+    setText('caGpMedMt', '0.00');
+    setText('caGpLowMt', '0.00');
+    setText('caGpSuperPct', '0.00%');
+    setText('caGpHighPct', '0.00%');
+    setText('caGpMedPct', '0.00%');
+    setText('caGpLowPct', '0.00%');
+    setText('caTotalOutstanding', '₹ 0.00');
+    setText('caTotalOverdue', '₹ 0.00');
+    renderCaEmptyTable('caGpDetailBody', 'caGpDetailFoot', 5);
+    renderCaEmptyTable('caProductLegendBody', 'caProductLegendFoot', 3);
+    renderCaEmptyTable('caTopOutstandingBody', 'caTopOutstandingFoot', 3);
+    renderCaEmptyTable('caTopOverdueBody', 'caTopOverdueFoot', 3);
+    renderCaEmptyTable('caTopPartyMonthBody', 'caTopPartyMonthFoot', 3);
+    renderCaEmptyTable('caSegmentBody', 'caSegmentFoot', 5);
+    if (caProductPieChartInstance) {
+        try { caProductPieChartInstance.destroy(); } catch (e) { /* ignore */ }
+        caProductPieChartInstance = null;
     }
-
-    tbody.innerHTML = '';
-    items.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${escapeHtml(item.partyName)}</td>
-            <td>${escapeHtml(item.segment)}</td>
-            <td class="text-end">${formatNumber(item.qty)}</td>
-            <td>${escapeHtml(item.gp)}</td>
-        `;
-        tbody.appendChild(tr);
-    });
 }
 
-function renderClientAnalysisSegmentTable(clientRows) {
-    const tbody = document.getElementById('caSegmentSalesTableBody');
-    if (!tbody) return;
-
-    const segmentMap = new Map();
-
-    (clientRows || []).forEach(row => {
-        const item = normalizeClientAnalysisRow(row);
-        if (!item.partyName || item.partyName === 'Unknown') return;
-
-        if (!segmentMap.has(item.segment)) {
-            segmentMap.set(item.segment, { total: 0, parties: [] });
-        }
-
-        const group = segmentMap.get(item.segment);
-        group.total += item.qty;
-        group.parties.push({
-            partyName: item.partyName,
-            qty: item.qty
-        });
-    });
-
-    const segments = Array.from(segmentMap.entries())
-        .map(([segment, data]) => ({
-            segment,
-            total: data.total,
-            parties: data.parties.sort((a, b) => b.qty - a.qty)
-        }))
-        .sort((a, b) => b.total - a.total);
-
-    if (segments.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = '';
-    segments.forEach(group => {
-        group.parties.forEach((party, index) => {
-            const tr = document.createElement('tr');
-            const segmentCell = index === 0
-                ? `<td rowspan="${group.parties.length}" style="vertical-align:middle;font-weight:600;">${escapeHtml(group.segment)}</td>`
-                : '';
-            const totalCell = index === 0
-                ? `<td rowspan="${group.parties.length}" class="text-end" style="vertical-align:middle;font-weight:700;background:#f8fafc;">${formatNumber(group.total)}</td>`
-                : '';
-
-            tr.innerHTML = `
-                ${segmentCell}
-                <td>${escapeHtml(party.partyName)}</td>
-                <td class="text-end">${formatNumber(party.qty)}</td>
-                ${totalCell}
-            `;
-            tbody.appendChild(tr);
-        });
-    });
-}
-
-function renderClientAnalysisDashboard(clientRows, summaryRow) {
-    const kpis = computeClientAnalysisKpis(clientRows, summaryRow);
-    const nofDreamClient = getNofDreamClientFromTopRow(clientRows);
-
-    const setText = (id, value) => {
+function renderClientAnalysisDashboard(salesRows, outstandingRows, lastSalesRows, productRows) {
+    const current = sumCaSales(salesRows);
+    const previous = sumCaSales(lastSalesRows);
+    const setText = function (id, value) {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
 
-    setText('caKpiTotalClients', Number(kpis.totalClients).toLocaleString('en-US'));
-    setText('caKpiLostClients', Number(kpis.lostClients).toLocaleString('en-US'));
-    setText('caKpiSalesMt', formatNumber(kpis.salesMt));
-    setText('caKpiAvgMtClient', formatNumber(kpis.avgMtClient));
-    setText('caKpiDreamClients', Number(nofDreamClient).toLocaleString('en-US'));
+    setText('caKpiSalesMt', formatNumber(current.mt));
+    setText('caKpiSalesValue', formatCaInr(current.value));
+    setText('caKpiAvgRate', formatCaInr(current.avgRate));
+    renderCaTrend('caKpiSalesMtTrend', current.mt, previous.mt);
+    renderCaTrend('caKpiSalesValueTrend', current.value, previous.value);
+    renderCaTrend('caKpiAvgRateTrend', current.avgRate, previous.avgRate);
 
-    renderClientAnalysisGpTable(clientRows);
-    renderClientAnalysisSegmentTable(clientRows);
+    renderCaGpSection(salesRows);
+    renderCaProductSection((productRows && productRows.length) ? productRows : salesRows);
+    renderCaTopPartyMonth(salesRows);
+    renderCaSegmentSection(salesRows);
+
+    const outstandingParties = groupCaOutstanding(outstandingRows, false);
+    const overdueParties = groupCaOutstanding(outstandingRows, true);
+    renderCaTopAmountTable('caTopOutstandingBody', 'caTopOutstandingFoot', outstandingParties);
+    renderCaTopAmountTable('caTopOverdueBody', 'caTopOverdueFoot', overdueParties);
+    const totalOutstanding = outstandingParties.reduce(function (sum, row) { return sum + row.amount; }, 0);
+    const totalOverdue = overdueParties.reduce(function (sum, row) { return sum + row.amount; }, 0);
+    setText('caTotalOutstanding', formatCaInr(totalOutstanding));
+    setText('caTotalOverdue', formatCaInr(totalOverdue));
+}
+
+function fetchClientAnalysisMode(mode, filters, fromDateValue, toDateValue) {
+    return SalesanalysisASTService.GetMultipleTableSalesAnalysisData(
+        mode,
+        filters.dealerCodes,
+        fromDateValue,
+        toDateValue,
+        filters.salesPersons,
+        filters.cities,
+        filters.status,
+        filters.gp,
+        filters.industryType,
+        filters.notPurchaseFromDays
+    );
 }
 
 function renderClientAnalysis() {
@@ -3938,8 +5112,16 @@ function renderClientAnalysis() {
     updateReportDateRangeDisplay();
     Showloader();
 
-    SalesanalysisASTService.GetMultipleTableSalesAnalysisData(
-        'CLIENT_ANALYSIS',
+    const lastMonthRange = getLastMonthAsOnDateRange(filters.fromDate, filters.toDate);
+    const currentCa = fetchClientAnalysisMode('CLIENT_ANALYSIS', filters, filters.fromDate, filters.toDate);
+    const currentSummary = (!G_SummaryReportRows || G_SummaryReportRows.length === 0)
+        ? fetchClientAnalysisMode('SUMMARY_REPORT', filters, filters.fromDate, filters.toDate)
+        : Promise.resolve(null);
+    const lastSummary = lastMonthRange
+        ? fetchClientAnalysisMode('SUMMARY_REPORT', filters, lastMonthRange.fromDate, lastMonthRange.toDate)
+        : Promise.resolve(null);
+    const productPromise = SalesanalysisASTService.GetSalesAnalysisData(
+        'PRODUCT_ANALYSIS',
         filters.dealerCodes,
         filters.fromDate,
         filters.toDate,
@@ -3949,17 +5131,32 @@ function renderClientAnalysis() {
         filters.gp,
         filters.industryType,
         filters.notPurchaseFromDays
-    ).then(function (response) {
-        HideLoader();
+    ).catch(function () { return []; });
 
-        const parsed = parseClientAnalysisResponse(response);
-        if ((!parsed.clientRows || parsed.clientRows.length === 0) && !parsed.summaryRow) {
+    Promise.all([currentCa, currentSummary, lastSummary, productPromise]).then(function (results) {
+        HideLoader();
+        const parsed = parseClientAnalysisResponse(results[0]);
+        let salesRows = parsed.salesRows || [];
+        if ((!salesRows || salesRows.length === 0) && G_SummaryReportRows && G_SummaryReportRows.length) {
+            salesRows = G_SummaryReportRows;
+        }
+        if ((!salesRows || salesRows.length === 0) && results[1]) {
+            salesRows = parseSummaryReportResponse(results[1]).rows || [];
+        }
+        const lastSalesRows = results[2] ? (parseSummaryReportResponse(results[2]).rows || []) : [];
+        const productRows = Array.isArray(results[3]) ? results[3] : [];
+        const hasProduct = (salesRows || []).some(function (row) {
+            const name = getCaProduct(row);
+            return name && name !== 'Unknown';
+        });
+
+        if ((!salesRows || salesRows.length === 0) && (!parsed.outstandingRows || parsed.outstandingRows.length === 0)) {
             console.warn('No Client Analysis data received');
             clearClientAnalysisDashboard();
             return;
         }
 
-        renderClientAnalysisDashboard(parsed.clientRows, parsed.summaryRow);
+        renderClientAnalysisDashboard(salesRows, parsed.outstandingRows, lastSalesRows, hasProduct ? null : productRows);
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching Client Analysis data:', err);
@@ -4504,9 +5701,6 @@ function SalesanalysisAST_ShowReport() {
     if (document.querySelector('#clientAnalysis')?.classList.contains('show') || document.querySelector('#clientAnalysis')?.classList.contains('active')) {
         renderClientAnalysis();
     }
-    if (document.querySelector('#gpWiseSummary')?.classList.contains('show') || document.querySelector('#gpWiseSummary')?.classList.contains('active')) {
-        renderGPWiseSummary();
-    }
     if (document.querySelector('#highGPLostClient')?.classList.contains('show') || document.querySelector('#highGPLostClient')?.classList.contains('active')) {
         renderHighGPLostClient();
     }
@@ -4514,6 +5708,14 @@ function SalesanalysisAST_ShowReport() {
 
 // Tab event listeners
 document.addEventListener('DOMContentLoaded', function () {
+    const salesAnalysisTabs = document.getElementById('salesAnalysisTabs');
+    if (salesAnalysisTabs) {
+        salesAnalysisTabs.addEventListener('shown.bs.tab', function (e) {
+            const target = e.target?.getAttribute('data-bs-target') || e.target?.getAttribute('aria-controls') || '';
+            syncGpFilterForTab(target);
+        }, true);
+    }
+
     const summaryTabBtn = document.getElementById('summaryReport-tab');
     if (summaryTabBtn) {
         summaryTabBtn.addEventListener('shown.bs.tab', function () {
@@ -4584,13 +5786,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    const gpWiseTabBtn = document.getElementById('gpWiseSummary-tab');
-    if (gpWiseTabBtn) {
-        gpWiseTabBtn.addEventListener('shown.bs.tab', function () {
-            renderGPWiseSummary();
-        });
-    }
-
     const highGPLostClientTabBtn = document.getElementById('highGPLostClient-tab');
     if (highGPLostClientTabBtn) {
         highGPLostClientTabBtn.addEventListener('shown.bs.tab', function () {
@@ -4630,9 +5825,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (document.querySelector('#clientAnalysis') && document.querySelector('#clientAnalysis').classList.contains('show')) {
             renderClientAnalysis();
         }
-        if (document.querySelector('#gpWiseSummary') && document.querySelector('#gpWiseSummary').classList.contains('show')) {
-            renderGPWiseSummary();
-        }
         if (document.querySelector('#highGPLostClient') && document.querySelector('#highGPLostClient').classList.contains('show')) {
             renderHighGPLostClient();
         }
@@ -4645,19 +5837,30 @@ let G_RmRateValues = {};
 let G_RmRateFinYearLoaded = false;
 
 const RM_RATE_MONTHS = [
-    { Name: 'April', Number: 4 },
-    { Name: 'May', Number: 5 },
-    { Name: 'June', Number: 6 },
-    { Name: 'July', Number: 7 },
-    { Name: 'August', Number: 8 },
-    { Name: 'September', Number: 9 },
-    { Name: 'October', Number: 10 },
-    { Name: 'November', Number: 11 },
-    { Name: 'December', Number: 12 },
-    { Name: 'January', Number: 1 },
-    { Name: 'February', Number: 2 },
-    { Name: 'March', Number: 3 }
+    { Name: 'April', ShortName: 'Apr', Number: 4 },
+    { Name: 'May', ShortName: 'May', Number: 5 },
+    { Name: 'June', ShortName: 'Jun', Number: 6 },
+    { Name: 'July', ShortName: 'Jul', Number: 7 },
+    { Name: 'August', ShortName: 'Aug', Number: 8 },
+    { Name: 'September', ShortName: 'Sep', Number: 9 },
+    { Name: 'October', ShortName: 'Oct', Number: 10 },
+    { Name: 'November', ShortName: 'Nov', Number: 11 },
+    { Name: 'December', ShortName: 'Dec', Number: 12 },
+    { Name: 'January', ShortName: 'Jan', Number: 1 },
+    { Name: 'February', ShortName: 'Feb', Number: 2 },
+    { Name: 'March', ShortName: 'Mar', Number: 3 }
 ];
+
+function getRmRateMonthByNumber(monthNumber) {
+    const month = Number(monthNumber);
+    return RM_RATE_MONTHS.find(function (item) {
+        return Number(item.Number) === month;
+    }) || null;
+}
+
+function getRmRateMonthShortName(monthNumber) {
+    return getRmRateMonthByNumber(monthNumber)?.ShortName || '';
+}
 
 function getCurrentFinYear() {
     try {
@@ -4673,6 +5876,13 @@ function getCurrentFinYear() {
 
 function getDefaultRmRateMonth() {
     if (fromDate && fromDate !== '0') {
+        const parts = String(fromDate).split('-');
+        if (parts.length >= 2) {
+            const month = parseInt(parts[1], 10);
+            if (month >= 1 && month <= 12) {
+                return String(month);
+            }
+        }
         const date = new Date(fromDate);
         if (!isNaN(date.getTime())) {
             return String(date.getMonth() + 1);
@@ -4857,9 +6067,8 @@ function loadRmRateModalData() {
 }
 
 function openRmRateModal() {
-    bindRmRateMonthDropdown();
+    bindRmRateMonthDropdownBySortNumber();
     bindRmRateFinYearDropdown();
-    loadRmRateModalData();
 }
 
 function saveRmRateModal() {
@@ -5136,7 +6345,7 @@ function loadMonthWiseItemRMRateGrid() {
     if (!tbody || !ddlFinYear || !ddlMonth) return;
 
     const finYear = ddlFinYear.value;
-    const month = ddlMonth.value;
+    const month = getRmRateMonthShortName(ddlMonth.value);
     if (!finYear || !month) {
         tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Please select Fin Year and Month</td></tr>';
         return;
@@ -5223,7 +6432,8 @@ function getSelectedRmRateMonthDate() {
     const ddlMonth = document.getElementById('ddlRmRateMonth');
     const finYear = ddlFinYear ? ddlFinYear.value : '';
     const month = Number(ddlMonth ? ddlMonth.value : 0);
-    if (!finYear || !month) {
+    const monthShortName = getRmRateMonthShortName(month);
+    if (!finYear || !month || !monthShortName) {
         return '';
     }
 
@@ -5235,7 +6445,7 @@ function getSelectedRmRateMonthDate() {
         return '';
     }
 
-    return `${year}-${String(month).padStart(2, '0')}-01`;
+    return `${monthShortName}-${year}`;
 }
 
 function collectMonthWiseItemRMRatePayload() {
@@ -5252,7 +6462,7 @@ function collectMonthWiseItemRMRatePayload() {
         }
 
         payload.push({
-            MonthDate: input.dataset.monthDate || defaultMonthDate,
+            MonthDate: defaultMonthDate,
             FinYear: finYear,
             ItemMaster_Code: itemMasterCode,
             QtyMT: Number(input.dataset.qty || 0),

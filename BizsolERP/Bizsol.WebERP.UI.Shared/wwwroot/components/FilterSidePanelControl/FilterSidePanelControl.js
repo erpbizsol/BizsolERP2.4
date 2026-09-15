@@ -456,6 +456,17 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+// Comma inside Desp/Code (e.g. "PANT NAGAR , DISTT. U.S. NAGAR") must not be used as a split delimiter.
+const FILTER_COMMA_TOKEN = '~#~';
+
+function encodeFilterComma(value) {
+    return String(value ?? '').split(',').join(FILTER_COMMA_TOKEN);
+}
+
+function decodeFilterComma(value) {
+    return String(value ?? '').split(FILTER_COMMA_TOKEN).join(',');
+}
+
 class FilterSidePanelControl extends HTMLElement {
     constructor() {
         super();
@@ -464,6 +475,7 @@ class FilterSidePanelControl extends HTMLElement {
         
         this._filters = [];
         this._showFloatingButton = true;
+        this._useCommaToken = false;
         this._onApplyCallback = null;
         
         // Get references to elements
@@ -488,6 +500,11 @@ class FilterSidePanelControl extends HTMLElement {
         const showButton = this.getAttribute('show-button');
         if (showButton !== null && showButton !== 'true') {
             this._showFloatingButton = false;
+        }
+
+        const useCommaTokenAttr = this.getAttribute('use-comma-token');
+        if (useCommaTokenAttr !== null) {
+            this.useCommaToken = useCommaTokenAttr === 'true';
         }
         
         // CRITICAL FIX: Inject global CSS to forcefully hide flatpickr mobile overlay
@@ -747,6 +764,8 @@ class FilterSidePanelControl extends HTMLElement {
     /**
      * Set filters configuration
      * @param {Array} filters - Array of filter objects
+     * @param {Object} [options]
+     * @param {boolean} [options.useCommaToken=false] - Encode commas in values as ~#~ for join/split
      * Example:
      * [
      *   { id: 'dateRange', type: 'daterange', label: 'Date Range' },
@@ -754,7 +773,28 @@ class FilterSidePanelControl extends HTMLElement {
      *   { id: 'status', type: 'select', label: 'Status', data: [{Code: 'A', Desp: 'Active'}] }
      * ]
      */
-    setFilters(filters) {
+    set useCommaToken(value) {
+        this._useCommaToken = value === true || value === 'true';
+    }
+
+    get useCommaToken() {
+        return this._useCommaToken === true;
+    }
+
+    _encodeFilterValue(value) {
+        const text = value == null ? '' : String(value);
+        return this.useCommaToken ? encodeFilterComma(text) : text;
+    }
+
+    _decodeFilterValue(value) {
+        const text = value == null ? '' : String(value);
+        return this.useCommaToken ? decodeFilterComma(text) : text;
+    }
+
+    setFilters(filters, options) {
+        if (options && options.useCommaToken !== undefined) {
+            this.useCommaToken = options.useCommaToken;
+        }
         this._filters = filters || [];
         this._renderFilters();
     }
@@ -800,6 +840,12 @@ class FilterSidePanelControl extends HTMLElement {
     _renderDateRangeFilter(container, filter) {
         const dateRangeEl = document.createElement('date-range-control');
         dateRangeEl.id = filter.id;
+        if (filter.defaultFrom) {
+            dateRangeEl.setAttribute('from', filter.defaultFrom);
+        }
+        if (filter.defaultTo) {
+            dateRangeEl.setAttribute('to', filter.defaultTo);
+        }
         container.appendChild(dateRangeEl);
     }
     
@@ -829,7 +875,8 @@ class FilterSidePanelControl extends HTMLElement {
         const data = filter.data || [];
         
         data.forEach(item => {
-            const val = escapeHtml(item.Code);
+            const rawCode = item.Code == null ? '' : String(item.Code);
+            const val = escapeHtml(this._encodeFilterValue(rawCode));
             const text = escapeHtml(item.Desp);
             const itemId = `${filter.id}_chk_${val}`;
             const itemHtml = `
@@ -1136,7 +1183,8 @@ class FilterSidePanelControl extends HTMLElement {
                             const allCheckboxes = wrapper.querySelectorAll(`.${filter.id}_chk`);
                             console.log(`Total checkboxes: ${allCheckboxes.length}, Checked: ${checkboxes.length}`);
                             
-                            const selectedValues = Array.from(checkboxes).map(chk => chk.value);
+                            const selectedEncoded = Array.from(checkboxes).map(chk => chk.value);
+                            const selectedValues = selectedEncoded.map(v => this._decodeFilterValue(v));
                             const allCheckbox = wrapper.querySelector(`#${filter.id}_all`);
                             const isAllSelected = allCheckbox && allCheckbox.checked;
                             
@@ -1144,7 +1192,7 @@ class FilterSidePanelControl extends HTMLElement {
                                 values: selectedValues,
                                 isAll: isAllSelected,
                                 //joined: (isAllSelected || selectedValues.length === allCheckboxes.length) ? '0' : selectedValues.join(',')
-                                joined: selectedValues.join(',')
+                                joined: selectedEncoded.join(',')
                             };
                             console.log(`Multiselect values for ${filter.id}:`, values[filter.id]);
                         } catch (e) {
@@ -1290,6 +1338,16 @@ export const FilterSidePanelControlHelper = {
         if (panel && typeof panel.updateFilterData === 'function') {
             panel.updateFilterData(filterId, data);
         }
+    },
+
+    COMMA_TOKEN: FILTER_COMMA_TOKEN,
+    encodeComma: encodeFilterComma,
+    decodeComma: decodeFilterComma,
+    splitJoined: function(joined) {
+        if (joined === null || joined === undefined || joined === '' || joined === '0') {
+            return [];
+        }
+        return String(joined).split(',').map(decodeFilterComma);
     },
     
     /**
