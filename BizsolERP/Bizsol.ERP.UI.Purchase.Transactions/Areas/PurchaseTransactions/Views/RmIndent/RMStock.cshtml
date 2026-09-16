@@ -8,13 +8,26 @@
 <script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
     /*
-     * RM Stock — colours match ProjectMaster.cshtml:
-     * - Grid header: .pm-table thead → linear-gradient(135deg, #4f46e5, #667eea)
-     * - Buttons / card bar / modals: var(--primary-gradient), var(--shadow-primary) (same as .pm-btn-new, .pm-card)
-     * - Row hover / focus ring: rgba(102,126,234,…) (same as .pm-table tbody tr:hover, #pmSearch:focus)
+     * RM Stock — navy / steel-blue palette (SalesanalysisAST summary style)
+     * Scoped to this page so layout chrome stays on the app theme.
      */
-    :root {
+    .rms-page,
+    .pm-modal {
+        --rms-deep: #1e3a6e;
+        --rms-steel: #365e9a;
+        --rms-teal: #0d9488;
+        --rms-teal-mid: #14b8a6;
+        --rms-amber: #d97706;
+        --rms-amber-mid: #f59e0b;
+        --primary-gradient: linear-gradient(135deg, #1e3a6e 0%, #365e9a 100%);
+        --accent-primary: #365e9a;
+        --accent-primary-dark: #1e3a6e;
+        --shadow-primary: 0 8px 24px rgba(30, 58, 110, .28);
         --pm-table-header-gradient: linear-gradient(135deg, #4f46e5, #667eea);
+        --rms-hover-bg: rgba(30, 58, 110, .07);
+        --rms-hover-strong: rgba(30, 58, 110, .12);
+        --rms-ring: rgba(54, 94, 154, .18);
+        --rms-tint: #f3f6fb;
     }
 
     .rms-page {
@@ -119,7 +132,7 @@
     }
 
     #rmStockTabContent table.table tbody tr:hover {
-        background: rgba(102, 126, 234, .07) !important;
+        background: var(--rms-hover-bg) !important;
     }
 
     #PlannedMyModal table.table tbody tr:nth-child(even) {
@@ -131,11 +144,11 @@
     }
 
     #PlannedMyModal table.table tbody tr:hover {
-        background: rgba(102, 126, 234, .07) !important;
+        background: var(--rms-hover-bg) !important;
     }
 
     #RMStockCurrentPlanned tfoot tr.table-info td {
-        background: rgba(102, 126, 234, .12) !important;
+        background: var(--rms-hover-strong) !important;
         color: var(--text-dark) !important;
         font-weight: 700;
         border-top: 1px solid var(--border-color) !important;
@@ -250,9 +263,9 @@
 
         #rmStockTabs .nav-link.active {
             color: #fff !important;
-            background: var(--primary-gradient) !important;
+            background: var(--pm-table-header-gradient) !important;
             border-color: transparent !important;
-            box-shadow: var(--shadow-primary);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, .35);
         }
 
         #rmStockTabs .nav-link i {
@@ -265,10 +278,10 @@
             border: none;
             border-radius: 12px;
             padding: 8px 14px;
-            background: var(--primary-gradient);
+            background: var(--pm-table-header-gradient);
             color: #fff;
             font-weight: 700;
-            box-shadow: var(--shadow-primary);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, .35);
         }
 
         #rmStockTabs #btnDownload:hover {
@@ -343,7 +356,7 @@
 
         .form-control:focus, .form-select:focus {
             border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
+            box-shadow: 0 0 0 3px var(--rms-ring);
         }
 
     .box_border {
@@ -356,7 +369,7 @@
     }
 
         .form-check-input:focus {
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, .2);
+            box-shadow: 0 0 0 3px var(--rms-ring);
             border-color: var(--accent-primary);
         }
 
@@ -370,8 +383,8 @@
         font-weight: 700;
         font-size: 12px;
         color: var(--accent-primary);
-        background: rgba(102, 126, 234, .1);
-        border: 1px solid rgba(102, 126, 234, .2);
+        background: rgba(54, 94, 154, .1);
+        border: 1px solid rgba(54, 94, 154, .22);
         border-radius: 10px;
         padding: 6px 11px;
         letter-spacing: .03em;
@@ -410,11 +423,15 @@
         height: auto !important;
         flex: none;
         overflow: visible;
+        margin: 0;
+        border: none;
+        box-shadow: none;
+        background: transparent;
     }
 
     #stock-summary .table-responsive {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow-x: hidden;
+        width: 100%;
     }
 
     #stock-summary .paginator {
@@ -423,42 +440,243 @@
         min-height: 0;
     }
 
-    #stock-summary .row {
-        --bs-gutter-y: 0.35rem;
-    }
-
     #stock-summary #SummaryData,
     #stock-summary #SlittedCoilsStockSummary {
-        width: 100%;
-        min-width: 320px;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none;
+        margin: 0;
+        table-layout: auto;
     }
 
     #stock-summary thead th {
         position: relative;
         overflow: visible;
+        font-size: 11px !important;
+        padding: 8px 10px !important;
+        letter-spacing: .03em;
     }
 
-    .rms-grand-total {
+    #stock-summary tbody td,
+    #stock-summary tfoot td {
+        padding: 6px 10px !important;
+        font-size: 12.5px;
+        white-space: normal;
+    }
+
+    #stock-summary tbody td:first-child,
+    #stock-summary tfoot td:first-child {
+        font-weight: 600;
+    }
+
+    #stock-summary tbody td:last-child {
+        font-weight: 800;
+        color: var(--rms-deep) !important;
+    }
+
+    .rms-ss {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        max-width: 1000px;
+    }
+
+    .rms-ss-kpis {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        max-width: 1000px;
+    }
+
+    .rms-ss-kpi {
+        display: flex;
         align-items: center;
-        gap: 12px 16px;
-        background: var(--pm-table-header-gradient);
-        color: #fff;
-        border-radius: 12px;
-        padding: 12px 18px;
+        gap: 8px;
+        padding: 10px 12px 10px 16px;
+        min-height: 0;
+        border-radius: 8px;
+        border: none;
+        background: #eef3ff;
+        box-shadow: none;
+        min-width: 0;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .rms-ss-kpi::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 4px 0 0 4px;
+        background: #3d5cce;
+    }
+
+    .rms-ss-kpi.is-pcs {
+        background: #eef3ff;
+    }
+
+    .rms-ss-kpi.is-pcs::before {
+        background: #3d5cce;
+    }
+
+    .rms-ss-kpi.is-stock {
+        background: #f0fdfa;
+    }
+
+    .rms-ss-kpi.is-stock::before {
+        background: #14b8a6;
+    }
+
+    .rms-ss-kpi.is-jw {
+        background: #fffbeb;
+    }
+
+    .rms-ss-kpi.is-jw::before {
+        background: #f59e0b;
+    }
+
+    .rms-ss-kpi.is-total {
+        background: #fff1f2;
+        color: inherit;
+        border-color: transparent;
+        box-shadow: none;
+    }
+
+    .rms-ss-kpi.is-total::before {
+        background: #ef4444;
+    }
+
+    .rms-ss-kpi-icon {
+        display: none;
+    }
+
+    .rms-ss-kpi-copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .rms-ss-kpi-label {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .rms-ss-kpi.is-total .rms-ss-kpi-label {
+        color: #6b7280;
+    }
+
+    .rms-ss-kpi-value {
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.25;
+        color: #1e293b;
+        letter-spacing: -.02em;
+        white-space: nowrap;
+    }
+
+    .rms-ss-kpi.is-total .rms-ss-kpi-value {
+        color: #1e293b;
+    }
+
+    .rms-ss-kpi-value small {
+        font-size: 10px;
         font-weight: 700;
-        box-shadow: var(--shadow-primary);
+        opacity: .7;
+        margin-left: 2px;
     }
 
-    .rms-grand-total-label {
-        font-size: 15px;
-        letter-spacing: .04em;
-        margin-right: auto;
+    .rms-ss-panels {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        align-items: start;
+        width: 100%;
+        max-width: 640px;
     }
 
-    .rms-grand-total-item {
-        font-size: 13.5px;
+    .rms-ss-panel {
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        min-width: 0;
+    }
+
+    .rms-ss-panel-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(180deg, var(--rms-tint) 0%, #fff 100%);
+    }
+
+    .rms-ss-panel-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        background: var(--primary-gradient);
+        flex-shrink: 0;
+        font-size: 11px;
+    }
+
+    .rms-ss-panel.is-slit .rms-ss-panel-icon {
+        background: linear-gradient(135deg, #0d9488, #14b8a6);
+    }
+
+    .rms-ss-panel-head h6 {
+        margin: 0;
+        font-weight: 800;
+        font-size: 12.5px;
+        color: var(--text-dark);
+        letter-spacing: .01em;
+    }
+
+    .rms-ss-panel-head p {
+        margin: 1px 0 0;
+        font-size: 10.5px;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .rms-ss-panel .table-responsive {
+        padding: 0;
+    }
+
+    .rms-ss-panel #SummaryData thead th:first-child,
+    .rms-ss-panel #SlittedCoilsStockSummary thead th:first-child {
+        border-top-left-radius: 0;
+    }
+
+    @@media (max-width: 1199.98px) {
+        #stock-summary .rms-ss-panels {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        #stock-summary .rms-ss-kpis {
+            grid-template-columns: 1fr;
+        }
     }
 
     /* ── ProjectMaster modal pattern (local copy) ── */
@@ -642,10 +860,30 @@
             margin-top: 0.5rem !important;
         }
 
-        /* Stock Summary — full width + horizontal swipe */
-        #stock-summary .col-12.col-md-6 {
-            width: 100%;
-            max-width: 100%;
+        /* Stock Summary — stacked cards + swipeable tables */
+        #stock-summary .rms-ss-kpis,
+        #stock-summary .rms-ss-panels {
+            grid-template-columns: 1fr;
+        }
+
+        #stock-summary .rms-ss-kpis,
+        #stock-summary .rms-ss-panels,
+        #stock-summary .rms-ss {
+            max-width: none;
+        }
+
+        #stock-summary .rms-ss-kpi {
+            padding: 10px 12px 10px 16px;
+        }
+
+        #stock-summary .rms-ss-kpi-value {
+            font-size: 15px;
+        }
+
+        #stock-summary .rms-ss-panel {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
         }
 
         #stock-summary .table-wrapper,
@@ -665,8 +903,8 @@
 
         #stock-summary #SummaryData,
         #stock-summary #SlittedCoilsStockSummary {
-            min-width: 480px;
-            width: max-content;
+            min-width: 620px !important;
+            width: max-content !important;
             max-width: none;
         }
 
@@ -681,18 +919,6 @@
             padding: 8px 10px !important;
             font-size: 12px;
             white-space: nowrap;
-        }
-
-        .rms-grand-total {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-            padding: 12px 14px;
-        }
-
-        .rms-grand-total-label {
-            margin-right: 0;
-            width: 100%;
         }
 
         /* Plan table Select2 on phone */
@@ -1049,12 +1275,50 @@
 
                     <!-- Stock Summary Tab -->
                     <div class="tab-pane fade" id="stock-summary" role="tabpanel" aria-labelledby="stock-summary-tab">
-                        <div id="tblSummaryData">
-                            <div class="row g-2">
-                                <div class="col-12 col-md-6">
+                        <div id="tblSummaryData" class="rms-ss">
+                            <div class="rms-ss-kpis">
+                                <div class="rms-ss-kpi is-pcs">
+                                    <div class="rms-ss-kpi-icon"><i class="fas fa-cubes"></i></div>
+                                    <div class="rms-ss-kpi-copy">
+                                        <div class="rms-ss-kpi-label">PCS</div>
+                                        <div class="rms-ss-kpi-value"><span id="grandTotalPCS">0</span></div>
+                                    </div>
+                                </div>
+                                <div class="rms-ss-kpi is-stock">
+                                    <div class="rms-ss-kpi-icon"><i class="fas fa-warehouse"></i></div>
+                                    <div class="rms-ss-kpi-copy">
+                                        <div class="rms-ss-kpi-label">Stock Weight</div>
+                                        <div class="rms-ss-kpi-value"><span id="grandTotalWeight">0.000</span> <small>MT</small></div>
+                                    </div>
+                                </div>
+                                <div class="rms-ss-kpi is-jw">
+                                    <div class="rms-ss-kpi-icon"><i class="fas fa-industry"></i></div>
+                                    <div class="rms-ss-kpi-copy">
+                                        <div class="rms-ss-kpi-label">Job Work Weight</div>
+                                        <div class="rms-ss-kpi-value"><span id="grandTotalPending">0.000</span> <small>MT</small></div>
+                                    </div>
+                                </div>
+                                <div class="rms-ss-kpi is-total">
+                                    <div class="rms-ss-kpi-icon"><i class="fas fa-calculator"></i></div>
+                                    <div class="rms-ss-kpi-copy">
+                                        <div class="rms-ss-kpi-label">Total Weight</div>
+                                        <div class="rms-ss-kpi-value"><span id="grandTotalItemTotal">0.000</span> <small>MT</small></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rms-ss-panels">
+                                <section class="rms-ss-panel">
+                                    <header class="rms-ss-panel-head">
+                                        <span class="rms-ss-panel-icon"><i class="fas fa-layer-group"></i></span>
+                                        <div>
+                                            <h6>Coil Stock</h6>
+                                            <p>Primary coil inventory by item</p>
+                                        </div>
+                                    </header>
                                     <div class="table-responsive">
                                         <div class="table-wrapper">
-                                            <table id="SummaryData" class="fixed-width-table table" style="min-width:300px; width: 100%;">
+                                            <table id="SummaryData" class="fixed-width-table table" style="width: 100%;">
                                                 <thead id="table-header-SummaryData">
                                                 </thead>
                                                 <tbody id="table-body-SummaryData">
@@ -1065,19 +1329,26 @@
                                                         <td id="totalPCSGreterThen" class="text-end">0</td>
                                                         <td id="totalWeightGreterThen" class="text-end">0.000</td>
                                                         <td id="totalPendingJobWork" class="text-end">0.000</td>
+                                                        <td id="totalItemTotalWeight" class="text-end">0.000</td>
                                                     </tr>
                                                 </tfoot>
                                             </table>
                                         </div>
                                         <div class="paginator" id="paginator-SummaryData"></div>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="row g-2">
-                                <div class="col-12 col-md-6">
+                                </section>
+
+                                <section class="rms-ss-panel is-slit">
+                                    <header class="rms-ss-panel-head">
+                                        <span class="rms-ss-panel-icon"><i class="fas fa-cut"></i></span>
+                                        <div>
+                                            <h6>Slit Coil Stock</h6>
+                                            <p>Slitted coil inventory by item</p>
+                                        </div>
+                                    </header>
                                     <div class="table-responsive">
                                         <div class="table-wrapper">
-                                            <table id="SlittedCoilsStockSummary" class="fixed-width-table table" style="min-width:300px; width: 100%;">
+                                            <table id="SlittedCoilsStockSummary" class="fixed-width-table table" style="width: 100%;">
                                                 <thead id="table-header-SlittedCoilsStockSummary">
                                                 </thead>
                                                 <tbody id="table-body-SlittedCoilsStockSummary">
@@ -1086,17 +1357,7 @@
                                         </div>
                                         <div class="paginator" id="paginator-SlittedCoilsStockSummary"></div>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="row g-2 justify-content-start">
-                                <div class="col-12 col-md-6">
-                                    <div class="rms-grand-total">
-                                        <span class="rms-grand-total-label">Grand Total</span>
-                                        <span class="rms-grand-total-item">PCS:&nbsp;<span id="grandTotalPCS">0</span></span>
-                                        <span class="rms-grand-total-item">Total Weight:&nbsp;<span id="grandTotalWeight">0.000</span></span>
-                                        <span class="rms-grand-total-item">Job Work RM Weight:&nbsp;<span id="grandTotalPending">0.000</span></span>
-                                    </div>
-                                </div>
+                                </section>
                             </div>
                         </div>
                     </div>
