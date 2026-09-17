@@ -2469,6 +2469,27 @@ function getTransporterReportColumnFilters(rows) {
     return { stringFilterColumn: stringFilterColumn, numericFilterColumn: numericFilterColumn, dateFilterColumn: dateFilterColumn };
 }
 
+function getTransporterSummaryTotalColumns(rows) {
+    if (!rows || !rows.length) return [];
+    var keys = Object.keys(rows[0]);
+    var wanted = [
+        /^quotation(\s+count)?\s+received$/i,
+        /^approved$/i,
+        /^total\s+not\s+approved$/i,
+        /^declined$/i
+    ];
+    var found = [];
+    wanted.forEach(function (re) {
+        for (var i = 0; i < keys.length; i++) {
+            if (re.test(String(keys[i]).trim())) {
+                found.push(keys[i]);
+                break;
+            }
+        }
+    });
+    return found;
+}
+
 function bindTransporterResultGrid(headId, bodyId, rows, noDataElId) {
     if (!rows || rows.length === 0) {
         $('#' + headId).empty();
@@ -2496,13 +2517,39 @@ function bindTransporterResultGrid(headId, bodyId, rows, noDataElId) {
         "Not Approved %": "right",
         "Declined %": "right"
     };
+    const isSummaryGrid = bodyId === 'table-body-transporter-r2';
+    const totalColumns = isSummaryGrid ? getTransporterSummaryTotalColumns(rows) : [];
     var fixedDecimal = {};
     Object.keys(rows[0]).forEach(function (k) {
         if (isTransporterSummaryPctColumn(k)) {
             fixedDecimal[k] = 2;
         }
     });
-    BizsolCustomFilterGrid.CreateDataTable(headId, bodyId, rows, button, showButtons, filters.stringFilterColumn, filters.numericFilterColumn, filters.dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, null, fixedDecimal);
+    totalColumns.forEach(function (k) {
+        columnAlignment[k] = 'right';
+        if (fixedDecimal[k] === undefined) {
+            fixedDecimal[k] = 0;
+        }
+    });
+    BizsolCustomFilterGrid.CreateDataTable(
+        headId,
+        bodyId,
+        rows,
+        button,
+        showButtons,
+        filters.stringFilterColumn,
+        filters.numericFilterColumn,
+        filters.dateFilterColumn,
+        stringDoubleFilterColumn,
+        hiddenColumns,
+        columnAlignment,
+        false,
+        totalColumns.length ? totalColumns : null,
+        fixedDecimal,
+        null,
+        false,
+        isSummaryGrid && totalColumns.length > 0
+    );
     const tableHead = document.getElementById(headId);
     if (tableHead) {
         const totalsRow = tableHead.querySelector('.totals-row');
