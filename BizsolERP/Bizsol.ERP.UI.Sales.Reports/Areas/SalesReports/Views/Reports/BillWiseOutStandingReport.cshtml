@@ -77,39 +77,41 @@
         padding: 0 0.2rem;
     }
 
-    .bwo-filter-show-col {
-        margin-top: 33px;
+    #bwoGroupTypeToggle {
+        max-width: 240px;
     }
 
+    #bwoCrDaysToggle {
+        max-width: 400px;
+    }
+
+
     @@media (max-width: 767.98px) {
+        #bwoGroupTypeToggle,
+        #bwoCrDaysToggle {
+            max-width: 100%;
+        }
+
         .bwo-drcr-toggle--triple {
-            flex-direction: column;
-            height: auto;
+            flex-direction: row;
+            height: 30px;
         }
 
         .bwo-drcr-toggle--triple label {
-            flex: none;
-            width: 100%;
-            border-right: none;
-            border-bottom: 1px solid #ced4da;
-            white-space: normal;
+            flex: 1;
+            width: auto;
+            border-right: 1px solid #ced4da;
+            border-bottom: none;
+            white-space: nowrap;
             text-align: center;
-            padding: 0.4rem 0.5rem;
-            font-size: 0.75rem;
-            line-height: 1.25;
-            min-height: 34px;
+            padding: 0 0.15rem;
+            font-size: 0.68rem;
+            line-height: 1;
+            min-height: 27px;
         }
 
         .bwo-drcr-toggle--triple label:last-of-type {
-            border-bottom: none;
-        }
-
-        .bwo-drcr-toggle--triple input[type="radio"]:checked + label {
-            border-bottom-color: #0d6efd;
-        }
-
-        .bwo-filter-show-col {
-            margin-top: 0;
+            border-right: none;
         }
     }
 
@@ -481,69 +483,67 @@
 
     <!-- Filter Card -->
     <div class="filter-card">
-        <div class="row g-2 mb-1 align-items-end">
-            <!-- Cr. Days — Master / Invoice / Without Credit Limit -->
-            <div class="col-12 col-md-7 col-lg-6">
-                <label class="form-label filter-label">Cr. Days</label>
-                <div class="bwo-drcr-toggle bwo-drcr-toggle--triple" id="bwoCrDaysToggle">
-                    <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysMaster" value="Y" checked autocomplete="off" />
-                    <label for="radBillWiseCrDaysMaster">Cr. Days From Master</label>
-                    <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysInvoice" value="N" autocomplete="off" />
-                    <label for="radBillWiseCrDaysInvoice">Cr. Days From Invoice</label>
-                    <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysNoLimit" value="W" autocomplete="off" />
-                    <label for="radBillWiseCrDaysNoLimit">Without Credit Limit</label>
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-6">
+                    <div class="col-12 col-sm-12">
+                        <label class="form-label filter-label" id="lblGroupTypeToggle">Loading…</label>
+                        <div class="bwo-drcr-toggle" id="bwoGroupTypeToggle"></div>
+                    </div>
+                    <div class="col-12 col-sm-12">
+                        <label class="form-label filter-label">Cr. Days</label>
+                        <div class="bwo-drcr-toggle bwo-drcr-toggle--triple" id="bwoCrDaysToggle">
+                            <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysMaster" value="Y" checked autocomplete="off" />
+                            <label for="radBillWiseCrDaysMaster">From Master</label>
+                            <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysInvoice" value="N" autocomplete="off" />
+                            <label for="radBillWiseCrDaysInvoice">From Invoice</label>
+                            <input type="radio" name="billWiseCrDaysFrom" id="radBillWiseCrDaysNoLimit" value="W" autocomplete="off" />
+                            <label for="radBillWiseCrDaysNoLimit">Without Credit Limit</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-12">
+                        <label for="ddlBillWiseMarketingMan" class="form-label filter-label">Sales Person</label>
+                        <select id="ddlBillWiseMarketingMan" name="ddlBillWiseMarketingMan"
+                                class="form-control box_border" multiple style="width:100%;"></select>
+                    </div>
+             </div>
+            
+            <div class="col-12 col-sm-6">
+                <!-- 3. As On Date -->
+                <div class="col-12 col-sm-12">
+                    @* <label for="txtAsOnDate" class="form-label filter-label">As on Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtAsOnDate" name="txtAsOnDate"
+                            class="form-control form-control-sm box_border" autocomplete="off" required /> *@
+                </div>
+
+                <div class="row">
+                    <div class="col-12 col-sm-3">
+                        <label for="txtAsOnDate" class="form-label filter-label">As on Date <span class="text-danger">*</span></label>
+                        <input type="date" id="txtAsOnDate" name="txtAsOnDate"
+                               class="form-control form-control-sm box_border" autocomplete="off" required />
+                    </div>
+                        <div class="col-12 col-sm-9">
+                            <label for="ddlBillWiseReportStatus" class="form-label filter-label">Report Type</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <select id="ddlBillWiseReportStatus" name="ddlBillWiseReportStatus"
+                                        class="form-select form-select-sm box_border" autocomplete="off">
+                                    <option value="Dashboard" selected>Dashboard</option>
+                                    <option value="AgeingReport">Ageing Report</option>
+                                </select>
+
+                            </div>
+                        </div>
+                    </div>
+                <div class="col-12 col-sm-12">
+                    <label for="ddlBillWiseAccount" class="form-label filter-label">Party / Account</label>
+                    <select id="ddlBillWiseAccount" name="ddlBillWiseAccount"
+                            class="form-control box_border" multiple style="width:100%;"></select>
                 </div>
             </div>
-
-            <!-- Status — Dashboard / Ageing Report -->
-            <div class="col-12 col-sm-6 col-md-3 col-lg-2">
-                <label for="ddlBillWiseReportStatus" class="form-label filter-label">Report Type</label>
-                <select id="ddlBillWiseReportStatus" name="ddlBillWiseReportStatus"
-                        class="form-select form-select-sm box_border" autocomplete="off">
-                    <option value="Dashboard" selected>Dashboard</option>
-                    <option value="AgeingReport">Ageing Report</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="row g-2">
-
-            <!-- Debtors / Creditors toggle — dynamically populated from GroupTypeMaster API -->
-            <div class="col-6 col-sm-4 col-md-2">
-                <label class="form-label filter-label" id="lblGroupTypeToggle">Loading…</label>
-                <div class="bwo-drcr-toggle" id="bwoGroupTypeToggle">
-                    <!-- Options rendered by JS after GetGroupTypeMaster API call -->
-                </div>
-            </div>
-
-            <!-- As on Date next to toggle on mobile -->
-            <div class="col-6 col-sm-4 col-md-2 col-lg-2">
-                <label for="txtAsOnDate" class="form-label filter-label">As on Date <span class="text-danger">*</span></label>
-                <input type="date" id="txtAsOnDate" name="txtAsOnDate"
-                       class="form-control form-control-sm box_border" autocomplete="off" required />
-            </div>
-
-            <!-- Sales Person — full row on mobile -->
-            <div class="col-12 col-sm-4 col-md-3">
-                <label for="ddlBillWiseMarketingMan" class="form-label filter-label">Sales Person</label>
-                <select id="ddlBillWiseMarketingMan" name="ddlBillWiseMarketingMan"
-                        class="form-control box_border" multiple style="width:100%;"></select>
-            </div>
-
-            <!-- Party / Account — full row on mobile -->
-            <div class="col-12 col-sm-8 col-md-3">
-                <label for="ddlBillWiseAccount" class="form-label filter-label">Party / Account</label>
-                <select id="ddlBillWiseAccount" name="ddlBillWiseAccount"
-                        class="form-control box_border" multiple style="width:100%;"></select>
-            </div>
-
-            <!-- Action buttons — full row on mobile -->
-            <div class="col-12 col-sm-4 col-md-2 bwo-filter-show-col">
-                <button type="button" id="btnShow" class="btn btn-success btn-height">
-                    <i class="fas fa-search"></i><span class="d-none d-sm-inline"> Show</span><span class="d-inline d-sm-none"> Show</span>
+            <div class="col-12 col-sm-12" style="text-align: right;">
+                <button type="button" id="btnShow" class="btn btn-success btn-height flex-shrink-0">
+                    <i class="fas fa-search"></i> Show
                 </button>
             </div>
-
         </div>
     </div>
 
