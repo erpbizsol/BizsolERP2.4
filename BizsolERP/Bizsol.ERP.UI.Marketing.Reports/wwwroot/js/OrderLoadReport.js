@@ -76,6 +76,7 @@ $(document).ready(function () {
     }
 
     bindEvents();
+    setDefaultDateFilterInputs();
     loadTemplateDropdown();
     installOrderLoadGridRenderHook();
     initOrderLoadPreviewModal();
@@ -529,9 +530,22 @@ function applyFilterActiveColors() {
     });
 }
 
+function getDefaultFromDate() {
+    var now = new Date();
+    return toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1));
+}
+
+function getDefaultToDate() {
+    return toIsoDate(new Date());
+}
+
+function setDefaultDateFilterInputs() {
+    $('#txtFromDate').val(getDefaultFromDate());
+    $('#txtToDate').val(getDefaultToDate());
+}
+
 function clearDateFilterInputs() {
-    $('#txtFromDate').val('');
-    $('#txtToDate').val('');
+    setDefaultDateFilterInputs();
 }
 
 function apiDateToIso(value) {
@@ -597,30 +611,19 @@ function extractDatesFromApiRow(row) {
 function applyTemplateDefaultDates(tpl) {
     tpl = tpl || getSelectedTemplate();
     var dates = extractDatesFromApiRow(tpl);
-    var fromIso = apiDateToIso(dates.fromDate || tpl.fromDate);
-    var toIso = apiDateToIso(dates.toDate || tpl.toDate);
+    var fromIso = apiDateToIso(dates.fromDate || tpl.fromDate) || getDefaultFromDate();
+    var toIso = apiDateToIso(dates.toDate || tpl.toDate) || getDefaultToDate();
     var showFrom = !tpl.code || isFlagY(tpl.showFromDate);
     var showTo = !tpl.code || isFlagY(tpl.showToDate);
 
-    if (!fromIso && !toIso) {
-        clearDateFilterInputs();
-        return;
-    }
-
-    if (!showFrom) {
-        $('#txtFromDate').val('');
-    } else if (fromIso) {
+    if (showFrom) {
         $('#txtFromDate').val(fromIso);
     } else {
         $('#txtFromDate').val('');
     }
 
-    if (!showTo) {
-        $('#txtToDate').val('');
-    } else if (toIso) {
+    if (showTo) {
         $('#txtToDate').val(toIso);
-    } else if (showFrom && fromIso) {
-        $('#txtToDate').val(toIsoDate(new Date()));
     } else {
         $('#txtToDate').val('');
     }
@@ -1266,6 +1269,8 @@ function applyLevelToFilters(tpl) {
 
     toggleFilterField('olFieldFromDate', showFrom);
     toggleFilterField('olFieldToDate', showTo);
+    if (showFrom && !$('#txtFromDate').val()) $('#txtFromDate').val(getDefaultFromDate());
+    if (showTo && !$('#txtToDate').val()) $('#txtToDate').val(getDefaultToDate());
     if (!showFrom) $('#txtFromDate').val('');
     if (!showTo) $('#txtToDate').val('');
 
