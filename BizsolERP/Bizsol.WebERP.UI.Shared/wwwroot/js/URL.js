@@ -48,7 +48,7 @@ let UrlService = {
     API_ENDPOINT_HRCONFIG: `${environment.BASE_URL}/ConfigHR`,
 
     API_ENDPOINT_TankDailyStock: `${environment.BASE_URL}/DailyTankStock`,
-    
+
     API_ENDPOINT_ACCOUNT_MASTER: `${environment.BASE_URL}/AccountMaster`,
     API_ENDPOINT_ServicePOApproval: `${environment.BASE_URL}/ServicePOApproval`,
     API_ENDPOINT_QuotationApproval: `${environment.BASE_URL}/QuotationApproval`,
@@ -82,8 +82,8 @@ let UrlService = {
     API_ENDPOINT_PackingListFG: `${environment.BASE_URL}/PackingListFG`,
     API_ENDPOINT_QTY_CONFIG: `${environment.BASE_URL}/FixedParameterQtyConfig`,
     API_ENDPOINT_CRM_ORDERENTRY_CONFIG: `${environment.BASE_URL}/ConfigCRMOrderEntry`,
-    
-    
+
+
     API_ENDPOINT_BreakDown: `${environment.BASE_URL}/BreakDownStartOrEnd`,
     API_ENDPOINT_SlittingEntry: `${environment.BASE_URL}/SlittingEntry`,
     API_ENDPOINT_VisitorMaster: `${environment.BASE_URL}/VisitorMaster`,
@@ -142,6 +142,7 @@ let UrlService = {
     API_ENDPOINT_GRNPaymentEntry: `${environment.BASE_URL}/GRNPaymentEntry`,
     API_ENDPOINT_POLevelsApprove: `${environment.BASE_URL}/POLevelsApproval`,
     API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`,
+    API_ENDPOINT_IMPORT_EXPORT: `${environment.BASE_URL}/ImportExport`,
     API_ENDPOINT_MRNMasterLevelsApproval: `${environment.BASE_URL}/MRNMasterLevelsApproval`,//
     API_ENDPOINT_CompanyInformation: `${environment.BASE_URL}/CompanyInformation`,
     API_ENDPOINT_EXPENSE_ENTRY_APPROVAL_CONFIG: `${environment.BASE_URL}/ExpenseEntryApprovalConfiguration`,
@@ -174,5 +175,5 @@ let UrlService = {
     API_ENDPOINT_ExpenseDashboard: `${environment.BASE_URL}/ExpenseDashboard`,
 }
 
-export { UrlService  }
+export { UrlService }
 
