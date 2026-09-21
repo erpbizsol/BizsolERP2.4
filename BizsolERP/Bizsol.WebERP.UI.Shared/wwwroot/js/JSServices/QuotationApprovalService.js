@@ -28,5 +28,13 @@ const QuotationApprovalService = {
             }
         );
     },
+    GetQuotationCostSheetParameter: function GetQuotationCostSheetParameter() {
+        var url = UrlService.API_ENDPOINT_QuotationApproval + "/GetQuotationCostSheetParameter";
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 export { QuotationApprovalService }

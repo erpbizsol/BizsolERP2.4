@@ -37,6 +37,7 @@ function initFilterSidePanelControl() {
     // Initialize with empty filters first
     const filters = [
         { id: 'dateRange', type: 'daterange', label: 'Date Range' },
+        { id: 'chkShowRecursive', type: 'checkbox', label: 'Show Recursive Marketing Man', checkboxLabel: 'Show Recursive Marketing Man', defaultChecked: true },
         { id: 'ddlSalesPersonlist', type: 'multiselect', label: 'Sales Person', data: [] },
         { id: 'ddlDealerNamelist', type: 'multiselect', label: 'Dealer Name', data: [] },
         { id: 'ddlCitiesNamelist', type: 'multiselect', label: 'Location', data: [] },
@@ -136,6 +137,14 @@ function loadFilterDropdowns(filterPanel) {
                         });
                     });
                 }
+
+                // Re-load dealer list when Show Recursive checkbox changes
+                const recursiveChk = filterPanel.shadowRoot.getElementById('chkShowRecursive');
+                if (recursiveChk) {
+                    recursiveChk.addEventListener('change', () => {
+                        updateDealerListBasedOnSalesPerson(filterPanel);
+                    });
+                }
             }, 500);
         }
     }).catch(function (error) {
@@ -226,9 +235,11 @@ function updateDealerListBasedOnSalesPerson(filterPanel) {
         return;
     }
 
+    const isNested = filterValues.chkShowRecursive !== false ? 'Y' : 'N';
+
     const promises = salesPersonFilter.values.map(function (code) {
         try {
-            return CRMReportsServices.GetDealerList(code);
+            return CRMReportsServices.GetDealerList(code, isNested);
         } catch (e) {
             return Promise.resolve([]);
         }
@@ -289,6 +300,124 @@ function formatNumber(v) {
     return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatDateYYYYMMDD(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function getLastMonthAsOnDateRange(fromDateStr, toDateStr) {
+    if (!fromDateStr || !toDateStr || fromDateStr === '0' || toDateStr === '0') {
+        return null;
+    }
+
+    const from = new Date(fromDateStr);
+    const to = new Date(toDateStr);
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+        return null;
+    }
+
+    const prevFrom = new Date(from.getFullYear(), from.getMonth() - 1, from.getDate());
+    const prevTo = new Date(to.getFullYear(), to.getMonth() - 1, to.getDate());
+
+    return {
+        fromDate: formatDateYYYYMMDD(prevFrom),
+        toDate: formatDateYYYYMMDD(prevTo)
+    };
+}
+
+function getWeekOfMonthFromDate(dateStr) {
+    if (!dateStr) return null;
+
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return null;
+
+        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+        const dayOfMonth = date.getDate();
+        const firstDayOfWeek = firstDay.getDay();
+
+        return Math.ceil((dayOfMonth + firstDayOfWeek) / 7);
+    } catch (e) {
+        return null;
+    }
+}
+
+function getSaleCompareBgColor(currentValue, previousValue) {
+    const current = parseFloat(currentValue) || 0;
+    const previous = parseFloat(previousValue) || 0;
+
+    if (current > previous) return 'background-color:#c6efce;';
+    if (current < previous) return 'background-color:#ffc7ce;';
+    return 'background-color:#ffeb9c;';
+}
+
+function aggregateSegmentWiseData(data) {
+    const segmentData = new Map();
+    let grandTotalWeight = 0;
+    let grandTotalManifested = 0;
+    const grandWeekTotals = {};
+    const allWeeks = new Set();
+
+    (data || []).forEach(function (row) {
+        const segment = row['Segment'] || row['SEGMENT'] || row['IndustryType'] || 'Unknown';
+        const buyerName = row['Party Name'] || row['Buyers Name'] || row['BuyersName'] || row['PartyName'] || 'Unknown';
+        const weight = parseFloat(row['Weight'] || row['WEIGHT'] || 0);
+        const manifestedWeight = parseFloat(row['Manifested Weight'] || row['ManifestedWeight'] || 0);
+        const invoiceDate = row['Invoice Date'] || row['InvoiceDate'] || row['INVOICE_DATE'];
+        const week = getWeekOfMonthFromDate(invoiceDate);
+
+        if (!segmentData.has(segment)) {
+            segmentData.set(segment, {
+                totalWeight: 0,
+                totalManifested: 0,
+                weekTotals: {},
+                buyersMap: new Map()
+            });
+        }
+
+        const segInfo = segmentData.get(segment);
+        segInfo.totalWeight += weight;
+        segInfo.totalManifested += manifestedWeight;
+
+        if (week !== null) {
+            const weekKey = `W${week}`;
+            allWeeks.add(week);
+            segInfo.weekTotals[weekKey] = (segInfo.weekTotals[weekKey] || 0) + weight;
+            grandWeekTotals[weekKey] = (grandWeekTotals[weekKey] || 0) + weight;
+        }
+
+        if (!segInfo.buyersMap.has(buyerName)) {
+            segInfo.buyersMap.set(buyerName, {
+                weight: 0,
+                manifested: 0,
+                weekSales: {}
+            });
+        }
+
+        const buyerInfo = segInfo.buyersMap.get(buyerName);
+        buyerInfo.weight += weight;
+        buyerInfo.manifested += manifestedWeight;
+
+        if (week !== null) {
+            const weekKey = `W${week}`;
+            buyerInfo.weekSales[weekKey] = (buyerInfo.weekSales[weekKey] || 0) + weight;
+        }
+
+        grandTotalWeight += weight;
+        grandTotalManifested += manifestedWeight;
+    });
+
+    return {
+        segmentData,
+        grandTotalWeight,
+        grandTotalManifested,
+        grandWeekTotals,
+        sortedWeeks: Array.from(allWeeks).sort((a, b) => a - b)
+    };
+}
+
 // Helper function to collect all filter values
 function GetAllFilters() {
     const filterPanel = document.getElementById('filterPanel');
@@ -311,8 +440,9 @@ function GetAllFilters() {
         const filterValues = filterPanel.getFilterValues();
         console.log('Filter values from control:', filterValues);
 
+        const rawDealerCodes = filterValues.ddlDealerNamelist?.joined || '0';
         const filters = {
-            dealerCodes: filterValues.ddlDealerNamelist?.joined || '0',
+            dealerCodes: rawDealerCodes === '0' || rawDealerCodes === '' ? '-1' : rawDealerCodes,
             salesPersons: filterValues.ddlSalesPersonlist?.joined || '0',
             cities: filterValues.ddlCitiesNamelist?.joined || '0',
             status: filterValues.ddlStatusNamelist?.joined || '0',
@@ -372,10 +502,11 @@ function renderSummaryReport() {
 
     Showloader();
 
-    SalesanalysisASTService.GetSalesAnalysisData('SUMMARY_REPORT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
+    //SalesanalysisASTService.GetSalesAnalysisData('SUMMARY_REPORT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
+    SalesanalysisASTService.GetMultipleTableSalesAnalysisData('SUMMARY_REPORT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
         HideLoader();
 
-        if (!response || response.length === 0) {
+        if (!response || response[0].length === 0) {
             console.warn('No summary report data received');
             // Clear KPIs
             document.getElementById('kpi-parties').textContent = '0';
@@ -383,6 +514,12 @@ function renderSummaryReport() {
             document.getElementById('kpi-lost-client').textContent = '0';
             document.getElementById('kpi-manifested-sales').textContent = '0';
             document.getElementById('kpi-actual-sale').textContent = '0';
+            document.getElementById('kpi-total-manifested').textContent = '0';
+            // Clear grid
+            const hdr = document.getElementById('summaryReportTableHeader');
+            const bdy = document.getElementById('summaryReportTableBody');
+            if (hdr) hdr.innerHTML = '';
+            if (bdy) bdy.innerHTML = '<tr><td class="text-center">No data available</td></tr>';
             updateReportDateRangeDisplay();
             return;
         }
@@ -394,7 +531,7 @@ function renderSummaryReport() {
         let manifestedSalesTotal = 0;
         let actualSaleTotal = 0;
 
-        response.forEach(function (row) {
+        response[0].forEach(function (row) {
             // Count unique parties
             const partyName = row['Party Name'] || row.PartyName || '';
             if (partyName) {
@@ -426,12 +563,22 @@ function renderSummaryReport() {
             }
         });
 
+        // Read TotalManifested from response[1]
+        let totalManifested = 0;
+        if (response[1]) {
+            const r1 = Array.isArray(response[1]) ? response[1][0] : response[1];
+            if (r1 && r1.TotalManifested !== undefined && r1.TotalManifested !== null) {
+                totalManifested = parseFloat(r1.TotalManifested) || 0;
+            }
+        }
+
         // Update KPI values
         document.getElementById('kpi-parties').textContent = uniqueParties.size.toString();
         document.getElementById('kpi-high-gp').textContent = highGPCount.toString();
         document.getElementById('kpi-lost-client').textContent = lostClientCount.toString();
         document.getElementById('kpi-manifested-sales').textContent = formatNumber(manifestedSalesTotal);
         document.getElementById('kpi-actual-sale').textContent = formatNumber(actualSaleTotal);
+        document.getElementById('kpi-total-manifested').textContent = formatNumber(totalManifested);
 
         // Update date range display
         updateReportDateRangeDisplay();
@@ -452,7 +599,7 @@ function renderSummaryReport() {
         };
 
         if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("summaryReportTableHeader", "summaryReportTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            BizsolCustomFilterGrid.CreateDataTable("summaryReportTableHeader", "summaryReportTableBody", response[0], Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
         }
     }).catch(function (err) {
         HideLoader();
@@ -1006,10 +1153,13 @@ function renderManifestation() {
             }
         }
 
+        const actualVsManifestData = Array.isArray(response) && Array.isArray(response[0]) ? (response[4] || []) : [];
+
         renderWeekWeightTable(weekWeightData);
         renderManifesteTable(manifesteData);
         renderOrderSheetTable(orderSheetData);
         renderItemWeightTable(itemWeightData);
+        renderActualVsManifestTable(actualVsManifestData);
 
     }).catch(function (err) {
         HideLoader();
@@ -1034,6 +1184,10 @@ function clearManifestationTables() {
     // Clear Item / WEIGHT table
     document.getElementById('itemWeightTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
     document.getElementById('itemWeightTableHeader').innerHTML = '';
+
+    // Clear Actual vs Manifested table
+    document.getElementById('actualVsManifestTableBody').innerHTML = '<tr><td colspan="5" class="text-center">No data available</td></tr>';
+    document.getElementById('actualVsManifestTableHeader').innerHTML = '';
 }
 
 function separateAndRenderManifestationData(data) {
@@ -1113,26 +1267,129 @@ function renderWeekWeightTable(data) {
         return;
     }
 
-    const StringFilterColumn = [];
-    const NumericFilterColumn = [];
-    const DateFilterColumn = [];
-    const Button = false;
-    const showButtons = [];
-    const StringdoubleFilterColumn = [];
-    const hiddenColumns = [];
+    const tableHeader = document.getElementById('weekWeightTableHeader');
+    const tableBody = document.getElementById('weekWeightTableBody');
+    if (!tableHeader || !tableBody) return;
 
-    // Right align all numeric columns (weeks)
-    const ColumnAlignment = {};
-    Object.keys(data[0] || {}).forEach(key => {
-        if (key !== 'MGKT_PERSON' && key !== 'MGKT Person' && key !== 'Marketing Man' &&
-            key !== 'MarketingMan' && key !== 'Person') {
-            ColumnAlignment[key] = 'right';
-        }
+    const allKeys = Object.keys(data[0]);
+
+    // Identify the person column
+    const personKeyOptions = ['MGKT_PERSON', 'MGKT Person', 'Marketing Man', 'MarketingMan', 'Person'];
+    const personKey = personKeyOptions.find(k => allKeys.includes(k)) || allKeys[0];
+
+    // Identify summary columns by keyword match
+    const isSummaryKey = (k) => {
+        const l = k.toLowerCase();
+        return l.includes('actual total') || l === 'actualtotal' ||
+               l.includes('target total') || l === 'targettotal' ||
+               l.includes('variance') ||
+               l.includes('achievement');
+    };
+
+    const actualTotalKey  = allKeys.find(k => k.toLowerCase().includes('actual total')  || k.toLowerCase() === 'actualtotal');
+    const targetTotalKey  = allKeys.find(k => k.toLowerCase().includes('target total')  || k.toLowerCase() === 'targettotal');
+    const varianceKey     = allKeys.find(k => k.toLowerCase().includes('variance'));
+    const achievementKey  = allKeys.find(k => k.toLowerCase().includes('achievement'));
+
+    // Week columns = everything that is not the person key and not a summary column
+    const weekColumns = allKeys.filter(k => k !== personKey && !isSummaryKey(k));
+    const numWeeks = weekColumns.length;
+
+    // ---- Build two-row header ----
+    const headerBg  = '#4472C4';
+    const subBg     = '#5B9BD5';
+    const summaryBg = '#365E9A';
+    const sepStyle  = 'border-left:2px solid rgba(255,255,255,0.4);';
+
+    let row1 = `<tr>`;
+    row1 += `<th rowspan="2" style="vertical-align:middle;background-color:${headerBg};color:white;white-space:nowrap;">${escapeHtml(personKey)}</th>`;
+    weekColumns.forEach(wk => {
+        row1 += `<th colspan="3" class="text-center" style="background-color:${headerBg};color:white;white-space:nowrap;${sepStyle}">${escapeHtml(wk)}</th>`;
+    });
+    if (actualTotalKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;${sepStyle}">Actual Total</th>`;
+    if (targetTotalKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Target Total</th>`;
+    if (varianceKey)    row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Variance</th>`;
+    if (achievementKey) row1 += `<th rowspan="2" class="text-end" style="vertical-align:middle;background-color:${summaryBg};color:white;white-space:nowrap;">Achievement %</th>`;
+    row1 += `</tr>`;
+
+    let row2 = `<tr>`;
+    weekColumns.forEach(() => {
+        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;${sepStyle}">Actual Sales</th>`;
+        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;">Week Target</th>`;
+        row2 += `<th class="text-end" style="background-color:${subBg};color:white;white-space:nowrap;">Achievement %</th>`;
+    });
+    row2 += `</tr>`;
+
+    tableHeader.innerHTML = row1 + row2;
+
+    // ---- Build body ----
+    tableBody.innerHTML = '';
+
+    const grandWeekActuals  = {};
+    const grandWeekTargets  = {};
+    weekColumns.forEach(wk => { grandWeekActuals[wk] = 0; grandWeekTargets[wk] = 0; });
+    let grandActualTotal = 0;
+    let grandTargetTotal = 0;
+
+    data.forEach(row => {
+        const personName  = row[personKey] || '';
+        const actualTotal = parseFloat(row[actualTotalKey] || 0);
+        const targetTotal = parseFloat(row[targetTotalKey] || 0);
+        const variance    = parseFloat(row[varianceKey]    || 0);
+
+        // Distribute total target equally across weeks
+        const weekTarget       = numWeeks > 0 ? targetTotal / numWeeks : 0;
+        const overallAchievement = targetTotal > 0 ? (actualTotal / targetTotal) * 100 : 0;
+
+        grandActualTotal += actualTotal;
+        grandTargetTotal += targetTotal;
+
+        let rowHTML = `<td style="white-space:nowrap;">${escapeHtml(personName)}</td>`;
+
+        weekColumns.forEach(wk => {
+            const actualSales  = parseFloat(row[wk] || 0);
+            const wkAchievement = weekTarget > 0 ? (actualSales / weekTarget) * 100 : 0;
+            grandWeekActuals[wk] += actualSales;
+            grandWeekTargets[wk] += weekTarget;
+
+            rowHTML += `<td class="text-end" style="${sepStyle}">${formatNumber(actualSales)}</td>`;
+            rowHTML += `<td class="text-end">${formatNumber(weekTarget)}</td>`;
+            rowHTML += `<td class="text-end">${wkAchievement.toFixed(2)}%</td>`;
+        });
+
+        if (actualTotalKey) rowHTML += `<td class="text-end fw-bold" style="${sepStyle}">${formatNumber(actualTotal)}</td>`;
+        if (targetTotalKey) rowHTML += `<td class="text-end fw-bold">${formatNumber(targetTotal)}</td>`;
+        if (varianceKey)    rowHTML += `<td class="text-end fw-bold">${formatNumber(variance)}</td>`;
+        if (achievementKey) rowHTML += `<td class="text-end fw-bold">${overallAchievement.toFixed(2)}%</td>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = rowHTML;
+        tableBody.appendChild(tr);
     });
 
-    if (typeof BizsolCustomFilterGrid !== 'undefined') {
-        BizsolCustomFilterGrid.CreateDataTable("weekWeightTableHeader", "weekWeightTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
-    }
+    // ---- Grand Total row ----
+    const grandVariance    = grandActualTotal - grandTargetTotal;
+    const grandAchievement = grandTargetTotal > 0 ? (grandActualTotal / grandTargetTotal) * 100 : 0;
+
+    const grandTotalRow = document.createElement('tr');
+    grandTotalRow.style.cssText = 'background-color:#d4edda;font-weight:bold;border-top:2px solid #333;';
+
+    let grandHTML = `<td style="white-space:nowrap;"><strong>Grand Total</strong></td>`;
+    weekColumns.forEach(wk => {
+        const gActual = grandWeekActuals[wk] || 0;
+        const gTarget = grandWeekTargets[wk] || 0;
+        const gAch    = gTarget > 0 ? (gActual / gTarget) * 100 : 0;
+        grandHTML += `<td class="text-end" style="${sepStyle}"><strong>${formatNumber(gActual)}</strong></td>`;
+        grandHTML += `<td class="text-end"><strong>${formatNumber(gTarget)}</strong></td>`;
+        grandHTML += `<td class="text-end"><strong>${gAch.toFixed(2)}%</strong></td>`;
+    });
+    if (actualTotalKey) grandHTML += `<td class="text-end" style="${sepStyle}"><strong>${formatNumber(grandActualTotal)}</strong></td>`;
+    if (targetTotalKey) grandHTML += `<td class="text-end"><strong>${formatNumber(grandTargetTotal)}</strong></td>`;
+    if (varianceKey)    grandHTML += `<td class="text-end"><strong>${formatNumber(grandVariance)}</strong></td>`;
+    if (achievementKey) grandHTML += `<td class="text-end"><strong>${grandAchievement.toFixed(2)}%</strong></td>`;
+
+    grandTotalRow.innerHTML = grandHTML;
+    tableBody.appendChild(grandTotalRow);
 }
 
 function renderManifesteTable(data) {
@@ -1214,6 +1471,49 @@ function renderItemWeightTable(data) {
 
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
         BizsolCustomFilterGrid.CreateDataTable("itemWeightTableHeader", "itemWeightTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    }
+}
+
+function renderActualVsManifestTable(data) {
+    const tbody = document.getElementById('actualVsManifestTableBody');
+    const tfoot = document.getElementById('actualVsManifestTableFoot');
+    if (!tbody) return;
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No data available</td></tr>';
+        if (tfoot) tfoot.innerHTML = '';
+        return;
+    }
+
+    const StringFilterColumn = ["Marketing Man", "Party Name"];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = [];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = [];
+    const ColumnAlignment = {
+        'Manifest': 'right',
+        'Actual': 'right'
+    };
+    const TotalColumns = ['Manifest', 'Actual'];
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable(
+            "actualVsManifestTableHeader",
+            "actualVsManifestTableBody",
+            data,
+            Button,
+            showButtons,
+            StringFilterColumn,
+            NumericFilterColumn,
+            DateFilterColumn,
+            StringdoubleFilterColumn,
+            hiddenColumns,
+            ColumnAlignment,
+            true,
+            TotalColumns
+        );
     }
 }
 
@@ -1343,6 +1643,7 @@ function renderNBDCRRBaseWeekTable(data) {
 
     // Right align all numeric columns (weeks, percentages, counts)
     const ColumnAlignment = {};
+    const TotalColumns = ['Total Actual Weight', 'Weekly Manifested'];
     Object.keys(data[0] || {}).forEach(key => {
         const lowerKey = key.toLowerCase();
         if (lowerKey !== 'mgkt_person' && lowerKey !== 'mgkt person' &&
@@ -1353,7 +1654,7 @@ function renderNBDCRRBaseWeekTable(data) {
     });
 
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
-        BizsolCustomFilterGrid.CreateDataTable("nbdCrrBaseWeekTableHeader", "nbdCrrBaseWeekTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        BizsolCustomFilterGrid.CreateDataTable("nbdCrrBaseWeekTableHeader", "nbdCrrBaseWeekTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment,true, TotalColumns);
     }
 }
 
@@ -1379,7 +1680,7 @@ function renderNBDCRROrderDetailsTable(data) {
         'ManifestedWeight': 'right'
     };
 
-    const TotalColumns = ['Weight', 'Invoice Amount', 'Manifested Weight']; // Pass column names to show totals
+    const TotalColumns = ['Weight', 'Invoice Amount']; // Pass column names to show totals
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
         BizsolCustomFilterGrid.CreateDataTable("nbdCrrOrderDetailsTableHeader", "nbdCrrOrderDetailsTableBody", data, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, true, TotalColumns);
     }
@@ -1397,12 +1698,17 @@ function renderSegmentWise() {
 
     Showloader();
 
-    SalesanalysisASTService.GetSalesAnalysisData('SEGMENT_WISE', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
+    const lastMonthRange = getLastMonthAsOnDateRange(filters.fromDate, filters.toDate);
+    const currentDataPromise = SalesanalysisASTService.GetSalesAnalysisData('SEGMENT_WISE', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType);
+    const lastMonthDataPromise = lastMonthRange
+        ? SalesanalysisASTService.GetSalesAnalysisData('SEGMENT_WISE', filters.dealerCodes, lastMonthRange.fromDate, lastMonthRange.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType)
+        : Promise.resolve([]);
+
+    Promise.all([currentDataPromise, lastMonthDataPromise]).then(function ([response, lastMonthResponse]) {
         HideLoader();
 
         if (response && response.length > 0) {
-            // Render the collapsible table grouped by segment
-            renderSegmentWiseCollapsibleTable(response);
+            renderSegmentWiseCollapsibleTable(response, lastMonthResponse || []);
         } else {
             const el = $('#segmentWiseTableBody')[0];
             if (el) el.innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
@@ -1413,7 +1719,7 @@ function renderSegmentWise() {
     });
 }
 
-function renderSegmentWiseCollapsibleTable(data) {
+function renderSegmentWiseCollapsibleTable(data, lastMonthData) {
     const tbody = document.getElementById('segmentWiseTableBody');
     const thead = document.getElementById('segmentWiseTableHeader');
 
@@ -1422,100 +1728,18 @@ function renderSegmentWiseCollapsibleTable(data) {
         return;
     }
 
-    // Helper function to get week number of month from date
-    function getWeekOfMonth(dateStr) {
-        if (!dateStr) return null;
+    const currentAgg = aggregateSegmentWiseData(data);
+    const lastMonthAgg = aggregateSegmentWiseData(lastMonthData);
+    const segmentData = currentAgg.segmentData;
+    const grandTotalWeight = currentAgg.grandTotalWeight;
+    const grandTotalManifested = currentAgg.grandTotalManifested;
+    const grandWeekTotals = currentAgg.grandWeekTotals;
+    const lastMonthSegmentData = lastMonthAgg.segmentData;
+    const lastMonthGrandWeekTotals = lastMonthAgg.grandWeekTotals;
+    const lastMonthGrandTotalWeight = lastMonthAgg.grandTotalWeight;
 
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return null;
-
-            // Get the first day of the month
-            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-
-            // Calculate the week number
-            const dayOfMonth = date.getDate();
-            const firstDayOfWeek = firstDay.getDay();
-
-            // Calculate week number (1-based)
-            const weekNum = Math.ceil((dayOfMonth + firstDayOfWeek) / 7);
-
-            return weekNum;
-        } catch (e) {
-            return null;
-        }
-    }
-
-    // Collect all unique weeks from the data
-    const allWeeks = new Set();
-    data.forEach(function (row) {
-        const invoiceDate = row['Invoice Date'] || row['InvoiceDate'] || row['INVOICE_DATE'];
-        if (invoiceDate) {
-            const week = getWeekOfMonth(invoiceDate);
-            if (week !== null) {
-                allWeeks.add(week);
-            }
-        }
-    });
-
-    // Sort weeks
+    const allWeeks = new Set([...currentAgg.sortedWeeks, ...lastMonthAgg.sortedWeeks]);
     const sortedWeeks = Array.from(allWeeks).sort((a, b) => a - b);
-
-    // Group data by Segment and Buyers with week-wise breakdown
-    const segmentData = new Map();
-    let grandTotalWeight = 0;
-    let grandTotalManifested = 0;
-    const grandWeekTotals = {};
-
-    data.forEach(function (row) {
-        const segment = row['Segment'] || row['SEGMENT'] || row['IndustryType'] || 'Unknown';
-        const buyerName = row['Party Name'] || row['Buyers Name'] || row['BuyersName'] || row['PartyName'] || 'Unknown';
-        const weight = parseFloat(row['Weight'] || row['WEIGHT'] || 0);
-        const manifestedWeight = parseFloat(row['Manifested Weight'] || row['ManifestedWeight'] || 0);
-        const invoiceDate = row['Invoice Date'] || row['InvoiceDate'] || row['INVOICE_DATE'];
-        const week = getWeekOfMonth(invoiceDate);
-
-        if (!segmentData.has(segment)) {
-            segmentData.set(segment, {
-                totalWeight: 0,
-                totalManifested: 0,
-                weekTotals: {},
-                buyersMap: new Map()
-            });
-        }
-
-        const segInfo = segmentData.get(segment);
-        segInfo.totalWeight += weight;
-        segInfo.totalManifested += manifestedWeight;
-
-        // Add to week total for segment
-        if (week !== null) {
-            const weekKey = `W${week}`;
-            segInfo.weekTotals[weekKey] = (segInfo.weekTotals[weekKey] || 0) + weight;
-            grandWeekTotals[weekKey] = (grandWeekTotals[weekKey] || 0) + weight;
-        }
-
-        if (!segInfo.buyersMap.has(buyerName)) {
-            segInfo.buyersMap.set(buyerName, {
-                weight: 0,
-                manifested: 0,
-                weekSales: {}
-            });
-        }
-
-        const buyerInfo = segInfo.buyersMap.get(buyerName);
-        buyerInfo.weight += weight;
-        buyerInfo.manifested += manifestedWeight;
-
-        // Add to week sales for buyer
-        if (week !== null) {
-            const weekKey = `W${week}`;
-            buyerInfo.weekSales[weekKey] = (buyerInfo.weekSales[weekKey] || 0) + weight;
-        }
-
-        grandTotalWeight += weight;
-        grandTotalManifested += manifestedWeight;
-    });
 
     // Create header with week columns
     let headerHTML = `
@@ -1528,8 +1752,8 @@ function renderSegmentWiseCollapsibleTable(data) {
     });
 
     headerHTML += `
-            <th class="text-end" style="background-color: #4472C4; color: white;">Manifested</th>
             <th class="text-end" style="background-color: #4472C4; color: white;">Total</th>
+            <th class="text-end" style="background-color: #4472C4; color: white;">Manifested</th>
             <th class="text-end" style="background-color: #4472C4; color: white;">Percentage</th>
         </tr>
     `;
@@ -1546,6 +1770,8 @@ function renderSegmentWiseCollapsibleTable(data) {
     sortedSegments.forEach(function ([segment, segInfo], index) {
         const segmentId = `segment-${index}`;
         const percentage = grandTotalWeight > 0 ? ((segInfo.totalWeight / grandTotalWeight) * 100) : 0;
+        const lastMonthSegInfo = lastMonthSegmentData.get(segment);
+        const lastMonthTotal = lastMonthSegInfo ? lastMonthSegInfo.totalWeight : 0;
 
         // Main segment row
         const segmentRow = document.createElement('tr');
@@ -1561,12 +1787,13 @@ function renderSegmentWiseCollapsibleTable(data) {
         sortedWeeks.forEach(function (week) {
             const weekKey = `W${week}`;
             const weekSale = segInfo.weekTotals[weekKey] || 0;
-            segmentRowHTML += `<td class="text-end">${formatNumber(weekSale)}</td>`;
+            const lastMonthWeekSale = lastMonthSegInfo ? (lastMonthSegInfo.weekTotals[weekKey] || 0) : 0;
+            segmentRowHTML += `<td class="text-end" style="${getSaleCompareBgColor(weekSale, lastMonthWeekSale)}">${formatNumber(weekSale)}</td>`;
         });
 
         segmentRowHTML += `
+            <td class="text-end" style="${getSaleCompareBgColor(segInfo.totalWeight, lastMonthTotal)}">${formatNumber(segInfo.totalWeight)}</td>
             <td class="text-end">${formatNumber(segInfo.totalManifested)}</td>
-            <td class="text-end">${formatNumber(segInfo.totalWeight)}</td>
             <td class="text-end">${percentage.toFixed(2)}%</td>
         `;
 
@@ -1597,8 +1824,8 @@ function renderSegmentWiseCollapsibleTable(data) {
         });
 
         buyersTableHTML += `
-                        <th class="text-end">Manifested</th>
                         <th class="text-end">Total</th>
+                        <th class="text-end">Manifested</th>
                         <th class="text-end">Percentage</th>
                     </tr>
                 </thead>
@@ -1611,6 +1838,8 @@ function renderSegmentWiseCollapsibleTable(data) {
 
         sortedBuyers.forEach(function ([buyerName, buyerInfo], buyerIndex) {
             const buyerPercentage = segInfo.totalWeight > 0 ? ((buyerInfo.weight / segInfo.totalWeight) * 100) : 0;
+            const lastMonthBuyerInfo = lastMonthSegInfo ? lastMonthSegInfo.buyersMap.get(buyerName) : null;
+            const lastMonthBuyerTotal = lastMonthBuyerInfo ? lastMonthBuyerInfo.weight : 0;
 
             buyersTableHTML += `
                 <tr>
@@ -1621,12 +1850,13 @@ function renderSegmentWiseCollapsibleTable(data) {
             sortedWeeks.forEach(function (week) {
                 const weekKey = `W${week}`;
                 const weekSale = buyerInfo.weekSales[weekKey] || 0;
-                buyersTableHTML += `<td class="text-end">${formatNumber(weekSale)}</td>`;
+                const lastMonthWeekSale = lastMonthBuyerInfo ? (lastMonthBuyerInfo.weekSales[weekKey] || 0) : 0;
+                buyersTableHTML += `<td class="text-end" style="${getSaleCompareBgColor(weekSale, lastMonthWeekSale)}">${formatNumber(weekSale)}</td>`;
             });
 
             buyersTableHTML += `
+                    <td class="text-end" style="${getSaleCompareBgColor(buyerInfo.weight, lastMonthBuyerTotal)}">${formatNumber(buyerInfo.weight)}</td>
                     <td class="text-end">${formatNumber(buyerInfo.manifested)}</td>
-                    <td class="text-end">${formatNumber(buyerInfo.weight)}</td>
                     <td class="text-end">${buyerPercentage.toFixed(2)}%</td>
                 </tr>
             `;
@@ -1667,12 +1897,13 @@ function renderSegmentWiseCollapsibleTable(data) {
     sortedWeeks.forEach(function (week) {
         const weekKey = `W${week}`;
         const weekTotal = grandWeekTotals[weekKey] || 0;
-        grandTotalHTML += `<td class="text-end"><strong>${formatNumber(weekTotal)}</strong></td>`;
+        const lastMonthWeekTotal = lastMonthGrandWeekTotals[weekKey] || 0;
+        grandTotalHTML += `<td class="text-end" style="${getSaleCompareBgColor(weekTotal, lastMonthWeekTotal)}"><strong>${formatNumber(weekTotal)}</strong></td>`;
     });
 
     grandTotalHTML += `
+        <td class="text-end" style="${getSaleCompareBgColor(grandTotalWeight, lastMonthGrandTotalWeight)}"><strong>${formatNumber(grandTotalWeight)}</strong></td>
         <td class="text-end"><strong>${formatNumber(grandTotalManifested)}</strong></td>
-        <td class="text-end"><strong>${formatNumber(grandTotalWeight)}</strong></td>
         <td class="text-end"><strong>100.00%</strong></td>
     `;
 
@@ -1826,6 +2057,50 @@ function renderGPWiseSummaryCustomTable(data) {
     tbody.appendChild(grandTotalRow);
 }
 
+function renderHighGPLostClient() {
+    const filters = GetAllFilters();
+
+    if (filters.dealerCodes == '') {
+        return;
+    }
+
+    updateReportDateRangeDisplay();
+
+    Showloader();
+
+    SalesanalysisASTService.GetSalesAnalysisData('HIGH_GP_LOST_CLIENT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType).then(function (response) {
+        HideLoader();
+
+        if (!response || response.length === 0) {
+            console.warn('No High GP Lost Client data received');
+            document.getElementById('highGPLostClientTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+            document.getElementById('highGPLostClientTableHeader').innerHTML = '';
+            return;
+        }
+
+        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "GP", "Status"];
+        const NumericFilterColumn = [];
+        const DateFilterColumn = [];
+        const Button = false;
+        const showButtons = [];
+        const StringdoubleFilterColumn = [];
+        const hiddenColumns = [];
+        const ColumnAlignment = {
+            'Weight': 'right',
+            'Manifestation': 'right',
+            'Total Sales': 'right',
+            'Growth (%)': 'right'
+        };
+
+        if (typeof BizsolCustomFilterGrid !== 'undefined') {
+            BizsolCustomFilterGrid.CreateDataTable("highGPLostClientTableHeader", "highGPLostClientTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        }
+    }).catch(function (err) {
+        HideLoader();
+        console.error('Error fetching High GP Lost Client data:', err);
+    });
+}
+
 // Show report function
 function SalesanalysisAST_ShowReport() {
     const filters = GetAllFilters();
@@ -1857,6 +2132,9 @@ function SalesanalysisAST_ShowReport() {
     }
     if (document.querySelector('#gpWiseSummary')?.classList.contains('show') || document.querySelector('#gpWiseSummary')?.classList.contains('active')) {
         renderGPWiseSummary();
+    }
+    if (document.querySelector('#highGPLostClient')?.classList.contains('show') || document.querySelector('#highGPLostClient')?.classList.contains('active')) {
+        renderHighGPLostClient();
     }
 }
 
@@ -1911,6 +2189,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const highGPLostClientTabBtn = document.getElementById('highGPLostClient-tab');
+    if (highGPLostClientTabBtn) {
+        highGPLostClientTabBtn.addEventListener('shown.bs.tab', function () {
+            renderHighGPLostClient();
+        });
+    }
+
     // Initial render if tab is already active
     setTimeout(function () {
         if (document.querySelector('#summaryReport') && document.querySelector('#summaryReport').classList.contains('show')) {
@@ -1933,6 +2218,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (document.querySelector('#gpWiseSummary') && document.querySelector('#gpWiseSummary').classList.contains('show')) {
             renderGPWiseSummary();
+        }
+        if (document.querySelector('#highGPLostClient') && document.querySelector('#highGPLostClient').classList.contains('show')) {
+            renderHighGPLostClient();
         }
     }, 300);
 });

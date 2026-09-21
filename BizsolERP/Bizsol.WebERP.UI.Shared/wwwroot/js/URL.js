@@ -82,8 +82,9 @@ let UrlService = {
     API_ENDPOINT_PackingListFG: `${environment.BASE_URL}/PackingListFG`,
     API_ENDPOINT_QTY_CONFIG: `${environment.BASE_URL}/FixedParameterQtyConfig`,
     API_ENDPOINT_CRM_ORDERENTRY_CONFIG: `${environment.BASE_URL}/ConfigCRMOrderEntry`,
-
-
+    
+    
+    API_ENDPOINT_WeightConfirmation: `${environment.BASE_URL}/WeightConfirmation`,
     API_ENDPOINT_BreakDown: `${environment.BASE_URL}/BreakDownStartOrEnd`,
     API_ENDPOINT_SlittingEntry: `${environment.BASE_URL}/SlittingEntry`,
     API_ENDPOINT_VisitorMaster: `${environment.BASE_URL}/VisitorMaster`,
@@ -109,8 +110,10 @@ let UrlService = {
     API_ENDPOINT_PDI: `${environment.BASE_URL}/PDI`,
     API_ENDPOINT_CustomerDashboard: `${environment.BASE_URL}/CustomerDashboard`,
     API_ENDPOINT_BuyingCapacity: `${environment.BASE_URL}/BuyingCapacity`,
+    API_ENDPOINT_TargetExecutiveWise: `${environment.BASE_URL}/TargetExecutiveWise`,
     API_ENDPOINT_ProspectiveCustomer: `${environment.BASE_URL}/ProspectiveCustomer`,
     API_DOCUMENT_DispatchAdvicePlan: `${environment.BASE_URL}/VerifyDispatchAdvice`,
+    API_ENDPOINT_FreightInvoice: `${environment.BASE_URL}/FreightInvoice`,
     API_DOCUMENT_StockAgeingReport: `${environment.BASE_URL}/StockAgeingReport`,
     API_ENDPOINT_BillWiseOutStandingReport: `${environment.BASE_URL}/BillWiseOutStandingReport`,
     API_ENDPOINT_BalancePOCancellation: `${environment.BASE_URL}/BalancePOCancellation`,
@@ -121,6 +124,7 @@ let UrlService = {
     API_ENDPOINT_QCPropertyMaster: `${environment.BASE_URL}/QCPropertyMaster`,
     API_ENDPOINT_QCPropertyTestTypeMaster: `${environment.BASE_URL}/QCPropertyTestTypeMaster`,
     API_ENDPOINT_RawMaterialOffer: `${environment.BASE_URL}/RawMaterialOffer`,
+    API_ENDPOINT_StockAllocation: `${environment.BASE_URL}/StockAllocation`,
     //MachineMaintenanceRequest
     API_ENDPOINT_MachineMaintenance: `${environment.BASE_URL}/MachineMaintenance`,
     API_ENDPOINT_FGInspectedOffer: `${environment.BASE_URL}/FGInspectedEntry`,
@@ -145,6 +149,7 @@ let UrlService = {
     API_ENDPOINT_IMPORT_EXPORT: `${environment.BASE_URL}/ImportExport`,
     API_ENDPOINT_MRNMasterLevelsApproval: `${environment.BASE_URL}/MRNMasterLevelsApproval`,//
     API_ENDPOINT_CompanyInformation: `${environment.BASE_URL}/CompanyInformation`,
+    API_ENDPOINT_EWayBill: `${environment.BASE_URL}/EwayBill`,
     API_ENDPOINT_EXPENSE_ENTRY_APPROVAL_CONFIG: `${environment.BASE_URL}/ExpenseEntryApprovalConfiguration`,
     API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL: `${environment.BASE_URL}/ExpenseEntryLevelsApproval`,
 
@@ -173,6 +178,12 @@ let UrlService = {
     API_ENDPOINT_SalesPersonTargetAchievementReport: `${environment.BASE_URL}/SalesPersonTargetAchievementReport`,
     API_ENDPOINT_SalesPersonDashboard: `${environment.BASE_URL}/SalesPersonDashboard`,
     API_ENDPOINT_ExpenseDashboard: `${environment.BASE_URL}/ExpenseDashboard`,
+    API_ENDPOINT_IndentMaster: `${environment.BASE_URL}/IndentMaster`,
+    API_ENDPOINT_TEMPLETE_REPORT: `${environment.BASE_URL}/OrderLoadReport`,
+    API_ENDPOINT_DASHBOARD_CONFIGURATION: `${environment.BASE_URL}/DashboardConfiguration`,
+    API_ENDPOINT_ProductionOrder: `${environment.BASE_URL}/ProductionOrder`,
+    API_ENDPOINT_CRM_ORDER_IN_TRANSIT: `${environment.BASE_URL}/CRMOrderInTransit`,
+    API_ENDPOINT_USER_DASHBOARD_MENU: `${environment.BASE_URL}/UserDashboardMenu`,
 }
 
 export { UrlService }

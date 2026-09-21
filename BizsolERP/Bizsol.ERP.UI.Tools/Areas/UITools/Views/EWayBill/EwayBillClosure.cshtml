@@ -1,0 +1,579 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Tools/script/EwayBillClosure.js"></script>
+
+<style>
+    .ewb-page .btn,
+    #EwayBillCloseModal .btn,
+    #EwayBillCloseResultModal .btn {
+        line-height: unset;
+    }
+    .ewb-page {
+        --ewb-accent: #558bc0;
+        --ewb-accent-hover: #4378b0;
+        color: #0f172a;
+        background:
+            radial-gradient(1200px 420px at 8% -10%, rgba(85, 139, 192, 0.16), transparent 55%),
+            radial-gradient(900px 360px at 100% 0%, rgba(51, 65, 85, 0.08), transparent 50%),
+            linear-gradient(180deg, #eef3f8 0%, #f7f9fc 40%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 14px 14px 18px;
+        margin: 0 0 8px;
+        min-height: calc(100vh - 140px);
+    }
+    .ewb-shell { max-width: 1480px; margin: 0 auto; }
+    .ewb-card {
+        background: #fff;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        border-radius: 16px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+        margin-bottom: 14px;
+    }
+    .ewb-header {
+        background: linear-gradient(125deg, #1e293b 0%, #334155 48%, #558bc0 140%);
+        padding: 18px 20px 16px;
+        position: relative;
+        overflow: hidden;
+    }
+    .ewb-header::after {
+        content: "";
+        position: absolute;
+        right: -40px;
+        top: -50px;
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        pointer-events: none;
+    }
+    .ewb-header-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px 12px;
+        position: relative;
+        z-index: 1;
+    }
+    .ewb-header h5 {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.15rem;
+        letter-spacing: -0.025em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .ewb-title-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(160deg, #38bdf8 0%, #2563eb 100%);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        color: #fff;
+        font-size: 1rem;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+    .ewb-header-sub {
+        margin: 0;
+        flex: 1 1 100%;
+        padding-left: 46px;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.8rem;
+        line-height: 1.45;
+        position: relative;
+        z-index: 1;
+    }
+    .ewb-header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+        border: 1px solid #f59e0b;
+        color: #7c2d12;
+        border-radius: 999px;
+        padding: 6px 13px 6px 7px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+    }
+    .ewb-header-badge i {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        color: #d97706;
+        font-size: 0.7rem;
+    }
+    .ewb-filter {
+        padding: 14px 16px 12px;
+        background: linear-gradient(180deg, #fbfdff, #f8fafc);
+        border-bottom: 1px solid #eef2f7;
+    }
+    .ewb-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 12px;
+    }
+    .ewb-field {
+        display: flex;
+        flex-direction: column;
+        min-width: 160px;
+    }
+    .ewb-field label,
+    .ewb-field .col-form-label-sm {
+        display: block;
+        margin: 0 0 4px;
+        padding: 0;
+        line-height: 1.2;
+        min-height: 16px;
+        font-size: 0.77rem;
+        font-weight: 700;
+        color: #334155;
+    }
+    .ewb-filter .form-control {
+        width: 100%;
+        height: 31px;
+        min-height: 31px;
+        border-radius: 5px;
+        border-color: #d7e0ea;
+        font-size: 0.82rem;
+        padding: .25rem .5rem;
+    }
+    .ewb-filter .form-control:focus {
+        border-color: #558bc0;
+        box-shadow: 0 0 0 3px rgba(85, 139, 192, 0.18);
+    }
+    .ewb-field-action {
+        min-width: auto;
+        height: 40px;
+    }
+    .ewb-page #btnEwayBillShow.btn,
+    .ewb-page #btnEwayBillClose.btn {
+        height: 31px !important;
+        min-height: 31px !important;
+        padding: 0 14px !important;
+        font-size: 9pt !important;
+        font-weight: 600;
+        border-radius: 5px !important;
+        color: #fff !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ewb-page #btnEwayBillShow.btn {
+        margin: 0 !important;
+    }
+    .ewb-page #btnEwayBillClose.btn {
+        margin-left: auto !important;
+        margin-right: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
+    .ewb-page #btnEwayBillShow.btn:hover {
+        background-image: linear-gradient(#26557d, #3878af, #175489);
+        border-color: #26557d;
+        color: #fff !important;
+    }
+    .ewb-action-wrap input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: #558bc0;
+    }
+    #EwayBillCloseModal .btn,
+    #EwayBillCloseResultModal .btn {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 14px !important;
+        font-size: 0.8rem !important;
+        border-radius: 9px !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ewb-grid-wrap {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+    .ewb-grid-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 10px;
+        border-bottom: 1px solid #eef2f7;
+        background: linear-gradient(180deg, #fbfdff, #f8fafc);
+    }
+    .ewb-toolbar-close {
+        margin-left: auto;
+    }
+    .ewb-grid-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #e8f4fd;
+        border: 1px solid #cfe0f0;
+        color: #558bc0;
+        font-size: 0.85rem;
+    }
+    .ewb-grid-title {
+        margin: 0;
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: #334155;
+    }
+    .ewb-grid-hint {
+        margin: 2px 0 0;
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+    .ewb-grid-wrap .table-wrapper {
+        min-height: 280px;
+        max-height: 520px;
+        overflow: auto;
+    }
+    #EwayBillClosure.ewb-list-table {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: collapse;
+        min-width: 1480px;
+    }
+    #EwayBillClosure.ewb-list-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        background-color: #fff;
+    }
+    #EwayBillClosure.ewb-list-table thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        border: none !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.22) !important;
+        border-bottom: 2px solid #4578a8 !important;
+        padding: 8px 10px !important;
+        font-size: 0.7rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+    }
+    #EwayBillClosure.ewb-list-table tbody td {
+        padding: 8px 10px !important;
+        border: none !important;
+        border-bottom: 1px solid #eef2f7 !important;
+        font-size: 0.8125rem !important;
+        vertical-align: middle !important;
+        color: #1e293b;
+    }
+    #EwayBillClosure.ewb-list-table tbody tr:nth-child(even) { background-color: #fafcfe; }
+    #EwayBillClosure.ewb-list-table.table-hover tbody tr:hover { background-color: #eef6fc !important; }
+    #EwayBillClosure.ewb-list-table tbody tr.ewb-row-success,
+    #EwayBillClosure.ewb-list-table tbody tr.ewb-row-success > td,
+    #EwayBillClosure.ewb-list-table tbody tr.ewb-row-success > *,
+    #EwayBillClosure.ewb-list-table.table-hover tbody tr.ewb-row-success:hover,
+    #EwayBillClosure.ewb-list-table.table-hover tbody tr.ewb-row-success:hover > td,
+    #EwayBillClosure.ewb-list-table.table-hover tbody tr.ewb-row-success:hover > * {
+        background-color: #dcfce7 !important;
+        --bs-table-bg: #dcfce7;
+        --bs-table-accent-bg: #dcfce7;
+        --bs-table-hover-bg: #dcfce7;
+    }
+    #EwayBillClosure.ewb-list-table tbody tr.ewb-row-fail,
+    #EwayBillClosure.ewb-list-table tbody tr.ewb-row-fail > td,
+    #EwayBillClosure.ewb-list-table tbody tr.ewb-row-fail > *,
+    #EwayBillClosure.ewb-list-table.table-hover tbody tr.ewb-row-fail:hover,
+    #EwayBillClosure.ewb-list-table.table-hover tbody tr.ewb-row-fail:hover > td,
+    #EwayBillClosure.ewb-list-table.table-hover tbody tr.ewb-row-fail:hover > * {
+        background-color: #fee2e2 !important;
+        --bs-table-bg: #fee2e2;
+        --bs-table-accent-bg: #fee2e2;
+        --bs-table-hover-bg: #fee2e2;
+    }
+    .ewb-empty {
+        text-align: center;
+        padding: 36px 16px !important;
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+    .ewb-empty i {
+        display: block;
+        font-size: 1.6rem;
+        color: #94a3b8;
+        margin-bottom: 8px;
+    }
+    .ewb-action-wrap {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+    }
+    .ewb-action-wrap .btn {
+        min-width: 34px;
+        height: 30px;
+        padding: 0 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+    }
+    .ewb-page .paginator {
+        margin-top: 0;
+        padding: 6px 10px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        font-size: 0.72rem;
+        border-radius: 0 0 16px 16px;
+    }
+    #EwayBillCloseModal .modal-content {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 56px rgba(8, 12, 36, 0.24);
+    }
+    #EwayBillCloseModal .modal-header {
+        background: linear-gradient(130deg, #558bc0, #334155);
+        border: none;
+        padding: 12px 16px;
+        color: #fff;
+    }
+    #EwayBillCloseModal .modal-header .modal-title {
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 700;
+    }
+    #EwayBillCloseModal .btn-close {
+        filter: invert(1);
+        opacity: 0.9;
+    }
+    #EwayBillCloseModal .modal-body { padding: 16px 18px; }
+    #EwayBillCloseModal .form-label {
+        font-size: 0.77rem;
+        font-weight: 600;
+        color: #475569;
+    }
+    #EwayBillCloseModal .form-control {
+        border-radius: 9px;
+        border-color: #d7e0ea;
+    }
+    #EwayBillCloseModal .modal-footer,
+    #EwayBillCloseResultModal .modal-footer {
+        border-top: 1px solid #eef2f7;
+        padding: 12px 16px;
+        gap: 8px;
+        background: #f8fafc;
+    }
+    #EwayBillCloseResultModal .modal-content {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 56px rgba(8, 12, 36, 0.24);
+    }
+    #EwayBillCloseResultModal .modal-header {
+        background: linear-gradient(130deg, #558bc0, #334155);
+        border: none;
+        padding: 12px 16px;
+        color: #fff;
+    }
+    #EwayBillCloseResultModal .modal-header .modal-title {
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 700;
+    }
+    #EwayBillCloseResultModal .btn-close {
+        filter: invert(1);
+        opacity: 0.9;
+    }
+    #EwayBillCloseResultModal .modal-body { padding: 14px 16px; }
+    .ewb-result-meta {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .ewb-result-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 24px;
+        padding: 0 8px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        flex-shrink: 0;
+    }
+    .ewb-result-status-y {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+    }
+    .ewb-result-status-n {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+    }
+    .ewb-result-msg {
+        margin: 0;
+        font-size: 0.82rem;
+        color: #334155;
+        line-height: 1.4;
+    }
+    #tblEwayBillCloseResultWrap {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        overflow: auto;
+        max-height: 420px;
+    }
+    #EwayBillCloseResult.ewb-result-table {
+        width: 100%;
+        margin-bottom: 0;
+        min-width: 720px;
+    }
+    #EwayBillCloseResult.ewb-result-table thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        border: none !important;
+        padding: 8px 10px !important;
+        font-size: 0.7rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    #EwayBillCloseResult.ewb-result-table tbody td {
+        padding: 8px 10px !important;
+        border-bottom: 1px solid #eef2f7 !important;
+        font-size: 0.8rem !important;
+        vertical-align: middle !important;
+    }
+    #EwayBillCloseResult.ewb-result-table tbody tr.ewb-row-success > td {
+        background-color: #dcfce7 !important;
+    }
+    #EwayBillCloseResult.ewb-result-table tbody tr.ewb-row-fail > td {
+        background-color: #fee2e2 !important;
+    }
+    @@media (max-width: 768px) {
+        .ewb-page { padding: 8px 6px 14px; border-radius: 12px; }
+        .ewb-header-sub { padding-left: 0; }
+    }
+</style>
+
+<div class="ewb-page">
+    <div class="ewb-shell">
+        <div class="ewb-card">
+            <div class="ewb-header">
+                <div class="ewb-header-top">
+                    <h5>
+                        <span class="ewb-title-icon"><i class="fa fa-truck"></i></span>
+                        E-Way Bill Closure
+                    </h5>
+                    <span class="ewb-header-badge"><i class="fa fa-hourglass-half"></i> Pending closures</span>
+                </div>
+            </div>
+            <div class="ewb-filter">
+                <div class="ewb-filter-row">
+                    <div class="ewb-field">
+                        <label for="txtFromDate">From Date <span class="text-danger">*</span></label>
+                        <input id="txtFromDate" type="date" class="form-control form-control-sm box_border" autocomplete="off" />
+                    </div>
+                    <div class="ewb-field">
+                        <label for="txtToDate">To Date <span class="text-danger">*</span></label>
+                        <input id="txtToDate" type="date" class="form-control form-control-sm box_border" autocomplete="off" />
+                    </div>
+                    <div class="ewb-field ewb-field-action">
+                        <button type="button" id="btnEwayBillShow" title="Show" class="btn btn-info btn-height" onclick="LoadEwayBillClosureList()">Show</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ewb-grid-wrap" id="tblEwayBillClosure">
+            <div class="ewb-grid-toolbar">
+                <span class="ewb-grid-icon" aria-hidden="true"><i class="fa fa-table-list"></i></span>
+                <div>
+                    <p class="ewb-grid-title">E-Way Bill list</p>
+                </div>
+                <button type="button" id="btnEwayBillClose" title="Close" class="btn btn-danger btn-height ewb-toolbar-close" onclick="OpenEwayBillClose()">Close</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="EwayBillClosure" class="table table-sm table-hover ewb-list-table fixed-width-table mb-0">
+                    <thead id="table-header-EwayBillClosure"></thead>
+                    <tbody id="table-body-EwayBillClosure"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-EwayBillClosure"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="EwayBillCloseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Close E-Way Bill</h5>
+                <button type="button" class="btn-close" aria-label="Close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label for="txtEwayBillCloseReason" class="form-label">Reason <span class="text-danger">*</span></label>
+                <textarea id="txtEwayBillCloseReason" class="form-control form-control-sm" rows="3" placeholder="Enter reason for closure" autocomplete="off"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="CloseEwayBillCloseModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" id="btnEwayBillCloseConfirm" onclick="ConfirmEwayBillClose()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="EwayBillCloseResultModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">E-Way Bill Close Result</h5>
+                <button type="button" class="btn-close" aria-label="Close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="ewb-result-meta">
+                    <span id="ewbCloseResultStatus" class="ewb-result-status">-</span>
+                    <p id="ewbCloseResultMsg" class="ewb-result-msg"></p>
+                </div>
+                <div id="tblEwayBillCloseResultWrap">
+                    <table id="EwayBillCloseResult" class="table table-sm ewb-result-table mb-0">
+                        <thead id="table-header-EwayBillCloseResult"></thead>
+                        <tbody id="table-body-EwayBillCloseResult"></tbody>
+                    </table>
+                </div>
+                <div id="ewbCloseResultEmpty" class="ewb-empty" style="display:none;">
+                    <i class="fa fa-inbox"></i>No result details found
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="CloseEwayBillCloseResultModal()">OK</button>
+            </div>
+        </div>
+    </div>
+</div>

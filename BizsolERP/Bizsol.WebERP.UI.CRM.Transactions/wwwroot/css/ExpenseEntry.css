@@ -98,16 +98,9 @@
     outline: 2px solid rgba(255, 255, 255, 0.9);
     outline-offset: 2px;
 }
-.ee-list-header .ee-list-header-icon-btn--settings i {
-    color: #c2410c;
-    font-size: 1.15rem;
-}
 .ee-list-header .ee-list-header-icon-btn--approval i {
     color: #4338ca;
     font-size: 1.2rem;
-}
-.ee-list-header .ee-list-header-icon-btn--settings:hover i {
-    color: #9a3412;
 }
 .ee-list-header .ee-list-header-icon-btn--approval:hover i {
     color: #312e81;

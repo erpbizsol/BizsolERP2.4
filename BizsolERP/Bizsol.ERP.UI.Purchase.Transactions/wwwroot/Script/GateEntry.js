@@ -30,7 +30,7 @@ let GateEntryImageDetail = [{
 }];
 let G_ScaleVehiclePhotoProvided = false;
 //let G_GateEntryLinkedERPDocuments = [{ TableName: "kumar", TableCode:5 }];
-let G_GateEntryLinkedERPDocuments = [{ TableName: "kumar", TableCode:5 }];
+let G_GateEntryLinkedERPDocuments = [];
 
 let baseUrl = sessionStorage.getItem('AppBaseURL');
 let G_TableName = '';

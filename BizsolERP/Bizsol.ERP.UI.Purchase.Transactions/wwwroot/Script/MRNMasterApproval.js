@@ -1,5 +1,6 @@
 import { MRNMasterApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MRNMasterApprovalService.js';
 import { GRNService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_GRNService.js';
+import { BOMService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BOMService.js';
 import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
@@ -104,6 +105,86 @@ function parseGpaAmount(value) {
     return Number.isFinite(n) ? n : NaN;
 }
 
+function mrnPickPaymentNum(p, keys) {
+    if (!p || typeof p !== 'object') return NaN;
+    for (let i = 0; i < keys.length; i++) {
+        const n = parseGpaAmount(p[keys[i]]);
+        if (!isNaN(n)) return n;
+    }
+    return NaN;
+}
+
+function mrnResolveLineItemsTotal(p) {
+    const lines = p && Array.isArray(p._detailLines) ? p._detailLines : [];
+    if (!lines.length) return 0;
+    let sum = 0;
+    lines.forEach(function (row) { sum += mrnResolveLineAmount(row); });
+    return sum;
+}
+
+function mrnResolvePaymentAmounts(p) {
+    if (!p) return { totalBill: 0, freight: 0, deduction: 0, tds: 0, netPayable: 0 };
+
+    let freight = mrnPickPaymentNum(p, [
+        'FreightCharges', 'freightCharges', 'Freight Charges', 'freight charges',
+    ]);
+    if (isNaN(freight)) freight = 0;
+
+    let deduction = mrnPickPaymentNum(p, [
+        'Dedution', 'dedution', 'Deduction', 'deduction',
+    ]);
+    if (isNaN(deduction)) deduction = 0;
+
+    let tds = mrnPickPaymentNum(p, [
+        'TDSAmount', 'tdsAmount', 'TDS Amount', 'tds amount',
+    ]);
+    if (isNaN(tds)) tds = 0;
+
+    const lineSum = mrnResolveLineItemsTotal(p);
+    // Always prefer saved TotalBillAmountManual — it may include manual adjustments
+    // beyond lineSum + freight (e.g. records saved before FreightCharges was tracked).
+    const savedManualBill = mrnPickPaymentNum(p, [
+        'TotalBillAmountManual', 'totalBillAmountManual',
+        'Total Bill Amount', 'BillAmount', 'billAmount',
+    ]);
+    let totalBill;
+    if (!isNaN(savedManualBill) && savedManualBill > 0) {
+        totalBill = savedManualBill;
+    } else if (lineSum > 0) {
+        totalBill = lineSum + freight;
+    } else {
+        totalBill = getTotalAmount(p);
+        if (isNaN(totalBill)) totalBill = freight;
+    }
+
+    const netPayable = Math.max(0, totalBill - deduction - tds);
+
+    return {
+        totalBill: totalBill || 0,
+        freight: freight || 0,
+        deduction: deduction || 0,
+        tds: tds || 0,
+        netPayable: netPayable || 0,
+    };
+}
+
+function mrnCopyMasterAmountFields(payment, master) {
+    if (!payment || !master || typeof master !== 'object') return payment;
+    const fields = [
+        { keys: ['TotalBillAmountManual', 'totalBillAmountManual', 'Total Bill Amount'], target: 'TotalBillAmountManual' },
+        { keys: ['FreightCharges', 'freightCharges', 'Freight Charges'], target: 'FreightCharges' },
+        { keys: ['Dedution', 'dedution', 'Deduction', 'deduction'], target: 'Dedution' },
+        { keys: ['TDSAmount', 'tdsAmount', 'TDS Amount'], target: 'TDSAmount' },
+        { keys: ['NetPayable', 'netPayable', 'Net Payable'], target: 'NetPayable' },
+    ];
+    fields.forEach(function (field) {
+        if (!isNaN(mrnPickPaymentNum(payment, field.keys))) return;
+        const n = mrnPickPaymentNum(master, field.keys);
+        if (!isNaN(n)) payment[field.target] = n;
+    });
+    return payment;
+}
+
 function EscHtml(str) {
     if (!str && str !== 0) return '';
     return String(str)
@@ -132,12 +213,32 @@ function getEntryNo(p) {
     return s || '—';
 }
 
+function isLikelySupplierBillNo(value) {
+    const s = value !== null && value !== undefined ? String(value).trim() : '';
+    if (!s) return false;
+    return /^\d{10,}$/.test(s.replace(/\s/g, ''));
+}
+
+function isValidMrnDisplayValue(value) {
+    const s = value !== null && value !== undefined ? String(value).trim() : '';
+    if (!s || s === '0' || s === '—') return false;
+    if (isLikelySupplierBillNo(s)) return false;
+    return true;
+}
+
 function getMrnNo(p) {
     if (!p) return '—';
-    const v = p.MRNNo ?? p.mRNNo ?? p['MRN No'] ?? p['MRN NO'] ?? p.MRN_No ?? p.mrnNo
-        ?? p.GRNo ?? p.grnNo ?? p.GRNNo ?? p.grNNo ?? '';
-    const s = v !== null && v !== undefined ? String(v).trim() : '';
-    if (s && s !== '0') return s;
+    const keys = [
+        'MRNNo', 'mRNNo', 'MRN No', 'MRN NO', 'MRN_No', 'mrnNo',
+        'MRNNumber', 'mRNNumber', 'MRN_Number', 'mrn_Number',
+        'GRNo', 'grnNo', 'GRNNo', 'grNNo', 'GRN No', 'GRN NO',
+        'EntryNo', 'entryNo', 'Entry No', 'Entry_No',
+        'Name', 'name',
+    ];
+    for (let i = 0; i < keys.length; i += 1) {
+        const v = p[keys[i]];
+        if (isValidMrnDisplayValue(v)) return String(v).trim();
+    }
     return '—';
 }
 
@@ -151,8 +252,6 @@ function resolveMrnNoFromGrnList(p) {
         if (remembered) {
             const mrn = getMrnNo(remembered);
             if (mrn !== '—') return mrn;
-            const entry = getEntryNo(remembered);
-            if (entry && entry !== '—') return entry;
         }
     }
 
@@ -165,8 +264,6 @@ function resolveMrnNoFromGrnList(p) {
         if (row) {
             const mrn = getMrnNo(row);
             if (mrn !== '—') return mrn;
-            const entry = getEntryNo(row);
-            if (entry && entry !== '—') return entry;
         }
     }
 
@@ -176,30 +273,120 @@ function resolveMrnNoFromGrnList(p) {
         if (hit) {
             const mrn = getMrnNo(hit);
             if (mrn !== '—') return mrn;
-            const entry = getEntryNo(hit);
-            if (entry && entry !== '—') return entry;
         }
     }
     return '';
 }
 
-/** Same resolution as GRN Service approval modal — MRNNo, then BillNo/EntryNo, then cached list rows. */
+function resolveMrnFromDetailApiRoot(p) {
+    const root = p && p._mrnDetailApiRoot;
+    if (!root || typeof root !== 'object') return '';
+    const master = firstMrnMasterFromApi(root);
+    if (master) {
+        const fromMaster = getMrnNo(master);
+        if (fromMaster !== '—') return fromMaster;
+    }
+    const gsl = root.GRNServiceList ?? root.grnServiceList;
+    if (Array.isArray(gsl) && gsl[0]) {
+        const fromGsl = getMrnNo(gsl[0]);
+        if (fromGsl !== '—') return fromGsl;
+    }
+    return '';
+}
+
+/** MRN badge only — never fall back to supplier BillNo. */
 function resolveMrnDisplayNumber(p) {
     if (!p) return '—';
-    let mrn = getMrnNo(p);
+    const mrn = getMrnNo(p);
     if (mrn !== '—') return mrn;
-    const entry = getEntryNo(p);
-    if (entry && entry !== '—') return entry;
     const fromList = resolveMrnNoFromGrnList(p);
     if (fromList) return fromList;
+    const fromDetailRoot = resolveMrnFromDetailApiRoot(p);
+    if (fromDetailRoot) return fromDetailRoot;
     const lines = p._detailLines;
     if (Array.isArray(lines) && lines.length) {
         const lineMrn = mrnPickRowField(lines[0], [
-            'MRNNo', 'mrnNo', 'GRNo', 'grnNo', 'BillNo', 'billNo', 'EntryNo', 'entryNo',
+            'MRNNo', 'mrnNo', 'MRNNumber', 'mRNNumber',
+            'GRNo', 'grnNo', 'GRNNo', 'EntryNo', 'entryNo', 'Name', 'name',
         ]);
-        if (lineMrn !== '' && `${lineMrn}`.trim() !== '0') return String(lineMrn).trim();
+        if (isValidMrnDisplayValue(lineMrn)) return String(lineMrn).trim();
     }
     return '—';
+}
+
+function getBillNoDisplay(p) {
+    if (!p) return '—';
+    const keys = ['BillNo', 'billNo', 'Bill No', 'Bill_No', 'SupplierBillNo', 'supplierBillNo'];
+    const direct = mrnPickRowField(p, keys);
+    if (direct) return String(direct).trim();
+    const root = p._mrnDetailApiRoot;
+    if (root && typeof root === 'object') {
+        const master = firstMrnMasterFromApi(root);
+        const fromMaster = mrnPickRowField(master, keys);
+        if (fromMaster) return String(fromMaster).trim();
+        const gsl = root.GRNServiceList ?? root.grnServiceList;
+        if (Array.isArray(gsl) && gsl[0]) {
+            const fromGsl = mrnPickRowField(gsl[0], keys);
+            if (fromGsl) return String(fromGsl).trim();
+        }
+    }
+    if (typeof window.grnGetApprovalSourceRow === 'function') {
+        const src = window.grnGetApprovalSourceRow(getPaymentMasterCode(p));
+        if (src) {
+            const fromSrc = mrnPickRowField(src, keys);
+            if (fromSrc) return String(fromSrc).trim();
+        }
+    }
+    return '—';
+}
+
+function mergeGrnMasterHeaderIntoPayment(payment, master) {
+    if (!payment || !master || typeof master !== 'object') return payment;
+    const mrnRaw = master.MRNNo ?? master.mRNNo ?? master['MRN No'] ?? master.GRNo ?? master.grnNo;
+    if (isValidMrnDisplayValue(mrnRaw)) {
+        payment.MRNNo = String(mrnRaw).trim();
+        payment.mRNNo = payment.MRNNo;
+    }
+    const billRaw = master.BillNo ?? master.billNo ?? master['Bill No'];
+    if (billRaw != null && String(billRaw).trim() !== '' && String(billRaw).trim() !== '0') {
+        payment.BillNo = String(billRaw).trim();
+        payment.billNo = payment.BillNo;
+    }
+    mrnCopyMasterAmountFields(payment, master);
+    return payment;
+}
+
+function fetchGrnMasterByCode(code) {
+    return GRNService.GetGRNByCode(code)
+        .then(function (resp) {
+            return (resp?.GRNServiceList ?? resp?.grnServiceList)?.[0] ?? null;
+        })
+        .catch(function (err) {
+            console.warn('GetGRNByCode header hydrate failed', code, err);
+            return null;
+        });
+}
+
+function ensurePaymentMrnBillFromGrnApi(payment) {
+    if (!payment) return Promise.resolve(payment);
+    const code = getPaymentMasterCode(payment);
+    if (!code) return Promise.resolve(payment);
+    const needsMrn = resolveMrnDisplayNumber(payment) === '—';
+    const needsBill = getBillNoDisplay(payment) === '—';
+    if (!needsMrn && !needsBill) return Promise.resolve(payment);
+    return fetchGrnMasterByCode(code).then(function (master) {
+        if (master) mergeGrnMasterHeaderIntoPayment(payment, master);
+        bindMrnNoOntoPayment(payment);
+        return payment;
+    });
+}
+
+function formatMrnModalTitle(p) {
+    const mrn = formatMrnDisplayNo(p);
+    const bill = getBillNoDisplay(p);
+    let title = 'MRN# ' + mrn;
+    if (bill !== '—') title += ' · Bill# ' + bill;
+    return title;
 }
 
 function bindMrnNoOntoPayment(p) {
@@ -208,6 +395,9 @@ function bindMrnNoOntoPayment(p) {
     if (no !== '—') {
         p.MRNNo = no;
         p.mRNNo = no;
+    } else if (isLikelySupplierBillNo(p.MRNNo ?? p.mRNNo)) {
+        delete p.MRNNo;
+        delete p.mRNNo;
     }
     return p;
 }
@@ -384,14 +574,6 @@ function enrichMrnHeaderFromDetailLines(payment, lines) {
     if (!payment) return payment;
     if (Array.isArray(lines) && lines.length) payment._detailLines = lines;
 
-    if (getMrnNo(payment) === '—') {
-        const billNo = payment.BillNo ?? payment.billNo;
-        if (billNo != null && `${billNo}`.trim() !== '' && `${billNo}`.trim() !== '0') {
-            payment.MRNNo = billNo;
-            payment.mRNNo = billNo;
-        }
-    }
-
     if (!getEntryDate(payment)) {
         const d0 = firstMrnDetailLineFromPayment(payment);
         const lineDate = d0 ? (d0.GRDate ?? d0.grDate ?? d0['Entry Date'] ?? d0.ReceiveDate ?? d0.receiveDate) : '';
@@ -420,7 +602,10 @@ function enrichMrnHeaderFromDetailLines(payment, lines) {
         if (sub) payment.SubProject = sub;
     }
 
-    return bindMrnNoOntoPayment(payment);
+    const detailMaster = firstMrnMasterFromApi(payment._mrnDetailApiRoot);
+    if (detailMaster) mergeGrnMasterHeaderIntoPayment(payment, detailMaster);
+
+    return mrnEnrichPaymentCodes(bindMrnNoOntoPayment(payment));
 }
 
 function mrnResolveLineAmount(row) {
@@ -615,6 +800,9 @@ function mrnNormalizeDetailLines(lines, master) {
             Qty: qtyDisplay !== '' ? qtyDisplay : (normalized.Qty ?? normalized.QtyMT ?? normalized.QtyBill ?? ''),
             qty: qtyDisplay !== '' ? qtyDisplay : (normalized.qty ?? normalized.qtyMT ?? normalized.qtyBill ?? ''),
         });
+    }).map(function (row) {
+        const code = mrnItemMasterCodeFromRow(row);
+        return code ? mrnBindCodeOntoDetailLine(row, code) : row;
     });
 }
 
@@ -631,7 +819,6 @@ function ensureGpaModalItemsTableHead() {
     $thead.html(
         '<tr>' +
             '<th style="width:40px;">#</th>' +
-            '<th>Bill no</th>' +
             '<th style="width:90px;">PO no</th>' +
             '<th>Item</th>' +
             '<th style="width:72px;">Bill Qty</th>' +
@@ -1023,11 +1210,29 @@ function refreshPaymentListCardsAfterHydrate(seq) {
     applyLandingPendingOnMeFilterIfNeeded();
 }
 
-function hydrateZeroAmountPaymentCards(seq) {
-    const rows = (G_PaymentListFull || []).filter(function (p) {
-        const code = getPaymentMasterCode(p);
-        return code > 0 && parseGpaAmount(getTotalAmount(p)) === 0;
-    });
+function paymentNeedsMrnNoHydrate(p) {
+    if (!p) return false;
+    const no = resolveMrnDisplayNumber(p);
+    if (no === '—') return true;
+    return isLikelySupplierBillNo(no);
+}
+
+function paymentNeedsBillNoHydrate(p) {
+    if (!p) return false;
+    return getBillNoDisplay(p) === '—';
+}
+
+function paymentNeedsDetailHydrate(p) {
+    if (!p) return false;
+    const code = getPaymentMasterCode(p);
+    if (!code) return false;
+    return parseGpaAmount(getTotalAmount(p)) === 0
+        || paymentNeedsMrnNoHydrate(p)
+        || paymentNeedsBillNoHydrate(p);
+}
+
+function hydratePaymentListCardsFromDetail(seq) {
+    const rows = (G_PaymentListFull || []).filter(paymentNeedsDetailHydrate);
     if (!rows.length) return Promise.resolve([]);
 
     return Promise.all(rows.map(function (payment) {
@@ -1037,11 +1242,12 @@ function hydrateZeroAmountPaymentCards(seq) {
                 if (seq !== G_LoadPaymentListSeq) return payment;
                 const merged = mergeDetailIntoPayment(res, payment);
                 Object.assign(payment, merged);
-                return payment;
+                bindMrnNoOntoPayment(payment);
+                return ensurePaymentMrnBillFromGrnApi(payment);
             })
             .catch(function (err) {
-                console.warn('GetMRNMasterDetail amount hydrate failed', code, err);
-                return payment;
+                console.warn('GetMRNMasterDetail card hydrate failed', code, err);
+                return ensurePaymentMrnBillFromGrnApi(payment);
             });
     })).then(function (updated) {
         refreshPaymentListCardsAfterHydrate(seq);
@@ -1189,7 +1395,7 @@ function LoadPaymentList(options) {
             const searchEl = document.getElementById('gpaLstSearch');
             FilterGpaCards(searchEl ? searchEl.value : '');
             applyLandingPendingOnMeFilterIfNeeded();
-            hydrateZeroAmountPaymentCards(seq);
+            hydratePaymentListCardsFromDetail(seq);
             return list;
         })
         .catch(function (err) {
@@ -1384,12 +1590,13 @@ function restoreGrnListHeaderAfterApprovalView() {
 function BuildPaymentCard(p) {
     const code = getPaymentMasterCode(p);
     const mrnPlain = String(formatMrnDisplayNo(p));
+    const billPlain = String(getBillNoDisplay(p));
     const entryPlain = String(getEntryNo(p));
     const vendorPlain = String(getPartyName(p));
     const mrnNo = EscHtml(mrnPlain);
     const vendor = EscHtml(vendorPlain);
     const entryDate = FmtDateDisplay(getEntryDate(p));
-    const amount = FmtCurrency(getTotalAmount(p));
+    const amount = FmtCurrency(mrnResolvePaymentAmounts(p).totalBill);
     const totalLvl = parseInt(p.TotalLevels ?? p.MaxLevel ?? 3, 10) || 1;
     const curLvlNo = parseInt(p.CurrentLevelNo ?? p.CurrentLevel ?? 1, 10) || 1;
     const levelChip = EscHtml(getGpaCardLevelChipLabel(p));
@@ -1420,7 +1627,7 @@ function BuildPaymentCard(p) {
         ? `<span class="gpa-creator-chip"><i class="fa fa-user me-1"></i>${creatorName}</span>`
         : `<span class="gpa-creator-chip"><i class="fa fa-user me-1"></i>Creator</span>`;
 
-    const searchKey = (vendorPlain + ' ' + mrnPlain + ' ' + entryPlain).toLowerCase();
+    const searchKey = (vendorPlain + ' ' + mrnPlain + ' ' + billPlain + ' ' + entryPlain).toLowerCase();
 
     const hasAttach = mrnApprovalHasAttachmentYes(p);
     const attachBg = hasAttach
@@ -1536,12 +1743,27 @@ function FilterGpaCards(query) {
 
 function mrnMergePartyFromSource(target, source) {
     if (!target || !source || typeof source !== 'object') return target;
+
     const party = getPartyName(source);
-    if (party === '—') return target;
-    if (getPartyName(target) !== '—') return target;
-    target.AccountDesp = source.AccountDesp ?? source.accountDesp ?? party;
-    target['Party Name'] = source['Party Name'] ?? source.partyName ?? party;
-    target.PartyName = source.PartyName ?? source.partyName ?? party;
+    if (party !== '—' && getPartyName(target) === '—') {
+        target.AccountDesp = source.AccountDesp ?? source.accountDesp ?? party;
+        target['Party Name'] = source['Party Name'] ?? source.partyName ?? party;
+        target.PartyName = source.PartyName ?? source.partyName ?? party;
+    }
+
+    const partyCode = mrnCodeFromObject(source, MRN_PARTY_CODE_KEYS);
+    if (partyCode && !mrnCodeFromObject(target, MRN_PARTY_CODE_KEYS)) {
+        mrnBindCodeOntoPayment(target, 'PartyMaster_Code', partyCode);
+        mrnBindCodeOntoPayment(target, 'AccountMaster_Code', partyCode);
+    }
+    const projectCode = mrnCodeFromObject(source, MRN_PROJECT_CODE_KEYS);
+    if (projectCode && !mrnCodeFromObject(target, MRN_PROJECT_CODE_KEYS)) {
+        mrnBindCodeOntoPayment(target, 'ProjectMaster_Code', projectCode);
+    }
+    const subProjectCode = mrnCodeFromObject(source, MRN_SUBPROJECT_CODE_KEYS);
+    if (subProjectCode && !mrnCodeFromObject(target, MRN_SUBPROJECT_CODE_KEYS)) {
+        mrnBindCodeOntoPayment(target, 'SubProjectMaster_Code', subProjectCode);
+    }
     return target;
 }
 
@@ -1551,25 +1773,30 @@ function mergeDetailIntoPayment(root, basePayment) {
 
     if (Array.isArray(root)) {
         p._detailLines = root;
+        p._mrnDetailApiRoot = root;
         p.LevelDetails = fromList.length ? fromList.slice() : [];
         enrichMrnHeaderFromDetailLines(p, root);
         mrnMergePartyFromSource(p, basePayment);
-        return bindMrnNoOntoPayment(p);
+        return mrnEnrichPaymentCodes(bindMrnNoOntoPayment(p));
     }
 
     const data = peelMrnApprovalApiRoot(root);
     if (!data || typeof data !== 'object') {
+        p._mrnDetailApiRoot = root;
         p.LevelDetails = fromList.length ? fromList.slice() : parseLevelDetailsToArray(p.LevelDetails);
         mrnMergePartyFromSource(p, basePayment);
-        return bindMrnNoOntoPayment(p);
+        return mrnEnrichPaymentCodes(bindMrnNoOntoPayment(p));
     }
     if (Array.isArray(data)) {
         p._detailLines = data;
+        p._mrnDetailApiRoot = data;
         p.LevelDetails = fromList.length ? fromList.slice() : parseLevelDetailsToArray(p.LevelDetails);
         enrichMrnHeaderFromDetailLines(p, data);
         mrnMergePartyFromSource(p, basePayment);
-        return bindMrnNoOntoPayment(p);
+        return mrnEnrichPaymentCodes(bindMrnNoOntoPayment(p));
     }
+
+    p._mrnDetailApiRoot = data;
 
     const resolvedMaster = firstMrnMasterFromApi(data)
         ?? data.VW_GRNPaymentMaster?.GRNPaymentMaster?.[0]
@@ -1604,7 +1831,7 @@ function mergeDetailIntoPayment(root, basePayment) {
         mrnMergePartyFromSource(p, resolvedMaster);
     }
 
-    return bindMrnNoOntoPayment(p);
+    return mrnEnrichPaymentCodes(bindMrnNoOntoPayment(p));
 }
 
 function extractDetailLines(root) {
@@ -1685,10 +1912,9 @@ function OpenDetailModal(paymentCode, options) {
     }
     mrnMergePartyFromSource(G_CurrentPayment, sourceRow);
 
-    const entryNo = formatMrnDisplayNo(G_CurrentPayment);
     const vendor = getPartyName(G_CurrentPayment);
 
-    $('#gpaModalEntryTitle').text('MRN# ' + entryNo);
+    $('#gpaModalEntryTitle').text(formatMrnModalTitle(G_CurrentPayment));
     $('#gpaModalParty').text(vendor);
     $('#hfGpaPaymentCode').val(String(code));
     $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
@@ -1698,9 +1924,10 @@ function OpenDetailModal(paymentCode, options) {
 
     ensureGpaModalItemsTableHead();
     $('#gpaModalItemsBody').html(
-        '<tr><td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<tr><td colspan="8" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
         '<i class="fa fa-spinner fa-spin me-1"></i>Loading\u2026</td></tr>'
     );
+    RenderGpaModalAmountSummary(G_CurrentPayment);
 
     applyGpaModalActionButtons(G_CurrentPayment);
 
@@ -1716,17 +1943,34 @@ function OpenDetailModal(paymentCode, options) {
             }
             lines = mrnNormalizeDetailLines(lines, G_CurrentPayment);
             G_CurrentPayment = enrichMrnHeaderFromDetailLines(G_CurrentPayment, lines);
+            mrnEnrichPaymentCodes(G_CurrentPayment);
+            lines = G_CurrentPayment._detailLines || lines;
             $('#hfGpaLevelCode').val(String(getLevelCode(G_CurrentPayment)));
-            $('#gpaModalEntryTitle').text('MRN# ' + formatMrnDisplayNo(G_CurrentPayment));
             $('#gpaModalParty').text(getPartyName(G_CurrentPayment));
             paintModalFromPayment(G_CurrentPayment);
             RenderGpaModalItems(lines);
+            return ensurePaymentMrnBillFromGrnApi(G_CurrentPayment);
+        })
+        .then(function () {
+            if (!G_CurrentPayment) return;
+            $('#gpaModalEntryTitle').text(formatMrnModalTitle(G_CurrentPayment));
+            paintModalFromPayment(G_CurrentPayment);
+            const detailLines = G_CurrentPayment._detailLines || [];
+            RenderGpaModalItems(detailLines);
+            mrnEnsureDetailLineItemCodesAsync(G_CurrentPayment).then(function () {
+                RenderGpaModalItems(G_CurrentPayment._detailLines || detailLines);
+            }).catch(function (e) {
+                console.warn('mrnEnsureDetailLineItemCodesAsync', e);
+            });
             applyGpaModalActionButtons(G_CurrentPayment);
+            mrnEnsurePaymentPartyCodeAsync(G_CurrentPayment).catch(function (e) {
+                console.warn('mrnEnsurePaymentPartyCodeAsync', e);
+            });
         })
         .catch(function (err) {
             console.error('GetMRNMasterDetail', err);
             $('#gpaModalItemsBody').html(
-                '<tr><td colspan="9" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                '<tr><td colspan="8" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
                 '<i class="fa fa-exclamation-triangle me-1"></i>Error loading GRN service lines.</td></tr>'
             );
         });
@@ -1734,9 +1978,10 @@ function OpenDetailModal(paymentCode, options) {
 
 function paintModalFromPayment(po) {
     const mrnNo = EscHtml(formatMrnDisplayNo(po));
+    const billNo = EscHtml(getBillNoDisplay(po));
     const vendor = EscHtml(getPartyName(po));
     const entryDate = EscHtml(FmtDateDisplay(getEntryDate(po)) || '—');
-    const amount = FmtCurrency(getTotalAmount(po));
+    const amount = FmtCurrency(mrnResolvePaymentAmounts(po).totalBill);
     const curLvlNo = parseInt(po.CurrentLevelNo ?? po.CurrentLevel ?? 1, 10) || 1;
     const totalLvl = parseInt(po.TotalLevels ?? po.MaxLevel ?? 3, 10) || 1;
     const status = EscHtml(getApprovalStatus(po));
@@ -1748,6 +1993,7 @@ function paintModalFromPayment(po) {
     $('#gpaModalHeader').html(
         '<div class="gpa-info-grid">' +
             BuildGpaInfoItem('MRN Number', mrnNo, 'fa-file-invoice') +
+            BuildGpaInfoItem('Bill No', billNo, 'fa-receipt') +
             BuildGpaInfoItem('Party', vendor, 'fa-building') +
             BuildGpaInfoItem('Entry Date', entryDate, 'fa-calendar-alt') +
             BuildGpaInfoItem('Amount', amount, 'fa-rupee-sign', '#667eea') +
@@ -1759,6 +2005,7 @@ function paintModalFromPayment(po) {
     );
 
     $('#gpaModalApprovalStepper').html(BuildGpaDetailStepper(po));
+    RenderGpaModalAmountSummary(po);
 }
 
 function BuildGpaInfoItem(label, value, icon, valueColor) {
@@ -1767,6 +2014,48 @@ function BuildGpaInfoItem(label, value, icon, valueColor) {
         '<span class="gpa-info-lbl"><i class="fa ' + icon + ' me-1"></i>' + label + '</span>' +
         '<span class="gpa-info-val" ' + clr + '>' + value + '</span>' +
         '</div>';
+}
+
+function BuildGpaAmountSummaryItem(label, value, highlight) {
+    const cls = highlight ? ' gpa-amount-item--net' : '';
+    return '<div class="gpa-amount-item' + cls + '">' +
+        '<span class="gpa-amount-lbl">' + EscHtml(label) + '</span>' +
+        '<span class="gpa-amount-val">' + value + '</span>' +
+        '</div>';
+}
+
+function RenderGpaModalAmountSummary(p) {
+    const $el = $('#gpaModalAmountSummary');
+    if (!$el.length) return;
+    const amounts = mrnResolvePaymentAmounts(p || G_CurrentPayment);
+    $el.html(
+        '<div class="gpa-amount-summary">' +
+            BuildGpaAmountSummaryItem('Freight Charges', FmtCurrency(amounts.freight)) +
+            BuildGpaAmountSummaryItem('Total Bill Amount', FmtCurrency(amounts.totalBill)) +
+            BuildGpaAmountSummaryItem('Deduction', FmtCurrency(amounts.deduction)) +
+            BuildGpaAmountSummaryItem('TDS Amount', FmtCurrency(amounts.tds)) +
+            BuildGpaAmountSummaryItem('Net Payable', FmtCurrency(amounts.netPayable), true) +
+        '</div>'
+    );
+}
+
+function buildGpaModalItemsFooterHtml(master) {
+    const amounts = mrnResolvePaymentAmounts(master || {});
+    const lineSum = mrnResolveLineItemsTotal(master || {});
+    const rowStyle = 'background:#f8fafc;font-weight:700;font-size:0.82rem;color:#475569;';
+    const valStyle = 'text-end;font-weight:800;color:#667eea;';
+    return '<tr class="gpa-items-tfoot-row" style="' + rowStyle + '">' +
+        '<td colspan="7" class="text-end">Total Amount</td>' +
+        '<td style="' + valStyle + '">' + FmtCurrency(lineSum) + '</td>' +
+        '</tr>' +
+        '<tr class="gpa-items-tfoot-row" style="' + rowStyle + '">' +
+        '<td colspan="7" class="text-end">Freight Charges</td>' +
+        '<td style="' + valStyle + '">' + FmtCurrency(amounts.freight) + '</td>' +
+        '</tr>' +
+        '<tr class="gpa-items-tfoot-row" style="' + rowStyle + '">' +
+        '<td colspan="7" class="text-end">Total Bill Amount</td>' +
+        '<td style="' + valStyle + '">' + FmtCurrency(amounts.totalBill) + '</td>' +
+        '</tr>';
 }
 
 function BuildGpaDetailStepper(po) {
@@ -1834,20 +2123,24 @@ function RenderGpaModalItems(items) {
     ensureGpaModalItemsTableHead();
     const master = G_CurrentPayment || {};
     const rows = mrnNormalizeDetailLines(items, master);
+    if (G_CurrentPayment && getPaymentMasterCode(G_CurrentPayment) === getPaymentMasterCode(master)) {
+        G_CurrentPayment._detailLines = rows;
+    }
     if (!rows || rows.length === 0) {
         $body.html(
-            '<tr><td colspan="9" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No line items found.</td></tr>'
+            '<tr><td colspan="8" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No line items found.</td></tr>'
         );
+        RenderGpaModalAmountSummary(master);
         return;
     }
     let html = '';
     rows.forEach(function (row, idx) {
-        const billNoRaw = row.BillNo ?? row.billNo ?? master.BillNo ?? master.billNo ?? '';
-        const billNo = EscHtml(billNoRaw !== null && `${billNoRaw}`.trim() !== '' ? billNoRaw : '—');
         const poRaw = row.PONo ?? row.PoNO ?? row.pONo ?? row.PurchaseOrderNo ?? row.purchaseOrderNo ?? '';
         const po = EscHtml(poRaw !== null && `${poRaw}`.trim() !== '' ? poRaw : '—');
         const itemRaw = mrnResolveItemName(row);
         const itemName = EscHtml(itemRaw !== '' ? itemRaw : '—');
+        const itemCode = mrnItemMasterCodeFromRow(row);
+        const itemCodeAttr = itemCode ? ' data-item-code="' + EscHtml(String(itemCode)) + '"' : '';
         const qtyBreak = mrnResolveLineQtyBreakdown(row);
         const billQty = mrnFmtLineQty(qtyBreak.billQty);
         const acceptQty = mrnFmtLineQty(qtyBreak.acceptQty);
@@ -1856,9 +2149,8 @@ function RenderGpaModalItems(items) {
         const amt = FmtCurrency(mrnResolveLineAmount(row));
         html += '<tr>' +
             '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
-            '<td style="font-weight:600;">' + billNo + '</td>' +
             '<td class="text-center">' + po + '</td>' +
-            '<td>' + itemName + '</td>' +
+            '<td' + itemCodeAttr + '>' + itemName + '</td>' +
             '<td class="text-end">' + billQty + '</td>' +
             '<td class="text-end">' + acceptQty + '</td>' +
             '<td class="text-end">' + rejectQty + '</td>' +
@@ -1867,6 +2159,7 @@ function RenderGpaModalItems(items) {
             '</tr>';
     });
     $body.html(html);
+    RenderGpaModalAmountSummary(master);
 }
 
 function RenderGpaBillLines(items) {
@@ -2327,6 +2620,7 @@ function getVisibleApprovalRowsForPrint() {
     return base.filter(function (p) {
         const key = (
             String(formatMrnDisplayNo(p)) + ' ' +
+            String(getBillNoDisplay(p)) + ' ' +
             String(getPartyName(p)) + ' ' +
             String(getEntryNo(p)) + ' ' +
             String(getProject(p)) + ' ' +
@@ -2339,28 +2633,32 @@ function getVisibleApprovalRowsForPrint() {
 function mapApprovalRowForGrnPrint(p) {
     const code = getPaymentMasterCode(p);
     const entryNo = getEntryNo(p);
+    const amounts = mrnResolvePaymentAmounts(p);
     const amt = getTotalAmount(p);
-    const totalBill = p.TotalBillAmountManual ?? p.totalBillAmountManual ?? p.BillAmount ?? p.billAmount ?? amt;
-    const tds = parseFloat(p.TDSAmount ?? p.tdsAmount ?? 0) || 0;
-    const deduct = parseFloat(p.Dedution ?? p.dedution ?? p.Deduction ?? p.deduction ?? 0) || 0;
+    const totalBill = p.TotalBillAmountManual ?? p.totalBillAmountManual ?? p.BillAmount ?? p.billAmount ?? amounts.totalBill ?? amt;
+    const tds = parseFloat(p.TDSAmount ?? p.tdsAmount ?? p['TDS Amount'] ?? amounts.tds ?? 0) || 0;
+    const deduct = parseFloat(p.Dedution ?? p.dedution ?? p.Deduction ?? p.deduction ?? amounts.deduction ?? 0) || 0;
+    const freight = parseFloat(p.FreightCharges ?? p.freightCharges ?? p['Freight Charges'] ?? amounts.freight ?? 0) || 0;
     const billNum = parseFloat(totalBill) || 0;
     const netPayable = billNum > 0
         ? Math.max(0, billNum - tds - deduct)
-        : (p.NetPayable ?? p.netPayable ?? p.PayableAmount ?? p.payableAmount ?? amt);
+        : (p.NetPayable ?? p.netPayable ?? p['Net Payable'] ?? p.PayableAmount ?? p.payableAmount ?? amounts.netPayable ?? amt);
     return Object.assign({}, p, {
         Code: code,
         MRNMaster_Code: code,
-        BillNo: p.BillNo ?? p.billNo ?? (entryNo !== '—' ? entryNo : undefined),
+        MRNNo: p.MRNNo ?? p.mRNNo ?? (formatMrnDisplayNo(p) !== '—' ? formatMrnDisplayNo(p) : undefined),
+        BillNo: p.BillNo ?? p.billNo ?? (getBillNoDisplay(p) !== '—' ? getBillNoDisplay(p) : (entryNo !== '—' ? entryNo : undefined)),
         BillDate: p.BillDate ?? p.billDate,
         ReceiveDate: getEntryDate(p) || p.ReceiveDate || p.receiveDate,
         AccountDesp: getPartyName(p),
         ProjectDesp: getProject(p) || mrnProjectLabelFromPayment(p),
         SubProjectDesp: getSubProject(p) || mrnSubProjectLabelFromPayment(p),
         TotalBillAmountManual: totalBill,
-        Dedution: p.Dedution ?? p.dedution ?? p.Deduction ?? p.deduction,
-        Deduction: p.Deduction ?? p.deduction ?? p.Dedution ?? p.dedution,
+        FreightCharges: freight,
+        Dedution: p.Dedution ?? p.dedution ?? p.Deduction ?? p.deduction ?? deduct,
+        Deduction: p.Deduction ?? p.deduction ?? p.Dedution ?? p.dedution ?? deduct,
         DedutionRemark: p.DedutionRemark ?? p.dedutionRemark ?? p.DeductionRemark ?? p.deductionRemark,
-        TDSAmount: p.TDSAmount ?? p.tdsAmount,
+        TDSAmount: p.TDSAmount ?? p.tdsAmount ?? p['TDS Amount'] ?? tds,
         NetPayable: netPayable,
     });
 }
@@ -2411,6 +2709,1421 @@ function PrintGRNApprovalList(mode) {
     if (typeof toastr !== 'undefined') toastr.error('GRN print module is not loaded.');
 }
 
+// ── MRN History (GetMRNBudgetBalance) ─────────────────────────────────────────
+let G_MrnHistoryState = null;
+let G_MrnHistoryPayload = null;
+let G_MrnCategoryCache = null;
+let G_MrnBomItemCategoryMap = {};
+let G_MrnBomItemNameMap = {};
+let G_MrnBomLookupKey = '';
+let G_MrnPoItemCache = null;
+let G_MrnPoItemCacheKey = '';
+
+const MRN_BUDGET_FIELD_KEYS = {
+    poQty: ['TotalPOWOQty', 'totalPOWOQty', 'TotalPOQty', 'totalPOQty'],
+    poAmt: ['TotalPOAmtWithGST', 'totalPOAmtWithGST', 'TotalPOAmount', 'totalPOAmount', 'TotalAmtWithGST', 'totalAmtWithGST'],
+    oldGrnQty: ['OldGRNQtyWithGST', 'oldGRNQtyWithGST', 'OldGRNQty', 'oldGRNQty'],
+    totalGrnAmt: ['TotalGRNAmtWithGST', 'totalGRNAmtWithGST', 'OldGRNAmount', 'oldGRNAmount'],
+    currGrnQty: ['CurrentGRNQty', 'currentGRNQty', 'currentGrnQty', 'CurrentGrnQty'],
+    currGrnAmt: ['CurrentGRNAmountWithGST', 'currentGRNAmountWithGST', 'currentGrnAmountWithGST', 'CurrentGrnAmountWithGST', 'CurrentGRNAmount', 'currentGRNAmount'],
+    netGrnAmt: ['NetGRNAmount', 'netGRNAmount', 'netGrnAmount', 'NetGRNAmountWithGST', 'netGRNAmountWithGST'],
+    balanceAmt: ['BalanceGRNAmt', 'balanceGRNAmt', 'balanceGrnAmt'],
+};
+
+const MRN_BUDGET_HISTORY_HEADERS = [
+    { key: 'poQty', col: 'A', label: 'Total PO/WO Qty' },
+    { key: 'poAmt', col: 'B', label: 'Total PO Amt With Gst' },
+    { key: 'oldGrnQty', col: 'C', label: 'Old GRN QTY With Gst' },
+    { key: 'totalGrnAmt', col: 'D', label: 'Old GRN AMT with GST' },
+    { key: 'currGrnQty', col: 'E', label: 'Current GRN QTY' },
+    { key: 'currGrnAmt', col: 'F', label: 'Current GRN Amount with gst' },
+    { key: 'netGrnAmt', col: 'G', label: 'Net GRN Amount (D+F)' },
+    { key: 'balanceAmt', col: 'H', label: 'Balance GRN Amt (B-G)' },
+];
+
+const MRN_PARTY_CODE_KEYS = [
+    'PartyMaster_Code', 'partyMaster_Code',
+    'PartyCode', 'partyCode',
+    'AccountMaster_Code', 'accountMaster_Code',
+    'VendorMaster_Code', 'vendorMaster_Code',
+    'F_AccountMaster_Code', 'f_AccountMaster_Code',
+    'F_VendorMaster_Code', 'f_VendorMaster_Code',
+    'F_PartyMaster_Code', 'f_PartyMaster_Code',
+];
+
+const MRN_PROJECT_CODE_KEYS = [
+    'ProjectMaster_Code', 'projectMaster_Code',
+    'ProjectCode', 'projectCode',
+    'F_ProjectMaster_Code', 'f_ProjectMaster_Code',
+];
+
+const MRN_SUBPROJECT_CODE_KEYS = [
+    'SubProjectMaster_Code', 'subProjectMaster_Code',
+    'SubProjectCode', 'subProjectCode',
+    'F_SubProjectMaster_Code', 'f_SubProjectMaster_Code',
+];
+
+const MRN_ITEM_CODE_KEYS = [
+    'ItemMaster_Code', 'itemMaster_Code',
+    'Item_Code', 'item_Code',
+    'ItemCode', 'itemCode',
+    'Itemaster_code', 'itemaster_code',
+    'F_ItemMaster_Code', 'f_ItemMaster_Code',
+];
+
+function mrnCodeFromObject(obj, keys) {
+    if (!obj || typeof obj !== 'object') return 0;
+    let i;
+    for (i = 0; i < keys.length; i += 1) {
+        const v = obj[keys[i]];
+        const n = parseInt(String(v ?? '0'), 10);
+        if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+}
+
+function mrnFirstCodeFromLines(lines, keys) {
+    const list = Array.isArray(lines) ? lines : [];
+    let i;
+    for (i = 0; i < list.length; i += 1) {
+        const code = mrnCodeFromObject(list[i], keys);
+        if (code) return code;
+    }
+    return 0;
+}
+
+function mrnLookupGrnSourceRow(mrnMasterCode) {
+    const code = parseInt(mrnMasterCode, 10);
+    if (!Number.isFinite(code) || code <= 0) return null;
+    if (typeof window.grnGetApprovalSourceRow === 'function') {
+        const remembered = window.grnGetApprovalSourceRow(code);
+        if (remembered) return remembered;
+    }
+    const pool = window.grnMasterSourceRows;
+    if (Array.isArray(pool)) {
+        return pool.find(function (r) {
+            const c = parseInt(r.Code ?? r.code ?? r.MRNMaster_Code ?? r.mRNMaster_Code ?? 0, 10);
+            return c === code;
+        }) || null;
+    }
+    return null;
+}
+
+function mrnFindCodeInTree(node, keys, depth, seen) {
+    if (!node || depth > 8) return 0;
+    if (typeof node !== 'object') return 0;
+    const set = seen || new Set();
+    if (set.has(node)) return 0;
+    set.add(node);
+
+    const direct = mrnCodeFromObject(node, keys);
+    if (direct) return direct;
+
+    if (Array.isArray(node)) {
+        let i;
+        for (i = 0; i < node.length; i += 1) {
+            const found = mrnFindCodeInTree(node[i], keys, depth + 1, set);
+            if (found) return found;
+        }
+        return 0;
+    }
+
+    const objKeys = Object.keys(node);
+    let i;
+    for (i = 0; i < objKeys.length; i += 1) {
+        const found = mrnFindCodeInTree(node[objKeys[i]], keys, depth + 1, set);
+        if (found) return found;
+    }
+    return 0;
+}
+
+function mrnBindCodeOntoPayment(payment, keyName, code) {
+    if (!payment || !code) return;
+    if (!payment[keyName]) payment[keyName] = code;
+    const camel = keyName.charAt(0).toLowerCase() + keyName.slice(1);
+    if (!payment[camel]) payment[camel] = code;
+}
+
+function mrnBindCodeOntoDetailLine(row, code) {
+    if (!row || !code) return row;
+    MRN_ITEM_CODE_KEYS.forEach(function (keyName) {
+        if (!row[keyName]) row[keyName] = code;
+        const camel = keyName.charAt(0).toLowerCase() + keyName.slice(1);
+        if (!row[camel]) row[camel] = code;
+    });
+    return row;
+}
+
+function mrnItemMasterCodeFromRow(row) {
+    return mrnCodeFromObject(row, MRN_ITEM_CODE_KEYS);
+}
+
+function mrnItemMasterCodesFromLines(lines) {
+    const seen = new Set();
+    const codes = [];
+    (Array.isArray(lines) ? lines : []).forEach(function (row) {
+        const code = mrnItemMasterCodeFromRow(row);
+        if (code && !seen.has(code)) {
+            seen.add(code);
+            codes.push(code);
+        }
+    });
+    return codes;
+}
+
+function mrnItemMasterCodesCsvFromPayment(p) {
+    return mrnItemMasterCodesFromLines(p && p._detailLines).join(',');
+}
+
+function mrnNormItemName(name) {
+    return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function mrnBuildBomNameToItemCodeMap() {
+    const map = {};
+    Object.keys(G_MrnBomItemNameMap || {}).forEach(function (codeStr) {
+        const name = mrnNormItemName(G_MrnBomItemNameMap[codeStr]);
+        const code = parseInt(codeStr, 10) || 0;
+        if (name && code && !map[name]) map[name] = code;
+    });
+    return map;
+}
+
+function mrnResolveItemCodeFromBomName(itemName) {
+    const norm = mrnNormItemName(itemName);
+    if (!norm) return 0;
+    const map = mrnBuildBomNameToItemCodeMap();
+    return map[norm] || 0;
+}
+
+function mrnPoNoFromDetailRow(row) {
+    return String(mrnPickRowField(row, [
+        'PONo', 'PoNO', 'pONo', 'PO_No', 'po_No',
+        'PurchaseOrderNo', 'purchaseOrderNo', 'PurchaseOrder_No', 'purchaseOrder_No',
+    ]) || '').trim();
+}
+
+function mrnPoMasterCodeFromDetailRow(row) {
+    return parseInt(mrnPickRowField(row, [
+        'PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code',
+        'PurchaseOrder_Code', 'purchaseOrder_Code', 'POCode', 'poCode',
+    ]) || 0, 10) || 0;
+}
+
+function mrnResolveItemCodeFromPoItems(row, poItems) {
+    const existing = mrnItemMasterCodeFromRow(row);
+    if (existing) return existing;
+
+    const itemName = mrnNormItemName(mrnResolveItemName(row));
+    const poNo = mrnPoNoFromDetailRow(row);
+    const poCode = mrnPoMasterCodeFromDetailRow(row);
+    const list = Array.isArray(poItems) ? poItems : [];
+    let i;
+    let fallbackCode = 0;
+
+    for (i = 0; i < list.length; i += 1) {
+        const po = list[i];
+        const poItemCode = parseInt(po.ItemMaster_Code ?? po.Item_Code ?? po.itemMaster_Code ?? po.item_Code ?? 0, 10) || 0;
+        if (!poItemCode) continue;
+
+        const poItemName = mrnNormItemName(
+            po.ItemName ?? po.Item_Name ?? po.itemName ?? po.item_name ?? ''
+        );
+        const matchPoNo = String(po.PONo ?? po.pONo ?? po.PO_No ?? '').trim();
+        const matchPoCode = parseInt(
+            po.PurchaseOrderMaster_Code ?? po.PurchaseOrder_Code ?? po.purchaseOrderMaster_Code ?? 0,
+            10
+        ) || 0;
+
+        const poMatch = (poNo && matchPoNo === poNo)
+            || (poCode && matchPoCode === poCode)
+            || (!poNo && !poCode);
+        if (!poMatch) continue;
+
+        if (itemName && poItemName && poItemName === itemName) return poItemCode;
+        if (!fallbackCode && itemName && poItemName
+            && (poItemName.indexOf(itemName) >= 0 || itemName.indexOf(poItemName) >= 0)) {
+            fallbackCode = poItemCode;
+        }
+    }
+    return fallbackCode;
+}
+
+function mrnEnsurePoItemCache(projectCode, subProjectCode, partyCode) {
+    const proj = parseInt(projectCode, 10) || 0;
+    const sub = parseInt(subProjectCode, 10) || 0;
+    const party = parseInt(partyCode, 10) || 0;
+    const key = proj + ':' + sub + ':' + party;
+    if (!proj || !sub || !party) return Promise.resolve([]);
+    if (G_MrnPoItemCacheKey === key && Array.isArray(G_MrnPoItemCache)) {
+        return Promise.resolve(G_MrnPoItemCache);
+    }
+    return GRNService.GetPOItemDetails(proj, sub, party)
+        .then(function (res) {
+            G_MrnPoItemCache = mrnNormalizeApiRows(res);
+            G_MrnPoItemCacheKey = key;
+            return G_MrnPoItemCache;
+        })
+        .catch(function (err) {
+            console.warn('mrnEnsurePoItemCache', err);
+            G_MrnPoItemCache = [];
+            G_MrnPoItemCacheKey = key;
+            return G_MrnPoItemCache;
+        });
+}
+
+function mrnEnrichDetailLineItemCodes(payment, poItems) {
+    if (!payment || !Array.isArray(payment._detailLines)) return payment;
+    payment._detailLines = payment._detailLines.map(function (row) {
+        if (!row || typeof row !== 'object') return row;
+        let code = mrnItemMasterCodeFromRow(row);
+        if (!code && poItems) code = mrnResolveItemCodeFromPoItems(row, poItems);
+        if (!code) code = mrnResolveItemCodeFromBomName(mrnResolveItemName(row));
+        if (code) mrnBindCodeOntoDetailLine(row, code);
+        return row;
+    });
+    return payment;
+}
+
+function mrnEnsureDetailLineItemCodesAsync(payment) {
+    if (!payment) return Promise.resolve('');
+    mrnEnrichPaymentCodes(payment);
+
+    const partyReady = mrnAccountMasterCodeFromPayment(payment)
+        ? Promise.resolve(mrnAccountMasterCodeFromPayment(payment))
+        : mrnEnsurePaymentPartyCodeAsync(payment);
+
+    return partyReady.then(function () {
+        return mrnEnsurePaymentDetailLinesAsync(payment);
+    }).then(function () {
+        const projectCode = mrnProjectMasterCodeFromPayment(payment);
+        const subProjectCode = mrnSubProjectMasterCodeFromPayment(payment);
+        const partyCode = mrnAccountMasterCodeFromPayment(payment);
+
+        return Promise.all([
+            mrnEnsurePoItemCache(projectCode, subProjectCode, partyCode),
+            mrnEnsureHistoryLookups(projectCode, subProjectCode),
+        ]).then(function (results) {
+            mrnEnrichDetailLineItemCodes(payment, results[0]);
+            if (G_CurrentPayment && getPaymentMasterCode(G_CurrentPayment) === getPaymentMasterCode(payment)) {
+                G_CurrentPayment._detailLines = payment._detailLines;
+            }
+            return mrnItemMasterCodesCsvFromPayment(payment);
+        });
+    });
+}
+
+let G_MrnVendorCache = null;
+let G_MrnVendorCachePromise = null;
+
+function mrnNormalizeVendorRows(res) {
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.Data)) return res.Data;
+    if (res && Array.isArray(res.data)) return res.data;
+    if (res && res.Data && typeof res.Data === 'object') return [res.Data];
+    if (res && res.data && typeof res.data === 'object') return [res.data];
+    return [];
+}
+
+function mrnEnsureVendorCache() {
+    if (Array.isArray(G_MrnVendorCache)) return Promise.resolve(G_MrnVendorCache);
+    if (G_MrnVendorCachePromise) return G_MrnVendorCachePromise;
+    G_MrnVendorCachePromise = GRNService.GetVendor()
+        .then(function (res) {
+            G_MrnVendorCache = mrnNormalizeVendorRows(res);
+            return G_MrnVendorCache;
+        })
+        .catch(function (err) {
+            console.warn('mrnEnsureVendorCache', err);
+            G_MrnVendorCache = [];
+            return G_MrnVendorCache;
+        });
+    return G_MrnVendorCachePromise;
+}
+
+function mrnNormPartyName(name) {
+    return String(name || '').trim().toLowerCase()
+        .replace(/\([^)]*\)/g, ' ')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function mrnPartyNameTokens(name) {
+    const stop = { pvt: 1, ltd: 1, llp: 1, inc: 1, co: 1, the: 1, and: 1 };
+    return mrnNormPartyName(name).split(' ').filter(function (w) {
+        return w.length > 2 && !stop[w];
+    });
+}
+
+function mrnBestApiPartyCodeFromVendor(v) {
+    if (!v || typeof v !== 'object') return 0;
+    const acc = parseInt(v.AccountMaster_Code ?? v.accountMaster_Code ?? 0, 10) || 0;
+    if (acc) return acc;
+    const vend = parseInt(v.VendorMaster_Code ?? v.vendorMaster_Code ?? v.Code ?? v.code ?? 0, 10) || 0;
+    if (vend) return vend;
+    return parseInt(v.PartyMaster_Code ?? v.partyMaster_Code ?? 0, 10) || 0;
+}
+
+function mrnFindVendorRecord(vendors, payment) {
+    const list = Array.isArray(vendors) ? vendors : [];
+    if (!list.length || !payment) return null;
+
+    const codes = [
+        mrnCodeFromObject(payment, ['PartyMaster_Code', 'partyMaster_Code']),
+        mrnCodeFromObject(payment, ['VendorMaster_Code', 'vendorMaster_Code']),
+        mrnCodeFromObject(payment, ['AccountMaster_Code', 'accountMaster_Code']),
+    ].filter(function (c) { return c > 0; });
+
+    let i;
+    for (i = 0; i < codes.length; i += 1) {
+        const want = String(codes[i]);
+        let j;
+        for (j = 0; j < list.length; j += 1) {
+            const v = list[j];
+            const vals = [
+                v.VendorMaster_Code, v.vendorMaster_Code, v.Code, v.code,
+                v.AccountMaster_Code, v.accountMaster_Code,
+                v.PartyMaster_Code, v.partyMaster_Code,
+            ];
+            let k;
+            for (k = 0; k < vals.length; k += 1) {
+                if (String(vals[k] ?? '').trim() === want) return v;
+            }
+        }
+    }
+
+    const names = mrnPartyNameCandidates(payment);
+    for (i = 0; i < names.length; i += 1) {
+        const code = mrnResolvePartyCodeFromVendorName(names[i], list);
+        if (code) {
+            let j;
+            for (j = 0; j < list.length; j += 1) {
+                if (mrnBestApiPartyCodeFromVendor(list[j]) === code
+                    || mrnCodeFromObject(list[j], MRN_PARTY_CODE_KEYS) === code) {
+                    return list[j];
+                }
+            }
+        }
+        const qTokens = mrnPartyNameTokens(names[i]);
+        if (qTokens.length >= 2) {
+            let j;
+            for (j = 0; j < list.length; j += 1) {
+                const vRec = list[j];
+                const vTokens = mrnPartyNameTokens(
+                    vRec.VendorName ?? vRec.vendorName ?? vRec.AccountDesp ?? vRec.accountDesp ?? vRec.Name ?? vRec.name
+                );
+                if (vTokens.length >= 2 && qTokens[0] === vTokens[0] && qTokens[1] === vTokens[1]) {
+                    return vRec;
+                }
+            }
+        }
+    }
+    return null;
+}
+
+function mrnResolveApiPartyCode(payment, vendors) {
+    if (!payment) return 0;
+    mrnEnrichPaymentCodes(payment);
+
+    const master = firstMrnMasterFromApi(payment._mrnDetailApiRoot ?? payment);
+    if (master) {
+        const masterCode = mrnCodeFromObject(master, MRN_PARTY_CODE_KEYS);
+        if (masterCode) {
+            const vendor = mrnFindVendorRecord(vendors, master);
+            return mrnBestApiPartyCodeFromVendor(vendor) || masterCode;
+        }
+    }
+
+    let code = mrnCodeFromObject(payment, MRN_PARTY_CODE_KEYS);
+    if (code) {
+        const vendor = mrnFindVendorRecord(vendors, payment);
+        const mapped = mrnBestApiPartyCodeFromVendor(vendor);
+        return mapped || code;
+    }
+
+    const vendor = mrnFindVendorRecord(vendors, payment);
+    if (vendor) return mrnBestApiPartyCodeFromVendor(vendor);
+
+    if (payment._mrnDetailApiRoot) {
+        code = mrnFindPartyCodeByKeyPattern(payment._mrnDetailApiRoot, 0);
+        if (code) return code;
+    }
+    return 0;
+}
+
+function mrnFormatPartyDisplay(name, code) {
+    const label = (name && String(name).trim() !== '' && String(name).trim() !== '—')
+        ? String(name).trim()
+        : '—';
+    const c = parseInt(code, 10) || 0;
+    return { name: label, code: c, codeText: c ? String(c) : '—' };
+}
+
+function mrnPartyNameCandidates(payment) {
+    const names = new Set();
+    const p = payment || {};
+    [
+        getPartyName(p),
+        p.AccountDesp, p.accountDesp,
+        p['Party Name'], p.PartyName, p.partyName,
+        p.VendorName, p.vendorName, p.Vendor, p.vendor,
+    ].forEach(function (n) {
+        const norm = mrnNormPartyName(n);
+        if (norm && norm !== '—') names.add(norm);
+    });
+    return Array.from(names);
+}
+
+function mrnResolvePartyCodeFromVendorName(partyName, vendors) {
+    const q = mrnNormPartyName(partyName);
+    if (!q) return 0;
+    const list = Array.isArray(vendors) ? vendors : [];
+    let best = 0;
+    let i;
+    for (i = 0; i < list.length; i += 1) {
+        const v = list[i];
+        const vendorNames = [
+            v.VendorName, v.vendorName, v.Name, v.name,
+            v.AccountDesp, v.accountDesp, v.PartyName, v.partyName,
+        ];
+        let j;
+        for (j = 0; j < vendorNames.length; j += 1) {
+            const n = mrnNormPartyName(vendorNames[j]);
+            if (!n) continue;
+            if (n === q) {
+                const exact = mrnCodeFromObject(v, MRN_PARTY_CODE_KEYS);
+                if (exact) return exact;
+            }
+            if (!best && (q.indexOf(n) >= 0 || n.indexOf(q) >= 0)) {
+                best = mrnCodeFromObject(v, MRN_PARTY_CODE_KEYS);
+            }
+        }
+    }
+    return best;
+}
+
+function mrnResolvePartyCodeFromVendors(payment, vendors) {
+    const names = mrnPartyNameCandidates(payment);
+    let i;
+    for (i = 0; i < names.length; i += 1) {
+        const code = mrnResolvePartyCodeFromVendorName(names[i], vendors);
+        if (code) return code;
+    }
+    return 0;
+}
+
+function mrnFindPartyCodeByKeyPattern(node, depth, seen) {
+    if (!node || depth > 10 || typeof node !== 'object') return 0;
+    const set = seen || new Set();
+    if (set.has(node)) return 0;
+    set.add(node);
+
+    const partyKeyRe = /^(partymaster_code|partycode|accountmaster_code|vendormaster_code|f_partymaster_code|f_accountmaster_code|f_vendormaster_code)$/i;
+    if (!Array.isArray(node)) {
+        const keys = Object.keys(node);
+        let i;
+        for (i = 0; i < keys.length; i += 1) {
+            if (!partyKeyRe.test(keys[i])) continue;
+            const n = parseInt(String(node[keys[i]] ?? '0'), 10);
+            if (Number.isFinite(n) && n > 0) return n;
+        }
+    }
+
+    if (Array.isArray(node)) {
+        let i;
+        for (i = 0; i < node.length; i += 1) {
+            const found = mrnFindPartyCodeByKeyPattern(node[i], depth + 1, set);
+            if (found) return found;
+        }
+        return 0;
+    }
+
+    const keys = Object.keys(node);
+    let i;
+    for (i = 0; i < keys.length; i += 1) {
+        const found = mrnFindPartyCodeByKeyPattern(node[keys[i]], depth + 1, set);
+        if (found) return found;
+    }
+    return 0;
+}
+
+function mrnEnsurePaymentPartyCodeAsync(payment) {
+    if (!payment) return Promise.resolve(0);
+    mrnEnrichPaymentCodes(payment);
+
+    let code = mrnResolveApiPartyCode(payment, G_MrnVendorCache);
+    if (code) {
+        mrnBindCodeOntoPayment(payment, 'PartyMaster_Code', code);
+        mrnBindCodeOntoPayment(payment, 'AccountMaster_Code', code);
+        mrnBindCodeOntoPayment(payment, 'VendorMaster_Code', code);
+        return Promise.resolve(code);
+    }
+
+    return mrnEnsureVendorCache().then(function (vendors) {
+        code = mrnResolveApiPartyCode(payment, vendors);
+        if (code) {
+            mrnBindCodeOntoPayment(payment, 'PartyMaster_Code', code);
+            mrnBindCodeOntoPayment(payment, 'AccountMaster_Code', code);
+            mrnBindCodeOntoPayment(payment, 'VendorMaster_Code', code);
+            return code;
+        }
+
+        const mrnCode = getPaymentMasterCode(payment);
+        if (!mrnCode) return 0;
+
+        return MRNMasterApprovalService.GetMRNMasterDetail(mrnCode)
+            .then(function (res) {
+                payment._mrnDetailApiRoot = peelMrnApprovalApiRoot(res) ?? res;
+                if (G_CurrentPayment && getPaymentMasterCode(G_CurrentPayment) === mrnCode) {
+                    G_CurrentPayment = mergeDetailIntoPayment(res, G_CurrentPayment);
+                    payment = G_CurrentPayment;
+                } else {
+                    mergeDetailIntoPayment(res, payment);
+                }
+                mrnEnrichPaymentCodes(payment);
+
+                code = mrnResolveApiPartyCode(payment, vendors);
+                if (code) {
+                    mrnBindCodeOntoPayment(payment, 'PartyMaster_Code', code);
+                    mrnBindCodeOntoPayment(payment, 'AccountMaster_Code', code);
+                    mrnBindCodeOntoPayment(payment, 'VendorMaster_Code', code);
+                    return code;
+                }
+
+                code = mrnResolvePartyCodeFromVendors(payment, vendors);
+                if (code) {
+                    mrnBindCodeOntoPayment(payment, 'PartyMaster_Code', code);
+                    mrnBindCodeOntoPayment(payment, 'AccountMaster_Code', code);
+                    mrnBindCodeOntoPayment(payment, 'VendorMaster_Code', code);
+                }
+                return code || 0;
+            })
+            .catch(function (err) {
+                console.warn('mrnEnsurePaymentPartyCodeAsync GetMRNMasterDetail', err);
+                code = mrnResolvePartyCodeFromVendors(payment, vendors);
+                if (code) {
+                    mrnBindCodeOntoPayment(payment, 'PartyMaster_Code', code);
+                    mrnBindCodeOntoPayment(payment, 'AccountMaster_Code', code);
+                    mrnBindCodeOntoPayment(payment, 'VendorMaster_Code', code);
+                }
+                return code || 0;
+            });
+    });
+}
+
+function mrnEnrichPaymentCodes(payment) {
+    if (!payment || typeof payment !== 'object') return payment;
+
+    let partyCode = mrnCodeFromObject(payment, MRN_PARTY_CODE_KEYS);
+    let projectCode = mrnCodeFromObject(payment, MRN_PROJECT_CODE_KEYS);
+    let subProjectCode = mrnCodeFromObject(payment, MRN_SUBPROJECT_CODE_KEYS);
+
+    if (!partyCode) partyCode = mrnFirstCodeFromLines(payment._detailLines, MRN_PARTY_CODE_KEYS);
+    if (!projectCode) projectCode = mrnFirstCodeFromLines(payment._detailLines, MRN_PROJECT_CODE_KEYS);
+    if (!subProjectCode) subProjectCode = mrnFirstCodeFromLines(payment._detailLines, MRN_SUBPROJECT_CODE_KEYS);
+
+    const mrnCode = getPaymentMasterCode(payment);
+    const grnRow = mrnLookupGrnSourceRow(mrnCode);
+    if (grnRow) {
+        if (!partyCode) partyCode = mrnCodeFromObject(grnRow, MRN_PARTY_CODE_KEYS);
+        if (!projectCode) projectCode = mrnCodeFromObject(grnRow, MRN_PROJECT_CODE_KEYS);
+        if (!subProjectCode) subProjectCode = mrnCodeFromObject(grnRow, MRN_SUBPROJECT_CODE_KEYS);
+    }
+
+    if (payment._mrnDetailApiRoot) {
+        if (!partyCode) partyCode = mrnFindCodeInTree(payment._mrnDetailApiRoot, MRN_PARTY_CODE_KEYS, 0);
+        if (!partyCode) partyCode = mrnFindPartyCodeByKeyPattern(payment._mrnDetailApiRoot, 0);
+        if (!projectCode) projectCode = mrnFindCodeInTree(payment._mrnDetailApiRoot, MRN_PROJECT_CODE_KEYS, 0);
+        if (!subProjectCode) subProjectCode = mrnFindCodeInTree(payment._mrnDetailApiRoot, MRN_SUBPROJECT_CODE_KEYS, 0);
+    }
+
+    if (partyCode) {
+        mrnBindCodeOntoPayment(payment, 'PartyMaster_Code', partyCode);
+        mrnBindCodeOntoPayment(payment, 'AccountMaster_Code', partyCode);
+    }
+    if (projectCode) mrnBindCodeOntoPayment(payment, 'ProjectMaster_Code', projectCode);
+    if (subProjectCode) mrnBindCodeOntoPayment(payment, 'SubProjectMaster_Code', subProjectCode);
+
+    mrnEnrichDetailLineItemCodes(payment);
+
+    return payment;
+}
+
+function mrnAccountMasterCodeFromPayment(p) {
+    if (!p) return 0;
+    mrnEnrichPaymentCodes(p);
+    const cached = mrnResolveApiPartyCode(p, G_MrnVendorCache);
+    if (cached) return cached;
+    return mrnCodeFromObject(p, MRN_PARTY_CODE_KEYS);
+}
+
+function mrnProjectMasterCodeFromPayment(p) {
+    if (!p) return 0;
+    mrnEnrichPaymentCodes(p);
+    let code = mrnCodeFromObject(p, MRN_PROJECT_CODE_KEYS);
+    if (code) return code;
+    return mrnFirstCodeFromLines(p._detailLines, MRN_PROJECT_CODE_KEYS);
+}
+
+function mrnSubProjectMasterCodeFromPayment(p) {
+    if (!p) return 0;
+    mrnEnrichPaymentCodes(p);
+    let code = mrnCodeFromObject(p, MRN_SUBPROJECT_CODE_KEYS);
+    if (code) return code;
+    return mrnFirstCodeFromLines(p._detailLines, MRN_SUBPROJECT_CODE_KEYS);
+}
+
+function mrnResolveHistoryContext(payment) {
+    const p = payment || G_CurrentPayment;
+    const mrnMasterCode = getPaymentMasterCode(p);
+    let accountMasterCode = mrnAccountMasterCodeFromPayment(p);
+    let projectMasterCode = mrnProjectMasterCodeFromPayment(p);
+    let subProjectMasterCode = mrnSubProjectMasterCodeFromPayment(p);
+
+    if ((!accountMasterCode || !projectMasterCode || !subProjectMasterCode) && mrnMasterCode) {
+        const pool = (G_PaymentList && G_PaymentList.length) ? G_PaymentList : G_PaymentListFull;
+        if (Array.isArray(pool)) {
+            const hit = pool.find(function (row) { return getPaymentMasterCode(row) === mrnMasterCode; });
+            if (hit) {
+                if (!accountMasterCode) accountMasterCode = mrnAccountMasterCodeFromPayment(hit);
+                if (!projectMasterCode) projectMasterCode = mrnProjectMasterCodeFromPayment(hit);
+                if (!subProjectMasterCode) subProjectMasterCode = mrnSubProjectMasterCodeFromPayment(hit);
+            }
+        }
+    }
+
+    return {
+        mrnMasterCode: mrnMasterCode,
+        accountMasterCode: accountMasterCode,
+        projectMasterCode: projectMasterCode,
+        subProjectMasterCode: subProjectMasterCode,
+        itemMasterCodes: mrnItemMasterCodesCsvFromPayment(p),
+        partyName: getPartyName(p),
+        projectName: getProject(p) || '—',
+        subProjectName: getSubProject(p) || '—',
+    };
+}
+
+function mrnEnsurePaymentDetailLinesAsync(payment) {
+    if (!payment) return Promise.resolve([]);
+    mrnEnrichPaymentCodes(payment);
+    const lines = payment._detailLines;
+    if (Array.isArray(lines) && lines.length) {
+        return Promise.resolve(lines);
+    }
+
+    const mrnCode = getPaymentMasterCode(payment);
+    if (!mrnCode) return Promise.resolve([]);
+
+    return MRNMasterApprovalService.GetMRNMasterDetail(mrnCode)
+        .then(function (res) {
+            if (G_CurrentPayment && getPaymentMasterCode(G_CurrentPayment) === mrnCode) {
+                G_CurrentPayment = mergeDetailIntoPayment(res, G_CurrentPayment);
+                payment = G_CurrentPayment;
+            } else {
+                mergeDetailIntoPayment(res, payment);
+            }
+            mrnEnrichPaymentCodes(payment);
+            return payment._detailLines || [];
+        })
+        .catch(function (err) {
+            console.warn('mrnEnsurePaymentDetailLinesAsync GetMRNMasterDetail', err);
+            return payment._detailLines || [];
+        });
+}
+
+function mrnHistPick(row, key, altKeys) {
+    if (!row || typeof row !== 'object') return null;
+    const keys = [key].concat(altKeys || []);
+    let i;
+    let j;
+    for (i = 0; i < keys.length; i += 1) {
+        const k = keys[i];
+        const camel = k.charAt(0).toLowerCase() + k.slice(1);
+        const val = row[k] ?? row[camel];
+        if (val != null && val !== '') return val;
+    }
+    const objKeys = Object.keys(row);
+    for (i = 0; i < keys.length; i += 1) {
+        const want = String(keys[i]).toLowerCase();
+        for (j = 0; j < objKeys.length; j += 1) {
+            if (String(objKeys[j]).toLowerCase() === want) {
+                const val = row[objKeys[j]];
+                if (val != null && val !== '') return val;
+            }
+        }
+    }
+    return null;
+}
+
+function mrnHistHasBudgetVal(row, keys, treatZeroAsMissing) {
+    const val = mrnHistPick(row, keys[0], keys.slice(1));
+    if (val == null || val === '' || isNaN(parseFloat(val))) return false;
+    if (treatZeroAsMissing && parseFloat(val) === 0) return false;
+    return true;
+}
+
+function mrnResolveGstRateForDetailLine(line, poItems) {
+    let gstRate = mrnPickRowNum(line, ['GSTRate', 'gstRate', 'GSTPercent', 'gstPercent']);
+    if (gstRate != null && gstRate > 0) return gstRate;
+
+    const itemCode = mrnItemMasterCodeFromRow(line);
+    const list = Array.isArray(poItems) ? poItems : (G_MrnPoItemCache || []);
+    let i;
+    for (i = 0; i < list.length; i += 1) {
+        const po = list[i];
+        const poItemCode = parseInt(po.ItemMaster_Code ?? po.Item_Code ?? 0, 10) || 0;
+        if (itemCode && poItemCode === itemCode) {
+            const r = parseFloat(po.GSTRate ?? po.gstRate ?? po.GSTPercent ?? 0);
+            if (r > 0) return r;
+        }
+    }
+    return 0;
+}
+
+function mrnResolveCurrentGrnQtyFromLine(line) {
+    return mrnPickRowNum(line, [
+        'QtyMT', 'qtyMT', 'GRNRejectedQty', 'grnRejectedQty', 'AcceptQty', 'acceptQty',
+        'QtyBill', 'qtyBill', 'Qty', 'qty',
+    ]);
+}
+
+function mrnResolveCurrentGrnAmtWithGstFromLine(line, poItems) {
+    const qty = mrnResolveCurrentGrnQtyFromLine(line);
+    let rate = mrnPickRowNum(line, ['Rate', 'rate']);
+    if ((rate == null || rate === 0) && qty) {
+        const baseAmt = mrnResolveLineAmount(line);
+        if (baseAmt > 0) rate = baseAmt / qty;
+    }
+    if (qty != null && rate != null && rate > 0) {
+        const gstRate = mrnResolveGstRateForDetailLine(line, poItems);
+        return qty * rate * (1 + (parseFloat(gstRate) || 0) / 100);
+    }
+    const direct = mrnResolveLineAmount(line);
+    return direct > 0 ? direct : 0;
+}
+
+function mrnApplyCurrentGrnFromDetailLine(out, line, poItems) {
+    const qty = mrnResolveCurrentGrnQtyFromLine(line);
+    if (qty == null || qty <= 0) return out;
+
+    const amt = mrnResolveCurrentGrnAmtWithGstFromLine(line, poItems);
+    out.CurrentGRNQty = qty;
+    out.currentGRNQty = qty;
+    out.CurrentGRNAmountWithGST = amt;
+    out.currentGRNAmountWithGST = amt;
+
+    const oldAmt = mrnHistBudgetVal(out, MRN_BUDGET_FIELD_KEYS.totalGrnAmt);
+    const poAmt = mrnHistBudgetVal(out, MRN_BUDGET_FIELD_KEYS.poAmt);
+    const net = oldAmt + amt;
+    out.NetGRNAmount = net;
+    out.netGRNAmount = net;
+    out.BalanceGRNAmt = poAmt - net;
+    out.balanceGRNAmt = poAmt - net;
+    return out;
+}
+
+function mrnEnrichBudgetRowsFromPaymentDetail(budgetRows, payment) {
+    const lines = payment && payment._detailLines;
+    if (!Array.isArray(budgetRows) || !budgetRows.length || !Array.isArray(lines) || !lines.length) {
+        return budgetRows;
+    }
+
+    const poItems = G_MrnPoItemCache || [];
+
+    return budgetRows.map(function (row) {
+        const itemCode = mrnHistItemCodeFromRow(row);
+        if (!itemCode) return row;
+
+        const line = lines.find(function (l) {
+            return mrnItemMasterCodeFromRow(l) === itemCode;
+        });
+        if (!line) return row;
+
+        const out = Object.assign({}, row);
+        /* API often returns CurrentGRNQty/Amount as 0 when SP @Code is missing — overlay from MRN lines */
+        const apiCurrQty = mrnHistBudgetVal(out, MRN_BUDGET_FIELD_KEYS.currGrnQty);
+        const apiCurrAmt = mrnHistBudgetVal(out, MRN_BUDGET_FIELD_KEYS.currGrnAmt);
+        const lineQty = mrnResolveCurrentGrnQtyFromLine(line);
+        const shouldOverlay = (lineQty != null && lineQty > 0)
+            && (apiCurrQty === 0 || apiCurrAmt === 0
+                || !mrnHistHasBudgetVal(out, MRN_BUDGET_FIELD_KEYS.currGrnQty, true));
+
+        if (shouldOverlay) {
+            mrnApplyCurrentGrnFromDetailLine(out, line, poItems);
+            return out;
+        }
+
+        if (!mrnHistHasBudgetVal(out, MRN_BUDGET_FIELD_KEYS.netGrnAmt, true)) {
+            const net = mrnHistBudgetVal(out, MRN_BUDGET_FIELD_KEYS.totalGrnAmt)
+                + mrnHistBudgetVal(out, MRN_BUDGET_FIELD_KEYS.currGrnAmt);
+            out.NetGRNAmount = net;
+            out.netGRNAmount = net;
+        }
+        if (!mrnHistHasBudgetVal(out, MRN_BUDGET_FIELD_KEYS.balanceAmt, true)) {
+            const net = mrnHistBudgetVal(out, MRN_BUDGET_FIELD_KEYS.netGrnAmt);
+            out.BalanceGRNAmt = mrnHistBudgetVal(out, MRN_BUDGET_FIELD_KEYS.poAmt) - net;
+            out.balanceGRNAmt = out.BalanceGRNAmt;
+        }
+        return out;
+    });
+}
+
+function mrnHistAmtCell(val) {
+    return '<td class="text-end">' + FmtCurrency(val ?? 0) + '</td>';
+}
+
+function mrnHistQtyCell(val) {
+    const n = parseFloat(val ?? 0);
+    const txt = isNaN(n) ? '—' : n.toLocaleString('en-IN', { maximumFractionDigits: 3 });
+    return '<td class="text-end">' + EscHtml(txt) + '</td>';
+}
+
+function mrnHistDocTypeBadge(docType) {
+    const t = String(docType || '').trim().toLowerCase();
+    if (t === 'po' || t === 'purchase order') {
+        return '<span class="gpa-history-type gpa-history-type-po">PO</span>';
+    }
+    if (t === 'grn' || t === 'mrn' || t === 'goods receipt note') {
+        return '<span class="gpa-history-type gpa-history-type-grn">GRN</span>';
+    }
+    return '<span class="gpa-history-type gpa-history-type-other">—</span>';
+}
+
+function mrnHistDocTypeCode(docType) {
+    const t = String(docType || '').trim().toLowerCase();
+    if (t === 'po' || t === 'purchase order') return 'po';
+    if (t === 'grn' || t === 'mrn') return 'grn';
+    if (t === 'payment' || t === 'pay') return 'payment';
+    return t || '';
+}
+
+function mrnHistIsPaymentRow(row) {
+    return mrnHistDocTypeCode(mrnHistPick(row, 'DocType', ['docType', 'Type', 'type'])) === 'payment';
+}
+
+/** Unique key for PO/GRN history row — strips duplicate rows from BOM join multiplication. */
+function mrnHistHistoryRowKey(row) {
+    const docDate = mrnHistPick(row, 'DocDate', ['docDate', 'Date', 'date']);
+    let dateKey = '';
+    if (docDate != null && String(docDate).trim() !== '') {
+        const d = new Date(docDate);
+        dateKey = Number.isFinite(d.getTime()) ? d.toISOString().slice(0, 10) : String(docDate).trim();
+    }
+    return [
+        mrnHistDocTypeCode(mrnHistPick(row, 'DocType', ['docType', 'Type', 'type'])),
+        String(mrnHistPick(row, 'DocNo', ['docNo']) ?? '').trim(),
+        dateKey,
+        parseInt(mrnHistPick(row, 'ItemCode', ['itemCode']) ?? 0, 10) || 0,
+        parseInt(mrnHistPick(row, 'PartyCode', ['partyCode']) ?? 0, 10) || 0,
+        parseInt(mrnHistPick(row, 'ProjectCode', ['projectCode']) ?? 0, 10) || 0,
+        parseInt(mrnHistPick(row, 'SubProjectCode', ['subProjectCode']) ?? 0, 10) || 0,
+        parseFloat(mrnHistPick(row, 'Qty', ['qty']) ?? 0) || 0,
+        parseFloat(mrnHistPick(row, 'Amount', ['amount']) ?? 0) || 0,
+        String(mrnHistPick(row, 'Status', ['status']) ?? '').trim().toLowerCase(),
+    ].join('|');
+}
+
+function mrnHistDedupeHistoryRows(rows) {
+    const seen = new Set();
+    const out = [];
+    (Array.isArray(rows) ? rows : []).forEach(function (r) {
+        const key = mrnHistHistoryRowKey(r);
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(r);
+    });
+    return out;
+}
+
+function mrnHistFilterHistoryRows(rows) {
+    return mrnHistDedupeHistoryRows(
+        (Array.isArray(rows) ? rows : []).filter(function (r) {
+            return !mrnHistIsPaymentRow(r);
+        })
+    );
+}
+
+function mrnNormalizeApiRows(res) {
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.Data)) return res.Data;
+    if (res && Array.isArray(res.data)) return res.data;
+    return [];
+}
+
+/** Preload category + BOM maps for BOS Type / item labels (fallback when API row omits them). */
+function mrnEnsureHistoryLookups(projectCode, subProjectCode) {
+    const proj = parseInt(projectCode, 10) || 0;
+    const sub = parseInt(subProjectCode, 10) || 0;
+    const bomKey = proj + ':' + sub;
+
+    const catPromise = G_MrnCategoryCache
+        ? Promise.resolve(G_MrnCategoryCache)
+        : BOMService.GetCategoryList()
+            .then(function (res) {
+                G_MrnCategoryCache = mrnNormalizeApiRows(res);
+                return G_MrnCategoryCache;
+            })
+            .catch(function () {
+                G_MrnCategoryCache = [];
+                return G_MrnCategoryCache;
+            });
+
+    const bomPromise = (proj > 0 && sub > 0)
+        ? (G_MrnBomLookupKey === bomKey
+            ? Promise.resolve(G_MrnBomItemCategoryMap)
+            : BOMService.GetBOMByCode(proj, sub)
+                .then(function (res) {
+                    const rows = mrnNormalizeApiRows(res);
+                    const catMap = {};
+                    const nameMap = {};
+                    rows.forEach(function (d) {
+                        const itemCode = parseInt(d.ItemMaster_Code ?? d.itemMaster_Code ?? 0, 10) || 0;
+                        if (!itemCode) return;
+                        const catCode = parseInt(d.ProjectCategory_Code ?? d.projectCategory_Code ?? 0, 10) || 0;
+                        if (catCode && !catMap[itemCode]) catMap[itemCode] = catCode;
+                        const itemName = String(
+                            d.ItemName ?? d.itemName ?? d.ItemDesp ?? d.itemDesp ?? d.Name ?? d.name ?? ''
+                        ).trim();
+                        if (itemName && !nameMap[itemCode]) nameMap[itemCode] = itemName;
+                    });
+                    G_MrnBomItemCategoryMap = catMap;
+                    G_MrnBomItemNameMap = nameMap;
+                    G_MrnBomLookupKey = bomKey;
+                    return rows;
+                })
+                .catch(function () {
+                    G_MrnBomItemCategoryMap = {};
+                    G_MrnBomItemNameMap = {};
+                    G_MrnBomLookupKey = bomKey;
+                    return [];
+                }))
+        : Promise.resolve([]);
+
+    return Promise.all([catPromise, bomPromise]).then(function () { return undefined; });
+}
+
+function mrnCategoryLabelFromCode(catCode) {
+    const code = parseInt(catCode, 10) || 0;
+    if (!code) return '—';
+    const list = G_MrnCategoryCache || [];
+    let i;
+    for (i = 0; i < list.length; i += 1) {
+        const c = list[i];
+        const cc = parseInt(
+            c.Code ?? c.code ?? c.CategoryMaster_Code ?? c.categoryMaster_Code
+            ?? c.ProjectCategory_Code ?? c.projectCategory_Code ?? 0,
+            10
+        ) || 0;
+        if (cc === code) {
+            const label = String(
+                c.CategoryDesc ?? c.categoryDesc ?? c.CategoryName ?? c.categoryName ?? c.Name ?? c.name ?? ''
+            ).trim();
+            return label || '—';
+        }
+    }
+    return '—';
+}
+
+function mrnHistItemCodeFromRow(row) {
+    const code = parseInt(mrnHistPick(row, 'ItemCode', ['itemCode', 'ItemMaster_Code', 'itemMaster_Code']) || 0, 10);
+    return Number.isFinite(code) && code > 0 ? code : 0;
+}
+
+function mrnHistBosTypeLabel(row) {
+    const direct = mrnHistPick(row, 'BOSType', [
+        'bosType', 'BOS Type', 'CategoryDesc', 'categoryDesc', 'CategoryName', 'categoryName', 'ProjectCategoryName',
+    ]);
+    if (direct != null && String(direct).trim() !== '') return String(direct).trim();
+
+    const catCode = mrnHistPick(row, 'ProjectCategory_Code', [
+        'projectCategory_Code', 'CategoryMaster_Code', 'categoryMaster_Code', 'Category_Code', 'category_Code',
+    ]);
+    const itemCode = mrnHistItemCodeFromRow(row);
+    if (itemCode && G_MrnBomItemCategoryMap[itemCode]) {
+        return mrnCategoryLabelFromCode(G_MrnBomItemCategoryMap[itemCode]);
+    }
+    if (catCode) return mrnCategoryLabelFromCode(catCode);
+    return '—';
+}
+
+function mrnHistBudgetVal(row, keys) {
+    const val = mrnHistPick(row, keys[0], keys.slice(1));
+    const n = parseFloat(val ?? 0);
+    return isNaN(n) ? 0 : n;
+}
+
+function mrnHistBudgetDerived(row) {
+    const poQty = mrnHistBudgetVal(row, MRN_BUDGET_FIELD_KEYS.poQty);
+    const poAmt = mrnHistBudgetVal(row, MRN_BUDGET_FIELD_KEYS.poAmt);
+    const oldGrnQty = mrnHistBudgetVal(row, MRN_BUDGET_FIELD_KEYS.oldGrnQty);
+    const totalGrnAmt = mrnHistBudgetVal(row, MRN_BUDGET_FIELD_KEYS.totalGrnAmt);
+    const currGrnQty = mrnHistBudgetVal(row, MRN_BUDGET_FIELD_KEYS.currGrnQty);
+    const currGrnAmt = mrnHistBudgetVal(row, MRN_BUDGET_FIELD_KEYS.currGrnAmt);
+    let netGrnAmt = mrnHistBudgetVal(row, MRN_BUDGET_FIELD_KEYS.netGrnAmt);
+    let balanceAmt = mrnHistBudgetVal(row, MRN_BUDGET_FIELD_KEYS.balanceAmt);
+    if (!mrnHistHasBudgetVal(row, MRN_BUDGET_FIELD_KEYS.netGrnAmt, true)) {
+        netGrnAmt = totalGrnAmt + currGrnAmt;
+    }
+    if (!mrnHistHasBudgetVal(row, MRN_BUDGET_FIELD_KEYS.balanceAmt, true)) {
+        balanceAmt = poAmt - netGrnAmt;
+    }
+    return { poQty, poAmt, oldGrnQty, totalGrnAmt, currGrnQty, currGrnAmt, netGrnAmt, balanceAmt };
+}
+
+function mrnHistItemLabel(row) {
+    const name = mrnHistPick(row, 'ItemName', ['itemName', 'Item Desp', 'ItemDesp', 'itemDesp', 'Name', 'name']);
+    if (name != null && String(name).trim() !== '') return String(name).trim();
+    const itemCode = mrnHistItemCodeFromRow(row);
+    if (itemCode && G_MrnBomItemNameMap[itemCode]) return G_MrnBomItemNameMap[itemCode];
+    return '—';
+}
+
+function mrnHistStatusCell(row) {
+    const raw = mrnHistPick(row, 'Status', ['status', 'ApprovalStatus', 'approvalStatus']);
+    if (raw == null || String(raw).trim() === '') return '<td class="text-center">—</td>';
+    const label = String(raw).trim();
+    const n = label.toLowerCase();
+    let cls = 'gpa-budget-status gpa-budget-status--other';
+    if (n === 'approved') cls = 'gpa-budget-status gpa-budget-status--approved';
+    else if (n === 'pending') cls = 'gpa-budget-status gpa-budget-status--pending';
+    else if (n === 'rejected') cls = 'gpa-budget-status gpa-budget-status--rejected';
+    return '<td class="text-center"><span class="' + cls + '">' + EscHtml(label) + '</span></td>';
+}
+
+function normalizeMrnBudgetBalanceResponse(res) {
+    const empty = { budgetRows: [], historyRows: [] };
+    if (res == null) return empty;
+
+    let root = res.Data ?? res.data ?? res;
+    if (typeof root === 'string') {
+        try { root = JSON.parse(root); } catch (e) { return empty; }
+    }
+    if (root && typeof root === 'object' && !Array.isArray(root)) {
+        const inner = root.Data ?? root.data ?? root.Result ?? root.result ?? root.Response ?? root.response;
+        if (inner && typeof inner === 'object') root = inner;
+    }
+
+    let budgetRows = [];
+    let historyRows = [];
+
+    if (Array.isArray(root)) {
+        if (root.length >= 2 && Array.isArray(root[0])) {
+            budgetRows = root[0] || [];
+            historyRows = root[1] || [];
+        } else if (root.length && (mrnHistPick(root[0], 'DocType', ['docType', 'Type', 'type']) != null)) {
+            historyRows = root;
+        } else {
+            budgetRows = root;
+        }
+    } else if (root && typeof root === 'object') {
+        const budgetRaw = root.Summary ?? root.summary
+            ?? root.Table ?? root.table
+            ?? root.Budget ?? root.budget ?? root.BudgetRows ?? root.budgetRows ?? [];
+        const historyRaw = root.History ?? root.history
+            ?? root.Table1 ?? root.table1
+            ?? root.HistoryRows ?? root.historyRows ?? [];
+        budgetRows = Array.isArray(budgetRaw) ? budgetRaw : (budgetRaw ? [budgetRaw] : []);
+        historyRows = Array.isArray(historyRaw) ? historyRaw : (historyRaw ? [historyRaw] : []);
+    } else if (Array.isArray(res)) {
+        return normalizeMrnBudgetBalanceResponse({ Data: res });
+    }
+
+    return {
+        budgetRows: budgetRows,
+        historyRows: mrnHistFilterHistoryRows(historyRows),
+    };
+}
+
+function mrnParseItemMasterCodesCsv(csv) {
+    const seen = new Set();
+    const out = [];
+    String(csv || '').split(',').forEach(function (part) {
+        const code = parseInt(String(part).trim(), 10);
+        if (Number.isFinite(code) && code > 0 && !seen.has(code)) {
+            seen.add(code);
+            out.push(code);
+        }
+    });
+    return out;
+}
+
+function mrnMergeMrnBudgetBalanceResponses(responses) {
+    const budgetRows = [];
+    const historyRows = [];
+    const seenBudget = new Set();
+    const seenHistory = new Set();
+
+    (Array.isArray(responses) ? responses : []).forEach(function (res) {
+        const payload = normalizeMrnBudgetBalanceResponse(res);
+        (payload.budgetRows || []).forEach(function (row) {
+            const key = String(mrnHistItemCodeFromRow(row) || mrnHistPick(row, 'ItemName', ['itemName']) || JSON.stringify(row));
+            if (seenBudget.has(key)) return;
+            seenBudget.add(key);
+            budgetRows.push(row);
+        });
+        (payload.historyRows || []).forEach(function (row) {
+            const key = mrnHistHistoryRowKey(row);
+            if (seenHistory.has(key)) return;
+            seenHistory.add(key);
+            historyRows.push(row);
+        });
+    });
+
+    return {
+        budgetRows: budgetRows,
+        historyRows: mrnHistFilterHistoryRows(historyRows),
+    };
+}
+
+/** Single API call — SP accepts comma-separated @Itemaster_code. */
+function loadMrnBudgetBalanceByItemCodes(state, itemMasterCodesCsv) {
+    const mrnCode = state.mrnMasterCode;
+    const accountCode = state.accountMasterCode || 0;
+    const projectCode = state.projectMasterCode || 0;
+    const subProjectCode = state.subProjectMasterCode || 0;
+    const itemCodes = String(itemMasterCodesCsv || '').trim();
+
+    return MRNMasterApprovalService.GetMRNBudgetBalance(
+        mrnCode, accountCode, projectCode, subProjectCode, itemCodes
+    ).then(function (res) {
+        return normalizeMrnBudgetBalanceResponse(res);
+    });
+}
+
+function mrnHistSumBudgetRows(rows, keyName) {
+    const keys = MRN_BUDGET_FIELD_KEYS[keyName] || [];
+    const list = Array.isArray(rows) ? rows : [];
+    if (keyName === 'netGrnAmt') {
+        return list.reduce(function (sum, row) {
+            return sum + mrnHistBudgetDerived(row).netGrnAmt;
+        }, 0);
+    }
+    if (keyName === 'balanceAmt') {
+        return list.reduce(function (sum, row) {
+            return sum + mrnHistBudgetDerived(row).balanceAmt;
+        }, 0);
+    }
+    return list.reduce(function (sum, row) {
+        return sum + mrnHistBudgetVal(row, keys);
+    }, 0);
+}
+
+function mrnHistBudgetHeaderText(h) {
+    return '(' + h.col + ') ' + h.label;
+}
+
+function mrnHistSummaryCardType(key) {
+    if (key === 'poQty' || key === 'poAmt') return 'po';
+    if (key === 'balanceAmt' || key === 'netGrnAmt') return 'balance';
+    return 'grn';
+}
+
+function mrnHistSummaryCardValue(key, val) {
+    if (key === 'poQty' || key === 'oldGrnQty' || key === 'currGrnQty') {
+        return EscHtml(Number(val || 0).toLocaleString('en-IN', { maximumFractionDigits: 3 }));
+    }
+    return FmtCurrency(val);
+}
+
+function mrnHistSummaryCard(label, valHtml, cardType) {
+    return '<div class="gpa-history-card gpa-history-card--' + cardType + '">'
+        + '<div class="gpa-history-card-lbl">' + EscHtml(label) + '</div>'
+        + '<div class="gpa-history-card-val">' + valHtml + '</div></div>';
+}
+
+function renderMrnHistorySummary(budgetRows) {
+    const rows = Array.isArray(budgetRows) ? budgetRows : [];
+    const totals = {
+        poQty: mrnHistSumBudgetRows(rows, 'poQty'),
+        poAmt: mrnHistSumBudgetRows(rows, 'poAmt'),
+        oldGrnQty: mrnHistSumBudgetRows(rows, 'oldGrnQty'),
+        totalGrnAmt: mrnHistSumBudgetRows(rows, 'totalGrnAmt'),
+        currGrnQty: mrnHistSumBudgetRows(rows, 'currGrnQty'),
+        currGrnAmt: mrnHistSumBudgetRows(rows, 'currGrnAmt'),
+        netGrnAmt: mrnHistSumBudgetRows(rows, 'netGrnAmt'),
+        balanceAmt: mrnHistSumBudgetRows(rows, 'balanceAmt'),
+    };
+
+    let html = '';
+    MRN_BUDGET_HISTORY_HEADERS.forEach(function (h) {
+        html += mrnHistSummaryCard(
+            mrnHistBudgetHeaderText(h),
+            mrnHistSummaryCardValue(h.key, totals[h.key]),
+            mrnHistSummaryCardType(h.key)
+        );
+    });
+    $('#mrnHistorySummary').html(html);
+}
+
+function renderMrnHistoryBudgetTable(budgetRows) {
+    const rows = Array.isArray(budgetRows) ? budgetRows : [];
+    const $body = $('#mrnHistoryBudgetBody');
+    if (!rows.length) {
+        $body.html('');
+        $('#mrnHistoryBudgetWrap').hide();
+        return;
+    }
+    let html = '';
+    rows.forEach(function (r) {
+        const d = mrnHistBudgetDerived(r);
+        html += '<tr>'
+            + '<td>' + EscHtml(mrnHistBosTypeLabel(r)) + '</td>'
+            + '<td>' + EscHtml(mrnHistItemLabel(r)) + '</td>'
+            + mrnHistQtyCell(d.poQty)
+            + mrnHistAmtCell(d.poAmt)
+            + mrnHistQtyCell(d.oldGrnQty)
+            + mrnHistAmtCell(d.totalGrnAmt)
+            + mrnHistQtyCell(d.currGrnQty)
+            + mrnHistAmtCell(d.currGrnAmt)
+            + mrnHistAmtCell(d.netGrnAmt)
+            + mrnHistAmtCell(d.balanceAmt)
+            + '</tr>';
+    });
+    $body.html(html);
+    $('#mrnHistoryBudgetWrap').show();
+}
+
+function renderMrnHistoryDetails(payload) {
+    const budgetRows = (payload && payload.budgetRows) ? payload.budgetRows : [];
+    const allHistory = mrnHistFilterHistoryRows((payload && payload.historyRows) ? payload.historyRows.slice() : []);
+
+    renderMrnHistorySummary(budgetRows);
+    renderMrnHistoryBudgetTable(budgetRows);
+
+    const $body = $('#mrnHistoryTableBody');
+    if (!allHistory.length) {
+        $body.html('');
+        $('#mrnHistoryTableWrap').hide();
+        if (budgetRows.length) {
+            $('#mrnHistoryEmpty').hide();
+            $('#mrnHistoryTxnEmpty').show();
+        } else {
+            $('#mrnHistoryTxnEmpty').hide();
+            $('#mrnHistoryEmpty').show();
+        }
+        return;
+    }
+
+    $('#mrnHistoryTxnEmpty').hide();
+
+    let html = '';
+    allHistory.forEach(function (r) {
+        const docDate = mrnHistPick(r, 'DocDate', ['docDate', 'Date', 'date']);
+        html += '<tr>'
+            + '<td class="text-center">' + mrnHistDocTypeBadge(mrnHistPick(r, 'DocType', ['docType', 'Type', 'type'])) + '</td>'
+            + '<td class="text-center">' + EscHtml(mrnHistPick(r, 'DocNo', ['docNo']) ?? '—') + '</td>'
+            + '<td class="text-center">' + EscHtml(docDate ? FmtDateDisplay(docDate) : '—') + '</td>'
+            + '<td>' + EscHtml(mrnHistBosTypeLabel(r)) + '</td>'
+            + '<td>' + EscHtml(mrnHistItemLabel(r)) + '</td>'
+            + mrnHistQtyCell(mrnHistPick(r, 'Qty', ['qty']))
+            + mrnHistAmtCell(mrnHistPick(r, 'Amount', ['amount']))
+            + mrnHistStatusCell(r)
+            + '</tr>';
+    });
+    $body.html(html);
+    $('#mrnHistoryEmpty').hide();
+    $('#mrnHistoryTableWrap').show();
+}
+
+function loadMrnApprovalHistoryData() {
+    const state = G_MrnHistoryState;
+    if (!state || !state.mrnMasterCode) {
+        if (typeof toastr !== 'undefined') toastr.warning('MRN code is required to load history.');
+        return;
+    }
+
+    const payment = G_CurrentPayment;
+    if (payment) {
+        const liveCode = mrnAccountMasterCodeFromPayment(payment);
+        if (liveCode) state.accountMasterCode = liveCode;
+    }
+
+    $('#mrnHistorySummary').html('');
+    $('#mrnHistoryBudgetBody, #mrnHistoryTableBody').html('');
+    $('#mrnHistoryBudgetWrap, #mrnHistoryTableWrap').hide();
+    $('#mrnHistoryEmpty, #mrnHistoryTxnEmpty').hide();
+    $('#mrnHistoryLoading').show();
+
+    Promise.all([
+        mrnEnsureDetailLineItemCodesAsync(payment),
+        mrnEnsurePoItemCache(
+            mrnProjectMasterCodeFromPayment(payment),
+            mrnSubProjectMasterCodeFromPayment(payment),
+            mrnAccountMasterCodeFromPayment(payment)
+        ),
+    ])
+        .then(function (results) {
+            const itemMasterCodes = results[0] || '';
+            state.itemMasterCodes = itemMasterCodes;
+            if (!itemMasterCodes && typeof toastr !== 'undefined') {
+                toastr.warning('Item code not found for line items — budget history may be empty.');
+            }
+            return loadMrnBudgetBalanceByItemCodes(state, itemMasterCodes);
+        })
+        .then(function (payload) {
+            $('#mrnHistoryLoading').hide();
+            payload = payload || { budgetRows: [], historyRows: [] };
+            payload.budgetRows = mrnEnrichBudgetRowsFromPaymentDetail(payload.budgetRows || [], payment);
+            G_MrnHistoryPayload = payload;
+            if (!(payload.budgetRows && payload.budgetRows.length)
+                && !(payload.historyRows && payload.historyRows.length)) {
+                $('#mrnHistoryEmpty').show();
+                return;
+            }
+            renderMrnHistoryDetails(payload);
+        })
+        .catch(function (err) {
+            console.error('GetMRNBudgetBalance', err);
+            $('#mrnHistoryLoading').hide();
+            G_MrnHistoryPayload = null;
+            $('#mrnHistoryEmpty').show();
+            if (typeof toastr !== 'undefined') toastr.error('Failed to load history.');
+        });
+}
+
+function OpenMrnApprovalHistory() {
+    const payment = G_CurrentPayment;
+    if (!payment || !getPaymentMasterCode(payment)) {
+        if (typeof toastr !== 'undefined') toastr.warning('Open an MRN entry before loading history.');
+        return;
+    }
+
+    G_MrnHistoryPayload = null;
+    $('#mrnHistorySummary').html('');
+    $('#mrnHistoryBudgetBody, #mrnHistoryTableBody').html('');
+    $('#mrnHistoryBudgetWrap, #mrnHistoryTableWrap').hide();
+    $('#mrnHistoryEmpty, #mrnHistoryTxnEmpty').hide();
+    $('#mrnHistoryLoading').show();
+    $('#modalMrnHistory').modal('show');
+
+    mrnEnsurePaymentPartyCodeAsync(G_CurrentPayment).then(function (resolvedCode) {
+        const payment = G_CurrentPayment || {};
+        const ctx = mrnResolveHistoryContext(payment);
+        if (resolvedCode) ctx.accountMasterCode = resolvedCode;
+        else if (!ctx.accountMasterCode) ctx.accountMasterCode = mrnAccountMasterCodeFromPayment(payment);
+        G_MrnHistoryState = ctx;
+
+        const partyView = mrnFormatPartyDisplay(ctx.partyName, ctx.accountMasterCode);
+        $('#mrnHistPartyName').text(partyView.name);
+        $('#mrnHistProjectName').text(ctx.projectName || '—');
+        $('#mrnHistSubProjectName').text(ctx.subProjectName || '—');
+
+        if (!ctx.accountMasterCode && typeof toastr !== 'undefined') {
+            toastr.warning('Party code not found — history may be empty.');
+        }
+
+        loadMrnApprovalHistoryData();
+    });
+}
+
+function CloseMrnApprovalHistoryModal() {
+    G_MrnHistoryState = null;
+    G_MrnHistoryPayload = null;
+    $('#modalMrnHistory').modal('hide');
+}
+
 window.LoadPaymentList = LoadPaymentList;
 window.refreshMrnApprovalListIfNeeded = refreshMrnApprovalListIfNeeded;
 window.reloadMrnApprovalView = reloadMrnApprovalView;
@@ -2434,3 +4147,5 @@ window.mrnResolveAttachmentBillDate = mrnResolveAttachmentBillDate;
 window.PrintGRNApprovalList = PrintGRNApprovalList;
 window.PrintGRNServiceFromApproval = PrintGRNServiceFromApproval;
 window.mrnGetCurrentPaymentForPrint = mrnGetCurrentPaymentForPrint;
+window.OpenMrnApprovalHistory = OpenMrnApprovalHistory;
+window.CloseMrnApprovalHistoryModal = CloseMrnApprovalHistoryModal;

@@ -2,6 +2,7 @@ import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices
 import { ExpensesLedgerReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpensesLedgerReportService.js';
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
@@ -37,6 +38,8 @@ var G_LevelVerifyApplicable = 'N';
 var G_ExpenseHeadOptions = [];
 /** `disabled="disabled"` on Approved Amount HTML when LevelVerifyApplicable is Y. */
 var G_EeApprovedInputDisabled = '';
+/** Rolled-up VerifyStatus from loaded detail lines: N / P / Y / R. */
+var G_EE_DetailVerifyStatus = 'N';
 
 /** LevelVerifyApplicable=Y → Approved Amount read-only; Verify button unchanged. */
 function refreshApprovedAmountInputDisabledAttr() {
@@ -272,17 +275,54 @@ function getExpenseEntryMasterCode() {
     return parseInt(String(param_ExpenseEntryMaster_Code || 0), 10) || 0;
 }
 
+function rollupExpenseDetailVerifyStatus(rawList) {
+    if (!Array.isArray(rawList) || rawList.length === 0) return 'N';
+    var hasR = false, hasP = false, allY = true;
+    for (var i = 0; i < rawList.length; i++) {
+        var vs = String(rawList[i].VerifyStatus != null ? rawList[i].VerifyStatus : 'N').trim().toUpperCase();
+        if (vs === 'R') hasR = true;
+        if (vs === 'P') hasP = true;
+        if (vs !== 'Y') allY = false;
+    }
+    if (hasR) return 'R';
+    if (hasP) return 'P';
+    if (allY) return 'Y';
+    return 'N';
+}
+
+/**
+ * Attachment control modes (same as Purchase Order Store):
+ *  view     → View page: no upload / no delete
+ *  addview  → Verified: upload allowed, delete hidden
+ *  all      → Unverified / Pending / Rejected: full CRUD
+ */
 function getAttachmentControlMode() {
     var m = (param_Mode || 'Edit').toString().trim().toLowerCase();
-    return m === 'view' ? 'view' : 'all';
+    if (m === 'view') return 'view';
+    if (G_EE_DetailVerifyStatus === 'Y') return 'addview';
+    return 'all';
+}
+
+function eeDetailAttachButtonStyle(hasFiles) {
+    return hasFiles
+        ? 'background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;'
+        : 'background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;';
+}
+
+function syncExpenseEntryMasterAttachButton(hasFiles) {
+    var $btn = $('#btnExpenseEntryMasterAttach');
+    if (!$btn.length) return;
+    $btn.attr('style', eeDetailAttachButtonStyle(!!hasFiles));
+    $btn.toggleClass('ee-attach-has-files', !!hasFiles);
 }
 
 /** Detail-line paperclip: requires saved ExpenseEntryDetail_Code. */
-function buildDetailAttachmentButtonHtml(detailCode) {
+function buildDetailAttachmentButtonHtml(detailCode, hasFiles) {
     var dc = parseInt(detailCode, 10) || 0;
     var title = dc > 0 ? 'Line attachment' : 'Save this entry first to attach files to this line';
     var extraClass = dc <= 0 ? ' ee-attach-disabled' : '';
-    return '<a class="btn btn-success icon-height mb-1 ee-btn-detail-attach' + extraClass + '" title="' + escHtml(title) + '" data-detail-code="' + dc + '" onclick="ViewAttachment(this)"><i class="fa fa-paperclip" aria-hidden="true"></i></a>';
+    var style = eeDetailAttachButtonStyle(!!hasFiles);
+    return '<a class="btn icon-height mb-1 ee-btn-detail-attach' + extraClass + '" title="' + escHtml(title) + '" data-detail-code="' + dc + '" style="' + style + '" onclick="ViewAttachment(this)"><i class="fa fa-paperclip" aria-hidden="true"></i></a>';
 }
 
 function formatExpenseEntryDetailCodeCell(detailCode) {
@@ -726,6 +766,15 @@ $(document).ready(function () {
     $('#txtEntryDate').val(currentDate);
     DatePicker();
 
+    document.addEventListener('bizsol:attachmentcontrol:changed', function (ev) {
+        const d = ev && ev.detail;
+        if (!d || d.tempMode) return;
+        if (d.masterTableName !== 'ExpenseEntryMaster') return;
+        const mc = getExpenseEntryMasterCode();
+        if (mc <= 0) return;
+        syncExpenseEntryAttachmentButtonColors(mc, null);
+    });
+
     $('#txtMarketingManName').val(MarketingPersonName);
     $('#txtFromDate').on('keydown', function (e) {
         if (e.key === "Enter") {
@@ -960,6 +1009,7 @@ function PopulateExpenseHeadDetails(Code) {
             }
 
             var rawList = response.ExpenseEntryDetail || [];
+            G_EE_DetailVerifyStatus = rollupExpenseDetailVerifyStatus(rawList);
             if (rawList.length > 0) {
                 buildExpenseHeadOptionsFromDetailList(rawList);
                 var detailData = rawList.map(function (item, index) {
@@ -979,7 +1029,7 @@ function PopulateExpenseHeadDetails(Code) {
                         'Expense Amount': buildExpenseAmountCellHtml(index, item['Expense Amount'] || 0),
                         'Approved Amount': '<input type="number" ' + G_EeApprovedInputDisabled + ' id="txtApprovedAmount" data-index="' + index + '" value="' + (item['Approved Amount'] || 0) + '" class="bal-pc-input txtApprovedAmount" onfocusout="ApprovedAmountIncrease(this);" autocomplete="off" style="text-align: right;" oninput="limitInputLength(this, 8);">',
                         'Remarks': '<input type="text" id="txtRemarks" data-index="' + index + '" value="' + (item['Remarks'] || '') + '" class="bal-mtrs-input txtRemarks" autocomplete="off" maxlength="16">',
-                        'Attachment': buildDetailAttachmentButtonHtml(item['ExpenseEntryDetail_Code'] != null ? item['ExpenseEntryDetail_Code'] : 0),
+                        'Attachment': buildDetailAttachmentButtonHtml(item['ExpenseEntryDetail_Code'] != null ? item['ExpenseEntryDetail_Code'] : 0, false),
                         'VerifyStatus': item['VerifyStatus'] !== undefined && item['VerifyStatus'] !== null ? item['VerifyStatus'] : '',
                         'ExpenseEntryDetail_Code': formatExpenseEntryDetailCodeCell(item['ExpenseEntryDetail_Code'] != null ? item['ExpenseEntryDetail_Code'] : 0),
                         'ExpenseHeadMaster_Code': '<input type="hidden" class="hdnExpenseHeadMasterCode" value="' + (item.ExpenseHeadMaster_Code != null ? item.ExpenseHeadMaster_Code : 0) + '" />'
@@ -999,6 +1049,7 @@ function PopulateExpenseHeadDetails(Code) {
                 refreshExpenseEntryDetailTotals();
                 applyClosingBalanceFieldVisibility();
                 refreshClosingBalance();
+                syncExpenseEntryAttachmentButtonColors(getExpenseEntryMasterCode(), rawList);
             } else {
                 loadExpenseHeadOptionsFromTemplate(MarketingPersonName).then(function () {
                     if (G_ExpenseHeadOptions.length > 0) {
@@ -1081,6 +1132,61 @@ function InitAttachmentControl(masterTableName, masterTableCode, detailTableName
         EntryNo: parseInt(entryNo, 10) || 0,
         EntryDate: entryDate || '',
         Mode: mode || 'all'
+    });
+}
+
+function eeDetailNormalizeAttachmentApiResponse(response) {
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
+
+/** Green/blue paperclip for master footer + each detail line (PO Store style). */
+function syncExpenseEntryAttachmentButtonColors(masterCode, rawList) {
+    var mc = parseInt(masterCode, 10) || 0;
+    if (mc <= 0) {
+        syncExpenseEntryMasterAttachButton(false);
+        return Promise.resolve();
+    }
+
+    var lineCodes = [];
+    (rawList || []).forEach(function (row) {
+        var dc = parseInt(row && (row.ExpenseEntryDetail_Code != null ? row.ExpenseEntryDetail_Code : row.Code), 10) || 0;
+        if (dc > 0) lineCodes.push(dc);
+    });
+    if (!lineCodes.length) {
+        $('#ExpenseEntryDetails tbody tr').each(function () {
+            var dc = parseInt($(this).find('.hdnExpenseEntryDetailCode').val() || $(this).find('.ee-btn-detail-attach').attr('data-detail-code'), 10) || 0;
+            if (dc > 0) lineCodes.push(dc);
+        });
+    }
+
+    var tasks = [
+        AttachmentControlService.GetAttachmentUploadFiles('ExpenseEntryMaster', mc, '', 0)
+            .then(function (resp) { return eeDetailNormalizeAttachmentApiResponse(resp); })
+            .catch(function () { return []; })
+    ];
+    lineCodes.forEach(function (dc) {
+        tasks.push(
+            AttachmentControlService.GetAttachmentUploadFiles('ExpenseEntryMaster', mc, 'ExpenseEntryDetail', dc)
+                .then(function (resp) { return { code: dc, rows: eeDetailNormalizeAttachmentApiResponse(resp) }; })
+                .catch(function () { return { code: dc, rows: [] }; })
+        );
+    });
+
+    return Promise.all(tasks).then(function (results) {
+        var masterRows = results[0] || [];
+        var anyMaster = masterRows.length > 0;
+        var anyLine = false;
+        for (var i = 1; i < results.length; i++) {
+            var pack = results[i] || {};
+            var yes = Array.isArray(pack.rows) && pack.rows.length > 0;
+            if (yes) anyLine = true;
+            var $btn = $('#ExpenseEntryDetails .ee-btn-detail-attach[data-detail-code="' + pack.code + '"]');
+            if ($btn.length) $btn.attr('style', eeDetailAttachButtonStyle(yes));
+        }
+        syncExpenseEntryMasterAttachButton(anyMaster || anyLine);
     });
 }
 

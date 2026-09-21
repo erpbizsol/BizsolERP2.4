@@ -73,6 +73,23 @@ th {
     width: 200px;
 }
 
+/* Floated above scroll/zoom containers — position set in Filter.js */
+.filter-dropdown.bizsol-filter-floating,
+.filter-dropdown-double.bizsol-filter-floating,
+.filter-division.bizsol-filter-floating {
+    z-index: 10050 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* In-flow menu once the panel is portaled to body (avoids absolute offset to table footer) */
+.filter-division.bizsol-filter-floating .dropdown-content {
+    position: static;
+    top: auto;
+    right: auto;
+    min-width: 160px;
+    box-shadow: none;
+}
+
 .filter-inputs {
     margin-top: 10px;
     display: flex;
@@ -320,4 +337,34 @@ right: -84px;
 }
 .bizsol-gs-clear:hover {
     color: #ef4444;
+}
+
+/* ── Floating / Sticky Total Row ─────────────────────────────────────────── */
+/*
+ * When FloatingTotalRow = true is passed to CreateDataTable the total row
+ * is rendered inside a <tfoot class="bizsol-floating-tfoot"> element.
+ * position:sticky on both <tfoot> (Chrome/Edge) and each <td> (Firefox/Safari)
+ * ensures the row stays pinned to the bottom of the scrollable table-wrapper.
+ *
+ * !important is required to override "background: transparent !important"
+ * rules that some page-level table styles apply to all <td> elements.
+ */
+tfoot.bizsol-floating-tfoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+}
+
+tfoot.bizsol-floating-tfoot tr td {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    background-color: #ffffff !important;
+}
+
+/* Ensure total / grand-total rows always have a solid background
+   even when page CSS sets td { background: transparent !important } */
+tr.total-row td,
+tr.grand-total-row td {
+    background-color: #ffffff !important;
 }

@@ -3,6 +3,7 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { BOMService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BOMService.js';
+import { ExpenseHeadMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseHeadMasterService.js';
 
 let G_ProjectList         = [];
 let G_SubProjectList      = [];
@@ -12,6 +13,10 @@ let G_ItemCacheByWorkType = {};
 let G_BOMRows             = [];
 let G_BOMList             = [];
 let G_BOMHeader           = {};
+/** Entry type: BOM (default) | EXPENSE */
+let G_EntryMode           = 'BOM';
+let G_ExpenseGroupList    = [];
+let G_ExpenseLoadedForKey = '';
 /** Last Copy From source — shown in modal until Save All. */
 let G_CopyFromSource        = { active: false, projectCode: 0, subProjectCode: 0, projectName: '', subProjectDesp: '' };
 
@@ -30,11 +35,20 @@ $(document).ready(function () {
     $('#btnCreateBOM').on('click', function () { openNewBOM(); });
     $('#btnCopyFromBom').on('click', function () { openCopyFromModal(); });
     $('#btnCopyFromFill').on('click', function () { fillBomFromCopy(); });
-    $('#btnAddBomRow').on('click', function () { addNewBomRow(); });
-    $('#btnSaveAllBomRows').on('click', function () { saveAllRows(); });
+    $('#btnAddBomRow').on('click', function () {
+        if (isExpenseMode()) addNewExpenseRow();
+        else addNewBomRow();
+    });
+    $('#btnSaveAllBomRows').on('click', function () {
+        if (isExpenseMode()) saveAllExpenseRows();
+        else saveAllRows();
+    });
     $('#btnVerifyAllBomRows').on('click', function () { verifyAllRows(); });
     $('#btnBackToBomList').on('click', function () { showBOMListView(); });
     $('#btnConfirmDeleteBOM').on('click', function () { confirmDeleteBOM(); });
+    $('input[name="bomEntryMode"]').on('change', function () {
+        setEntryMode($(this).val() || 'BOM');
+    });
 
     $('#tblBOMList').on('click', '.js-bom-view', function () {
         const $tr = $(this).closest('tr');
@@ -221,7 +235,7 @@ function bindBOMGrid(list) {
     if (!list || list.length === 0) {
         $tbody.append(`
             <tr>
-                <td colspan="7">
+                <td colspan="8">
                     <div class="pm-empty">
                         <div class="pm-empty-icon"><i class="fas fa-folder-open"></i></div>
                         <div class="pm-empty-title">No BOM records found</div>
@@ -231,11 +245,13 @@ function bindBOMGrid(list) {
             </tr>`);
         $('#bomListGrandAmount').text('—');
         $('#bomListGrandTotal').text('—');
+        $('#bomListGrandExpense').text('—');
         return;
     }
 
     let grandAmount = 0;
     let grandTotal = 0;
+    let grandExpense = 0;
 
     list.forEach(function (item, index) {
         const projectName    = item.ProjectName || item.ProjectDesp || '';
@@ -243,8 +259,10 @@ function bindBOMGrid(list) {
         const totalItems     = item.TotalItems  || 0;
         const baseAmount     = getBomListBaseAmount(item);
         const totalAmount    = parseFloat(item.TotalAmount || 0);
+        const expenseAmount  = parseFloat(item.ExpenseAmount ?? item.expenseAmount ?? 0) || 0;
         grandAmount += baseAmount;
         grandTotal += totalAmount;
+        grandExpense += expenseAmount;
 
         const bomId    = item.ProjectMaster_Code || item.Code || 0;
         const subBomId = item.SubProjectMaster_Code || 0;
@@ -257,6 +275,7 @@ function bindBOMGrid(list) {
                 <td class="center">${totalItems}</td>
                 <td class="right pm-budget">${formatInrAmountNum(baseAmount, 2, 2)}</td>
                 <td class="right pm-budget">${formatInrAmountNum(totalAmount, 2, 2)}</td>
+                <td class="right pm-budget">${formatInrAmountNum(expenseAmount, 2, 2)}</td>
                 <td class="center">
                     <div class="bom-actions">
                         <button type="button" class="bom-btn icon view js-bom-view" title="View">
@@ -278,6 +297,7 @@ function bindBOMGrid(list) {
 
     $('#bomListGrandAmount').text(formatInrAmountNum(grandAmount, 2, 2));
     $('#bomListGrandTotal').text(formatInrAmountNum(grandTotal, 2, 2));
+    $('#bomListGrandExpense').text(formatInrAmountNum(grandExpense, 2, 2));
 }
 function filterBOMs(query) {
     if (!query) { bindBOMGrid(G_BOMList); return; }
@@ -520,6 +540,9 @@ function viewBOM(id, subId) {
     $('#viewBOMTotalQty').text(row.TotalQty != null ? formatInrQtyNum(parseFloat(row.TotalQty)) : '—');
     $('#viewBOMAmount').text(formatInrAmountNum(getBomListBaseAmount(row), 2, 2));
     $('#viewBOMTotalAmount').text(formatInrAmountNum(parseFloat(row.TotalAmount || 0), 2, 2));
+    if ($('#viewBOMExpenseAmount').length) {
+        $('#viewBOMExpenseAmount').text(formatInrAmountNum(parseFloat(row.ExpenseAmount || 0), 2, 2));
+    }
 
     showModal('dvBOMViewModal');
 }
@@ -528,6 +551,53 @@ function showBOMListView() {
     $('#dvBOMGrid').show();
     loadBOMList();
 }
+function isExpenseMode() {
+    return G_EntryMode === 'EXPENSE';
+}
+
+function getSelectedEntryMode() {
+    const v = ($('input[name="bomEntryMode"]:checked').val() || 'BOM').toUpperCase();
+    return v === 'EXPENSE' ? 'EXPENSE' : 'BOM';
+}
+
+function setEntryMode(mode, options) {
+    options = options || {};
+    const next = (mode || 'BOM').toUpperCase() === 'EXPENSE' ? 'EXPENSE' : 'BOM';
+    G_EntryMode = next;
+    if (next === 'EXPENSE') {
+        $('#rdoExpenseMode').prop('checked', true);
+        $('#rdoBomMode').prop('checked', false);
+    } else {
+        $('#rdoBomMode').prop('checked', true);
+        $('#rdoExpenseMode').prop('checked', false);
+    }
+
+    if (next === 'EXPENSE') {
+        $('#dvBomTableWrap').hide();
+        $('#bomEntryScrollHint').hide();
+        $('#dvExpenseTableWrap').show();
+        applyExpenseSummaryHeaders();
+        ensureExpenseGroupList().then(function () {
+            if (!$('#tblExpenseBOM tbody tr').length) {
+                addNewExpenseRow();
+            }
+            if (!options.skipLoad) {
+                loadExpenseForCurrentSelection();
+            }
+            refreshExpenseSummary();
+        });
+    } else {
+        $('#dvExpenseTableWrap').hide();
+        $('#dvBomTableWrap').show();
+        $('#bomEntryScrollHint').show();
+        applyBomSummaryHeaders();
+        if (!$('#tblBOM tbody tr').length) {
+            addNewBomRow();
+        }
+        refreshBOMSummary();
+    }
+}
+
 function openNewBOM() {
     $('#dvBOMGrid').hide();
     $('#dvBOMEntry').show();
@@ -543,8 +613,15 @@ function openNewBOM() {
         : Promise.resolve();
 
     Promise.all([projectPromise, masterPromise])
-        .then(function ()  { HideLoader && HideLoader(); addNewBomRow(); })
-        .catch(function () { HideLoader && HideLoader(); addNewBomRow(); });
+        .then(function ()  {
+            HideLoader && HideLoader();
+            /* setEntryMode adds exactly one blank row when the grid is empty */
+            setEntryMode('BOM', { skipLoad: true });
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            setEntryMode('BOM', { skipLoad: true });
+        });
 }
 /** GETBYCODE / COPYFROM response may be a bare array or wrapped in Data/data. */
 function normalizeBOMDetailResponse(response) {
@@ -710,6 +787,7 @@ function openBOMFromList(id, mode, subProjectCode) {
     $('#dvBOMEntry').show();
     resetBomForm();
     $('#hfBOMCode').val(projectCode);
+    setEntryMode('BOM', { skipLoad: true });
 
     if (mode === 'view') {
         $('#btnSaveAllBomRows').prop('disabled', true);
@@ -742,9 +820,14 @@ function openBOMFromList(id, mode, subProjectCode) {
 
             if (detailRows.length > 0) {
                 bindBomHeaderFromDetailRows(detailRows);
+            } else if (projectCode) {
+                $('#ddlProject').val(String(projectCode));
+                bindSubProjectDropdown();
+                if (subProjCode) $('#ddlSubProject').val(String(subProjCode));
             }
 
             applyBomDetailRows(detailRows);
+            G_ExpenseLoadedForKey = '';
 
             if (mode === 'view') {
                 disableEntryForm();
@@ -763,7 +846,9 @@ function openBOMFromList(id, mode, subProjectCode) {
 }
 function disableEntryForm() {
     $('#tblBOM .bom-input, #tblBOM .bom-select').prop('disabled', true).prop('readonly', true);
+    $('#tblExpenseBOM .bom-input, #tblExpenseBOM .bom-select').prop('disabled', true).prop('readonly', true);
     $('#ddlProject, #ddlSubProject').prop('disabled', true);
+    $('input[name="bomEntryMode"]').prop('disabled', true);
     $('#btnCopyFromBom, #btnAddBomRow, #btnSaveAllBomRows').prop('disabled', true);
 }
 function enableEntryFormHeader() {
@@ -1000,6 +1085,7 @@ function prepareCopyFromDetailRows(detailRows) {
 
 function clearBomTableAndSummary() {
     $('#tblBOM tbody').empty();
+    $('#tblExpenseBOM tbody').empty();
     $('#tblBOMSummary tbody').empty();
     $('#bomSummaryTotalsLine').empty();
     $('#sumQtyRequired').text('—');
@@ -1046,6 +1132,11 @@ function fillBomFromCopy() {
         && String(targetProjectCode) === String(sourceProjectCode)
         && String(targetSubCode) === String(sourceSubCode)) {
         toastr.warning('Source and target project/sub-project cannot be the same.');
+        return;
+    }
+
+    if (isExpenseMode()) {
+        fillExpenseFromCopy(sourceProjectCode, sourceSubCode);
         return;
     }
 
@@ -1100,6 +1191,49 @@ function fillBomFromCopy() {
         });
 }
 
+function fillExpenseFromCopy(sourceProjectCode, sourceSubCode) {
+    if (!BOMService || typeof BOMService.GetExpenseBOMCopyFrom !== 'function') {
+        toastr.error('Expense Copy From service is not available.');
+        return;
+    }
+
+    Showloader && Showloader();
+    ensureExpenseGroupList()
+        .then(function () {
+            return BOMService.GetExpenseBOMCopyFrom(sourceProjectCode, sourceSubCode);
+        })
+        .then(function (response) {
+            const failMsg = getBomApiFailureMessage(response, 'Could not copy expense budget.');
+            if (failMsg) {
+                HideLoader && HideLoader();
+                toastr.warning(failMsg);
+                return;
+            }
+
+            const detailRows = normalizeBOMDetailResponse(response);
+            if (!detailRows.length) {
+                HideLoader && HideLoader();
+                toastr.warning('No expense budget lines found for the selected project and sub-project.');
+                return;
+            }
+
+            const $srcSub = $('#ddlCopyFromSubProject option:selected');
+            const $srcPrj = $('#ddlCopyFromProject option:selected');
+            const srcProjectName = ($srcPrj.text() || '').trim();
+            const srcSubDesp = ($srcSub.data('name') || $srcSub.text() || '').trim();
+
+            applyExpenseDetailRows(prepareCopyFromDetailRows(detailRows));
+            rememberCopyFromSource(sourceProjectCode, sourceSubCode, srcProjectName, srcSubDesp);
+            hideModal('dvBOMCopyFromModal');
+            HideLoader && HideLoader();
+            toastr.success('Copied ' + detailRows.length + ' expense line(s). Target project/sub-project unchanged.');
+        })
+        .catch(function (error) {
+            HideLoader && HideLoader();
+            toastr.warning((error && error.Msg) || 'Error while copying expense budget.');
+        });
+}
+
 function loadCategoryAndWorkTypeMaster() {
     if (!BOMService) return Promise.resolve();
 
@@ -1126,12 +1260,14 @@ function loadCategoryAndWorkTypeMaster() {
 function resetBomForm() {
     G_BOMRows   = [];
     G_BOMHeader = {};
+    G_ExpenseLoadedForKey = '';
     clearCopyFromSession();
 
     $('#hfBOMCode').val(0);
     $('#ddlProject').val('').prop('disabled', false);
     $('#ddlSubProject').empty().append('<option value="">Select project first</option>').prop('disabled', false);
     $('#tblBOM tbody').empty();
+    $('#tblExpenseBOM tbody').empty();
     $('#tblBOMSummary tbody').empty();
     $('#bomSummaryTotalsLine').empty();
     $('#sumQtyRequired').text('—');
@@ -1141,6 +1277,14 @@ function resetBomForm() {
     $('#btnVerifyAllBomRows').hide().prop('disabled', false);
     $('#btnSaveAllBomRows').prop('disabled', false);
     $('#btnCopyFromBom, #btnAddBomRow').prop('disabled', false);
+    $('input[name="bomEntryMode"]').prop('disabled', false);
+    $('#rdoBomMode').prop('checked', true);
+    $('#rdoExpenseMode').prop('checked', false);
+    G_EntryMode = 'BOM';
+    $('#dvExpenseTableWrap').hide();
+    $('#dvBomTableWrap').show();
+    $('#bomEntryScrollHint').show();
+    applyBomSummaryHeaders();
 }
 function addNewBomRow() {
     const $tbody    = $('#tblBOM tbody');
@@ -1677,7 +1821,7 @@ function saveAllRows() {
         .catch(function (err) {
             HideLoader && HideLoader();
             if (err && err.message === 'save_failed') return;
-            toastr.error('Error while saving BOM or reloading lines.');
+            // toastr.error('Error while saving BOM or reloading lines.');
         });
 }
 function lockAllRowsAfterSave() {
@@ -1820,7 +1964,61 @@ function getCategoryLabelFromRow($tr) {
     return t || ('Category ' + v);
 }
 
+function applyBomSummaryHeaders() {
+    $('#bomSummaryHeaderText').text('BOM Summary by Prj Category');
+    $('#bomSummaryScrollHintText').text('Swipe to see Total Amount');
+    $('#bomSummaryColgroup').html(
+        '<col class="bom-sum-col-cat" />' +
+        '<col class="bom-sum-col-qty" />' +
+        '<col class="bom-sum-col-amt" />' +
+        '<col class="bom-sum-col-total" />'
+    );
+    $('#bomSummaryThead').html(
+        '<tr>' +
+        '<th>Prj Category</th>' +
+        '<th class="right">Qty Required</th>' +
+        '<th class="right">Amount</th>' +
+        '<th class="right">Total Amount</th>' +
+        '</tr>'
+    );
+    $('#bomSummaryTfoot').html(
+        '<tr>' +
+        '<td><strong>Grand Total</strong></td>' +
+        '<td class="right" id="sumQtyRequired">—</td>' +
+        '<td class="right" id="sumAmount">—</td>' +
+        '<td class="right" id="sumTotalAmount">—</td>' +
+        '</tr>'
+    );
+}
+
+function applyExpenseSummaryHeaders() {
+    $('#bomSummaryHeaderText').text('Expense Budget Summary by Expense Group');
+    $('#bomSummaryScrollHintText').text('Swipe to see Expense Amount');
+    $('#bomSummaryColgroup').html(
+        '<col class="bom-sum-col-cat" />' +
+        '<col class="bom-sum-col-total" />'
+    );
+    $('#bomSummaryThead').html(
+        '<tr>' +
+        '<th>Expense Group</th>' +
+        '<th class="right">Expense Amount</th>' +
+        '</tr>'
+    );
+    $('#bomSummaryTfoot').html(
+        '<tr>' +
+        '<td><strong>Grand Total</strong></td>' +
+        '<td class="right" id="sumTotalAmount">—</td>' +
+        '</tr>'
+    );
+}
+
 function refreshBOMSummary() {
+    if (isExpenseMode()) {
+        refreshExpenseSummary();
+        return;
+    }
+
+    applyBomSummaryHeaders();
     const groups = {};
 
     $('#tblBOM tbody tr').each(function () {
@@ -1892,6 +2090,64 @@ function refreshBOMSummary() {
 
     $('#dvBOMSummary').show();
 }
+
+function refreshExpenseSummary() {
+    applyExpenseSummaryHeaders();
+    const groups = {};
+
+    $('#tblExpenseBOM tbody tr').each(function () {
+        const $tr = $(this);
+        const groupCode = parseInt($tr.find('.bom-expense-group').val() || '0', 10) || 0;
+        const amt = parseBomMoney($tr.find('.bom-expense-amount').val());
+        if (!groupCode && amt === 0) return;
+
+        const label = groupCode
+            ? (($tr.find('.bom-expense-group option:selected').text() || '').trim() || ('Group ' + groupCode))
+            : 'Uncategorized';
+        const key = groupCode ? String(groupCode) : '_none';
+        if (!groups[key]) {
+            groups[key] = { label: label, amount: 0 };
+        }
+        groups[key].amount += amt;
+    });
+
+    const keys = Object.keys(groups).filter(function (k) {
+        return groups[k].amount !== 0 || k !== '_none';
+    });
+    if (!keys.length) {
+        $('#dvBOMSummary').hide();
+        $('#bomSummaryTotalsLine').empty();
+        return;
+    }
+
+    const $tbody = $('#tblBOMSummary tbody');
+    $tbody.empty();
+    let gTotal = 0;
+
+    keys.sort(function (a, b) {
+        return String(groups[a].label).localeCompare(String(groups[b].label), undefined, { sensitivity: 'base' });
+    }).forEach(function (k) {
+        const g = groups[k];
+        gTotal += g.amount;
+        $tbody.append(
+            '<tr>' +
+            '<td><span class="uom-badge">' + escHtml(g.label) + '</span></td>' +
+            '<td class="right"><strong>' + formatInrAmountNum(g.amount, 2, 2) + '</strong></td>' +
+            '</tr>'
+        );
+    });
+
+    $('#sumTotalAmount').text(formatInrAmountNum(gTotal, 2, 2));
+    $('#bomSummaryTotalsLine').html(
+        '<div class="bom-summary-footer-row bom-summary-footer-total-amt">' +
+        '<span class="bom-summary-footer-label">Total Expense Amount :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(formatInrAmountNum(gTotal, 2, 2)) + '</span></div>' +
+        '<div class="bom-summary-footer-row bom-summary-footer-amt-words">' +
+        '<span class="bom-summary-footer-label">Amount In Words :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(inrAmountWordsRupeeSymbol(gTotal)) + '</span></div>'
+    );
+    $('#dvBOMSummary').show();
+}
 function recalcAmount($tr) {
     const qty  = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
     const rate = parseBomMoney($tr.find('.bom-est-rate').val());
@@ -1947,6 +2203,315 @@ function hideModal(id) {
             $(`#${id}`).modal('hide');
         }
     } catch (e) { $(`#${id}`).modal('hide'); }
+}
+
+// ── Expense Budget entry ─────────────────────────────────────────────────────
+
+function normalizeExpenseGroupList(response) {
+    let rows = Array.isArray(response) ? response
+        : (response && Array.isArray(response.data) ? response.data
+        : (response && Array.isArray(response.Data) ? response.Data : []));
+    return (rows || []).map(function (item) {
+        return {
+            Code: item.Code || item.code || 0,
+            Desp: (item.Desp || item.ExpenseGroupDesp || item.ExpenseGroupName || item.Name || '').trim()
+        };
+    }).filter(function (x) { return x.Code; });
+}
+
+function ensureExpenseGroupList() {
+    if (G_ExpenseGroupList && G_ExpenseGroupList.length) {
+        return Promise.resolve(G_ExpenseGroupList);
+    }
+
+    const tryBom = (BOMService && typeof BOMService.GetExpenseGroupList === 'function')
+        ? BOMService.GetExpenseGroupList()
+        : Promise.reject(new Error('no_bom_expense_group'));
+
+    return tryBom
+        .then(function (response) {
+            G_ExpenseGroupList = normalizeExpenseGroupList(response);
+            if (G_ExpenseGroupList.length) return G_ExpenseGroupList;
+            throw new Error('empty');
+        })
+        .catch(function () {
+            if (!ExpenseHeadMasterService || typeof ExpenseHeadMasterService.GetExpenseGroupList !== 'function') {
+                return [];
+            }
+            return ExpenseHeadMasterService.GetExpenseGroupList().then(function (response) {
+                G_ExpenseGroupList = normalizeExpenseGroupList(response);
+                return G_ExpenseGroupList;
+            });
+        })
+        .catch(function () {
+            G_ExpenseGroupList = [];
+            return [];
+        });
+}
+
+function bindExpenseGroupDropdown($select, selectedCode) {
+    const $ddl = $select;
+    const prev = selectedCode != null ? selectedCode : $ddl.val();
+    $ddl.empty().append('<option value="">-- Select Expense Group --</option>');
+    (G_ExpenseGroupList || []).forEach(function (g) {
+        $ddl.append('<option value="' + g.Code + '">' + escHtml(g.Desp || ('Group ' + g.Code)) + '</option>');
+    });
+    if (prev) $ddl.val(String(prev));
+}
+
+function addNewExpenseRow(detail) {
+    detail = detail || {};
+    const $tbody = $('#tblExpenseBOM tbody');
+    const nextIndex = $tbody.children('tr').length + 1;
+    const rowId = 'expRow_' + Date.now() + '_' + nextIndex;
+    const $tr = $(
+        '<tr data-row-id="' + rowId + '" data-state="edit" data-detail-code="' + (detail.Code || 0) + '">' +
+        '<td class="center">' + nextIndex + '</td>' +
+        '<td><select class="bom-select bom-expense-group"><option value="">-- Select Expense Group --</option></select></td>' +
+        '<td><input type="text" class="bom-input bom-expense-amount right" inputmode="decimal" autocomplete="off" /></td>' +
+        '<td class="center">' +
+        '<button type="button" class="bom-btn icon del js-expense-row-delete" title="Remove">' +
+        '<i class="fas fa-times-circle"></i></button></td>' +
+        '</tr>'
+    );
+    $tbody.append($tr);
+    bindExpenseGroupDropdown($tr.find('.bom-expense-group'), detail.ExpenseGroupMaster_Code || 0);
+    if (detail.ExpenseAmount != null && detail.ExpenseAmount !== '') {
+        $tr.find('.bom-expense-amount').val(formatBomMoneyRaw(Number(detail.ExpenseAmount).toFixed(2)));
+    }
+    initExpenseRowEvents($tr);
+    refreshExpenseSummary();
+}
+
+function initExpenseRowEvents($tr) {
+    $tr.find('.bom-expense-amount').on('input', function () {
+        formatBomMoneyInput(this);
+        refreshExpenseSummary();
+    });
+    $tr.find('.bom-expense-group').on('change', function () {
+        refreshExpenseSummary();
+    });
+    $tr.find('.js-expense-row-delete').on('click', function () {
+        deleteExpenseRow($tr);
+    });
+}
+
+function deleteExpenseRow($tr) {
+    const $tbody = $('#tblExpenseBOM tbody');
+    if ($tbody.children('tr').length <= 1) {
+        $tr.attr('data-detail-code', 0);
+        $tr.find('.bom-expense-group').val('');
+        $tr.find('.bom-expense-amount').val('');
+        refreshExpenseSummary();
+        return;
+    }
+    $tr.remove();
+    $tbody.children('tr').each(function (idx) {
+        $(this).find('td').first().text(idx + 1);
+    });
+    refreshExpenseSummary();
+}
+
+function applyExpenseDetailRows(detailRows) {
+    $('#tblExpenseBOM tbody').empty();
+    const rows = Array.isArray(detailRows) ? detailRows : [];
+    if (!rows.length) {
+        addNewExpenseRow();
+        refreshExpenseSummary();
+        return;
+    }
+    rows.forEach(function (d) {
+        addNewExpenseRow({
+            Code: d.Code || 0,
+            ExpenseGroupMaster_Code: d.ExpenseGroupMaster_Code || 0,
+            ExpenseAmount: d.ExpenseAmount
+        });
+    });
+    refreshExpenseSummary();
+}
+
+function loadExpenseForCurrentSelection() {
+    const projectCode = parseInt($('#hfBOMCode').val() || $('#ddlProject').val() || '0', 10) || 0;
+    const subCode = parseInt($('#ddlSubProject').val() || '0', 10) || 0;
+    const key = projectCode + '_' + subCode;
+
+    if (!projectCode) {
+        if (!$('#tblExpenseBOM tbody tr').length) addNewExpenseRow();
+        refreshExpenseSummary();
+        return Promise.resolve();
+    }
+
+    if (G_ExpenseLoadedForKey === key && $('#tblExpenseBOM tbody tr').length) {
+        refreshExpenseSummary();
+        return Promise.resolve();
+    }
+
+    if (!BOMService || typeof BOMService.GetExpenseBOMByCode !== 'function') {
+        if (!$('#tblExpenseBOM tbody tr').length) addNewExpenseRow();
+        return Promise.resolve();
+    }
+
+    Showloader && Showloader();
+    return ensureExpenseGroupList()
+        .then(function () {
+            return BOMService.GetExpenseBOMByCode(projectCode, subCode);
+        })
+        .then(function (response) {
+            HideLoader && HideLoader();
+            const failMsg = getBomApiFailureMessage(response, '');
+            if (failMsg && !normalizeBOMDetailResponse(response).length) {
+                toastr.warning(failMsg);
+            }
+            const detailRows = normalizeBOMDetailResponse(response);
+            applyExpenseDetailRows(detailRows);
+            G_ExpenseLoadedForKey = key;
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            if (!$('#tblExpenseBOM tbody tr').length) addNewExpenseRow();
+            toastr.error('Error loading expense budget details.');
+        });
+}
+
+function validateExpenseRow($tr) {
+    const groupCode = parseInt($tr.find('.bom-expense-group').val() || '0', 10) || 0;
+    const amtRaw = ($tr.find('.bom-expense-amount').val() || '').toString().trim();
+    const amt = parseBomMoney(amtRaw);
+
+    if (!groupCode) {
+        toastr.warning('Please select Expense Group.');
+        $tr.find('.bom-expense-group').focus();
+        return false;
+    }
+    if (!amtRaw || amt <= 0) {
+        toastr.warning('Please enter Expense Amount greater than 0.');
+        $tr.find('.bom-expense-amount').focus();
+        return false;
+    }
+    if (!isValidNumber(amtRaw)) {
+        toastr.warning('Please enter a valid float Expense Amount.');
+        $tr.find('.bom-expense-amount').focus();
+        return false;
+    }
+    return true;
+}
+
+function saveAllExpenseRows() {
+    const $rows = $('#tblExpenseBOM tbody tr');
+    if (!$rows.length) {
+        toastr.warning('Please add at least one expense row.');
+        return;
+    }
+
+    const details = [];
+    let hasError = false;
+    const groupSeen = {};
+
+    $rows.each(function () {
+        const $tr = $(this);
+        const groupCode = parseInt($tr.find('.bom-expense-group').val() || '0', 10) || 0;
+        const amt = parseBomMoney($tr.find('.bom-expense-amount').val());
+
+        if (!groupCode && amt === 0) return;
+
+        if (!validateExpenseRow($tr)) {
+            hasError = true;
+            return false;
+        }
+
+        if (groupSeen[groupCode]) {
+            toastr.warning('Duplicate Expense Group is not allowed in the same list.');
+            hasError = true;
+            return false;
+        }
+        groupSeen[groupCode] = true;
+
+        details.push({
+            Code: parseInt($tr.attr('data-detail-code') || '0', 10) || 0,
+            ExpenseGroupMaster_Code: groupCode,
+            ExpenseAmount: amt
+        });
+    });
+
+    if (hasError) return;
+    if (!details.length) {
+        toastr.warning('Please enter at least one complete expense line before saving.');
+        return;
+    }
+
+    const projectMaster_Code =
+        parseInt($('#hfBOMCode').val() || '0', 10) ||
+        parseInt($('#ddlProject').val() || '0', 10) || 0;
+    const subProjectCode = parseInt($('#ddlSubProject').val() || '0', 10) || 0;
+
+    if (!projectMaster_Code) {
+        toastr.warning('Please select a Project before saving.');
+        return;
+    }
+    if (!subProjectCode) {
+        toastr.warning('Please select a Sub Project before saving.');
+        return;
+    }
+
+    if (subProjectCode && G_SubProjectList && G_SubProjectList.length) {
+        const spRow = G_SubProjectList.find(function (s) { return String(s.Code) === String(subProjectCode); });
+        const limit = spRow ? (parseFloat(spRow.Budget || spRow.SubProjectBudget || 0) || 0) : 0;
+        if (limit > 0) {
+            let expSum = 0;
+            details.forEach(function (d) { expSum += parseFloat(d.ExpenseAmount || 0) || 0; });
+            if (expSum > limit) {
+                toastr.warning(
+                    'Total expense amount (' + formatInrAmountNum(expSum, 2, 2)
+                        + ') cannot exceed sub-project budget (' + formatInrAmountNum(limit, 2, 2) + ').'
+                );
+                return;
+            }
+        }
+    }
+
+    const payloadDetails = details.map(function (d) {
+        return {
+            Code: d.Code || 0,
+            ProjectMaster_Code: projectMaster_Code,
+            SubProjectMaster_Code: subProjectCode,
+            ExpenseGroupMaster_Code: d.ExpenseGroupMaster_Code,
+            ExpenseAmount: d.ExpenseAmount
+        };
+    });
+
+    const payload = { Code: projectMaster_Code, Details: payloadDetails };
+
+    if (!BOMService || typeof BOMService.SaveExpenseBOM !== 'function') {
+        toastr.error('Expense save service is not available.');
+        return;
+    }
+
+    Showloader && Showloader();
+    let saveSuccessMsg = '';
+    BOMService.SaveExpenseBOM(payload)
+        .then(function (resp) {
+            if (resp && resp.Status === 'Y') {
+                saveSuccessMsg = resp.Msg || 'Expense budget saved successfully.';
+                $('#hfBOMCode').val(projectMaster_Code);
+                return BOMService.GetExpenseBOMByCode(projectMaster_Code, subProjectCode);
+            }
+            HideLoader && HideLoader();
+            toastr.warning((resp && (resp.Msg || resp.Message)) || 'Expense budget save failed.');
+            return Promise.reject(new Error('save_failed'));
+        })
+        .then(function (reloadResponse) {
+            HideLoader && HideLoader();
+            const detailRows = normalizeBOMDetailResponse(reloadResponse);
+            applyExpenseDetailRows(detailRows);
+            G_ExpenseLoadedForKey = projectMaster_Code + '_' + subProjectCode;
+            clearCopyFromSession();
+            toastr.success(saveSuccessMsg || 'Expense budget saved successfully.');
+        })
+        .catch(function (err) {
+            HideLoader && HideLoader();
+            if (err && err.message === 'save_failed') return;
+            toastr.error('Error while saving expense budget.');
+        });
 }
 
 // ── Item Master Modal ────────────────────────────────────────────────────────

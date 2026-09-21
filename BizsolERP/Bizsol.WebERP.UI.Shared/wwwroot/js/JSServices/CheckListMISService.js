@@ -11,6 +11,17 @@ const CheckListMISService = {
         });
     },
 
+    TaskListCheckReport: function TaskListCheckReport(ReportType, UserMasterCode, FromDate, ToDate) {
+        var URL = UrlService.API_ENDPOINT_CHECKLIST_MIS
+            + '/TaskListCheckReport?ReportType=' + encodeURIComponent(ReportType || '')
+            + '&UserMasterCode=' + encodeURIComponent(UserMasterCode || 0)
+            + '&FromDate=' + encodeURIComponent(FromDate || '')
+            + '&ToDate=' + encodeURIComponent(ToDate || '');
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
     GetCheckListMIS: function GetCheckListMIS(ReportType, UserMasterCode, FromDate, ToDate, Mode) {
         var URL = UrlService.API_ENDPOINT_CHECKLIST_MIS
             + '/GetCheckListMIS?ReportType=' + encodeURIComponent(ReportType || '')

@@ -21,7 +21,10 @@ namespace Bizsol.WebERP.UI.Sales.Transactions.Areas.SalesTransactions.Controller
         {
             return View();
         }
-
+        public IActionResult FreightInvoice()
+        {
+            return View();
+        }
         public IActionResult SalesPersonTargetAchievement()
         {
             return View();

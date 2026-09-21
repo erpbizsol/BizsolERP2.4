@@ -23,12 +23,13 @@ const POLevelsApproveService = {
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
+    
     // ── Get first pending PO date to use as default FromDate ────────────────
     GetFirstPendingPODate: function GetFirstPendingPODate() {
         let url = UrlService.API_ENDPOINT_POLevelsApprove + `/GetFirstPendingPODate`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
-
+    
     // ── Approve a PO at the current level ─────────────────────────────────────
     ApprovePO: function ApprovePO(poCode, levelCode, remarks) {
         let userCode = 0, groupCode = 0;
@@ -40,9 +41,9 @@ const POLevelsApproveService = {
             `/ApprovePO?PurchaseOrderMaster_Code=${poCode}&LevelCode=${levelCode}` +
             `&UserMaster_Code=${userCode}&GroupMaster_Code=${groupCode}` +
             `&Remarks=${encodeURIComponent(remarks || '')}`;
-        return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
-    },
-
+            return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
+        },
+        
     // ── Reject a PO at the current level ──────────────────────────────────────
     RejectPO: function RejectPO(poCode, levelCode, remarks) {
         let userCode = 0, groupCode = 0;
@@ -51,12 +52,12 @@ const POLevelsApproveService = {
             groupCode = JSON.parse(sessionStorage.getItem('UserDetails'))[0].GroupMaster_Code;
         } catch (e) {}
         let url = UrlService.API_ENDPOINT_POLevelsApprove +
-            `/RejectPO?PurchaseOrderMaster_Code=${poCode}&LevelCode=${levelCode}` +
-            `&UserMaster_Code=${userCode}&GroupMaster_Code=${groupCode}` +
-            `&Remarks=${encodeURIComponent(remarks || '')}`;
+        `/RejectPO?PurchaseOrderMaster_Code=${poCode}&LevelCode=${levelCode}` +
+        `&UserMaster_Code=${userCode}&GroupMaster_Code=${groupCode}` +
+        `&Remarks=${encodeURIComponent(remarks || '')}`;
         return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
     },
-
+    
     // ── Put a PO on hold at the current level ─────────────────────────────────
     HoldPO: function HoldPO(poCode, levelCode, remarks) {
         let userCode = 0, groupCode = 0;
@@ -65,12 +66,17 @@ const POLevelsApproveService = {
             groupCode = JSON.parse(sessionStorage.getItem('UserDetails'))[0].GroupMaster_Code;
         } catch (e) {}
         let url = UrlService.API_ENDPOINT_POLevelsApprove +
-            `/HoldPO?PurchaseOrderMaster_Code=${poCode}&LevelCode=${levelCode}` +
-            `&UserMaster_Code=${userCode}&GroupMaster_Code=${groupCode}` +
-            `&Remarks=${encodeURIComponent(remarks || '')}`;
+        `/HoldPO?PurchaseOrderMaster_Code=${poCode}&LevelCode=${levelCode}` +
+        `&UserMaster_Code=${userCode}&GroupMaster_Code=${groupCode}` +
+        `&Remarks=${encodeURIComponent(remarks || '')}`;
         return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
     },
-
+    
+    // ── Budget history (As per budget amount) ─────────────────────────────────
+    GetBudgetHistory: function GetBudgetHistory(poCode) {
+        let url = UrlService.API_ENDPOINT_POLevelsApprove + `/GetBudgetHistory?PurchaseOrderMaster_Code=${poCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
 }
 
 export { POLevelsApproveService }

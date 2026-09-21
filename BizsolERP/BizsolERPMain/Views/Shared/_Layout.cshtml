@@ -26,6 +26,8 @@
     <link href="~/assets/css/app.min.css" rel="stylesheet" />
     <link href="~/assets/css/responsive.css" rel="stylesheet" />
     <script src="~/assets/js/jquery-3.6.0.min.js"></script>
+    <script src="~/_content/Bizsol.WebERP.UI.Shared/js/ConfirmDialog.js"></script>
+    <script src="~/_content/Bizsol.WebERP.UI.Shared/js/FileViewer.js"></script>
     <style>
         :root {
             /* BizSol Brand Colors - Deep Indigo & Cyan Modern Theme */
@@ -2251,7 +2253,7 @@
                         </button>
                         <div class="dropdown-menu dropdown-menu-end profile-dropdown">
                             <div class="profile-dropdown-accent" aria-hidden="true"></div>
-                            <a class="dropdown-item" href="#">
+                            <a class="dropdown-item" href="#" onclick="window.location.href = sessionStorage.getItem('AppBaseURL') + '/CommonMasters/UserMaster/UserMaster?ModuleDesp=User%20Master'; return false;">
                                 <i class="fas fa-user-circle" aria-hidden="true"></i>
                                 <span>Profile</span>
                             </a>
@@ -2685,8 +2687,8 @@
             }
         });
 
-        // Cleanup on close
-        $(document).on('select2:close select2:closing', function () {
+        // Also cleanup on select so re-init during change cannot skip close and leave scroll locked.
+        $(document).on('select2:close select2:closing select2:select', function () {
             _s2ModalEl = null;
             _cleanupSelect2MobileState();
         });

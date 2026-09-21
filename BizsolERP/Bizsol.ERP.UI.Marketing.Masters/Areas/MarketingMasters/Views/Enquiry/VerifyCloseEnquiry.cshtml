@@ -1,0 +1,450 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Masters/js/VerifyCloseEnquiry.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="~/assets/js/jquery-3.6.0.min.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/gh/ankitayodhya2002/CDN@main/Filter.js"></script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    .vce-page {
+        --vce-accent: #558bc0;
+        --vce-accent-hover: #4378b0;
+        --vce-accent-soft: #e8f4fd;
+        --vce-border: #e2e8f0;
+        --vce-text: #0f172a;
+        --vce-muted: #64748b;
+        color: var(--vce-text);
+        background:
+            radial-gradient(1200px 420px at 8% -10%, rgba(85, 139, 192, 0.16), transparent 55%),
+            radial-gradient(900px 360px at 100% 0%, rgba(51, 65, 85, 0.08), transparent 50%),
+            linear-gradient(180deg, #eef3f8 0%, #f7f9fc 40%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 14px 14px 18px;
+        margin: 0 0 8px;
+        min-height: calc(100vh - 140px);
+    }
+    .vce-shell {
+        max-width: 1480px;
+        margin: 0 auto;
+    }
+    .vce-card {
+        background: #fff;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        border-radius: 16px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+        margin-bottom: 14px;
+    }
+    .vce-header {
+        background: linear-gradient(125deg, #1e293b 0%, #334155 48%, #558bc0 140%);
+        padding: 18px 20px 16px;
+        position: relative;
+        overflow: hidden;
+    }
+    .vce-header::after {
+        content: "";
+        position: absolute;
+        right: -40px;
+        top: -50px;
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        pointer-events: none;
+    }
+    .vce-header-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px 12px;
+        position: relative;
+        z-index: 1;
+    }
+    .vce-header h5 {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.15rem;
+        letter-spacing: -0.025em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .vce-title-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+    .vce-header-sub {
+        margin: 0;
+        flex: 1 1 100%;
+        padding-left: 46px;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.8rem;
+        line-height: 1.45;
+        position: relative;
+        z-index: 1;
+    }
+    .vce-header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        border-radius: 999px;
+        padding: 5px 12px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+    }
+    .vce-header-badge i { opacity: 0.9; }
+
+    .vce-grid-wrap {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+    .vce-grid-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #eef2f7;
+        background: linear-gradient(180deg, #fbfdff, #f8fafc);
+    }
+    .vce-grid-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: #e8f4fd;
+        border: 1px solid #cfe0f0;
+        color: #558bc0;
+        font-size: 0.85rem;
+    }
+    .vce-grid-text { min-width: 0; flex: 1 1 auto; }
+    .vce-grid-title {
+        margin: 0;
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: #334155;
+        letter-spacing: 0.02em;
+    }
+    .vce-grid-hint {
+        margin: 2px 0 0;
+        font-size: 0.75rem;
+        color: #94a3b8;
+        line-height: 1.35;
+    }
+    .vce-grid-wrap .table-wrapper {
+        min-height: 280px;
+        max-height: 520px;
+        overflow: auto;
+    }
+    #table.vce-list-table {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: collapse;
+        min-width: 700px;
+    }
+    #table.vce-list-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        background-color: #fff;
+    }
+    #table.vce-list-table thead th {
+        background-color: #558bc0 !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        border: none !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.22) !important;
+        border-bottom: 2px solid #4578a8 !important;
+        padding: 8px 10px !important;
+        font-size: 0.7rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        vertical-align: middle !important;
+    }
+    #table.vce-list-table thead th:last-child {
+        border-right: none !important;
+    }
+    #table.vce-list-table tbody td {
+        padding: 8px 10px !important;
+        border: none !important;
+        border-bottom: 1px solid #eef2f7 !important;
+        font-size: 0.8125rem !important;
+        vertical-align: middle !important;
+        color: #1e293b;
+    }
+    #table.vce-list-table tbody tr:nth-child(even) {
+        background-color: #fafcfe;
+    }
+    #table.vce-list-table.table-hover tbody tr:hover {
+        background-color: #eef6fc !important;
+    }
+    #table.vce-list-table td.vce-col-remark-wrap {
+        white-space: normal !important;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: 260px;
+        vertical-align: top !important;
+        line-height: 1.35;
+    }
+    .vce-empty {
+        text-align: center;
+        padding: 36px 16px !important;
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+    .vce-empty i {
+        display: block;
+        font-size: 1.6rem;
+        color: #94a3b8;
+        margin-bottom: 8px;
+    }
+    .vce-action-wrap {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+    }
+    .vce-action-wrap .btn {
+        min-width: 34px;
+        height: 30px;
+        padding: 0 10px;
+        line-height: 1;
+        font-size: 0.75rem;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+    .vce-action-wrap .btn-success {
+        background: linear-gradient(180deg, #34d399 0%, #16a34a 100%) !important;
+        border: none !important;
+    }
+    .vce-action-wrap .btn-danger {
+        background: #fff !important;
+        color: #dc2626 !important;
+        border: 1px solid #fecaca !important;
+    }
+    .vce-action-wrap .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    /* Paginator */
+    .vce-page .paginator {
+        margin-top: 0;
+        padding: 6px 10px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        font-size: 0.72rem;
+        border-radius: 0 0 16px 16px;
+    }
+    .vce-page .paginator button.paginator-btn {
+        background: linear-gradient(180deg, #6a9ccd 0%, #558bc0 100%) !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 6px;
+        padding: 2px 6px !important;
+        font-size: 0.7rem;
+        font-weight: 600;
+        min-height: 26px !important;
+        height: 26px !important;
+    }
+
+    /* Modal */
+    #VerifyCloseModal .modal-content {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 56px rgba(8, 12, 36, 0.24);
+    }
+    #VerifyCloseModal .modal-header {
+        background: linear-gradient(130deg, #558bc0, #334155);
+        border: none;
+        padding: 12px 16px;
+        color: #fff;
+    }
+    #VerifyCloseModal .modal-header .modal-title {
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 700;
+    }
+    #VerifyCloseModal .modal-header.vce-modal-reject {
+        background: linear-gradient(130deg, #dc2626, #7f1d1d);
+    }
+    #VerifyCloseModal .modal-close,
+    #VerifyCloseModal .btn-close {
+        color: #fff;
+        opacity: 0.9;
+        filter: invert(1);
+    }
+    #VerifyCloseModal .modal-body {
+        padding: 16px 18px;
+    }
+    #VerifyCloseModal .form-label {
+        font-size: 0.77rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.35rem;
+    }
+    #VerifyCloseModal .form-control {
+        border-radius: 9px;
+        border-color: #d7e0ea;
+        min-height: 36px;
+        font-size: 0.85rem;
+    }
+    #VerifyCloseModal .form-control:focus {
+        border-color: #558bc0;
+        box-shadow: 0 0 0 3px rgba(85, 139, 192, 0.18);
+    }
+    #VerifyCloseModal .modal-footer {
+        border-top: 1px solid #eef2f7;
+        padding: 12px 16px;
+        gap: 8px;
+        background: #f8fafc;
+    }
+    #VerifyCloseModal .modal-footer .btn {
+        border-radius: 9px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        min-height: 34px;
+        padding: 6px 14px;
+    }
+    #VerifyCloseModal .btn-vce-ok {
+        background: linear-gradient(180deg, #6a9ccd 0%, #558bc0 100%);
+        border: none;
+        color: #fff;
+    }
+    #VerifyCloseModal .btn-vce-ok.btn-danger,
+    #VerifyCloseModal .btn-vce-ok.is-reject {
+        background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+    }
+    #VerifyCloseModal .btn-vce-cancel {
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+    }
+
+    @@media (max-width: 768px) {
+        .vce-page {
+            padding: 8px 6px 14px;
+            border-radius: 12px;
+        }
+        .vce-header {
+            padding: 12px 14px;
+        }
+        .vce-header h5 {
+            font-size: 1.05rem;
+        }
+        .vce-title-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+        .vce-header-sub {
+            padding-left: 0;
+            font-size: 0.7rem;
+        }
+        .vce-grid-toolbar {
+            padding: 10px 12px;
+        }
+        .vce-grid-hint {
+            font-size: 0.7rem;
+            padding-left: 0;
+        }
+        .vce-header-badge {
+            font-size: 0.68rem;
+            padding: 4px 10px;
+        }
+    }
+</style>
+
+<div class="vce-page">
+    <div class="vce-shell">
+        <div class="vce-card">
+            <div class="vce-header">
+                <div class="vce-header-top">
+                    <h5>
+                        <span class="vce-title-icon"><i class="fa fa-clipboard-check"></i></span>
+                        Verify Close Enquiry
+                    </h5>
+                    <span class="vce-header-badge"><i class="fa fa-hourglass-half"></i> Pending close approvals</span>
+                    <p class="vce-header-sub">Review closed enquiries — verify or reject with a reason</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="vce-grid-wrap" id="tblTable">
+            <div class="vce-grid-toolbar">
+                <span class="vce-grid-icon" aria-hidden="true"><i class="fa fa-table-list"></i></span>
+                <div class="vce-grid-text">
+                    <p class="vce-grid-title">Close enquiry list</p>
+                    <p class="vce-grid-hint">Use Verify / Reject on pending rows</p>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="table" class="table table-sm table-hover vce-list-table fixed-width-table mb-0">
+                    <thead id="table-header"></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-table"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Verify / Reject reason modal -->
+<div class="modal fade" id="VerifyCloseModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="VerifyCloseModalHeader">
+                <h5 class="modal-title" id="VerifyCloseModalTitle">Verify Close Enquiry</h5>
+                <button type="button" class="btn-close" aria-label="Close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label for="txtVerifyCloseReason" class="form-label">
+                    Reason <span class="text-danger" id="lblVerifyCloseReasonReq" style="display:none;">*</span>
+                </label>
+                <textarea id="txtVerifyCloseReason" class="form-control form-control-sm" rows="3" placeholder="Enter reason" autocomplete="off"></textarea>
+                <input type="hidden" id="txtVerifyCloseCode" />
+                <input type="hidden" id="txtVerifyCloseAction" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="CloseVerifyCloseModal()">Cancel</button>
+                <button type="button" class="btn btn-success" id="btnVerifyCloseOk" onclick="ConfirmVerifyCloseAction()">
+                    <i class="fa fa-check me-1"></i>Ok
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

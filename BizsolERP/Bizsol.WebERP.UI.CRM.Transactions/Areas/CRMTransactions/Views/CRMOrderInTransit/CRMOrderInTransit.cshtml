@@ -1,0 +1,267 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/CRMOrderInTransit.js"></script>
+<style>
+    .oit-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 0 0 32px;
+    }
+    .section-entry-animation {
+        animation: oit-fade-slide 0.35s ease both;
+    }
+    @@keyframes oit-fade-slide {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .oit-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 4px 24px rgba(102, 126, 234, 0.22);
+    }
+    .oit-list-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    .oit-list-header-title-block { flex: 1; min-width: 0; }
+    .oit-list-header-title {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+    }
+    .oit-list-header-sub {
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.78rem;
+        display: block;
+        margin-top: 4px;
+    }
+    .oit-list-header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-shrink: 0;
+        margin-left: auto;
+        flex-wrap: wrap;
+    }
+    .oit-list-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+        cursor: pointer;
+        height: auto !important;
+        min-height: 40px;
+        line-height: 1.25 !important;
+        font-size: 0.85rem !important;
+        transition: all 0.2s;
+    }
+    .oit-list-action-btn:hover {
+        background: #f0f4ff;
+        border-color: #667eea;
+        color: #667eea;
+    }
+    .oit-list-action-btn--update { color: #0f766e; }
+    .oit-list-action-btn--update:hover { background: #ecfdf5; border-color: #0f766e; color: #0f766e; }
+    .oit-list-action-btn--stock { color: #1d4ed8; }
+    .oit-list-action-btn--stock:hover { background: #eff6ff; border-color: #1d4ed8; color: #1d4ed8; }
+    .oit-list-action-btn--transfer { color: #c2410c; }
+    .oit-list-action-btn--transfer:hover { background: #fff7ed; border-color: #c2410c; color: #c2410c; }
+    .oit-list-filter-bar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        padding: 12px 18px;
+        margin-bottom: 14px;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.06);
+        color: #64748b;
+        font-size: 0.78rem;
+    }
+    .oit-grid-wrap {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .oit-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100vh - 340px);
+        overflow-y: auto;
+    }
+    .oit-page #tblCRMOrderInTransit {
+        margin-bottom: 0;
+        font-size: 13px;
+    }
+    .oit-page #tblCRMOrderInTransit thead {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+    .oit-page #tblCRMOrderInTransit thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 12px 14px;
+        text-align: left;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 11.5px;
+        letter-spacing: 0.04em;
+        vertical-align: middle;
+    }
+    .oit-page #tblCRMOrderInTransit thead th .filter-table-heading,
+    .oit-page #tblCRMOrderInTransit thead th i,
+    .oit-page #tblCRMOrderInTransit thead th .fa {
+        color: rgba(255, 255, 255, 0.95);
+    }
+    .oit-page #tblCRMOrderInTransit tbody tr {
+        transition: background 0.12s;
+    }
+    .oit-page #tblCRMOrderInTransit tbody tr:nth-child(even) {
+        background: #f8fafc !important;
+    }
+    .oit-page #tblCRMOrderInTransit tbody tr:hover {
+        background: rgba(102, 126, 234, 0.07) !important;
+    }
+    .oit-page #tblCRMOrderInTransit tbody tr.oit-row-stock-available {
+        box-shadow: inset 4px 0 0 #22c55e;
+    }
+    .oit-page #tblCRMOrderInTransit tbody tr.oit-row-stock-available,
+    .oit-page #tblCRMOrderInTransit tbody tr.oit-row-stock-available td {
+        background-color: #dcfce7 !important;
+        color: #14532d;
+    }
+    .oit-page #tblCRMOrderInTransit tbody tr.oit-row-stock-available:nth-child(even),
+    .oit-page #tblCRMOrderInTransit tbody tr.oit-row-stock-available:nth-child(even) td {
+        background-color: #dcfce7 !important;
+    }
+    .oit-page #tblCRMOrderInTransit tbody tr.oit-row-stock-available:hover,
+    .oit-page #tblCRMOrderInTransit tbody tr.oit-row-stock-available:hover td {
+        background-color: #bbf7d0 !important;
+    }
+    .oit-page #tblCRMOrderInTransit td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #f1f5f9 !important;
+        color: #1e293b;
+        vertical-align: middle;
+    }
+    .oit-page .paginator {
+        padding: 10px 16px;
+        border-top: 1px solid #eef0f8;
+        background: #fafbff;
+        display: flex;
+        align-items: center;
+        font-size: 8pt;
+    }
+    .oit-est-date,
+    .oit-remark {
+        min-width: 140px;
+        width: 100%;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        background: #fafaff;
+    }
+    .oit-remark { min-width: 180px; }
+    .oit-est-date.oit-locked,
+    .oit-remark.oit-locked {
+        background: #e9ecef !important;
+        color: #475569;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .oit-est-date:focus,
+    .oit-remark:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        background: #fff;
+        outline: none;
+    }
+    #tblCRMOrderInTransit th.oit-select-col,
+    #tblCRMOrderInTransit td:last-child {
+        text-align: center;
+        width: 56px;
+    }
+    #chkSelectAll,
+    .oit-row-check {
+        cursor: pointer;
+        width: 16px;
+        height: 16px;
+        accent-color: #667eea;
+    }
+    .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
+    @@media (max-width: 576px) {
+        .oit-list-action-btn-label { display: none; }
+    }
+</style>
+
+<div class="oit-page">
+    <div class="oit-list-header section-entry-animation">
+        <div class="oit-list-header-top">
+            <div class="oit-list-header-title-block">
+                <h2 class="oit-list-header-title"><i class="fa fa-truck-fast me-2" aria-hidden="true"></i>Order In Transit</h2>
+                <small class="oit-list-header-sub">Estimated Date and Remark are both mandatory for Update. Select rows with the last column, or use the header checkbox to select all.</small>
+            </div>
+            <div class="oit-list-header-actions">
+                <button type="button" id="btnShowCRMOrderInTransit" class="oit-list-action-btn" title="Show pending orders">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    <span class="oit-list-action-btn-label">Show</span>
+                </button>
+                <button type="button" id="btnUpdateCRMOrderInTransit" class="oit-list-action-btn oit-list-action-btn--update" title="Update estimated date / remark">
+                    <i class="fas fa-save" aria-hidden="true"></i>
+                    <span class="oit-list-action-btn-label">Update</span>
+                </button>
+                <button type="button" id="btnCheckStockCRMOrderInTransit" class="oit-list-action-btn oit-list-action-btn--stock" title="Check and update current stock for all rows">
+                    <i class="fas fa-boxes-stacked" aria-hidden="true"></i>
+                    <span class="oit-list-action-btn-label">Check Current Stock</span>
+                </button>
+                <button type="button" id="btnTransferCRMOrderInTransit" class="oit-list-action-btn oit-list-action-btn--transfer" title="Transfer selected orders">
+                    <i class="fas fa-right-left" aria-hidden="true"></i>
+                    <span class="oit-list-action-btn-label">Transfer</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="oit-list-filter-bar section-entry-animation">
+        Use <strong>Check Current Stock</strong> to refresh stock for all rows. Then use <strong>Update</strong> to save date/remark or <strong>Transfer</strong> to move selected orders.
+    </div>
+
+    <div class="oit-grid-wrap section-entry-animation">
+        <div class="oit-table-wrapper table-wrapper fixed-height-table">
+            <table id="tblCRMOrderInTransit" class="fixed-width-table table">
+                <thead id="tblCRMOrderInTransit-header"></thead>
+                <tbody id="tblCRMOrderInTransit-body"></tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-tblCRMOrderInTransit"></div>
+    </div>
+</div>

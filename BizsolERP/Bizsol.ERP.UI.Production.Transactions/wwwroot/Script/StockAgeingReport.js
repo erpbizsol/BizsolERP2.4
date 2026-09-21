@@ -100,6 +100,13 @@ const LOGICAL_STOCK_COLUMN_MAP = [
     ['MinimumQty', 'Minimum Qty']
 ];
 
+const LOGICAL_STOCK_DRILLDOWN_COLUMNS = {
+    'Sale Order Qty': { mode: 'SaleOrderDtl', title: 'Sale Order Details' },
+    'Pending CRM Order': { mode: 'CRMOrderDtl', title: 'Pending CRM Order Details' },
+    'Rolling Forecast': { mode: 'RollingForecastDtl', title: 'Rolling Forecast Details' },
+    'Pending Enquiry': { mode: 'PendingEnquiryDtl', title: 'Pending Enquiry Details' }
+};
+
 function filterLogicalStockRows(rows) {
     return rows.filter(function (row) {
         var ps = parseFloat(row.PhysicalStock);
@@ -145,7 +152,8 @@ function mapLogicalStockRowForGrid(raw) {
             key === 'ItemName' ||
             key === 'SizeDesp' ||
             key === 'Code' ||
-            key === 'ItemMaster_Code'
+            key === 'ItemMaster_Code' ||
+            key === 'ItemSizeMaster_Code'
         ) {
             return;
         }
@@ -177,6 +185,9 @@ function mapLogicalStockRowForGrid(raw) {
     }
     if (raw['ItemMaster_Code'] !== undefined) {
         out['ItemMaster_Code'] = raw['ItemMaster_Code'];
+    }
+    if (raw['ItemSizeMaster_Code'] !== undefined) {
+        out['ItemSizeMaster_Code'] = raw['ItemSizeMaster_Code'];
     }
 
     return out;
@@ -356,6 +367,250 @@ function bindStockAgeingReportHeightHandlers() {
     }
 }
 
+function getStockAgeingHeaderColumnIndex(thead, label) {
+    var headerRow = thead.querySelector('tr');
+    if (!headerRow) {
+        return -1;
+    }
+    var ths = headerRow.querySelectorAll('th');
+    var wanted = String(label || '').trim().toLowerCase();
+    for (var i = 0; i < ths.length; i++) {
+        var span = ths[i].querySelector('.filter-table-heading');
+        var text = span ? span.textContent.trim() : ths[i].textContent.trim();
+        if (text.toLowerCase() === wanted) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+function bindLogicalStockDrilldownClicks() {
+    $(document).off('click.lsDrilldown', '#table-body-StockAgeingReport a.ls-drilldown-link')
+        .on('click.lsDrilldown', '#table-body-StockAgeingReport a.ls-drilldown-link', function (e) {
+            e.preventDefault();
+            var $a = $(this);
+            ShowLogicalStockDetail(
+                $a.attr('data-mode'),
+                $a.attr('data-title'),
+                $a.attr('data-itemcode'),
+                $a.attr('data-sizedesp'),
+                $a.attr('data-sizecode'),
+                $a.attr('data-itemname')
+            );
+        });
+}
+
+function applyLogicalStockDrilldownLinks() {
+    if (!isLogicalStockWithSeparateParameters()) {
+        return;
+    }
+    var thead = document.getElementById(STOCK_AGEING_THEAD_ID);
+    var tbody = document.getElementById(STOCK_AGEING_TBODY_ID);
+    if (!thead || !tbody) {
+        return;
+    }
+
+    var itemCodeIdx = getStockAgeingHeaderColumnIndex(thead, 'ItemMaster_Code');
+    var sizeCodeIdx = getStockAgeingHeaderColumnIndex(thead, 'ItemSizeMaster_Code');
+    var itemNameIdx = getStockAgeingHeaderColumnIndex(thead, 'Item Name');
+    if (itemNameIdx < 0) {
+        itemNameIdx = getStockAgeingHeaderColumnIndex(thead, 'ItemName');
+    }
+    var sizeDespIdx = getStockAgeingHeaderColumnIndex(thead, 'SizeDesp');
+    if (sizeDespIdx < 0) {
+        sizeDespIdx = getStockAgeingHeaderColumnIndex(thead, 'Size Desp');
+    }
+
+    var colIndexes = {};
+    Object.keys(LOGICAL_STOCK_DRILLDOWN_COLUMNS).forEach(function (name) {
+        var idx = getStockAgeingHeaderColumnIndex(thead, name);
+        if (idx >= 0) {
+            colIndexes[name] = idx;
+        }
+    });
+    if (Object.keys(colIndexes).length === 0) {
+        return;
+    }
+
+    tbody.querySelectorAll('tr').forEach(function (tr) {
+        if (tr.classList.contains('total-row') || tr.classList.contains('grand-total-row')) {
+            return;
+        }
+        var tds = tr.querySelectorAll('td');
+        var itemCode = itemCodeIdx >= 0 && tds[itemCodeIdx] ? (tds[itemCodeIdx].textContent || '').trim() : '';
+        var sizeCode = sizeCodeIdx >= 0 && tds[sizeCodeIdx] ? (tds[sizeCodeIdx].textContent || '').trim() : '';
+        var itemName = itemNameIdx >= 0 && tds[itemNameIdx] ? (tds[itemNameIdx].textContent || '').trim() : '';
+        var sizeDesp = sizeDespIdx >= 0 && tds[sizeDespIdx] ? (tds[sizeDespIdx].textContent || '').trim() : '';
+
+        Object.keys(colIndexes).forEach(function (colName) {
+            var td = tds[colIndexes[colName]];
+            if (!td || td.querySelector('a.ls-drilldown-link')) {
+                return;
+            }
+            var raw = (td.textContent || '').replace(/,/g, '').trim();
+            var val = parseFloat(raw);
+            if (isNaN(val) || val <= 0) {
+                return;
+            }
+            var cfg = LOGICAL_STOCK_DRILLDOWN_COLUMNS[colName];
+            var a = document.createElement('a');
+            a.href = 'javascript:void(0)';
+            a.className = 'ls-drilldown-link';
+            a.textContent = (td.textContent || '').trim();
+            a.setAttribute('data-mode', cfg.mode);
+            a.setAttribute('data-title', cfg.title);
+            a.setAttribute('data-itemcode', itemCode);
+            a.setAttribute('data-sizecode', sizeCode);
+            a.setAttribute('data-sizedesp', sizeDesp);
+            a.setAttribute('data-itemname', itemName);
+            td.innerHTML = '';
+            td.appendChild(a);
+        });
+    });
+}
+
+function inferLogicalStockDetailGridConfig(row) {
+    var stringFilterColumn = [];
+    var numericFilterColumn = [];
+    var dateFilterColumn = [];
+    var columnAlignment = {};
+    Object.keys(row).forEach(function (key) {
+        var lower = key.toLowerCase();
+        if (lower.indexOf('date') >= 0) {
+            dateFilterColumn.push(key);
+            columnAlignment[key] = 'center';
+            return;
+        }
+        if (lower.indexOf('qty') >= 0 || lower === 'quantity') {
+            numericFilterColumn.push(key);
+            columnAlignment[key] = 'right';
+            return;
+        }
+        stringFilterColumn.push(key);
+    });
+    return {
+        stringFilterColumn: stringFilterColumn,
+        numericFilterColumn: numericFilterColumn,
+        dateFilterColumn: dateFilterColumn,
+        columnAlignment: columnAlignment
+    };
+}
+
+function resolveItemMasterCodeByName(itemName) {
+    var code = 0;
+    if (!itemName) {
+        return code;
+    }
+    var wanted = String(itemName).trim().toLowerCase();
+    $('#ddlItemNameFilter option').each(function () {
+        var text = ($(this).text() || '').trim().toLowerCase();
+        var val = parseInt($(this).val(), 10);
+        if (text === wanted && !isNaN(val) && val > 0) {
+            code = val;
+            return false;
+        }
+    });
+    return code;
+}
+
+function ShowLogicalStockDetail(mode, title, itemMasterCode, sizeDesp, itemSizeMasterCode, itemName) {
+    var asOnDate = $('#txtAsOnDate').val();
+    var itemCode = parseInt(itemMasterCode, 10);
+    if (!mode) {
+        return;
+    }
+    if ((isNaN(itemCode) || itemCode <= 0) && itemName) {
+        itemCode = resolveItemMasterCodeByName(itemName);
+    }
+    if (isNaN(itemCode) || itemCode <= 0) {
+        var selectedItem = $('#ddlItemNameFilter').val();
+        itemCode = parseInt(selectedItem, 10);
+    }
+    if (isNaN(itemCode) || itemCode <= 0) {
+        itemCode = 0;
+    }
+    if (!itemName && itemCode <= 0) {
+        toastr.error('Item name not found for this row.');
+        return;
+    }
+
+    var payload = {
+        category: '',
+        itemType: '',
+        warehouse: '',
+        itemMaster_Code: itemCode,
+        asOnDate: asOnDate,
+        itemSizeMaster_Codes: itemSizeMasterCode && itemSizeMasterCode !== '0' ? itemSizeMasterCode : '0',
+        itemParameterMaster_Desps: '',
+        ReportType: $('#ddlReportOption').val(),
+        Mode: mode,
+        SizeDesp: sizeDesp || '',
+        ItemName: itemName || ''
+    };
+
+    var modalTitle = title || 'Details';
+    if (itemName) {
+        modalTitle = modalTitle + ' - ' + itemName;
+    }
+    $('#LogicalStockDetailModalTitle').text(modalTitle);
+    Showloader();
+    StockAgeingReportService.GetLogicalStockDetail(payload).then(function (response) {
+        HideLoader();
+        var rows = normalizeStockAgeingApiResponse(response);
+        if (!rows.length) {
+            toastr.error('No Data Found');
+            return;
+        }
+        rows = rows.map(function (row) {
+            Object.keys(row).forEach(function (key) {
+                var lower = key.toLowerCase();
+                if ((lower.indexOf('qty') >= 0 || lower === 'quantity') && row[key] !== undefined && row[key] !== null && !isNaN(parseFloat(row[key]))) {
+                    row[key] = parseFloat(row[key]).toFixed(3);
+                }
+            });
+            return row;
+        });
+        var gridConfig = inferLogicalStockDetailGridConfig(rows[0]);
+        BizsolCustomFilterGrid.CreateDataTable(
+            'table-head-LogicalStockDetail',
+            'table-body-LogicalStockDetail',
+            rows,
+            false,
+            [],
+            gridConfig.stringFilterColumn,
+            gridConfig.numericFilterColumn,
+            gridConfig.dateFilterColumn,
+            [],
+            [],
+            gridConfig.columnAlignment,
+            true
+        );
+        var modalEl = document.getElementById('LogicalStockDetailModal');
+        if (window.bootstrap && bootstrap.Modal) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        } else {
+            $('#LogicalStockDetailModal').modal('show');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || error.message || 'Error loading details');
+    });
+}
+
+function CloseLogicalStockDetailModal() {
+    var modalEl = document.getElementById('LogicalStockDetailModal');
+    if (window.bootstrap && bootstrap.Modal) {
+        var instance = bootstrap.Modal.getInstance(modalEl);
+        if (instance) {
+            instance.hide();
+        }
+    } else {
+        $('#LogicalStockDetailModal').modal('hide');
+    }
+    $('#table-head-LogicalStockDetail').empty();
+    $('#table-body-LogicalStockDetail').empty();
+}
+
 function getBalanceQtyColumnIndex(thead) {
     var headerRow = thead.querySelector('tr');
     if (!headerRow) {
@@ -409,7 +664,10 @@ function startStockAgeingBalanceQtyRowHighlightTimer() {
     if (stockAgeingBalanceQtyHighlightTimerId != null) {
         return;
     }
-    stockAgeingBalanceQtyHighlightTimerId = setInterval(applyStockAgeingNegativeBalanceRowStyle, 1000);
+    stockAgeingBalanceQtyHighlightTimerId = setInterval(function () {
+        applyStockAgeingNegativeBalanceRowStyle();
+        applyLogicalStockDrilldownLinks();
+    }, 1000);
 }
 
 $(document).ready(function () {
@@ -445,6 +703,7 @@ $(document).ready(function () {
     startStockAgeingBalanceQtyRowHighlightTimer();
     bindStockAgeingReportHeightHandlers();
     scheduleStockAgeingReportTableHeightAdjust();
+    bindLogicalStockDrilldownClicks();
 
     $('#swcBtnResetFilters').on('click', function () {
         SWC_SelectedCategoryCode = 0;
@@ -1147,7 +1406,7 @@ export function GetStockAgeingReportList() {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ['Code', 'ItemMaster_Code'];
+            const hiddenColumns = ['Code', 'ItemMaster_Code', 'ItemSizeMaster_Code'];
             BizsolCustomFilterGrid.CreateDataTable(
                 'table-head-StockAgeingReport',
                 'table-body-StockAgeingReport',
@@ -1164,7 +1423,10 @@ export function GetStockAgeingReportList() {
                 prepared.gridConfig.totalColKeys,
                 null
             );
-            setTimeout(applyStockAgeingNegativeBalanceRowStyle, 0);
+            setTimeout(function () {
+                applyStockAgeingNegativeBalanceRowStyle();
+                applyLogicalStockDrilldownLinks();
+            }, 0);
             scheduleStockAgeingReportTableHeightAdjust();
             setTimeout(scheduleStockAgeingReportTableHeightAdjust, 150);
         } else {
@@ -1178,7 +1440,7 @@ export function GetStockAgeingReportList() {
     });
 }
 function ExportExcel() {
-    const hiddenFields = ['Code', 'ItemMaster_Code'];
+    const hiddenFields = ['Code', 'ItemMaster_Code', 'ItemSizeMaster_Code'];
     const ReportOptionExport = $('#ddlReportOption').val();
 
     if (isStockWithChart()) {
@@ -1319,6 +1581,8 @@ window.Bind_ddlItemMaster = Bind_ddlItemMaster;
 window.GetStockAgeingReportList = GetStockAgeingReportList;
 window.ShowSizeControlModal = ShowSizeControlModal;
 window.ShowAgeingParameterModal = ShowAgeingParameterModal;
+window.ShowLogicalStockDetail = ShowLogicalStockDetail;
+window.CloseLogicalStockDetailModal = CloseLogicalStockDetailModal;
 function SWC_DestroyCharts() {
     if (SWC_CategoryChartInstance) {
         try { SWC_CategoryChartInstance.destroy(); } catch (e) { /* ignore */ }

@@ -1,7 +1,31 @@
 import { BuyingCapacityService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BuyingCapacityService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
 let G_BuyingCapacityRows = [];
+// When true, programmatic value binding is in progress and onchange-triggered saves are ignored
+let G_SuppressSave = false;
+let G_SalesPersonBound = false;
+
+function resetBuyingCapacityTableScroll() {
+    var wrap = document.querySelector('#BuyingCapacityPage .table-wrapper');
+    if (wrap) {
+        wrap.scrollLeft = 0;
+    }
+}
+
+function pickField(item, keys, fallback) {
+    if (!item || !keys) {
+        return fallback !== undefined ? fallback : '';
+    }
+    for (var i = 0; i < keys.length; i++) {
+        var val = item[keys[i]];
+        if (val !== undefined && val !== null && val !== '') {
+            return val;
+        }
+    }
+    return fallback !== undefined ? fallback : '';
+}
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
@@ -13,17 +37,22 @@ $(document).ready(function () {
     //if (SalesPersonNameSave) {
     //    $('#ddlMarketingMan').val(SalesPersonNameSave);
     //}
-    GetNestedMarketingManList();
-    //GetBuyingCapacityList();
-    //FillBuyingFrequency();
+    GetNestedMarketingManList().then(function (bound) {
+        if (bound) {
+            GetBuyingCapacityList();
+        }
+    });
     $("#btnShow").click(function () {
+        if (!G_SalesPersonBound) {
+            toastr.error('Please wait, sales person list is loading');
+            return false;
+        }
         var MarketingMan_Name = $("#ddlMarketingMan").val();
         
         if (MarketingMan_Name == undefined || MarketingMan_Name == '') {
             toastr.error('Please select Sales Person');
             return false;
         }
-        FillBuyingFrequency();
         GetBuyingCapacityList();
     });
 });
@@ -37,7 +66,11 @@ function getUrlVars() {
     return vars;
 }
 function GetNestedMarketingManList() {
-    BuyingCapacityService.GetNestedMarketingManList().then(function (response) {
+    G_SalesPersonBound = false;
+    $('#ddlMarketingMan').prop('disabled', true);
+    $('#btnShow, #btnExportExcel').prop('disabled', true);
+    Showloader();
+    return BuyingCapacityService.GetNestedMarketingManList().then(function (response) {
         if (response && response.length > 0) {
             let matchedPersonName = null;
             let marketingList = [];
@@ -67,36 +100,63 @@ function GetNestedMarketingManList() {
                 }
             }
 
-            BindSelectList1($('#ddlMarketingMan')[0], marketingList);
-            $('#ddlMarketingMan option[value="0"]').val("ALL");
-            if ($('#ddlMarketingMan').select2) {
-                $('#ddlMarketingMan').select2({
-                    width: '-webkit-fill-available'
-                });
-            }
+            var $ddl = $('#ddlMarketingMan');
+            BindSelectList1($ddl[0], marketingList);
+            $ddl.find('option[value="0"]').val("ALL");
 
-            // Set the marketing man input or dropdown value
+            // Determine which value should be selected
             var urlParams = getUrlVars();
             var urlMarketingMan = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
-            if (urlMarketingMan == '') {
-                if (matchedPersonName) {
-                    $('#ddlMarketingMan').val(matchedPersonName);
-                } else {
-                    $('#ddlMarketingMan').val("ALL");
-                }
+            var targetValue;
+            if (urlMarketingMan === '') {
+                targetValue = matchedPersonName ? matchedPersonName : "ALL";
             } else {
-                $('#ddlMarketingMan').val(urlMarketingMan);
+                targetValue = urlMarketingMan;
             }
 
+            // (Re)initialize select2 so options and selection stay in sync
+            try {
+                if ($ddl.hasClass('select2-hidden-accessible')) {
+                    $ddl.select2('destroy');
+                }
+            } catch (e) { }
+            try {
+                if (typeof $ddl.select2 === 'function') {
+                    $ddl.select2({ width: '100%', dropdownParent: $(document.body) });
+                }
+            } catch (e) { }
+
+            // Set the value AFTER select2 init and trigger change so the UI reflects it
+            $ddl.val(targetValue);
+            try {
+                $ddl.trigger('change.select2');
+            } catch (e) {
+                $ddl.trigger('change');
+            }
+
+            G_SalesPersonBound = true;
+            $ddl.prop('disabled', false);
+            $('#btnShow, #btnExportExcel').prop('disabled', false);
+            return true;
         } else {
             toastr.error('No Data Found');
+            $('#ddlMarketingMan').prop('disabled', false);
+            return false;
         }
     }).catch(function (error) {
         console.error('Error loading marketing person list:', error);
         toastr.error('Error loading sales person list');
+        $('#ddlMarketingMan').prop('disabled', false);
+        return false;
+    }).finally(function () {
+        HideLoader();
     });
 }
 async function GetBuyingCapacityList() {
+    if (!G_SalesPersonBound) {
+        toastr.error('Please wait, sales person list is loading');
+        return;
+    }
     var MarketingPersonName = $("#ddlMarketingMan").val();
     // Procedure expects 'All' (not 'ALL') when showing all marketing persons
     if (MarketingPersonName === 'ALL' || MarketingPersonName === '0') {
@@ -104,6 +164,7 @@ async function GetBuyingCapacityList() {
     }
 
     try {
+        Showloader();
         const response = await BuyingCapacityService.GetBuyingCapacityList(MarketingPersonName);
         $('#BuyingCapacity').show();
         if (response && response.length > 0) {
@@ -113,33 +174,49 @@ async function GetBuyingCapacityList() {
                     __RowIndex: index
                 };
             });
-            const StringFilterColumn = ["Party Name", "Marketing Person","Country", "City", "State","PinCode"];
+            const StringFilterColumn = ["Party Name", "Mkt Person", "Country", "City", "State", "PinCode"];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
             const hiddenColumns = ["Code", "__RowIndex"];
-            const ColumnAlignment = {};
+            const ColumnAlignment = {
+                "S.No.": "right",
+                "PinCode": "right",
+                "Monthly Req(Qty)": "right"
+            };
             const updatedResponse = G_BuyingCapacityRows.map((item) => {
                 const rowIndex = item.__RowIndex;
                 let BuyingFrequencyInputHTML = `<select type="text" class="form-control form-control-sm box_border" id="ddlFillBuyingFrequency_${rowIndex}" onchange="SaveBuyingCapacity(${rowIndex},'${item.Code}')"></select>`;
-                let MonthlyRequiredQtyInputHTML = `<input type="text" class="form-control form-control-sm box_border text-end" id="txtMonthlyRequired_${rowIndex}" oninput="validateDecimalRateInput(this)" onblur="SaveBuyingCapacity(${rowIndex},'${item.Code}')" style="width:120px" autocomplete="off"/>`;
-                let CustomerRatingInputHTML = `<input type="text" class="form-control form-control-sm box_border" id="txtCustomerRating_${rowIndex}" maxlength="100" onblur="SaveBuyingCapacity(${rowIndex},'${item.Code}')" style="width:150px" placeholder="Customer Rating" autocomplete="off"/>`;
+                let MonthlyRequiredQtyInputHTML = `<input type="text" class="form-control form-control-sm box_border text-end" id="txtMonthlyRequired_${rowIndex}" oninput="validateDecimalRateInput(this)" onblur="SaveBuyingCapacity(${rowIndex},'${item.Code}')" autocomplete="off"/>`;
+                let CustomerRatingInputHTML = `<input type="text" class="form-control form-control-sm box_border" id="txtCustomerRating_${rowIndex}" maxlength="100" onblur="SaveBuyingCapacity(${rowIndex},'${item.Code}')" placeholder="Customer Rating" autocomplete="off"/>`;
+                let GPRollingInputHTML = `<select type="text" class="form-control form-control-sm box_border" id="ddlFillGPRolling_${rowIndex}" onchange="SaveBuyingCapacity(${rowIndex},'${item.Code}')"></select>`;
 
                 return {
-                    ...item,
+                    'S.No.': pickField(item, ['S.No.', 'S.No', 'SNo', 'SrNo', 'Sr No'], rowIndex + 1),
+                    'Party Name': pickField(item, ['Party Name', 'PartyName']),
+                    'Mkt Person': pickField(item, ['Marketing Person', 'Mkt Person', 'PersonName']),
+                    'Country': pickField(item, ['Country']),
+                    'State': pickField(item, ['State']),
+                    'City': pickField(item, ['City']),
+                    'PinCode': pickField(item, ['PinCode']),
                     'Buying Frequency': BuyingFrequencyInputHTML,
-                    'Monthly Required(Qty)': MonthlyRequiredQtyInputHTML,
+                    'Monthly Req(Qty)': MonthlyRequiredQtyInputHTML,
                     'Customer Rating': CustomerRatingInputHTML,
+                    'GP Rolling': GPRollingInputHTML,
+                    Code: item.Code,
+                    __RowIndex: rowIndex
                 };
             });
             BizsolCustomFilterGrid.CreateDataTable("table-header-BuyingCapacity", "table-body-BuyingCapacity", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment, false);
 
             // Ensure dropdown options are populated first
             await FillBuyingFrequency();
+            await FillBuyingGPRolling();
 
             // Bind initial values from response to each row controls
+            G_SuppressSave = true;
             try {
                 for (var i = 0; i < G_BuyingCapacityRows.length; i++) {
                     var row = G_BuyingCapacityRows[i] || {};
@@ -152,8 +229,9 @@ async function GetBuyingCapacityList() {
                         var codeMap = { 'M': 'Monthly', 'O': 'Occasionally', 'W': 'Weekly' };
                         if (bfText && codeMap[bfText]) { bfText = codeMap[bfText]; }
                     } catch(eMap) { }
-                    var qty = baseRow.MonthlyRequiredQty != null ? baseRow.MonthlyRequiredQty : (baseRow['Monthly Required(Qty)'] != null ? baseRow['Monthly Required(Qty)'] : '');
+                    var qty = pickField(baseRow, ['MonthlyRequiredQty', 'Monthly Req(Qty)', 'Monthly Required(Qty)']);
                     var customerRating = baseRow['Customer Rating'] != null ? baseRow['Customer Rating'] : (baseRow.CustomerRating != null ? baseRow.CustomerRating : (baseRow.Ratings != null ? baseRow.Ratings : ''));
+                    var gpRolling = baseRow.GPRolling != null ? baseRow.GPRolling : (baseRow['GP Rolling'] != null ? baseRow['GP Rolling'] : '');
 
                     // Bind Buying Frequency by text using helper (matches option display text)
                     try {
@@ -178,22 +256,36 @@ async function GetBuyingCapacityList() {
                     if ($ratingInp && $ratingInp.length) {
                         $ratingInp.val(customerRating || '');
                     }
+
+                    // Bind GP Rolling by value or text
+                    try {
+                        SelectGPRollingOption(`ddlFillGPRolling_${domIndex}`, gpRolling);
+                    } catch(e3) { }
                 }
             } catch(e) { }
+            finally {
+                setTimeout(function () { G_SuppressSave = false; }, 0);
+            }
         }
         else {
             $('#BuyingCapacity').hide();
             toastr.error('No Data Found');
         }
     } catch (error) {
-        HideLoader();
         $('#BuyingCapacity').hide();
         toastr.error('Error loading buying capacity data');
+    } finally {
+        resetBuyingCapacityTableScroll();
+        HideLoader();
     }
 }
 
 function SaveBuyingCapacity(index,Code) {
     try {
+        // Ignore saves fired by programmatic value binding (e.g. after clicking Show / filtering)
+        if (G_SuppressSave) {
+            return;
+        }
         var baseItem = (G_BuyingCapacityRows && G_BuyingCapacityRows.length > index) ? G_BuyingCapacityRows[index] : null;
         if (!baseItem) {
             toastr.error('Row context not found');
@@ -204,6 +296,8 @@ function SaveBuyingCapacity(index,Code) {
         var monthlyQty = monthlyQtyStr !== '' ? parseFloat(monthlyQtyStr) : null;
         var customerRatingVal = $('#txtCustomerRating_' + index).val();
         var customerRating = (customerRatingVal != null && typeof customerRatingVal === 'string') ? String(customerRatingVal).trim().substring(0, 100) : '';
+        var gpRollingVal = $('#ddlFillGPRolling_' + index).val();
+        var gpRolling = (gpRollingVal && gpRollingVal !== '0') ? gpRollingVal : '';
 
         if (!buyingFrequency || buyingFrequency === '0') {
             return;
@@ -219,7 +313,8 @@ function SaveBuyingCapacity(index,Code) {
             AccountMaster_Code: parseInt(Code, 10) || 0,
             BuyingFrequency: buyingFrequency,
             MonthlyRequiredQty: monthlyQty,
-            CustomerRating: customerRating === '' ? '' : customerRating
+            CustomerRating: customerRating === '' ? '' : customerRating,
+            GPRolling: gpRolling
         };
 
         Showloader();
@@ -246,6 +341,52 @@ function SaveBuyingCapacity(index,Code) {
     }
 }
 
+function ExportExcel() {
+    if (!G_SalesPersonBound) {
+        toastr.error('Please wait, sales person list is loading');
+        return;
+    }
+    var MarketingPersonName = $("#ddlMarketingMan").val();
+    if (MarketingPersonName == undefined || MarketingPersonName === '') {
+        toastr.error('Please select Sales Person');
+        return;
+    }
+    // Procedure expects 'All' (not 'ALL') when exporting all marketing persons
+    if (MarketingPersonName === 'ALL' || MarketingPersonName === '0') {
+        MarketingPersonName = 'All';
+    }
+
+    Showloader();
+    BuyingCapacityService.GetBuyingCapacityList(MarketingPersonName).then(function (response) {
+        HideLoader();
+        if (response && response.length > 0) {
+            var hiddenFields = ["Code", "__RowIndex", "Marketing Person", "PersonName", "MonthlyRequiredQty", "Monthly Required(Qty)"];
+            var exportRows = response.map(function (item) {
+                return {
+                    'S.No.': pickField(item, ['S.No.', 'S.No', 'SNo', 'SrNo', 'Sr No']),
+                    'Party Name': pickField(item, ['Party Name', 'PartyName']),
+                    'Mkt Person': pickField(item, ['Marketing Person', 'Mkt Person', 'PersonName']),
+                    'Country': pickField(item, ['Country']),
+                    'State': pickField(item, ['State']),
+                    'City': pickField(item, ['City']),
+                    'PinCode': pickField(item, ['PinCode']),
+                    'Buying Frequency': pickField(item, ['Buying Frequency', 'BuyingFrequency']),
+                    'Monthly Req(Qty)': pickField(item, ['MonthlyRequiredQty', 'Monthly Req(Qty)', 'Monthly Required(Qty)']),
+                    'Customer Rating': pickField(item, ['Customer Rating', 'CustomerRating', 'Ratings']),
+                    'GP Rolling': pickField(item, ['GP Rolling', 'GPRolling'])
+                };
+            });
+            ExportToExcelControl.ExportToExcel(exportRows, hiddenFields, "BuyingCapacity");
+            toastr.success('Export completed successfully.');
+        } else {
+            toastr.info('No data to export.');
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error((error && (error.Msg || error.message)) || 'Error during export.');
+    });
+}
+
 async function FillBuyingFrequency(selectId) {
     try {
         const response = await BuyingCapacityService.GetBuyingFrequency();
@@ -263,7 +404,7 @@ async function FillBuyingFrequency(selectId) {
                 $select.html(option);
                 try {
                     if ($select.select2) {
-                        $select.select2({ width: '-webkit-fill-available' });
+                        $select.select2({ width: '132px', dropdownParent: $(document.body) });
                     }
                 } catch(e) { }
             }
@@ -280,6 +421,72 @@ async function FillBuyingFrequency(selectId) {
         }
     } catch (error) {
         toastr.error('Error fetching buying frequency');
+    }
+}
+async function FillBuyingGPRolling(selectId) {
+    try {
+        const response = await BuyingCapacityService.GetBuyingGPRollingCategory();
+        if (response && response.length > 0) {
+            var list = response.map(function (item) {
+                // Store the descriptive string in RollingGPCategory: use Description as both value and text
+                var text = (item.Description != null ? item.Description : (item.Desp != null ? item.Desp : item.Value));
+                return { Code: text, Desp: text };
+            });
+
+            function bindOptions($select) {
+                if (!$select || $select.length === 0) { return; }
+                var option = '<option value="0">Select</option>';
+                for (var i = 0; i < list.length; i++) {
+                    option += '<option value="' + list[i].Code + '">' + list[i].Desp + '</option>';
+                }
+                $select.html(option);
+                try {
+                    if ($select.select2) {
+                        $select.select2({ width: '132px', dropdownParent: $(document.body) });
+                    }
+                } catch(e) { }
+            }
+
+            if (selectId && typeof selectId === 'string') {
+                bindOptions($('#' + selectId));
+            } else {
+                $('[id^=ddlFillGPRolling_]').each(function () {
+                    bindOptions($(this));
+                });
+            }
+        } else {
+            toastr.error('No data received or empty response');
+        }
+    } catch (error) {
+        toastr.error('Error fetching GP rolling category');
+    }
+}
+function SelectGPRollingOption(selectId, gpValue) {
+    var $sel = $('#' + selectId);
+    if (!$sel || $sel.length === 0) { return; }
+    if (gpValue == null || gpValue === '') { return; }
+    var target = String(gpValue).trim();
+    var matched = false;
+    // Try match by option value first
+    $sel.find('option').each(function () {
+        if (!matched && String($(this).val()).trim() === target) {
+            $(this).prop('selected', true);
+            matched = true;
+        }
+    });
+    // Fallback: match by option text
+    if (!matched) {
+        $sel.find('option').each(function () {
+            if (!matched && String($(this).text()).trim() === target) {
+                $(this).prop('selected', true);
+                matched = true;
+            }
+        });
+    }
+    if (matched) {
+        try {
+            if ($sel.select2) { $sel.trigger('change.select2'); } else { $sel.trigger('change'); }
+        } catch (e) { $sel.trigger('change'); }
     }
 }
 function validateDecimalRateInput(input) {
@@ -327,7 +534,8 @@ function refreshBuyingCapacityRowControls(rows) {
         return;
     }
 
-    FillBuyingFrequency().then(function () {
+    Promise.all([FillBuyingFrequency(), FillBuyingGPRolling()]).then(function () {
+        G_SuppressSave = true;
         try {
             var codeMap = { 'M': 'Monthly', 'O': 'Occasionally', 'W': 'Weekly' };
 
@@ -346,12 +554,7 @@ function refreshBuyingCapacityRowControls(rows) {
                     bfText = codeMap[bfText];
                 }
 
-                var qty = '';
-                if (baseRow.MonthlyRequiredQty !== undefined && baseRow.MonthlyRequiredQty !== null) {
-                    qty = baseRow.MonthlyRequiredQty;
-                } else if (baseRow['Monthly Required(Qty)'] !== undefined && baseRow['Monthly Required(Qty)'] !== null) {
-                    qty = baseRow['Monthly Required(Qty)'];
-                }
+                var qty = pickField(baseRow, ['MonthlyRequiredQty', 'Monthly Req(Qty)', 'Monthly Required(Qty)']);
 
                 var customerRating = '';
                 if (baseRow['Customer Rating'] !== undefined && baseRow['Customer Rating'] !== null) {
@@ -360,6 +563,13 @@ function refreshBuyingCapacityRowControls(rows) {
                     customerRating = baseRow.CustomerRating;
                 } else if (baseRow.Ratings !== undefined && baseRow.Ratings !== null) {
                     customerRating = baseRow.Ratings;
+                }
+
+                var gpRolling = '';
+                if (baseRow.GPRolling !== undefined && baseRow.GPRolling !== null) {
+                    gpRolling = baseRow.GPRolling;
+                } else if (baseRow['GP Rolling'] !== undefined && baseRow['GP Rolling'] !== null) {
+                    gpRolling = baseRow['GP Rolling'];
                 }
 
                 var selectId = 'ddlFillBuyingFrequency_' + domIndex;
@@ -397,14 +607,23 @@ function refreshBuyingCapacityRowControls(rows) {
                 if ($ratingInp && $ratingInp.length) {
                     $ratingInp.val(customerRating || '');
                 }
+
+                try {
+                    SelectGPRollingOption('ddlFillGPRolling_' + domIndex, gpRolling);
+                } catch (e3) { }
             }
         } catch (error) {
             console.error('Error rebinding buying capacity controls:', error);
         } finally {
-            adjustFilterDropdownPosition();
+            setTimeout(function () {
+                G_SuppressSave = false;
+                resetBuyingCapacityTableScroll();
+                adjustFilterDropdownPosition();
+            }, 0);
         }
     }).catch(function (error) {
         console.error('Error refreshing buying frequency after filtering:', error);
+        G_SuppressSave = false;
         adjustFilterDropdownPosition();
     });
 }
@@ -429,9 +648,11 @@ function adjustFilterDropdownPosition() {
         }
         
         /* Ensure filter content is visible and not cut off */
-        .table-wrapper {
-            overflow-x: auto;
-            overflow-y: visible;
+        @media (min-width: 1200px) {
+            #BuyingCapacityPage .table-wrapper {
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
         }
         
         #BuyingCapacity {
@@ -486,5 +707,8 @@ window.GetBuyingCapacityList = GetBuyingCapacityList;
 window.GetNestedMarketingManList = GetNestedMarketingManList;
 window.getUrlVars = getUrlVars;
 window.FillBuyingFrequency = FillBuyingFrequency;
+window.FillBuyingGPRolling = FillBuyingGPRolling;
+window.SelectGPRollingOption = SelectGPRollingOption;
 window.validateDecimalRateInput = validateDecimalRateInput;
 window.SaveBuyingCapacity = SaveBuyingCapacity;
+window.ExportExcel = ExportExcel;

@@ -910,6 +910,150 @@ function CloseConfirmModal() {
     $('#modalConfirm').modal('hide');
 }
 
+function CloseBudgetHistoryModal() {
+    $('#modalPOBudgetHistory').modal('hide');
+}
+
+function plaPickHistoryField(row, keys) {
+    if (!row) return '';
+    for (let i = 0; i < keys.length; i++) {
+        if (row[keys[i]] !== undefined && row[keys[i]] !== null && String(row[keys[i]]).trim() !== '') {
+            return row[keys[i]];
+        }
+    }
+    const objKeys = Object.keys(row);
+    for (let i = 0; i < keys.length; i++) {
+        const want = String(keys[i]).toLowerCase().replace(/\s+/g, '');
+        const found = objKeys.find(function (k) {
+            return String(k).toLowerCase().replace(/\s+/g, '') === want;
+        });
+        if (found != null && row[found] !== undefined && row[found] !== null && String(row[found]).trim() !== '') {
+            return row[found];
+        }
+    }
+    return '';
+}
+
+function plaFmtHistoryAmt(val) {
+    const n = parseFloat(String(val == null ? '' : val).replace(/,/g, ''));
+    if (isNaN(n)) return '0.00';
+    return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function NormalizeBudgetHistoryList(data) {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.Data)) return data.Data;
+    if (Array.isArray(data.History)) return data.History;
+    return [];
+}
+
+function RenderBudgetHistoryRows(rows) {
+    const $body = $('#budgetHistoryBody');
+    if (!rows || rows.length === 0) {
+        $body.html(
+            '<tr><td colspan="7" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+            'No budget history found for this PO.</td></tr>'
+        );
+        return;
+    }
+
+    let html = '';
+    rows.forEach(function (row) {
+        const category = EscHtml(plaPickHistoryField(row, ['Category', 'BOS Type', 'BOS Tyep', 'CategoryName']) || '—');
+        const item = EscHtml(plaPickHistoryField(row, ['Item', 'Item Name', 'ItemName']) || '');
+        const budget = plaPickHistoryField(row, ['Budget Amount with GST', '(A) Total Budget Amt With Gst', 'BudgetAmtWithGst']);
+        const current = plaPickHistoryField(row, ['Current po amt with GST', '(B) Current PO/WO Amt With Gst', 'CurrentPOAmtWithGst']);
+        const other = plaPickHistoryField(row, ['Other PO sum value with GST', '(C )Old WO/PO Amt With Gst', 'OtherPOAmtWithGst']);
+        const net = plaPickHistoryField(row, ['Net PO amount', '(D)Net WO/PO Amt With GST', 'NetPOAmount']);
+        const balance = plaPickHistoryField(row, ['Balance', '(A) - (D)Balance Budget Amt', 'BalanceAmt']);
+        const balNum = parseFloat(String(balance == null ? '' : balance).replace(/,/g, ''));
+        const balCls = !isNaN(balNum) && balNum < 0 ? 'pla-history-neg' : 'pla-history-pos';
+
+        html += '<tr>' +
+            '<td class="text-center" style="font-weight:700;">' + category + '</td>' +
+            '<td style="font-weight:600;">' + (item || '<span style="color:#94a3b8;">—</span>') + '</td>' +
+            '<td class="text-end">' + plaFmtHistoryAmt(budget) + '</td>' +
+            '<td class="text-end">' + plaFmtHistoryAmt(current) + '</td>' +
+            '<td class="text-end">' + plaFmtHistoryAmt(other) + '</td>' +
+            '<td class="text-end" style="font-weight:700;">' + plaFmtHistoryAmt(net) + '</td>' +
+            '<td class="text-end ' + balCls + '">' + plaFmtHistoryAmt(balance) + '</td>' +
+            '</tr>';
+    });
+    $body.html(html);
+}
+
+function OpenBudgetHistoryModal() {
+    const poCode = parseInt($('#hfPOCode').val() || '0', 10);
+    if (!poCode) {
+        toastr.warning('No PO selected.');
+        return;
+    }
+
+    const poNo = G_CurrentPO ? (G_CurrentPO['PO No'] || G_CurrentPO.PONo || '') : '';
+    const vendor = G_CurrentPO ? (G_CurrentPO['Party Name'] || G_CurrentPO.VendorName || '') : '';
+    const project = PlaProjectName(G_CurrentPO) || '—';
+    const subProject = PlaSubProjectName(G_CurrentPO) || '—';
+
+    $('#budgetHistoryModalSub').text(
+        (poNo ? ('PO# ' + poNo) : 'As per budget amount') + (vendor ? (' · ' + vendor) : '')
+    );
+    $('#budgetHistoryProjectLine').html(
+        '<i class="fa fa-diagram-project me-1"></i>Project: ' + EscHtml(project) +
+        '&nbsp;&nbsp;|&nbsp;&nbsp;' +
+        '<i class="fa fa-map-location-dot me-1"></i>Sub Project: ' + EscHtml(subProject)
+    );
+    $('#budgetHistoryBody').html(
+        '<tr><td colspan="7" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<i class="fa fa-spinner fa-spin me-1"></i>Loading history…</td></tr>'
+    );
+
+    $('#modalPOBudgetHistory').modal({ backdrop: 'static' });
+    $('#modalPOBudgetHistory').modal('show');
+
+    if (USE_DUMMY) {
+        RenderBudgetHistoryRows([
+            {
+                Category: 'A', Item: 'module',
+                'Budget Amount with GST': 100000,
+                'Current po amt with GST': 20000,
+                'Other PO sum value with GST': 30000,
+                'Net PO amount': 50000,
+                Balance: 50000
+            },
+            {
+                Category: 'B', Item: 'Inventor',
+                'Budget Amount with GST': 100000,
+                'Current po amt with GST': 30000,
+                'Other PO sum value with GST': 40000,
+                'Net PO amount': 70000,
+                Balance: 30000
+            },
+            {
+                Category: 'C', Item: '',
+                'Budget Amount with GST': 100000,
+                'Current po amt with GST': 40000,
+                'Other PO sum value with GST': 20000,
+                'Net PO amount': 60000,
+                Balance: 40000
+            }
+        ]);
+        return;
+    }
+
+    POLevelsApproveService.GetBudgetHistory(poCode)
+        .then(function (response) {
+            RenderBudgetHistoryRows(NormalizeBudgetHistoryList(response));
+        })
+        .catch(function () {
+            $('#budgetHistoryBody').html(
+                '<tr><td colspan="7" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                'Failed to load budget history.</td></tr>'
+            );
+        });
+}
+
 // ─── DISPLAY HELPERS ──────────────────────────────────────────────────────────
 function ShowLoading(show) {
     document.getElementById('poPendingLoading').style.display = show ? '' : 'none';
@@ -962,6 +1106,8 @@ window.OpenDetailModal   = OpenDetailModal;
 window.SubmitApproval    = SubmitApproval;
 window.CloseDetailModal  = CloseDetailModal;
 window.CloseConfirmModal = CloseConfirmModal;
+window.OpenBudgetHistoryModal = OpenBudgetHistoryModal;
+window.CloseBudgetHistoryModal = CloseBudgetHistoryModal;
 window.NavigateToPOStore = NavigateToPOStore;
 window.PrintPOFromDetail = PrintPOFromDetail;
 window.OpenPOApprovalAttachment = OpenPOApprovalAttachment;

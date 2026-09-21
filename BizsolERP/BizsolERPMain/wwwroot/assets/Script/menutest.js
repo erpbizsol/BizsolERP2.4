@@ -1,6 +1,7 @@
 //import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 import { BizSolHelperFunction } from '../../_content/Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { UserDashboardMenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/UserDashboardMenuService.js';
 
 var _menuAllItems = [];
 var _menuUserID = '';
@@ -203,22 +204,55 @@ function setHomeButtonTargets(targetUrl, targetTitle) {
     }
 }
 
+function firstDashboardRows(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    if (payload.$values && Array.isArray(payload.$values)) return payload.$values;
+    if (payload.data && Array.isArray(payload.data)) return payload.data;
+    if (payload.Data && Array.isArray(payload.Data)) return payload.Data;
+    return [];
+}
+
 function applyUserHomeRedirection(baseUrlForHome, userID) {
     var defaultHomeUrl = buildHomeTargetUrl(baseUrlForHome, '');
+    var menuUrl = BizSolHelperFunction.getUserDashboardMenuUrl();
 
     return MenuService.GetUserDefaultHomeURL(userID).then(function (res) {
         var userHomeUrl = extractUserDefaultHomeUrl(res);
         var hasCustomHome = userHomeUrl !== '';
         var targetUrl = hasCustomHome ? buildHomeTargetUrl(baseUrlForHome, userHomeUrl) : defaultHomeUrl;
-        var targetTitle = 'Home';
 
-        setHomeButtonTargets(targetUrl, targetTitle);
+        setHomeButtonTargets(targetUrl, 'Home');
 
-        if (hasCustomHome && isDefaultLandingPage()) {
-            window.location.href = targetUrl;
-            return true;
-        }
-        return false;
+        return UserDashboardMenuService.GetUserDashboardDetails().then(function (dashRes) {
+            var rows = firstDashboardRows(dashRes);
+            BizSolHelperFunction.rememberUserDashboardCount(rows.length);
+
+            if (rows.length > 1) {
+                setHomeButtonTargets(menuUrl, 'User Dashboard Menu');
+            }
+
+            if (!isDefaultLandingPage()) {
+                return false;
+            }
+
+            if (rows.length > 0) {
+                window.location.href = menuUrl;
+                return true;
+            }
+
+            if (hasCustomHome) {
+                window.location.href = targetUrl;
+                return true;
+            }
+            return false;
+        }).catch(function () {
+            if (hasCustomHome && isDefaultLandingPage()) {
+                window.location.href = targetUrl;
+                return true;
+            }
+            return false;
+        });
     }).catch(function () {
         setHomeButtonTargets(defaultHomeUrl, 'Home');
         return false;

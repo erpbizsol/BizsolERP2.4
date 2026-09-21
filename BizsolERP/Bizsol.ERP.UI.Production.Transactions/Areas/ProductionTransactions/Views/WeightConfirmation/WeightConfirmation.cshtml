@@ -1,0 +1,363 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Production.Transactions/css/PalletPacking.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/WeightConfirmation.js"></script>
+<style>
+    .wc-error-row td {
+        color: #dc3545 !important;
+        font-weight: 600;
+    }
+
+    .wc-msg-success {
+        color: #198754 !important;
+        font-weight: 700;
+    }
+
+    .wc-msg-error {
+        color: #dc3545 !important;
+        font-weight: 700;
+    }
+
+    .wc-success-row td .wc-msg-success {
+        color: #198754 !important;
+    }
+
+    .btn:not(:disabled):not(.disabled) {
+        cursor: pointer !important;
+    }
+
+    #hidetexbox { display: none; }
+
+    /* Field widths (no inline max-width so mobile can go full width) */
+    .pp-page .wc-field-process { flex: 1 1 200px; min-width: 180px; max-width: 260px; }
+    .pp-page .wc-field-id { flex: 1.2 1 220px; min-width: 200px; max-width: 320px; }
+    .pp-page .wc-field-weight { flex: 0.9 1 160px; min-width: 150px; max-width: 220px; }
+
+    .pp-page .pp-list-filter-bar .pp-filter-row {
+        align-items: flex-end;
+        gap: 16px 20px;
+    }
+
+    .pp-page .pp-list-filter-bar .pp-filter-field {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 0;
+    }
+
+    .pp-page .pp-list-filter-bar .pp-filter-field > .form-label,
+    .pp-page .pp-list-filter-bar .pp-filter-field > label {
+        margin-bottom: 6px !important;
+        line-height: 1.2 !important;
+        min-height: 1.2em;
+        white-space: nowrap;
+        font-size: 0.77rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* Kill global form-control-sm margin that breaks input-group height */
+    .pp-page .pp-list-filter-bar .form-control,
+    .pp-page .pp-list-filter-bar .form-control-sm,
+    .pp-page .pp-list-filter-bar select.form-control {
+        margin: 0 !important;
+        margin-bottom: 0 !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        max-height: 34px !important;
+        padding: 0.25rem 0.5rem !important;
+        font-size: 0.82rem !important;
+        line-height: 1.2 !important;
+        box-sizing: border-box !important;
+        max-width: none !important;
+        border-radius: 8px !important;
+        vertical-align: middle;
+    }
+
+    .pp-page .pp-list-filter-bar .pp-filter-field > select.form-control,
+    .pp-page .pp-list-filter-bar .pp-filter-field > .form-control,
+    .pp-page .pp-list-filter-bar .pp-filter-field > .input-group,
+    .pp-page .pp-list-filter-bar .pp-filter-field > .wc-weight-group {
+        width: 100% !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        max-height: 34px !important;
+    }
+
+    /* Select renders shorter than text inputs unless padding is normalized */
+    .pp-page .pp-list-filter-bar select.form-control {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        padding: 0 28px 0 0.5rem !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-color: #f5f3ff;
+        border: 1.5px solid #ddd6fe !important;
+    }
+
+    /* Identification No group */
+    .pp-page .pp-list-filter-bar .input-group {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch !important;
+        height: 34px !important;
+    }
+
+    .pp-page .pp-list-filter-bar .input-group > .form-control {
+        flex: 1 1 auto;
+        width: 1% !important;
+        min-width: 0 !important;
+        border-radius: 8px 0 0 8px !important;
+        height: 34px !important;
+        margin: 0 !important;
+    }
+
+    .pp-page .pp-list-filter-bar .input-group > button.wc-inline-btn,
+    .pp-page .pp-list-filter-bar .input-group > button.btn {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        max-height: 34px !important;
+        padding: 0 12px !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+        font-size: 0.78rem !important;
+        border-radius: 0 8px 8px 0 !important;
+        box-sizing: border-box !important;
+        white-space: nowrap;
+        flex: 0 0 auto;
+    }
+
+    /* Actual Weight group */
+    .pp-page .wc-weight-group {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 0;
+        align-items: stretch !important;
+        width: 100%;
+        height: 34px !important;
+    }
+
+    .pp-page .wc-weight-group input.form-control {
+        border-radius: 8px 0 0 8px !important;
+        flex: 1 1 auto;
+        width: 1% !important;
+        min-width: 0 !important;
+        height: 34px !important;
+        margin: 0 !important;
+        max-width: none !important;
+    }
+
+    .pp-page .wc-weight-group button.btn-scalewt {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        max-height: 34px !important;
+        border-radius: 0 8px 8px 0 !important;
+        border: 1.5px solid #ddd6fe !important;
+        border-left: none !important;
+        background: #f5f3ff;
+        color: #667eea !important;
+        padding: 0 10px !important;
+        margin: 0 !important;
+        font-size: 1rem !important;
+        line-height: 1 !important;
+        cursor: pointer;
+        flex: 0 0 auto;
+        box-sizing: border-box !important;
+        transition: background 0.15s;
+    }
+
+    .pp-page .wc-weight-group button.btn-scalewt:hover {
+        background: #667eea;
+        color: #fff !important;
+    }
+
+    /* Prevent page-level horizontal scroll (shared CSS sets table min-width:900px) */
+    .pp-page {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    .pp-page .pp-list-filter-bar,
+    .pp-page .pp-list-grid-wrap,
+    .pp-page #tblWeightConfirmation {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .pp-page .pp-list-grid-wrap {
+        overflow: hidden;
+    }
+
+    .pp-page .pp-table-wrapper {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .pp-page .pp-table-wrapper .table,
+    .pp-page .pp-table-wrapper .fixed-width-table,
+    .pp-page #WeightConfirmationGrid {
+        min-width: 0 !important;
+        width: 100% !important;
+        table-layout: auto;
+    }
+
+    .pp-page .pp-table-wrapper .table th,
+    .pp-page .pp-table-wrapper .table td,
+    .pp-page .pp-table-wrapper .fixed-width-table th,
+    .pp-page .pp-table-wrapper .fixed-width-table td {
+        white-space: normal !important;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    /* Mobile: stack fields full width + no horizontal scroll */
+    @@media (max-width: 768px) {
+        .pp-page .pp-list-filter-bar .pp-filter-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+
+        .pp-page .wc-field-process,
+        .pp-page .wc-field-id,
+        .pp-page .wc-field-weight,
+        .pp-page .pp-list-filter-bar .pp-filter-field {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+
+        .pp-page .pp-list-filter-bar .pp-filter-field > select.form-control,
+        .pp-page .pp-list-filter-bar .pp-filter-field > .form-control,
+        .pp-page .pp-list-filter-bar .pp-filter-field > .input-group,
+        .pp-page .pp-list-filter-bar .pp-filter-field > .wc-weight-group {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .pp-page .pp-list-filter-bar .pp-filter-field > .form-label,
+        .pp-page .pp-list-filter-bar .pp-filter-field > label {
+            white-space: normal !important;
+        }
+
+        .pp-page .pp-table-wrapper {
+            overflow-x: hidden;
+        }
+
+        .pp-page .pp-table-wrapper .table,
+        .pp-page .pp-table-wrapper .fixed-width-table,
+        .pp-page #WeightConfirmationGrid {
+            min-width: 100% !important;
+            width: 100% !important;
+        }
+
+        .pp-page .pp-table-wrapper .table thead th,
+        .pp-page .pp-table-wrapper .table td {
+            white-space: normal !important;
+            word-break: break-word;
+            padding: 8px 10px;
+        }
+    }
+</style>
+
+<div class="pp-page">
+
+    <!-- Header -->
+    <div class="pp-list-header section-entry-animation">
+        <div class="pp-list-header-top">
+            <div class="pp-list-header-title-block">
+                <h2 class="pp-list-header-title">
+                    <i class="fa fa-weight-hanging me-2" aria-hidden="true"></i>Weight Confirmation
+                </h2>
+                <small class="pp-list-header-sub">Confirm actual weight by process and identification.</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter / Entry Bar -->
+    <div class="pp-list-filter-bar">
+        <div class="pp-filter-row">
+
+            <!-- Process Dropdown -->
+            <div class="pp-filter-field wc-field-process">
+                <label for="ddlProcess" class="form-label">Process <span class="text-danger">*</span></label>
+                <select id="ddlProcess" class="form-control form-control-sm box_border">
+                    <option value="0">-- Select Process --</option>
+                </select>
+            </div>
+
+            <!-- Identification No -->
+            <div class="pp-filter-field wc-field-id">
+                <label for="txtIdentificationNo" class="form-label">Identification No <span class="text-danger">*</span></label>
+                <div class="input-group input-group-sm">
+                    <input type="text"
+                           id="txtIdentificationNo"
+                           class="box_border form-control form-control-sm"
+                           autocomplete="off"
+                           placeholder="Scan or type ID"
+                           onkeydown="WeightConfirmation_onIdentificationKeyDown(event)" />
+                    <button type="button"
+                            class="btn btn-secondary wc-inline-btn"
+                            id="btnScanID"
+                            title="Scan Barcode / QR"
+                            onclick="WeightConfirmation_btnScanQR()">
+                        <i class="fa fa-qrcode me-1"></i>Scan
+                    </button>
+                </div>
+            </div>
+
+            <!-- Actual Weight -->
+            <div class="pp-filter-field wc-field-weight">
+                <label for="txtActualWeight" class="form-label">Actual Weight (Kg) <span class="text-danger">*</span></label>
+                <div class="wc-weight-group">
+                    <input type="text"
+                           id="txtActualWeight"
+                           class="box_border form-control form-control-sm"
+                           autocomplete="off"
+                           placeholder="0.000"
+                           oninput="this.value = this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1')"
+                           onkeydown="WeightConfirmation_onWeightKeyDown(event)" />
+                    <button type="button"
+                            class="btn-scalewt"
+                            title="Get Scale Weight"
+                            onclick="WeightConfirmation_openScaleWeightModal()">
+                        <i class="fa fa-scale-balanced"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="pp-list-grid-wrap">
+        <div id="tblWeightConfirmation">
+            <div class="pp-table-wrapper table-wrapper fixed-height-table">
+                <table id="WeightConfirmationGrid" class="fixed-width-table table">
+                    <thead id="table-header-WeightConfirmation"></thead>
+                    <tbody id="table-body-WeightConfirmation"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Scale Weight Modal – loaded dynamically by JS -->
+<div id="WC_DivSelectMachineToGetWeightControl"></div>
+
+<!-- Scan QR Camera Control – loaded dynamically by JS -->
+<div id="DivScanQRCodeByCameraControlModal"></div>

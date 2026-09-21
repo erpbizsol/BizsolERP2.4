@@ -5,6 +5,8 @@ let fixedParaMeterConfigurationList = [];
 let QtyMTHeader = '';
 let QtyPCHeader = '';
 let QtyMTRHeader = '';
+let QtyBagsHeader = '';
+let CRM_Config_OEL = null;
 let selectedDates = [];
 $(document).ready(function () {
     $("#ERPHeading").text("Order Entry List");
@@ -295,6 +297,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                 "Verified": 'center',
                 "Closed": 'center',
                 "Credit Days": 'right',
+                "Avg. Cost/Crate": 'right',
             };
             if (QtyMTRHeader !== '') {
                 response = response.map(item => {
@@ -353,7 +356,17 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             } else {
                 hiddenColumns.push("Total Order Qty PC");
             }
-            //if (QtyMTRHeader !== '') {
+
+            // Hide Total Order Qty columns when AskTotalOrderQty is N
+            if (getAskTotalOrderQtyFlag() !== 'Y') {
+                hiddenColumns.push('Total Order Qty.', 'Total Order Qty PC', 'Total Order Qty MR');
+            }
+
+            // Hide Avg. Cost/Crate unless Qty unit is NOS
+            if (!isAvgCostCrateVisible()) {
+                hiddenColumns.push('Avg. Cost/Crate');
+            }
+
             //    response = response.map(item => {
             //        if (item.hasOwnProperty('Dispatched Qty MTRS')) {
             //            const reorderedItem = {};
@@ -435,9 +448,9 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             ColumnAlignment['Qty ' + QtyMTRHeader] = 'right';
             ColumnAlignment['Qty ' + QtyPCHeader] = 'right';
 
-            BizsolCustomFilterGrid.CreateDataTable("table-header","table-body",updatedResponse,button,showButtons,stringFilterColumn,numericFilterColumn,dateFilterColumn,stringDoubleFilterColumn,hiddenColumns,ColumnAlignment);
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
             applyOrderListTransferredRowColors();
-            updateFooter(response); 
+            updateFooter(updatedResponse); 
 
             var columnsToRemoveForPrint = ["Code", "VisitMaster_Code", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "Verified By", "Verified On", "Order Type", "Action", "Verified", "Closed", "Total Amount", "Total Order Qty PC", "Total Order Qty MR","Total Order Qty","OtherCharges"];
             response.forEach(function (row) {
@@ -648,7 +661,7 @@ function isViewButtonEnabled(order) {
 function GetFixedParameterConfiguration() {
     //OrderEntryListService.GetFixedParameterConfiguration().then(function (res) {
     OrderEntryListService.GetFixedParameterQtyConfig().then(function (res) {
-    
+
         fixedParaMeterConfigurationList = res;
         //QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMTHeader;
         //QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPCHeader;
@@ -656,7 +669,14 @@ function GetFixedParameterConfiguration() {
         QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMT;
         QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPC;
         QtyMTRHeader = fixedParaMeterConfigurationList[0].QtyMR;
-       
+        QtyBagsHeader = (fixedParaMeterConfigurationList[0].Unit || '').trim().toUpperCase() === 'AS PER MASTER' ? 'Crate' : '';
+
+    });
+    OrderEntryListService.GetCRMOrderEntryConfig().then(function (res) {
+        if (res && res.length > 0) {
+            CRM_Config_OEL = res[0];
+            sessionStorage.setItem('CRMOrderEntryConfig', JSON.stringify(res[0]));
+        }
     });
 }
 
@@ -677,84 +697,128 @@ function BindSelectList(element, list, FirstItem) {
     element.innerHTML = option;
 }
 
-function updateFooter(data) {
-    const calculateTotalAmount = "Total Amount";
-
-    if (calculateTotalAmount === "Total Amount") {
-        const rowCount = data.length;
-        let totalQuantity = 0;
-        //let totalBasicRate = 0;
-        let totalFinalAmount = 0;
-        //let totalFinalRate = 0;
-        //let totalDispatchQtyMTRS = 0;
-        //let totalDispatchQtyMT = 0;
-        //let totalDispatchQtyPC = 0;
-        let TotalOrderQty = 0;
-        let TotalOrderQtyPC = 0;
-        let TotalOrderQtyMR = 0;
-
-        data.forEach(row => {
-            totalQuantity += parseFloat(row['Qty ' + QtyMTHeader] || row['Qty ' + QtyMTRHeader] || row['Qty ' + QtyPCHeader] || 0);
-            //totalBasicRate += parseFloat(row["Basic Rate"] || 0);
-            totalFinalAmount += parseFloat(row["Amount"] || 0);
-            //totalFinalRate += parseFloat(row["Final Rate"] || 0);
-            //totalDispatchQtyMTRS += parseFloat(row["Dispatched Qty MTRS"] || 0);
-            //totalDispatchQtyMT += parseFloat(row["Dispatched Qty"] || 0);
-            //totalDispatchQtyPC += parseFloat(row["Dispatched Qty PC"] || 0);
-            if (QtyMTHeader != '') {
-                TotalOrderQty += parseFloat(row['Qty ' + QtyMTHeader]) || 0;
-            }
-            if (QtyPCHeader != '') {
-                TotalOrderQtyPC += parseFloat(row['Qty ' + QtyPCHeader]) || 0;
-            }
-            if (QtyMTRHeader != '') {
-                TotalOrderQtyMR += parseFloat(row['Qty ' + QtyMTRHeader]) || 0;
-            }
-        });
-
-        var tfootContent1 = ``;
-        var tfootContent2= ``;
-        var tfootContent3= ``;
-        var tfootContent4= ``;
-        var tfootContent = ``;
-
-        tfootContent1 = `
-        <tr>
-            <td colspan="3"><b>Row Count :</b> ${rowCount}</td>
-            <td><b>Total</b></td>
-            ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQty.toFixed(2)}</b></td>` : ''}
-             ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyPC.toFixed(2)}</b></td>` : ''}
-             ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyMR.toFixed(2)}</b></td>` : ''}
-            <td style="text-align: right;"><b>${totalFinalAmount.toFixed(2)}</b></td>
-            <td style="text-align: right;"></td>   
-            
-            <td ></td>`;
-        //if (QtyMTRHeader !== '') {
-        //    tfootContent2 = `<td style="text-align: right;">${totalDispatchQtyMTRS.toFixed(2)}</td>`;
-        //}
-        //if (QtyMTHeader !== '') {
-        //    tfootContent3 = `<td style="text-align: right;">${totalDispatchQtyMT.toFixed(2)}</td>`;
-        //}
-        //if (QtyPCHeader !== '') {
-        //    tfootContent4 = `<td style="text-align: right;">${totalDispatchQtyPC.toFixed(2)}</td>`;
-        //}
-
-        tfootContent = `${tfootContent1}${tfootContent2}${tfootContent3}${tfootContent4}<td ></td><td ></td><td></td></tr>`;
-        const tfoot = document.querySelector("#OrderList tfoot");
-
-        if (tfoot) {
-            tfoot.innerHTML = tfootContent;
-        } else {
-            const table = document.querySelector("#OrderList");
-            if (table) {
-                const newTfoot = document.createElement("tfoot");
-                newTfoot.innerHTML = tfootContent;
-                table.appendChild(newTfoot);
-            } else {
-                console.error("Table element with id 'table' not found.");
-            }
+function getAskTotalOrderQtyFlag() {
+    var cfg = CRM_Config_OEL;
+    if (!cfg) {
+        try {
+            cfg = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
+        } catch (e) {
+            cfg = null;
         }
     }
+    return cfg ? (cfg.AskTotalOrderQty || 'N') : 'N';
+}
+
+function isAvgCostCrateVisible() {
+    return QtyMTRHeader === 'NOS';
+}
+
+function getOrderListTotalColumns() {
+    const cols = [];
+    if (QtyMTHeader) {
+        cols.push('Qty ' + QtyMTHeader);
+    }
+    if (QtyPCHeader) {
+        cols.push('Qty ' + QtyPCHeader);
+    }
+    if (QtyMTRHeader) {
+        cols.push('Qty ' + QtyMTRHeader);
+    }
+    if (isAvgCostCrateVisible()) {
+        cols.push('Avg. Cost/Crate');
+    }
+    cols.push('Amount');
+    if (getAskTotalOrderQtyFlag() === 'Y') {
+        cols.push('Total Order Qty.');
+    }
+    return cols;
+}
+
+function getVisibleOrderListHeaders() {
+    const headers = [];
+    $('#OrderList #table-header th').each(function () {
+        const $th = $(this);
+        if ($th.css('display') === 'none') {
+            return;
+        }
+        const $heading = $th.find('.filter-table-heading').first();
+        const heading = ($heading.length ? $heading.text() : $th.text()).replace(/\s+/g, ' ').trim();
+        if (heading) {
+            headers.push(heading);
+        }
+    });
+    return headers;
+}
+
+function parseFooterNumber(value) {
+    if (value === null || value === undefined || value === '') {
+        return 0;
+    }
+    const n = parseFloat(String(value).replace(/,/g, '').trim());
+    return isNaN(n) ? 0 : n;
+}
+
+function updateFooter(data) {
+    const table = document.querySelector('#OrderList');
+    if (!table || !data || !data.length) {
+        const existing = document.querySelector('#OrderList tfoot');
+        if (existing) {
+            existing.innerHTML = '';
+        }
+        return;
+    }
+
+    const totalColumns = getOrderListTotalColumns();
+    const totalSet = {};
+    const totals = {};
+    totalColumns.forEach(function (col) {
+        totalSet[col] = true;
+        totals[col] = 0;
+    });
+
+    data.forEach(function (row) {
+        totalColumns.forEach(function (col) {
+            totals[col] += parseFooterNumber(row[col]);
+        });
+    });
+
+    const visibleHeaders = getVisibleOrderListHeaders();
+    if (!visibleHeaders.length) {
+        return;
+    }
+
+    const firstTotalIndex = visibleHeaders.findIndex(function (heading) {
+        return totalSet[heading];
+    });
+    const labelCols = firstTotalIndex > 0 ? firstTotalIndex : 1;
+
+    let html = '<tr class="total-row">';
+    visibleHeaders.forEach(function (heading, index) {
+        if (index === 0 && labelCols > 1) {
+            html += '<td colspan="' + (labelCols - 1) + '"><b>Row Count :</b> ' + data.length + '</td>';
+            return;
+        }
+        if (index < labelCols - 1) {
+            return;
+        }
+        if (index === labelCols - 1 && !totalSet[heading]) {
+            html += '<td><b>Total</b></td>';
+            return;
+        }
+        if (totalSet[heading]) {
+            html += '<td style="text-align:right"><b>' + totals[heading].toFixed(2) + '</b></td>';
+            return;
+        }
+        html += '<td></td>';
+    });
+    html += '</tr>';
+
+    let tfoot = table.querySelector('tfoot');
+    if (!tfoot) {
+        tfoot = document.createElement('tfoot');
+        table.appendChild(tfoot);
+    }
+    tfoot.innerHTML = html;
 }
 
 

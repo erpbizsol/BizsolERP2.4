@@ -390,6 +390,11 @@
             <i class="fas fa-chart-bar"></i>GP Wise Summary
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="highGPLostClient-tab" data-bs-toggle="tab" data-bs-target="#highGPLostClient" type="button" role="tab" aria-controls="highGPLostClient" aria-selected="false">
+            <i class="fas fa-user-times"></i>High GP Lost Client
+        </button>
+    </li>
 </ul>
 
 <!-- Report Date Range Display - MOVED HERE TO BE VISIBLE FOR ALL TABS -->
@@ -405,44 +410,52 @@
 <div class="tab-content pt-3" id="salesAnalysisTabsContent">
     <div class="tab-pane fade show active" id="summaryReport" role="tabpanel" aria-labelledby="summaryReport-tab">
         <!-- KPI Cards Row -->
-        <div class="row">
-            <div class="col-md-6 col-lg-3 col-xl-2-4 ">
+        <div class="row g-2">
+            <div class="col-6 col-md-4 col-lg-2">
                 <div class="card kpi-card" style="border:1px solid #dcdcdc;">
                     <div class="card-body text-center p-1">
                         <small class="text-muted">Parties</small>
-                        <div id="kpi-parties" class="fw-bold" style="font-size:36px; color:#28a745; margin-top:8px;">0</div>
+                        <div id="kpi-parties" class="fw-bold" style="font-size:28px; color:#28a745; margin-top:4px;">0</div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3 col-xl-2-4">
+            <div class="col-6 col-md-4 col-lg-2">
                 <div class="card kpi-card" style="border:1px solid #dcdcdc;">
                     <div class="card-body text-center p-1">
                         <small class="text-muted">High GP</small>
-                        <div id="kpi-high-gp" class="fw-bold" style="font-size:36px; color:#17a2b8; margin-top:8px;">0</div>
+                        <div id="kpi-high-gp" class="fw-bold" style="font-size:28px; color:#17a2b8; margin-top:4px;">0</div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3 col-xl-2-4">
+            <div class="col-6 col-md-4 col-lg-2">
                 <div class="card kpi-card" style="border:1px solid #dcdcdc;">
                     <div class="card-body text-center p-1">
                         <small class="text-muted">Lost Client</small>
-                        <div id="kpi-lost-client" class="fw-bold" style="font-size:36px; color:#dc3545; margin-top:8px;">0</div>
+                        <div id="kpi-lost-client" class="fw-bold" style="font-size:28px; color:#dc3545; margin-top:4px;">0</div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3 col-xl-2-4">
+            <div class="col-6 col-md-4 col-lg-2">
                 <div class="card kpi-card" style="border:1px solid #dcdcdc;">
                     <div class="card-body text-center p-1">
                         <small class="text-muted">Manifested Sales</small>
-                        <div id="kpi-manifested-sales" class="fw-bold" style="font-size:36px; color:#fd7e14; margin-top:8px;">0</div>
+                        <div id="kpi-manifested-sales" class="fw-bold" style="font-size:28px; color:#fd7e14; margin-top:4px;">0</div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3 col-xl-2-4">
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
+                    <div class="card-body text-center p-1">
+                        <small class="text-muted">Total Manifested</small>
+                        <div id="kpi-total-manifested" class="fw-bold" style="font-size:28px; color:#20c997; margin-top:4px;">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
                 <div class="card kpi-card" style="border:1px solid #dcdcdc;">
                     <div class="card-body text-center p-1">
                         <small class="text-muted">Actual Sale</small>
-                        <div id="kpi-actual-sale" class="fw-bold" style="font-size:36px; color:#6f42c1; margin-top:8px;">0</div>
+                        <div id="kpi-actual-sale" class="fw-bold" style="font-size:28px; color:#6f42c1; margin-top:4px;">0</div>
                     </div>
                 </div>
             </div>
@@ -813,6 +826,23 @@
                 </div>
             </div>
         </div>
+
+        <!-- Actual vs Manifested Table -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Actual v/s Manifested</h5>
+                <div class="table-responsive mt-2">
+                    <table id="actualVsManifestTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:600px;">
+                        <thead class="table-secondary" id="actualVsManifestTableHeader">
+                        </thead>
+                        <tbody id="actualVsManifestTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-actualVsManifestTable">
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="tab-pane fade" id="nbdCrr" role="tabpanel" aria-labelledby="nbdCrr-tab">
@@ -884,9 +914,27 @@
             </div>
         </div>
     </div>
+
+    <div class="tab-pane fade" id="highGPLostClient" role="tabpanel" aria-labelledby="highGPLostClient-tab">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">High GP Lost Client</h5>
+                <div class="table-responsive mt-2">
+                    <table id="highGPLostClientTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
+                        <thead class="table-secondary" id="highGPLostClientTableHeader">
+                        </thead>
+                        <tbody id="highGPLostClientTableBody">
+                        </tbody>
+                    </table>
+                    <div class="paginator" id="paginator-highGPLostClientTable">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/FilterSidePanelControl/FilterSidePanelControl.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/SalesanalysisAST.js"></script><script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/SalesanalysisAST.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/SalesanalysisAST.js"></script>

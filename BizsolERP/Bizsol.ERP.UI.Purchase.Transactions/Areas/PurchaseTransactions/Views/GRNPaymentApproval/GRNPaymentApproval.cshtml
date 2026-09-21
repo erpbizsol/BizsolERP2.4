@@ -1002,6 +1002,22 @@
         letter-spacing: 0.04em;
         margin-bottom: 10px;
     }
+    #modalGpaHistory .gpa-budget-status {
+        display: inline-block;
+        min-width: 72px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    #modalGpaHistory .gpa-budget-status--approved { background: #dcfce7; color: #15803d; }
+    #modalGpaHistory .gpa-budget-status--completed { background: #e0f2fe; color: #0369a1; }
+    #modalGpaHistory .gpa-budget-status--pending { background: #dbeafe; color: #1d4ed8; }
+    #modalGpaHistory .gpa-budget-status--rejected { background: #fee2e2; color: #b91c1c; }
+    #modalGpaHistory .gpa-budget-status--hold { background: #ffedd5; color: #c2410c; }
+    #modalGpaHistory .gpa-budget-status--other { background: #f3f4f6; color: #374151; }
     .btn-gpa-close {
         display: inline-flex; align-items: center; gap: 5px;
         background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -1171,7 +1187,7 @@
                 </div>
             </div>
             <div class="row g-2 mt-1">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Ref No / CH No <span id="refNoReqMark" class="req" style="display: none;" aria-hidden="true">*</span></label>
                     <input type="text" id="txtRefNo" class="form-control form-control-sm" maxlength="50" autocomplete="off" placeholder="Reference / Cheque no.">
                 </div>
@@ -1185,9 +1201,9 @@
                         <option value="">-- Select Work Type --</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Payment for</label>
-                    <input type="text" id="txtPaymentFor" class="form-control form-control-sm" maxlength="100" autocomplete="off" placeholder="Payment for">
+                    <textarea id="txtPaymentFor" class="form-control form-control-sm" rows="2" maxlength="200" autocomplete="off" placeholder="Enter payment for (optional)"></textarea>
                 </div>
                 <div class="col-md-3 d-flex align-items-end gpa-hint-box-col">
                     <div class="gpa-hint-box w-100 mb-1">
@@ -1196,10 +1212,11 @@
                     </div>
                 </div>
             </div>
+            
             <div class="row g-2 mt-1">
                 <div class="col-12">
                     <label class="po-field-lbl d-block mb-1">Narration</label>
-                    <textarea id="txtNarration" class="form-control form-control-sm" rows="2" maxlength="225" autocomplete="off" placeholder="Enter narration (optional)"></textarea>
+                    <textarea id="txtNarration" class="form-control form-control-sm" rows="2" maxlength="1000" autocomplete="off" placeholder="Enter narration (optional)"></textarea>
                 </div>
             </div>
         </div>

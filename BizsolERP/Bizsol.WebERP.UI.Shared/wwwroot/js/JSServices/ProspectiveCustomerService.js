@@ -55,6 +55,23 @@ const ProspectiveCustomerService = {
             }
         );
     },
+    SaveClosedDetails: function SaveClosedDetails(Code, ClosedBy, ClosedDate, MarketingPerson) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var URL = UrlService.API_ENDPOINT_ProspectiveCustomer + "/SaveClosedDetails";
+        var payload = {
+            Code: parseInt(Code, 10) || 0,
+            ClosedBy: parseInt(ClosedBy, 10) || 0,
+            ClosedDate: ClosedDate || '',
+            MarketingPerson: MarketingPerson || '',
+            UserMaster_Code: userMasterCode
+        };
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload)).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { ProspectiveCustomerService }

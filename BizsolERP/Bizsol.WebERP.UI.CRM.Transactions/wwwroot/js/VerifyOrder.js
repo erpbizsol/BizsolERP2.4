@@ -490,8 +490,21 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const ColumnAlignment = {
                     "Order Amount": "right",
                     "Order Qty": "right",
+                    "Avg. Cost/Crate": "right",
                 };
-                
+
+                // Hide Total Order Qty column when AskTotalOrderQty is N
+                var _vo_crmCfg = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
+                var _vo_askTotalQty = _vo_crmCfg ? (_vo_crmCfg.AskTotalOrderQty || 'N') : 'N';
+                if (_vo_askTotalQty !== 'Y') {
+                    hiddenColumns.push('Total Order Qty', 'Order Qty');
+                }
+
+                // Hide Avg. Cost/Crate when Qty unit is not NOS (QtyPCHeader empty)
+                if (QtyMTRHeader !== 'NOS') {
+                    hiddenColumns.push('Avg. Cost/Crate');
+                }
+
                 let VerifiedLv1Button = '';
 
 
@@ -963,6 +976,17 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                     hiddenColumns.push("Qty MR");
                 }
 
+                // Hide Total Order Qty column when AskTotalOrderQty is N
+                var _vo2_crmCfg = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
+                var _vo2_askTotalQty = _vo2_crmCfg ? (_vo2_crmCfg.AskTotalOrderQty || 'N') : 'N';
+                if (_vo2_askTotalQty !== 'Y') {
+                    hiddenColumns.push('Total Order Qty.', 'Order Qty');
+                }
+
+                // Hide Avg. Cost/Crate when Qty unit is not NOS (QtyPCHeader empty)
+                if (QtyMTRHeader !== 'NOS') {
+                    hiddenColumns.push('Avg. Cost/Crate');
+                }
 
                 const ColumnAlignment = {
                     "Qty MT": "right",
@@ -975,7 +999,8 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                     "Basic Rate": "right",
                     "Final Rate": "right",
                     "Outstanding": "right",
-                    "Credit Days": "right"
+                    "Credit Days": "right",
+                    "Avg. Cost/Crate": "right",
                 };
                 if (QtyMTHeader != '') {
                     ColumnAlignment['Qty ' + QtyMTHeader] = "right";
@@ -1258,6 +1283,7 @@ function updateFooter(data) {
     let TotalOrderQtyPC = 0;
     let TotalOrderQtyMR = 0;
     let TotalFinalAmount = 0;
+    let TotalAvgCostCrate = 0;
     var Qty_Config = JSON.parse(sessionStorage.getItem('QtyConfig'));
      var QtyPCHeader = Qty_Config.QtyPC;
     var QtyMTRHeader = Qty_Config.QtyMR;
@@ -1281,11 +1307,11 @@ function updateFooter(data) {
     <tr>
         <td><b>Total</b></td>
         <td colspan="13"></td>
-        
+
         ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyPC.toFixed(2)}</b></td>` : ''}
         ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyMR.toFixed(2)}</b></td>` : ''}
         ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQty.toFixed(2)}</b></td>` : ''}
-        
+
         <td style="text-align:right"><b>${TotalFinalAmount.toFixed(2)}</b></td>
          <td colspan="5"></td>
     </tr>
@@ -1295,30 +1321,73 @@ function updateFooter(data) {
         data.forEach(row => {
             TotalOrderQty += parseFloat(row["Order Qty"]) || 0;
             TotalFinalAmount += parseFloat(row["Order Amount"]) || 0;
+            TotalAvgCostCrate += parseFloat(row["Avg. Cost/Crate"]) || 0;
         });
-        tfootContent = `
-    <tr>
-        <td><b>Total</b></td>
-        <td colspan="5"></td>
-        <td style="text-align:right"></td>
-        <td style="text-align:right"><b>${TotalFinalAmount.toFixed(2)}</b></td>
-         <td colspan="2"></td>
-    </tr>
-`;
+
+        // Build footer dynamically — read column name from span.filter-table-heading (filter cols)
+        // or direct th text (hidden cols), and mirror display:none for hidden ths
+        const headerThs = $('#Visit thead tr:first-child th');
+        const headers = [];
+        const headerHidden = [];
+        headerThs.each(function () {
+            const $span = $(this).find('span.filter-table-heading');
+            headers.push($span.length ? $span.first().text().trim() : $(this).text().trim());
+            headerHidden.push($(this).css('display') === 'none');
+        });
+        const totalCols = headers.length;
+        const avgCostIdx = headers.indexOf('Avg. Cost/Crate');
+        const orderAmountIdx = headers.indexOf('Order Amount');
+
+        let cells = '';
+        for (let i = 0; i < totalCols; i++) {
+            const hiddenStyle = headerHidden[i] ? ' style="display:none"' : '';
+            if (i === 0) {
+                cells += `<td${hiddenStyle}><b>Total</b></td>`;
+            } else if (avgCostIdx >= 0 && i === avgCostIdx) {
+                cells += `<td style="text-align:right${headerHidden[i] ? ';display:none' : ''}"><b>${TotalAvgCostCrate.toFixed(2)}</b></td>`;
+            } else if (orderAmountIdx >= 0 && i === orderAmountIdx) {
+                cells += `<td style="text-align:right${headerHidden[i] ? ';display:none' : ''}"><b>${TotalFinalAmount.toFixed(2)}</b></td>`;
+            } else {
+                cells += `<td${hiddenStyle}></td>`;
+            }
+        }
+        tfootContent = `<tr>${cells}</tr>`;
+
     } else if (Mode == 'CONSOLIDATED_OUTSTANDING_VIEW') {
         data.forEach(row => {
             TotalOrderQty += parseFloat(row["Order Qty"]) || 0;
             TotalFinalAmount += parseFloat(row["Order Amount"]) || 0;
+            TotalAvgCostCrate += parseFloat(row["Avg. Cost/Crate"]) || 0;
         });
-        tfootContent = `
-    <tr>
-        <td><b>Total</b></td>
-        <td colspan="9"></td>
-        <td style="text-align:right"></td>
-        <td style="text-align:right"><b>${TotalFinalAmount.toFixed(2)}</b></td>
-         <td colspan="2"></td>
-    </tr>
-`;
+
+        // Build footer dynamically — read column name from span.filter-table-heading (filter cols)
+        // or direct th text (hidden cols), and mirror display:none for hidden ths
+        const headerThs2 = $('#Visit thead tr:first-child th');
+        const headers2 = [];
+        const headerHidden2 = [];
+        headerThs2.each(function () {
+            const $span = $(this).find('span.filter-table-heading');
+            headers2.push($span.length ? $span.first().text().trim() : $(this).text().trim());
+            headerHidden2.push($(this).css('display') === 'none');
+        });
+        const totalCols2 = headers2.length;
+        const avgCostIdx2 = headers2.indexOf('Avg. Cost/Crate');
+        const orderAmountIdx2 = headers2.indexOf('Order Amount');
+
+        let cells2 = '';
+        for (let i = 0; i < totalCols2; i++) {
+            const hiddenStyle = headerHidden2[i] ? ' style="display:none"' : '';
+            if (i === 0) {
+                cells2 += `<td${hiddenStyle}><b>Total</b></td>`;
+            } else if (avgCostIdx2 >= 0 && i === avgCostIdx2) {
+                cells2 += `<td style="text-align:right${headerHidden2[i] ? ';display:none' : ''}"><b>${TotalAvgCostCrate.toFixed(2)}</b></td>`;
+            } else if (orderAmountIdx2 >= 0 && i === orderAmountIdx2) {
+                cells2 += `<td style="text-align:right${headerHidden2[i] ? ';display:none' : ''}"><b>${TotalFinalAmount.toFixed(2)}</b></td>`;
+            } else {
+                cells2 += `<td${hiddenStyle}></td>`;
+            }
+        }
+        tfootContent = `<tr>${cells2}</tr>`;
 
     } else if (Mode == 'DETAIL_OUTSTANDING_VIEW') {
                 data.forEach(row => {

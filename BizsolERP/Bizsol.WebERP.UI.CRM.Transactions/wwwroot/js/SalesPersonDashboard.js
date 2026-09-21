@@ -1,60 +1,30 @@
 import { SalesPersonDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SalesPersonDashboardService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 const METRICS = ['Sales', 'Receipt', 'Visit'];
 const PERIODS = ['Day', 'Month'];
 
-/** Set false when API is ready — dummy data used for UI preview */
-//const USE_DUMMY_DATA = true;
-const USE_DUMMY_DATA = false;
-
-/** Set true to show Performance tab (hidden in UI until ready) */
-const SHOW_PERFORMANCE_TAB = false;
-
-let activeTab = 'activity';
-let chartPerformance = null;
 let chartPaymentDonut = null;
 
 $(document).ready(function () {
     $('#ERPHeading').text('Sales Person Dashboard');
-    bindTabEvents();
-    loadActiveTab();
-});
-
-function bindTabEvents() {
-    $('.spd-tab').on('click', function () {
-        const tab = $(this).data('tab');
-        switchTab(tab);
-        loadActiveTab();
+    BizSolHelperFunction.applyUserDashboardMenuBackButton('#btnBackToUserDashboardMenu');
+    $('#btnBackToUserDashboardMenu').on('click', function () {
+        BizSolHelperFunction.goToUserDashboardMenu();
     });
-}
-
-function switchTab(tab) {
-    activeTab = tab;
-    $('.spd-tab').removeClass('active');
-    $(`.spd-tab[data-tab="${tab}"]`).addClass('active');
-    $('.spd-tab-panel').removeClass('active');
-    if (tab === 'activity') {
-        $('#panelActivity').addClass('active');
-    } else if (tab === 'performance' && SHOW_PERFORMANCE_TAB) {
-        $('#panelPerformance').addClass('active');
-    } else {
-        $('#panelPayment').addClass('active');
-        activeTab = 'payment';
-    }
-}
+    loadDashboard();
+});
 
 function setLoading(isLoading) {
     $('#spdLoader').toggleClass('show', isLoading);
 }
 
-function loadActiveTab() {
-    if (activeTab === 'activity') {
-        loadActivitySummary();
-    } else if (activeTab === 'performance' && SHOW_PERFORMANCE_TAB) {
-        loadPerformanceSummary();
-    } else {
-        loadPaymentSummary();
-    }
+function loadDashboard() {
+    setLoading(true);
+    Promise.all([loadActivitySummary(), loadPaymentSummary()])
+        .finally(function () {
+            setLoading(false);
+        });
 }
 
 function destroyChart(chart) {
@@ -64,208 +34,28 @@ function destroyChart(chart) {
     return null;
 }
 
-function getDummyActivitySummary() {
-    return [{
-        DaySalesCount: 3,
-        DaySalesTotal: 125000.0,
-        DayReceiptCount: 2,
-        DayReceiptTotal: 85000.0,
-        DayVisitCount: 5,
-        DayVisitTotal: 0.0,
-        MonthSalesCount: 42,
-        MonthSalesTotal: 1850000.0,
-        MonthReceiptCount: 28,
-        MonthReceiptTotal: 920000.0,
-        MonthVisitCount: 86,
-        MonthVisitTotal: 0.0,
-    }];
-}
-
-function getDummyPerformanceSummary() {
-    return [
-        { Metric: 'Collection Target', Day: 300000, Month: 4500000 },
-        { Metric: 'Collection Achieved', Day: 85000, Month: 920000 },
-        { Metric: 'Achievement %', Day: 28.3, Month: 20.4 },
-    ];
-}
-
-function getDummyPaymentSummary() {
-    return [{
-        Payment: 4500000,
-        Achieved: 920000,
-        AchievementPercent: 20.4,
-    }];
-}
-
-function isEmptyActivityResponse(response) {
-    const data = normalizeActivityData(response);
-    return METRICS.every(function (m) {
-        return data.Day[m].Count === 0 && data.Day[m].Total === 0
-            && data.Month[m].Count === 0 && data.Month[m].Total === 0;
-    });
-}
-
-function isEmptyPerformanceResponse(response) {
-    const rows = Array.isArray(response) ? response : (response ? [response] : []);
-    return !rows.length;
-}
-
-function isEmptyPaymentResponse(response) {
-    const row = Array.isArray(response) ? (response[0] || {}) : (response || {});
-    return numVal(row.Payment ?? row.payment) === 0
-        && numVal(row.Achieved ?? row.achieved) === 0;
-}
-
 function loadActivitySummary() {
-    if (USE_DUMMY_DATA) {
-        const data = normalizeActivityData(getDummyActivitySummary());
-        bindActivityValues('Day', data.Day);
-        bindActivityValues('Month', data.Month);
-        return;
-    }
-
-    setLoading(true);
-
-    SalesPersonDashboardService.GetActivitySummary()
+    return SalesPersonDashboardService.GetActivitySummary()
         .then(function (response) {
-            const payload = isEmptyActivityResponse(response) ? getDummyActivitySummary() : response;
-            const data = normalizeActivityData(payload);
+            const data = normalizeActivityData(response);
             bindActivityValues('Day', data.Day);
             bindActivityValues('Month', data.Month);
         })
         .catch(function (err) {
             console.error('Activity summary error:', err);
-            const data = normalizeActivityData(getDummyActivitySummary());
-            bindActivityValues('Day', data.Day);
-            bindActivityValues('Month', data.Month);
-        })
-        .finally(function () {
-            setLoading(false);
-        });
-}
-
-function loadPerformanceSummary() {
-    if (USE_DUMMY_DATA) {
-        renderPerformanceChart(getDummyPerformanceSummary());
-        return;
-    }
-
-    setLoading(true);
-
-    SalesPersonDashboardService.GetPerformanceSummary()
-        .then(function (response) {
-            renderPerformanceChart(
-                isEmptyPerformanceResponse(response) ? getDummyPerformanceSummary() : response
-            );
-        })
-        .catch(function (err) {
-            console.error('Performance summary error:', err);
-            renderPerformanceChart(getDummyPerformanceSummary());
-        })
-        .finally(function () {
-            setLoading(false);
+            resetActivityValues();
         });
 }
 
 function loadPaymentSummary() {
-    if (USE_DUMMY_DATA) {
-        renderPaymentSummary(getDummyPaymentSummary());
-        return;
-    }
-
-    setLoading(true);
-
-    SalesPersonDashboardService.GetPaymentSummary()
+    return SalesPersonDashboardService.GetPaymentSummary()
         .then(function (response) {
-            renderPaymentSummary(
-                isEmptyPaymentResponse(response) ? getDummyPaymentSummary() : response
-            );
+            renderPaymentSummary(response);
         })
         .catch(function (err) {
             console.error('Payment summary error:', err);
-            renderPaymentSummary(getDummyPaymentSummary());
-        })
-        .finally(function () {
-            setLoading(false);
+            renderPaymentSummary({ Payment: 0, Achieved: 0, AchievementPercent: 0 });
         });
-}
-
-function parsePerformanceRows(response) {
-    const rows = Array.isArray(response) ? response : (response ? [response] : []);
-    const map = {};
-
-    rows.forEach(function (row) {
-        const metric = String(row.Metric || row.metric || row.Description || row.description || '').trim();
-        if (!metric) return;
-        map[metric.toLowerCase()] = {
-            day: numVal(row.Day ?? row.day ?? row.DayValue ?? row.dayValue),
-            month: numVal(row.Month ?? row.month ?? row.MonthValue ?? row.monthValue),
-        };
-    });
-
-    const target = map['collection target'] || { day: 0, month: 0 };
-    const achieved = map['collection achieved'] || { day: 0, month: 0 };
-    const pct = map['achievement %'] || map['achievement%'] || { day: 0, month: 0 };
-
-    return { target, achieved, pct };
-}
-
-function renderPerformanceChart(response) {
-    const { target, achieved, pct } = parsePerformanceRows(response);
-
-    $('#perfDayPct').text(pct.day.toFixed(1) + '%');
-    $('#perfMonthPct').text(pct.month.toFixed(1) + '%');
-
-    const canvas = document.getElementById('chartPerformance');
-    if (!canvas || typeof Chart === 'undefined') return;
-
-    chartPerformance = destroyChart(chartPerformance);
-    chartPerformance = new Chart(canvas, {
-        type: 'bar',
-        data: {
-            labels: ['Collection Target', 'Collection Achieved'],
-            datasets: [
-                {
-                    label: 'Day',
-                    data: [target.day, achieved.day],
-                    backgroundColor: '#f58220',
-                    borderRadius: 4,
-                    barPercentage: 0.55,
-                },
-                {
-                    label: 'Month',
-                    data: [target.month, achieved.month],
-                    backgroundColor: '#9b7bb8',
-                    borderRadius: 4,
-                    barPercentage: 0.55,
-                },
-            ],
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function (ctx) {
-                            return ` ${ctx.dataset.label}: ${fmtDisplayAmount(ctx.parsed.y)}`;
-                        },
-                    },
-                },
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function (value) {
-                            return fmtAmount(value);
-                        },
-                    },
-                },
-            },
-        },
-    });
 }
 
 function parsePaymentSummaryData(response) {
@@ -417,13 +207,6 @@ function fmtCount(v) {
 
 function fmtTotal(v) {
     return numVal(v).toFixed(1);
-}
-
-function fmtAmount(v) {
-    const n = numVal(v);
-    if (n >= 100000) return (n / 100000).toFixed(1) + 'L';
-    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-    return n.toFixed(0);
 }
 
 function fmtDisplayAmount(v) {

@@ -6,6 +6,7 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
 <style>
     
@@ -28,6 +29,672 @@
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
+    /* Summary Dashboard KPI Cards */
+    .summary-panel {
+        padding: 16px;
+    }
+
+    .summary-kpi-scroll {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .summary-kpi-card {
+        background: #fff;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        overflow: hidden;
+        min-width: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .summary-kpi-header {
+        background: linear-gradient(135deg, #365e9a 0%, #1e3a6e 100%);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        padding: 8px 10px;
+        line-height: 1.25;
+        min-height: 38px;
+    }
+
+    .summary-kpi-header small {
+        display: block;
+        font-size: 10px;
+        opacity: 0.88;
+        font-weight: 500;
+        margin-top: 2px;
+        text-transform: none;
+    }
+
+    .summary-kpi-body {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .summary-kpi-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .summary-kpi-icon.icon-blue { background: #4e73df; }
+    .summary-kpi-icon.icon-green { background: #1cc88a; }
+    .summary-kpi-icon.icon-red { background: #e74a3b; }
+    .summary-kpi-icon.icon-teal { background: #36b9cc; }
+    .summary-kpi-icon.icon-orange { background: #f6c23e; }
+    .summary-kpi-icon.icon-purple { background: #6f42c1; }
+    .summary-kpi-icon.icon-indigo { background: #224abe; }
+
+    .summary-kpi-value-wrap {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .summary-kpi-value {
+        font-size: 18px;
+        font-weight: 800;
+        color: #1a202c;
+        line-height: 1.15;
+        word-break: break-word;
+    }
+
+    .summary-kpi-value.value-red { color: #e74a3b; }
+    .summary-kpi-value.value-blue { color: #224abe; }
+
+    .summary-kpi-trend {
+        font-size: 9px;
+        font-weight: 700;
+        margin-top: 4px;
+        line-height: 1.2;
+    }
+
+    .summary-kpi-trend span {
+        font-weight: 500;
+        color: #718096;
+    }
+
+    .summary-kpi-trend.trend-positive { color: #1cc88a; }
+    .summary-kpi-trend.trend-negative { color: #e74a3b; }
+    .summary-kpi-trend.trend-neutral { color: #718096; }
+
+    .summary-kpi-lines {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 11px;
+        color: #2d3748;
+    }
+
+    .summary-kpi-lines strong {
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .summary-kpi-footer {
+        border-top: 1px solid #edf2f7;
+        padding: 6px 10px 8px;
+        font-size: 11px;
+        color: #2d3748;
+    }
+
+    .summary-kpi-footer strong {
+        color: #224abe;
+        font-weight: 800;
+    }
+
+    .summary-chart-card {
+        background: #fff;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .summary-chart-header {
+        background: linear-gradient(135deg, #365e9a 0%, #1e3a6e 100%);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        padding: 8px 12px;
+        text-align: center;
+    }
+
+    .summary-chart-body {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        min-height: 210px;
+    }
+
+    .summary-chart-canvas {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+        height: 190px;
+    }
+
+    .summary-chart-legend {
+        flex: 0 0 130px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .summary-legend-item {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .summary-legend-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    .summary-legend-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #1a202c;
+        line-height: 1.2;
+    }
+
+    .summary-legend-meta {
+        font-size: 11px;
+        color: #718096;
+        margin-top: 1px;
+    }
+
+    .summary-donut-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        text-align: center;
+    }
+
+    .summary-donut-center .label {
+        font-size: 11px;
+        color: #718096;
+        font-weight: 600;
+    }
+
+    .summary-donut-center .value {
+        font-size: 22px;
+        font-weight: 800;
+        color: #1a202c;
+        line-height: 1.1;
+    }
+
+    .summary-grid-card {
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .summary-grid-card .card-body {
+        padding: 14px;
+    }
+
+    .summary-grid-card .card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1e3a6e;
+        margin-bottom: 10px;
+    }
+
+    #partyScoring.tab-pane.active {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        overflow: visible;
+    }
+
+    .ps-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #1e3a6e;
+        margin-bottom: 10px;
+    }
+
+    .ps-title small {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-top: 2px;
+    }
+
+    .ps-top-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+        margin-bottom: 0;
+    }
+
+    .ps-top-row > * {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .ps-section-bar {
+        background: #d8f3dc;
+        border-radius: 6px;
+        padding: 10px 16px;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 800;
+        color: #1e3a6e;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+        flex: 0 0 auto;
+    }
+
+    .ps-card {
+        background: #fff;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        padding: 14px 16px;
+        height: auto;
+        overflow: hidden;
+    }
+
+    .ps-dist-body {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        min-height: 0;
+        flex-wrap: nowrap;
+    }
+
+    .ps-donut-wrap {
+        position: relative;
+        flex: 0 0 200px;
+        width: 200px;
+        height: 200px;
+        overflow: hidden;
+    }
+
+    .ps-donut-wrap canvas {
+        width: 200px !important;
+        height: 200px !important;
+        max-width: 100%;
+        max-height: 100%;
+    }
+
+    .ps-donut-center {
+        position: absolute;
+        inset: 24%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        text-align: center;
+        overflow: hidden;
+        padding: 2px;
+    }
+
+    .ps-donut-center .label {
+        font-size: 9px;
+        color: #4a5568;
+        font-weight: 600;
+        line-height: 1.1;
+    }
+
+    .ps-donut-center .value {
+        font-size: 11px;
+        font-weight: 800;
+        color: #1a202c;
+        line-height: 1.15;
+        max-width: 100%;
+        white-space: nowrap;
+    }
+
+    .ps-donut-center .meta {
+        font-size: 8px;
+        color: #718096;
+        line-height: 1.1;
+    }
+
+    .ps-range-table {
+        width: 100%;
+        font-size: 12px;
+    }
+
+    .ps-range-table th {
+        color: #224abe;
+        font-weight: 700;
+        padding: 6px 8px;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .ps-range-table td {
+        padding: 7px 8px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #2d3748;
+    }
+
+    .ps-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+    .ps-range-table tfoot td {
+        font-weight: 800;
+        color: #224abe;
+        font-size: 13px;
+        padding: 8px;
+        background: #fff;
+        border-top: 1px solid #224abe;
+        border-bottom: 1px solid #224abe;
+    }
+
+    .ps-range-table tfoot td:first-child {
+        border-left: 1px solid #224abe;
+        border-radius: 6px 0 0 6px;
+    }
+
+    .ps-range-table tfoot td:last-child {
+        border-right: 1px solid #224abe;
+        border-radius: 0 6px 6px 0;
+    }
+
+    .ps-kpi-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .ps-kpi-box {
+        padding: 16px 18px;
+        border-right: 1px solid #edf2f7;
+    }
+
+    .ps-kpi-box:last-child { border-right: none; }
+
+    .ps-kpi-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #4a5568;
+        margin-bottom: 8px;
+    }
+
+    .ps-kpi-value {
+        font-size: 20px;
+        font-weight: 800;
+        color: #1a202c;
+    }
+
+    .ps-kpi-value small {
+        font-size: 14px;
+        font-weight: 700;
+        color: #718096;
+    }
+
+    .ps-split-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        background: #fff;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .ps-split-box {
+        padding: 16px 18px;
+        border-right: 1px solid #edf2f7;
+    }
+
+    .ps-split-box:last-child { border-right: none; }
+
+    .ps-split-count {
+        font-size: 24px;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .ps-split-pct {
+        font-size: 16px;
+        font-weight: 800;
+        margin-top: 4px;
+    }
+
+    .ps-good { color: #1cc88a; }
+    .ps-bad { color: #e74a3b; }
+
+    .ps-party-table thead th {
+        background: #1e3a6e;
+        color: #fff !important;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .ps-party-table .filter-table-heading,
+    .ps-party-table .table-filter-arrow i {
+        color: #fff !important;
+    }
+
+    .ps-party-table tbody td {
+        font-size: 12px;
+        vertical-align: middle;
+        padding: 8px 10px;
+    }
+
+    .ps-party-scroll {
+        max-height: 520px;
+        overflow: auto;
+    }
+
+    .ps-party-table td.ps-num { text-align: right; }
+    .ps-party-table td.ps-center { text-align: center; }
+    .ps-party-table td.ps-name { text-align: left; font-weight: 600; }
+
+    .ps-party-table tbody tr:nth-child(even) {
+        background: #f7fafc;
+    }
+
+    .ps-badge {
+        display: inline-block;
+        min-width: 110px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .ps-badge-excellent { background: #1e7e34; }
+    .ps-badge-verygood { background: #28a745; }
+    .ps-badge-good { background: #8bc34a; color: #1a202c; }
+    .ps-badge-average { background: #d4a017; }
+    .ps-badge-attention { background: #e67e22; }
+    .ps-badge-poor { background: #e74a3b; }
+
+    .ps-trend-up { color: #1cc88a; font-weight: 700; }
+    .ps-trend-down { color: #e74a3b; font-weight: 700; }
+    .ps-trend-flat { color: #718096; font-weight: 600; }
+
+    @@media (max-width: 1199px) {
+        .ps-dist-body { flex-direction: column; }
+        .ps-donut-wrap,
+        .ps-donut-wrap canvas {
+            width: 180px !important;
+            height: 180px !important;
+        }
+        .ps-donut-center .value { font-size: 10px; }
+    }
+
+    @@media (max-width: 991px) {
+        .ps-top-row { grid-template-columns: 1fr; }
+        .ps-dist-body { flex-direction: column; }
+        .ps-kpi-row, .ps-split-row { grid-template-columns: 1fr; }
+        .ps-kpi-box, .ps-split-box { border-right: none; border-bottom: 1px solid #edf2f7; }
+    }
+
+    @@media (max-width: 1400px) {
+        .summary-kpi-scroll {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 991px) {
+        .summary-kpi-scroll {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .summary-chart-body {
+            flex-direction: column;
+            min-height: auto;
+        }
+
+        .summary-chart-canvas {
+            width: 100%;
+            height: 180px;
+        }
+
+        .summary-chart-legend {
+            flex: 1 1 auto;
+            width: 100%;
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .summary-kpi-scroll {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Sales Comparison */
+    .sc-panel {
+        padding: 16px;
+    }
+
+    .sc-chart-wrap {
+        position: relative;
+        height: 360px;
+        padding: 12px 8px 0;
+    }
+
+    .sc-growth-badge {
+        position: absolute;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+        font-size: 14px;
+        font-weight: 800;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        pointer-events: none;
+    }
+
+    .sc-growth-badge.positive { color: #1cc88a; }
+    .sc-growth-badge.negative { color: #e74a3b; }
+    .sc-growth-badge.neutral { color: #718096; }
+
+    .sc-period-labels {
+        display: flex;
+        justify-content: space-around;
+        gap: 12px;
+        padding: 0 12px 12px;
+        text-align: center;
+    }
+
+    .sc-period-label {
+        flex: 1;
+        font-size: 12px;
+        color: #4a5568;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
+    .sc-period-label strong {
+        display: block;
+        color: #1e3a6e;
+        font-size: 13px;
+        margin-bottom: 2px;
+    }
+
+    .sc-summary-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .sc-summary-card {
+        flex: 1 1 180px;
+        background: #fff;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        padding: 12px 14px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .sc-summary-card .label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .sc-summary-card .value {
+        font-size: 22px;
+        font-weight: 800;
+        color: #1a202c;
+        margin-top: 4px;
+    }
+
+    .sc-summary-card.current .value { color: #4e73df; }
+    .sc-summary-card.previous .value { color: #6c757d; }
     /* Summary grid styling */
     .sticky-top {
         position: sticky;
@@ -120,6 +787,339 @@
         background-color: #fff9c4;
     }
 
+    .gc-grid-top,
+    .gc-grid-bottom {
+        display: grid;
+        gap: 14px;
+        margin-bottom: 14px;
+        align-items: stretch;
+    }
+
+    .gc-grid-top {
+        grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    }
+
+    .gc-grid-bottom {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .gc-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 360px;
+    }
+
+    .gc-head {
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: center;
+        padding: 10px 12px;
+    }
+
+    .gc-head-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .gc-head-pink { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .gc-head-coral { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .gc-head-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .gc-head-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+    .gc-body {
+        padding: 12px;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .gc-table {
+        width: 100%;
+        font-size: 12px;
+        margin-bottom: 0;
+        table-layout: fixed;
+    }
+
+    .gc-table th {
+        background: #1e54a4;
+        color: #fff !important;
+        font-weight: 700;
+        padding: 7px 8px;
+        white-space: nowrap;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .gc-table td {
+        padding: 6px 8px;
+        border-bottom: 1px solid #edf2f7;
+        color: #2d3748;
+    }
+
+    .gc-table tbody tr:nth-child(even) { background: #f8fafc; }
+
+    .gc-table tbody td:first-child,
+    .gc-table tfoot td:first-child {
+        text-align: left;
+    }
+
+    .gc-table tbody td:not(:first-child),
+    .gc-table tfoot td:not(:first-child) {
+        text-align: right;
+    }
+
+    .gc-table tfoot td {
+        position: sticky;
+        bottom: 0;
+        background: #eef4ff;
+    }
+
+    .gc-scroll {
+        max-height: 280px;
+        overflow: auto;
+        flex: 1;
+    }
+
+    .gc-total {
+        font-weight: 800;
+        color: #224abe;
+        border-top: 2px solid #cbd5e0;
+        background: #eef4ff;
+    }
+
+    .gc-split {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        min-height: 0;
+        flex: 1;
+    }
+
+    .gc-donut-wrap {
+        position: relative;
+        flex: 0 0 180px;
+        width: 180px;
+        height: 180px;
+    }
+
+    .gc-donut-wrap canvas,
+    .gc-pie-wrap canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .gc-donut-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        text-align: center;
+    }
+
+    .gc-donut-center .label { font-size: 11px; color: #4a5568; font-weight: 600; }
+    .gc-donut-center .value { font-size: 15px; font-weight: 800; color: #1a202c; line-height: 1.2; }
+    .gc-donut-center .meta { font-size: 11px; color: #718096; font-weight: 700; }
+
+    .gc-pie-wrap {
+        position: relative;
+        flex: 0 0 200px;
+        width: 200px;
+        height: 200px;
+    }
+
+    .gc-legend {
+        flex: 1;
+        min-width: 0;
+        font-size: 12px;
+        max-height: 260px;
+        overflow: auto;
+    }
+
+    .gc-legend-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+    }
+
+    .gc-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex: 0 0 10px;
+    }
+
+    .gc-sq {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        flex: 0 0 10px;
+    }
+
+    .gc-bar-row {
+        display: grid;
+        grid-template-columns: 110px minmax(80px, 1fr) 90px 70px;
+        gap: 8px;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid #edf2f7;
+        font-size: 12px;
+    }
+
+    .gc-bar-head {
+        font-weight: 700;
+        color: #1e54a4;
+        border-bottom: 1px solid #dbe4f0;
+        padding-bottom: 6px;
+    }
+
+    .gc-bar-track {
+        height: 14px;
+        background: #edf2f7;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .gc-bar-fill {
+        height: 100%;
+        background: #4e73df;
+        border-radius: 8px;
+    }
+
+    .gc-gp-split {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        gap: 12px;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .gc-kpi {
+        border: 2px solid #d1d5db;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        background: #fff;
+    }
+
+    .gc-kpi:last-child { margin-bottom: 0; }
+    .gc-kpi-super { border-color: #1cc88a; }
+    .gc-kpi-high { border-color: #e67e22; }
+    .gc-kpi-combo { border-color: #4e73df; }
+
+    .gc-kpi-title {
+        font-size: 11px;
+        font-weight: 800;
+        color: #2d3748;
+        margin-bottom: 4px;
+    }
+
+    .gc-kpi-value {
+        font-size: 16px;
+        font-weight: 800;
+        color: #1a202c;
+    }
+
+    .gc-kpi-meta {
+        font-size: 11px;
+        color: #718096;
+        font-weight: 600;
+    }
+
+    @@media (max-width: 1199px) {
+        .gc-grid-top,
+        .gc-grid-bottom,
+        .gc-gp-split { grid-template-columns: 1fr; }
+        .gc-split { flex-direction: column; }
+    }
+
+    .mv-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .mv-info-box {
+        background: #fff;
+        border: 1px solid #e3e8ef;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .mv-info-label {
+        font-weight: 800;
+        color: #1e3a6e;
+        margin-bottom: 4px;
+    }
+
+    .mv-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        margin-top: 4px;
+    }
+
+    .mv-legend span { font-weight: 700; }
+    .mv-good { color: #006100; background: #c6efce; padding: 1px 6px; border-radius: 4px; }
+    .mv-avg { color: #9c5700; background: #ffeb9c; padding: 1px 6px; border-radius: 4px; }
+    .mv-poor { color: #9c0006; background: #ffc7ce; padding: 1px 6px; border-radius: 4px; }
+
+    .mv-card {
+        background: #fff;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        padding: 12px;
+        margin-bottom: 14px;
+        overflow: auto;
+    }
+
+    .mv-title {
+        font-size: 14px;
+        font-weight: 800;
+        color: #1e3a6e;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .mv-table {
+        width: 100%;
+        font-size: 11px;
+        border-collapse: collapse;
+        min-width: 980px;
+    }
+
+    .mv-table th,
+    .mv-table td {
+        padding: 5px 6px;
+        border: 1px solid #d9e2ec;
+        white-space: nowrap;
+    }
+
+    .mv-table thead th {
+        background-color: #4472C4;
+        color: #fff !important;
+        text-align: center;
+        vertical-align: middle;
+        font-weight: 700;
+    }
+
+    .mv-ach-good { background: #c6efce !important; color: #006100; font-weight: 700; }
+    .mv-ach-avg { background: #ffeb9c !important; color: #9c5700; font-weight: 700; }
+    .mv-ach-poor { background: #ffc7ce !important; color: #9c0006; font-weight: 700; }
+    .mv-total-row { background: #d4edda; font-weight: 800; }
+
+    @@media (max-width: 991px) {
+        .mv-info-grid { grid-template-columns: 1fr; }
+    }
+
     /* Scrollable table container with sticky footer */
     .table-with-sticky-footer {
         display: flex;
@@ -146,6 +1146,371 @@
         height: 350px;
     }
 
+    /* Regional Analysis drill-down */
+    .regional-analysis-panel {
+        border: 1px solid #e0e6ed;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .regional-breadcrumb {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: #eef4ff;
+        border: 1px solid #d7e3ff;
+        border-radius: 10px;
+    }
+
+    .regional-breadcrumb-item {
+        color: #4e73df;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .regional-breadcrumb-item:hover {
+        text-decoration: underline;
+    }
+
+    .regional-breadcrumb-item.active {
+        color: #1f2937;
+        cursor: default;
+        text-decoration: none;
+    }
+
+    .regional-breadcrumb-separator {
+        color: #94a3b8;
+        font-weight: 700;
+    }
+
+    .regional-chart-container {
+        position: relative;
+        height: 380px;
+    }
+
+    .regional-table-container {
+        max-height: 380px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .regional-drill-hint {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 12px;
+    }
+
+    .regional-level-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+
+    .regional-back-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-width: 120px;
+        min-height: 36px;
+        padding: 8px 16px;
+        border: 1px solid #4e73df;
+        border-radius: 8px;
+        background: #4e73df;
+        color: #ffffff !important;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.2;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(78, 115, 223, 0.25);
+    }
+
+    .regional-back-btn:hover,
+    .regional-back-btn:focus {
+        background: #3b5cc9;
+        border-color: #3b5cc9;
+        color: #ffffff !important;
+        outline: none;
+    }
+
+    /* Target Vs Growth */
+    .tvg-panel {
+        border: 1px solid #e0e6ed;
+        border-radius: 14px;
+        background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+        padding: 20px;
+    }
+
+    .tvg-kpi-card {
+        border: none;
+        border-radius: 14px;
+        overflow: hidden;
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+        min-height: 110px;
+    }
+
+    .tvg-kpi-card .card-body {
+        padding: 18px 20px;
+    }
+
+    .tvg-kpi-label {
+        font-size: 13px;
+        opacity: 0.92;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+
+    .tvg-kpi-value {
+        font-size: 32px;
+        font-weight: 800;
+        margin-top: 6px;
+        line-height: 1.1;
+    }
+
+    .tvg-kpi-lost {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    }
+
+    .tvg-kpi-manifest {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    }
+
+    .tvg-kpi-actual {
+        background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+    }
+
+    .tvg-section-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #fff;
+        height: 100%;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .tvg-section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #fff;
+        padding: 12px 16px;
+        border-radius: 12px 12px 0 0;
+        margin: 0;
+    }
+
+    .tvg-section-body {
+        padding: 16px;
+    }
+
+    .tvg-metric-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        background: #f8fafc;
+        border: 1px solid #eef2f7;
+    }
+
+    .tvg-metric-row strong {
+        font-size: 15px;
+    }
+
+    .tvg-chart-box {
+        position: relative;
+        height: 300px;
+    }
+
+    .tvg-table thead th {
+        background: #365e9a !important;
+        color: #fff !important;
+        border-color: #2f5287 !important;
+    }
+
+    /* Client Analysis */
+    .ca-kpi-total {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    }
+
+    .ca-kpi-lost {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    }
+
+    .ca-kpi-sales {
+        background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+    }
+
+    .ca-kpi-avg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .ca-kpi-dream {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .ca-kpi-panel {
+        min-height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ca-kpi-panel .card-body {
+        text-align: center;
+        width: 100%;
+    }
+
+    .ca-table-scroll {
+        max-height: 360px;
+        overflow-y: auto;
+    }
+
+    .ca-dash { padding: 4px 0 12px; }
+    .ca-dash-row {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .ca-dash-kpi { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ca-dash .ca-summary-kpi { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ca-out-kpis { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+    .ca-dash-mid { grid-template-columns: 1.1fr 1.2fr 1.3fr; }
+    .ca-dash-out { grid-template-columns: 1.1fr 1.1fr 1.1fr 0.9fr; }
+    .ca-dash-card {
+        background: #fff;
+        border: 1px solid #e3e8ef;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        overflow: hidden;
+        padding: 0;
+        min-width: 0;
+    }
+    .ca-dash-title {
+        background: linear-gradient(135deg, #365e9a 0%, #1e3a6e 100%);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        padding: 8px 12px;
+        text-align: center;
+        margin-bottom: 0;
+        line-height: 1.25;
+        min-height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ca-dash-card > .table-responsive,
+    .ca-dash-card > .ca-gp-boxes,
+    .ca-dash-card > .ca-product-wrap {
+        padding: 10px 12px 12px;
+    }
+    .ca-kpi-box {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        min-height: 108px;
+    }
+    .ca-kpi-box .ca-dash-title { margin-bottom: 6px; }
+    .ca-kpi-main {
+        font-size: 26px;
+        font-weight: 800;
+        color: #1a365d;
+        line-height: 1.15;
+    }
+    .ca-kpi-unit { font-size: 12px; color: #718096; font-weight: 600; }
+    .ca-kpi-trend-up { color: #1cc88a; font-size: 12px; font-weight: 700; margin-top: 6px; }
+    .ca-kpi-trend-down { color: #e74a3b; font-size: 12px; font-weight: 700; margin-top: 6px; }
+    .ca-kpi-ico {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .ca-kpi-ico.blue { background: #4e73df; }
+    .ca-kpi-ico.teal { background: #1cc88a; }
+    .ca-kpi-ico.indigo { background: #224abe; }
+    .ca-gp-boxes {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+    }
+    .ca-gp-box { text-align: center; padding: 6px 2px; }
+    .ca-gp-box .lbl { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+    .ca-gp-box .val { font-size: 18px; font-weight: 800; }
+    .ca-gp-box .unit { font-size: 11px; color: #718096; font-weight: 600; }
+    .ca-gp-box .pct { font-size: 12px; font-weight: 700; margin-top: 2px; }
+    .ca-gp-super { color: #0d9488; }
+    .ca-gp-high { color: #1cc88a; }
+    .ca-gp-med { color: #d69e2e; }
+    .ca-gp-low { color: #dd6b20; }
+    .ca-mini-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+    .ca-mini-table th, .ca-mini-table td { padding: 5px 6px; border-bottom: 1px solid #eef2f7; white-space: nowrap; }
+    .ca-mini-table th { color: #4a5568; font-weight: 700; background: #f8fafc; }
+    .ca-mini-table tfoot td { font-weight: 800; background: #f8fafc; }
+    .ca-product-wrap { display: grid; grid-template-columns: 140px 1fr; gap: 10px; align-items: center; }
+    .ca-product-chart { height: 150px; }
+    .ca-out-total { text-align: center; padding-top: 8px; }
+    .ca-out-label { font-size: 13px; font-weight: 800; color: #2b6cb0; margin-bottom: 6px; }
+    .ca-out-value { font-size: 22px; font-weight: 800; color: #2b6cb0; }
+    .ca-overdue-label { font-size: 13px; font-weight: 800; color: #e53e3e; margin: 22px 0 6px; }
+    .ca-overdue-value { font-size: 22px; font-weight: 800; color: #e53e3e; }
+    @@media (max-width: 1199px) {
+        .ca-dash-kpi, .ca-dash-mid, .ca-dash-out { grid-template-columns: 1fr; }
+        .ca-product-wrap { grid-template-columns: 1fr; }
+    }
+
+    .ca-status-badge {
+        display: inline-block;
+        min-width: 52px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .ca-status-high {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .ca-status-mid {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .ca-status-low {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .ca-segment-total-row td {
+        background: #eef2ff;
+        font-weight: 700;
+    }
+
     /* Column width specifications for 2-column tables */
     .col-width-2-name {
         width: 60%;
@@ -165,18 +1530,221 @@
     }
 
     /* GP Wise Summary Table Styling */
+    .summary-top10-wrap {
+        max-height: 360px;
+        overflow: auto;
+    }
+
+    .summary-top10-table thead th {
+        background: #f8fafc;
+        color: #1e3a6e;
+        font-size: 11px;
+        font-weight: 700;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+
+    .summary-top10-table td {
+        font-size: 12px;
+        color: #1e3a6e;
+        border-color: #edf2f7;
+        vertical-align: middle;
+    }
+
+    .summary-top10-table td.client-name {
+        font-weight: 700;
+        color: #224abe;
+        text-transform: uppercase;
+    }
+
+    .summary-highgp-card {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .summary-highgp-tabs {
+        display: flex;
+        gap: 8px;
+        padding: 10px 12px 0;
+    }
+
+    .summary-highgp-tab {
+        border: none;
+        background: #eef2f7;
+        color: #4a5568;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .summary-highgp-tab.active {
+        background: #224abe;
+        color: #fff;
+    }
+
+    .summary-highgp-body {
+        display: flex;
+        gap: 16px;
+        padding: 12px;
+        min-height: 260px;
+        align-items: stretch;
+    }
+
+    .summary-highgp-gauge-wrap {
+        flex: 0 0 230px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .summary-highgp-meter {
+        position: relative;
+        width: 220px;
+        height: 140px;
+    }
+
+    .summary-highgp-meter svg {
+        width: 220px;
+        height: 140px;
+        display: block;
+    }
+
+    .summary-highgp-meter .meter-track {
+        fill: none;
+        stroke: #e2e8f0;
+        stroke-width: 16;
+        stroke-linecap: round;
+    }
+
+    .summary-highgp-meter .meter-value {
+        fill: none;
+        stroke: #1cc88a;
+        stroke-width: 16;
+        stroke-linecap: round;
+        stroke-dasharray: 283;
+        stroke-dashoffset: 283;
+        transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
+    }
+
+    .summary-highgp-meter .meter-value.not-achieved {
+        stroke: #e74a3b;
+    }
+
+    .summary-highgp-gauge-center {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 58px;
+        text-align: center;
+        pointer-events: none;
+    }
+
+    .summary-highgp-gauge-center .value {
+        font-size: 28px;
+        font-weight: 800;
+        color: #1cc88a;
+        line-height: 1;
+    }
+
+    .summary-highgp-gauge-center .status {
+        font-size: 12px;
+        font-weight: 700;
+        color: #1cc88a;
+        margin-top: 4px;
+    }
+
+    .summary-highgp-gauge-center .status.not-achieved,
+    .summary-highgp-gauge-center .value.not-achieved {
+        color: #e74a3b;
+    }
+
+    .summary-highgp-target {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #4a5568;
+    }
+
+    .summary-highgp-detail {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .summary-highgp-stat {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #edf2f7;
+        font-size: 13px;
+        color: #4a5568;
+    }
+
+    .summary-highgp-stat strong {
+        color: #1a202c;
+        font-weight: 800;
+    }
+
+    .summary-highgp-table {
+        width: 100%;
+    }
+
+    .summary-highgp-table thead th {
+        background: #e8eef8;
+        color: #1e3a6e;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .summary-highgp-table td {
+        font-size: 12px;
+        color: #2d3748;
+    }
+
+    .summary-highgp-status {
+        font-weight: 700;
+    }
+
+    .summary-highgp-status.achieved { color: #1cc88a; }
+    .summary-highgp-status.not-achieved { color: #e74a3b; }
+
+    @@media (max-width: 991px) {
+        .summary-highgp-body {
+            flex-direction: column;
+        }
+    }
+
+    .gp-wise-grid-wrap {
+        max-height: 480px;
+        overflow: auto;
+        position: relative;
+        width: 100%;
+    }
+
     #gpWiseTable thead th {
-        background-color: #e9ecef !important;
+        background-color: #1e3a6e !important;
+        color: #fff;
         position: sticky;
         z-index: 10;
+        font-size: 11px;
+        white-space: nowrap;
+        text-align: center;
+        vertical-align: middle;
     }
+
+    #gpWiseTable thead th.gp-col-superhigh { background-color: #224abe !important; }
+    #gpWiseTable thead th.gp-col-high { background-color: #1cc88a !important; }
+    #gpWiseTable thead th.gp-col-medium { background-color: #f6c23e !important; color: #fff !important; }
+    #gpWiseTable thead th.gp-col-low { background-color: #e74a3b !important; }
 
     #gpWiseTable thead tr:first-child th {
         top: 0;
     }
 
     #gpWiseTable thead tr:nth-child(2) th {
-        top: 38px; /* Adjust based on first row height */
+        top: 34px;
     }
 
     #gpWiseTable tbody tr:last-child {
@@ -188,42 +1756,41 @@
         z-index: 9;
     }
 
-    /* Ensure table borders are visible */
     #gpWiseTable {
         border-collapse: separate;
         border-spacing: 0;
+        min-width: 980px;
     }
 
     #gpWiseTable th,
     #gpWiseTable td {
         border: 1px solid #dee2e6;
-        padding: 8px;
+        padding: 6px 8px;
+        font-size: 12px;
     }
 
-    /* Column widths for GP Wise Summary */
-    #gpWiseTable th:first-child,
-    #gpWiseTable td:first-child {
-        min-width: 200px;
+    #gpWiseTable thead tr:first-child th:first-child,
+    #gpWiseTable tbody td:first-child {
+        min-width: 160px;
+        text-align: left;
     }
 
-    #gpWiseTable th:not(:first-child),
-    #gpWiseTable td:not(:first-child) {
-        min-width: 100px;
+    #gpWiseTable thead th:not(:first-child),
+    #gpWiseTable tbody td:not(:first-child) {
+        min-width: 72px;
     }
 
-    /* Highlight Total and % of Total columns */
-    #gpWiseTable tbody tr td:nth-child(5),
-    #gpWiseTable tbody tr td:nth-child(6) {
+    #gpWiseTable tbody tr td:nth-last-child(-n+2) {
         background-color: #f8f9fa;
+        font-weight: 700;
     }
 
     #gpWiseTable tbody tr:hover td {
-        background-color: rgba(0, 123, 255, 0.1);
+        background-color: rgba(0, 123, 255, 0.08);
     }
 
-    #gpWiseTable tbody tr:hover td:nth-child(5),
-    #gpWiseTable tbody tr:hover td:nth-child(6) {
-        background-color: rgba(0, 123, 255, 0.15);
+    #gpWiseTable tbody tr:hover td:nth-last-child(-n+2) {
+        background-color: rgba(0, 123, 255, 0.14);
     }
 
     /* Responsive adjustments */
@@ -347,6 +1914,102 @@
                     font-size: 13px;
                 }
     }
+
+    .summary-kpi-card:has(.summary-kpi-action) {
+        padding: 0;
+        cursor: pointer;
+        transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .summary-kpi-action {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        border: 0;
+        outline: none;
+        text-align: left;
+        cursor: pointer;
+        background: transparent;
+        font: inherit;
+        color: inherit;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+
+    .summary-kpi-action .summary-kpi-body {
+        flex: 1;
+    }
+
+    .summary-kpi-header.rm-rate-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .summary-kpi-plus {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #22c55e;
+        color: #fff;
+        font-size: 11px;
+        line-height: 1;
+        flex-shrink: 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+    }
+
+    .summary-kpi-icon.icon-rm-rate {
+        background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+    }
+
+    .summary-kpi-card:has(.summary-kpi-action):hover,
+    .summary-kpi-action:focus {
+        outline: none;
+        border-color: #e3e8ef;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        transform: none;
+    }
+
+    .summary-kpi-action:focus .summary-kpi-plus,
+    .summary-kpi-card:has(.summary-kpi-action):hover .summary-kpi-plus {
+        background: #16a34a;
+    }
+
+    #rmRateModal .rm-rate-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    #rmRateModal .rm-rate-filter-field {
+        flex: 1 1 180px;
+        min-width: 160px;
+    }
+
+    #rmRateModal .rm-rate-filter-field label {
+        font-weight: 700;
+        font-size: 13px;
+        color: #1a202c;
+        margin-bottom: 4px;
+    }
+
+    #rmRateModal .rm-rate-summary-title {
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 10px;
+    }
+
+    #rmRateTable .rm-rate-input {
+        max-width: 120px;
+        text-align: right;
+    }
 </style>
 
 <!-- FilterSidePanelControl Web Component -->
@@ -359,7 +2022,6 @@
             <i class="fas fa-file-alt"></i>Summary Report
         </button>
     </li>
-
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="partyScoring-tab" data-bs-toggle="tab" data-bs-target="#partyScoring" type="button" role="tab" aria-controls="partyScoring" aria-selected="false">
             <i class="fas fa-star"></i>Party Scoring
@@ -372,10 +2034,10 @@
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="manifestation-tab" data-bs-toggle="tab" data-bs-target="#manifestation" type="button" role="tab" aria-controls="manifestation" aria-selected="false">
-            <i class="fas fa-clipboard-check"></i>Manifestation
+            <i class="fas fa-clipboard-check"></i>Manifestation Vs Actual
         </button>
     </li>
-    <li class="nav-item" role="presentation">
+    <li class="nav-item d-none" role="presentation">
         <button class="nav-link" id="nbdCrr-tab" data-bs-toggle="tab" data-bs-target="#nbdCrr" type="button" role="tab" aria-controls="nbdCrr" aria-selected="false">
             <i class="fas fa-user-plus"></i>NBD CRR
         </button>
@@ -386,8 +2048,23 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="gpWiseSummary-tab" data-bs-toggle="tab" data-bs-target="#gpWiseSummary" type="button" role="tab" aria-controls="gpWiseSummary" aria-selected="false">
-            <i class="fas fa-chart-bar"></i>GP Wise Summary
+        <button class="nav-link" id="regionalAnalysis-tab" data-bs-toggle="tab" data-bs-target="#regionalAnalysis" type="button" role="tab" aria-controls="regionalAnalysis" aria-selected="false">
+            <i class="fas fa-map-marked-alt"></i>Regional Analysis
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="productAnalysis-tab" data-bs-toggle="tab" data-bs-target="#productAnalysis" type="button" role="tab" aria-controls="productAnalysis" aria-selected="false">
+            <i class="fas fa-cubes"></i>Product Analysis
+        </button>
+    </li>
+    <li class="nav-item d-none" role="presentation">
+        <button class="nav-link" id="targetVsGrowth-tab" data-bs-toggle="tab" data-bs-target="#targetVsGrowth" type="button" role="tab" aria-controls="targetVsGrowth" aria-selected="false">
+            <i class="fas fa-bullseye"></i>Target and Growth
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="clientAnalysis-tab" data-bs-toggle="tab" data-bs-target="#clientAnalysis" type="button" role="tab" aria-controls="clientAnalysis" aria-selected="false">
+            <i class="fas fa-users"></i>CLIENT ANALYSIS
         </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -409,70 +2086,236 @@
 <!-- Tab Content -->
 <div class="tab-content pt-3" id="salesAnalysisTabsContent">
     <div class="tab-pane fade show active" id="summaryReport" role="tabpanel" aria-labelledby="summaryReport-tab">
-        <!-- KPI Cards Row -->
-        <div class="row g-2">
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">Parties</small>
-                        <div id="kpi-parties" class="fw-bold" style="font-size:28px; color:#28a745; margin-top:4px;">0</div>
+        <div class="container-fluid px-0">
+            <div class="tvg-panel summary-panel">
+                <!-- KPI Cards: two rows of four -->
+                <div class="summary-kpi-scroll">
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Total Sale (MT)<small id="skpi-total-sale-label">As on date</small></div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-blue"><i class="fas fa-shopping-cart"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-total-sale" class="summary-kpi-value">0 MT</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Lost Client (Count)</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-red"><i class="fas fa-user-times"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-lost-client" class="summary-kpi-value">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Close Dream Client</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-purple"><i class="fas fa-star"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-close-dream-client" class="summary-kpi-value">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Total No. of Parties</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-indigo"><i class="fas fa-users"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-total-parties" class="summary-kpi-value value-blue">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Manifest Score (%)<small>As on current date</small></div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-teal"><i class="fas fa-bullseye"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-manifest-score" class="summary-kpi-value">0.00%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Total Manifested For The Month</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-green"><i class="fas fa-clipboard-list"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-total-manifested" class="summary-kpi-value">0 MT</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Total Manifest As On Date<small id="skpi-manifested-asondate-label">Current date</small></div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-teal"><i class="fas fa-calendar-check"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-manifest-asondate" class="summary-kpi-value">0 MT</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Lost Freight (₹)</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-orange"><i class="fas fa-truck"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-lost-freight" class="summary-kpi-value value-red">₹ 0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">NBD / CRR Count</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-purple"><i class="fas fa-file-alt"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div class="summary-kpi-lines">
+                                    <div>NBD : <strong id="skpi-nbd-count">0</strong></div>
+                                    <div>CRR : <strong id="skpi-crr-count">0</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-kpi-footer">Total : <strong id="skpi-nbd-crr-total">0</strong></div>
+                    </div>
+                    <div class="summary-kpi-card" id="rmRateToolbar">
+                        <button type="button" id="btnRmRate" class="summary-kpi-action" title="Add RM Rate" data-bs-toggle="modal" data-bs-target="#rmRateModal">
+                            <div class="summary-kpi-header rm-rate-header">
+                                RM Rate
+                                <span class="summary-kpi-plus" aria-hidden="true"><i class="fas fa-plus"></i></span>
+                            </div>
+                            <div class="summary-kpi-body">
+                                <div class="summary-kpi-icon icon-rm-rate"><i class="fas fa-plus"></i></div>
+                                <div class="summary-kpi-value-wrap">
+                                    <div class="summary-kpi-value">Add Rate</div>
+                                    <div class="summary-kpi-trend trend-neutral"><span>Click to add / update</span></div>
+                                </div>
+                            </div>
+                            <div class="summary-kpi-footer">&nbsp;</div>
+                        </button>
+                    </div>
+                    <div class="summary-kpi-card d-none" id="skpi-ready-dispatch-card">
+                        <div class="summary-kpi-header">Ready to Dispatch Stock</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-indigo"><i class="fas fa-box-open"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-ready-dispatch" class="summary-kpi-value">0 MT</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">High GP</small>
-                        <div id="kpi-high-gp" class="fw-bold" style="font-size:28px; color:#17a2b8; margin-top:4px;">0</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">Lost Client</small>
-                        <div id="kpi-lost-client" class="fw-bold" style="font-size:28px; color:#dc3545; margin-top:4px;">0</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">Manifested Sales</small>
-                        <div id="kpi-manifested-sales" class="fw-bold" style="font-size:28px; color:#fd7e14; margin-top:4px;">0</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">Total Manifested</small>
-                        <div id="kpi-total-manifested" class="fw-bold" style="font-size:28px; color:#20c997; margin-top:4px;">0</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-                <div class="card kpi-card" style="border:1px solid #dcdcdc;">
-                    <div class="card-body text-center p-1">
-                        <small class="text-muted">Actual Sale</small>
-                        <div id="kpi-actual-sale" class="fw-bold" style="font-size:28px; color:#6f42c1; margin-top:4px;">0</div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Summary Report Table -->
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Summary Report</h5>
-                <div class="table-responsive mt-2">
-                    <table id="summaryReportTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="summaryReportTableHeader">
-                        </thead>
-                        <tbody id="summaryReportTableBody">
-                        </tbody>
-                    </table>
-                    <div class="paginator" id="paginator-summaryReportTable">
+                <!-- Charts Row -->
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-4">
+                        <div class="summary-chart-card">
+                            <div class="summary-chart-header">GP Wise Sale Distribution (MT)</div>
+                            <div class="summary-chart-body">
+                                <div class="summary-chart-canvas">
+                                    <canvas id="summaryGpPieChart"></canvas>
+                                </div>
+                                <div id="summaryGpLegend" class="summary-chart-legend"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="summary-chart-card">
+                            <div class="summary-chart-header">Marketing Man Sale Share (MT)</div>
+                            <div class="summary-chart-body">
+                                <div class="summary-chart-canvas">
+                                    <canvas id="summaryGpWiseManPieChart"></canvas>
+                                </div>
+                                <div id="summaryGpWiseManLegend" class="summary-chart-legend"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="summary-chart-card">
+                            <div class="summary-chart-header">NBD / CRR Count Details</div>
+                            <div class="summary-chart-body">
+                                <div class="summary-chart-canvas">
+                                    <canvas id="summaryNbdCrrDonutChart"></canvas>
+                                    <div class="summary-donut-center">
+                                        <div class="label">Total</div>
+                                        <div id="summaryNbdCrrDonutTotal" class="value">0</div>
+                                    </div>
+                                </div>
+                                <div id="summaryNbdCrrLegend" class="summary-chart-legend"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-5">
+                        <div class="summary-chart-card">
+                            <div class="summary-chart-header">Top 10 Clients (This Month Sale)</div>
+                            <div class="table-responsive summary-top10-wrap">
+                                <table class="table table-sm mb-0 summary-top10-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Client Name</th>
+                                            <th class="text-end">Sale (MT)</th>
+                                            <th class="text-end">GP (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="summaryTop10ClientsBody">
+                                        <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="summary-chart-card summary-highgp-card">
+                            <div class="summary-chart-header">60% Super High / High GP Party Sale Achieved</div>
+                            <div class="summary-highgp-body">
+                                <div class="summary-highgp-gauge-wrap">
+                                    <div class="summary-highgp-meter">
+                                        <svg viewBox="0 0 220 140" aria-label="High GP achievement meter">
+                                            <path class="meter-track" d="M 30 120 A 80 80 0 0 1 190 120"></path>
+                                            <path id="summaryHighGpMeterArc" class="meter-value" d="M 30 120 A 80 80 0 0 1 190 120"></path>
+                                        </svg>
+                                        <div class="summary-highgp-gauge-center">
+                                            <div id="summaryHighGpGaugeValue" class="value">0%</div>
+                                            <div id="summaryHighGpGaugeStatus" class="status">Not Achieved</div>
+                                        </div>
+                                    </div>
+                                    <div class="summary-highgp-target">Target : <strong>60%</strong></div>
+                                </div>
+                                <div class="summary-highgp-detail">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0 summary-highgp-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Marketing Man</th>
+                                                    <th class="text-end">Achieved (%)</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="summaryHighGpManBody">
+                                                <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GP Wise Summary grid (full width) -->
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="summary-chart-card">
+                            <div class="summary-chart-header">GP Wise Summary</div>
+                            <div class="table-responsive gp-wise-grid-wrap">
+                                <table id="gpWiseTable" class="table table-sm table-bordered mb-0">
+                                    <thead class="table-secondary" id="gpWiseTableHeader">
+                                    </thead>
+                                    <tbody id="gpWiseTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -480,367 +2323,292 @@
     </div>
 
     <div class="tab-pane fade" id="partyScoring" role="tabpanel" aria-labelledby="partyScoring-tab">
-        
-        <!-- Summary Grids Row -->
-        <div class="row mb-2">
-            <div class="col-lg-4 mb-0">
-                <div class="card" style="border:1px solid #dcdcdc; display: flex; flex-direction: column; height: 280px;">
-                    <div class="card-body p-0" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
-                        <div class="table-responsive" style="flex: 1; max-height: 230px; overflow-y: auto;">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="table-light sticky-top">
+        <div class="ps-top-row">
+            <div>
+                <div class="ps-title">Party Sale & Score Distribution</div>
+                <div class="ps-card">
+                    <div class="ps-dist-body">
+                        <div class="ps-donut-wrap">
+                            <canvas id="partyScoreDonutChart"></canvas>
+                            <div class="ps-donut-center">
+                                <div class="label">Total Sale</div>
+                                <div id="psDonutTotalSale" class="value">0 MT</div>
+                                <div id="psDonutTotalParties" class="meta">(0 Parties)</div>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 w-100">
+                            <table class="ps-range-table mb-0">
+                                <thead>
                                     <tr>
-                                        <th style="width: 40px;">S.no.</th>
-                                        <th>Location</th>
-                                        <th class="text-end" style="width: 120px;">Record Count</th>
+                                        <th>Score Range (out of 40)</th>
+                                        <th class="text-end">Sale (MT)</th>
+                                        <th class="text-end">Parties with Sale</th>
+                                        <th class="text-end">Parties</th>
                                     </tr>
                                 </thead>
-                                <tbody id="locationSummaryBody">
-                                    <tr>
-                                        <td colspan="3" class="text-center text-muted">Loading...</td>
-                                    </tr>
+                                <tbody id="psScoreRangeBody">
+                                    <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
                                 </tbody>
-                            </table>
-                        </div>
-                        <div class="summary-grid-footer" style="border-top: 2px solid #dee2e6; background: #f8f9fa;">
-                            <table class="table table-sm mb-0">
-                                <tr style="font-weight: bold;">
-                                    <td colspan="2" style="padding: 8px 12px;">Grand total</td>
-                                    <td class="text-end grand-total-value" style="padding: 8px 12px; width: 120px;">0</td>
-                                </tr>
-                                <tr style="font-weight: bold;">
-                                    <td colspan="3" class="mb-0 summary-grid-title" style="padding: 8px 12px; width: 120px;">0</td>
-                                </tr>
+                                <tfoot>
+                                    <tr>
+                                        <td>Total</td>
+                                        <td class="text-end" id="psRangeTotalSale">0</td>
+                                        <td class="text-end" id="psRangeTotalSellingParties">0</td>
+                                        <td class="text-end" id="psRangeTotalParties">0</td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div class="col-lg-4 mb-0">
-                <div class="card" style="border:1px solid #dcdccdc; display: flex; flex-direction: column; height: 280px;">
-                    <div class="card-body p-0" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
-                        <div class="table-responsive" style="flex: 1; max-height: 230px; overflow-y: auto;">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="table-light sticky-top">
-                                    <tr>
-                                        <th style="width: 40px;">S.no.</th>
-                                        <th>MGKT Person</th>
-                                        <th class="text-end" style="width: 120px;">Record Count</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="mgktPersonSummaryBody">
-                                    <tr>
-                                        <td colspan="3" class="text-center text-muted">Loading...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="summary-grid-footer" style="border-top: 2px solid #dee2e6; background: #f8f9fa;">
-                            <table class="table table-sm mb-0">
-                                <tr style="font-weight: bold;">
-                                    <td colspan="2" style="padding: 8px 12px;">Grand total</td>
-                                    <td class="text-end grand-total-value" style="padding: 8px 12px; width: 120px;">0</td>
-                                </tr>
-                                <tr style="font-weight: bold;">
-                                    <td colspan="3" class="mb-0 summary-grid-title" style="padding: 8px 12px; width: 120px;">0</td>
-                                </tr>
-                            </table>
-                        </div>
+            <div>
+                <div class="ps-title">Overall Party Score Summary</div>
+                <div class="ps-kpi-row">
+                    <div class="ps-kpi-box">
+                        <div class="ps-kpi-label">Avg Score (All Parties)</div>
+                        <div class="ps-kpi-value"><span id="psAvgScore">0.00</span> <small>/ 40</small></div>
+                    </div>
+                    <div class="ps-kpi-box">
+                        <div class="ps-kpi-label">Top Score</div>
+                        <div class="ps-kpi-value"><span id="psTopScore">0.00</span> <small>/ 40</small></div>
+                    </div>
+                    <div class="ps-kpi-box">
+                        <div class="ps-kpi-label">Lowest Score</div>
+                        <div class="ps-kpi-value"><span id="psLowScore">0.00</span> <small>/ 40</small></div>
                     </div>
                 </div>
-            </div>
-
-            <div class="col-lg-4 mb-0">
-                <div class="card" style="border:1px solid #dcdcdc; display: flex; flex-direction: column; height: 280px;">
-                    <div class="card-body p-0" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
-                        <div class="table-responsive" style="flex: 1; max-height: 230px; overflow-y: auto;">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="table-light sticky-top">
-                                    <tr>
-                                        <th style="width: 40px;">S.no.</th>
-                                        <th>Parties</th>
-                                        <th class="text-end" style="width: 120px;">Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="partyIdSummaryBody">
-                                    <tr>
-                                        <td colspan="3" class="text-center text-muted">Loading...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="summary-grid-footer" style="border-top: 2px solid #dee2e6; background: #f8f9fa;">
-                            <table class="table table-sm mb-0">
-                                <tr style="font-weight: bold;">
-                                    <td colspan="2" style="padding: 8px 12px;">Grand total</td>
-                                    <td class="text-end grand-total-value" style="padding: 8px 12px; width: 120px;">0</td>
-                                </tr>
-                                <tr style="font-weight: bold;">
-                                    <td colspan="3" class="mb-0 summary-grid-title" style="padding: 8px 12px; width: 120px;">0</td>
-                                </tr>
-                            </table>
-                        </div>
+                <div class="ps-split-row">
+                    <div class="ps-split-box">
+                        <div class="ps-kpi-label">Score &gt;= 28 (Good &amp; Above)</div>
+                        <div id="psGoodCount" class="ps-split-count ps-good">0</div>
+                        <div id="psGoodPct" class="ps-split-pct ps-good">0.00%</div>
+                    </div>
+                    <div class="ps-split-box">
+                        <div class="ps-kpi-label">Score &lt; 28 (Needs Attention)</div>
+                        <div id="psAttentionCount" class="ps-split-count ps-bad">0</div>
+                        <div id="psAttentionPct" class="ps-split-pct ps-bad">0.00%</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Main Party Scoring Table -->
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Party Scoring Details</h5>
-                <div class="table-responsive mt-2">
-                    <table id="partyScoringTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="partyScoringTableHeader">
-                        </thead>
-                        <tbody id="partyScoringTableBody">
-                        </tbody>
-                    </table>
-                    <div class="paginator" id="paginator-partyScoringTable">
-                    </div>
-                </div>
+        <div class="ps-section-bar">Party Wise Average Score (Out of 40)</div>
+        <div class="ps-card">
+            <div class="table-responsive ps-party-scroll">
+                <table id="partyScoreTable" class="table table-sm mb-0 ps-party-table">
+                    <thead id="partyScoreTableHeader">
+                    </thead>
+                    <tbody id="partyScoreTableBody">
+                        <tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>
+                    </tbody>
+                </table>
+                <div class="paginator" id="paginator-partyScoreTable"></div>
             </div>
         </div>
     </div>
 
     <div class="tab-pane fade" id="goldenCircle" role="tabpanel" aria-labelledby="goldenCircle-tab">
-        <div class="container-fluid">
-            <!-- Row 1: Marketing Person Table and Base % Chart -->
-            <div class="row">
-                <!-- Marketing Person Weight Table -->
-                <div class="col-lg-3">
-                    <div class="dashboard-card">
-                        <div class="dashboard-title">Marketing Person Weight</div>
-                        <div class="dashboard-table-container">
-                            <div class="table-scroll-wrapper">
-                                <table class="table table-compact table-bordered table-hover mb-0">
-                                    <thead class="sticky-top">
-                                        <tr>
-                                            <th class="col-width-2-name">MGKT_PERSON</th>
-                                            <th class="text-end col-width-2-value">WEIGHT</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="mgktPersonWeightBody">
-                                        <tr>
-                                            <td colspan="2" class="text-center text-muted">Loading...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+        <div id="goldenCircleGpFilterNote" class="alert alert-info mb-3 py-2" role="alert">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Note:</strong> Golden Circle Client defaults to <strong>Super High</strong> and <strong>High</strong> GP. Data on this tab follows the <strong>GP</strong> filter. To see Medium or Low GP, open <strong>Filters</strong> and change the <strong>GP</strong> selection.
+        </div>
+        <div class="gc-grid-top">
+            <div class="gc-card">
+                <div class="gc-head gc-head-pink">Marketing Person-wise Sale Share %</div>
+                <div class="gc-body">
+                    <div class="gc-split">
+                        <div class="gc-donut-wrap">
+                            <canvas id="gcMktShareDonutChart"></canvas>
+                            <div class="gc-donut-center">
+                                <div class="label">Total Sale</div>
+                                <div id="gcMktShareTotal" class="value">0 MT</div>
+                                <div class="meta">100%</div>
                             </div>
-                            <table class="table table-compact table-bordered mb-0 table-footer-sticky">
-                                <tfoot id="mgktPersonWeightFooter">
+                        </div>
+                        <div class="gc-scroll w-100">
+                            <table class="gc-table">
+                                <thead>
                                     <tr>
-                                        <td class="col-width-2-name"><strong>Grand total</strong></td>
-                                        <td class="text-end col-width-2-value"><strong>0.00</strong></td>
+                                        <th>MARKETING PERSON</th>
+                                        <th class="text-end">SALE (MT)</th>
+                                        <th class="text-end">SHARE %</th>
                                     </tr>
-                                </tfoot>
+                                </thead>
+                                <tbody id="gcMktShareBody">
+                                    <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Base % and Weight Table -->
-                <div class="col-lg-4">
-                    <div class="dashboard-card base-table">
-                        <div class="dashboard-title" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Base % and Weight</div>
-                        <div class="dashboard-table-container">
-                            <div class="table-scroll-wrapper">
-                                <table class="table table-compact table-bordered table-hover mb-0">
-                                    <thead class="sticky-top">
-                                        <tr>
-                                            <th class="col-width-2-name">BASE</th>
-                                            <th class="text-end col-width-2-value">WEIGHT</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="baseWeightBody">
-                                        <tr>
-                                            <td colspan="2" class="text-center text-muted">Loading...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <table class="table table-compact table-bordered mb-0 table-footer-sticky">
-                                <tfoot id="baseWeightFooter">
-                                    <tr>
-                                        <td class="col-width-2-name"><strong>Grand total</strong></td>
-                                        <td class="text-end col-width-2-value"><strong>0.00</strong></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Base Wise Sales % Pie Chart -->
-                <div class="col-lg-5">
-                    <div class="dashboard-card">
-                        <div class="dashboard-title" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">Base wise Sales % with weight</div>
-                        <div class="chart-container">
+            <div class="gc-card">
+                <div class="gc-head gc-head-coral">Base wise Sales % with weight</div>
+                <div class="gc-body">
+                    <div class="gc-split">
+                        <div class="gc-pie-wrap">
                             <canvas id="baseSalesPieChart"></canvas>
                         </div>
+                        <div id="gcBaseLegend" class="gc-legend"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="gc-grid-bottom">
+            <div class="gc-card">
+                <div class="gc-head gc-head-blue">Item-wise Sale Share %</div>
+                <div class="gc-body">
+                    <div class="gc-bar-row gc-bar-head">
+                        <div>ITEM</div>
+                        <div></div>
+                        <div class="text-end">SALE (MT)</div>
+                        <div class="text-end">SHARE %</div>
+                    </div>
+                    <div id="gcItemShareBody" class="gc-scroll">
+                        <div class="text-center text-muted py-3">Loading...</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Row 2: Partywise Share Pie Chart and GP/Weight Table -->
-            <div class="row">
-                <!-- Partywise Share % Pie Chart -->
-                <div class="col-lg-5">
-                    <div class="dashboard-card">
-                        <div class="dashboard-title" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">Partywise Share % in Sales</div>
-                        <div class="chart-container">
-                            <canvas id="partySharePieChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- GP / Weight Table -->
-                <div class="col-lg-7">
-                    <div class="dashboard-card gp-weight-table">
-                        <div class="dashboard-title" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">GP / WEIGHT</div>
-                        <div class="dashboard-table-container">
-                            <div class="table-scroll-wrapper">
-                                <table class="table table-compact table-bordered table-hover mb-0">
-                                    <thead class="sticky-top">
-                                        <tr>
-                                            <th rowspan="2" class="col-width-4-party">PARTY_CODE</th>
-                                            <th colspan="3" class="text-center">GP / WEIGHT</th>
-                                        </tr>
-                                        <tr>
-                                            <th class="text-end col-width-4-value">High</th>
-                                            <th class="text-end col-width-4-value">Low</th>
-                                            <th class="text-end col-width-4-value">Medium</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="gpWeightBody">
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted">Loading...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+            <div class="gc-card">
+                <div class="gc-head gc-head-green">GP Category – Sale Contribution</div>
+                <div class="gc-body">
+                    <div class="gc-gp-split">
+                        <div>
+                            <div class="gc-kpi gc-kpi-super">
+                                <div class="gc-kpi-title"><i class="fas fa-star me-1"></i>SUPER HIGH GP</div>
+                                <div id="gcKpiSuperHigh" class="gc-kpi-value">0.00 MT</div>
+                                <div id="gcKpiSuperHighPct" class="gc-kpi-meta">0.00% of Total Sale</div>
                             </div>
-                            <table class="table table-compact table-bordered mb-0 table-footer-sticky">
-                                <tfoot id="gpWeightFooter">
+                            <div class="gc-kpi gc-kpi-high">
+                                <div class="gc-kpi-title"><i class="fas fa-thumbs-up me-1"></i>HIGH GP</div>
+                                <div id="gcKpiHigh" class="gc-kpi-value">0.00 MT</div>
+                                <div id="gcKpiHighPct" class="gc-kpi-meta">0.00% of Total Sale</div>
+                            </div>
+                            <div class="gc-kpi gc-kpi-combo">
+                                <div class="gc-kpi-title"><i class="fas fa-certificate me-1"></i>HIGH + SUPER HIGH GP</div>
+                                <div id="gcKpiCombo" class="gc-kpi-value">0.00 MT</div>
+                                <div id="gcKpiComboPct" class="gc-kpi-meta">0.00% of Total Sale</div>
+                            </div>
+                        </div>
+                        <div class="gc-scroll">
+                            <table class="gc-table">
+                                <thead>
                                     <tr>
-                                        <td class="col-width-4-party"><strong>Grand total</strong></td>
-                                        <td class="text-end col-width-4-value"><strong>0.00</strong></td>
-                                        <td class="text-end col-width-4-value"><strong>0.00</strong></td>
-                                        <td class="text-end col-width-4-value"><strong>0.00</strong></td>
+                                        <th>GP CATEGORY</th>
+                                        <th class="text-end">SALE (MT)</th>
+                                        <th class="text-end">SALE %</th>
+                                        <th class="text-end">PARTY COUNT</th>
                                     </tr>
-                                </tfoot>
+                                </thead>
+                                <tbody id="gcGpCategoryBody">
+                                    <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Row 3: Original Data Table (if needed) -->
-            <div class="row mt-3">
-                <div class="col-lg-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Golden Circle Client - Detailed Data</h5>
-                            <div class="table-responsive mt-2">
-                                <table id="goldenCircleTable" class="table table-sm table-striped mb-0" style="min-width:800px;">
-                                    <thead class="table-secondary" id="goldenCircleTableHeader">
-                                    </thead>
-                                    <tbody id="goldenCircleTableBody">
-                                    </tbody>
-                                </table>
-                                <div class="paginator" id="paginator-goldenCircleTable">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <div class="gc-card">
+            <div class="gc-head gc-head-green">GP / Sales</div>
+            <div class="gc-body">
+                <div class="gc-scroll" style="max-height: 360px;">
+                    <table class="gc-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="2">PARTY_CODE</th>
+                                <th colspan="4">GP / Sales</th>
+                            </tr>
+                            <tr>
+                                <th>Super High</th>
+                                <th>High</th>
+                                <th>Medium</th>
+                                <th>Low</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gcGpSalesBody">
+                            <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                        </tbody>
+                        <tfoot id="gcGpSalesFooter">
+                            <tr class="gc-total">
+                                <td>Grand Total</td>
+                                <td>0.00</td>
+                                <td>0.00</td>
+                                <td>0.00</td>
+                                <td>0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="tab-pane fade" id="manifestation" role="tabpanel" aria-labelledby="manifestation-tab">
-        <!-- Week / WEIGHT Table -->
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Week / WEIGHT</h5>
-                <div class="table-responsive mt-2">
-                    <table id="weekWeightTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="weekWeightTableHeader">
-                        </thead>
-                        <tbody id="weekWeightTableBody">
-                        </tbody>
-                    </table>
-                    <div class="paginator" id="paginator-weekWeightTable">
-                    </div>
+        <div class="mv-info-grid">
+            <div class="mv-info-box">
+                <div class="mv-info-label">Report Period</div>
+                <div id="mvReportPeriod">-</div>
+                <div class="mt-2"><strong>Comparison Basis:</strong> Last Month (prorata)</div>
+                <div><strong>Data Basis:</strong> Prorata (up to selected date)</div>
+            </div>
+            <div class="mv-info-box">
+                <div class="mv-info-label">Performance vs Target / Last Month (prorata)</div>
+                <div class="mv-legend">
+                    <span class="mv-good">&gt;= 100% of Target</span>
+                    <span class="mv-avg">85% to 99% of Target</span>
+                    <span class="mv-poor">&lt; 85% of Target</span>
                 </div>
+            </div>
+            <div class="mv-info-box">
+                <div class="mv-info-label">Prorata Calculation</div>
+                <div id="mvProrataCalc">Prorata Factor = Days Passed / Total Days in Month</div>
+                <div class="mt-1">This factor is applied to both weekly target and last month actuals.</div>
             </div>
         </div>
 
-        <!-- Manifeste Table -->
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Manifested</h5>
-                <div class="table-responsive mt-2">
-                    <table id="manifesteTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="manifesteTableHeader">
-                        </thead>
-                        <tbody id="manifesteTableBody">
-                        </tbody>
-                    </table>
-                    <div class="paginator" id="paginator-manifesteTable">
-                    </div>
-                </div>
+        <div class="mv-card">
+            <div class="table-responsive">
+                <table id="weekWeightTable" class="mv-table mb-0">
+                    <thead id="weekWeightTableHeader"></thead>
+                    <tbody id="weekWeightTableBody"></tbody>
+                </table>
             </div>
         </div>
 
-        <!-- Order Sheet Data Table -->
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Order Sheet Data</h5>
-                <div class="table-responsive mt-2">
-                    <table id="orderSheetTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="orderSheetTableHeader">
-                        </thead>
-                        <tbody id="orderSheetTableBody">
-                        </tbody>
-                    </table>
-                    <div class="paginator" id="paginator-orderSheetTable">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Item / WEIGHT Table -->
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Item / WEIGHT</h5>
-                <div class="table-responsive mt-2">
-                    <table id="itemWeightTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="itemWeightTableHeader">
-                        </thead>
-                        <tbody id="itemWeightTableBody">
-                        </tbody>
-                    </table>
-                    <div class="paginator" id="paginator-itemWeightTable">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Actual vs Manifested Table -->
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Actual v/s Manifested</h5>
-                <div class="table-responsive mt-2">
-                    <table id="actualVsManifestTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:600px;">
-                        <thead class="table-secondary" id="actualVsManifestTableHeader">
-                        </thead>
-                        <tbody id="actualVsManifestTableBody">
-                        </tbody>
-                    </table>
-                    <div class="paginator" id="paginator-actualVsManifestTable">
-                    </div>
-                </div>
+        <div class="mv-card">
+            <div class="mv-title">WEEK WISE PRORATA COMPARISON WITH LAST MONTH</div>
+            <div class="table-responsive">
+                <table class="mv-table mb-0">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="background-color:#4472C4;color:#fff;">Week</th>
+                            <th colspan="2" style="background-color:#4472C4;color:#fff;">Actual Sales (MT)</th>
+                            <th colspan="3" style="background-color:#4472C4;color:#fff;">vs Last Month</th>
+                            <th colspan="2" style="background-color:#4472C4;color:#fff;">Weekly Manifest Target</th>
+                            <th colspan="2" style="background-color:#4472C4;color:#fff;">Achievement % (Actual vs Target)</th>
+                        </tr>
+                        <tr>
+                            <th style="background-color:#5B9BD5;color:#fff;">This Month (prorata)</th>
+                            <th style="background-color:#5B9BD5;color:#fff;">%</th>
+                            <th style="background-color:#5B9BD5;color:#fff;">Last Month (prorata)</th>
+                            <th style="background-color:#5B9BD5;color:#fff;">Diff (MT)</th>
+                            <th style="background-color:#5B9BD5;color:#fff;">%</th>
+                            <th style="background-color:#5B9BD5;color:#fff;">Target (prorata)</th>
+                            <th style="background-color:#5B9BD5;color:#fff;">%</th>
+                            <th style="background-color:#5B9BD5;color:#fff;">This Month</th>
+                            <th style="background-color:#5B9BD5;color:#fff;">Last Month</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mvWeekCompareBody">
+                        <tr><td colspan="10" class="text-center text-muted">Loading...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -863,10 +2631,10 @@
             </div>
         </div>
 
-        <!-- Order Details Table -->
+        <!-- Invoice Details Table -->
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Order Details</h5>
+                <h5 class="card-title">Invoice Details</h5>
                 <div class="table-responsive mt-2">
                     <table id="nbdCrrOrderDetailsTable" class="table table-sm table-striped table-bordered mb-0" style="min-width:800px;">
                         <thead class="table-secondary" id="nbdCrrOrderDetailsTableHeader">
@@ -899,17 +2667,661 @@
         </div>
     </div>
 
-    <div class="tab-pane fade" id="gpWiseSummary" role="tabpanel" aria-labelledby="gpWiseSummary-tab">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">GP Wise Summary</h5>
-                <div class="table-responsive mt-2" style="max-height: 600px; overflow-y: auto; position: relative;">
-                    <table id="gpWiseTable" class="table table-sm table-bordered mb-0" style="min-width:800px;">
-                        <thead class="table-secondary" id="gpWiseTableHeader" style="position: sticky; top: 0; z-index: 100;">
-                        </thead>
-                        <tbody id="gpWiseTableBody">
-                        </tbody>
-                    </table>
+    <div class="tab-pane fade" id="regionalAnalysis" role="tabpanel" aria-labelledby="regionalAnalysis-tab">
+        <div class="container-fluid">
+            <div class="regional-analysis-panel">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        Regional Analysis
+                        <span id="regionalAnalysisLevelBadge" class="regional-level-badge">State Wise</span>
+                    </h5>
+                    <a id="regionalAnalysisBackBtn" class="regional-back-btn">
+                        &#8592; Back
+                    </a>
+                </div>
+
+                <div id="regionalAnalysisBreadcrumb" class="regional-breadcrumb mb-3">
+                    <span class="regional-breadcrumb-item active" data-level="state">All States</span>
+                </div>
+
+                <div id="regionalAnalysisDrillHint" class="regional-drill-hint">
+                    <i class="fas fa-hand-pointer me-1"></i>Click on a pie chart segment or table row to drill down. Next level opens below without hiding this chart.
+                </div>
+
+                <!-- Level 1: State Wise -->
+                <div id="regionalLevelStateRow" class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                State-wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="regionalStatePieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                State-wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="regionalStateTableHeader">
+                                            <th>State Name</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="regionalStateTableBody">
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="regionalStateTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 2: City Wise -->
+                <div id="regionalLevelCityRow" class="row g-4 mb-4" style="display:none;">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="regionalCityChartTitle" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                City-wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="regionalCityPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="regionalCityTableTitle" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                City-wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="regionalCityTableHeader">
+                                            <th>State Name</th>
+                                            <th>City Name</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="regionalCityTableBody">
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">No data available</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="regionalCityTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td colspan="2"><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 3: Party Wise -->
+                <div id="regionalLevelPartyRow" class="row g-4 mb-4" style="display:none;">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="regionalPartyChartTitle" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                Party-wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="regionalPartyPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="regionalPartyTableTitle" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);">
+                                Party-wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="regionalPartyTableHeader">
+                                            <th>State Name</th>
+                                            <th>City Name</th>
+                                            <th>Party Name</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="regionalPartyTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No data available</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="regionalPartyTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td colspan="3"><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="productAnalysis" role="tabpanel" aria-labelledby="productAnalysis-tab">
+        <div class="container-fluid">
+            <div class="regional-analysis-panel">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        Product Analysis
+                        <span id="productAnalysisLevelBadge" class="regional-level-badge">Item Wise</span>
+                    </h5>
+                    <a id="productAnalysisBackBtn" class="regional-back-btn">
+                        &#8592; Back
+                    </a>
+                </div>
+
+                <div id="productAnalysisBreadcrumb" class="regional-breadcrumb mb-3">
+                    <span class="regional-breadcrumb-item active" data-level="item">All Items</span>
+                </div>
+
+                <div id="productAnalysisDrillHint" class="regional-drill-hint">
+                    <i class="fas fa-hand-pointer me-1"></i>Click on a pie chart segment or table row to drill down. Next level opens below without hiding this chart.
+                </div>
+
+                <!-- Level 1: Item Wise -->
+                <div id="productLevelItemRow" class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                Item-wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="productItemPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                Item-wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="productItemTableHeader">
+                                            <th>Item Name</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productItemTableBody">
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="productItemTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 2: Item-Size Wise -->
+                <div id="productLevelSizeRow" class="row g-4 mb-4" style="display:none;">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="productSizeChartTitle" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                Item-Size wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="productSizePieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="productSizeTableTitle" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                Item-Size wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="productSizeTableHeader">
+                                            <th>Item Name</th>
+                                            <th>Size</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productSizeTableBody">
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">No data available</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="productSizeTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td colspan="2"><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 3: Item-Size-Thickness Wise -->
+                <div id="productLevelThicknessRow" class="row g-4 mb-4" style="display:none;">
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="productThicknessChartTitle" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                Item-Size-Thickness wise Sales
+                            </div>
+                            <div class="regional-chart-container">
+                                <canvas id="productThicknessPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="dashboard-card mb-0 h-100">
+                            <div class="dashboard-title" id="productThicknessTableTitle" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);">
+                                Item-Size-Thickness wise Data
+                            </div>
+                            <div class="regional-table-container">
+                                <table class="table table-compact table-hover mb-0">
+                                    <thead class="sticky-top">
+                                        <tr id="productThicknessTableHeader">
+                                            <th>Item Name</th>
+                                            <th>Size</th>
+                                            <th>Thickness</th>
+                                            <th class="text-end">Weight</th>
+                                            <th class="text-end">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productThicknessTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No data available</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="productThicknessTableFooter">
+                                        <tr class="grand-total-row">
+                                            <td colspan="3"><strong>Grand Total</strong></td>
+                                            <td class="text-end"><strong>0.00</strong></td>
+                                            <td class="text-end"><strong>100.00%</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="targetVsGrowth" role="tabpanel" aria-labelledby="targetVsGrowth-tab">
+        <div class="container-fluid">
+            <div class="tvg-panel">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Target and Growth</h5>
+                    <span class="regional-level-badge">Manifest vs Actual</span>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card tvg-kpi-card tvg-kpi-lost">
+                            <div class="card-body">
+                                <div class="tvg-kpi-label"><i class="fas fa-user-slash me-1"></i>Lost Clients</div>
+                                <div id="tvgKpiLostClients" class="tvg-kpi-value">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card tvg-kpi-card tvg-kpi-manifest">
+                            <div class="card-body">
+                                <div class="tvg-kpi-label"><i class="fas fa-flag-checkered me-1"></i>Manifest %</div>
+                                <div id="tvgKpiManifestPct" class="tvg-kpi-value">0.00%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card tvg-kpi-card tvg-kpi-actual">
+                            <div class="card-body">
+                                <div class="tvg-kpi-label"><i class="fas fa-chart-line me-1"></i>Actual %</div>
+                                <div id="tvgKpiActualPct" class="tvg-kpi-value">0.00%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-5">
+                        <div class="tvg-section-card">
+                            <h6 class="tvg-section-title" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">GP / Lost Clients</h6>
+                            <div class="tvg-section-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered tvg-table mb-3">
+                                        <thead>
+                                            <tr>
+                                                <th>GP</th>
+                                                <th class="text-end">Lost Client</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tvgLostClientTableBody">
+                                            <tr><td colspan="2" class="text-center text-muted">Loading...</td></tr>
+                                        </tbody>
+                                        <tfoot id="tvgLostClientTableFooter">
+                                            <tr class="grand-total-row">
+                                                <td><strong>Total</strong></td>
+                                                <td class="text-end"><strong>0</strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <div class="tvg-metric-row">
+                                    <span>Manifest (MT)</span>
+                                    <strong id="tvgManifestMt">0.00</strong>
+                                </div>
+                                <div class="tvg-metric-row">
+                                    <span>Actual (MT)</span>
+                                    <strong id="tvgActualMt">0.00</strong>
+                                </div>
+                                <div class="tvg-metric-row">
+                                    <span>Manifest Share</span>
+                                    <strong id="tvgManifestShare">0.00%</strong>
+                                </div>
+                                <div class="tvg-metric-row mb-0">
+                                    <span>Actual Share</span>
+                                    <strong id="tvgActualShare">0.00%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="tvg-section-card">
+                            <h6 class="tvg-section-title" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">Lost Clients by GP</h6>
+                            <div class="tvg-section-body">
+                                <div class="tvg-chart-box">
+                                    <canvas id="tvgLostClientBarChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="tvg-section-card">
+                            <h6 class="tvg-section-title" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">Manifest vs Actual (MT)</h6>
+                            <div class="tvg-section-body">
+                                <div class="tvg-chart-box">
+                                    <canvas id="tvgManifestActualPieChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="tvg-section-card">
+                            <h6 class="tvg-section-title" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">Growth Snapshot</h6>
+                            <div class="tvg-section-body">
+                                <div class="row g-3">
+                                    <div class="col-sm-6">
+                                        <div class="p-3 rounded-3" style="background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #c7d2fe;">
+                                            <div class="text-muted small fw-semibold">Manifest Target</div>
+                                            <div id="tvgSnapManifest" class="fs-4 fw-bold text-primary mt-1">0.00 MT</div>
+                                            <div id="tvgSnapManifestPct" class="small fw-bold text-primary">0.00%</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="p-3 rounded-3" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0;">
+                                            <div class="text-muted small fw-semibold">Actual Growth</div>
+                                            <div id="tvgSnapActual" class="fs-4 fw-bold text-success mt-1">0.00 MT</div>
+                                            <div id="tvgSnapActualPct" class="small fw-bold text-success">0.00%</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="p-3 rounded-3" style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #fdba74;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="text-muted small fw-semibold">Gap (Manifest - Actual)</div>
+                                                    <div id="tvgSnapGap" class="fs-4 fw-bold mt-1" style="color:#c2410c;">0.00 MT</div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <div class="text-muted small fw-semibold">Achievement</div>
+                                                    <div id="tvgSnapAchievement" class="fs-4 fw-bold mt-1" style="color:#9a3412;">0.00%</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="clientAnalysis" role="tabpanel" aria-labelledby="clientAnalysis-tab">
+        <div class="ca-dash">
+            <div class="summary-kpi-scroll ca-summary-kpi">
+                <div class="summary-kpi-card">
+                    <div class="summary-kpi-header">Total Sales (MT)<small>Current Period</small></div>
+                    <div class="summary-kpi-body">
+                        <div class="summary-kpi-icon icon-blue"><i class="fas fa-shopping-cart"></i></div>
+                        <div class="summary-kpi-value-wrap">
+                            <div id="caKpiSalesMt" class="summary-kpi-value">0.00</div>
+                            <div id="caKpiSalesMtTrend" class="summary-kpi-trend trend-neutral"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-kpi-card">
+                    <div class="summary-kpi-header">Total Sales (Value)<small>Current Period</small></div>
+                    <div class="summary-kpi-body">
+                        <div class="summary-kpi-icon icon-green"><i class="fas fa-rupee-sign"></i></div>
+                        <div class="summary-kpi-value-wrap">
+                            <div id="caKpiSalesValue" class="summary-kpi-value">₹ 0.00</div>
+                            <div id="caKpiSalesValueTrend" class="summary-kpi-trend trend-neutral"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-kpi-card">
+                    <div class="summary-kpi-header">Average Rate Per Ton<small>INR / MT</small></div>
+                    <div class="summary-kpi-body">
+                        <div class="summary-kpi-icon icon-indigo"><i class="fas fa-chart-line"></i></div>
+                        <div class="summary-kpi-value-wrap">
+                            <div id="caKpiAvgRate" class="summary-kpi-value">₹ 0.00</div>
+                            <div id="caKpiAvgRateTrend" class="summary-kpi-trend trend-neutral"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ca-dash-row ca-dash-mid">
+                <div class="ca-dash-card">
+                    <div class="ca-dash-title">GP Wise Sales (MT)</div>
+                    <div class="ca-gp-boxes">
+                        <div class="ca-gp-box ca-gp-super">
+                            <div class="lbl">Super High GP</div>
+                            <div id="caGpSuperMt" class="val">0.00</div>
+                            <div class="unit">MT</div>
+                            <div id="caGpSuperPct" class="pct">0.00%</div>
+                        </div>
+                        <div class="ca-gp-box ca-gp-high">
+                            <div class="lbl">High GP</div>
+                            <div id="caGpHighMt" class="val">0.00</div>
+                            <div class="unit">MT</div>
+                            <div id="caGpHighPct" class="pct">0.00%</div>
+                        </div>
+                        <div class="ca-gp-box ca-gp-med">
+                            <div class="lbl">Medium GP</div>
+                            <div id="caGpMedMt" class="val">0.00</div>
+                            <div class="unit">MT</div>
+                            <div id="caGpMedPct" class="pct">0.00%</div>
+                        </div>
+                        <div class="ca-gp-box ca-gp-low">
+                            <div class="lbl">Low GP</div>
+                            <div id="caGpLowMt" class="val">0.00</div>
+                            <div class="unit">MT</div>
+                            <div id="caGpLowPct" class="pct">0.00%</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ca-dash-card">
+                    <div class="ca-dash-title">GP Wise Sales Detail</div>
+                    <div class="table-responsive">
+                        <table class="ca-mini-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>GP Category</th>
+                                    <th class="text-end">Sales (MT)</th>
+                                    <th class="text-end">% of Total</th>
+                                    <th class="text-end">Value (INR)</th>
+                                    <th class="text-end">% of Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="caGpDetailBody"></tbody>
+                            <tfoot id="caGpDetailFoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="ca-dash-card">
+                    <div class="ca-dash-title">Product Wise Sales (MT)</div>
+                    <div class="ca-product-wrap">
+                        <div class="ca-product-chart"><canvas id="caProductPieChart"></canvas></div>
+                        <div class="table-responsive">
+                            <table class="ca-mini-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th class="text-end">Sales (MT)</th>
+                                        <th class="text-end">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="caProductLegendBody"></tbody>
+                                <tfoot id="caProductLegendFoot"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ca-dash-row ca-dash-out">
+                <div class="ca-dash-card">
+                    <div class="ca-dash-title">Top 5 Party (Outstanding)</div>
+                    <div class="table-responsive">
+                        <table class="ca-mini-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Party Name</th>
+                                    <th class="text-end">Outstanding (INR)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="caTopOutstandingBody"></tbody>
+                            <tfoot id="caTopOutstandingFoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="ca-dash-card">
+                    <div class="ca-dash-title">Top 5 Party (Overdue)</div>
+                    <div class="table-responsive">
+                        <table class="ca-mini-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Party Name</th>
+                                    <th class="text-end">Overdue (INR)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="caTopOverdueBody"></tbody>
+                            <tfoot id="caTopOverdueFoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="ca-dash-card">
+                    <div class="ca-dash-title">Top Party (This Month)</div>
+                    <div class="table-responsive">
+                        <table class="ca-mini-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Party Name</th>
+                                    <th class="text-end">Sales (MT)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="caTopPartyMonthBody"></tbody>
+                            <tfoot id="caTopPartyMonthFoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="ca-out-kpis">
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Total Outstanding</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-indigo"><i class="fas fa-rupee-sign"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="caTotalOutstanding" class="summary-kpi-value value-blue">₹ 0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Overdue Amount</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-red"><i class="fas fa-exclamation-circle"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="caTotalOverdue" class="summary-kpi-value value-red">₹ 0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ca-dash-row">
+                <div class="ca-dash-card">
+                    <div class="ca-dash-title">Segment Wise Sales (MT)</div>
+                    <div class="table-responsive">
+                        <table class="ca-mini-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Segment</th>
+                                    <th class="text-end">Sales (MT)</th>
+                                    <th class="text-end">% of Total</th>
+                                    <th class="text-end">Value (INR)</th>
+                                    <th class="text-end">Avg Rate (INR/MT)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="caSegmentBody"></tbody>
+                            <tfoot id="caSegmentFoot"></tfoot>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -929,6 +3341,63 @@
                     <div class="paginator" id="paginator-highGPLostClientTable">
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="rmRateModal" tabindex="-1" role="dialog" aria-labelledby="rmRateModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rmRateModalTitle">RM Rate</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="rm-rate-filter-row">
+                    <div class="rm-rate-filter-field">
+                        <label for="ddlRmRateFinYear">Fin Year</label>
+                        <select id="ddlRmRateFinYear" class="form-select form-select-sm">
+                            <option value="">Please select...</option>
+                        </select>
+                    </div>
+                    <div class="rm-rate-filter-field">
+                        <label for="ddlRmRateMonth">Month</label>
+                        <select id="ddlRmRateMonth" class="form-select form-select-sm">
+                            <option value="">Please select...</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="rm-rate-summary-title">Item Wise Summary</div>
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table id="rmRateTable" class="table table-sm table-striped table-bordered mb-0">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Item Name</th>
+                                <th class="text-end" style="width: 120px;">Qty MT</th>
+                                <th class="text-center" style="width: 160px;">RM Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rmRateTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success icon-height" id="btnSaveRmRate">Save</button>
+                <button type="button" class="btn btn-danger icon-height" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

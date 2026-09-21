@@ -1156,8 +1156,18 @@ function RollingProductionEnty_PrintID(PrintId) {
 function InitSelectPrinterToPrintControl(printText) {
     let url = baseUrl + '/CustomControl/SelectPrinterToPrintControl';
 
-    $('#DivSelectPrinterToPrintControlModal').load(url, { PrintText: encodeURIComponent(printText) });
+    document.querySelectorAll('#SelectPrinterToPrintControlModal').forEach(function (el) {
+        if (window.bootstrap && window.bootstrap.Modal) {
+            bootstrap.Modal.getInstance(el)?.dispose();
+        }
+        el.remove();
+    });
+    document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
 
+    $('#DivSelectPrinterToPrintControlModal').empty().load(url, { PrintText: encodeURIComponent(printText) });
 }
 function InitScanQRCodeByCameraControl(outputQRTextElementID, callBackFunctionName) {
     let url = baseUrl + '/CustomControl/ScanQRCodeByCameraControl';
