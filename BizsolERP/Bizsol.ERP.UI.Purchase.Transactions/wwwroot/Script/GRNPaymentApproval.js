@@ -3364,7 +3364,7 @@ function gpaRenderBudgetPartySummaryTable(totalRow) {
 
     const row = gpaApplyPartyBudgetFormulas(totalRow || {});
     let headHtml = '<tr class="gpa-budget-party-group-row">'
-        + '<th class="text-center gpa-budget-col-party">as per party</th>'
+        + '<th class="text-center gpa-budget-col-party">As per party</th>'
         + '<th colspan="5" class="text-center gpa-budget-col-grn-part">GRN part</th>'
         + '<th colspan="3" class="gpa-budget-col-balance-part"></th>'
         + '</tr><tr class="gpa-budget-party-label-row">';
@@ -4418,7 +4418,7 @@ function gpaBuildBudgetBalanceExcelHtml() {
 
     html += '<table>'
         + '<tr>'
-        + '<th class="hdr party">as per party</th>'
+        + '<th class="hdr party">As per party</th>'
         + '<th class="hdr" colspan="5">GRN part</th>'
         + '<th class="hdr" colspan="3"></th>'
         + '</tr><tr>';

@@ -447,12 +447,17 @@ function aggregateSummaryMetrics(rows, summaryRow) {
         : totalManifested;
     const readyDispatch = parseFloat(sr.ReadyToDispatch || sr.ReaddyToDispatch || sr.ReadyToDispatchStock || sr['Ready To Dispatch'] || 0) || 0;
     const readyDispatchValue = parseFloat(sr.ReadyToDispatchValue || sr['Ready To Dispatch Value'] || sr.ReadyDispatchValue || 0) || 0;
+    const closeDreamClient = parseInt(
+        sr.CloseDreamClient ?? sr.ClosedDreamClient ?? sr['Close Dream Client'] ?? sr.NofDreamClient ?? 0,
+        10
+    ) || 0;
     const manifestActualScore = manifestedAsOnDate > 0 ? (totalSaleMt / manifestedAsOnDate) * 100 : 0;
 
     return {
         totalSaleMt,
         teamSaleMt,
         lostClients,
+        closeDreamClient,
         totalParties,
         manifestActualScore,
         lostFreight,
@@ -475,6 +480,7 @@ function clearSummaryDashboard() {
 
     setText('skpi-total-sale', '0 MT');
     setText('skpi-lost-client', '0');
+    setText('skpi-close-dream-client', '0');
     setText('skpi-total-parties', '0');
     setText('skpi-manifest-score', '0.00%');
     setText('skpi-total-manifested', '0 MT');
@@ -521,7 +527,6 @@ function renderSummaryGpLegend(items) {
                 <span class="summary-legend-swatch" style="background:${item.color};"></span>
                 <div>
                     <div class="summary-legend-label">${escapeHtml(item.label)}</div>
-                    <div class="summary-legend-meta">${escapeHtml(item.criteria)}</div>
                     <div class="summary-legend-meta">${formatNumber(item.value)} MT</div>
                 </div>
             </div>
@@ -693,6 +698,7 @@ function renderSummaryDashboard(metrics) {
 
     setText('skpi-total-sale', `${formatNumber(metrics.totalSaleMt)} MT`);
     setText('skpi-lost-client', formatInteger(metrics.lostClients));
+    setText('skpi-close-dream-client', formatInteger(metrics.closeDreamClient));
     setText('skpi-total-parties', formatInteger(metrics.totalParties));
     setText('skpi-manifest-score', `${metrics.manifestActualScore.toFixed(2)}%`);
     setText('skpi-total-manifested', `${formatNumber(metrics.totalManifested)} MT`);
@@ -718,6 +724,9 @@ function renderSummaryDashboard(metrics) {
     renderSummaryNbdCrrDonutChart(metrics.nbdCount, metrics.crrCount);
     renderSummaryTop10Clients(G_SummaryReportRows);
     renderSummaryHighGpAchievement(G_SummaryReportRows);
+    if (typeof applyRmRateButtonVisibility === 'function') {
+        applyRmRateButtonVisibility();
+    }
 }
 
 function parseSummaryGpPercent(row) {
@@ -1389,17 +1398,18 @@ function aggregatePartyScoringRows(rows) {
             category: PARTY_SCORE_CATEGORY_BY_RANGE[rangeKey]
         };
     }).sort(function (a, b) {
-        if (b.score100 !== a.score100) return b.score100 - a.score100;
+        if ((b.apiScore || 0) !== (a.apiScore || 0)) return (b.apiScore || 0) - (a.apiScore || 0);
         return b.sale - a.sale;
     });
 
     const rangeStats = PARTY_SCORE_RANGES.map(function (range) {
-        return { ...range, sale: 0, parties: 0 };
+        return { ...range, sale: 0, parties: 0, sellingParties: 0 };
     });
     const rangeIndex = {};
     rangeStats.forEach(function (range, idx) { rangeIndex[range.key] = idx; });
 
     let totalSale = 0;
+    let sellingParties = 0;
     let totalScore = 0;
     let topScore = 0;
     let lowScore = parties.length ? Number.POSITIVE_INFINITY : 0;
@@ -1407,14 +1417,18 @@ function aggregatePartyScoringRows(rows) {
 
     parties.forEach(function (party) {
         totalSale += party.sale;
-        totalScore += party.score100;
-        if (party.score100 > topScore) topScore = party.score100;
-        if (party.score100 < lowScore) lowScore = party.score100;
-        if (party.score100 >= 70) goodCount += 1;
+        totalScore += (party.apiScore || 0);
+        if ((party.apiScore || 0) > topScore) topScore = party.apiScore || 0;
+        if ((party.apiScore || 0) < lowScore) lowScore = party.apiScore || 0;
+        if ((party.apiScore || 0) >= 28) goodCount += 1;
         const idx = rangeIndex[party.rangeKey];
         if (idx !== undefined) {
             rangeStats[idx].sale += party.sale;
             rangeStats[idx].parties += 1;
+            if (party.sale > 0) {
+                rangeStats[idx].sellingParties = (rangeStats[idx].sellingParties || 0) + 1;
+                sellingParties += 1;
+            }
         }
     });
 
@@ -1422,6 +1436,7 @@ function aggregatePartyScoringRows(rows) {
         parties: parties,
         rangeStats: rangeStats,
         totalSale: totalSale,
+        sellingParties: sellingParties,
         totalParties: parties.length,
         avgScore: parties.length ? (totalScore / parties.length) : 0,
         topScore: topScore,
@@ -1447,8 +1462,9 @@ function clearPartyScoringDashboard() {
     };
 
     setText('psDonutTotalSale', '0 MT');
-    setText('psDonutTotalParties', '(0 Parties)');
+    setText('psDonutTotalParties', '(0 Parties with Sale)');
     setText('psRangeTotalSale', '0');
+    setText('psRangeTotalSellingParties', '0');
     setText('psRangeTotalParties', '0');
     setText('psAvgScore', '0.00');
     setText('psTopScore', '0.00');
@@ -1460,7 +1476,7 @@ function clearPartyScoringDashboard() {
 
     const rangeBody = document.getElementById('psScoreRangeBody');
     if (rangeBody) {
-        rangeBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No data available</td></tr>';
+        rangeBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
     }
     const partyHeader = document.getElementById('partyScoreTableHeader');
     const partyBody = document.getElementById('partyScoreTableBody');
@@ -1472,7 +1488,7 @@ function clearPartyScoringDashboard() {
     if (partyPager) partyPager.innerHTML = '';
 }
 
-function renderPartyScoreRangeTable(rangeStats, totalSale, totalParties) {
+function renderPartyScoreRangeTable(rangeStats, totalSale, sellingParties, totalParties) {
     const tbody = document.getElementById('psScoreRangeBody');
     if (!tbody) return;
 
@@ -1480,13 +1496,16 @@ function renderPartyScoreRangeTable(rangeStats, totalSale, totalParties) {
         return `<tr>
             <td><span class="ps-dot" style="background:${range.color}"></span>${escapeHtml(range.label)}</td>
             <td class="text-end">${formatPartyMt(range.sale)}</td>
+            <td class="text-end">${formatInteger(range.sellingParties || 0)}</td>
             <td class="text-end">${formatInteger(range.parties)}</td>
         </tr>`;
     }).join('');
 
     const saleEl = document.getElementById('psRangeTotalSale');
+    const sellingEl = document.getElementById('psRangeTotalSellingParties');
     const partyEl = document.getElementById('psRangeTotalParties');
     if (saleEl) saleEl.textContent = formatPartyMt(totalSale);
+    if (sellingEl) sellingEl.textContent = formatInteger(sellingParties);
     if (partyEl) partyEl.textContent = formatInteger(totalParties);
 }
 
@@ -1495,7 +1514,7 @@ function renderPartyScoreDonutChart(rangeStats, totalSale, totalParties) {
     const saleEl = document.getElementById('psDonutTotalSale');
     const partyEl = document.getElementById('psDonutTotalParties');
     if (saleEl) saleEl.textContent = `${formatPartyMt(totalSale)} MT`;
-    if (partyEl) partyEl.textContent = `(${formatInteger(totalParties)} Parties)`;
+    if (partyEl) partyEl.textContent = `(${formatInteger(totalParties)} Parties with Sale)`;
     if (!canvas) return;
 
     if (partyScoreDonutChartInstance) {
@@ -1613,7 +1632,7 @@ function renderPartyWiseScoreTable(parties) {
 
     if (!parties.length) {
         thead.innerHTML = '';
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No data available</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No data available</td></tr>';
         const pager = document.getElementById('paginator-partyScoreTable');
         if (pager) pager.innerHTML = '';
         return;
@@ -1625,10 +1644,9 @@ function renderPartyWiseScoreTable(parties) {
             'S.No.': index + 1,
             'Party Name': party.partyName,
             'Total Sale (MT)': formatPartyMt(party.sale),
-            'Total Score (Out of 100)': formatPartyScore(party.apiScore),
-            'Score %': `${formatPartyScore(party.apiScore)}%`,
-            'Score Category': category.label || '-',
-            'Score Trend (vs Last Month)': getPartyScoreTrendHtml(party)
+            'Total Score (Out of 40)': formatPartyScore(party.apiScore),
+            'Score %': `${formatPartyScore(((party.apiScore || 0) / 40) * 100)}%`,
+            'Score Category': category.label || '-'
         };
     });
 
@@ -1647,10 +1665,9 @@ function renderPartyWiseScoreTable(parties) {
             {
                 'S.No.': 'center',
                 'Total Sale (MT)': 'right',
-                'Total Score (Out of 100)': 'center',
+                'Total Score (Out of 40)': 'center',
                 'Score %': 'center',
-                'Score Category': 'center',
-                'Score Trend (vs Last Month)': 'center'
+                'Score Category': 'center'
             },
             true
         );
@@ -1672,18 +1689,17 @@ function renderPartyWiseScoreTable(parties) {
             <td class="ps-center">${row['S.No.']}</td>
             <td class="ps-name">${escapeHtml(row['Party Name'])}</td>
             <td class="ps-num">${row['Total Sale (MT)']}</td>
-            <td class="ps-center">${row['Total Score (Out of 100)']}</td>
+            <td class="ps-center">${row['Total Score (Out of 40)']}</td>
             <td class="ps-center">${row['Score %']}</td>
             <td class="ps-center"><span class="ps-badge ${css}">${escapeHtml(row['Score Category'])}</span></td>
-            <td class="ps-center">${row['Score Trend (vs Last Month)']}</td>
         </tr>`;
     }).join('');
 }
 
 function renderPartyScoringDashboard() {
     const summary = aggregatePartyScoringRows(G_PartyScoringRows);
-    renderPartyScoreRangeTable(summary.rangeStats, summary.totalSale, summary.totalParties);
-    renderPartyScoreDonutChart(summary.rangeStats, summary.totalSale, summary.totalParties);
+    renderPartyScoreRangeTable(summary.rangeStats, summary.totalSale, summary.sellingParties, summary.totalParties);
+    renderPartyScoreDonutChart(summary.rangeStats, summary.totalSale, summary.sellingParties);
     renderPartyScoreSummaryKpis(summary);
     renderPartyWiseScoreTable(summary.parties);
 }
@@ -6377,13 +6393,12 @@ function getLoggedInRmRateUserType() {
 function applyRmRateButtonVisibility() {
     const toolbar = document.getElementById('rmRateToolbar');
     const btnRmRate = document.getElementById('btnRmRate');
-    const isAdmin = getLoggedInRmRateUserType() === 'A';
 
     if (toolbar) {
-        toolbar.classList.toggle('d-none', !isAdmin);
+        toolbar.classList.remove('d-none');
     }
     if (btnRmRate) {
-        btnRmRate.classList.toggle('d-none', !isAdmin);
+        btnRmRate.classList.remove('d-none');
     }
 }
 
