@@ -1390,6 +1390,15 @@ function downloadTableAsExcel(tableId, filename) {
     const table = document.getElementById(tableId);
     if (!table) return;
 
+    const fileName = filename + '.xls';
+    if (typeof XLSX !== 'undefined' && XLSX.utils && typeof window.bizsolSaveExcelWorkbook === 'function') {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(table, { raw: true });
+        XLSX.utils.book_append_sheet(wb, ws, 'MIS Report');
+        window.bizsolSaveExcelWorkbook(wb, fileName.replace(/\.xls$/i, '.xlsx'));
+        return;
+    }
+
     const tableHtml = table.outerHTML;
     const template =
         '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
@@ -1403,10 +1412,16 @@ function downloadTableAsExcel(tableId, filename) {
         '<style>td{mso-number-format:"\\@";}</style>' +
         '</head><body>' + tableHtml + '</body></html>';
 
+    if (typeof window.bizsolDownloadExcelBlob === 'function') {
+        const blob = new Blob([template], { type: 'application/octet-stream' });
+        window.bizsolDownloadExcelBlob(blob, fileName);
+        return;
+    }
+
     const dataUri = 'data:application/vnd.ms-excel;base64,' + base64EncodeUnicode(template);
     const link = document.createElement('a');
     link.href = dataUri;
-    link.download = filename + '.xls';
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

@@ -49,15 +49,34 @@ function getPlanSelect2Container($select) {
     return $select.next('.select2-container');
 }
 
-// Select2 renders the open list into a wrapper appended to the dropdownParent,
-// so the open one is always a direct child of the plan modal.
+function getPlanDropdownParent() {
+    return $('#PlannedMyModal');
+}
+
+function findPlanSelect2PortalSpan($root) {
+    if (!$root || !$root.length) {
+        return $();
+    }
+    var $span = $root.children('span').filter(function () {
+        return $(this).find('.select2-dropdown').length > 0;
+    }).last();
+    return $span;
+}
+
+// Select2 attachBody appends a bare <span> (dropdownContainer) to dropdownParent.
 function getPlanOpenDropdown() {
-    const $wrapper = $('#PlannedMyModal').children('.select2-container--open').last();
+    var $wrapper = findPlanSelect2PortalSpan($('#PlannedMyModal'));
+    if (!$wrapper.length) {
+        $wrapper = findPlanSelect2PortalSpan($(document.body));
+    }
     if (!$wrapper.length) {
         return null;
     }
-    const $dropdown = $wrapper.find('.select2-dropdown').first();
-    return $dropdown.length ? { $wrapper: $wrapper, $dropdown: $dropdown } : null;
+    var $dropdown = $wrapper.find('.select2-dropdown').first();
+    if (!$dropdown.length) {
+        return null;
+    }
+    return { $wrapper: $wrapper, $dropdown: $dropdown };
 }
 
 // Measured the same way Select2 measures the viewport when it picks a direction.
@@ -141,6 +160,96 @@ function alignPlanDropdown($select) {
     clampPlanDropdownHorizontally();
 }
 
+function setImportantStyle(el, prop, value) {
+    if (el) {
+        el.style.setProperty(prop, value, 'important');
+    }
+}
+
+// Phone: pin the open list to the bottom of the screen as a sheet so it cannot
+// leak out of the Plan card, and keep the search/filter box visible.
+function pinPlanDropdownSheet() {
+    const open = getPlanOpenDropdown();
+    if (!open) {
+        return;
+    }
+    const wrap = open.$wrapper[0];
+    const dd = open.$dropdown[0];
+    const results = dd.querySelector('.select2-results__options');
+    const search = dd.querySelector('.select2-search');
+    const sheetH = Math.round(Math.min(window.innerHeight * 0.5, 360));
+
+    open.$wrapper.addClass('plan-s2-sheet');
+    open.$dropdown.removeClass('select2-dropdown--above').addClass('select2-dropdown--below plan-s2-dd');
+    if (search) {
+        search.classList.remove('select2-search--hide');
+        setImportantStyle(search, 'display', 'block');
+    }
+
+    setImportantStyle(wrap, 'position', 'fixed');
+    setImportantStyle(wrap, 'top', 'auto');
+    setImportantStyle(wrap, 'left', '0');
+    setImportantStyle(wrap, 'right', '0');
+    setImportantStyle(wrap, 'bottom', '0');
+    setImportantStyle(wrap, 'width', '100%');
+    setImportantStyle(wrap, 'max-width', '100vw');
+    setImportantStyle(wrap, 'height', 'auto');
+    setImportantStyle(wrap, 'z-index', '100000');
+    setImportantStyle(wrap, 'transform', 'none');
+    setImportantStyle(wrap, 'margin', '0');
+
+    setImportantStyle(dd, 'position', 'relative');
+    setImportantStyle(dd, 'top', 'auto');
+    setImportantStyle(dd, 'left', 'auto');
+    setImportantStyle(dd, 'bottom', 'auto');
+    setImportantStyle(dd, 'width', '100%');
+    setImportantStyle(dd, 'max-height', sheetH + 'px');
+    setImportantStyle(dd, 'transition', 'none');
+    setImportantStyle(dd, 'display', 'block');
+    setImportantStyle(dd, 'z-index', '100000');
+
+    if (results) {
+        setImportantStyle(results, 'max-height', Math.max(120, sheetH - 72) + 'px');
+        setImportantStyle(results, 'overflow-y', 'auto');
+    }
+
+    open.$wrapper.addClass('plan-s2-ready');
+}
+
+function suppressPlanSearchAutoFocus() {
+    const $field = $('.select2-container--open .select2-dropdown .select2-search__field');
+    if (!$field.length) {
+        return;
+    }
+    $field.prop('readonly', true);
+    if (document.activeElement === $field[0]) {
+        $field[0].blur();
+    }
+    window.setTimeout(function () {
+        $field.prop('readonly', false);
+    }, 400);
+}
+
+function openPlanDropdownSheetMobile() {
+    function applyPin() {
+        if (!getPlanOpenDropdown()) {
+            return false;
+        }
+        pinPlanDropdownSheet();
+        return true;
+    }
+    if (applyPin()) {
+        requestAnimationFrame(applyPin);
+        return;
+    }
+    window.setTimeout(function () {
+        if (applyPin()) {
+            requestAnimationFrame(applyPin);
+            suppressPlanSearchAutoFocus();
+        }
+    }, 0);
+}
+
 function bindPlanSelect2DropDirection() {
     if (window.__rmStockPlanSelect2DirectionBound) {
         return;
@@ -149,18 +258,28 @@ function bindPlanSelect2DropDirection() {
 
     $(document)
         .on('select2:opening', PLAN_SELECT2_FIELDS, function () {
-            // Phone uses the layout bottom sheet. Do not scroll/reposition the
-            // field or the sheet closes before a tap can land on an option.
             if (isPlanCompactView()) {
+                $('#PlannedMyModal').addClass('plan-s2-open');
                 return;
             }
             reservePlanDropdownSpace($(this));
         })
         .on('select2:open', PLAN_SELECT2_FIELDS, function () {
+            const $select = $(this);
             if (isPlanCompactView()) {
+                openPlanDropdownSheetMobile();
+                window.setTimeout(function () {
+                    openPlanDropdownSheetMobile();
+                    suppressPlanSearchAutoFocus();
+                }, 16);
+                $(window).off('.planDropdown').on('resize.planDropdown orientationchange.planDropdown', function () {
+                    if (!getPlanOpenDropdown()) {
+                        return;
+                    }
+                    pinPlanDropdownSheet();
+                });
                 return;
             }
-            const $select = $(this);
             alignPlanDropdown($select);
             $(window).off('.planDropdown').on('resize.planDropdown orientationchange.planDropdown', function () {
                 if (!getPlanSelect2Container($select).hasClass('select2-container--open')) {
@@ -171,6 +290,7 @@ function bindPlanSelect2DropDirection() {
         })
         .on('select2:close', PLAN_SELECT2_FIELDS, function () {
             $(window).off('.planDropdown');
+            $('#PlannedMyModal').removeClass('plan-s2-open');
             const modal = document.getElementById('PlannedMyModal');
             if (modal) {
                 modal.style.removeProperty('--plan-dd-list-height');
@@ -179,16 +299,81 @@ function bindPlanSelect2DropDirection() {
 }
 
 function getPlanSelect2InitOpts() {
-    var opts = {
-        dropdownParent: $('#PlannedMyModal'),
-        width: '100%'
+    return {
+        dropdownParent: getPlanDropdownParent(),
+        width: '100%',
+        dropdownCssClass: 'plan-s2-dd',
+        minimumResultsForSearch: 0
     };
-    if (isPlanCompactView()) {
-        // Layout auto-focuses the search box, which opens the keyboard and
-        // immediately closes this modal's sheet. Hide search on the phone.
-        opts.minimumResultsForSearch = Infinity;
+}
+
+function planSlitWidthKey(val) {
+    return val == null || val === '' ? '' : String(val);
+}
+
+function syncPlanSlitWidthCommitted($select) {
+    $select.data('planSlitWidthCommitted', planSlitWidthKey($select.val()));
+}
+
+function syncAllPlanSlitWidthCommittedStates() {
+    $('#RMStockCurrentPlanned select.ddlSlitWidthRow').each(function () {
+        syncPlanSlitWidthCommitted($(this));
+    });
+}
+
+function shouldRunSlitWidthApis($select, nextVal) {
+    var next = planSlitWidthKey(nextVal != null ? nextVal : $select.val());
+    var committed = $select.data('planSlitWidthCommitted');
+    return committed !== next;
+}
+
+function handleSlitWidthRowChange($select) {
+    if (!shouldRunSlitWidthApis($select)) {
+        return;
     }
-    return opts;
+    syncPlanSlitWidthCommitted($select);
+
+    var $row = $select.closest('tr');
+    var rowId = $row.attr('id');
+
+    if ($('#PartingCase').is(':checked')) {
+        calculateWeightPerSlit(rowId);
+    } else {
+        var $no = $row.find('.txtNoOfSlitsRow');
+        var $wps = $row.find('.txtWeightPerSlitRow');
+        var $tw = $row.find('.txtTotalWeightRow');
+        $no.val(0);
+        $wps.val(0);
+        $tw.val(0);
+        GetRMStockNumericValueWidthForRow(rowId);
+    }
+    updateTableTotals();
+    UpdateODSizeWidthSelection(rowId);
+}
+
+function bindPlanSlitWidthRowHandlers() {
+    if (window.__rmStockPlanSlitWidthBound) {
+        return;
+    }
+    window.__rmStockPlanSlitWidthBound = true;
+
+    $(document).on('select2:select', '#PlannedMyModal select.ddlSlitWidthRow', function (e) {
+        var $select = $(this);
+        var picked = (e.params && e.params.data && e.params.data.id != null)
+            ? e.params.data.id
+            : $select.val();
+        if (!shouldRunSlitWidthApis($select, picked)) {
+            return;
+        }
+        handleSlitWidthRowChange($select);
+    });
+
+    $('#RMStockCurrentPlanned').on('change', '.ddlSlitWidthRow', function () {
+        if ($(this).hasClass('select2-hidden-accessible')) {
+            return;
+        }
+        handleSlitWidthRowChange($(this));
+    });
 }
 
 function initPlanSelect2($el) {
@@ -205,6 +390,14 @@ function initPlanSelect2($el) {
         } catch (eDestroy) { }
         $one.select2(getPlanSelect2InitOpts());
     });
+    syncAllPlanSlitWidthCommittedStates();
+}
+
+function refreshPlanSelect2ForViewport() {
+    if (!$('#PlannedMyModal').hasClass('show')) {
+        return;
+    }
+    initPlanSelect2($(PLAN_SELECT2_FIELDS));
 }
 
 // Phone: the opening tap is replayed onto .select2-backdrop (~300ms later) and
@@ -246,14 +439,18 @@ function bindPlanSelect2MobileHoldOpen() {
         if (!isPlanCompactView() || !planModalIsOpen()) {
             return;
         }
-        holdOpenUntil = Date.now() + 500;
+        holdOpenUntil = Date.now() + 700;
         var $backdrop = $('.select2-backdrop');
         if ($backdrop.length) {
             $backdrop.css('pointer-events', 'none');
             window.setTimeout(function () {
                 $('.select2-backdrop').css('pointer-events', '');
-            }, 500);
+            }, 700);
         }
+    });
+
+    $(document).on('select2:select', PLAN_SELECT2_FIELDS, function () {
+        holdOpenUntil = 0;
     });
 
     $(document).on('select2:closing', PLAN_SELECT2_FIELDS, function (e) {
@@ -270,6 +467,7 @@ $(document).ready(function () {
     bindRMStockFilterTotalHooks();
     bindPlanSelect2DropDirection();
     bindPlanSelect2MobileHoldOpen();
+    bindPlanSlitWidthRowHandlers();
    
     $('#current-stock').show();
     $('#unApproved-planned').hide();
@@ -343,25 +541,6 @@ $(document).ready(function () {
 
     $('#ddlMachineNo').on('change', function () {
         UpdateODSizeWidthSelection();
-    });
-
-    $('#RMStockCurrentPlanned').on('change', '.ddlSlitWidthRow', function () {
-        var $row = $(this).closest('tr');
-        var rowId = $row.attr('id');
-
-        if ($('#PartingCase').is(':checked')) {
-            calculateWeightPerSlit(rowId);
-        } else {
-            var $no = $row.find('.txtNoOfSlitsRow');
-            var $wps = $row.find('.txtWeightPerSlitRow');
-            var $tw = $row.find('.txtTotalWeightRow');
-            $no.val(0);
-            $wps.val(0);
-            $tw.val(0);
-            GetRMStockNumericValueWidthForRow(rowId);
-        }
-        updateTableTotals();
-        UpdateODSizeWidthSelection(rowId);
     });
 
     $('#AllowManualWeight').off('change').on('change', function () {
@@ -499,24 +678,37 @@ function ShowModelPlanned(rowData) {
             $('#PlannedMyModal').modal({
                 backdrop: 'static',
             });
-            $('#PlannedMyModal').modal('show');
-            ShowRMStockPlan();
-            //GetRMStockWidthList();
-            //GetRMStockItemNameList();
-            GetRMStockMachineNoList();
-            setCurrentDate();
-            updateTableTotals();
+            Showloader();
+            Promise.all([
+                ShowRMStockPlan(),
+                GetRMStockMachineNoList(true)
+            ]).then(function () {
+                setCurrentDate();
+                updateTableTotals();
+                if (isPlanCompactView()) {
+                    $('#PlannedMyModal').addClass('plan-modal-instant');
+                }
+                $('#PlannedMyModal').modal('show');
+            }).catch(function () {
+                setCurrentDate();
+                updateTableTotals();
+                $('#PlannedMyModal').modal('show');
+            }).finally(function () {
+                HideLoader();
+                $('#PlannedMyModal').one('shown.bs.modal', function () {
+                    $('#PlannedMyModal').removeClass('plan-modal-instant');
+                    refreshPlanSelect2ForViewport();
+                });
+            });
         }
     });
 }
 function ShowRMStockPlan() {
-    RMStockService.ShowRMStockData(G_IdentificationNo).then(function (response) {
+    return RMStockService.ShowRMStockData(G_IdentificationNo).then(function (response) {
         syncAllowManualWeightFromPlan(response);
-        fillTableWithExistingData(response);
-        setTimeout(function() {
-            updateTableTotals();
+        return fillTableWithExistingData(response).then(function () {
             applyAllowManualWeightState();
-        }, 100);
+        });
     });
 }
 function syncAllowManualWeightFromPlan(response) {
@@ -536,7 +728,11 @@ function syncAllowManualWeightFromPlan(response) {
     }
 }
 function fillTableWithExistingData(response) {
-    Promise.all([GetRMStockItemNameList(), GetRMStockWidthList(), GetRMStockODSizeList()])
+    return Promise.all([
+        GetRMStockItemNameList(undefined, true),
+        GetRMStockWidthList(true),
+        GetRMStockODSizeList(true)
+    ])
         .then(function ([itemNameList, widthList, odSizeList])
         {
     var tbody = $('#RMStockCurrentPlanned tbody');
@@ -618,13 +814,12 @@ function fillTableWithExistingData(response) {
             initPlanSelect2($('#RMStockCurrentPlanned select.ddlItemNameRow'));
             initPlanSelect2($('#RMStockCurrentPlanned select.ddlSlitWidthRow'));
             initPlanSelect2($('#RMStockCurrentPlanned select.ddlODWidthRow'));
-            enableNewRowAddition();
             applyAllowManualWeightState();
-        } else {
-            enableNewRowAddition();
-            G_SlittingPlanMaster_Code = 0;
-            applyAllowManualWeightState();
+            return enableNewRowAddition();
         }
+        G_SlittingPlanMaster_Code = 0;
+        applyAllowManualWeightState();
+        return enableNewRowAddition();
     });
 }
 function enableNewRowAddition() {
@@ -658,37 +853,40 @@ function enableNewRowAddition() {
     $ddlItem.trigger('change');
     $ddlWidth.trigger('change');
 
-    GetRMStockItemNameList().then(function (itemNameList) {
+    const itemPromise = GetRMStockItemNameList().then(function (itemNameList) {
         BindSelectList1($row.find('select.ddlItemNameRow')[0], itemNameList);
         initPlanSelect2($ddlItem);
         if (itemNameList && itemNameList.length === 1) {
             var $itemDropdown = $row.find('select.ddlItemNameRow');
             if ($itemDropdown.length) {
                 var firstItemCode = itemNameList[0].Code;
-                setTimeout(function() {
-                    $itemDropdown.val(firstItemCode);
-                    if ($itemDropdown.data('select2')) {
-                        $itemDropdown.trigger('change.select2');
-                    } else {
-                        $itemDropdown.trigger('change');
-                    }
-                }, 100);
+                $itemDropdown.val(firstItemCode);
+                if ($itemDropdown.data('select2')) {
+                    $itemDropdown.trigger('change.select2');
+                } else {
+                    $itemDropdown.trigger('change');
+                }
             }
         }
     });
-    Promise.all([GetRMStockWidthList(), GetRMStockODSizeList()]).then(function ([slitWidthList, odSizeList]) {
+    const widthPromise = Promise.all([GetRMStockWidthList(), GetRMStockODSizeList()]).then(function ([slitWidthList, odSizeList]) {
         BindSelectList1($row.find('select.ddlSlitWidthRow')[0], slitWidthList);
         BindSelectList1($row.find('select.ddlODWidthRow')[0], odSizeList);
         initPlanSelect2($ddlWidth);
         initPlanSelect2($odDropdown);
         applyAllowManualWeightState();
     });
+    return Promise.all([itemPromise, widthPromise]);
 }
-function GetRMStockItemNameList(ItemMaster_CodeOnlyIssue) {
-    Showloader();
+function GetRMStockItemNameList(ItemMaster_CodeOnlyIssue, skipLoader) {
+    if (!skipLoader) {
+        Showloader();
+    }
     var itemMasterCodeOnlyIssue = ItemMaster_CodeOnlyIssue || G_ItemMaster_CodeOnlyIssue || '';
     return RMStockService.GetRMStockItemName(itemMasterCodeOnlyIssue).then(function (response) {
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             if (response && response.length > 0) {
                 const list = response.map((item) => ({ Code: item.Code, Desp: item.ItemName }));
                 return list; 
@@ -699,14 +897,20 @@ function GetRMStockItemNameList(ItemMaster_CodeOnlyIssue) {
         })
         .catch(function (error) {
             toastr.error('Error fetching item list');
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             return [];
         });
 }
-function GetRMStockWidthList() {
-    Showloader();
+function GetRMStockWidthList(skipLoader) {
+    if (!skipLoader) {
+        Showloader();
+    }
     return RMStockService.GetRMStockWidth().then(function (response) {
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             if (response && response.length > 0) {
                 const list = response.map((item) => ({ Code: item.Code, Desp: item.Desp }));
                 return list;
@@ -717,14 +921,20 @@ function GetRMStockWidthList() {
         })
         .catch(function (error) {
             toastr.error('Error fetching width list');
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             return [];
         });
 }
-function GetRMStockODSizeList() {
-    Showloader();
+function GetRMStockODSizeList(skipLoader) {
+    if (!skipLoader) {
+        Showloader();
+    }
     return RMStockService.GetRMStockODSize().then(function (response) {
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             if (response && response.length > 0) {
                 const list = response.map((item) => ({ Code: item.Code, Desp: item.Desp }));
                 return list;
@@ -735,7 +945,9 @@ function GetRMStockODSizeList() {
         })
         .catch(function (error) {
             toastr.error('Error fetching OD Size list');
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             return [];
         });
 }
@@ -918,8 +1130,14 @@ function CheckODSizeApplicabilityForRow(rowId, itemMasterCode) {
         }
     });
 }
-function GetRMStockMachineNoList() {
-    RMStockService.GetRMStockMachineNo().then(function (response) {
+function GetRMStockMachineNoList(skipLoader) {
+    if (!skipLoader) {
+        Showloader();
+    }
+    return RMStockService.GetRMStockMachineNo().then(function (response) {
+            if (!skipLoader) {
+                HideLoader();
+            }
         if (response && response.length > 0) {
             var machineList = response.map((item) => ({ Code: item.Code, Desp: item.MachineNo }));
             BindSelectList1($('#ddlMachineNo')[0], machineList);
@@ -927,20 +1145,21 @@ function GetRMStockMachineNoList() {
 
             if (response.length === 1) {
                 var firstMachineCode = response[0].Code;
-                setTimeout(function() {
-                    $('#ddlMachineNo').val(firstMachineCode);
-                    if ($('#ddlMachineNo').data('select2')) {
-                        $('#ddlMachineNo').trigger('change.select2');
-                    } else {
-                        $('#ddlMachineNo').trigger('change');
-                    }
-                }, 100);
+                $('#ddlMachineNo').val(firstMachineCode);
+                if ($('#ddlMachineNo').data('select2')) {
+                    $('#ddlMachineNo').trigger('change.select2');
+                } else {
+                    $('#ddlMachineNo').trigger('change');
+                }
             }
         } else {
             toastr.error('No data received or empty response');
         }
     }).catch(function (error) {
         toastr.error('Error fetching user list:', error);
+        if (!skipLoader) {
+            HideLoader();
+        }
     });
 }
 function validateIntegerInput(input) {
@@ -1035,11 +1254,14 @@ function GetRMStockNumericValueWidthForRow(rowId) {
             } else {
                 toastr.warning("Slit Width value is greater then Original Width");
                 var $ddl = $row.find('.ddlSlitWidthRow');
+                $ddl.data('planSlitWidthCommitted', '');
                 if ($ddl.hasClass('select2-hidden-accessible')) {
-                    $ddl.val(null).trigger('change');
+                    $ddl.val(null).trigger('change.select2');
                 } else {
                     $ddl.val('');
                 }
+                updateTableTotals();
+                UpdateODSizeWidthSelection(rowId);
             }
         }
      });
