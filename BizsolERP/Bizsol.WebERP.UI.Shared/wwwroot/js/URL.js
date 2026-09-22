@@ -178,6 +178,8 @@ let UrlService = {
     API_ENDPOINT_SalesPersonDashboard: `${environment.BASE_URL}/SalesPersonDashboard`,
     API_ENDPOINT_ExpenseDashboard: `${environment.BASE_URL}/ExpenseDashboard`,
     API_ENDPOINT_IndentMaster: `${environment.BASE_URL}/IndentMaster`,
+    API_ENDPOINT_IndentMasterApprovalConfig: `${environment.BASE_URL}/IndentMasterApprovalConfig`,
+    API_ENDPOINT_IndentMasterLevelsApproval: `${environment.BASE_URL}/IndentMasterLevelsApproval`,
     API_ENDPOINT_TEMPLETE_REPORT: `${environment.BASE_URL}/OrderLoadReport`,
     API_ENDPOINT_DASHBOARD_CONFIGURATION: `${environment.BASE_URL}/DashboardConfiguration`,
     API_ENDPOINT_ProductionOrder: `${environment.BASE_URL}/ProductionOrder`,
