@@ -1,0 +1,603 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="~/assets/libs/jszip/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Tools/script/Import.js?v=import-api-v98"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/bizsolpbcontrols.js"></script>
+
+<style>
+    #ImportPage.imp-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 4px 0 32px;
+    }
+
+    #ImportPage .imp-hero {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    #ImportPage .imp-hero-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 22px;
+        box-shadow: var(--shadow-primary);
+        flex-shrink: 0;
+    }
+
+    #ImportPage .imp-hero-title {
+        font-size: 21px;
+        font-weight: 800;
+        color: var(--text-dark);
+        letter-spacing: -.025em;
+        line-height: 1.2;
+    }
+
+    #ImportPage .imp-hero-sub {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    #ImportPage .imp-card {
+        background: var(--white-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        position: relative;
+    }
+
+    #ImportPage .imp-card::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: var(--primary-gradient);
+        border-radius: 20px 20px 0 0;
+    }
+
+    #ImportPage .imp-card-body {
+        padding: 24px 26px 28px;
+    }
+
+    #ImportPage .imp-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 6px;
+    }
+
+    #ImportPage .imp-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    #ImportPage .imp-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        outline: none;
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform .15s, box-shadow .15s;
+        white-space: nowrap;
+    }
+
+    #ImportPage .imp-btn-primary {
+        background: var(--primary-gradient);
+        color: #fff;
+        box-shadow: var(--shadow-primary);
+    }
+
+    #ImportPage .imp-btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(102, 126, 234, .45);
+    }
+
+    #ImportPage .imp-btn-outline {
+        background: #fff;
+        color: var(--text-dark);
+        border: 1px solid var(--border-color);
+    }
+
+    #ImportPage .imp-btn-download {
+        background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+        color: #fff;
+        border: 1px solid #0284c7;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+        min-width: 158px;
+        justify-content: center;
+    }
+
+    #ImportPage .imp-btn-download:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(2, 132, 199, 0.45);
+    }
+
+    #ImportPage .imp-btn-download:disabled {
+        background: #64748b;
+        color: #fff;
+        border-color: #64748b;
+        opacity: 1;
+        box-shadow: none;
+    }
+
+    #ImportPage .imp-type-row .imp-btn-download {
+        height: 31px;
+        padding: 6px 16px;
+        font-size: 13px;
+    }
+
+    #ImportPage .imp-btn:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    #ImportPage .imp-file-wrap {
+        width: 100%;
+    }
+
+    #ImportPage .imp-file-name {
+        font-size: 13px;
+        color: var(--text-muted);
+        min-height: 20px;
+    }
+
+    #ImportPage .imp-result {
+        margin-top: 22px;
+        padding: 16px 18px;
+        border-radius: 14px;
+        border: 1px solid var(--border-light);
+        background: #f8fafc;
+        display: none;
+    }
+
+    #ImportPage .imp-result-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    #ImportPage .imp-result-body {
+        font-size: 13px;
+        color: var(--text-dark);
+        white-space: pre-wrap;
+    }
+
+    #ImportPage .imp-form-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 18px;
+        --imp-field-width: 380px;
+    }
+
+    #ImportPage .imp-field-block,
+    #ImportPage .imp-file-field-block {
+        width: var(--imp-field-width);
+        max-width: 100%;
+    }
+
+    #ImportPage .imp-field-control {
+        width: 100%;
+    }
+
+    #ImportPage .imp-download-wrap {
+        margin-top: 10px;
+    }
+
+    #ImportPage .imp-type-row {
+        width: 100%;
+    }
+
+    #ImportPage .box_border.form-control:not(textarea),
+    #ImportPage select.box_border.form-control {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.8125rem;
+        background-color: #fff;
+        color: #0f172a;
+        min-height: 31px;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    #ImportPage .box_border.form-control:focus,
+    #ImportPage select.box_border.form-control:focus {
+        border-color: #667eea;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        outline: none;
+    }
+
+    #ImportPage .imp-file-field {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        min-height: 31px;
+        padding: 4px 6px 4px 12px;
+        cursor: pointer;
+    }
+
+    #ImportPage .imp-file-field:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    #ImportPage .imp-file-field .imp-file-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.8125rem;
+        color: #0f172a;
+        min-height: auto;
+    }
+
+    #ImportPage .imp-file-field .imp-file-name.is-empty {
+        color: var(--text-muted);
+    }
+
+    #ImportPage .imp-btn-choose-file {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        flex-shrink: 0;
+        min-width: 158px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #334155 !important;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 4px 16px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+    }
+
+    #ImportPage .imp-btn-choose-file i {
+        color: #334155;
+    }
+
+    #ImportPage .imp-btn-choose-file:hover {
+        background: #eef2ff;
+        border-color: #667eea;
+        color: #4338ca !important;
+    }
+
+    #ImportPage .imp-btn-choose-file:hover i {
+        color: #4338ca;
+    }
+
+    #ImportPage .imp-file-field.imp-file-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15);
+    }
+
+    #ImportPage .imp-file-validation {
+        display: none;
+        margin-top: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #dc3545;
+        line-height: 1.4;
+    }
+
+    #ImportPage .imp-hint {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 8px;
+    }
+
+    #ImportPage .imp-grid-section {
+        margin-top: 22px;
+    }
+
+    #ImportPage .imp-grid-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    #ImportPage .imp-grid-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    #ImportPage .imp-grid-sub {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    #ImportPage .imp-cell-input {
+        min-width: 110px;
+    }
+
+    #ImportPage .imp-validation-remark {
+        display: inline-block;
+        max-width: 280px;
+        font-size: 12px;
+        line-height: 1.35;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    #ImportPage #tblImportData .table-wrapper {
+        max-height: 420px;
+    }
+
+    #ImportPage .imp-grid-toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-shrink: 0;
+    }
+
+    #ImportPage #table-header-ImportData th.imp-select-col-header {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    #ImportPage .imp-grid-select-all,
+    #ImportPage #tblImportData th:first-child,
+    #ImportPage #tblImportData td:first-child {
+        width: 44px;
+        min-width: 44px;
+        max-width: 44px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    #ImportPage .imp-row-select,
+    #ImportPage .imp-grid-select-all {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    #ImportPage #paginator-ImportData {
+        display: none;
+    }
+
+    #ImportPage #tblImportData th:nth-child(2),
+    #ImportPage #tblImportData td:nth-child(2) {
+        width: 52px;
+        min-width: 52px;
+        max-width: 52px;
+        text-align: center;
+        vertical-align: middle;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    #ImportPage .imp-row-locked {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        color: #6c757d;
+        font-size: 12px;
+        cursor: not-allowed;
+    }
+
+    #ImportPage .imp-cell-locked {
+        display: inline-block;
+        min-width: 110px;
+        font-size: 13px;
+        color: #495057;
+        padding: 4px 0;
+    }
+
+    #ImportPage .imp-branch-section {
+        margin-bottom: 18px;
+    }
+
+    #ImportPage .imp-branch-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+
+    #ImportPage .imp-branch-select-all {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: #495057;
+        cursor: pointer;
+    }
+
+    #ImportPage .imp-branch-list {
+        max-height: 180px;
+        overflow: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    #ImportPage .imp-branch-list-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-bottom: 1px solid #eef1f4;
+        font-size: 13px;
+    }
+
+    #ImportPage .imp-branch-list-item:last-child {
+        border-bottom: none;
+    }
+
+    #ImportPage .imp-branch-list-item:hover {
+        background: #f8f8fd;
+    }
+
+    #ImportPage .imp-branch-list-empty {
+        margin: 0;
+        padding: 14px;
+        color: #6c757d;
+        font-size: 13px;
+    }
+
+    #ImportPage .imp-transfer-blocked {
+        margin-bottom: 16px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid #f5c2c7;
+        background: #f8d7da;
+        color: #842029;
+        font-size: 13px;
+        font-weight: 600;
+    }
+</style>
+
+<div id="ImportPage" class="imp-page">
+    <div class="imp-hero">
+        <div class="imp-hero-icon">
+            <i class="fa fa-file-import"></i>
+        </div>
+        <div>
+            <div class="imp-hero-title">Import</div>
+            <div class="imp-hero-sub">Upload and import master data into the system</div>
+        </div>
+    </div>
+
+    <div class="imp-card box_border">
+        <div class="imp-card-body">
+            <div class="imp-form-stack">
+                <div class="imp-field-block">
+                    <label class="imp-label" for="ddlImportTemplate">
+                        Import Type <span class="text-danger">*</span>
+                    </label>
+                    <div class="imp-type-row">
+                        <select id="ddlImportTemplate" class="form-control form-control-sm box_border imp-field-control">
+                            <option value="">-- Select Import Type --</option>
+                        </select>
+                        <div class="imp-download-wrap">
+                            <button type="button" id="btnDownloadTemplate" class="imp-btn imp-btn-download btn-height" disabled title="Download Excel template for selected type">
+                                <i class="fa fa-download"></i> Download Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="impTransferBlocked" class="imp-transfer-blocked" style="display:none;"></div>
+
+                <div id="impBranchSection" class="imp-branch-section" style="display:none;">
+                    <label class="imp-label">Transfer To Branches</label>
+                    <div class="imp-branch-toolbar">
+                        <label class="imp-branch-select-all">
+                            <input type="checkbox" id="chkSelectAllImportBranches" checked />
+                            Select All
+                        </label>
+                    </div>
+                    <div id="impBranchListContainer" class="imp-branch-list">
+                        <p class="imp-branch-list-empty">Loading branches...</p>
+                    </div>
+                    <div class="imp-hint">Selected branches receive imported data. Uncheck all branches to skip branch transfer.</div>
+                </div>
+
+                <div class="imp-file-field-block">
+                    <label class="imp-label" for="fileImportUpload">
+                        Import File <span class="text-danger">*</span>
+                    </label>
+                    <div class="imp-file-wrap">
+                        <input type="file" id="fileImportUpload" accept=".xltx,.xlsx,.xls" class="d-none" />
+                        <div id="impFileField" class="imp-file-field form-control form-control-sm box_border">
+                            <span id="lblImportFileName" class="imp-file-name is-empty">No file chosen</span>
+                            <button type="button" id="btnChooseFile" class="imp-btn-choose-file btn-height" title="Choose Excel file">
+                                <i class="fa fa-folder-open"></i> Choose File
+                            </button>
+                        </div>
+                    </div>
+                    <div id="impFileValidation" class="imp-file-validation"></div>
+                    <div class="imp-hint">Download template as .xltx — upload .xlsx or .xls after filling data.</div>
+                </div>
+            </div>
+
+            <div class="imp-actions">
+                <button type="button" id="btnImportData" class="imp-btn imp-btn-primary btn-height" disabled title="Load file into grid">
+                    <i class="fa fa-file-import"></i> Import
+                </button>
+            </div>
+
+            <div id="impResultPanel" class="imp-result">
+                <div id="impResultTitle" class="imp-result-title"></div>
+                <div id="impResultBody" class="imp-result-body"></div>
+            </div>
+
+            <div id="impGridSection" class="imp-grid-section" style="display:none;">
+                <div class="imp-grid-toolbar">
+                    <div>
+                        <div class="imp-grid-title">Imported Data</div>
+                        <div class="imp-grid-sub">Select rows to save. Fix validation errors and save only corrected rows.</div>
+                    </div>
+                    <button type="button" id="btnSaveImportGrid" class="imp-btn imp-btn-primary btn-height" disabled title="Save selected import rows">
+                        <i class="fa fa-save"></i> Save Import
+                    </button>
+                </div>
+                <div id="tblImportData">
+                    <div class="table-wrapper fixed-height-table">
+                        <table id="ImportData" class="fixed-width-table table">
+                            <thead id="table-header-ImportData"></thead>
+                            <tbody id="table-body-ImportData"></tbody>
+                        </table>
+                    </div>
+                    <div class="paginator" id="paginator-ImportData"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    (function () {
+        function clearImportLoader() {
+            if (typeof HideLoader === 'function') {
+                HideLoader();
+            }
+        }
+        clearImportLoader();
+        $(function () {
+            clearImportLoader();
+            setTimeout(clearImportLoader, 300);
+            setTimeout(clearImportLoader, 1500);
+        });
+    })();
+</script>
+}
