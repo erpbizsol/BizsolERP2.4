@@ -1,3 +1,4 @@
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { BillWiseOutStandingReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BillWiseOutStandingReportService.js';
 import { MillWiseProductionReport } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_MillWiseProductionReportService.js';
 import { AgeingParameterControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AgeingParameterControlService.js';
@@ -2908,6 +2909,11 @@ window.ShowAgeingParameterModal = ShowAgeingParameterModal;
 window.onBillWiseAgeingParameterSelected = onAgeingParameterSelected;
 
 $(function () {
+    BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
+    if (!$('#ERPHeading').text()) {
+        $('#ERPHeading').text('Bill Wise Outstanding Report');
+    }
+
     const todayEl = document.getElementById('txtAsOnDate');
     if (todayEl && !todayEl.value) {
         const now = new Date();
