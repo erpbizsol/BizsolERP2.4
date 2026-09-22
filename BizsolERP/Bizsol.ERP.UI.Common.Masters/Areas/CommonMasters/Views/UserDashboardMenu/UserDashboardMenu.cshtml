@@ -3,7 +3,7 @@
 }
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserDashboardMenu.js?v=20260903d"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserDashboardMenu.js?v=20260911a"></script>
 <style>
     #UserDashboardMenuPage {
         --udm-ink: var(--text-dark, #1e293b);
@@ -43,9 +43,7 @@
     .udm-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
         gap: 16px;
-        flex-wrap: wrap;
         padding: 16px 22px;
         background: var(--udm-brand);
         box-shadow: var(--shadow-primary, 0 8px 24px rgba(102,126,234,.3));
@@ -61,14 +59,6 @@
     }
     .udm-header-title { margin: 0; font-size: 1.25rem; font-weight: 800; color: #fff; letter-spacing: -.02em; }
     .udm-header-sub { margin: 2px 0 0; font-size: 12px; color: rgba(255,255,255,.78); font-weight: 500; }
-
-    .udm-header-badge {
-        display: inline-flex; align-items: center; gap: 8px;
-        padding: 6px 12px; border-radius: 999px;
-        background: rgba(255,255,255,.16);
-        border: 1px solid rgba(255,255,255,.28);
-        color: #fff; font-size: 12px; font-weight: 700;
-    }
 
     .udm-body { padding: 20px 22px 24px; }
 
@@ -182,12 +172,6 @@
                     <h1 class="udm-header-title" id="ERPHeading">User Dashboard Menu</h1>
                     <p class="udm-header-sub">Your default dashboard opens first. Click another name to switch.</p>
                 </div>
-            </div>
-            <div class="udm-header-badge">
-                <i class="fas fa-user"></i>
-                User Code <span id="udm-user-code">—</span>
-                <span>·</span>
-                <span id="udm-count">0</span> dashboard(s)
             </div>
         </div>
         <div class="udm-body">

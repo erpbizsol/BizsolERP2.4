@@ -341,6 +341,39 @@ function SaveBuyingCapacity(index,Code) {
     }
 }
 
+function readSelectDisplay(id, fallback) {
+    var el = document.getElementById(id);
+    if (!el) {
+        return fallback;
+    }
+    if (el.selectedIndex >= 0 && el.options[el.selectedIndex]) {
+        var text = String(el.options[el.selectedIndex].text || '').trim();
+        if (text && text.toLowerCase() !== 'select' && text !== '0') {
+            return text;
+        }
+    }
+    return el.value || fallback;
+}
+
+function mapBuyingCapacityExportRow(item, index) {
+    var rowIndex = typeof item.__RowIndex === 'number' ? item.__RowIndex : index;
+    var qtyEl = document.getElementById('txtMonthlyRequired_' + rowIndex);
+    var ratingEl = document.getElementById('txtCustomerRating_' + rowIndex);
+    return {
+        'S.No.': pickField(item, ['S.No.', 'S.No', 'SNo', 'SrNo', 'Sr No'], rowIndex + 1),
+        'Party Name': pickField(item, ['Party Name', 'PartyName']),
+        'Mkt Person': pickField(item, ['Marketing Person', 'Mkt Person', 'PersonName']),
+        'Country': pickField(item, ['Country']),
+        'State': pickField(item, ['State']),
+        'City': pickField(item, ['City']),
+        'PinCode': pickField(item, ['PinCode']),
+        'Buying Frequency': readSelectDisplay('ddlFillBuyingFrequency_' + rowIndex, pickField(item, ['Buying Frequency', 'BuyingFrequency'])),
+        'Monthly Req(Qty)': (qtyEl && qtyEl.value !== '') ? qtyEl.value : pickField(item, ['MonthlyRequiredQty', 'Monthly Req(Qty)', 'Monthly Required(Qty)']),
+        'Customer Rating': (ratingEl && ratingEl.value !== '') ? ratingEl.value : pickField(item, ['Customer Rating', 'CustomerRating', 'Ratings']),
+        'GP Rolling': readSelectDisplay('ddlFillGPRolling_' + rowIndex, pickField(item, ['GP Rolling', 'GPRolling']))
+    };
+}
+
 function ExportExcel() {
     if (!G_SalesPersonBound) {
         toastr.error('Please wait, sales person list is loading');
@@ -351,6 +384,18 @@ function ExportExcel() {
         toastr.error('Please select Sales Person');
         return;
     }
+    var hiddenFields = ["Code", "__RowIndex", "Marketing Person", "PersonName", "MonthlyRequiredQty", "Monthly Required(Qty)"];
+
+    // Use already-loaded grid data so iOS still has the user tap for Share.
+    if (G_BuyingCapacityRows && G_BuyingCapacityRows.length > 0) {
+        var exportRows = G_BuyingCapacityRows.map(mapBuyingCapacityExportRow);
+        var result = ExportToExcelControl.ExportToExcel(exportRows, hiddenFields, "BuyingCapacity");
+        if (result === true) {
+            toastr.success('Export completed successfully.');
+        }
+        return;
+    }
+
     // Procedure expects 'All' (not 'ALL') when exporting all marketing persons
     if (MarketingPersonName === 'ALL' || MarketingPersonName === '0') {
         MarketingPersonName = 'All';
@@ -360,24 +405,14 @@ function ExportExcel() {
     BuyingCapacityService.GetBuyingCapacityList(MarketingPersonName).then(function (response) {
         HideLoader();
         if (response && response.length > 0) {
-            var hiddenFields = ["Code", "__RowIndex", "Marketing Person", "PersonName", "MonthlyRequiredQty", "Monthly Required(Qty)"];
-            var exportRows = response.map(function (item) {
-                return {
-                    'S.No.': pickField(item, ['S.No.', 'S.No', 'SNo', 'SrNo', 'Sr No']),
-                    'Party Name': pickField(item, ['Party Name', 'PartyName']),
-                    'Mkt Person': pickField(item, ['Marketing Person', 'Mkt Person', 'PersonName']),
-                    'Country': pickField(item, ['Country']),
-                    'State': pickField(item, ['State']),
-                    'City': pickField(item, ['City']),
-                    'PinCode': pickField(item, ['PinCode']),
-                    'Buying Frequency': pickField(item, ['Buying Frequency', 'BuyingFrequency']),
-                    'Monthly Req(Qty)': pickField(item, ['MonthlyRequiredQty', 'Monthly Req(Qty)', 'Monthly Required(Qty)']),
-                    'Customer Rating': pickField(item, ['Customer Rating', 'CustomerRating', 'Ratings']),
-                    'GP Rolling': pickField(item, ['GP Rolling', 'GPRolling'])
-                };
+            G_BuyingCapacityRows = response.map(function (item, index) {
+                return Object.assign({}, item, { __RowIndex: index });
             });
-            ExportToExcelControl.ExportToExcel(exportRows, hiddenFields, "BuyingCapacity");
-            toastr.success('Export completed successfully.');
+            var fetchedRows = G_BuyingCapacityRows.map(mapBuyingCapacityExportRow);
+            var fetchedResult = ExportToExcelControl.ExportToExcel(fetchedRows, hiddenFields, "BuyingCapacity");
+            if (fetchedResult === true) {
+                toastr.success('Export completed successfully.');
+            }
         } else {
             toastr.info('No data to export.');
         }

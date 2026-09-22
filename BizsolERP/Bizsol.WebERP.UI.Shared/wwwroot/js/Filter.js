@@ -175,8 +175,67 @@ window.parseNumericCellForTotal = function parseNumericCellForTotal(raw) {
     return NaN;
 };
 
+window.normalizeFilterColKey = function normalizeFilterColKey(name) {
+    return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+};
+
+window.normalizeLastValueColumns = function normalizeLastValueColumns(lastValueColumns) {
+    if (lastValueColumns == null || lastValueColumns === false) {
+        return [];
+    }
+    if (typeof lastValueColumns === 'string') {
+        const name = lastValueColumns.trim();
+        return name ? [name] : [];
+    }
+    if (Array.isArray(lastValueColumns)) {
+        return lastValueColumns
+            .map(function (c) { return c == null ? '' : String(c).trim(); })
+            .filter(function (c) { return c !== ''; });
+    }
+    return [];
+};
+
+window.resolveLastValueColumnKey = function resolveLastValueColumnKey(requestedName, availableKeys) {
+    if (!requestedName) {
+        return '';
+    }
+    const keys = Array.isArray(availableKeys) ? availableKeys : [];
+    if (keys.includes(requestedName)) {
+        return requestedName;
+    }
+    const n = window.normalizeFilterColKey(requestedName);
+    const match = keys.find(function (k) {
+        return window.normalizeFilterColKey(k) === n;
+    });
+    return match || requestedName;
+};
+
+window.resolveLastValueColumns = function resolveLastValueColumns(lastValueColumns, availableKeys) {
+    return window.normalizeLastValueColumns(lastValueColumns).map(function (name) {
+        return window.resolveLastValueColumnKey(name, availableKeys);
+    }).filter(function (name) { return name !== ''; });
+};
+
+window.applyLastValueColumnTotals = function applyLastValueColumnTotals(totals, items, totalColumns, lastValueColumns) {
+    const availableKeys = (items && items.length)
+        ? Object.keys(items[0])
+        : (Array.isArray(totalColumns) ? totalColumns : []);
+    const resolved = window.resolveLastValueColumns(lastValueColumns, availableKeys);
+    if (!totals || !items || items.length === 0 || resolved.length === 0) {
+        return;
+    }
+    const lastItem = items[items.length - 1];
+    resolved.forEach(colName => {
+        if (totalColumns && Array.isArray(totalColumns) && !totalColumns.includes(colName)) {
+            return;
+        }
+        const value = window.parseNumericCellForTotal(lastItem[colName]);
+        totals[colName] = (!isNaN(value) && isFinite(value)) ? value : 0;
+    });
+};
+
 const BizsolCustomFilterGrid = {
-    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null, CommaColumns = null, GlobalSearch = false, FloatingTotalRow = false) {
+    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null, CommaColumns = null, GlobalSearch = false, FloatingTotalRow = false, LastValueColumns = null) {
         const columns = Object.keys(data[0]);
         const tableId = $('#' + bodyId).closest('table').attr('id');
         renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
@@ -186,6 +245,7 @@ const BizsolCustomFilterGrid = {
         window[`fixedDecimalvalue_${bodyId}`] = FixedDecimalvalue;
         window[`commaColumns_${bodyId}`] = Array.isArray(CommaColumns) ? CommaColumns : [];
         window[`floatingTotalRow_${bodyId}`] = !!FloatingTotalRow;
+        window[`lastValueColumns_${bodyId}`] = window.normalizeLastValueColumns(LastValueColumns);
 
         // Create or remove the sticky <tfoot> used for the floating total row
         const $tbl = $('#' + bodyId).closest('table');
@@ -1049,6 +1109,10 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
     }
 
     const totalColumns = window[`totalColumns_${bodyId}`];
+    const lastValueColumns = window.resolveLastValueColumns(
+        window[`lastValueColumns_${bodyId}`],
+        (items && items.length) ? Object.keys(items[0]) : totalColumns
+    );
     const columnTotals = {};
     let _floatingTfootHtml = null;
 
@@ -1060,12 +1124,16 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
 
         items.forEach(item => {
             totalColumns.forEach(colName => {
+                if (lastValueColumns.includes(colName)) {
+                    return;
+                }
                 const value = window.parseNumericCellForTotal(item[colName]);
                 if (!isNaN(value) && isFinite(value)) {
                     columnTotals[colName] += value;
                 }
             });
         });
+        window.applyLastValueColumnTotals(columnTotals, items, totalColumns, lastValueColumns);
     }
 
     let rows = items.map((item, index) => {
@@ -1211,6 +1279,10 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
 window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
     const totalColumns = window[`totalColumns_${bodyId}`];
     const filteredData = window[`filteredData_${tableId}`];
+    const lastValueColumns = window.resolveLastValueColumns(
+        window[`lastValueColumns_${bodyId}`],
+        (filteredData && filteredData.length) ? Object.keys(filteredData[0]) : totalColumns
+    );
     const isPaginated = window[`Paginator_${tableId}`];
     
     console.log('renderGrandTotalRow called:', { tableId, bodyId, isPaginated, totalColumns, dataLength: filteredData?.length });
@@ -1232,12 +1304,16 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
 
     filteredData.forEach(item => {
         totalColumns.forEach(colName => {
+            if (lastValueColumns.includes(colName)) {
+                return;
+            }
             const value = window.parseNumericCellForTotal(item[colName]);
             if (!isNaN(value) && isFinite(value)) {
                 grandTotals[colName] += value;
             }
         });
     });
+    window.applyLastValueColumnTotals(grandTotals, filteredData, totalColumns, lastValueColumns);
 
     console.log('Grand Totals calculated:', grandTotals);
 

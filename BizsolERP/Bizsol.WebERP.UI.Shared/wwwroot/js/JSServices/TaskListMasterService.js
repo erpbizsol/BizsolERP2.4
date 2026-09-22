@@ -20,8 +20,15 @@ function authUserCode() {
 }
 
 const TaskListMasterService = {
+    GetFinyear: function GetFinyear() {
+        const URL = TASKLIST_MASTER_BASE + '/GetFinyear';
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
     GetCurrentFinYear: function GetCurrentFinYear() {
-        const URL = TASKLIST_MASTER_BASE + '/GetFinyearList';
+        const URL = TASKLIST_MASTER_BASE + '/GetFinyear';
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });

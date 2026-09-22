@@ -1,6 +1,7 @@
 ﻿import { ProspectiveCustomerService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProspectiveCustomerService.js';
 import { ExpenseEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseEntryService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
 // Preserve native URL constructor before it gets shadowed by service file
 var OriginalURLConstructor = null;
@@ -56,6 +57,9 @@ $(document).ready(function () {
     GetISCodeList();
     $("#btnShow").click(function () {
         GetProspectiveCustomerList();
+    });
+    $("#btnExportExcel").click(function () {
+        ExportExcel();
     });
 });
 function GetNestedMarketingManList() {
@@ -292,6 +296,46 @@ function GetProspectiveCustomerList() {
         restoreURLConstructor();
     });
 }
+function ExportExcel() {
+    restoreURLConstructor();
+    var hiddenFields = ["Code", "ClosedBy", "__RowIndex"];
+    if (G_ProspectiveCustomerRows && G_ProspectiveCustomerRows.length > 0) {
+        var result = ExportToExcelControl.ExportToExcel(G_ProspectiveCustomerRows, hiddenFields, "ProspectiveCustomer");
+        if (result === true) {
+            toastr.success('Export completed successfully.');
+        }
+        return;
+    }
+
+    var MarketingPersonName = $("#ddlMarketingMan").val() || 'ALL';
+    var Thikness = $("#ddlThikness").val();
+    var Size = $("#ddlSize").val();
+    var Grade = $("#ddlGrade").val();
+    var ISCode = $("#ddlISCode").val();
+    var Status = $("#txtStatus").val();
+    Showloader();
+    ProspectiveCustomerService.GetProspectiveCustomerList(MarketingPersonName, Thikness, Size, Grade, ISCode, Status).then(function (response) {
+        HideLoader();
+        if (response && response.length > 0) {
+            G_ProspectiveCustomerRows = response.map(function (item, index) {
+                return Object.assign({}, item, { __RowIndex: index });
+            });
+            var fetchedResult = ExportToExcelControl.ExportToExcel(G_ProspectiveCustomerRows, hiddenFields, "ProspectiveCustomer");
+            if (fetchedResult === true) {
+                toastr.success('Export completed successfully.');
+            }
+        } else {
+            toastr.error('No Data Found');
+        }
+        restoreURLConstructor();
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error('Error during Excel download');
+        console.error('Error:', error);
+        restoreURLConstructor();
+    });
+}
+
 function BindSelectList1(element, list) {
     let option = '<option value="0">ALL</option>';
     $.each(list, function (key, val) {
@@ -533,3 +577,4 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
 window.GetProspectiveCustomerList = GetProspectiveCustomerList;
 window.GetNestedMarketingManList = GetNestedMarketingManList;
 window.SaveClosedDetails = SaveClosedDetails;
+window.ExportExcel = ExportExcel;
