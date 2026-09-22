@@ -29,6 +29,39 @@
         line-height: 1; text-decoration: none; font-size: 0.85rem;
     }
     .indent-create-btn:hover { background: #eef5ff; border-color: #1a56b0; color: #1a56b0; }
+    .indent-stats-strip {
+        display: flex; gap: 8px; align-items: center;
+        overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+        flex-wrap: nowrap; padding-bottom: 2px;
+        width: 100%; min-width: 0;
+        -webkit-overflow-scrolling: touch;
+    }
+    .indent-stats-strip::-webkit-scrollbar { display: none; }
+    .indent-stat-chip {
+        background: rgba(255,255,255,0.18); border-radius: 10px;
+        padding: 5px 14px; text-align: center; min-width: 80px;
+        border: 1px solid rgba(255,255,255,0.2);
+        flex-shrink: 0; cursor: pointer;
+        transition: transform 0.18s ease, background 0.18s ease;
+    }
+    .indent-stat-chip .val { font-size: 1.15rem; font-weight: 800; color: #fff; line-height: 1; }
+    .indent-stat-chip .lbl { font-size: 0.65rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+    .indent-stat-chip:hover { background: rgba(255,255,255,0.32); transform: scale(1.06); }
+    .indent-stat-chip.is-active {
+        background: rgba(255,255,255,0.4);
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.85);
+    }
+    @@media (max-width: 768px) {
+        #divIndentList .indent-stats-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            overflow-x: visible;
+            gap: 6px;
+        }
+        #divIndentList .indent-stat-chip { min-width: 0; padding: 4px 6px; }
+        #divIndentList .indent-stat-chip .val { font-size: 0.95rem; }
+        #divIndentList .indent-stat-chip .lbl { font-size: 0.55rem; letter-spacing: 0.03em; }
+    }
 
     .indent-filter-bar {
         background: #fff;
@@ -338,6 +371,27 @@
                 <i class="fa fa-plus-circle"></i>
                 <span class="indent-create-btn-label ms-1">Create New</span>
             </a>
+        </div>
+        <div class="indent-stats-strip">
+            <div class="indent-stat-chip" id="indentChipTotal" onclick="FilterIndentChip('total')" title="Show all indents">
+                <div class="val" id="statTotalIndent">—</div>
+                <div class="lbl">Total</div>
+            </div>
+            <div class="indent-stat-chip" id="indentChipPending" style="border:1.5px solid rgba(255,165,0,0.55);"
+                 onclick="FilterIndentChip('pending')" title="Show pending indents">
+                <div class="val" id="statPendingIndent" style="color:#ffd580;">—</div>
+                <div class="lbl">Pending</div>
+            </div>
+            <div class="indent-stat-chip" id="indentChipOnMe" style="border:1.5px solid rgba(255,165,0,0.55);"
+                 onclick="NavigateToIndentPendingOnMe()" title="Open indent verification pending on me">
+                <div class="val" id="statPendingOnMeIndent" style="color:#c7206d;">—</div>
+                <div class="lbl">Pending on Me</div>
+            </div>
+            <div class="indent-stat-chip" id="indentChipVerified" style="border:1.5px solid rgba(16,185,129,0.55);"
+                 onclick="FilterIndentChip('verified')" title="Show verified / approved indents">
+                <div class="val" id="statVerifiedIndent" style="color:#6ee7b7;">—</div>
+                <div class="lbl">Approved</div>
+            </div>
         </div>
     </div>
 
