@@ -35,6 +35,10 @@ function buildNotificationUrl(notification, baseUrl) {
     return baseUrl + '/' + notification.ScreenURL + sep + q;
 }
 
+function formatTimerDisplay() {
+    return minutes + ':' + (seconds < 10 ? '0' + seconds : seconds);
+}
+
 function renderNotificationWell(rowsHtml, headerCount) {
     const headerText =
         headerCount === 0
@@ -43,11 +47,26 @@ function renderNotificationWell(rowsHtml, headerCount) {
 
     return (
         `<div class="notification-well">
-            <div class="notification-well-header">${headerText}</div>
+            <div class="notification-well-header">
+                <span class="notification-well-header-title">${headerText}</span>
+                <div class="notification-well-header-actions">
+                    <span id="time" class="notification-well-timer">${formatTimerDisplay()}</span>
+                    <button type="button" id="resetBtn" class="notification-well-refresh" title="Refresh notifications" aria-label="Refresh notifications">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                </div>
+            </div>
             <div class="notification-well-list">` +
         rowsHtml +
         `</div></div>`
     );
+}
+
+function applyNotificationDropdownIfOpen() {
+    const $dropdown = $('#notificationDropdown');
+    if ($dropdown.hasClass('show')) {
+        $dropdown.html(notificationList);
+    }
 }
 
 function GetWebNotificationList() {
@@ -104,6 +123,7 @@ function GetWebNotificationList() {
             } else {
                 notificationList = renderNotificationWell(rowsHtml, itemCount);
             }
+            applyNotificationDropdownIfOpen();
         })
         .catch(function () {
             notificationList = renderNotificationWell(
@@ -111,6 +131,7 @@ function GetWebNotificationList() {
                 0
             );
             $('#notificationCount').hide();
+            applyNotificationDropdownIfOpen();
         });
 }
 
@@ -133,21 +154,29 @@ function startTimer() {
             GetWebNotificationList();
             return;
         }
-        $('#time').html(minutes + ':' + (seconds < 10 ? '0' + seconds : seconds));
+        $('#time').html(formatTimerDisplay());
     }, 1000);
 }
 
-$('#resetBtn').click(function () {
+$(document).on('click', '#resetBtn', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
     clearInterval(timer);
     minutes = 1;
     seconds = 0;
-    $('#time').html(minutes + ':' + (seconds < 10 ? '0' + seconds : seconds));
+    $('#time').html(formatTimerDisplay());
     startTimer();
     GetWebNotificationList();
 });
 
 $('#bell-icon').on('click', function () {
-    $('#notificationDropdown').html(notificationList);
+    $('#notificationDropdown').html(
+        notificationList ||
+            renderNotificationWell(
+                `<div class="notification-well-empty">You have no new notifications.</div>`,
+                0
+            )
+    );
 });
 
 window.GetWebNotificationList = GetWebNotificationList;

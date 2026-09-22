@@ -48,23 +48,26 @@
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
         overflow: hidden;
         min-width: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
     .summary-kpi-header {
         background: linear-gradient(135deg, #365e9a 0%, #1e3a6e 100%);
         color: #fff;
-        font-size: 9px;
+        font-size: 12px;
         font-weight: 700;
         letter-spacing: 0.3px;
         text-transform: uppercase;
-        padding: 7px 10px;
+        padding: 8px 10px;
         line-height: 1.25;
-        min-height: 34px;
+        min-height: 38px;
     }
 
     .summary-kpi-header small {
         display: block;
-        font-size: 8px;
+        font-size: 10px;
         opacity: 0.88;
         font-weight: 500;
         margin-top: 2px;
@@ -104,7 +107,7 @@
     }
 
     .summary-kpi-value {
-        font-size: 15px;
+        font-size: 18px;
         font-weight: 800;
         color: #1a202c;
         line-height: 1.15;
@@ -167,7 +170,7 @@
     .summary-chart-header {
         background: linear-gradient(135deg, #365e9a 0%, #1e3a6e 100%);
         color: #fff;
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 700;
         letter-spacing: 0.3px;
         text-transform: uppercase;
@@ -212,14 +215,14 @@
     }
 
     .summary-legend-label {
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 700;
         color: #1a202c;
         line-height: 1.2;
     }
 
     .summary-legend-meta {
-        font-size: 9px;
+        font-size: 11px;
         color: #718096;
         margin-top: 1px;
     }
@@ -411,16 +414,24 @@
         vertical-align: middle;
     }
 
-    .ps-range-total {
-        margin-top: 8px;
-        border: 1px solid #224abe;
-        border-radius: 6px;
-        padding: 8px 10px;
-        display: flex;
-        justify-content: space-between;
+    .ps-range-table tfoot td {
         font-weight: 800;
         color: #224abe;
         font-size: 13px;
+        padding: 8px;
+        background: #fff;
+        border-top: 1px solid #224abe;
+        border-bottom: 1px solid #224abe;
+    }
+
+    .ps-range-table tfoot td:first-child {
+        border-left: 1px solid #224abe;
+        border-radius: 6px 0 0 6px;
+    }
+
+    .ps-range-table tfoot td:last-child {
+        border-right: 1px solid #224abe;
+        border-radius: 0 6px 6px 0;
     }
 
     .ps-kpi-row {
@@ -828,6 +839,7 @@
         width: 100%;
         font-size: 12px;
         margin-bottom: 0;
+        table-layout: fixed;
     }
 
     .gc-table th {
@@ -851,6 +863,17 @@
     .gc-table tbody td:first-child,
     .gc-table tfoot td:first-child {
         text-align: left;
+    }
+
+    .gc-table tbody td:not(:first-child),
+    .gc-table tfoot td:not(:first-child) {
+        text-align: right;
+    }
+
+    .gc-table tfoot td {
+        position: sticky;
+        bottom: 0;
+        background: #eef4ff;
     }
 
     .gc-scroll {
@@ -1899,11 +1922,13 @@
     }
 
     .summary-kpi-action {
-        display: block;
+        display: flex;
+        flex-direction: column;
         width: 100%;
         height: 100%;
         padding: 0;
-        border: none;
+        border: 0;
+        outline: none;
         text-align: left;
         cursor: pointer;
         background: transparent;
@@ -1911,6 +1936,10 @@
         color: inherit;
         appearance: none;
         -webkit-appearance: none;
+    }
+
+    .summary-kpi-action .summary-kpi-body {
+        flex: 1;
     }
 
     .summary-kpi-header.rm-rate-header {
@@ -1942,9 +1971,9 @@
     .summary-kpi-card:has(.summary-kpi-action):hover,
     .summary-kpi-action:focus {
         outline: none;
-        border-color: #22c55e;
-        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.22);
-        transform: translateY(-1px);
+        border-color: #e3e8ef;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        transform: none;
     }
 
     .summary-kpi-action:focus .summary-kpi-plus,
@@ -2080,6 +2109,15 @@
                         </div>
                     </div>
                     <div class="summary-kpi-card">
+                        <div class="summary-kpi-header">Close Dream Client</div>
+                        <div class="summary-kpi-body">
+                            <div class="summary-kpi-icon icon-purple"><i class="fas fa-star"></i></div>
+                            <div class="summary-kpi-value-wrap">
+                                <div id="skpi-close-dream-client" class="summary-kpi-value">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-kpi-card">
                         <div class="summary-kpi-header">Total No. of Parties</div>
                         <div class="summary-kpi-body">
                             <div class="summary-kpi-icon icon-indigo"><i class="fas fa-users"></i></div>
@@ -2137,7 +2175,7 @@
                         </div>
                         <div class="summary-kpi-footer">Total : <strong id="skpi-nbd-crr-total">0</strong></div>
                     </div>
-                    <div class="summary-kpi-card d-none" id="rmRateToolbar">
+                    <div class="summary-kpi-card" id="rmRateToolbar">
                         <button type="button" id="btnRmRate" class="summary-kpi-action" title="Add RM Rate" data-bs-toggle="modal" data-bs-target="#rmRateModal">
                             <div class="summary-kpi-header rm-rate-header">
                                 RM Rate
@@ -2150,6 +2188,7 @@
                                     <div class="summary-kpi-trend trend-neutral"><span>Click to add / update</span></div>
                                 </div>
                             </div>
+                            <div class="summary-kpi-footer">&nbsp;</div>
                         </button>
                     </div>
                     <div class="summary-kpi-card d-none" id="skpi-ready-dispatch-card">
@@ -2227,7 +2266,7 @@
                     </div>
                     <div class="col-lg-7">
                         <div class="summary-chart-card summary-highgp-card">
-                            <div class="summary-chart-header">60% High GP Party Sale Achieved</div>
+                            <div class="summary-chart-header">60% Super High / High GP Party Sale Achieved</div>
                             <div class="summary-highgp-body">
                                 <div class="summary-highgp-gauge-wrap">
                                     <div class="summary-highgp-meter">
@@ -2303,18 +2342,22 @@
                                     <tr>
                                         <th>Score Range (out of 40)</th>
                                         <th class="text-end">Sale (MT)</th>
+                                        <th class="text-end">Parties with Sale</th>
                                         <th class="text-end">Parties</th>
                                     </tr>
                                 </thead>
                                 <tbody id="psScoreRangeBody">
-                                    <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
+                                    <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
                                 </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td>Total</td>
+                                        <td class="text-end" id="psRangeTotalSale">0</td>
+                                        <td class="text-end" id="psRangeTotalSellingParties">0</td>
+                                        <td class="text-end" id="psRangeTotalParties">0</td>
+                                    </tr>
+                                </tfoot>
                             </table>
-                            <div class="ps-range-total">
-                                <span>Total</span>
-                                <span id="psRangeTotalSale">0</span>
-                                <span id="psRangeTotalParties">0</span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -2324,25 +2367,25 @@
                 <div class="ps-kpi-row">
                     <div class="ps-kpi-box">
                         <div class="ps-kpi-label">Avg Score (All Parties)</div>
-                        <div class="ps-kpi-value"><span id="psAvgScore">0.00</span> <small>/ 100</small></div>
+                        <div class="ps-kpi-value"><span id="psAvgScore">0.00</span> <small>/ 40</small></div>
                     </div>
                     <div class="ps-kpi-box">
                         <div class="ps-kpi-label">Top Score</div>
-                        <div class="ps-kpi-value"><span id="psTopScore">0.00</span> <small>/ 100</small></div>
+                        <div class="ps-kpi-value"><span id="psTopScore">0.00</span> <small>/ 40</small></div>
                     </div>
                     <div class="ps-kpi-box">
                         <div class="ps-kpi-label">Lowest Score</div>
-                        <div class="ps-kpi-value"><span id="psLowScore">0.00</span> <small>/ 100</small></div>
+                        <div class="ps-kpi-value"><span id="psLowScore">0.00</span> <small>/ 40</small></div>
                     </div>
                 </div>
                 <div class="ps-split-row">
                     <div class="ps-split-box">
-                        <div class="ps-kpi-label">Score &gt;= 70 (Good &amp; Above)</div>
+                        <div class="ps-kpi-label">Score &gt;= 28 (Good &amp; Above)</div>
                         <div id="psGoodCount" class="ps-split-count ps-good">0</div>
                         <div id="psGoodPct" class="ps-split-pct ps-good">0.00%</div>
                     </div>
                     <div class="ps-split-box">
-                        <div class="ps-kpi-label">Score &lt; 70 (Needs Attention)</div>
+                        <div class="ps-kpi-label">Score &lt; 28 (Needs Attention)</div>
                         <div id="psAttentionCount" class="ps-split-count ps-bad">0</div>
                         <div id="psAttentionPct" class="ps-split-pct ps-bad">0.00%</div>
                     </div>
@@ -2350,14 +2393,14 @@
             </div>
         </div>
 
-        <div class="ps-section-bar">Party Wise Average Score (Out of 100)</div>
+        <div class="ps-section-bar">Party Wise Average Score (Out of 40)</div>
         <div class="ps-card">
             <div class="table-responsive ps-party-scroll">
                 <table id="partyScoreTable" class="table table-sm mb-0 ps-party-table">
                     <thead id="partyScoreTableHeader">
                     </thead>
                     <tbody id="partyScoreTableBody">
-                        <tr><td colspan="7" class="text-center text-muted">Loading...</td></tr>
+                        <tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>
                     </tbody>
                 </table>
                 <div class="paginator" id="paginator-partyScoreTable"></div>
@@ -2491,19 +2534,17 @@
                         <tbody id="gcGpSalesBody">
                             <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
                         </tbody>
+                        <tfoot id="gcGpSalesFooter">
+                            <tr class="gc-total">
+                                <td>Grand Total</td>
+                                <td>0.00</td>
+                                <td>0.00</td>
+                                <td>0.00</td>
+                                <td>0.00</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
-                <table class="gc-table">
-                    <tfoot id="gcGpSalesFooter">
-                        <tr class="gc-total">
-                            <td>Grand Total</td>
-                            <td class="text-end">0.00</td>
-                            <td class="text-end">0.00</td>
-                            <td class="text-end">0.00</td>
-                            <td class="text-end">0.00</td>
-                        </tr>
-                    </tfoot>
-                </table>
             </div>
         </div>
     </div>

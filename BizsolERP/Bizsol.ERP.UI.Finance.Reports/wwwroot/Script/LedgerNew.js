@@ -375,6 +375,13 @@ function buildLedgerGridOptions(gridData) {
     return { ColumnAlignment, NumericFilterColumn, TotalColumns, FixedDecimalvalue, CommaColumns };
 }
 
+function getLedgerRunningBalanceColumn(columns) {
+    return (columns || []).find(function (col) {
+        const n = normalizeLedgerColKey(col);
+        return n === 'accountwiserunningbalance' || n === 'runningbalance' || n.endsWith('runningbalance');
+    }) || null;
+}
+
 function renderLedgerGrid() {
     console.log('Rendering ledger grid with', G_RawLedgerData.length, 'records');
 
@@ -414,10 +421,13 @@ function renderLedgerGrid() {
         StringdoubleFilterColumn,
         hiddenColumns,
         gridOpts.ColumnAlignment,
-        true,
+        false,
         gridOpts.TotalColumns,
         gridOpts.FixedDecimalvalue,
-        gridOpts.CommaColumns
+        gridOpts.CommaColumns,
+        false,
+        false,
+        "Running Balance"
     );
 
     updateLedgerViewState(true);

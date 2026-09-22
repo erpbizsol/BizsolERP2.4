@@ -48,6 +48,8 @@
                     var errorMessage = status + ': ' + error;
                    // alert('Data Error: ' + errorMessage);
                     toastr.error('Data Error: ' + errorMessage + ' ON API:' + new URL(URl).pathname);
+                    if (typeof HideLoader === 'function') HideLoader();
+                    reject({ message: errorMessage, xhr: xhr, status: status });
                 }
             });
         });

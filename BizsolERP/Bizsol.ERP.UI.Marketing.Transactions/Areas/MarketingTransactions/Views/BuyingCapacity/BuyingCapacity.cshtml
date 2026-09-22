@@ -5,6 +5,13 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BuyingCapacity.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+    if (typeof XLSX === 'undefined') {
+        var xlsxFallback = document.createElement('script');
+        xlsxFallback.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        document.head.appendChild(xlsxFallback);
+    }
+</script>
 <style>
     /* Card - Layout style (dashboard-card) */
     #BuyingCapacityPage .card {
