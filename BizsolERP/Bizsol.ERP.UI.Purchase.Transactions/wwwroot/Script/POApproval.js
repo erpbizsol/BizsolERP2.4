@@ -64,18 +64,88 @@ function FmtDateDisplay(d) {
         dt.getFullYear();
 }
 
-function FmtCurrency(val) {
-    const n = parseMoneyValue(val);
-    if (isNaN(n)) return '—';
-    return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function parseAmountWithCurrency(val) {
+    if (val === null || val === undefined || val === '') return { amount: NaN, currency: '' };
+    if (typeof val === 'number' && isFinite(val)) return { amount: val, currency: '' };
+    let s = String(val).replace(/\u00a0/g, ' ').replace(/,/g, '').replace(/\s+/g, ' ').trim();
+    const m = s.match(/^([^\d\-\.]+?)\s*([\-\d].*)$/);
+    let currency = '';
+    if (m) {
+        currency = m[1].trim();
+        s = m[2].trim();
+    }
+    s = s.replace(/,/g, '').replace(/\s/g, '');
+    const n = parseFloat(s);
+    return { amount: isNaN(n) ? NaN : n, currency: currency };
 }
 
 function parseMoneyValue(val) {
-    if (val === null || val === undefined || val === '') return NaN;
-    if (typeof val === 'number' && isFinite(val)) return val;
-    const s = String(val).replace(/Rs\.?/gi, '').replace(/,/g, '').trim();
-    const n = parseFloat(s);
-    return isNaN(n) ? NaN : n;
+    return parseAmountWithCurrency(val).amount;
+}
+
+function getCurrencyMeta(desc) {
+    const raw = String(desc || '').trim();
+    const key = raw.replace(/\s+/g, '').replace(/\./g, '').toUpperCase();
+    if (!raw || key === 'RS' || key === 'INR' || key === '₹' || key === 'RUPEE' || key === 'RUPEES') {
+        return { symbol: '\u20B9', icon: 'fa-rupee-sign', label: raw || 'Rs' };
+    }
+    if (key === 'US$' || key === 'USD' || key === '$' || key === 'USS' || key === 'DOLLAR' || key === 'DOLLARS') {
+        return { symbol: 'US$', icon: 'fa-dollar-sign', label: raw || 'US$' };
+    }
+    if (key === 'EURO' || key === 'EUR' || key === '€' || key === 'EUROS') {
+        return { symbol: '\u20AC', icon: 'fa-euro-sign', label: raw || 'EURO' };
+    }
+    if (key === 'GBP' || key === '£' || key === 'POUND' || key === 'POUNDS') {
+        return { symbol: '\u00A3', icon: 'fa-pound-sign', label: raw || 'GBP' };
+    }
+    if (key === 'YEN' || key === 'JPY' || key === '¥' || key === 'YUAN' || key === 'CNY') {
+        return { symbol: '\u00A5', icon: 'fa-yen-sign', label: raw || raw };
+    }
+    return { symbol: raw, icon: '', label: raw };
+}
+
+function pickCurrencyDescription(row) {
+    if (!row) return '';
+    const named = pickField(row, [
+        'Currency', 'CurrencyDescription', 'CurrencyDesp', 'Currency Symbol',
+        'CurrencySymbol', 'CurrencyMasterDescription', 'CurrencyName'
+    ]);
+    if (named) return named;
+    const desc = pickField(row, ['Description']);
+    if (desc && desc.length <= 12) return desc;
+    return '';
+}
+
+function resolveCurrencyMeta(po, items) {
+    let desc = '';
+    if (items && items.length) {
+        desc = pickCurrencyDescription(items[0]);
+    }
+    if (!desc && po) {
+        desc = pickCurrencyDescription(po);
+        if (!desc) {
+            const rawAmt = po['Total Bill Amount'] || po.TotalBillAmount || po.TotalAmount || po.Amount;
+            desc = parseAmountWithCurrency(rawAmt).currency;
+        }
+    }
+    return getCurrencyMeta(desc);
+}
+
+function formatAmountWithSymbol(n, currencyMeta) {
+    if (isNaN(n)) return '—';
+    const meta = currencyMeta || getCurrencyMeta('');
+    const num = n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const symbol = meta.symbol || '\u20B9';
+    if (/^[₹$€£¥]$/.test(symbol)) return symbol + num;
+    return symbol + ' ' + num;
+}
+
+function FmtCurrency(val, currencyMeta) {
+    const parsed = parseAmountWithCurrency(val);
+    const n = parsed.amount;
+    if (isNaN(n)) return '—';
+    const meta = currencyMeta || getCurrencyMeta(parsed.currency);
+    return formatAmountWithSymbol(n, meta);
 }
 
 function pickField(o, keys) {
@@ -120,8 +190,16 @@ function getListProductSummary(po) {
 
 function BuildInfoItem(label, value, icon, valueColor) {
     const clr = valueColor ? 'style="color:' + valueColor + ';font-weight:800;"' : '';
+    let iconHtml = '';
+    if (icon) {
+        if (String(icon).indexOf('fa-') === 0) {
+            iconHtml = '<i class="fa ' + icon + ' me-1"></i>';
+        } else {
+            iconHtml = '<span class="me-1">' + EscHtml(icon) + '</span>';
+        }
+    }
     return '<div class="poa-info-item">' +
-        '<span class="poa-info-lbl"><i class="fa ' + icon + ' me-1"></i>' + EscHtml(label) + '</span>' +
+        '<span class="poa-info-lbl">' + iconHtml + EscHtml(label) + '</span>' +
         '<span class="poa-info-val" ' + clr + '>' + value + '</span>' +
         '</div>';
 }
@@ -289,6 +367,10 @@ function poaLoadDetailContent(Code) {
 
     POApprovalService.GetPODetail(Code).then(function (response) {
         if (response && response.length > 0) {
+            if (po && response[0]) {
+                const itemCurrLabel = pickCurrencyDescription(response[0]);
+                if (itemCurrLabel) po.Currency = itemCurrLabel;
+            }
             $('#poaModalHeader').html(po ? BuildPOAModalHeader(po, response) : '');
             RenderPOAModalItems(response, po);
         } else {
@@ -336,7 +418,8 @@ function BuildPOACard(po) {
     const vendor = EscHtml(po['Party Name'] || po.VendorName || po.PartyName || '—');
     const poDate = FmtDateDisplay(po['PO Date'] || po.PODate || po.DocDate);
     const amtNum = getListTotalAmount(po);
-    const amount = FmtCurrency(isNaN(amtNum) ? 0 : amtNum);
+    const curr = resolveCurrencyMeta(po);
+    const amount = formatAmountWithSymbol(isNaN(amtNum) ? 0 : amtNum, curr);
 
     const statusTxt = 'Pending';
     const statusClr = '#d97706';
@@ -390,10 +473,12 @@ function BuildPOAModalHeader(po, items) {
             return acc + (isNaN(v) ? 0 : v);
         }, 0);
     }
-    const amount = EscHtml(FmtCurrency(totalAmt));
+    const curr = resolveCurrencyMeta(po, items);
+    const amount = EscHtml(formatAmountWithSymbol(totalAmt, curr));
+    const amountIcon = curr.icon || curr.label || 'fa-coins';
 
     return '<div class="poa-info-grid">' +
-        BuildInfoItem('Total Amount', amount, 'fa-rupee-sign', '#667eea') +
+        BuildInfoItem('Total Amount', amount, amountIcon, '#667eea') +
         BuildInfoItem('Status', 'Pending', 'fa-info-circle') +
         BuildInfoItem('Action', EscHtml(FrmAction || 'Verify'), 'fa-user-check') +
         '</div>';

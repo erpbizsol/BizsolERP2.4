@@ -490,7 +490,11 @@
                 border-left-color: #7c3aed;
                 color: var(--sidebar-text-active);
                 font-weight: 600;
-                box-shadow: 0 3px 14px rgba(108, 92, 231, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+                padding-top: 0.18rem;
+                padding-bottom: 0.18rem;
+                min-height: 22px;
+                line-height: 1.15;
+                box-shadow: 0 1px 6px rgba(108, 92, 231, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.65);
             }
 
             /* Glass-style icon tiles on hover/active */
@@ -592,6 +596,10 @@
                 .sub-menu .sidebar-menu-item.active {
                     background: var(--sidebar-item-active);
                     color: var(--sidebar-text-active);
+                    padding-top: 0.12rem;
+                    padding-bottom: 0.12rem;
+                    min-height: 20px;
+                    line-height: 1.12;
                 }
 
                 .sub-menu .sidebar-menu-item > i:not(.menu-fav-star):not(.menu-star-btn):not(.fav-star-icon) {
@@ -613,10 +621,17 @@
             }
 
                 .sub-menu .sub-menu .sidebar-menu-item {
-                    padding: 0.22rem 0.35rem;
+                    padding: 0.18rem 0.32rem;
                     font-size: 0.68rem;
-                    min-height: 24px;
+                    min-height: 20px;
                 }
+
+                    .sub-menu .sub-menu .sidebar-menu-item.active {
+                        padding-top: 0.1rem;
+                        padding-bottom: 0.1rem;
+                        min-height: 18px;
+                        line-height: 1.1;
+                    }
 
                     .sub-menu .sub-menu .sidebar-menu-item > i:not(.menu-fav-star):not(.menu-star-btn):not(.fav-star-icon) {
                         font-size: 0.58rem;
@@ -997,7 +1012,7 @@
         .profile-avatar {
             width: 45px;
             height: 45px;
-            border-radius: 12px;
+            border-radius: 41px;
             border: 2px solid var(--accent-primary);
             box-shadow: var(--shadow-primary);
         }
@@ -1026,6 +1041,22 @@
             gap: 1rem;
             flex-shrink: 0;
             min-width: 0;
+        }
+
+        .header-end-cluster {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+        }
+
+        .header-profile-btn.header-icon-btn {
+            overflow: hidden;
+            padding: 0;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
         }
 
         .header-icon-btn {
@@ -1336,7 +1367,7 @@
             align-items: center;
             width: 100%;
             max-width: 100%;
-            margin: 0 auto;
+            margin: -5px auto;
             overflow: hidden;
         }
 
@@ -1363,14 +1394,16 @@
             }
 
             .mobile-nav-item span {
-                font-size: 0.6rem;
+                font-size: 0.52rem;
                 font-weight: 600;
                 text-transform: uppercase;
-                letter-spacing: 0.3px;
+                letter-spacing: 0.15px;
                 white-space: nowrap;
                 max-width: 100%;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                text-align: center;
+                line-height: 1.15;
             }
 
             .mobile-nav-item:hover,
@@ -1402,11 +1435,99 @@
 
         @@media (max-width: 768px) {
             .modern-header {
-                padding: 0.5rem 0.65rem;
+                padding: 0.5rem 0.7rem;
+            }
+
+            .modern-header #vertical-menu-btn {
+                width: 36px;
+                height: 36px;
+                margin-right: 0.45rem !important;
+            }
+
+            .app-logo {
+                gap: 0.4rem;
+            }
+
+            .app-logo img {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+            }
+
+            .erp-heading-wrapper {
+                padding: 0 0.35rem;
             }
 
             .header-actions {
-                gap: 0.35rem;
+                gap: 0;
+            }
+
+            .header-end-cluster {
+                gap: 0.9rem;
+            }
+
+            .header-icon-btn {
+                width: 36px;
+                height: 36px;
+                border-radius: 10px;
+            }
+
+            .header-profile-btn.header-icon-btn {
+                background: transparent;
+                border: none;
+                box-shadow: none;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+            }
+
+            .profile-avatar {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                border-width: 1.5px;
+                box-shadow: none;
+            }
+
+            #bell-icon.header-icon-btn {
+                width: 36px;
+                height: 36px;
+            }
+
+            #bell-icon .fa-bell,
+            #bell-icon .fa-regular {
+                font-size: 1.05rem;
+            }
+
+            #bell-icon .notification-badge.notification-bell-badge {
+                top: -3px !important;
+                right: -3px !important;
+                min-width: 1rem;
+                min-height: 1rem;
+                font-size: 0.58rem !important;
+                padding: 0 0.22rem !important;
+            }
+
+            .modern-header .dropdown-menu.notification-dropdown.show,
+            .modern-header .dropdown-menu.profile-dropdown.show {
+                position: fixed !important;
+                top: 58px !important;
+                left: 8px !important;
+                right: 8px !important;
+                width: auto !important;
+                min-width: 0 !important;
+                max-width: none !important;
+                transform: none !important;
+                margin-top: 0 !important;
+            }
+
+            .notification-well-header {
+                padding: 0.45rem 0.5rem 0.45rem 0.75rem;
+                font-size: 0.8rem;
+            }
+
+            .notification-well-timer {
+                font-size: 0.75rem;
             }
 
             .modern-sidebar {
@@ -1504,11 +1625,6 @@
                 border-bottom: none;
             }
 
-            .header-icon-btn {
-                width: 40px;
-                height: 40px;
-            }
-
             #time {
                 font-size: 0.875rem;
             }
@@ -1563,7 +1679,8 @@
             }
 
             .mobile-nav-item span {
-                font-size: 0.55rem;
+                font-size: 0.48rem;
+                letter-spacing: 0.1px;
             }
 
             .app-logo {
@@ -1890,15 +2007,59 @@
         }
 
         .notification-well-header {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            text-align: left;
             font-weight: 700;
             font-size: 0.875rem;
             letter-spacing: 0.02em;
             color: #0f172a;
-            padding: 0.55rem 1rem 0.45rem;
+            padding: 0.5rem 0.65rem 0.5rem 1rem;
             border-bottom: 1px solid #eeeeee;
             background: #ffffff;
         }
+
+        .notification-well-header-title {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .notification-well-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            flex-shrink: 0;
+        }
+
+        .notification-well-timer {
+            font-weight: 700;
+            font-size: 0.8125rem;
+            color: var(--accent-primary, #2563eb);
+            font-variant-numeric: tabular-nums;
+            min-width: 2.35rem;
+            text-align: right;
+        }
+
+        .notification-well-refresh {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+        }
+
+            .notification-well-refresh:hover {
+                background: rgba(37, 99, 235, 0.08);
+                color: #2563eb;
+            }
 
         .notification-well-list {
             max-height: 300px;
@@ -2040,6 +2201,16 @@
                 text-align: center;
                 color: #64748b;
             }
+
+        .profile-dropdown-username {
+            font-weight: 600;
+            font-size: 0.78rem;
+            color: #64748b;
+            max-width: 8.5rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
 
             .profile-dropdown .dropdown-item:hover,
             .profile-dropdown .dropdown-item:focus {
@@ -2227,35 +2398,32 @@
                     </a>
                 </div>
                 <div class="erp-heading-wrapper">
-                    <h4 class="mb-0 erpHedTextSize" id="ERPHeading">Dashboard</h4>
+                    <h4 class="mb-0 erpHedTextSize d-none" id="ERPHeading">Dashboard</h4>
                 </div>
                 <div class="header-actions">
                     <a id="solarHomeBtn" href="#" title="Home"
-                       class="header-icon-btn" aria-label="Home">
+                       class="header-icon-btn d-none" aria-label="Home">
                         <i class="fas fa-home"></i>
                     </a>
-                    <button type="button" class="header-icon-btn position-relative" id="bell-icon" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-label="Notifications">
+                    <div class="header-end-cluster">
+                    <div class="dropdown">
+                    <button type="button" class="header-icon-btn position-relative" id="bell-icon" data-bs-toggle="dropdown" data-bs-auto-close="outside" data-bs-boundary="viewport" aria-label="Notifications">
                         <i class="fa-regular fa-bell"></i>
                         <span class="notification-badge notification-bell-badge position-absolute" id="notificationCount" aria-hidden="true"></span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown"></div>
-
-                    <div class="d-flex align-items-center">
-                        <div id="time" class="me-3 d-none d-md-block fw-bold" style="color: var(--accent-primary);">1:00</div>
-                        <button id="resetBtn" type="button" class="header-icon-btn me-2">
-                            <i class="fas fa-undo"></i>
-                        </button>
                     </div>
 
                     <div class="dropdown">
-                        <button type="button" class="header-icon-btn" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" aria-label="Account menu">
-                            <img class="profile-avatar" src="~/assets/images/users/user.jpg" alt="User">
+                        <button type="button" class="header-icon-btn header-profile-btn" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" aria-label="Account menu">
+                            <img class="profile-avatar" id="ERPUserProfileImage" src="~/assets/images/users/user.jpg" alt="User">
                         </button>
                         <div class="dropdown-menu dropdown-menu-end profile-dropdown">
                             <div class="profile-dropdown-accent" aria-hidden="true"></div>
-                            <a class="dropdown-item" href="#" onclick="window.location.href = sessionStorage.getItem('AppBaseURL') + '/CommonMasters/UserMaster/UserMaster?ModuleDesp=User%20Master'; return false;">
+                            <a class="dropdown-item" href="#" onclick="window.location.href = sessionStorage.getItem('AppBaseURL') + '/CommonMasters/UserMaster/UserMaster?ModuleDesp=User%20Master&amp;fromProfile=1'; return false;">
                                 <i class="fas fa-user-circle" aria-hidden="true"></i>
                                 <span>Profile</span>
+                                <span class="profile-dropdown-username" id="ERPProfileUserName">()</span>
                             </a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item profile-dropdown-logout" href="#" onclick="logoutUser()">
@@ -2263,6 +2431,7 @@
                                 <span>Logout</span>
                             </a>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>

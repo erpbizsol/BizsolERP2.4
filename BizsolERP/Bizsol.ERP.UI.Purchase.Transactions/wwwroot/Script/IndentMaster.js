@@ -4,11 +4,15 @@
  * List + Create New form (same flow as PurchaseOrderStore).
  */
 import { IndentMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/IndentMasterService.js';
+import { IndentMasterLevelsApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/IndentMasterLevelsApprovalService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { initializeObjectlistControl } from '../../Bizsol.WebERP.UI.Shared/js/Pages/CustomControl/_ObjectListControlPage.js';
 
 var G_IndentList        = [];
+var G_IndentChipFilter  = '';
+var G_PendingOnMeCodes  = [];
+var G_PendingOnMeReady  = false;
 var G_LocateConfig      = [];
 var G_ItemList          = [];
 var G_AllItemList       = [];
@@ -68,12 +72,14 @@ $(document).ready(function () {
     Promise.all([
         _fillLocateTypeDropdown(),
         _loadLocateConfig()
-    ]);
+    ]).then(function () {
+        _loadPendingOnMeCount();
+    });
 
     $('#ddlLocateType').on('change', function () {
         if (G_IndentList.length > 0) {
             var selectedLocateType = $(this).find('option:selected').data('locate-type');
-            _renderTable(G_IndentList, selectedLocateType || '');
+            _renderTable(_indentFilteredList(), selectedLocateType || '');
         }
     });
 });
@@ -206,12 +212,161 @@ window.LoadIndentList = function () {
     IndentMasterService.GetIndentList(fromDate, toDate, locateType)
         .then(function (data) {
             G_IndentList = _toList(data);
-            _renderTable(G_IndentList, locateType);
+            _updateIndentStatChips(G_IndentList);
+            _loadPendingOnMeCount();
+            _renderTable(_indentFilteredList(), locateType);
         })
         .catch(function (err) {
             toastr.error('Error loading Indent list.');
             console.error('IndentMaster LOCATE error:', err);
         });
+};
+
+function _indentRowCode(row) {
+    if (!row) return 0;
+    var n = parseInt(row.Code ?? row.code ?? row.IndentMaster_Code ?? row.indentMaster_Code ?? 0, 10);
+    return n > 0 ? n : 0;
+}
+
+function _indentStatusText(row) {
+    return String((row && (row.Status || row.status || row.StatusCode || row.statusCode)) || '').trim();
+}
+
+function _indentIsVerified(row) {
+    var v = String((row && (row.Verified || row.verified)) || '').trim().toUpperCase();
+    if (v === 'Y') return true;
+    var s = _indentStatusText(row).toLowerCase();
+    return s === 'verified' || s === 'approved' || s === 'completed';
+}
+
+function _indentIsPending(row) {
+    if (_indentIsVerified(row)) return false;
+    var s = _indentStatusText(row).toLowerCase();
+    if (s.indexOf('partial') >= 0) return true;
+    if (!s || s === 'n' || s === 'pending' || s === 'unverified' || s === 'un-verified') return true;
+    return s.indexOf('pending') >= 0;
+}
+
+function _indentIsPendingOnMe(row) {
+    if (!row) return false;
+    if (String(row.PendingOnMe || row.pendingOnMe || row.IsMyApproval || row.isMyApproval || '').toUpperCase() === 'Y') {
+        return true;
+    }
+    var code = _indentRowCode(row);
+    if (G_PendingOnMeReady) return code > 0 && G_PendingOnMeCodes.indexOf(code) >= 0;
+    if (!_indentIsPending(row)) return false;
+    var auth = _auth();
+    var userId = parseInt(auth.UserMaster_Code || auth.userMaster_Code || auth.Code || auth.code || 0, 10) || 0;
+    var requested = parseInt(row.UserMaster_Code_Requested || row.userMaster_Code_Requested || row.RequestedBy || 0, 10) || 0;
+    var createdBy = parseInt(row.UserId || row.userId || row.CreatedBy || 0, 10) || 0;
+    if (userId && (requested === userId || createdBy === userId)) return true;
+    return _indentIsPending(row);
+}
+
+function _indentFilteredList() {
+    var list = G_IndentList || [];
+    if (G_IndentChipFilter === 'pending') return list.filter(_indentIsPending);
+    if (G_IndentChipFilter === 'verified') return list.filter(_indentIsVerified);
+    if (G_IndentChipFilter === 'onme') return list.filter(_indentIsPendingOnMe);
+    return list;
+}
+
+function _fmtIndentStat(n) {
+    return n > 0 ? String(n) : '—';
+}
+
+function _updateIndentStatChips(list) {
+    var rows = list || [];
+    $('#statTotalIndent').text(rows.length > 0 ? String(rows.length) : '—');
+    $('#statPendingIndent').text(_fmtIndentStat(rows.filter(_indentIsPending).length));
+    $('#statVerifiedIndent').text(_fmtIndentStat(rows.filter(_indentIsVerified).length));
+    if (G_PendingOnMeReady) {
+        $('#statPendingOnMeIndent').text(_fmtIndentStat(G_PendingOnMeCodes.length));
+    } else {
+        $('#statPendingOnMeIndent').text(_fmtIndentStat(rows.filter(_indentIsPendingOnMe).length));
+    }
+    _syncIndentChipActive();
+}
+
+function _syncIndentChipActive() {
+    $('#indentChipTotal').toggleClass('is-active', !G_IndentChipFilter || G_IndentChipFilter === 'total');
+    $('#indentChipPending').toggleClass('is-active', G_IndentChipFilter === 'pending');
+    $('#indentChipOnMe').toggleClass('is-active', G_IndentChipFilter === 'onme');
+    $('#indentChipVerified').toggleClass('is-active', G_IndentChipFilter === 'verified');
+}
+
+function _selectPendingOnMeLocateType() {
+    var $found = $();
+    $('#ddlLocateType option').each(function () {
+        var t = String($(this).data('locate-type') || $(this).text() || '').replace(/[\s_-]/g, '').toLowerCase();
+        if (t.indexOf('pendingonme') >= 0 || t === 'pendingonme') {
+            $found = $(this);
+            return false;
+        }
+    });
+    if (!$found.length) return false;
+    $('#ddlLocateType').val($found.val());
+    if ($.fn.select2) $('#ddlLocateType').trigger('change.select2');
+    return true;
+}
+
+function _loadPendingOnMeCount() {
+    var fromDate = $('#txtFromDate').val() || '';
+    var toDate = $('#txtToDate').val() || '';
+    IndentMasterLevelsApprovalService.GetPendingIndentList(fromDate, toDate, 'N')
+        .then(function (data) {
+            var rows = _toList(data);
+            G_PendingOnMeReady = true;
+            G_PendingOnMeCodes = rows.map(_indentRowCode).filter(function (c) { return c > 0; });
+            var count = G_PendingOnMeCodes.length || rows.length;
+            $('#statPendingOnMeIndent').text(_fmtIndentStat(count));
+            if (G_IndentList.length) _updateIndentStatChips(G_IndentList);
+        })
+        .catch(function () {
+            G_PendingOnMeReady = false;
+            G_PendingOnMeCodes = [];
+            if (G_IndentList.length) {
+                $('#statPendingOnMeIndent').text(_fmtIndentStat(G_IndentList.filter(_indentIsPendingOnMe).length));
+            }
+        });
+}
+
+window.NavigateToIndentPendingOnMe = function () {
+    var appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
+    var fromDate = $('#txtFromDate').val() || '';
+    var toDate = $('#txtToDate').val() || '';
+    var qs = 'ModuleDesp=' + encodeURIComponent('Indent Verification');
+    if (fromDate) qs += '&FromDate=' + encodeURIComponent(fromDate);
+    if (toDate) qs += '&ToDate=' + encodeURIComponent(toDate);
+    window.location.href = appBase + 'PurchaseTransactions/IndentMaster/IndentPendingOnMe?' + qs;
+};
+
+window.FilterIndentChip = function (chip) {
+    chip = String(chip || 'total');
+    if (chip === 'onme') {
+        NavigateToIndentPendingOnMe();
+        return;
+    }
+    if (chip === 'total') {
+        G_IndentChipFilter = '';
+    } else if (G_IndentChipFilter === chip) {
+        G_IndentChipFilter = '';
+    } else {
+        G_IndentChipFilter = chip;
+    }
+
+    _syncIndentChipActive();
+
+    var apply = function () {
+        var locateType = $('#ddlLocateType').find('option:selected').data('locate-type') || '';
+        _renderTable(_indentFilteredList(), locateType);
+    };
+
+    if (!G_IndentList.length) {
+        LoadIndentList();
+        return;
+    }
+    apply();
 };
 
 function _renderTable(data, locateType) {
@@ -1798,6 +1953,9 @@ window.SaveIndent = function () {
         var code = parseInt((row && (row.Code != null ? row.Code : row.code)) || 0, 10) || 0;
         if (status === 'Y') {
             toastr.success(msg || 'Indent saved successfully.');
+            if (code > 0) {
+                IndentMasterLevelsApprovalService.CreateWorkflow(code).catch(function () { });
+            }
             CloseIndentForm();
             LoadIndentList();
         } else {

@@ -48,7 +48,7 @@ let UrlService = {
     API_ENDPOINT_HRCONFIG: `${environment.BASE_URL}/ConfigHR`,
 
     API_ENDPOINT_TankDailyStock: `${environment.BASE_URL}/DailyTankStock`,
-    
+
     API_ENDPOINT_ACCOUNT_MASTER: `${environment.BASE_URL}/AccountMaster`,
     API_ENDPOINT_ServicePOApproval: `${environment.BASE_URL}/ServicePOApproval`,
     API_ENDPOINT_QuotationApproval: `${environment.BASE_URL}/QuotationApproval`,
@@ -79,6 +79,8 @@ let UrlService = {
     API_ENDPOINT_ITEM: `${environment.BASE_URL}/Item`,
     API_ENDPOINT_EXPENSE_ENTRY: `${environment.BASE_URL}/ExpenseEntryMaster`,
     API_ENDPOINT_DEALER_MASTER: `${environment.BASE_URL}/DealerMaster`,
+    API_ENDPOINT_DEALER_TARGET_MASTER: `${environment.BASE_URL}/DealerTargetMaster`,
+    API_ENDPOINT_TARGET_DASHBOARD_REPORT: `${environment.BASE_URL}/TargetDashboardReport`,
     API_ENDPOINT_PackingListFG: `${environment.BASE_URL}/PackingListFG`,
     API_ENDPOINT_QTY_CONFIG: `${environment.BASE_URL}/FixedParameterQtyConfig`,
     API_ENDPOINT_CRM_ORDERENTRY_CONFIG: `${environment.BASE_URL}/ConfigCRMOrderEntry`,
@@ -146,6 +148,7 @@ let UrlService = {
     API_ENDPOINT_GRNPaymentEntry: `${environment.BASE_URL}/GRNPaymentEntry`,
     API_ENDPOINT_POLevelsApprove: `${environment.BASE_URL}/POLevelsApproval`,
     API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`,
+    API_ENDPOINT_IMPORT_EXPORT: `${environment.BASE_URL}/ImportExport`,
     API_ENDPOINT_MRNMasterLevelsApproval: `${environment.BASE_URL}/MRNMasterLevelsApproval`,//
     API_ENDPOINT_CompanyInformation: `${environment.BASE_URL}/CompanyInformation`,
     API_ENDPOINT_EWayBill: `${environment.BASE_URL}/EwayBill`,
@@ -178,6 +181,8 @@ let UrlService = {
     API_ENDPOINT_SalesPersonDashboard: `${environment.BASE_URL}/SalesPersonDashboard`,
     API_ENDPOINT_ExpenseDashboard: `${environment.BASE_URL}/ExpenseDashboard`,
     API_ENDPOINT_IndentMaster: `${environment.BASE_URL}/IndentMaster`,
+    API_ENDPOINT_IndentMasterApprovalConfig: `${environment.BASE_URL}/IndentMasterApprovalConfig`,
+    API_ENDPOINT_IndentMasterLevelsApproval: `${environment.BASE_URL}/IndentMasterLevelsApproval`,
     API_ENDPOINT_TEMPLETE_REPORT: `${environment.BASE_URL}/OrderLoadReport`,
     API_ENDPOINT_DASHBOARD_CONFIGURATION: `${environment.BASE_URL}/DashboardConfiguration`,
     API_ENDPOINT_ProductionOrder: `${environment.BASE_URL}/ProductionOrder`,
@@ -185,5 +190,5 @@ let UrlService = {
     API_ENDPOINT_USER_DASHBOARD_MENU: `${environment.BASE_URL}/UserDashboardMenu`,
 }
 
-export { UrlService  }
+export { UrlService }
 
