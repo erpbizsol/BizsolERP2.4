@@ -132,6 +132,33 @@
         background: #fafbff;
     }
 
+    .mmm-list-grid-pane {
+        position: relative;
+        min-height: 240px;
+    }
+
+    .mmm-list-empty-state {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 32px 20px 40px;
+        min-height: min(340px, calc(100vh - 360px));
+        background: linear-gradient(180deg, #f8faff 0%, #fff 100%);
+    }
+
+    .mmm-list-empty-state.is-visible {
+        display: flex;
+    }
+
+    .mmm-list-empty-title {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-muted, #64748b);
+        line-height: 1.5;
+    }
+
     .mmm-hero {
         display: flex;
         align-items: center;
@@ -898,6 +925,34 @@
         height: 40px;
     }
 
+    #dvClientCard .mmm-client-search-toolbar {
+        padding: 12px 0 14px;
+    }
+
+    #dvClientCard .mmm-client-search-wrap {
+        max-width: 340px;
+        width: 100%;
+    }
+
+    #dvClientCard #mmmClientSearch {
+        width: 100%;
+        padding: 9px 14px 9px 38px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        background: var(--light-bg);
+        color: var(--text-dark);
+        transition: border-color .2s, box-shadow .2s, background .2s;
+        box-sizing: border-box;
+    }
+
+    #dvClientCard #mmmClientSearch:focus {
+        border-color: var(--accent-primary);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+    }
+
     #dvClientCard .mmm-ci-po-step-body {
         padding-top: 8px;
     }
@@ -1013,16 +1068,217 @@
         .mmm-fg.span2 { grid-column: span 2; }
     }
 
+    @@media (max-width: 768px) {
+        #MarketingManMasterPage.mmm-page {
+            padding: 4px 10px calc(76px + env(safe-area-inset-bottom, 0px));
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+
+        .mmm-po-list-header {
+            padding: 14px 16px 12px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .mmm-po-header-top {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+
+        .mmm-po-list-header .mmm-hero-icon {
+            width: 42px;
+            height: 42px;
+            font-size: 18px;
+        }
+
+        .mmm-po-list-header .mmm-hero-title {
+            font-size: 0.95rem;
+        }
+
+        .mmm-po-list-header .mmm-hero-sub {
+            font-size: 0.72rem;
+        }
+
+        .mmm-po-create-btn {
+            width: 100%;
+            min-height: 44px;
+            justify-content: center;
+        }
+
+        #MarketingManMasterPage .pm-card-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 14px;
+            gap: 10px;
+        }
+
+        .pm-search-wrap {
+            max-width: 100%;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .mmm-list-grid-wrap {
+            border-radius: 0 0 12px 12px;
+        }
+
+        .mmm-list-grid-wrap .pm-table-wrap {
+            max-height: calc(100dvh - 380px);
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
+        }
+
+        .mmm-list-empty-state {
+            min-height: min(220px, calc(100dvh - 420px));
+            padding: 24px 16px;
+        }
+
+        .mmm-list-empty-title {
+            font-size: 16px;
+        }
+
+        #mmmDetailPanel .mmm-ci-po-list-header {
+            padding: 14px 16px 12px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        #mmmDetailPanel .mmm-ci-po-header-top {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+
+        #mmmDetailPanel .mmm-ci-po-header-top .mmm-ci-po-footer-right {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+            margin-left: 0;
+        }
+
+        #mmmDetailPanel .mmm-ci-po-header-top .mmm-ci-po-back-btn,
+        #mmmDetailPanel .mmm-ci-po-header-top .btn-mmm-ci-po-save {
+            width: 100%;
+            min-height: 44px;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        #mmmDetailPanel .mmm-ci-po-header-top .btn-mmm-ci-po-save {
+            grid-column: 1 / -1;
+        }
+
+        #mmmDetailPanel .mmm-ci-entry-title {
+            font-size: 0.95rem;
+            line-height: 1.25;
+        }
+
+        #mmmDetailPanel .mmm-ci-entry-sub {
+            font-size: 0.72rem;
+            line-height: 1.35;
+        }
+
+        #mmmDetailPanel .mmm-ci-po-step-body {
+            padding: 14px 14px 16px;
+        }
+
+        #mmmDetailPanel .mmm-ci-po-step-header {
+            padding: 10px 14px;
+        }
+
+        #mmmDetailPanel #dvClientCard.mmm-ci-po-step-card {
+            border-radius: 12px;
+        }
+
+        #mmmDetailPanel .mmm-ci-po-step-card:first-of-type {
+            border-radius: 0 0 12px 12px;
+        }
+
+        .mmm-form-band {
+            padding: 12px 14px;
+        }
+
+        #MarketingManMasterPage input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+        #MarketingManMasterPage select,
+        #MarketingManMasterPage textarea {
+            font-size: 16px;
+        }
+
+        #mmmSearch,
+        #mmmClientSearch {
+            font-size: 16px !important;
+        }
+
+        #mmmDetailPanel .mmm-fg input[type="text"],
+        #mmmDetailPanel .mmm-fg input[type="email"],
+        #mmmDetailPanel .mmm-fg input[type="date"],
+        #mmmDetailPanel .mmm-fg input[type="tel"],
+        #mmmDetailPanel .mmm-fg select,
+        #mmmDetailPanel .mmm-fg textarea {
+            min-height: 44px;
+            font-size: 16px;
+        }
+
+        #mmmDetailPanel .select2-container--default .select2-selection--single {
+            min-height: 44px;
+        }
+
+        #mmmDetailPanel .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 34px;
+            font-size: 16px !important;
+        }
+
+        #mmmDetailPanel .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 42px;
+        }
+
+        #dvClientCard .mmm-client-search-wrap {
+            max-width: 100%;
+        }
+
+        #dvClientCard #mmmClientSearch {
+            min-height: 44px;
+            font-size: 16px;
+        }
+
+        #dvClientCard .mmm-table-wrap {
+            max-height: min(320px, 42dvh);
+        }
+
+        .pm-modal .modal-dialog {
+            margin: 0.5rem auto;
+            max-width: calc(100vw - 1rem) !important;
+            width: calc(100vw - 1rem);
+        }
+
+        .pm-modal .modal-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+            gap: 8px;
+        }
+
+        .pm-modal .modal-footer .pm-btn {
+            width: 100%;
+            justify-content: center;
+            min-height: 44px;
+        }
+    }
+
     @@media (max-width: 600px) {
         .mmm-form-grid { grid-template-columns: 1fr; }
         .mmm-fg.span2, .mmm-fg.span3 { grid-column: span 1; }
         #mmmDetailPanel .mmm-ci-po-step-footer--actions { flex-direction: column; align-items: stretch; }
-        #mmmDetailPanel .mmm-ci-po-footer-right { margin-left: 0; width: 100%; }
-        #mmmDetailPanel .mmm-ci-po-footer-right .mmm-ci-po-back-btn,
-        #mmmDetailPanel .mmm-ci-po-footer-right .btn-mmm-ci-po-save { flex: 1; justify-content: center; }
+        #mmmDetailPanel .mmm-ci-po-step-footer .mmm-ci-po-footer-right { margin-left: 0; width: 100%; }
+        #mmmDetailPanel .mmm-ci-po-step-footer .mmm-ci-po-footer-right .mmm-ci-po-back-btn,
+        #mmmDetailPanel .mmm-ci-po-step-footer .mmm-ci-po-footer-right .btn-mmm-ci-po-save { flex: 1; justify-content: center; }
         #MarketingManMasterPage.mmm-page { padding-left: 8px; padding-right: 8px; }
-        .mmm-po-create-btn .mmm-po-create-label { display: none; }
-        .mmm-po-create-btn { padding: 8px 12px; }
+    }
+
+    @@media (max-width: 380px) {
+        #mmmDetailPanel .mmm-ci-po-header-top .mmm-ci-po-back-label {
+            display: none;
+        }
     }
 </style>
 
@@ -1054,11 +1310,16 @@
                     <input type="text" id="mmmSearch" placeholder="Search by name, mobile or email…" autocomplete="off" />
                 </div>
             </div>
-            <div class="pm-table-wrap table-wrapper">
-                <table class="pm-table" id="MarketingManMaster">
-                    <thead id="table-header-MarketingManMaster"></thead>
-                    <tbody id="table-body-MarketingManMaster"></tbody>
-                </table>
+            <div class="mmm-list-grid-pane">
+                <div class="pm-table-wrap table-wrapper">
+                    <table class="pm-table" id="MarketingManMaster">
+                        <thead id="table-header-MarketingManMaster"></thead>
+                        <tbody id="table-body-MarketingManMaster"></tbody>
+                    </table>
+                </div>
+                <div class="mmm-list-empty-state" id="mmmListEmptyState" aria-live="polite" hidden>
+                    <p class="mmm-list-empty-title" id="mmmListEmptyTitle">No records found</p>
+                </div>
             </div>
             <div class="paginator" id="paginator-MarketingManMaster"></div>
         </div>
@@ -1200,6 +1461,12 @@
                 <i class="fas fa-building mmm-ci-po-step-icon" aria-hidden="true"></i>
             </div>
             <div class="mmm-ci-po-step-body" style="padding-top:0;">
+                <div class="mmm-client-search-toolbar">
+                    <div class="pm-search-wrap mmm-client-search-wrap">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="text" id="mmmClientSearch" placeholder="Search by name, mobile or email…" autocomplete="off" aria-label="Search linked clients" />
+                    </div>
+                </div>
                 <div class="mmm-table-wrap">
                     <table class="mmm-table" id="tblClient">
                         <thead>

@@ -10,5 +10,15 @@ namespace Bizsol.WebERP.UI.Purchase.Transactions.Areas.PurchaseTransactions.Cont
         {
             return View();
         }
+
+        public IActionResult IndentPendingOnMe()
+        {
+            return View();
+        }
+
+        public IActionResult IndentMasterApprovalConfiguration()
+        {
+            return View();
+        }
     }
 }
