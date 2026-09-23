@@ -540,14 +540,15 @@ function loadSalesReturnData(code, cratesReceiveMaster_Code, isViewMode) {
             if (detailsData && detailsData.length > 0) {
                 detailsData.forEach(item => {
                     const detailCode = item.Code; // Get the detail code
-                    addNewRow(detailCode); // Pass detail code to addNewRow
+                    const isConsumed = item.IsConsumed || item.isConsumed || '';
+                    addNewRow(detailCode, isConsumed); // Pass detail code and consumed flag
                     const currentRow = rowCounter;
                     
                     const itemCode = item.ItemMaster_Code;
                     const qty = item.Qty || 0;
                     const remarks = item.Remark || '';
                     
-                    console.log(`Setting row ${currentRow}: Code=${detailCode}, ItemCode=${itemCode}, Qty=${qty}, Remark=${remarks}`);
+                    console.log(`Setting row ${currentRow}: Code=${detailCode}, ItemCode=${itemCode}, Qty=${qty}, Remark=${remarks}, IsConsumed=${isConsumed}`);
                     
                     $(`.item-select[data-row="${currentRow}"]`).val(itemCode).trigger('change');
                     $(`.qty-input[data-row="${currentRow}"]`).val(formatQtyDisplay(qty));
@@ -561,6 +562,7 @@ function loadSalesReturnData(code, cratesReceiveMaster_Code, isViewMode) {
             
             // Set form mode (readonly for view)
             setFormMode(isViewMode);
+            applyConsumedRowLocks();
         } else {
             toastr.error('Invalid data format received from server');
             closeForm();
@@ -602,14 +604,35 @@ function setFormMode(isReadonly) {
         $('#txtReceivedPayments').prop('readonly', false).removeClass('readonly-field');
         $('#txtCrateRemark').prop('readonly', false).removeClass('readonly-field');
         
-        $('.item-select').prop('disabled', false);
-        $('.qty-input').prop('readonly', false).removeClass('readonly-field');
-        $('.remarks-input').prop('readonly', false).removeClass('readonly-field');
+        $('.item-select').not('.consumed-lock').prop('disabled', false);
+        $('.qty-input').not('.consumed-lock').prop('readonly', false).removeClass('readonly-field');
+        $('.remarks-input').not('.consumed-lock').prop('readonly', false).removeClass('readonly-field');
         
         $('#btnAddRow').show();
-        $('.btn-remove').show();
+        $('.btn-remove').not('.consumed-lock').show();
         $('#btnSave').show();
+        applyConsumedRowLocks();
     }
+}
+
+function isRowConsumed(flag) {
+    return String(flag || '').trim().toUpperCase() === 'Y';
+}
+
+function applyConsumedRowLocks() {
+    $('#gridBody tr.consumed-row').each(function() {
+        const rowId = $(this).data('row-id');
+        lockConsumedRow(rowId);
+    });
+}
+
+function lockConsumedRow(rowId) {
+    const $row = $(`tr[data-row-id="${rowId}"]`);
+    $row.addClass('consumed-row');
+    $row.find('.item-select').prop('disabled', true).addClass('consumed-lock');
+    $row.find('.qty-input').prop('readonly', true).addClass('readonly-field consumed-lock');
+    $row.find('.remarks-input').prop('readonly', true).addClass('readonly-field consumed-lock');
+    $row.find('.btn-remove').addClass('consumed-lock').hide();
 }
 
 function deleteSalesReturn(code, cratesReceiveMaster_Code) {
@@ -672,11 +695,12 @@ function closeForm() {
     loadSalesReturnList();
 }
 
-function addNewRow(detailCode = 0) {
+function addNewRow(detailCode = 0, isConsumed = '') {
     rowCounter++;
+    const consumed = isRowConsumed(isConsumed);
     
     const row = `
-        <tr data-row-id="${rowCounter}" data-detail-code="${detailCode}">
+        <tr data-row-id="${rowCounter}" data-detail-code="${detailCode}" data-is-consumed="${consumed ? 'Y' : 'N'}" class="${consumed ? 'consumed-row' : ''}">
             <td class="text-center">${rowCounter}</td>
             <td>
                 <select class="form-control form-control-sm item-select grid-select2" data-row="${rowCounter}">
@@ -724,13 +748,23 @@ function addNewRow(detailCode = 0) {
     $(`.btn-remove[data-row="${rowCounter}"]`).on('click', function() {
         removeRow($(this).data('row'));
     });
+
+    if (consumed) {
+        lockConsumedRow(rowCounter);
+    }
     
     calculateTotal();
 }
 
 function removeRow(rowId) {
+    const $row = $(`tr[data-row-id="${rowId}"]`);
+    if (isRowConsumed($row.data('is-consumed'))) {
+        toastr.warning('This row is consumed and cannot be deleted');
+        return;
+    }
+
     if ($('#gridBody tr').length > 1) {
-        $(`tr[data-row-id="${rowId}"]`).remove();
+        $row.remove();
         renumberRows();
         calculateTotal();
     } else {
