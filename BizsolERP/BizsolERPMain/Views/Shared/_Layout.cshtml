@@ -8,7 +8,7 @@
     <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
     <meta content="Themesbrand" name="author" />
     <!--toastr-->
-    <link href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" rel="stylesheet" />
     <link href="~/assets/css/toastr.min.css" rel="stylesheet" />
     <!-- DataTables -->
     <link href="~/assets/libs/datatables.net-bs4/css/datatables.bootstrap4.min.css" rel="stylesheet" />
@@ -1738,66 +1738,167 @@
             box-sizing: border-box;
         }
 
-        /* Mobile: bottom-sheet style — dropdown slides up above the keyboard */
+        /*
+         * Mobile searchable select: compact bottom sheet.
+         * Portal = span.select2-container--open WITHOUT .select2 (the trigger has .select2).
+         * Sheet sizes to its options (max ~62vh) so it does not paint a blank half-page.
+         * Search stays at the TOP; the list scrolls underneath.
+         */
         @@media (max-width: 991px) {
-            /* Prevent iOS auto-zoom (font-size must be >= 16px on inputs) */
+            /*
+             * iOS Safari auto-zooms the page when an focused input has font-size < 16px.
+             * Keep text fields at 16px+ on mobile (do not disable user zoom via viewport).
+             */
+            #modern-content input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="image"]):not([type="range"]):not([type="file"]),
+            #modern-content select,
+            #modern-content textarea,
+            #modern-content .form-control {
+                font-size: 16px !important;
+            }
+
+            .select2-container--default .select2-selection--single .select2-selection__rendered {
+                font-size: 16px !important;
+            }
+
             .select2-search__field,
             .select2-results__option {
                 font-size: 16px !important;
             }
 
-            /* Drag-handle pip at the top of the bottom sheet */
-            .select2-container--open .select2-dropdown--below::before,
-            .select2-container--open .select2-dropdown--above::before {
+            body.s2-mobile-open {
+                overflow: hidden !important;
+            }
+
+            /* Full-page dimmer — sheet sits above it, so the page no longer looks split */
+            .select2-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.48);
+                z-index: 99998;
+                animation: backdropFadeIn 0.2s ease;
+                -webkit-tap-highlight-color: transparent;
+                touch-action: auto;
+            }
+
+            /* Dropdown portal pinned to the bottom (beats Select2 inline top/left) */
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) {
+                position: fixed !important;
+                display: block !important;
+                left: 0 !important;
+                right: 0 !important;
+                top: auto !important;
+                bottom: 0 !important;
+                width: 100% !important;
+                max-width: 100vw !important;
+                height: auto !important;
+                z-index: 100000 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                animation: s2SheetIn 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+                transition: bottom 0.2s ease;
+            }
+
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-dropdown,
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-dropdown--below,
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-dropdown--above {
+                position: relative !important;
+                top: auto !important;
+                left: auto !important;
+                bottom: auto !important;
+                width: 100% !important;
+                max-width: 100vw !important;
+                max-height: min(62vh, 520px);
+                height: auto !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: flex-start !important;
+                border-radius: 18px 18px 0 0 !important;
+                border: none !important;
+                border-top: 3px solid var(--accent-primary) !important;
+                box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.28) !important;
+                background: #fff !important;
+                z-index: 100000 !important;
+                overflow: hidden !important;
+                padding-bottom: env(safe-area-inset-bottom, 8px);
+            }
+
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-dropdown::before {
                 content: '';
                 display: block;
                 width: 36px;
                 height: 4px;
-                background: rgba(0, 0, 0, 0.18);
-                border-radius: 2px;
-                margin: 10px auto 4px;
+                background: rgba(15, 23, 42, 0.18);
+                border-radius: 99px;
+                margin: 10px auto 2px;
                 flex-shrink: 0;
             }
 
-            .select2-container--open .select2-dropdown--below,
-            .select2-container--open .select2-dropdown--above {
-                position: fixed !important;
-                bottom: 0 !important;
-                top: auto !important;
-                left: 0 !important;
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-search--dropdown,
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-search--hide {
+                display: block !important;
+                order: 0;
+                flex-shrink: 0;
+                padding: 8px 12px 10px !important;
+            }
+
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-search--dropdown .select2-search__field {
+                display: block !important;
                 width: 100% !important;
-                max-height: 50vh;
-                border-radius: 16px 16px 0 0;
-                border-top: 3px solid var(--accent-primary);
-                box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25);
-                z-index: 99999 !important;
+                height: 42px !important;
+                margin: 0 !important;
+                padding: 8px 12px !important;
+                font-size: 16px !important;
+                line-height: 1.3 !important;
+                border: 1.5px solid #c7d2fe !important;
+                border-radius: 10px !important;
+                background: #f8fafc !important;
+                outline: none !important;
+                box-shadow: none !important;
+            }
+
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-search--dropdown .select2-search__field:focus {
+                border-color: var(--accent-primary) !important;
+                background: #fff !important;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18) !important;
+            }
+
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-results {
+                order: 1;
+                flex: 0 1 auto;
+                min-height: 0;
                 overflow: hidden;
-                /* Smooth slide when keyboard opens / closes */
-                transition: bottom 0.15s ease, max-height 0.15s ease;
             }
 
-            .select2-container--open .select2-results__options {
-                overflow-y: auto;
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-results__options {
+                max-height: min(48vh, 380px) !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
+                touch-action: pan-y;
             }
 
-            /* Backdrop only covers the area ABOVE the bottom sheet.
-               The dropdown itself (bottom 50vh) is never overlapped,
-               so options remain fully tappable. */
-            .select2-backdrop {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 50vh; /* stops where the dropdown begins */
-                background: rgba(0, 0, 0, 0.3);
-                z-index: 99998;
-                animation: backdropFadeIn 0.2s ease;
+            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-results__option {
+                padding: 12px 16px !important;
+                min-height: 44px;
+                line-height: 1.35;
+                border-bottom: 1px solid #f1f5f9;
+            }
+
+            .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+                background-color: var(--accent-primary) !important;
+                color: #fff !important;
             }
         }
 
         @@keyframes backdropFadeIn {
             from { opacity: 0; }
             to   { opacity: 1; }
+        }
+
+        @@keyframes s2SheetIn {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
         }
 
         /* ── Embedded / iframe mode ─────────────────────────────────────────
@@ -2457,7 +2558,7 @@
         <footer class="modern-footer">
             <div class="d-flex justify-content-between align-items-center flex-wrap desktop-footer" style="gap: 0.5rem;">
                 <div class="d-flex align-items-center text-truncate">
-                    <span class="fw-bold text-truncate" id="ERPUserName" style="color: var(--accent-primary);">PINKI BIZSOL</span>
+                    <span class="fw-bold text-truncate" id="ERPUserName" style="color: var(--accent-primary);">Connecting..</span>
                     <span class="text-muted ms-2 text-truncate" id="ERPCompanyCode">(ERP2.4 DEV)</span>
                 </div>
                 <div class="text-truncate">
@@ -2694,24 +2795,32 @@
             }
         });
 
-        // ── Keyboard-aware repositioning (mobile only) ────────────────────────
+        // ── Mobile searchable-select sheet ────────────────────────────────────
         // _s2InitialVvpHeight: captures vvp.height BEFORE the keyboard animates in.
-        // This is needed because on iOS 15+ window.innerHeight ALSO shrinks with
-        // the keyboard, making the Method-1 calculation return 0.
+        // On iOS 15+ window.innerHeight ALSO shrinks with the keyboard.
         var _s2ViewportHandler  = null;
         var _s2InitialVvpHeight = null;
         var _s2BodyOverflowPrev = null;
         var _s2HtmlOverflowPrev = null;
         var _s2ScrollLocked = false;
 
-        // ── Modal-scroll guard ────────────────────────────────────────────────
         // Select2 focuses its search field BEFORE firing select2:open, which
-        // causes the nearest scrollable ancestor (.modal) to auto-scroll down
-        // to the newly-appended dropdown container. We save the scroll position
-        // in select2:opening (before any DOM change) and restore it in
-        // select2:open via requestAnimationFrame (before the browser paints).
+        // can scroll the nearest .modal. Save scroll in select2:opening and
+        // restore it in select2:open via requestAnimationFrame.
         var _s2ModalEl  = null;
         var _s2ModalTop = 0;
+
+        function _isSelect2Mobile() {
+            return window.innerWidth <= 991;
+        }
+
+        function _isPlanSelect2Sheet(target) {
+            return !!(target && $(target).closest('#PlannedMyModal').length);
+        }
+
+        function _getSelect2MobilePortal() {
+            return document.querySelector('.select2-container--open:not(.select2):not(.plan-s2-sheet)');
+        }
 
         function _lockSelect2PageScroll() {
             if (_s2ScrollLocked) return;
@@ -2731,8 +2840,25 @@
             _s2ScrollLocked = false;
         }
 
+        function _clearSelect2SheetInlineStyles() {
+            var portal = _getSelect2MobilePortal();
+            if (!portal) return;
+            portal.style.bottom = '';
+            var dropdown = portal.querySelector('.select2-dropdown');
+            if (dropdown) {
+                dropdown.style.bottom = '';
+                dropdown.style.maxHeight = '';
+            }
+            var results = portal.querySelector('.select2-results__options');
+            if (results) {
+                results.style.maxHeight = '';
+            }
+        }
+
         function _cleanupSelect2MobileState() {
+            document.body.classList.remove('s2-mobile-open');
             $('.select2-backdrop').remove();
+            _clearSelect2SheetInlineStyles();
             _unlockSelect2PageScroll();
 
             if (_s2ViewportHandler && window.visualViewport) {
@@ -2743,6 +2869,42 @@
             _s2InitialVvpHeight = null;
         }
 
+        function _adjustSelect2AboveKeyboard() {
+            if (!window.visualViewport) return;
+            var portal = _getSelect2MobilePortal();
+            if (!portal) return;
+
+            var dropdown = portal.querySelector('.select2-dropdown') || portal;
+            var results = dropdown.querySelector
+                ? dropdown.querySelector('.select2-results__options')
+                : null;
+            var vvp = window.visualViewport;
+
+            var kbH1 = Math.max(0, window.innerHeight - vvp.offsetTop - vvp.height);
+            var kbH2 = (_s2InitialVvpHeight !== null)
+                ? Math.max(0, _s2InitialVvpHeight - vvp.height)
+                : 0;
+            var keyboardHeight = Math.max(kbH1, kbH2);
+
+            // No keyboard: let CSS size the sheet to its options (no 50vh blank panel).
+            if (keyboardHeight < 40) {
+                portal.style.bottom = '';
+                dropdown.style.maxHeight = '';
+                if (results) results.style.maxHeight = '';
+                return;
+            }
+
+            portal.style.bottom = keyboardHeight + 'px';
+            var maxH = Math.min(
+                Math.max(160, vvp.height - 12),
+                Math.round((_s2InitialVvpHeight || window.innerHeight) * 0.72)
+            );
+            dropdown.style.maxHeight = maxH + 'px';
+            if (results) {
+                results.style.maxHeight = Math.max(80, maxH - 78) + 'px';
+            }
+        }
+
         $(document).on('select2:opening', function (e) {
             var $modal = $(e.target).closest('.modal');
             if ($modal.length) {
@@ -2751,119 +2913,74 @@
             } else {
                 _s2ModalEl = null;
             }
+
+            if (_isSelect2Mobile() && !_isPlanSelect2Sheet(e.target)) {
+                document.body.classList.add('s2-mobile-open');
+            }
         });
 
-        function _adjustSelect2AboveKeyboard() {
-            if (!window.visualViewport) return;
-            var vvp = window.visualViewport;
-
-            // Method 1 – Android & older iOS:
-            //   keyboard height = layout viewport − (offset + visual viewport)
-            var kbH1 = Math.max(0, window.innerHeight - vvp.offsetTop - vvp.height);
-
-            // Method 2 – iOS 15+ (window.innerHeight also shrinks):
-            //   compare current vvp.height against the height captured before keyboard
-            var kbH2 = (_s2InitialVvpHeight !== null)
-                ? Math.max(0, _s2InitialVvpHeight - vvp.height)
-                : 0;
-
-            var keyboardHeight = Math.max(kbH1, kbH2);
-
-            var dropdown = document.querySelector('.select2-dropdown');
-            if (!dropdown) return;
-
-            // Push the dropdown above the keyboard
-            dropdown.style.bottom = keyboardHeight + 'px';
-
-            // Give the dropdown as much visible space as possible.
-            // vvp.height = visible area above keyboard.
-            // Cap at 50 % of the original (pre-keyboard) height so the sheet
-            // doesn’t fill the entire screen when no keyboard is open.
-            var baseHeight = _s2InitialVvpHeight || window.innerHeight;
-            var maxH = Math.min(
-                Math.max(150, vvp.height - 48),   // visible area minus 48 px top gap
-                Math.round(baseHeight * 0.50)      // never taller than 50 % of full screen
-            );
-            dropdown.style.maxHeight = maxH + 'px';
-
-            // Results list = dropdown minus drag handle (18 px) + search bar (54 px)
-            var results = dropdown.querySelector('.select2-results__options');
-            if (results) {
-                results.style.maxHeight = Math.max(80, maxH - 72) + 'px';
-            }
-
-            // Keep the backdrop ending exactly where the dropdown begins
-            var backdrop = document.querySelector('.select2-backdrop');
-            if (backdrop) {
-                backdrop.style.bottom = (keyboardHeight + maxH) + 'px';
-            }
-        }
-
-        // Auto-focus the search field when any Select2 opens
         $(document).on('select2:open', function (e) {
-            // Restore the modal scroll position that Select2 disrupted by focusing
-            // its search input (which triggered a browser scroll-into-view on the
-            // dropdown element appended at the end of the modal DOM).
             if (_s2ModalEl) {
                 var el  = _s2ModalEl;
                 var top = _s2ModalTop;
                 requestAnimationFrame(function () { el.scrollTop = top; });
             }
 
+            var isMobile = _isSelect2Mobile();
+            var skipSheet = _isPlanSelect2Sheet(e.target);
+
             setTimeout(function () {
-                // For multiple-select, the search field is INLINE — every instance
-                // keeps its own .select2-search__field in the DOM at all times.
-                // querySelectorAll returns ALL of them, so [last] always lands on
-                // the bottom-most row (Management). Instead, look up only the field
-                // that belongs to the Select2 that just opened.
                 var searchField = null;
                 try {
                     var s2 = $(e.target).data('select2');
-                    if (s2 && s2.$container && s2.$container.length) {
+                    if (s2 && s2.$dropdown) {
+                        searchField = s2.$dropdown[0].querySelector('.select2-search__field');
+                    }
+                    if (!searchField && s2 && s2.$container && s2.$container.length) {
                         searchField = s2.$container[0].querySelector('.select2-search__field');
                     }
                 } catch (err) {}
 
-                // Fallback for single-selects: their search lives in the dropdown
                 if (!searchField) {
                     var fields = document.querySelectorAll('.select2-dropdown .select2-search__field');
                     if (fields.length > 0) { searchField = fields[fields.length - 1]; }
                 }
 
-                if (searchField) { searchField.focus({ preventScroll: true }); }
+                if (searchField && !searchField.placeholder) {
+                    searchField.placeholder = 'Search...';
+                }
+
+                // Desktop: focus search. Mobile: do not auto-focus — opening the
+                // keyboard immediately was stretching the sheet into a blank half-page.
+                if (searchField && !isMobile) {
+                    searchField.focus({ preventScroll: true });
+                }
             }, 10);
 
-            // Mobile: add backdrop + prevent background scroll
-            if (window.innerWidth <= 991) {
+            if (isMobile && !skipSheet) {
                 if (!$('.select2-backdrop').length) {
                     $('<div class="select2-backdrop"></div>').appendTo('body');
                 }
+                document.body.classList.add('s2-mobile-open');
                 _lockSelect2PageScroll();
 
-                // Capture viewport height BEFORE the keyboard animation starts
                 _s2InitialVvpHeight = window.visualViewport
                     ? window.visualViewport.height
                     : window.innerHeight;
 
                 if (window.visualViewport && !_s2ViewportHandler) {
                     _s2ViewportHandler = _adjustSelect2AboveKeyboard;
-                    // 'resize' fires on Android; iOS Safari sometimes fires 'scroll'
                     window.visualViewport.addEventListener('resize', _s2ViewportHandler);
                     window.visualViewport.addEventListener('scroll', _s2ViewportHandler);
-                    // 300 ms delay lets the iOS keyboard finish its open animation
-                    setTimeout(_adjustSelect2AboveKeyboard, 300);
                 }
             }
         });
 
-        // Also cleanup on select so re-init during change cannot skip close and leave scroll locked.
         $(document).on('select2:close select2:closing select2:select', function () {
             _s2ModalEl = null;
             _cleanupSelect2MobileState();
         });
 
-        // Tap backdrop (top area above dropdown) to dismiss the open Select2.
-        // Use select2-hidden-accessible because Select2 hides the original <select>.
         $(document).on('click', '.select2-backdrop', function () {
             $('select.select2-hidden-accessible').select2('close');
         });

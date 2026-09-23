@@ -3,11 +3,14 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 import { CRMReportsServices } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CRMReportsService.js';
 import { EmployeeMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/EmployeeMasterServices.js';
 import { MarketingManMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MarketingManMasterService.js';
+import { ReasonMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ReasonMasterService.js';
 
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
 var G_UserMasterCode = authKeyData.UserMaster_Code || 0;
 
 var G_MMM_SourceRows = [];
+var G_MMM_ClientSourceRows = [];
+var G_MMM_EmployeeSourceRows = [];
 var G_MMM_DetailMode = 'list';
 /** When true, Save sends ClientAccountCodes (from GETBYCODE); when false, SQL keeps existing client links unchanged. */
 var G_MMM_ClientCodesLoaded = false;
@@ -23,6 +26,10 @@ function firstArray(payload) {
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload.data)) return payload.data;
     if (Array.isArray(payload.Data)) return payload.Data;
+    if (Array.isArray(payload.result)) return payload.result;
+    if (Array.isArray(payload.Result)) return payload.Result;
+    if (Array.isArray(payload.Table)) return payload.Table;
+    if (Array.isArray(payload.table)) return payload.table;
     return [];
 }
 
@@ -94,11 +101,94 @@ function normalizeMarketingManRows(rows) {
 }
 
 function normalizeEmployeeRows(rows) {
-    return (rows || []).map(function (r) {
-        var code = r.Code != null ? r.Code : r.EmployeeMaster_Code;
-        var text = r.EmployeeName || r.Name || '';
-        return { Code: code, Desp: String(text).trim() || String(code) };
+    return (rows || [])
+        .map(function (r) {
+            var code = pickField(r, 'Code', 'code', 'EmployeeMaster_Code', 'employeeMaster_Code');
+            var text =
+                pickField(
+                    r,
+                    'Desp',
+                    'desp',
+                    'EmployeeName',
+                    'employeeName',
+                    'Emp Name',
+                    'EmpName',
+                    'empName',
+                    'Name',
+                    'name'
+                ) || '';
+            var card = pickField(r, 'Employee Card No', 'EmployeeCardNo', 'employeeCardNo', 'Card Desp', 'CardDesp');
+            var label = String(text).trim();
+            if (card && String(card).trim()) {
+                label = label ? label + ' (' + String(card).trim() + ')' : String(card).trim();
+            }
+            if (!label && code != null) label = String(code);
+            return { Code: code, Desp: label };
+        })
+        .filter(function (item) {
+            var c = item.Code;
+            return c !== undefined && c !== null && String(c).trim() !== '' && String(c) !== '0';
+        });
+}
+
+/** Load employee options (HR list, then Reason Master dropdown API as fallback). */
+function loadEmployeeMasterOptions() {
+    return EmployeeMasterService.GetEmployeeMasterList('All')
+        .then(function (res) {
+            var rows = normalizeEmployeeRows(firstArray(res));
+            if (rows.length) return rows;
+            return Promise.reject(new Error('empty employee list'));
+        })
+        .catch(function () {
+            return ReasonMasterService.GetEmployeeMasterDropdownList()
+                .then(function (res) {
+                    return normalizeEmployeeRows(firstArray(res));
+                })
+                .catch(function () {
+                    return [];
+                });
+        });
+}
+
+function ensureEmployeeDropdownSelection(code, label) {
+    var $sel = $('#ddlEmployeeName');
+    if (!$sel.length) return;
+    if (code == null || code <= 0) {
+        $sel.val('').trigger('change');
+        if ($sel.data('select2')) {
+            $sel.trigger('change.select2');
+        }
+        return;
+    }
+    var codeStr = String(code);
+    var hasOption =
+        $sel.find('option').filter(function () {
+            return String($(this).val()) === codeStr;
+        }).length > 0;
+    if (!hasOption) {
+        var lbl = (label || '').trim() || 'Employee ' + codeStr;
+        $sel.append(new Option(lbl, codeStr));
+    }
+    $sel.val(codeStr).trigger('change');
+    if ($sel.data('select2')) {
+        $sel.trigger('change.select2');
+    }
+}
+
+function bindEmployeeNameDropdown(rows, selectedCode, selectedLabel) {
+    G_MMM_EmployeeSourceRows = rows || [];
+    var sorted = G_MMM_EmployeeSourceRows.slice().sort(function (a, b) {
+        return String(a.Desp || '').localeCompare(String(b.Desp || ''), undefined, { sensitivity: 'base' });
     });
+    bindSelectBasic($('#ddlEmployeeName'), sorted, 'Select');
+    initSelect2($('#ddlEmployeeName'), {
+        dropdownParent: $(document.body),
+        minimumResultsForSearch: 0,
+        placeholder: 'Search or select employee…',
+    });
+    if (selectedCode != null && selectedCode > 0) {
+        ensureEmployeeDropdownSelection(selectedCode, selectedLabel);
+    }
 }
 
 function normalizeZoneRows(rows) {
@@ -159,19 +249,19 @@ function bindSelectBasic($select, rows, placeholder) {
     $select.append(new Option(placeholder || 'Select', ''));
     $.each(rows, function (_, item) {
         if (item.Code === undefined || item.Code === null) return;
-        $select.append(new Option(item.Desp, item.Code));
+        $select.append(new Option(item.Desp, String(item.Code)));
     });
 }
-
-function initSelect2($el) {
+function initSelect2($el, extraOptions) {
     if ($el.data('select2')) {
         $el.select2('destroy');
     }
-    $el.select2({
+    var base = {
         width: '100%',
         placeholder: 'Select',
         allowClear: true,
-    });
+    };
+    $el.select2($.extend(base, extraOptions || {}));
 }
 
 function getMarketingManCodeForDealers() {
@@ -205,65 +295,104 @@ function isAccountLinkedFromRow(row, linkedSet) {
     return apiLinked || !!linkedSet[acct];
 }
 
-/** Writes selected checkbox account codes to #hfClientAccountCodes (comma-separated). */
+/** Merge visible checkbox state into #hfClientAccountCodes (keeps links for rows not shown by search). */
 function syncClientAccountCodesFromCheckboxes() {
-    var codes = [];
-    $('#tblClientBody input.mmm-client-link-cb:checked').each(function () {
+    var set = getLinkedClientAccountSet();
+    $('#tblClientBody input.mmm-client-link-cb').each(function () {
         var n = parseInt($(this).attr('data-account-code'), 10);
-        if (isFinite(n) && n > 0) codes.push(n);
+        if (!isFinite(n) || n <= 0) return;
+        if ($(this).is(':checked')) set[n] = true;
+        else delete set[n];
     });
-    codes.sort(function (a, b) {
-        return a - b;
-    });
+    var codes = Object.keys(set)
+        .map(function (k) {
+            return parseInt(k, 10);
+        })
+        .filter(function (n) {
+            return isFinite(n) && n > 0;
+        })
+        .sort(function (a, b) {
+            return a - b;
+        });
     $('#hfClientAccountCodes').val(codes.join(','));
+}
+
+function getClientRowDisplayName(row) {
+    return (
+        pickField(row, 'AccountDesp', 'accountDesp') ||
+        row.DealerName ||
+        row.PartyName ||
+        row.Name ||
+        row['Account Desp'] ||
+        ''
+    );
+}
+
+function applyMMMClientSearch(rows) {
+    var q = ($('#mmmClientSearch').val() || '').toLowerCase().trim();
+    var src = rows || G_MMM_ClientSourceRows || [];
+    if (!q) return src.slice();
+    return src.filter(function (r) {
+        var name = String(getClientRowDisplayName(r)).toLowerCase();
+        var mobile = String(
+            pickField(r, 'Mobile', 'mobile', 'MobileNo', 'mobileNo', 'Phone', 'phone') || ''
+        ).toLowerCase();
+        var email = String(pickField(r, 'EMail', 'Email', 'email', 'eMail') || '').toLowerCase();
+        return name.indexOf(q) >= 0 || mobile.indexOf(q) >= 0 || email.indexOf(q) >= 0;
+    });
+}
+
+function bindClientTableBody(rows) {
+    var viewMode = G_MMM_DetailMode === 'view';
+    var linked = getLinkedClientAccountSet();
+    var $tb = $('#tblClientBody');
+    $tb.empty();
+    if (!rows.length) {
+        var q = ($('#mmmClientSearch').val() || '').trim();
+        var msg = q
+            ? 'No clients match your search'
+            : 'No clients found';
+        $tb.append(
+            '<tr><td colspan="3" class="center" style="padding:24px;color:var(--text-muted);">' +
+                msg +
+                '</td></tr>'
+        );
+        return;
+    }
+    rows.forEach(function (row, idx) {
+        var name = getClientRowDisplayName(row);
+        var acct = accountCodeFromDealerRow(row);
+        var tr = $('<tr></tr>');
+        tr.append('<td class="center"><span class="pm-sno">' + (idx + 1) + '</span></td>');
+        tr.append('<td>' + $('<div></div>').text(name).html() + '</td>');
+        var checked = isAccountLinkedFromRow(row, linked);
+        var cb =
+            '<input type="checkbox" class="mmm-client-link-cb" ' +
+            (acct != null ? 'data-account-code="' + acct + '" ' : '') +
+            (checked ? 'checked ' : '') +
+            (viewMode || acct == null ? 'disabled ' : '') +
+            'aria-label="Link client" />';
+        tr.append($('<td class="center"></td>').html(cb));
+        $tb.append(tr);
+    });
+    if (!G_MMM_ClientCodesLoaded) {
+        syncClientAccountCodesFromCheckboxes();
+        if (($('#hfClientAccountCodes').val() || '').trim()) {
+            G_MMM_ClientCodesLoaded = true;
+        }
+    }
 }
 
 function refreshClientTable() {
     var mm = getMarketingManCodeForDealers();
-    var viewMode = G_MMM_DetailMode === 'view';
-    var linked = getLinkedClientAccountSet();
 
     MarketingManMasterService.GetMarketingManAccountList(mm)
         .then(function (res) {
-            var rows = firstArray(res);
-            var $tb = $('#tblClientBody');
-            $tb.empty();
-            if (!rows.length) {
-                $tb.append(
-                    '<tr><td colspan="3" class="center" style="padding:24px;color:var(--text-muted);">No clients found</td></tr>'
-                );
-                return;
-            }
-            rows.forEach(function (row, idx) {
-                var name =
-                    pickField(row, 'AccountDesp', 'accountDesp') ||
-                    row.DealerName ||
-                    row.PartyName ||
-                    row.Name ||
-                    row['Account Desp'] ||
-                    '';
-                var acct = accountCodeFromDealerRow(row);
-                var tr = $('<tr></tr>');
-                tr.append('<td class="center"><span class="pm-sno">' + (idx + 1) + '</span></td>');
-                tr.append('<td>' + $('<div></div>').text(name).html() + '</td>');
-                var checked = isAccountLinkedFromRow(row, linked);
-                var cb =
-                    '<input type="checkbox" class="mmm-client-link-cb" ' +
-                    (acct != null ? 'data-account-code="' + acct + '" ' : '') +
-                    (checked ? 'checked ' : '') +
-                    (viewMode || acct == null ? 'disabled ' : '') +
-                    'aria-label="Link client" />';
-                tr.append($('<td class="center"></td>').html(cb));
-                $tb.append(tr);
-            });
-            if (!G_MMM_ClientCodesLoaded) {
-                syncClientAccountCodesFromCheckboxes();
-                if (($('#hfClientAccountCodes').val() || '').trim()) {
-                    G_MMM_ClientCodesLoaded = true;
-                }
-            }
+            G_MMM_ClientSourceRows = firstArray(res);
+            bindClientTableBody(applyMMMClientSearch(G_MMM_ClientSourceRows));
         })
         .catch(function () {
+            G_MMM_ClientSourceRows = [];
             $('#tblClientBody').html(
                 '<tr><td colspan="3" class="center" style="padding:24px;color:#ef4444;">Unable to load client list</td></tr>'
             );
@@ -355,16 +484,9 @@ function loadDropdowns(excludeMmCode) {
                 });
         });
 
-    var pEmp = EmployeeMasterService.GetEmployeeMasterList('All')
-        .then(function (res) {
-            var rows = normalizeEmployeeRows(firstArray(res));
-            bindSelectBasic($('#ddlEmployeeName'), rows, 'Select');
-            initSelect2($('#ddlEmployeeName'));
-        })
-        .catch(function () {
-            bindSelectBasic($('#ddlEmployeeName'), [], 'Select');
-            initSelect2($('#ddlEmployeeName'));
-        });
+    var pEmp = loadEmployeeMasterOptions().then(function (rows) {
+        bindEmployeeNameDropdown(rows);
+    });
 
     var pZone = MarketingManMasterService.GetZoneList()
         .then(function (res) {
@@ -420,6 +542,7 @@ function clearForm() {
     $('#ddlExpenseCategory').val('').trigger('change');
     $('input[name="radStatus"][value="Y"]').prop('checked', true);
     $('#chkShowAllParty').prop('checked', false);
+    $('#mmmClientSearch').val('');
     syncPersonNameFieldState();
     toggleUserIdRequiredUi();
 }
@@ -459,6 +582,8 @@ function showListPanel() {
     $('#mmmListPanel').show();
     $('#mmmDetailPanel').hide();
     G_MMM_DetailMode = 'list';
+    $('#mmmClientSearch').val('');
+    G_MMM_ClientSourceRows = [];
     refreshMarketingManMasterGrid();
 }
 
@@ -484,6 +609,22 @@ function buildActionHtml(code) {
     );
 }
 
+function formatEmailForGrid(email) {
+    var raw = (email == null ? '' : String(email)).trim();
+    if (!raw) return '';
+    var parts = raw.split(',').map(function (s) {
+        return s.trim();
+    }).filter(Boolean);
+    if (parts.length <= 1) {
+        return $('<div></div>').text(parts[0] || raw).html();
+    }
+    return parts
+        .map(function (part) {
+            return $('<div></div>').text(part).html();
+        })
+        .join(',<br>');
+}
+
 function mapRowForGrid(item, rowIndex) {
     var code = item.Code || 0;
     var active = String(item.IsActive || 'Y').toUpperCase() !== 'N';
@@ -498,7 +639,7 @@ function mapRowForGrid(item, rowIndex) {
         'S.No.': sno,
         'Person Name': item.PersonName || item.Person_Name || '',
         Mobile: item.Mobile || item.MobileNo || '',
-        'E-Mail': item.EMail || item.Email || '',
+        'E-Mail': formatEmailForGrid(item.EMail || item.Email || ''),
         Designation: item.Designation || '',
         Status: active ? 'Active' : 'Inactive',
         Level: sj ? 'Junior' : 'Senior',
@@ -519,16 +660,29 @@ function applyMMMListSearch(rows) {
     });
 }
 
+function setMarketingManListEmptyState(isEmpty) {
+    var $wrap = $('#mmmListPanel .pm-table-wrap').first();
+    var $empty = $('#mmmListEmptyState');
+    if (isEmpty) {
+        $wrap.hide().scrollLeft(0);
+        $empty.prop('hidden', false).addClass('is-visible');
+    } else {
+        $wrap.show();
+        $empty.prop('hidden', true).removeClass('is-visible');
+    }
+}
+
 function bindMarketingManMasterGridData(filteredRows) {
     var rows = filteredRows || [];
     if (!rows.length) {
         $('#table-header-MarketingManMaster').empty();
-        $('#table-body-MarketingManMaster').html(
-            '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);">No records found. Click <strong>Create New</strong> to add.</td></tr>'
-        );
+        $('#table-body-MarketingManMaster').empty();
         $('#paginator-MarketingManMaster').empty();
+        setMarketingManListEmptyState(true);
         return;
     }
+
+    setMarketingManListEmptyState(false);
 
     var mapped = rows.map(function (item, idx) {
         return mapRowForGrid(item, idx);
@@ -542,6 +696,8 @@ function bindMarketingManMasterGridData(filteredRows) {
     var hiddenColumns = ['Code'];
     var ColumnAlignment = {
         'S.No.': 'center;min-width:52px;white-space:nowrap;',
+        'E-Mail':
+            'left;min-width:160px;max-width:260px;white-space:normal;word-break:break-word;line-height:1.45;vertical-align:top;',
         Action: 'center;min-width:128px;white-space:nowrap;',
     };
 
@@ -649,9 +805,16 @@ function mapRecordToForm(rec) {
         $('#ddlSeniorName').val(String(seniorCode)).trigger('change');
     }
     var empCode = pickInt(rec, 'EmployeeMaster_Code', 'employeeMaster_Code');
-    if (empCode != null) {
-        $('#ddlEmployeeName').val(String(empCode)).trigger('change');
-    }
+    var empLabel = pickField(
+        rec,
+        'EmployeeName',
+        'employeeName',
+        'Emp Name',
+        'Employee_Name',
+        'EmployeeDesp',
+        'employeeDesp'
+    );
+    ensureEmployeeDropdownSelection(empCode, empLabel);
     var costCode = pickInt(rec, 'CostCentreMaster_Code', 'costCentreMaster_Code', 'CostCanterIDMaster_Code');
     if (costCode != null) {
         $('#ddlCostCenter').val(String(costCode)).trigger('change');
@@ -707,6 +870,17 @@ function loadEditRecord(code, mode) {
                 /* Select2 sometimes needs a second tick to show the selected expense category after options exist. */
                 setTimeout(function () {
                     bindExpenseCategoryDropdown(rec);
+                    var empCode = pickInt(rec, 'EmployeeMaster_Code', 'employeeMaster_Code');
+                    var empLabel = pickField(
+                        rec,
+                        'EmployeeName',
+                        'employeeName',
+                        'Emp Name',
+                        'Employee_Name',
+                        'EmployeeDesp',
+                        'employeeDesp'
+                    );
+                    ensureEmployeeDropdownSelection(empCode, empLabel);
                 }, 0);
             }
             setDetailFormMode(mode || 'edit');
@@ -954,9 +1128,9 @@ $(document).ready(function () {
     }
 
     $('#btnCreateMarketingMan').on('click', function () {
+        showDetailPanel('new');
         loadDropdowns(0).then(function () {
             clearForm();
-            showDetailPanel('new');
             toggleSeniorJuniorUi();
             refreshClientTable();
         });
@@ -1042,6 +1216,15 @@ $(document).ready(function () {
         clearTimeout(searchTimer);
         searchTimer = setTimeout(function () {
             bindMarketingManMasterGridData(applyMMMListSearch(G_MMM_SourceRows));
+        }, 200);
+    });
+
+    var clientSearchTimer;
+    $('#mmmClientSearch').on('input', function () {
+        clearTimeout(clientSearchTimer);
+        clientSearchTimer = setTimeout(function () {
+            syncClientAccountCodesFromCheckboxes();
+            bindClientTableBody(applyMMMClientSearch(G_MMM_ClientSourceRows));
         }, 200);
     });
 
