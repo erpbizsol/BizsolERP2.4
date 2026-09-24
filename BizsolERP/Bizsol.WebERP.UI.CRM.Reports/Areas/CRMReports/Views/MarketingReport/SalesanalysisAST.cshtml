@@ -176,6 +176,38 @@
         text-transform: uppercase;
         padding: 8px 12px;
         text-align: center;
+        position: relative;
+    }
+
+    .summary-chart-header.has-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .summary-chart-party-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 28px;
+        height: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .summary-chart-party-btn:hover {
+        background: #fff;
+        color: #1e3a6e;
     }
 
     .summary-chart-body {
@@ -2228,7 +2260,12 @@
                     </div>
                     <div class="col-lg-4">
                         <div class="summary-chart-card">
-                            <div class="summary-chart-header">NBD / CRR Count Details</div>
+                            <div class="summary-chart-header has-action">
+                                NBD / CRR Count Details
+                                <button type="button" id="btnSummaryNbdCrrParties" class="summary-chart-party-btn" title="Show Parties">
+                                    <i class="fas fa-users"></i>
+                                </button>
+                            </div>
                             <div class="summary-chart-body">
                                 <div class="summary-chart-canvas">
                                     <canvas id="summaryNbdCrrDonutChart"></canvas>
@@ -2340,7 +2377,7 @@
                             <table class="ps-range-table mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Score Range (out of 40)</th>
+                                        <th id="psScoreRangeHeader">Score Range (out of 40)</th>
                                         <th class="text-end">Sale (MT)</th>
                                         <th class="text-end">Parties with Sale</th>
                                         <th class="text-end">Parties</th>
@@ -2367,25 +2404,25 @@
                 <div class="ps-kpi-row">
                     <div class="ps-kpi-box">
                         <div class="ps-kpi-label">Avg Score (All Parties)</div>
-                        <div class="ps-kpi-value"><span id="psAvgScore">0.00</span> <small>/ 40</small></div>
+                        <div class="ps-kpi-value"><span id="psAvgScore">0.00</span> <small>/ <span class="ps-score-max-label">40</span></small></div>
                     </div>
                     <div class="ps-kpi-box">
                         <div class="ps-kpi-label">Top Score</div>
-                        <div class="ps-kpi-value"><span id="psTopScore">0.00</span> <small>/ 40</small></div>
+                        <div class="ps-kpi-value"><span id="psTopScore">0.00</span> <small>/ <span class="ps-score-max-label">40</span></small></div>
                     </div>
                     <div class="ps-kpi-box">
                         <div class="ps-kpi-label">Lowest Score</div>
-                        <div class="ps-kpi-value"><span id="psLowScore">0.00</span> <small>/ 40</small></div>
+                        <div class="ps-kpi-value"><span id="psLowScore">0.00</span> <small>/ <span class="ps-score-max-label">40</span></small></div>
                     </div>
                 </div>
                 <div class="ps-split-row">
                     <div class="ps-split-box">
-                        <div class="ps-kpi-label">Score &gt;= 28 (Good &amp; Above)</div>
+                        <div class="ps-kpi-label" id="psGoodThresholdLabel">Score &gt;= 28 (Good &amp; Above)</div>
                         <div id="psGoodCount" class="ps-split-count ps-good">0</div>
                         <div id="psGoodPct" class="ps-split-pct ps-good">0.00%</div>
                     </div>
                     <div class="ps-split-box">
-                        <div class="ps-kpi-label">Score &lt; 28 (Needs Attention)</div>
+                        <div class="ps-kpi-label" id="psAttentionThresholdLabel">Score &lt; 28 (Needs Attention)</div>
                         <div id="psAttentionCount" class="ps-split-count ps-bad">0</div>
                         <div id="psAttentionPct" class="ps-split-pct ps-bad">0.00%</div>
                     </div>
@@ -2393,14 +2430,14 @@
             </div>
         </div>
 
-        <div class="ps-section-bar">Party Wise Average Score (Out of 40)</div>
+        <div class="ps-section-bar" id="psPartyWiseScoreBar">Party Wise Average Score (Out of 40)</div>
         <div class="ps-card">
             <div class="table-responsive ps-party-scroll">
                 <table id="partyScoreTable" class="table table-sm mb-0 ps-party-table">
                     <thead id="partyScoreTableHeader">
                     </thead>
                     <tbody id="partyScoreTableBody">
-                        <tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>
+                        <tr><td colspan="10" class="text-center text-muted">Loading...</td></tr>
                     </tbody>
                 </table>
                 <div class="paginator" id="paginator-partyScoreTable"></div>
@@ -3340,6 +3377,26 @@
                     </table>
                     <div class="paginator" id="paginator-highGPLostClientTable">
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="summaryNbdCrrPartyModal" tabindex="-1" aria-labelledby="summaryNbdCrrPartyModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="summaryNbdCrrPartyModalTitle">NBD / CRR Parties</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table id="summaryNbdCrrPartyTable" class="table table-sm table-striped table-bordered mb-0">
+                        <thead class="table-secondary" id="summaryNbdCrrPartyTableHeader"></thead>
+                        <tbody id="summaryNbdCrrPartyTableBody"></tbody>
+                    </table>
+                    <div class="paginator" id="paginator-summaryNbdCrrPartyTable"></div>
                 </div>
             </div>
         </div>
