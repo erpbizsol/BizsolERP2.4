@@ -102,6 +102,77 @@ function resolveUserMasterListFilterCode() {
     return getUserCode();
 }
 
+/** Logged-in user text for profile → User Master search (User ID preferred). */
+function resolveLoggedInUserSearchText() {
+    var row = getUserDetailsRow();
+    if (row) {
+        var fromDetails = String(row.UserID || row.UserName || row.UserDesp || '').trim();
+        if (fromDetails) return fromDetails;
+    }
+    try {
+        var auth = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        var fromAuth = String(auth.UserID || auth.userID || '').trim();
+        if (fromAuth) return fromAuth;
+    } catch (e) { /* ignore */ }
+    return '';
+}
+
+function pickUserMasterRowText(row, keys) {
+    if (!row) return '';
+    for (var i = 0; i < keys.length; i++) {
+        var val = row[keys[i]];
+        if (val != null && String(val).trim() !== '') return String(val).trim();
+    }
+    return '';
+}
+
+/** Exact match only (Profile link) — avoids partial hits e.g. BIZARCHIT vs BIZARCHITG. */
+function applyExactUserMasterProfileFilter(tableId, bodyId, searchText) {
+    var fullData = window['filteredDataTemp_' + tableId] || [];
+    var termLower = String(searchText || '').trim().toLowerCase();
+    if (!termLower) return;
+
+    var result = fullData.filter(function (row) {
+        var userId = pickUserMasterRowText(row, ['UserID', 'UserId', 'userID']).toLowerCase();
+        if (userId === termLower) return true;
+        var userName = pickUserMasterRowText(row, ['UserName', 'UserDesp', 'userName']).toLowerCase();
+        return userName === termLower;
+    });
+
+    window['filteredData_' + tableId] = result;
+    window['currentPage_' + tableId] = 1;
+
+    if (window['Paginator_' + tableId] && typeof window.createPaginator === 'function' && typeof window.renderTableWithPagination === 'function') {
+        window.createPaginator(tableId, bodyId);
+        window.renderTableWithPagination(tableId, bodyId);
+    } else if (typeof window.renderTable === 'function') {
+        window.renderTable(result, bodyId);
+    }
+}
+
+/** When opened from header Profile link (?fromProfile=1), pre-fill search and show exact user row only. */
+function applyProfileSearchIfRequested() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('fromProfile') !== '1') return;
+
+    var searchText = resolveLoggedInUserSearchText();
+    if (!searchText) return;
+
+    var tableId = 'UserMasterGrid';
+    var bodyId = 'UserMaster-body';
+    var $input = $('#global-search-input-' + tableId);
+    if (!$input.length) return;
+
+    $input.val(searchText);
+    $('#global-search-clear-' + tableId).show();
+    applyExactUserMasterProfileFilter(tableId, bodyId, searchText);
+
+    params.delete('fromProfile');
+    var qs = params.toString();
+    var cleanUrl = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+    window.history.replaceState({}, '', cleanUrl);
+}
+
 function updateUserMasterPageAccess() {
     var admin = isAdminUser();
     $('#btnNewUser').toggle(admin);
@@ -1124,6 +1195,7 @@ function GetUserMasterList() {
             true, null, null, null,
             'Search by User ID, Name, Group, Email, Mobile, Status...'
         );
+        applyProfileSearchIfRequested();
     }).catch(function () {
         toastr.error('Failed to load user list.');
     });

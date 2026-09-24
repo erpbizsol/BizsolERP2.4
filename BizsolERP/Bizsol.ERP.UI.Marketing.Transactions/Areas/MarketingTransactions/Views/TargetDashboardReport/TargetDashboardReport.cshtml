@@ -1,0 +1,102 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/css/TargetDashboardReport.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/TargetDashboardReport.js"></script>
+
+<div id="TargetDashboardReportPage" class="tdr-page">
+    <div class="tdr-toolbar">
+        <div class="tdr-brand">
+            <div class="tdr-logo"><i class="fas fa-chart-line"></i></div>
+            <div>
+                <h3>Target Dashboard</h3>
+                <p>Sales, returns and dealer achievement</p>
+            </div>
+        </div>
+
+        <div class="tdr-controls">
+            <div class="tdr-datebox">
+                <div class="tdr-field">
+                    <label for="txtFromDate">From</label>
+                    <input type="date" id="txtFromDate" name="txtFromDate" class="form-control form-control-sm box_border" required />
+                </div>
+                <span class="tdr-date-sep">to</span>
+                <div class="tdr-field">
+                    <label for="txtToDate">To</label>
+                    <input type="date" id="txtToDate" name="txtToDate" class="form-control form-control-sm box_border" required />
+                </div>
+            </div>
+
+            <div class="tdr-presets" id="tdrPresets">
+                <button type="button" class="tdr-chip" data-preset="today">Today</button>
+                <button type="button" class="tdr-chip" data-preset="week">7 Days</button>
+                <button type="button" class="tdr-chip is-active" data-preset="month">This Month</button>
+                <button type="button" class="tdr-chip" data-preset="lastMonth">Last Month</button>
+            </div>
+
+            <div class="tdr-action-btns">
+                <button type="button" id="btnShowData" class="tdr-btn tdr-btn-show">
+                    <i class="fas fa-play"></i>
+                    <span id="btnShowDataText">Show Data</span>
+                </button>
+                <button type="button" id="btnReset" class="tdr-btn tdr-btn-reset">
+                    <i class="fas fa-rotate-left"></i>
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tdrEmptyState" class="tdr-empty">
+        <div class="tdr-empty-icon"><i class="fas fa-chart-pie"></i></div>
+        <h4>Choose a period to begin</h4>
+        <p>Pick dates or a quick chip, then click <strong>Show Data</strong>.</p>
+    </div>
+
+    <div id="tdrDashboard" class="tdr-dashboard" style="display:none;">
+        <div class="tdr-score">
+            <div class="tdr-kpi tdr-kpi-sale">
+                <div class="tdr-kpi-icon"><i class="fas fa-rupee-sign"></i></div>
+                <div class="tdr-kpi-body">
+                    <div class="tdr-kpi-label">Total Sale</div>
+                    <div class="tdr-kpi-value" id="kpiSale">₹0</div>
+                    <div class="tdr-kpi-sub" id="kpiPeriod">Date range</div>
+                </div>
+            </div>
+            <div class="tdr-kpi tdr-kpi-target">
+                <div class="tdr-kpi-icon"><i class="fas fa-bullseye"></i></div>
+                <div class="tdr-kpi-body">
+                    <div class="tdr-kpi-label">Targeted Amount</div>
+                    <div class="tdr-kpi-value" id="kpiTarget">₹0</div>
+                    <div class="tdr-kpi-sub" id="kpiDealers">0 dealers</div>
+                </div>
+            </div>
+            <div class="tdr-kpi tdr-kpi-achieved">
+                <div class="tdr-kpi-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="tdr-kpi-body">
+                    <div class="tdr-kpi-label">Achieved Amount</div>
+                    <div class="tdr-kpi-value" id="kpiAchieved">₹0</div>
+                    <div class="tdr-kpi-sub" id="kpiReturn">Return ₹0</div>
+                </div>
+            </div>
+            <div class="tdr-kpi tdr-kpi-pct" id="tdrKpiPct">
+                <div class="tdr-ring" id="tdrRing" style="--pct: 0;">
+                    <div class="tdr-ring-hole"><strong id="kpiPct">0%</strong></div>
+                </div>
+                <div class="tdr-kpi-body">
+                    <div class="tdr-kpi-label">Achievement</div>
+                    <div class="tdr-kpi-sub" id="kpiPctHint">Achieved vs target</div>
+                    <div class="tdr-kpi-bar"><span id="kpiPctBar"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tdr-reports">
+            <div class="tdr-tile-grid" id="tdrTileGrid"></div>
+        </div>
+    </div>
+</div>

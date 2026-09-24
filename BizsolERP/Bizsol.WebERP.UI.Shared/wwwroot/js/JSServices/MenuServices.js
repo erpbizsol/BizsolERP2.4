@@ -70,6 +70,15 @@ const MenuService = {
             }
         );
     },
+    GetUserImage: function GetUserImage() {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        const url = `${UrlService.ERP_SIDE_MENU}/GetUserImage?UserMaster_Code=${userCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '', { suppressErrorToast: true }).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { MenuService }

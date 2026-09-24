@@ -11,27 +11,33 @@ const IndentMasterService = {
     /**
      * Generic GET helper that maps every parameter to a query-string key.
      */
-    Getddl: function Getddl(Mode, Code, FromDate, ToDate, LocateType, VerifyStatus) {
+    Getddl: function Getddl(Mode, Code, FromDate, ToDate, LocateType, VerifyStatus, OtherParameter) {
         Code         = Code         || 0;
         FromDate     = FromDate     || '';
         ToDate       = ToDate       || '';
         LocateType   = LocateType   || 'Default';
         VerifyStatus = VerifyStatus || '';
+        OtherParameter = OtherParameter || '';
 
         let url = UrlService.API_ENDPOINT_IndentMaster
                 + `/Getddl?Mode=${encodeURIComponent(Mode)}`
                 + `&Code=${encodeURIComponent(Code)}`;
 
-        if (FromDate)     url += `&FromDate=${encodeURIComponent(FromDate)}`;
-        if (ToDate)       url += `&ToDate=${encodeURIComponent(ToDate)}`;
-        if (LocateType)   url += `&LocateType=${encodeURIComponent(LocateType)}`;
-        if (VerifyStatus) url += `&VerifyStatus=${encodeURIComponent(VerifyStatus)}`;
+        if (FromDate)        url += `&FromDate=${encodeURIComponent(FromDate)}`;
+        if (ToDate)          url += `&ToDate=${encodeURIComponent(ToDate)}`;
+        if (LocateType)      url += `&LocateType=${encodeURIComponent(LocateType)}`;
+        if (VerifyStatus)    url += `&VerifyStatus=${encodeURIComponent(VerifyStatus)}`;
+        if (OtherParameter)  url += `&OtherParameter=${encodeURIComponent(OtherParameter)}`;
 
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(value => value);
     },
 
     GetIndentList: function GetIndentList(FromDate, ToDate, LocateType, VerifyStatus) {
         return IndentMasterService.Getddl('LOCATE', 0, FromDate, ToDate, LocateType, VerifyStatus);
+    },
+
+    GetPendingOnMeList: function GetPendingOnMeList(FromDate, ToDate) {
+        return IndentMasterService.Getddl('DDL_PENDINGINDENTONME', 0, FromDate || '', ToDate || '', '', '');
     },
 
     GetLocateTypeList: function GetLocateTypeList() {
@@ -110,8 +116,8 @@ const IndentMasterService = {
         return IndentMasterService.Getddl('SHOWDATA', code);
     },
 
-    VerifyIndent: function VerifyIndent(code, verifyStatus) {
-        return IndentMasterService.Getddl('VERIFY', code, '', '', '', verifyStatus);
+    VerifyIndent: function VerifyIndent(code, verifyStatus, otherParameter) {
+        return IndentMasterService.Getddl('VERIFY', code, '', '', '', verifyStatus || 'Y', otherParameter || '');
     },
 
     DeleteIndent: function DeleteIndent(code) {

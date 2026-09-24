@@ -26,6 +26,8 @@ function bindMenu() {
             $('#ERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})${LoginGodownName}`;
             $('#mobileERPUserName')[0].innerHTML = UserDetailsobj[0].UserID;
             $('#mobileERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})${LoginGodownName}`;
+            $('#ERPProfileUserName').text('( ' + (UserDetailsobj[0].UserName || UserDetailsobj[0].UserDesp || UserDetailsobj[0].UserID || '') + ' )');
+            bindUserProfileImage();
 
             _menuUserID = UserDetailsobj[0].UserID;
 
@@ -296,7 +298,7 @@ function renderFullMenu(value, baseUrl) {
 
                 mobileMenuHtml += '<a href="' + mobileHref + '" class="' + mobileClass + '" data-menu-code="' + item.Code + '" data-menu-name="' + item.ModuleDesp + '">';
                 mobileMenuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
-                mobileMenuHtml += '<span>' + truncateText(item.ModuleDesp, 10) + '</span>';
+                mobileMenuHtml += '<span>' + item.ModuleDesp + '</span>';
                 mobileMenuHtml += '</a>';
 
                 mobileMenuCount++;
@@ -688,14 +690,6 @@ function getFirstChildUrl(value, masterCode, baseUrl) {
     return firstUrl;
 }
 
-// Helper function to truncate text for mobile display
-function truncateText(text, maxLength) {
-    if (text.length <= maxLength) {
-        return text;
-    }
-    return text.substr(0, maxLength);
-}
-
 // Helper function to get appropriate icon based on menu name
 function getMenuIcon(moduleDesp) {
     const iconMap = {
@@ -958,4 +952,49 @@ function initCollapsedSidebarHover() {
             }
         }, 100);
     });
+}
+
+function byteArrayToBase64(bytes) {
+    if (!bytes || !bytes.length) return '';
+    var binaryString = '';
+    var chunkSize = 8192;
+    for (var i = 0; i < bytes.length; i += chunkSize) {
+        binaryString += String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize));
+    }
+    return btoa(binaryString);
+}
+
+function extractUserImageSrc(data) {
+    if (!data) return '';
+    if (typeof data === 'string') {
+        if (!data.length) return '';
+        return data.indexOf('data:') === 0 ? data : ('data:image/jpeg;base64,' + data);
+    }
+
+    var list = data;
+    if (data.$values && Array.isArray(data.$values)) list = data.$values;
+    var item = Array.isArray(list) ? list[0] : list;
+    if (!item) return '';
+
+    var raw = item.UserImage || item.userImage || item.ImageDataBase64 || item.ImageBase64 || item.PhotoBase64 || '';
+    if (Array.isArray(raw)) raw = byteArrayToBase64(raw);
+    if (typeof raw !== 'string' || !raw.length) return '';
+
+    raw = raw.trim();
+    if (raw.indexOf('data:') === 0) return raw;
+    return 'data:image/jpeg;base64,' + raw;
+}
+
+function applyUserProfileImageSrc(src) {
+    if (!src) return;
+    var img = document.getElementById('ERPUserProfileImage') || document.querySelector('.profile-avatar');
+    if (img) img.src = src;
+}
+
+function bindUserProfileImage() {
+    MenuService.GetUserImage()
+        .then(function (data) {
+            applyUserProfileImageSrc(extractUserImageSrc(data));
+        })
+        .catch(function () { });
 }

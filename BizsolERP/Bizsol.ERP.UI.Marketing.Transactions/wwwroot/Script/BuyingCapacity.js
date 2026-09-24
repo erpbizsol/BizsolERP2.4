@@ -6,6 +6,85 @@ let G_BuyingCapacityRows = [];
 // When true, programmatic value binding is in progress and onchange-triggered saves are ignored
 let G_SuppressSave = false;
 let G_SalesPersonBound = false;
+let G_SalesPersonLoadPromise = null;
+
+const BC_SALES_PERSON_MAX_RETRIES = 4;
+const BC_SALES_PERSON_RETRY_DELAY_MS = 350;
+
+function delay(ms) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, ms);
+    });
+}
+
+function normalizeApiList(response) {
+    if (Array.isArray(response)) {
+        return response;
+    }
+    if (response && Array.isArray(response.Data)) {
+        return response.Data;
+    }
+    if (response && Array.isArray(response.data)) {
+        return response.data;
+    }
+    return [];
+}
+
+function escapeHtmlAttr(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+async function waitForElement(selector, maxAttempts, intervalMs) {
+    maxAttempts = maxAttempts || 80;
+    intervalMs = intervalMs || 50;
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+        var $el = $(selector);
+        if ($el.length) {
+            return $el;
+        }
+        await delay(intervalMs);
+    }
+    return null;
+}
+
+function initSalesPersonSelect2($ddl) {
+    if (!$ddl || !$ddl.length) {
+        return;
+    }
+    try {
+        if ($ddl.hasClass('select2-hidden-accessible')) {
+            $ddl.select2('destroy');
+        }
+    } catch (e) { }
+    if (typeof $ddl.select2 === 'function') {
+        $ddl.select2({
+            width: '100%',
+            dropdownParent: $(document.body)
+        });
+    }
+}
+
+async function waitForAuthKey(maxAttempts, intervalMs) {
+    maxAttempts = maxAttempts || 50;
+    intervalMs = intervalMs || 100;
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            var authRaw = sessionStorage.getItem('authKey');
+            if (authRaw) {
+                var authKey = JSON.parse(authRaw);
+                if (authKey && authKey.UserMaster_Code !== undefined && authKey.UserMaster_Code !== null && authKey.UserMaster_Code !== '') {
+                    return authKey;
+                }
+            }
+        } catch (e) { }
+        await delay(intervalMs);
+    }
+    return null;
+}
 
 function resetBuyingCapacityTableScroll() {
     var wrap = document.querySelector('#BuyingCapacityPage .table-wrapper');
@@ -27,35 +106,36 @@ function pickField(item, keys, fallback) {
     return fallback !== undefined ? fallback : '';
 }
 
-$(document).ready(function () {
+$(document).ready(async function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
-
-    //var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
-    //var SalesPersonNameSave = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
-    
-    //if (SalesPersonNameSave) {
-    //    $('#ddlMarketingMan').val(SalesPersonNameSave);
-    //}
-    GetNestedMarketingManList().then(function (bound) {
-        if (bound) {
-            GetBuyingCapacityList();
-        }
-    });
     $("#btnShow").click(function () {
         if (!G_SalesPersonBound) {
             toastr.error('Please wait, sales person list is loading');
             return false;
         }
         var MarketingMan_Name = $("#ddlMarketingMan").val();
-        
+
         if (MarketingMan_Name == undefined || MarketingMan_Name == '') {
             toastr.error('Please select Sales Person');
             return false;
         }
         GetBuyingCapacityList();
     });
+
+    try {
+        await initBuyingCapacityPage();
+    } catch (err) {
+        console.error('Buying Capacity page init failed:', err);
+    }
 });
+
+async function initBuyingCapacityPage() {
+    var bound = await GetNestedMarketingManList();
+    if (bound) {
+        await GetBuyingCapacityList();
+    }
+}
 function getUrlVars() {
     var vars = {};
     var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
@@ -65,92 +145,156 @@ function getUrlVars() {
     }
     return vars;
 }
-function GetNestedMarketingManList() {
-    G_SalesPersonBound = false;
-    $('#ddlMarketingMan').prop('disabled', true);
-    $('#btnShow, #btnExportExcel').prop('disabled', true);
-    Showloader();
-    return BuyingCapacityService.GetNestedMarketingManList().then(function (response) {
-        if (response && response.length > 0) {
-            let matchedPersonName = null;
-            let marketingList = [];
-            let userMaster_Code = null;
+function applySalesPersonDropdownBinding(response) {
+    var rows = normalizeApiList(response);
+    if (!rows.length) {
+        return false;
+    }
 
-            try {
-                var authKeyStr = sessionStorage.getItem('authKey');
-                if (authKeyStr) {
-                    var authKey = JSON.parse(authKeyStr);
-                    userMaster_Code = authKey ? authKey.UserMaster_Code : null;
-                }
-            } catch (e) {
-                console.error('Error parsing authKey:', e);
-                userMaster_Code = null;
+    var matchedPersonName = null;
+    var marketingList = [];
+    var personNames = [];
+    var userMaster_Code = null;
+
+    try {
+        var authKeyStr = sessionStorage.getItem('authKey');
+        if (authKeyStr) {
+            var authKey = JSON.parse(authKeyStr);
+            userMaster_Code = authKey ? authKey.UserMaster_Code : null;
+        }
+    } catch (e) {
+        console.error('Error parsing authKey:', e);
+        userMaster_Code = null;
+    }
+
+    for (var i = 0; i < rows.length; i++) {
+        var person = rows[i];
+        if (person && person.PersonName) {
+            var personName = String(person.PersonName).trim();
+            if (!personName) {
+                continue;
             }
-
-            for (let i = 0; i < response.length; i++) {
-                const person = response[i];
-                if (person && person.PersonName) {
-                    if (userMaster_Code && person.Usermaster_Code == userMaster_Code) {
-                        matchedPersonName = person.PersonName;
-                    }
-                    marketingList.push({
-                        Code: person.PersonName,
-                        Desp: person.PersonName
-                    });
-                }
+            var userCode = person.Usermaster_Code != null ? person.Usermaster_Code : person.UserMaster_Code;
+            if (userMaster_Code != null && userCode == userMaster_Code) {
+                matchedPersonName = personName;
             }
+            personNames.push(personName);
+            marketingList.push({
+                Code: personName,
+                Desp: personName
+            });
+        }
+    }
 
-            var $ddl = $('#ddlMarketingMan');
-            BindSelectList1($ddl[0], marketingList);
-            $ddl.find('option[value="0"]').val("ALL");
+    if (marketingList.length === 0) {
+        return false;
+    }
 
-            // Determine which value should be selected
-            var urlParams = getUrlVars();
-            var urlMarketingMan = decodeURIComponent(urlParams['MarketingMan_Name'] || "");
-            var targetValue;
-            if (urlMarketingMan === '') {
-                targetValue = matchedPersonName ? matchedPersonName : "ALL";
-            } else {
-                targetValue = urlMarketingMan;
-            }
+    var $ddl = $('#ddlMarketingMan');
+    if (!$ddl.length) {
+        return false;
+    }
 
-            // (Re)initialize select2 so options and selection stay in sync
-            try {
-                if ($ddl.hasClass('select2-hidden-accessible')) {
-                    $ddl.select2('destroy');
-                }
-            } catch (e) { }
-            try {
-                if (typeof $ddl.select2 === 'function') {
-                    $ddl.select2({ width: '100%', dropdownParent: $(document.body) });
-                }
-            } catch (e) { }
+    BindSelectList1($ddl[0], marketingList);
 
-            // Set the value AFTER select2 init and trigger change so the UI reflects it
-            $ddl.val(targetValue);
-            try {
-                $ddl.trigger('change.select2');
-            } catch (e) {
-                $ddl.trigger('change');
-            }
+    var urlParams = getUrlVars();
+    var urlMarketingMan = decodeURIComponent((urlParams['MarketingMan_Name'] || '').replace(/\+/g, ' ')).trim();
+    var targetValue;
+    if (urlMarketingMan === '') {
+        targetValue = matchedPersonName ? matchedPersonName : 'ALL';
+    } else {
+        targetValue = urlMarketingMan;
+    }
 
-            G_SalesPersonBound = true;
-            $ddl.prop('disabled', false);
-            $('#btnShow, #btnExportExcel').prop('disabled', false);
-            return true;
-        } else {
-            toastr.error('No Data Found');
-            $('#ddlMarketingMan').prop('disabled', false);
+    if (personNames.indexOf(targetValue) < 0 && targetValue !== 'ALL') {
+        targetValue = matchedPersonName ? matchedPersonName : 'ALL';
+    }
+
+    initSalesPersonSelect2($ddl);
+    $ddl.val(targetValue);
+    if (!$ddl.val()) {
+        $ddl.val('ALL');
+    }
+    try {
+        $ddl.trigger('change.select2');
+    } catch (e) {
+        $ddl.trigger('change');
+    }
+
+    G_SalesPersonBound = true;
+    $ddl.prop('disabled', false);
+    $('#btnShow, #btnExportExcel').prop('disabled', false);
+    return true;
+}
+
+async function GetNestedMarketingManList() {
+    if (G_SalesPersonLoadPromise) {
+        return G_SalesPersonLoadPromise;
+    }
+
+    G_SalesPersonLoadPromise = (async function () {
+        G_SalesPersonBound = false;
+        var $ddl = await waitForElement('#ddlMarketingMan');
+        if (!$ddl || !$ddl.length) {
+            toastr.error('Page not ready. Please refresh the page.');
             return false;
         }
-    }).catch(function (error) {
-        console.error('Error loading marketing person list:', error);
-        toastr.error('Error loading sales person list');
-        $('#ddlMarketingMan').prop('disabled', false);
-        return false;
-    }).finally(function () {
-        HideLoader();
-    });
+
+        $ddl.prop('disabled', true).empty();
+        $('#btnShow, #btnExportExcel').prop('disabled', true);
+        if (typeof Showloader === 'function') {
+            Showloader();
+        }
+
+        try {
+            var authKey = await waitForAuthKey(80, 100);
+            if (!authKey) {
+                toastr.error('Session not ready. Please refresh the page.');
+                return false;
+            }
+
+            var lastError = null;
+            for (var attempt = 0; attempt < BC_SALES_PERSON_MAX_RETRIES; attempt++) {
+                try {
+                    var response = await BuyingCapacityService.GetNestedMarketingManList();
+                    lastError = null;
+                    if (applySalesPersonDropdownBinding(response)) {
+                        return true;
+                    }
+                } catch (err) {
+                    lastError = err;
+                }
+
+                if (attempt < BC_SALES_PERSON_MAX_RETRIES - 1) {
+                    await delay(BC_SALES_PERSON_RETRY_DELAY_MS);
+                    await waitForAuthKey(10, 100);
+                }
+            }
+
+            if (lastError) {
+                throw lastError;
+            }
+
+            toastr.error('No Data Found');
+            $ddl.prop('disabled', false);
+            return false;
+        } catch (error) {
+            console.error('Error loading marketing person list:', error);
+            toastr.error('Error loading sales person list');
+            $('#ddlMarketingMan').prop('disabled', false);
+            return false;
+        } finally {
+            if (typeof HideLoader === 'function') {
+                HideLoader();
+            }
+        }
+    })();
+
+    try {
+        return await G_SalesPersonLoadPromise;
+    } finally {
+        G_SalesPersonLoadPromise = null;
+    }
 }
 async function GetBuyingCapacityList() {
     if (!G_SalesPersonBound) {
@@ -341,6 +485,39 @@ function SaveBuyingCapacity(index,Code) {
     }
 }
 
+function readSelectDisplay(id, fallback) {
+    var el = document.getElementById(id);
+    if (!el) {
+        return fallback;
+    }
+    if (el.selectedIndex >= 0 && el.options[el.selectedIndex]) {
+        var text = String(el.options[el.selectedIndex].text || '').trim();
+        if (text && text.toLowerCase() !== 'select' && text !== '0') {
+            return text;
+        }
+    }
+    return el.value || fallback;
+}
+
+function mapBuyingCapacityExportRow(item, index) {
+    var rowIndex = typeof item.__RowIndex === 'number' ? item.__RowIndex : index;
+    var qtyEl = document.getElementById('txtMonthlyRequired_' + rowIndex);
+    var ratingEl = document.getElementById('txtCustomerRating_' + rowIndex);
+    return {
+        'S.No.': pickField(item, ['S.No.', 'S.No', 'SNo', 'SrNo', 'Sr No'], rowIndex + 1),
+        'Party Name': pickField(item, ['Party Name', 'PartyName']),
+        'Mkt Person': pickField(item, ['Marketing Person', 'Mkt Person', 'PersonName']),
+        'Country': pickField(item, ['Country']),
+        'State': pickField(item, ['State']),
+        'City': pickField(item, ['City']),
+        'PinCode': pickField(item, ['PinCode']),
+        'Buying Frequency': readSelectDisplay('ddlFillBuyingFrequency_' + rowIndex, pickField(item, ['Buying Frequency', 'BuyingFrequency'])),
+        'Monthly Req(Qty)': (qtyEl && qtyEl.value !== '') ? qtyEl.value : pickField(item, ['MonthlyRequiredQty', 'Monthly Req(Qty)', 'Monthly Required(Qty)']),
+        'Customer Rating': (ratingEl && ratingEl.value !== '') ? ratingEl.value : pickField(item, ['Customer Rating', 'CustomerRating', 'Ratings']),
+        'GP Rolling': readSelectDisplay('ddlFillGPRolling_' + rowIndex, pickField(item, ['GP Rolling', 'GPRolling']))
+    };
+}
+
 function ExportExcel() {
     if (!G_SalesPersonBound) {
         toastr.error('Please wait, sales person list is loading');
@@ -351,6 +528,18 @@ function ExportExcel() {
         toastr.error('Please select Sales Person');
         return;
     }
+    var hiddenFields = ["Code", "__RowIndex", "Marketing Person", "PersonName", "MonthlyRequiredQty", "Monthly Required(Qty)"];
+
+    // Use already-loaded grid data so iOS still has the user tap for Share.
+    if (G_BuyingCapacityRows && G_BuyingCapacityRows.length > 0) {
+        var exportRows = G_BuyingCapacityRows.map(mapBuyingCapacityExportRow);
+        var result = ExportToExcelControl.ExportToExcel(exportRows, hiddenFields, "BuyingCapacity");
+        if (result === true) {
+            toastr.success('Export completed successfully.');
+        }
+        return;
+    }
+
     // Procedure expects 'All' (not 'ALL') when exporting all marketing persons
     if (MarketingPersonName === 'ALL' || MarketingPersonName === '0') {
         MarketingPersonName = 'All';
@@ -360,24 +549,14 @@ function ExportExcel() {
     BuyingCapacityService.GetBuyingCapacityList(MarketingPersonName).then(function (response) {
         HideLoader();
         if (response && response.length > 0) {
-            var hiddenFields = ["Code", "__RowIndex", "Marketing Person", "PersonName", "MonthlyRequiredQty", "Monthly Required(Qty)"];
-            var exportRows = response.map(function (item) {
-                return {
-                    'S.No.': pickField(item, ['S.No.', 'S.No', 'SNo', 'SrNo', 'Sr No']),
-                    'Party Name': pickField(item, ['Party Name', 'PartyName']),
-                    'Mkt Person': pickField(item, ['Marketing Person', 'Mkt Person', 'PersonName']),
-                    'Country': pickField(item, ['Country']),
-                    'State': pickField(item, ['State']),
-                    'City': pickField(item, ['City']),
-                    'PinCode': pickField(item, ['PinCode']),
-                    'Buying Frequency': pickField(item, ['Buying Frequency', 'BuyingFrequency']),
-                    'Monthly Req(Qty)': pickField(item, ['MonthlyRequiredQty', 'Monthly Req(Qty)', 'Monthly Required(Qty)']),
-                    'Customer Rating': pickField(item, ['Customer Rating', 'CustomerRating', 'Ratings']),
-                    'GP Rolling': pickField(item, ['GP Rolling', 'GPRolling'])
-                };
+            G_BuyingCapacityRows = response.map(function (item, index) {
+                return Object.assign({}, item, { __RowIndex: index });
             });
-            ExportToExcelControl.ExportToExcel(exportRows, hiddenFields, "BuyingCapacity");
-            toastr.success('Export completed successfully.');
+            var fetchedRows = G_BuyingCapacityRows.map(mapBuyingCapacityExportRow);
+            var fetchedResult = ExportToExcelControl.ExportToExcel(fetchedRows, hiddenFields, "BuyingCapacity");
+            if (fetchedResult === true) {
+                toastr.success('Export completed successfully.');
+            }
         } else {
             toastr.info('No data to export.');
         }
@@ -504,9 +683,9 @@ function validateDecimalRateInput(input) {
     input.value = value;
 }
 function BindSelectList1(element, list) {
-    let option = '<option value="0">ALL</option>';
+    let option = '<option value="ALL">ALL</option>';
     $.each(list, function (key, val) {
-        option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
+        option += '<option value="' + escapeHtmlAttr(val.Code) + '">' + escapeHtmlAttr(val.Desp) + '</option>';
     });
     element.innerHTML = option;
 }

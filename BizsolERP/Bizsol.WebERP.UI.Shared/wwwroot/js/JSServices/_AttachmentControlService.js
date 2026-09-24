@@ -22,8 +22,13 @@ const AttachmentControlService = {
         );
     },
     DownloadAllAttachment: function DownloadAllAttachment(MasterTableName, MasterTableCode, DetailTableName, DetailTableCode) {
-        //let url = UrlService.API_DOCUMENT_ATTECHMENT + `/DownloadAllAttachment?MasterTableName=${MasterTableName}&MasterTableCode=${MasterTableCode}&DetailTableName=${''}&DetailTableCode=${0}`
-        let url = UrlService.API_DOCUMENT_ATTECHMENT + `/DownloadAllAttachment?MasterTableName=${MasterTableName}&MasterTableCode=${MasterTableCode}&DetailTableName=${DetailTableName}&DetailTableCode=${DetailTableCode}`
+        const dName = DetailTableName != null && DetailTableName !== undefined ? String(DetailTableName) : '';
+        const dCode = parseInt(String(DetailTableCode ?? 0), 10) || 0;
+        let url = UrlService.API_DOCUMENT_ATTECHMENT
+            + `/DownloadAllAttachment?MasterTableName=${encodeURIComponent(MasterTableName || '')}`
+            + `&MasterTableCode=${parseInt(String(MasterTableCode ?? 0), 10) || 0}`
+            + `&DetailTableName=${encodeURIComponent(dName)}`
+            + `&DetailTableCode=${dCode}`;
         return promiseAjaxCallApi.CallAPIasBlobObj('GET', url, "").then(
             function (value) {
                 return value;
@@ -54,7 +59,7 @@ const AttachmentControlService = {
         );
     },
     DownloadAttachment: function DownloadAttachment(DocumentMaster_Code) {
-        let url = UrlService.API_DOCUMENT_ATTECHMENT + `/ShowDocumentAttachment?DocumentMaster_Code=${DocumentMaster_Code}&IsDownload=Y`
+        let url = UrlService.API_DOCUMENT_ATTECHMENT + `/ShowDocumentAttachment?DocumentMaster_Code=${encodeURIComponent(DocumentMaster_Code)}&IsDownload=Y`
         return promiseAjaxCallApi.CallAPIasBlobObj('GET', url, "").then(
             function (value) {
                 return value;

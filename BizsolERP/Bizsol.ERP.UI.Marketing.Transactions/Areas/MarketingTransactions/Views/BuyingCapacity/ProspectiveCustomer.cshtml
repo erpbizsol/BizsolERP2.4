@@ -3,84 +3,78 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/ProspectiveCustomer.js"></script>
 
 <style>
-    /* Hide page scrollbar */
-    html {
-        overflow: hidden !important;
-        height: 100% !important;
-    }
-
-    body {
-        overflow: hidden !important;
-        height: 100vh !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* Ensure main content area fits viewport without scrolling */
-    .row {
-        margin: 0 !important;
-    }
-    
-    .col-sm-12 {
-        height: 100% !important;
-        display: flex !important;
-        flex-direction: column !important;
-    }
-
-    /* Main container for card and table - similar to #rmStockTabContent */
-    #prospectiveCustomerContent {
-        margin-top: .5rem;
+    #ProspectiveCustomerPage {
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 150px);
-        min-height: 400px;
-        overflow: hidden;
-        flex: 1;
+        min-height: 0;
     }
 
-    /* Prevent card and card-body from growing */
-    .card {
+    #ProspectiveCustomerPage .card,
+    #ProspectiveCustomerPage #prospectiveCustomerContent {
         margin: 0 !important;
-        margin-bottom: 0 !important;
+        margin-bottom: 0.5rem !important;
+        flex: 0 0 auto !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
 
-    .card-body {
+    #ProspectiveCustomerPage .card-body {
         margin: 0 !important;
         padding: 1rem !important;
-        flex-shrink: 0;
+        flex: 0 0 auto !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
 
-    /* Prevent paginator from growing */
-    .paginator {
-        flex-shrink: 0;
-    }
-
-    .fixed-width-table th, .fixed-width-table td {
+    #ProspectiveCustomerPage .fixed-width-table th,
+    #ProspectiveCustomerPage .fixed-width-table td {
         white-space: nowrap;
         min-width: auto;
     }
 
-    /* Table wrapper with flex layout - similar to RollingPlanSheet */
-    .table-wrapper {
+    /* Fixed table height so last rows stay visible with vertical + horizontal scroll */
+    #ProspectiveCustomerPage .table-wrapper {
         position: relative;
-        overflow: auto; /* Shows scrollbars (vertical and horizontal) when content exceeds container */
-        flex: 1; /* Take remaining space inside prospectiveCustomerContent */
-        min-height: 0; /* Allow it to shrink when viewport is small */
+        display: block;
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        height: calc(100vh - 340px);
+        max-height: calc(100vh - 340px);
+        min-height: 250px;
         margin: 0 !important;
-        margin-bottom: 0 !important;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+        scrollbar-color: #667eea #edf0f7;
     }
 
-    /* Ensure table takes full width */
+    #ProspectiveCustomerPage .table-wrapper::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+        display: block;
+    }
+
+    #ProspectiveCustomerPage .table-wrapper::-webkit-scrollbar-thumb {
+        background: #667eea;
+        border-radius: 8px;
+    }
+
+    #ProspectiveCustomerPage .table-wrapper::-webkit-scrollbar-track {
+        background: #edf0f7;
+    }
+
     #ProspectiveCustomer {
-        width: 100%;
+        width: max-content;
+        min-width: 100%;
         margin: 0 !important;
         margin-bottom: 0 !important;
     }
 
-    /* Sticky table header */
     #ProspectiveCustomer thead {
         position: sticky;
         top: 0;
@@ -109,72 +103,163 @@
         vertical-align: middle;
     }
 
-    /* Responsive height adjustments for smaller screens - similar to RollingPlanSheet */
-    @@media (max-height: 800px) {
-        #prospectiveCustomerContent {
-            max-height: calc(100vh - 150px);
-        }
-        .table-wrapper {
-            min-height: 300px;
+    #paginator-ProspectiveCustomer {
+        flex-shrink: 0;
+        padding: 0.35rem 0 0.5rem 0;
+    }
+
+    @@media (max-height: 800px) and (min-width: 992px) {
+        #ProspectiveCustomerPage .table-wrapper {
+            height: calc(100vh - 300px);
+            max-height: calc(100vh - 300px);
+            min-height: 200px;
         }
     }
 
-    @@media (max-height: 600px) {
-        #prospectiveCustomerContent {
-            max-height: calc(100vh - 120px);
+    @@media (max-height: 600px) and (min-width: 992px) {
+        #ProspectiveCustomerPage .table-wrapper {
+            height: calc(100vh - 260px);
+            max-height: calc(100vh - 260px);
+            min-height: 180px;
         }
-        .table-wrapper {
-            min-height: 250px;
+    }
+
+    /* Phone: filter card stays fixed (no scroll). Only the table scrolls. */
+    @@media (max-width: 768px) {
+        body:has(#ProspectiveCustomerPage) #modern-content.modern-content {
+            overflow: hidden !important;
+        }
+
+        body:has(#ProspectiveCustomerPage) #modern-content.modern-content > main {
+            height: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #ProspectiveCustomerPage {
+            flex: 1 1 auto;
+            height: 100%;
+            max-height: 100%;
+            min-height: 0;
+            overflow: hidden;
+            padding-bottom: 56px;
+            box-sizing: border-box;
+        }
+
+        #ProspectiveCustomerPage .card,
+        #ProspectiveCustomerPage #prospectiveCustomerContent,
+        #ProspectiveCustomerPage .card-body {
+            max-height: none !important;
+            height: auto !important;
+            overflow: visible !important;
+            flex: 0 0 auto !important;
+            overscroll-behavior: none;
+        }
+
+        #ProspectiveCustomerPage .card,
+        #ProspectiveCustomerPage #prospectiveCustomerContent {
+            margin-bottom: 0.4rem !important;
+        }
+
+        #ProspectiveCustomerPage .card-body {
+            padding: 0.7rem 0.75rem !important;
+        }
+
+        #ProspectiveCustomerPage .card-body .row > [class*="col-"] {
+            flex: 0 0 50% !important;
+            width: 50% !important;
+            max-width: 50% !important;
+        }
+
+        #ProspectiveCustomerPage .card-body .row > .without-label-field {
+            flex: 0 0 100% !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        #ProspectiveCustomerPage .table-wrapper {
+            flex: 1 1 auto;
+            height: auto !important;
+            max-height: none !important;
+            min-height: 0 !important;
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+            padding-bottom: 16px;
+            margin-bottom: 0 !important;
+        }
+
+        #ProspectiveCustomer {
+            width: max-content !important;
+            min-width: max-content !important;
+        }
+
+        #ProspectiveCustomer thead th,
+        #ProspectiveCustomer tbody td {
+            white-space: nowrap;
+        }
+
+        #ProspectiveCustomer tbody tr:last-child td {
+            padding-bottom: 12px;
+        }
+
+        #paginator-ProspectiveCustomer {
+            padding-bottom: 4px;
         }
     }
 </style>
-<div class="row">
-    <div class="col-sm-12">
-        <div class="card p-1" id="prospectiveCustomerContent">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <label for="ddlMarketingMan" class="form-label">Sales Person <span class="text-danger">*</span></label>
-                        <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" autocomplete="off" required></select>
-                        @* <input list="ddlSalesPersonList" id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" onclick="$(this).val('');" placeholder="Sales Person" autocomplete="off" required>
-                        <datalist id="ddlSalesPersonList"></datalist> *@
-                    </div>
-                    <div class="col-md-3">
-                        <label for="ddlThikness" class="form-label">Thikness <span class="text-danger">*</span></label>
-                        <select id="ddlThikness" name="ddlThikness" class="form-control form-control-sm box_border" placeholder="Thikness" autocomplete="off" required></select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="ddlSize" class="form-label">Size <span class="text-danger">*</span></label>
-                        <select list="ddlSize" id="ddlSize" name="ddlSize" class="form-control form-control-sm box_border" placeholder="Size" autocomplete="off" required></select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="ddlGrade" class="form-label">Grade <span class="text-danger">*</span></label>
-                        <select id="ddlGrade" name="ddlGrade" class="form-control form-control-sm box_border" placeholder="Grade" autocomplete="off" required></select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="ddlISCode" class="form-label">IS Code <span class="text-danger">*</span></label>
-                        <select id="ddlISCode" name="ddlISCode" class="form-control form-control-sm box_border" placeholder="IS Code" autocomplete="off" required></select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="txtStatus" class="form-label">Status <span class="text-danger">*</span></label>
-                        <input id="txtStatus" name="txtStatus" class="form-control form-control-sm box_border" placeholder="Status" value="Active" autocomplete="off" required readonly/>
-                    </div>
-
-                    <div class="col-md-3 without-label-field">
-                        <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
-                    </div>
+<div id="ProspectiveCustomerPage">
+    <div class="card p-1" id="prospectiveCustomerContent">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="ddlMarketingMan" class="form-label">Sales Person <span class="text-danger">*</span></label>
+                    <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+                    @* <input list="ddlSalesPersonList" id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" onclick="$(this).val('');" placeholder="Sales Person" autocomplete="off" required>
+                    <datalist id="ddlSalesPersonList"></datalist> *@
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlThikness" class="form-label">Thikness <span class="text-danger">*</span></label>
+                    <select id="ddlThikness" name="ddlThikness" class="form-control form-control-sm box_border" placeholder="Thikness" autocomplete="off" required></select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlSize" class="form-label">Size <span class="text-danger">*</span></label>
+                    <select list="ddlSize" id="ddlSize" name="ddlSize" class="form-control form-control-sm box_border" placeholder="Size" autocomplete="off" required></select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlGrade" class="form-label">Grade <span class="text-danger">*</span></label>
+                    <select id="ddlGrade" name="ddlGrade" class="form-control form-control-sm box_border" placeholder="Grade" autocomplete="off" required></select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlISCode" class="form-label">IS Code <span class="text-danger">*</span></label>
+                    <select id="ddlISCode" name="ddlISCode" class="form-control form-control-sm box_border" placeholder="IS Code" autocomplete="off" required></select>
+                </div>
+                <div class="col-md-3">
+                    <label for="txtStatus" class="form-label">Status <span class="text-danger">*</span></label>
+                    <input id="txtStatus" name="txtStatus" class="form-control form-control-sm box_border" placeholder="Status" value="Active" autocomplete="off" required readonly/>
+                </div>
+                <div class="col-md-3 without-label-field">
+                    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+                    <button type="button" id="btnExportExcel" class="btn btn-primary btn-height btn-width">
+                        <i class="fas fa-download"></i> Download
+                    </button>
                 </div>
             </div>
-            <div class="table-wrapper">
-                <table id="ProspectiveCustomer" class="fixed-width-table table">
-                    <thead id="table-header-ProspectiveCustomer">
-                    </thead>
-                    <tbody id="table-body-ProspectiveCustomer">
-                    </tbody>
-                </table>
-            </div>
-            <div class="paginator" id="paginator-ProspectiveCustomer">
-            </div>
         </div>
+    </div>
+    <div class="table-wrapper">
+        <table id="ProspectiveCustomer" class="fixed-width-table table">
+            <thead id="table-header-ProspectiveCustomer">
+            </thead>
+            <tbody id="table-body-ProspectiveCustomer">
+            </tbody>
+        </table>
+    </div>
+    <div class="paginator" id="paginator-ProspectiveCustomer">
     </div>
 </div>

@@ -1,0 +1,118 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Marketing.Reports/css/DealerTargetReport.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Reports/js/DealerTargetReport.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+    .fixed-width-table th, .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
+    }
+</style>
+
+<div id="DealerTargetReportPage" class="dtr-page">
+    <div class="dtr-header">
+        <div class="dtr-header-title">
+            <h3><i class="fas fa-bullseye"></i> Dealer Target Report</h3>
+            <span>Compare monthly targets with actual dealer sales</span>
+        </div>
+        <div class="dtr-header-filters">
+            <div class="dtr-date-fields">
+                <div class="dtr-field">
+                    <label for="txtFromDate">From Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtFromDate" name="txtFromDate" class="form-control form-control-sm box_border" required />
+                </div>
+                <div class="dtr-field">
+                    <label for="txtToDate">To Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtToDate" name="txtToDate" class="form-control form-control-sm box_border" required />
+                </div>
+            </div>
+            <div class="dtr-actions">
+                <span class="dtr-action-label" aria-hidden="true">&nbsp;</span>
+                <div class="dtr-action-btns">
+                    <button type="button" id="btnShow" class="dtr-btn dtr-btn-show">
+                        <i class="fas fa-play"></i>
+                        <span id="btnShowText">Show</span>
+                    </button>
+                    <button type="button" id="btnDownload" class="dtr-btn dtr-btn-download" disabled>
+                        <i class="fas fa-file-excel"></i> Download
+                    </button>
+                    <button type="button" id="btnReset" class="dtr-btn dtr-btn-reset">
+                        <i class="fas fa-rotate-left"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dtr-kpi-row" id="dtrKpiRow" style="display:none;">
+        <div class="dtr-kpi dtr-kpi-dealers">
+            <div class="dtr-kpi-icon"><i class="fas fa-users"></i></div>
+            <div class="dtr-kpi-body">
+                <div class="dtr-kpi-label">Dealers</div>
+                <div class="dtr-kpi-value" id="kpiDealers">0</div>
+                <div class="dtr-kpi-sub" id="kpiPartyCount">0 parties</div>
+            </div>
+        </div>
+        <div class="dtr-kpi dtr-kpi-target">
+            <div class="dtr-kpi-icon"><i class="fas fa-bullseye"></i></div>
+            <div class="dtr-kpi-body">
+                <div class="dtr-kpi-label">Monthly Target</div>
+                <div class="dtr-kpi-value" id="kpiMonthlyTarget">0</div>
+                <div class="dtr-kpi-sub" id="kpiPerDayTarget">Per day 0</div>
+            </div>
+        </div>
+        <div class="dtr-kpi dtr-kpi-sale">
+            <div class="dtr-kpi-icon"><i class="fas fa-rupee-sign"></i></div>
+            <div class="dtr-kpi-body">
+                <div class="dtr-kpi-label">Total Sale (Actual)</div>
+                <div class="dtr-kpi-value" id="kpiTotalSale">0</div>
+                <div class="dtr-kpi-sub" id="kpiPerDaySale">Per day 0</div>
+            </div>
+        </div>
+        <div class="dtr-kpi dtr-kpi-achv" id="dtrKpiAchv">
+            <div class="dtr-kpi-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="dtr-kpi-body">
+                <div class="dtr-kpi-label">Achievement</div>
+                <div class="dtr-kpi-value" id="kpiAchievement">0%</div>
+                <div class="dtr-kpi-bar"><span id="kpiAchievementBar"></span></div>
+                <div class="dtr-kpi-sub">Actual vs monthly target</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dtrEmptyState" class="dtr-empty">
+        <div class="dtr-empty-icon"><i class="fas fa-chart-column"></i></div>
+        <h4>No report loaded</h4>
+        <p>Select From Date and To Date, then click <strong>Show</strong> to load dealer targets and actual sales.</p>
+    </div>
+
+    <div id="tblDealerTargetReport" class="dtr-grid-panel" style="display:none;">
+        <div class="dtr-grid-toolbar">
+            <div class="dtr-grid-title">
+                <i class="fas fa-table-list"></i>
+                <span>Dealer Target Details</span>
+            </div>
+            <div class="dtr-grid-meta">
+                <input type="text" id="txtDealerTargetReportSearch" class="dtr-search" placeholder="Search dealer, party, location..." autocomplete="off" />
+                <span class="dtr-period" id="dtrPeriodLabel">Select a date range</span>
+                <span class="dtr-record-badge" id="dtrRecordCount">0 records</span>
+            </div>
+        </div>
+        <div class="table-wrapper fixed-height-table dtr-table-wrap">
+            <table id="DealerTargetReport" class="fixed-width-table table" style="--bs-table-bg: unset;">
+                <thead id="DealerTargetReport-header">
+                </thead>
+                <tbody id="DealerTargetReport-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="dtr-grid-footer">
+            <div class="paginator" id="paginator-DealerTargetReport">
+            </div>
+        </div>
+    </div>
+</div>
