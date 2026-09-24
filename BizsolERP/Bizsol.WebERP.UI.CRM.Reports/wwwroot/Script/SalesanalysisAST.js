@@ -30,6 +30,7 @@ let G_SummaryReportRows = [];
 let G_PartyScoringRows = [];
 let G_PartyScoringLastMonthMap = {};
 let G_PartySaleMap = {};
+let G_ClientRatingMaster = [];
 const HIGH_GP_SALE_TARGET_PCT = 60;
 
 // Regional Analysis data and drill-down state
@@ -212,6 +213,7 @@ function loadFilterDropdowns(filterPanel) {
         console.error('Error fetching industry type list:', error);
     });
     loadPromises.push(industryPromise);
+    loadPromises.push(loadClientRatingMaster());
 
     // Wait for all dropdowns to load, then call the report
     Promise.all(loadPromises).then(function () {
@@ -302,7 +304,7 @@ function escapeHtml(unsafe) {
 
 function formatNumber(v) {
     if (v === null || v === undefined) return '';
-    return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Number(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 function formatInteger(v) {
@@ -726,6 +728,102 @@ function renderSummaryDashboard(metrics) {
     renderSummaryHighGpAchievement(G_SummaryReportRows);
     if (typeof applyRmRateButtonVisibility === 'function') {
         applyRmRateButtonVisibility();
+    }
+}
+
+function getSummaryNbdCrrType(row) {
+    return (row['NBD/CRR'] || row.NBD_CRRType || row.NbdCrr || row['NBD/CRR Type'] || '').toString().trim();
+}
+
+function getSummaryNbdCrrPartyRows() {
+    const map = new Map();
+    (G_SummaryReportRows || []).forEach(function (row) {
+        const partyName = (row['Party Name'] || row.PartyName || row.PARTY_NAME || '').toString().trim();
+        const nbdCrrType = getSummaryNbdCrrType(row);
+        const typeUpper = nbdCrrType.toUpperCase();
+        if (!partyName || (!typeUpper.includes('NBD') && !typeUpper.includes('CRR'))) {
+            return;
+        }
+        const key = partyName.toLowerCase() + '|' + typeUpper;
+        if (!map.has(key)) {
+            map.set(key, {
+                'Party Name': partyName,
+                'NBD/CRR Type': nbdCrrType
+            });
+        }
+    });
+    return Array.from(map.values()).sort(function (a, b) {
+        const typeCompare = String(a['NBD/CRR Type']).localeCompare(String(b['NBD/CRR Type']));
+        if (typeCompare !== 0) return typeCompare;
+        return String(a['Party Name']).localeCompare(String(b['Party Name']));
+    });
+}
+
+function renderSummaryNbdCrrPartyTable() {
+    const header = document.getElementById('summaryNbdCrrPartyTableHeader');
+    const body = document.getElementById('summaryNbdCrrPartyTableBody');
+    if (!header || !body) return;
+
+    const rows = getSummaryNbdCrrPartyRows();
+    if (!rows.length) {
+        header.innerHTML = '';
+        body.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No NBD / CRR party data available</td></tr>';
+        const pager = document.getElementById('paginator-summaryNbdCrrPartyTable');
+        if (pager) pager.innerHTML = '';
+        return;
+    }
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable(
+            'summaryNbdCrrPartyTableHeader',
+            'summaryNbdCrrPartyTableBody',
+            rows,
+            false,
+            [],
+            ['Party Name', 'NBD/CRR Type'],
+            [],
+            [],
+            [],
+            [],
+            {
+                'Party Name': 'left',
+                'NBD/CRR Type': 'center'
+            },
+            true
+        );
+        return;
+    }
+
+    header.innerHTML = '<tr><th>Party Name</th><th>NBD/CRR Type</th></tr>';
+    body.innerHTML = rows.map(function (row) {
+        return `<tr><td>${escapeHtml(row['Party Name'])}</td><td class="text-center">${escapeHtml(row['NBD/CRR Type'])}</td></tr>`;
+    }).join('');
+}
+
+function openSummaryNbdCrrPartyModal() {
+    renderSummaryNbdCrrPartyTable();
+    const modalEl = document.getElementById('summaryNbdCrrPartyModal');
+    if (!modalEl) return;
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
+
+function initSummaryNbdCrrPartyModal() {
+    const btn = document.getElementById('btnSummaryNbdCrrParties');
+    if (btn && !btn.dataset.nbdPartyBound) {
+        btn.dataset.nbdPartyBound = 'Y';
+        btn.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            openSummaryNbdCrrPartyModal();
+        });
+    }
+
+    const modalEl = document.getElementById('summaryNbdCrrPartyModal');
+    if (modalEl && !modalEl.dataset.nbdPartyBound) {
+        modalEl.dataset.nbdPartyBound = 'Y';
+        modalEl.addEventListener('shown.bs.modal', renderSummaryNbdCrrPartyTable);
     }
 }
 
@@ -1232,6 +1330,143 @@ const PARTY_SCORE_CATEGORY_BY_RANGE = {
     excellent: { label: 'Excellent', css: 'ps-badge-excellent' }
 };
 
+function isClientRatingActive(row) {
+    const raw = String(row.IsActive ?? row.Isactive ?? row['Is Active'] ?? 'N').trim().toUpperCase();
+    return raw === 'Y' || raw === 'YES' || raw === '1' || raw === 'TRUE';
+}
+
+function parseClientRatingMaster(response) {
+    let rows = [];
+    if (Array.isArray(response)) {
+        rows = Array.isArray(response[0]) ? (response[0] || []) : response;
+    } else if (response && (response.Table || response.Table1)) {
+        rows = response.Table || response.Table1 || [];
+    }
+    return rows.map(function (row) {
+        const code = parseInt(row.Code ?? row.code ?? row.CODE ?? 0, 10) || 0;
+        const desp = String(row.Desp ?? row.desp ?? row.Description ?? row.RatingName ?? '').trim();
+        const maxValue = parseFloat(row.MaxValue ?? row.Maxvalue ?? row.maxValue ?? 0) || 0;
+        return {
+            code: code,
+            desp: desp,
+            maxValue: maxValue,
+            isActive: isClientRatingActive(row)
+        };
+    }).filter(function (item) {
+        return item.code >= 1 && item.code <= 10;
+    }).sort(function (a, b) {
+        return a.code - b.code;
+    });
+}
+
+function getVisibleClientRatings() {
+    return (G_ClientRatingMaster || []).filter(function (item) {
+        return item.isActive;
+    });
+}
+
+function getPartyScoreMaxTotal() {
+    const ratings = getVisibleClientRatings();
+    const total = ratings.reduce(function (sum, item) {
+        return sum + (Number(item.maxValue) || 0);
+    }, 0);
+    return total > 0 ? total : 40;
+}
+
+function getPartyGoodScoreThreshold() {
+    return (getPartyScoreMaxTotal() * 28) / 40;
+}
+
+function formatPartyScoreBound(value) {
+    const num = Number(value) || 0;
+    return Math.abs(num - Math.round(num)) < 0.05 ? String(Math.round(num)) : num.toFixed(1);
+}
+
+function getClientRatingColumnName(rating) {
+    return (rating && rating.desp) ? rating.desp : (`Parameter ${rating.code}`);
+}
+
+function getScaledPartyScoreRanges() {
+    const max = getPartyScoreMaxTotal();
+    const scale = max > 0 ? (max / 40) : 1;
+    return PARTY_SCORE_RANGES.map(function (range) {
+        const min = range.min * scale;
+        const maxVal = range.max * scale;
+        const match = (range.label || '').match(/\(([^)]+)\)/);
+        const name = match ? match[1] : range.key;
+        return {
+            ...range,
+            min: min,
+            max: maxVal,
+            label: `${formatPartyScoreBound(min)} - ${formatPartyScoreBound(maxVal)} (${name})`
+        };
+    });
+}
+
+function updatePartyScoreMaxLabels() {
+    const maxText = formatPartyScoreBound(getPartyScoreMaxTotal());
+    const thresholdText = formatPartyScoreBound(getPartyGoodScoreThreshold());
+
+    const rangeHeader = document.getElementById('psScoreRangeHeader');
+    if (rangeHeader) rangeHeader.textContent = `Score Range (out of ${maxText})`;
+
+    document.querySelectorAll('.ps-score-max-label').forEach(function (el) {
+        el.textContent = maxText;
+    });
+
+    const bar = document.getElementById('psPartyWiseScoreBar');
+    if (bar) bar.textContent = `Party Wise Average Score (Out of ${maxText})`;
+
+    const goodLabel = document.getElementById('psGoodThresholdLabel');
+    if (goodLabel) goodLabel.innerHTML = `Score &gt;= ${thresholdText} (Good &amp; Above)`;
+
+    const attnLabel = document.getElementById('psAttentionThresholdLabel');
+    if (attnLabel) attnLabel.innerHTML = `Score &lt; ${thresholdText} (Needs Attention)`;
+}
+
+function loadClientRatingMaster() {
+    return SalesanalysisASTService.GetSalesAnalysisData('DDL_F_CLIENTRATING', '0', '0', '0', '0', '0', '0', '0', '0', '0').then(function (response) {
+        G_ClientRatingMaster = parseClientRatingMaster(response);
+        updatePartyScoreMaxLabels();
+        return G_ClientRatingMaster;
+    }).catch(function (error) {
+        console.error('Error fetching client rating master:', error);
+        if (!Array.isArray(G_ClientRatingMaster)) {
+            G_ClientRatingMaster = [];
+        }
+        updatePartyScoreMaxLabels();
+        return G_ClientRatingMaster;
+    });
+}
+
+function getPartyParameterScores(row) {
+    const scores = {};
+    for (let i = 1; i <= 10; i++) {
+        const raw = row[`Parameter${i}`] ?? row[`parameter${i}`] ?? row[`PARAMETER${i}`] ?? row[`Parameter ${i}`];
+        const val = parseFloat(raw);
+        scores[i] = Number.isFinite(val) ? val : 0;
+    }
+    return scores;
+}
+
+function getPartyScoreFromParameters(params) {
+    const active = getVisibleClientRatings();
+    if (active.length) {
+        return active.reduce(function (sum, item) {
+            return sum + (Number(params[item.code]) || 0);
+        }, 0);
+    }
+    let total = 0;
+    for (let i = 1; i <= 10; i++) {
+        total += Number(params[i]) || 0;
+    }
+    return total;
+}
+
+function getPartyScoreTableColspan() {
+    return 6 + getVisibleClientRatings().length;
+}
+
 function getPartyField(row, names) {
     for (let i = 0; i < names.length; i++) {
         const key = names[i];
@@ -1276,41 +1511,44 @@ function buildPartySaleMap(summaryRows) {
     return map;
 }
 
-function getPartyRawScore(row) {
-    const raw = parseFloat(getPartyField(row, ['Score', 'Party Score', 'PartyScore', 'Total Score']));
-    return Number.isFinite(raw) ? raw : 0;
+function getPartyTotalScore(row, params) {
+    return getPartyScoreFromParameters(params || getPartyParameterScores(row || {}));
 }
 
 function detectPartyScoreScale(rows) {
+    const maxTotal = getPartyScoreMaxTotal();
     let max = 0;
     (rows || []).forEach(function (row) {
-        const score = getPartyRawScore(row);
+        const score = getPartyTotalScore(row, getPartyParameterScores(row));
         if (score > max) max = score;
     });
-    return max > 40 ? 100 : 40;
+    return max > maxTotal ? 100 : maxTotal;
 }
 
 function toPartyScore40(rawScore, scale) {
+    const maxTotal = getPartyScoreMaxTotal();
     const score = Number(rawScore) || 0;
     if (scale === 100) {
-        return Math.max(0, Math.min(40, (score / 100) * 40));
+        return Math.max(0, Math.min(maxTotal, (score / 100) * maxTotal));
     }
-    return Math.max(0, Math.min(40, score));
+    return Math.max(0, Math.min(maxTotal, score));
 }
 
 function toPartyScore100(rawScore, scale) {
+    const maxTotal = getPartyScoreMaxTotal();
     const score = Number(rawScore) || 0;
     if (scale === 100) {
         return Math.max(0, Math.min(100, score));
     }
-    return Math.max(0, Math.min(100, (score / 40) * 100));
+    return Math.max(0, Math.min(100, maxTotal > 0 ? (score / maxTotal) * 100 : 0));
 }
 
-function getPartyScoreRangeKey(score40) {
-    const score = Number(score40) || 0;
-    for (let i = 0; i < PARTY_SCORE_RANGES.length; i++) {
-        const range = PARTY_SCORE_RANGES[i];
-        const isLast = i === PARTY_SCORE_RANGES.length - 1;
+function getPartyScoreRangeKey(scoreValue) {
+    const score = Number(scoreValue) || 0;
+    const ranges = getScaledPartyScoreRanges();
+    for (let i = 0; i < ranges.length; i++) {
+        const range = ranges[i];
+        const isLast = i === ranges.length - 1;
         if (score > range.min && score <= range.max) {
             return range.key;
         }
@@ -1321,15 +1559,18 @@ function getPartyScoreRangeKey(score40) {
             return range.key;
         }
     }
-    return PARTY_SCORE_RANGES[0].key;
+    return ranges[0] ? ranges[0].key : PARTY_SCORE_RANGES[0].key;
 }
 
 function formatPartyMt(value) {
-    return Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+    return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 function formatPartyScore(value) {
-    return Number(value || 0).toFixed(2);
+    const num = Number(value || 0);
+    if (!isFinite(num)) return '0';
+    if (Math.abs(num - Math.round(num)) < 1e-9) return String(Math.round(num));
+    return parseFloat(num.toFixed(2)).toString();
 }
 
 function buildPartyScoreLastMonthMap(rows) {
@@ -1340,7 +1581,7 @@ function buildPartyScoreLastMonthMap(rows) {
         if (!key) return;
         const existing = map[key];
         const sale = getPartySaleMt(row);
-        const apiScore = getPartyRawScore(row);
+        const apiScore = getPartyTotalScore(row, getPartyParameterScores(row));
         const score100 = toPartyScore100(apiScore, scale);
         if (!existing) {
             map[key] = { score100: score100, apiScore: apiScore, sale: sale };
@@ -1361,7 +1602,8 @@ function aggregatePartyScoringRows(rows) {
         const key = getPartyKey(row) || getPartyName(row).toUpperCase();
         if (!key) return;
 
-        const apiScore = getPartyRawScore(row);
+        const params = getPartyParameterScores(row);
+        const apiScore = getPartyTotalScore(row, params);
         const score100 = toPartyScore100(apiScore, scale);
         const gst = String(getPartyField(row, ['Party GST', 'PartyGST', 'GSTNo', 'GSTIN']) || '').trim().toUpperCase();
         const existing = partyMap.get(key);
@@ -1373,7 +1615,8 @@ function aggregatePartyScoringRows(rows) {
                 sale: 0,
                 apiScore: apiScore,
                 score100: score100,
-                score40: toPartyScore40(apiScore, scale)
+                score40: toPartyScore40(apiScore, scale),
+                parameters: params
             });
             return;
         }
@@ -1382,6 +1625,7 @@ function aggregatePartyScoringRows(rows) {
             existing.apiScore = apiScore;
             existing.score100 = score100;
             existing.score40 = toPartyScore40(apiScore, scale);
+            existing.parameters = params;
         }
     });
 
@@ -1391,7 +1635,7 @@ function aggregatePartyScoringRows(rows) {
     });
 
     const parties = Array.from(partyMap.values()).map(function (party) {
-        const rangeKey = getPartyScoreRangeKey(party.score40);
+        const rangeKey = getPartyScoreRangeKey(party.apiScore);
         return {
             ...party,
             rangeKey: rangeKey,
@@ -1402,7 +1646,8 @@ function aggregatePartyScoringRows(rows) {
         return b.sale - a.sale;
     });
 
-    const rangeStats = PARTY_SCORE_RANGES.map(function (range) {
+    const goodThreshold = getPartyGoodScoreThreshold();
+    const rangeStats = getScaledPartyScoreRanges().map(function (range) {
         return { ...range, sale: 0, parties: 0, sellingParties: 0 };
     });
     const rangeIndex = {};
@@ -1420,7 +1665,7 @@ function aggregatePartyScoringRows(rows) {
         totalScore += (party.apiScore || 0);
         if ((party.apiScore || 0) > topScore) topScore = party.apiScore || 0;
         if ((party.apiScore || 0) < lowScore) lowScore = party.apiScore || 0;
-        if ((party.apiScore || 0) >= 28) goodCount += 1;
+        if ((party.apiScore || 0) >= goodThreshold) goodCount += 1;
         const idx = rangeIndex[party.rangeKey];
         if (idx !== undefined) {
             rangeStats[idx].sale += party.sale;
@@ -1450,6 +1695,7 @@ function clearPartyScoringDashboard() {
     G_PartyScoringRows = [];
     G_PartyScoringLastMonthMap = {};
     G_PartySaleMap = {};
+    updatePartyScoreMaxLabels();
 
     if (partyScoreDonutChartInstance) {
         try { partyScoreDonutChartInstance.destroy(); } catch (e) { /* ignore */ }
@@ -1483,7 +1729,7 @@ function clearPartyScoringDashboard() {
     const partyPager = document.getElementById('paginator-partyScoreTable');
     if (partyHeader) partyHeader.innerHTML = '';
     if (partyBody) {
-        partyBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No data available</td></tr>';
+        partyBody.innerHTML = `<tr><td colspan="${getPartyScoreTableColspan()}" class="text-center text-muted">No data available</td></tr>`;
     }
     if (partyPager) partyPager.innerHTML = '';
 }
@@ -1594,6 +1840,17 @@ function getPartyScoreTrendHtml(party) {
     return `<span class="ps-trend-down">↓ ${formatPartyScore(diff)}</span>`;
 }
 
+function getPartyScoreCategoryColumnIndex() {
+    const headerCells = document.querySelectorAll('#partyScoreTableHeader th, #partyScoreTableHeader td');
+    for (let i = 0; i < headerCells.length; i++) {
+        const text = (headerCells[i].textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (text.indexOf('score category') !== -1) {
+            return i + 1;
+        }
+    }
+    return getPartyScoreTableColspan();
+}
+
 function decoratePartyScoreCategoryCells() {
     const categoryCss = {
         'Excellent': 'ps-badge-excellent',
@@ -1604,7 +1861,8 @@ function decoratePartyScoreCategoryCells() {
         'Poor': 'ps-badge-poor'
     };
 
-    document.querySelectorAll('#partyScoreTableBody td:nth-child(6)').forEach(function (td) {
+    const colIndex = getPartyScoreCategoryColumnIndex();
+    document.querySelectorAll(`#partyScoreTableBody td:nth-child(${colIndex})`).forEach(function (td) {
         if (td.querySelector('.ps-badge')) return;
         const label = (td.textContent || '').trim();
         if (!label) return;
@@ -1629,10 +1887,16 @@ function renderPartyWiseScoreTable(parties) {
     if (!tbody || !thead) return;
 
     bindPartyScoreTableDecorate();
+    updatePartyScoreMaxLabels();
+
+    const visibleRatings = getVisibleClientRatings();
+    const maxTotal = getPartyScoreMaxTotal();
+    const totalScoreColumn = `Total Score (Out of ${formatPartyScoreBound(maxTotal)})`;
+    const colspan = getPartyScoreTableColspan();
 
     if (!parties.length) {
         thead.innerHTML = '';
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No data available</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-muted">No data available</td></tr>`;
         const pager = document.getElementById('paginator-partyScoreTable');
         if (pager) pager.innerHTML = '';
         return;
@@ -1640,14 +1904,32 @@ function renderPartyWiseScoreTable(parties) {
 
     const rows = parties.map(function (party, index) {
         const category = party.category || { label: '-' };
-        return {
+        const params = party.parameters || {};
+        const row = {
             'S.No.': index + 1,
             'Party Name': party.partyName,
-            'Total Sale (MT)': formatPartyMt(party.sale),
-            'Total Score (Out of 40)': formatPartyScore(party.apiScore),
-            'Score %': `${formatPartyScore(((party.apiScore || 0) / 40) * 100)}%`,
-            'Score Category': category.label || '-'
+            'Total Sale (MT)': formatPartyMt(party.sale)
         };
+        visibleRatings.forEach(function (rating) {
+            row[getClientRatingColumnName(rating)] = formatPartyScore(params[rating.code] || 0);
+        });
+        row[totalScoreColumn] = formatPartyScore(party.apiScore);
+        row['Score %'] = `${formatPartyScore(maxTotal > 0 ? ((party.apiScore || 0) / maxTotal) * 100 : 0)}%`;
+        row['Score Category'] = category.label || '-';
+        return row;
+    });
+
+    const alignment = {
+        'S.No.': 'right',
+        'Party Name': 'left',
+        'Total Sale (MT)': 'right',
+        [totalScoreColumn]: 'right',
+        'Score %': 'right',
+        'Score Category': 'center'
+    };
+    const numericFilterColumn = visibleRatings.map(getClientRatingColumnName).concat([totalScoreColumn]);
+    visibleRatings.forEach(function (rating) {
+        alignment[getClientRatingColumnName(rating)] = 'right';
     });
 
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
@@ -1658,23 +1940,21 @@ function renderPartyWiseScoreTable(parties) {
             false,
             [],
             ['Party Name', 'Score Category'],
+            numericFilterColumn,
             [],
             [],
             [],
-            [],
-            {
-                'S.No.': 'center',
-                'Total Sale (MT)': 'right',
-                'Total Score (Out of 40)': 'center',
-                'Score %': 'center',
-                'Score Category': 'center'
-            },
+            alignment,
             true
         );
         decoratePartyScoreCategoryCells();
         return;
     }
 
+    const headerCols = ['S.No.', 'Party Name', 'Total Sale (MT)']
+        .concat(visibleRatings.map(getClientRatingColumnName))
+        .concat([totalScoreColumn, 'Score %', 'Score Category']);
+    thead.innerHTML = `<tr>${headerCols.map(function (col) { return `<th>${escapeHtml(col)}</th>`; }).join('')}</tr>`;
     tbody.innerHTML = rows.map(function (row) {
         const cssMap = {
             'Excellent': 'ps-badge-excellent',
@@ -1685,18 +1965,23 @@ function renderPartyWiseScoreTable(parties) {
             'Poor': 'ps-badge-poor'
         };
         const css = cssMap[row['Score Category']] || 'ps-badge-average';
+        const paramCells = visibleRatings.map(function (rating) {
+            return `<td class="ps-num">${row[getClientRatingColumnName(rating)]}</td>`;
+        }).join('');
         return `<tr>
-            <td class="ps-center">${row['S.No.']}</td>
+            <td class="ps-num">${row['S.No.']}</td>
             <td class="ps-name">${escapeHtml(row['Party Name'])}</td>
             <td class="ps-num">${row['Total Sale (MT)']}</td>
-            <td class="ps-center">${row['Total Score (Out of 40)']}</td>
-            <td class="ps-center">${row['Score %']}</td>
+            ${paramCells}
+            <td class="ps-num">${row[totalScoreColumn]}</td>
+            <td class="ps-num">${row['Score %']}</td>
             <td class="ps-center"><span class="ps-badge ${css}">${escapeHtml(row['Score Category'])}</span></td>
         </tr>`;
     }).join('');
 }
 
 function renderPartyScoringDashboard() {
+    updatePartyScoreMaxLabels();
     const summary = aggregatePartyScoringRows(G_PartyScoringRows);
     renderPartyScoreRangeTable(summary.rangeStats, summary.totalSale, summary.sellingParties, summary.totalParties);
     renderPartyScoreDonutChart(summary.rangeStats, summary.totalSale, summary.sellingParties);
@@ -1732,7 +2017,9 @@ function renderPartyScoring() {
         filters.notPurchaseFromDays
     );
 
-    Promise.all([currentPromise, lastMonthPromise, salePromise]).then(function ([response, lastMonthResponse, saleResponse]) {
+    const ratingMasterPromise = loadClientRatingMaster();
+
+    Promise.all([currentPromise, lastMonthPromise, salePromise, ratingMasterPromise]).then(function ([response, lastMonthResponse, saleResponse]) {
         HideLoader();
         G_PartyScoringRows = Array.isArray(response) ? response : [];
         G_PartyScoringLastMonthMap = buildPartyScoreLastMonthMap(Array.isArray(lastMonthResponse) ? lastMonthResponse : []);
@@ -5847,6 +6134,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 300);
 
     initRmRateModalControls();
+    initSummaryNbdCrrPartyModal();
 });
 
 let G_RmRateValues = {};
