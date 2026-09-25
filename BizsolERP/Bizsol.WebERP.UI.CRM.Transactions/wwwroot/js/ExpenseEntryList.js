@@ -22,6 +22,10 @@ var G_EE_ListHistoryContext = { detailLines: [], masterCode: 0 };
 var G_EE_ListAttachmentYesMap = {};
 const EE_SALES_PERSON_MAX_RETRIES = 4;
 const EE_SALES_PERSON_RETRY_DELAY_MS = 600;
+/** "Pending on me" = every entry awaiting my approval, so the chip ignores the From/To filter.
+ *  The API needs both dates, hence this all-time window. */
+const EE_PENDING_ON_ME_FROM_DATE = '1900-01-01';
+const EE_PENDING_ON_ME_TO_DATE = '2099-12-31';
 
 const Indx_Tbl = {
     Code: 0,
@@ -374,13 +378,7 @@ function updateStatChipsFromRawRows(rows) {
 }
 
 function refreshPendingOnMeCount() {
-    var fd = listDateToIso($("#txtFromDate").val());
-    var td = listDateToIso($("#txtToDate").val());
-    if (!fd || !td) {
-        $('#eeStatPendingOnMe').text('—');
-        return;
-    }
-    ExpenseEntryLevelsApprovalService.GetPendingExpenseEntryList(fd, td, 'P')
+    ExpenseEntryLevelsApprovalService.GetPendingExpenseEntryList(EE_PENDING_ON_ME_FROM_DATE, EE_PENDING_ON_ME_TO_DATE, 'P')
         .then(function (data) {
             var list = Array.isArray(data) ? data : (data && (data.Data || data.data)) || [];
             if (!Array.isArray(list)) list = [];
