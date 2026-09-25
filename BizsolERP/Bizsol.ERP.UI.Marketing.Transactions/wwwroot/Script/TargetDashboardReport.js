@@ -207,7 +207,6 @@ function visibleColumns(rows, tile) {
         return hidden.indexOf(String(key).toLowerCase()) === -1;
     });
 }
-
 function monthArchiveColumns(rows) {
     if (!rows || !rows.length) return [];
     const row = rows[0];
