@@ -47,6 +47,11 @@ const UserMasterService = {
         var URL = UrlService.API_ENDPOINT_USERMASTER + '/GETDASHBOARDLIST';
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
+    DecryptPassword: function (encryptedPassword) {
+        var URL = UrlService.API_ENDPOINT_USERMASTER + '/DecryptPassword';
+        var body = JSON.stringify(encryptedPassword == null ? '' : String(encryptedPassword));
+        return promiseAjaxCallApi.CallAPI('POST', URL, body, { suppressErrorToast: true });
+    },
 
 };
 

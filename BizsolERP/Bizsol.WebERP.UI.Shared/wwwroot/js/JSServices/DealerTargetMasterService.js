@@ -62,22 +62,21 @@ const DealerTargetMasterService = {
     },
 
     /** Active dealers for the selected party (DealerMaster GetDealerLocate). */
-    GetDealerLocate: function GetDealerLocate(AccountDesp, FinYear, TargetedDate, TargetFor) {
+    GetDealerLocate: function GetDealerLocate(AccountDesp, MarketingManMaster_Code, FinYear, TargetedDate) {
         const URL =
             UrlService.API_ENDPOINT_DEALER_TARGET_MASTER +
             '/GetDealerLocate?AccountDesp=' +
             encodeURIComponent(AccountDesp == null ? '' : AccountDesp) +
+            '&MarketingManMaster_Code=' +
+            encodeURIComponent(MarketingManMaster_Code ?? 0) +
             '&FinYear=' +
             encodeURIComponent(FinYear == null ? '' : FinYear) +
             '&TargetedDate=' +
-            encodeURIComponent(TargetedDate == null ? '' : TargetedDate) +
-            '&TargetFor=' +
-            encodeURIComponent(TargetFor == null ? '' : TargetFor);
+            encodeURIComponent(TargetedDate == null ? '' : TargetedDate);
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
     },
-
     /** Saved dealer target header + amounts by DealerTargetMaster.Code. */
     GetByCodeData: function GetByCodeData(Code) {
         const URL =
@@ -104,14 +103,18 @@ const DealerTargetMasterService = {
         });
     },
 
-    /** Dealer Target Report — FromDate / ToDate (USP Mode GETDEALERTARGETREPORT). */
-    GetDealerTargetReport: function GetDealerTargetReport(FromDate, ToDate) {
+    /**
+     * Dealer Target Report (USP Mode GETDEALERTARGETREPORT), one calendar month.
+     * TargetedDate is any date in that month (screen sends yyyy-MM-01).
+     * MarketingManMaster_Code = 0 means All sales persons.
+     */
+    GetDealerTargetReport: function GetDealerTargetReport(TargetedDate, MarketingManMaster_Code) {
         const URL =
             UrlService.API_ENDPOINT_DEALER_TARGET_MASTER +
-            '/GetDealerTargetReport?FromDate=' +
-            encodeURIComponent(FromDate == null ? '' : FromDate) +
-            '&ToDate=' +
-            encodeURIComponent(ToDate == null ? '' : ToDate);
+            '/GetDealerTargetReport?TargetedDate=' +
+            encodeURIComponent(TargetedDate == null ? '' : TargetedDate) +
+            '&MarketingManMaster_Code=' +
+            encodeURIComponent(MarketingManMaster_Code ?? 0);
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });

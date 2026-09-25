@@ -18,16 +18,21 @@
         <div class="dtr-header-title">
             <h3><i class="fas fa-bullseye"></i> Dealer Target Report</h3>
             <span>Compare monthly targets with actual dealer sales</span>
+
         </div>
         <div class="dtr-header-filters">
             <div class="dtr-date-fields">
-                <div class="dtr-field">
-                    <label for="txtFromDate">From Date <span class="text-danger">*</span></label>
-                    <input type="date" id="txtFromDate" name="txtFromDate" class="form-control form-control-sm box_border" required />
+                <div class="dtr-field dtr-field-month">
+                    <label for="ddlMonth">Month Name <span class="text-danger">*</span></label>
+                    <select id="ddlMonth" name="ddlMonth" class="form-control form-control-sm box_border">
+                        <option value="">Select</option>
+                    </select>
                 </div>
-                <div class="dtr-field">
-                    <label for="txtToDate">To Date <span class="text-danger">*</span></label>
-                    <input type="date" id="txtToDate" name="txtToDate" class="form-control form-control-sm box_border" required />
+                <div class="dtr-field dtr-field-person">
+                    <label for="ddlMarketingMan">Sales Person</label>
+                    <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border">
+                        <option value="0">All</option>
+                    </select>
                 </div>
             </div>
             <div class="dtr-actions">
@@ -78,7 +83,6 @@
             <div class="dtr-kpi-body">
                 <div class="dtr-kpi-label">Achievement</div>
                 <div class="dtr-kpi-value" id="kpiAchievement">0%</div>
-                <div class="dtr-kpi-bar"><span id="kpiAchievementBar"></span></div>
                 <div class="dtr-kpi-sub">Actual vs monthly target</div>
             </div>
         </div>
@@ -87,7 +91,7 @@
     <div id="dtrEmptyState" class="dtr-empty">
         <div class="dtr-empty-icon"><i class="fas fa-chart-column"></i></div>
         <h4>No report loaded</h4>
-        <p>Select From Date and To Date, then click <strong>Show</strong> to load dealer targets and actual sales.</p>
+        <p>Select Month and Sales Person, then click <strong>Show</strong> to load dealer targets and actual sales.</p>
     </div>
 
     <div id="tblDealerTargetReport" class="dtr-grid-panel" style="display:none;">
