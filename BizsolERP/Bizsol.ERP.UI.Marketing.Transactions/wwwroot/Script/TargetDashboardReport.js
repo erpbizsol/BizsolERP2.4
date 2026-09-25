@@ -337,6 +337,55 @@ function renderTable(rows, tile) {
         head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
 }
 
+function freezeTableHeaders() {
+    $('#tdrTileGrid .tdr-table-wrap').each(function () {
+        const wrap = this;
+        if (wrap.querySelector('.tdr-freeze-body')) return;
+        const table = wrap.querySelector('table');
+        const thead = table && table.querySelector('thead');
+        const firstRow = table && table.querySelector('tbody tr');
+        if (!thead || !firstRow) return;
+
+        const widths = Array.prototype.map.call(firstRow.children, function (cell) {
+            return Math.ceil(cell.getBoundingClientRect().width);
+        });
+
+        const headWrap = document.createElement('div');
+        headWrap.className = 'tdr-freeze-head';
+        const headTable = table.cloneNode(false);
+        headTable.appendChild(thead);
+        headWrap.appendChild(headTable);
+
+        const scroll = document.createElement('div');
+        scroll.className = 'tdr-freeze-body';
+        scroll.appendChild(table);
+        wrap.appendChild(headWrap);
+        wrap.appendChild(scroll);
+
+        const total = widths.reduce(function (sum, width) { return sum + width; }, 0);
+        headTable.style.width = total + 'px';
+        headTable.style.minWidth = total + 'px';
+        table.style.width = total + 'px';
+        table.style.minWidth = total + 'px';
+
+        function lockCells(row) {
+            Array.prototype.forEach.call(row.children, function (cell, index) {
+                const width = widths[index] || 0;
+                cell.style.width = width + 'px';
+                cell.style.minWidth = width + 'px';
+                cell.style.maxWidth = width + 'px';
+            });
+        }
+        lockCells(headTable.querySelector('tr'));
+        Array.prototype.forEach.call(table.querySelectorAll('tbody tr'), lockCells);
+
+        scroll.addEventListener('scroll', function () {
+            headWrap.scrollLeft = scroll.scrollLeft;
+        });
+        headWrap.style.paddingRight = (scroll.offsetWidth - scroll.clientWidth) + 'px';
+    });
+}
+
 function tileMeta(tile, rows) {
     const count = (rows || []).length;
     const countText = count + (count === 1 ? ' record' : ' records');
@@ -520,6 +569,7 @@ function showData() {
         updateKpis(results, fromDate, toDate);
         renderTiles(results);
         showDashboard();
+        freezeTableHeaders();
         if (!anyData) {
             toastr.info('No data found for ' + formatDisplayDate(fromDate) + ' – ' + formatDisplayDate(toDate) + '.');
         }

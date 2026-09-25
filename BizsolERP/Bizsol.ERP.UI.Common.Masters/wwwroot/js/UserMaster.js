@@ -1296,6 +1296,8 @@ function EditUser(code) {
         row = mergeUserRowWithDetailsFromGetByCodeResponse(row, res);
         PopulateForm(row);
         U_EditRow = Object.assign({}, row);
+        var encPwd = pickRowVal(row, 'Password', 'password');
+        applyDecryptedPasswordToEditForm(code, encPwd != null ? String(encPwd) : '');
         var companyCode = pickRowVal(row, 'FixedParameter_Code', 'fixedParameter_Code');
         companyCode = companyCode != null && String(companyCode).trim() !== '' ? String(companyCode).trim() : '';
         loadSubProjectsForUserMaster(companyCode);
@@ -1382,6 +1384,51 @@ function EditFromView() {
 /* ══════════════════════════════════════════
    SAVE
 ══════════════════════════════════════════ */
+function storedEncryptedPassword() {
+    if (!U_EditRow) return '';
+    var keepPwd = pickRowVal(U_EditRow, 'Password', 'password');
+    if (keepPwd == null || String(keepPwd) === '') return '';
+    return String(keepPwd);
+}
+
+function normalizeDecryptedPassword(raw) {
+    if (raw == null) return '';
+    if (typeof raw === 'string' || typeof raw === 'number') return String(raw);
+    if (typeof raw === 'object') {
+        var keys = ['decryptedPassword', 'DecryptedPassword', 'password', 'Password', 'value', 'Value', 'data', 'Data', 'result', 'Result'];
+        var i;
+        for (i = 0; i < keys.length; i++) {
+            if (raw[keys[i]] != null && typeof raw[keys[i]] !== 'object')
+                return String(raw[keys[i]]);
+        }
+    }
+    return '';
+}
+
+/** POST DecryptPassword and return the plain password string. */
+function DecryptPassword(encryptedPassword) {
+    var enc = encryptedPassword == null ? '' : String(encryptedPassword);
+    if (!enc) return Promise.resolve('');
+    return UserMasterService.DecryptPassword(enc).then(function (raw) {
+        return normalizeDecryptedPassword(raw).trim();
+    });
+}
+
+function applyDecryptedPasswordToEditForm(editCode, encryptedPassword) {
+    DecryptPassword(encryptedPassword).then(function (plain) {
+        if (String(U_EditCode) !== String(editCode)) return;
+        if (!plain) {
+            toastr.error('Failed to decrypt password.');
+            return;
+        }
+        $('#txtPassword').val(plain);
+        $('#txtConfirmPassword').val(plain);
+    }).catch(function () {
+        if (String(U_EditCode) !== String(editCode)) return;
+        toastr.error('Failed to decrypt password.');
+    });
+}
+
 function SaveUser() {
     if (!ValidateForm()) return;
 
@@ -1392,26 +1439,51 @@ function SaveUser() {
     $btn.prop('disabled', true);
     $('#btnSaveText').text(isEdit ? 'Updating…' : 'Saving…');
 
-    UserMasterService.SaveUserMaster(payload).then(function (raw) {
-        var response = unwrapStandardApiBody(raw);
-        if (apiSuccessY(response)) {
-            CloseForm();
-            GetUserMasterList();
-            ShowSuccessModal(
-                isEdit ? 'Updated Successfully!' : 'Saved Successfully!',
-                coalesceApiMessage(response, 'User has been saved.'),
-                isEdit ? 'fa-pen-to-square' : 'fa-circle-check'
-            );
-        } else {
-            var failMsg = isEdit ? 'Failed to update user.' : 'Failed to save user.';
-            toastr.error(coalesceApiMessage(response, failMsg));
-        }
-    }).catch(function () {
-        toastr.error('An error occurred. Please try again.');
-    }).finally(function () {
+    function resetSaveButton() {
         $btn.prop('disabled', false);
         $('#btnSaveText').text(origText);
-    });
+    }
+
+    function finishSave() {
+        UserMasterService.SaveUserMaster(payload).then(function (raw) {
+            var response = unwrapStandardApiBody(raw);
+            if (apiSuccessY(response)) {
+                CloseForm();
+                GetUserMasterList();
+                ShowSuccessModal(
+                    isEdit ? 'Updated Successfully!' : 'Saved Successfully!',
+                    coalesceApiMessage(response, 'User has been saved.'),
+                    isEdit ? 'fa-pen-to-square' : 'fa-circle-check'
+                );
+            } else {
+                var failMsg = isEdit ? 'Failed to update user.' : 'Failed to save user.';
+                toastr.error(coalesceApiMessage(response, failMsg));
+            }
+        }).catch(function () {
+            toastr.error('An error occurred. Please try again.');
+        }).finally(resetSaveButton);
+    }
+
+    /* Edit: GET returns encrypted password. Decrypt it, then save the plain password.
+       A newly typed password is already plain — send it as-is. */
+    var storedEnc = storedEncryptedPassword();
+    if (isEdit && storedEnc && payload.Password === storedEnc) {
+        DecryptPassword(storedEnc).then(function (plain) {
+            if (!plain) {
+                toastr.error('Failed to decrypt password.');
+                resetSaveButton();
+                return;
+            }
+            payload.Password = plain;
+            finishSave();
+        }).catch(function () {
+            toastr.error('Failed to decrypt password.');
+            resetSaveButton();
+        });
+        return;
+    }
+
+    finishSave();
 }
 
 function BuildPayload() {
@@ -1568,7 +1640,6 @@ function PopulateForm(d) {
     var mobile = pickRowVal(d, 'UserMobileNo', 'userMobileNo');
     var groupCode = pickRowVal(d, 'GroupMaster_Code', 'groupMaster_Code');
     var companyCode = pickRowVal(d, 'FixedParameter_Code', 'fixedParameter_Code');
-    var pwd = pickRowVal(d, 'Password', 'password');
     var isBiz = String(pickRowVal(d, 'IsBizSolUser', 'isBizSolUser') || '').trim().toUpperCase();
     var att = String(pickRowVal(d, 'AttendanceMandatoryInCRM', 'attendanceMandatoryInCRM') || '').trim().toUpperCase();
     var status = String(pickRowVal(d, 'Status', 'status') || '').trim().toUpperCase();
@@ -1576,13 +1647,9 @@ function PopulateForm(d) {
     $('#txtUserID').val(userId != null ? String(userId) : '');
     $('#txtUserName').val(userName != null ? String(userName) : '');
     $('#txtMobileNo').val(mobile != null ? String(mobile) : '');
-    if (pwd != null && String(pwd) !== '') {
-        $('#txtPassword').val(String(pwd));
-        $('#txtConfirmPassword').val(String(pwd));
-    } else {
-        $('#txtPassword').val('');
-        $('#txtConfirmPassword').val('');
-    }
+    /* Password is encrypted on GET. EditUser fills these after DecryptPassword returns. */
+    $('#txtPassword').val('');
+    $('#txtConfirmPassword').val('');
     setSelectValueWhenReady($('#ddlGroupName'), groupCode, 16);
     setSelectValueWhenReady($('#ddlDefaultCompany'), companyCode, 16, function (cc) {
         if (cc) loadSubProjectsForUserMaster(cc);
