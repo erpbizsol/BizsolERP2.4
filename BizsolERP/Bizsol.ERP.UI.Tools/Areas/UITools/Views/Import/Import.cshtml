@@ -6,7 +6,7 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script src="~/assets/libs/jszip/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Tools/script/Import.js?v=import-api-v98"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Tools/script/Import.js?v=import-api-v103"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/bizsolpbcontrols.js"></script>
 
@@ -338,8 +338,24 @@
         margin-top: 2px;
     }
 
+    #ImportPage #ImportData.fixed-width-table {
+        width: max-content;
+        min-width: 100%;
+        table-layout: auto;
+    }
+
+    #ImportPage #ImportData th,
+    #ImportPage #ImportData td {
+        white-space: nowrap;
+        vertical-align: middle;
+        padding: 4px 8px;
+    }
+
     #ImportPage .imp-cell-input {
-        min-width: 110px;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     #ImportPage .imp-validation-remark {
@@ -413,7 +429,7 @@
 
     #ImportPage .imp-cell-locked {
         display: inline-block;
-        min-width: 110px;
+        min-width: 0;
         font-size: 13px;
         color: #495057;
         padding: 4px 0;
