@@ -83,6 +83,12 @@ body:has(#DealerTargetReportPage) #modern-content.modern-content > main {
     flex: 1 1 150px;
 }
 
+.dtr-field-month,
+.dtr-field-person {
+    min-width: 190px;
+    flex: 1 1 190px;
+}
+
 .dtr-field label {
     margin: 0;
     font-size: 0.74rem;
@@ -259,23 +265,6 @@ body:has(#DealerTargetReportPage) #modern-content.modern-content > main {
     font-size: 0.72rem;
 }
 
-.dtr-kpi-bar {
-    margin-top: 8px;
-    height: 6px;
-    border-radius: 999px;
-    background: rgba(245, 158, 11, 0.2);
-    overflow: hidden;
-}
-
-.dtr-kpi-bar span {
-    display: block;
-    height: 100%;
-    width: 0;
-    border-radius: 999px;
-    background: #f59e0b;
-    transition: width 0.35s ease;
-}
-
 .dtr-kpi-dealers {
     background: #eef2ff;
     border-color: #c7d2fe;
@@ -320,8 +309,6 @@ body:has(#DealerTargetReportPage) #modern-content.modern-content > main {
 .dtr-kpi-achv.is-good .dtr-kpi-label,
 .dtr-kpi-achv.is-good .dtr-kpi-sub { color: #059669; }
 .dtr-kpi-achv.is-good .dtr-kpi-value { color: #065f46; }
-.dtr-kpi-achv.is-good .dtr-kpi-bar { background: rgba(16, 185, 129, 0.2); }
-.dtr-kpi-achv.is-good .dtr-kpi-bar span { background: #10b981; }
 
 .dtr-kpi-achv.is-low {
     background: #fff1f2;
@@ -331,8 +318,6 @@ body:has(#DealerTargetReportPage) #modern-content.modern-content > main {
 .dtr-kpi-achv.is-low .dtr-kpi-label,
 .dtr-kpi-achv.is-low .dtr-kpi-sub { color: #e11d48; }
 .dtr-kpi-achv.is-low .dtr-kpi-value { color: #9f1239; }
-.dtr-kpi-achv.is-low .dtr-kpi-bar { background: rgba(239, 68, 68, 0.18); }
-.dtr-kpi-achv.is-low .dtr-kpi-bar span { background: #ef4444; }
 
 .dtr-empty,
 .dtr-grid-panel {

@@ -4,6 +4,7 @@ import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToE
 
 let G_DealerTargetReport = [];
 let G_DealerTargetReportView = [];
+let G_MonthList = [];
 
 function firstPayloadArray(payload) {
     if (!payload) return [];
@@ -72,22 +73,75 @@ function rowText(row, names) {
     return '';
 }
 
-function SetDate() {
-    const today = new Date();
-    const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    $('#txtFromDate').val(formatDate(firstOfMonth));
-    $('#txtToDate').val(formatDate(today));
-    UpdatePeriodLabel();
+function pad2(value) {
+    return String(value).padStart(2, '0');
+}
+
+function monthRowByValue(value) {
+    const selected = String(value || '').trim().toLowerCase();
+    for (let i = 0; i < G_MonthList.length; i++) {
+        if (String(G_MonthList[i].MonthNameWithYear).toLowerCase() === selected) {
+            return G_MonthList[i];
+        }
+    }
+    return null;
+}
+
+function monthDateRange(row) {
+    if (!row || !row.MonthNumber) return null;
+    const year = row.MonthYear || new Date().getFullYear();
+    const month = Number(row.MonthNumber);
+    const fromDate = year + '-' + pad2(month) + '-01';
+    const lastDay = new Date(year, month, 0).getDate();
+    const toDate = year + '-' + pad2(month) + '-' + pad2(lastDay);
+    return { fromDate: fromDate, toDate: toDate };
+}
+
+function LoadMonthList() {
+    const $ddl = $('#ddlMonth');
+    $ddl.prop('disabled', true);
+    DealerTargetMasterService.GetMonth().then(function (response) {
+        const rows = firstPayloadArray(response);
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        let defaultValue = '';
+        let option = '<option value="">Select</option>';
+
+        G_MonthList = rows.map(function (row) {
+            return {
+                MonthNameWithYear: String(row.MonthNameWithYear || row.monthNameWithYear || '').trim(),
+                MonthNumber: Number(row.MonthNumber || row.monthNumber) || 0,
+                MonthYear: Number(row.MonthYear || row.monthYear) || 0
+            };
+        }).filter(function (row) {
+            return !!row.MonthNameWithYear;
+        });
+
+        G_MonthList.forEach(function (row) {
+            if (row.MonthNumber === currentMonth && (row.MonthYear === currentYear || !row.MonthYear)) {
+                defaultValue = row.MonthNameWithYear;
+            }
+            option += '<option value="' + escapeAttr(row.MonthNameWithYear) + '">' + escapeAttr(row.MonthNameWithYear) + '</option>';
+        });
+
+        if (!defaultValue && G_MonthList.length) {
+            defaultValue = G_MonthList[0].MonthNameWithYear;
+        }
+
+        $ddl.html(option).val(defaultValue);
+        $ddl.prop('disabled', false);
+        UpdatePeriodLabel();
+    }).catch(function () {
+        $ddl.html('<option value="">Select</option>').val('');
+        $ddl.prop('disabled', false);
+        UpdatePeriodLabel();
+    });
 }
 
 function UpdatePeriodLabel() {
-    const fromDate = $('#txtFromDate').val();
-    const toDate = $('#txtToDate').val();
-    if (fromDate && toDate) {
-        $('#dtrPeriodLabel').text(formatDisplayDate(fromDate) + '  –  ' + formatDisplayDate(toDate));
-        return;
-    }
-    $('#dtrPeriodLabel').text('Select a date range');
+    const monthName = ($('#ddlMonth').val() || '').trim();
+    $('#dtrPeriodLabel').text(monthName || 'Select a month');
 }
 
 function setShowLoading(isLoading) {
@@ -115,7 +169,6 @@ function UpdateSummary(rows) {
 
     const achievement = monthlyTarget > 0 ? (totalSale / monthlyTarget) * 100 : 0;
     const partyCount = Object.keys(parties).length;
-    const barWidth = Math.max(0, Math.min(achievement, 100));
 
     $('#kpiDealers').text(formatNumber(dealerCount));
     $('#kpiPartyCount').text(partyCount + (partyCount === 1 ? ' party' : ' parties'));
@@ -124,7 +177,6 @@ function UpdateSummary(rows) {
     $('#kpiTotalSale').text(formatNumber(totalSale));
     $('#kpiPerDaySale').text('Per day ' + formatNumber(perDaySale));
     $('#kpiAchievement').text(formatNumber(achievement) + '%');
-    $('#kpiAchievementBar').css('width', barWidth + '%');
     $('#dtrKpiAchv').removeClass('is-good is-low');
     if (achievement >= 80) {
         $('#dtrKpiAchv').addClass('is-good');
@@ -146,12 +198,8 @@ function rowSearchText(row) {
 function enhanceReportRows(rows) {
     return (rows || []).map(function (row) {
         const enhanced = Object.assign({}, row);
-        const target = rowNumber(row, ['Monthly Target']);
-        const sale = rowNumber(row, ['Total Sale (Actual)', 'Total Sale']);
-        const achievement = target > 0 ? (sale / target) * 100 : 0;
-        if (enhanced['Achievement %'] === undefined && enhanced.Achievement === undefined) {
-            enhanced['Achievement %'] = Number(achievement.toFixed(2));
-        }
+        delete enhanced['Achievement %'];
+        delete enhanced.Achievement;
         enhanced._search = rowSearchText(enhanced);
         return enhanced;
     });
@@ -181,22 +229,22 @@ function BindDealerTargetReport(rows) {
     }
 
     const stringFilterColumn = ['MKT Person', 'Party Name', 'Location', 'Dealer Name'];
-    const numericFilterColumn = ['Avg Cost Per Crate', 'Monthly Target', 'Per Day Target', 'Total Sale (Actual)', 'Per Day Sale (Actual)', 'Achievement %'];
+    const numericFilterColumn = ['Avg Cost Per Crate', 'Monthly Target', 'Per Day Target', 'Total Sale (Actual)', 'Per Day Sale (Actual)'];
     const dateFilterColumn = [];
     const button = false;
     const showButtons = [];
     const stringDoubleFilterColumn = [];
     const hiddenColumns = [
         'Code', 'DealerMaster_Code', 'AccountMaster_Code', 'CityMaster_Code',
-        'StateMaster_Code', 'MarketingManMaster_Code', 'DealerTargetMaster_Code', '_search'
+        'StateMaster_Code', 'MarketingManMaster_Code', 'DealerTargetMaster_Code', 'Month',
+        'Achievement %', 'Achievement', '_search'
     ];
     const columnAlignment = {
         'Avg Cost Per Crate': 'right',
         'Monthly Target': 'right',
         'Per Day Target': 'right',
         'Total Sale (Actual)': 'right',
-        'Per Day Sale (Actual)': 'right',
-        'Achievement %': 'right'
+        'Per Day Sale (Actual)': 'right'
     };
 
     BizsolCustomFilterGrid.CreateDataTable(
@@ -236,30 +284,67 @@ function ShowGrid() {
     $('#btnDownload').prop('disabled', false);
 }
 
-function ShowData() {
-    const FromDate = $('#txtFromDate').val();
-    const ToDate = $('#txtToDate').val();
+function escapeAttr(val) {
+    return String(val == null ? '' : val)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
 
-    if (!FromDate) {
-        toastr.error('Please enter From Date');
-        $('#txtFromDate').focus();
+function getMarketingManCode() {
+    const code = parseInt($('#ddlMarketingMan').val() || '0', 10);
+    return isNaN(code) ? 0 : code;
+}
+
+function LoadMarketingManList() {
+    const $ddl = $('#ddlMarketingMan');
+    $ddl.prop('disabled', true);
+    DealerTargetMasterService.GetNestedMarketingManList().then(function (response) {
+        const rows = firstPayloadArray(response);
+        let option = '<option value="0">All</option>';
+        rows.forEach(function (person) {
+            const code = person.Code != null ? person.Code : person.MarketingManMaster_Code;
+            const name = String(person.PersonName || person.Desp || person.MarketingManName || '').trim();
+            if (code === undefined || code === null || String(code) === '' || String(code) === '0' || !name) return;
+            option += '<option value="' + escapeAttr(code) + '">' + escapeAttr(name) + '</option>';
+        });
+        $ddl.html(option).val('0');
+        $ddl.prop('disabled', false);
+    }).catch(function () {
+        $ddl.html('<option value="0">All</option>').val('0');
+        $ddl.prop('disabled', false);
+    });
+}
+
+function filterBySalesPerson(rows, code) {
+    if (!code) return rows || [];
+    const selectedName = ($('#ddlMarketingMan option:selected').text() || '').trim().toLowerCase();
+    return (rows || []).filter(function (row) {
+        const rowCode = rowNumber(row, ['MarketingManMaster_Code']);
+        if (rowCode) return rowCode === code;
+        if (!selectedName || selectedName === 'all') return true;
+        return rowText(row, ['MKT Person', 'Marketing Person', 'Sales Person']).toLowerCase() === selectedName;
+    });
+}
+
+function ShowData() {
+    const monthRow = monthRowByValue($('#ddlMonth').val());
+    const range = monthDateRange(monthRow);
+    const MarketingManMaster_Code = getMarketingManCode();
+
+    if (!range) {
+        toastr.error('Please select Month');
+        $('#ddlMonth').focus();
         return;
     }
-    if (!ToDate) {
-        toastr.error('Please enter To Date');
-        $('#txtToDate').focus();
-        return;
-    }
-    if (new Date(ToDate) < new Date(FromDate)) {
-        toastr.error('To Date cannot be before From Date');
-        $('#txtToDate').focus();
-        return;
-    }
+
+    const TargetedDate = range.fromDate;
 
     UpdatePeriodLabel();
     setShowLoading(true);
     if (typeof window.Showloader === 'function') window.Showloader();
-    DealerTargetMasterService.GetDealerTargetReport(FromDate, ToDate).then(function (response) {
+    DealerTargetMasterService.GetDealerTargetReport(TargetedDate, MarketingManMaster_Code).then(function (response) {
         const status = response && (response.Status || response.status);
         const msg = response && (response.Msg || response.msg || response.message);
         const rows = firstPayloadArray(response);
@@ -278,7 +363,7 @@ function ShowData() {
             return;
         }
 
-        G_DealerTargetReport = enhanceReportRows(rows);
+        G_DealerTargetReport = enhanceReportRows(filterBySalesPerson(rows, MarketingManMaster_Code));
         G_DealerTargetReportView = G_DealerTargetReport;
         UpdateSummary(G_DealerTargetReport);
         ShowGrid();
@@ -298,13 +383,15 @@ function Download() {
     }
     const hiddenFields = [
         'Code', 'DealerMaster_Code', 'AccountMaster_Code', 'CityMaster_Code',
-        'StateMaster_Code', 'MarketingManMaster_Code', 'DealerTargetMaster_Code', '_search'
+        'StateMaster_Code', 'MarketingManMaster_Code', 'DealerTargetMaster_Code', 'Month',
+        'Achievement %', 'Achievement', '_search'
     ];
     ExportToExcelControl.ExportToExcel(G_DealerTargetReport, hiddenFields, 'DealerTargetReport');
 }
 
 function ResetReport() {
-    SetDate();
+    LoadMonthList();
+    $('#ddlMarketingMan').val('0');
     ShowEmptyState();
     $('#DealerTargetReport-header').empty();
     $('#DealerTargetReport-body').empty();
@@ -316,11 +403,12 @@ $(document).ready(function () {
         BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
     }
     $('#ERPHeading').text($('#ERPHeading').text() || 'Dealer Target Report');
-    SetDate();
+    LoadMonthList();
+    LoadMarketingManList();
     ShowEmptyState();
 
-    $('#txtFromDate, #txtToDate').on('change', UpdatePeriodLabel);
-    $('#txtFromDate, #txtToDate').on('keydown', function (e) {
+    $('#ddlMonth').on('change', UpdatePeriodLabel);
+    $('#ddlMonth').on('keydown', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             ShowData();

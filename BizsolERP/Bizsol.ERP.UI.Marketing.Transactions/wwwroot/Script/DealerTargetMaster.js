@@ -721,7 +721,7 @@ function dealerIndexByCode(dealers, code) {
 
 function applySavedRowToDealer(dealer, saved, transactionCode) {
     const merged = Object.assign({}, dealer);
-    const amountRaw = pickAny(saved, ['TargetedAmount', 'Amount', 'TargetAmount'], null);
+    const amountRaw = pickAny(saved, ['TargetedAmount', 'Targeted Amount', 'Amount', 'TargetAmount'], null);
     if (hasTargetAmount(amountRaw)) {
         merged.TargetedAmount = amountRaw;
     }
@@ -740,7 +740,7 @@ function applySavedRowToDealer(dealer, saved, transactionCode) {
 function applyAmountSnapshot(dealers, snapshot) {
     if (!dealers || !dealers.length || !snapshot) return dealers || [];
     return dealers.map(function (dealer) {
-        const current = pickAny(dealer, ['TargetedAmount'], null);
+        const current = pickAny(dealer, ['TargetedAmount', 'Targeted Amount'], null);
         const snapAmount = snapshot[dealerRowCode(dealer)];
         if (!hasTargetAmount(current) && hasTargetAmount(snapAmount)) {
             return Object.assign({}, dealer, { TargetedAmount: snapAmount });
@@ -937,7 +937,7 @@ function highlightDeactiveRows() {
 
 function mapDealerRow(dealer, party) {
     const code = pick(dealer, ['Code', 'DealerMaster_Code'], 0);
-    const amountRaw = pickAny(dealer, ['TargetedAmount', 'Amount', 'TargetAmount'], null);
+    const amountRaw = pickAny(dealer, ['TargetedAmount', 'Targeted Amount', 'Amount', 'TargetAmount'], null);
     const amountValue = hasTargetAmount(amountRaw) ? amountRaw : '';
     const status = pick(dealer, ['Status', 'DealerStatus', 'IsActive'], 'Active');
     const inactive = isInactiveStatus(status);
@@ -1058,17 +1058,14 @@ function BindDealerTargetGrid(list, silent) {
 
 function GetDealerTargetList(preferredHeaderCode, silent) {
     silent = !!silent;
-    const stored = readStoredState();
-    const amountSnapshot = Object.assign({}, stored.amounts || {}, snapshotTargetAmounts());
-    if (!G_HeaderCode) G_HeaderCode = toInt(stored.headerCode);
     const party = getSelectedParty();
     const monthNameWithYear = getSelectedMonthName();
     const monthNumber = getSelectedMonthNumber();
     const finYear = getSelectedFinYear();
-    const targetFor = getSelectedTargetFor();
+    const marketingManCode = getSelectedMarketingManCode();
     const targetedDate = getSelectedTargetedDate();
 
-    if (!getSelectedMarketingManCode()) {
+    if (!marketingManCode) {
         if (!silent) toastr.error('Please select Sales Person');
         return false;
     }
@@ -1085,7 +1082,7 @@ function GetDealerTargetList(preferredHeaderCode, silent) {
     if (typeof window.Showloader === 'function') window.Showloader();
 
     const locateDealers = function (dateValue) {
-        return DealerTargetMasterService.GetDealerLocate(normalizeText(party.AccountDesp), finYear, dateValue, targetFor);
+        return DealerTargetMasterService.GetDealerLocate(normalizeText(party.AccountDesp), marketingManCode, finYear, dateValue);
     };
 
     locateDealers(targetedDate).then(function (response) {
@@ -1099,11 +1096,10 @@ function GetDealerTargetList(preferredHeaderCode, silent) {
     }).then(function (result) {
         const dealers = (result && result.dealers) || [];
         const headerCode = toInt(preferredHeaderCode) ||
-            toInt(pick(dealers[0], ['DealerTargetMaster_Code'], 0)) ||
-            G_HeaderCode ||
-            toInt(stored.headerCode);
+            toInt(pick(dealers[0], ['DealerTargetMaster_Code'], 0));
+        G_HeaderCode = headerCode;
         setShowLoading(false);
-        return loadSavedTargetData(headerCode, dealers, party, amountSnapshot, silent);
+        return loadSavedTargetData(headerCode, dealers, party, {}, silent);
     }).catch(function (error) {
         if (typeof window.HideLoader === 'function') window.HideLoader();
         setShowLoading(false);
