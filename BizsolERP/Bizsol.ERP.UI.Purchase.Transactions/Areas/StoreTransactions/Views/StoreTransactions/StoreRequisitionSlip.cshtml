@@ -1,0 +1,220 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/StoreRequisitionSlip.js"></script>
+
+<style>
+    /* ── STORE REQUISITION LIST ──────────────────────────── */
+    .sr-list-header {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        overflow: visible;
+    }
+    .sr-list-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .sr-list-header small { color: rgba(255,255,255,0.75); font-size: 0.78rem; display: block; }
+    .sr-header-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .sr-create-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #11998e;
+        border-radius: 10px; padding: 8px 16px; font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.2); white-space: nowrap;
+        cursor: pointer; font-size: 0.88rem; transition: background 0.18s;
+    }
+    .sr-create-btn:hover { background: #e8fff5; }
+    .sr-form-header {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        color: #fff;
+    }
+    .sr-form-header h5 { margin: 0; font-weight: 700; }
+    .section-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+        margin-bottom: 18px;
+    }
+    .section-card-header {
+        background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+        color: #fff;
+        border-radius: 10px 10px 0 0;
+        padding: 10px 18px;
+        font-weight: 700;
+        font-size: 0.92rem;
+    }
+    .section-card-body { padding: 16px 18px; }
+    .form-label { font-weight: 600; font-size: 0.85rem; }
+    .table-responsive { border-radius: 10px; overflow: hidden; }
+    .sr-detail-table thead { background: linear-gradient(90deg,#11998e,#38ef7d); color:#fff; }
+    .badge-pending   { background:#ffc107; color:#333; }
+    .badge-approved  { background:#28a745; color:#fff; }
+    .badge-cancelled { background:#dc3545; color:#fff; }
+    .action-btn { border: none; background: transparent; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+    .action-btn:hover { background: rgba(0,0,0,0.07); }
+</style>
+
+<!-- ══════════════════════════════════════════════════════
+     LIST PANEL
+══════════════════════════════════════════════════════ -->
+<div id="divSRList">
+    <div class="section-card">
+        <div class="sr-list-header">
+            <div class="sr-header-top">
+                <div>
+                    <h5><i class="bi bi-clipboard2-check me-2"></i>Store Requisition Slip</h5>
+                    <small>Manage all store requisition slips</small>
+                </div>
+                <button class="sr-create-btn" id="btnNewSR" onclick="ShowSRForm()">
+                    <i class="bi bi-plus-circle-fill"></i> New Requisition
+                </button>
+            </div>
+            <!-- Filter Row -->
+            <div class="d-flex flex-wrap gap-2 align-items-center mt-1">
+                <select id="ddlSRStatus" class="form-select form-select-sm" style="max-width:160px;">
+                    <option value="">All Status</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="CANCELLED">Cancelled</option>
+                </select>
+                <input type="date" id="txtSRFromDate" class="form-control form-control-sm" style="max-width:150px;" />
+                <input type="date" id="txtSRToDate"   class="form-control form-control-sm" style="max-width:150px;" />
+                <button class="btn btn-sm btn-light border" onclick="LoadSRList()">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="ClearSRFilter()">
+                    <i class="bi bi-x-circle"></i> Clear
+                </button>
+            </div>
+        </div>
+        <div class="section-card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0 sr-detail-table" id="tblSRList">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>SR No</th>
+                            <th>Date</th>
+                            <th>Requested By</th>
+                            <th>Department</th>
+                            <th>Project</th>
+                            <th>Remarks</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblSRListBody">
+                        <tr><td colspan="9" class="text-center text-muted py-4">No records found. Use Search to load data.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     FORM PANEL
+══════════════════════════════════════════════════════ -->
+<div id="divSRForm" style="display:none;">
+    <div class="section-card">
+        <div class="sr-form-header d-flex align-items-center justify-content-between">
+            <h5 class="mb-0"><i class="bi bi-clipboard2-plus me-2"></i><span id="lblSRFormTitle">New Store Requisition Slip</span></h5>
+            <button class="btn btn-sm btn-light" onclick="ShowSRList()">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </button>
+        </div>
+        <div class="section-card-body">
+            <input type="hidden" id="hdnSRCode" value="0" />
+
+            <!-- Header Section -->
+            <div class="section-card mb-3">
+                <div class="section-card-header"><i class="bi bi-info-circle me-1"></i>Requisition Details</div>
+                <div class="section-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">SR Number</label>
+                            <input type="text" id="txtSRNumber" class="form-control form-control-sm" placeholder="Auto-generated" readonly />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Date <span class="text-danger">*</span></label>
+                            <input type="date" id="txtSRDate" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Requested By <span class="text-danger">*</span></label>
+                            <input type="text" id="txtRequestedBy" class="form-control form-control-sm" placeholder="Requested by" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Department</label>
+                            <input type="text" id="txtDepartment" class="form-control form-control-sm" placeholder="Department" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Project</label>
+                            <select id="ddlSRProject" class="form-select form-select-sm">
+                                <option value="">-- Select Project --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Sub-Project</label>
+                            <select id="ddlSRSubProject" class="form-select form-select-sm">
+                                <option value="">-- Select Sub-Project --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Required By Date</label>
+                            <input type="date" id="txtRequiredByDate" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Remarks</label>
+                            <textarea id="txtSRRemarks" class="form-control form-control-sm" rows="2" placeholder="Remarks / purpose of requisition..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item Details Section -->
+            <div class="section-card mb-3">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-box-seam me-1"></i>Item Details</span>
+                    <button class="btn btn-sm btn-light border" onclick="AddSRItemRow()">
+                        <i class="bi bi-plus-circle"></i> Add Item
+                    </button>
+                </div>
+                <div class="section-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0 sr-detail-table" id="tblSRItems">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px">#</th>
+                                    <th>Item Name</th>
+                                    <th>UOM</th>
+                                    <th style="width:110px">Required Qty</th>
+                                    <th>Specification / Remarks</th>
+                                    <th style="width:50px">Del</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblSRItemsBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-2 justify-content-end mt-2">
+                <button class="btn btn-secondary btn-sm px-4" onclick="ResetSRForm()">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                </button>
+                <button class="btn btn-success btn-sm px-4" onclick="SaveSRSlip()">
+                    <i class="bi bi-save me-1"></i>Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

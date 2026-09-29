@@ -123,6 +123,11 @@ namespace BizsolERPMain
                areaName: "FinanceMasters",
                pattern: "FinanceMasters/{controller=BankMaster}/{action=BankMaster}/{id?}");
 
+            app.MapAreaControllerRoute(
+               name: "StoreTransactions",
+               areaName: "StoreTransactions",
+               pattern: "StoreTransactions/{controller=StoreTransactions}/{action=StoreRequisitionSlip}/{id?}");
+
             app.Run();
         }
     }
