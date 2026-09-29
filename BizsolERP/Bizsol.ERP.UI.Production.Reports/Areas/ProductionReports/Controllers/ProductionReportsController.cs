@@ -9,5 +9,13 @@ namespace Bizsol.WebERP.UI.Production.Reports.Areas.ProductionReports.Controller
         {
             return View();
         }
+        public IActionResult ProductionReport()
+        {
+            return View();
+        }
+        public IActionResult ProductionBreakDownReport()
+        {
+            return View();
+        }
     }
 }

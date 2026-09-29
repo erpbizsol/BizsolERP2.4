@@ -71,5 +71,21 @@ const SaleOrderApprovalService = {
             }
         );
     },
+    /**
+     * Party outstanding / overdue — USP_WebAPI_BuyerPOApprovalOrVerify @Mode GetPartyOutstandingOverdue.
+     * Party resolved from BuyerPOMaster.CustomerMaster_Code (same as CheckCreditLimits).
+     * @param {number|string} buyerPOMasterCode - BuyerPOMaster_Code (required)
+     */
+    GetPartyOutstandingOverdue: function GetPartyOutstandingOverdue(buyerPOMasterCode) {
+        const bp = parseInt(buyerPOMasterCode, 10) || 0;
+        if (bp <= 0) {
+            return Promise.resolve([{ Outstanding: 0, Overdue: 0, AccountMaster_Code: 0, BillCount: 0 }]);
+        }
+        const url = UrlService.API_ENDPOINT_SaleOrderApproval +
+            '/GetPartyOutstandingOverdue?BuyerPOMaster_Code=' + encodeURIComponent(String(bp));
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
+            return value;
+        });
+    },
 }
 export { SaleOrderApprovalService }

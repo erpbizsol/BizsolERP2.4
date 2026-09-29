@@ -1,0 +1,131 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/DealerTargetMaster.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/css/DealerTargetMaster.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+
+<div id="DealerTargetMasterPage" class="dtm-page">
+    <div class="dtm-header">
+        <div class="dtm-header-title">
+            <h3><i class="fas fa-bullseye"></i> Dealer Target Master</h3>
+            <span>Set monthly sales targets for dealers under a distributor</span>
+        </div>
+        <div class="dtm-header-filters">
+            <div class="dtm-field">
+                <label for="ddlMarketingMan">Sales Person <span class="text-danger">*</span></label>
+                <select id="ddlMarketingMan" name="ddlMarketingMan"
+                        class="form-control form-control-sm box_border"
+                        data-placeholder="Select" required>
+                    <option value="">Select</option>
+                </select>
+                <input type="hidden" id="hdnMarketingManMasterCode" name="hdnMarketingManMasterCode">
+            </div>
+            <div class="dtm-field dtm-field-wide">
+                <label for="txtPartyName">Distributor <span class="text-danger">*</span></label>
+                <select id="txtPartyName" name="txtPartyName"
+                        class="form-control form-control-sm box_border"
+                        data-placeholder="Select" required>
+                    <option value="">Select</option>
+                </select>
+                <input type="hidden" id="hdnPartyCode" name="hdnPartyCode">
+            </div>
+            <div class="dtm-field">
+                <label for="txtMonthName">Month Name <span class="text-danger">*</span></label>
+                <select id="txtMonthName" name="txtMonthName"
+                        class="form-control form-control-sm box_border"
+                        data-placeholder="Select month" required>
+                    <option value="">Select month</option>
+                </select>
+                <input type="hidden" id="hdnMonthNumber" name="hdnMonthNumber">
+                <input type="hidden" id="hdnMonthName" name="hdnMonthName">
+            </div>
+            <div class="dtm-actions">
+                <span class="dtm-action-label" aria-hidden="true">&nbsp;</span>
+                <div class="dtm-action-btns">
+                    <button type="button" id="btnShow" class="dtm-btn dtm-btn-show">
+                        <i class="fas fa-play"></i>
+                        <span id="btnShowText">Show</span>
+                    </button>
+                    <button type="button" id="btnSave" class="dtm-btn dtm-btn-save" style="display:none;">
+                        <i class="fas fa-floppy-disk"></i> Save
+                    </button>
+                    <button type="button" id="btnReset" class="dtm-btn dtm-btn-reset">
+                        <i class="fas fa-rotate-left"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dtm-kpi-row" id="dtmKpiRow" style="display:none;">
+        <div class="dtm-kpi dtm-kpi-dealers">
+            <div class="dtm-kpi-icon"><i class="fas fa-users"></i></div>
+            <div class="dtm-kpi-body">
+                <div class="dtm-kpi-label">Dealers</div>
+                <div class="dtm-kpi-value" id="kpiDealers">0</div>
+                <div class="dtm-kpi-sub" id="kpiDealerSub">Select a distributor</div>
+            </div>
+        </div>
+        <div class="dtm-kpi dtm-kpi-entered">
+            <div class="dtm-kpi-icon"><i class="fas fa-pen-to-square"></i></div>
+            <div class="dtm-kpi-body">
+                <div class="dtm-kpi-label">Targets Entered</div>
+                <div class="dtm-kpi-value" id="kpiEntered">0</div>
+                <div class="dtm-kpi-sub" id="kpiPending">0 pending</div>
+            </div>
+        </div>
+        <div class="dtm-kpi dtm-kpi-amount">
+            <div class="dtm-kpi-icon"><i class="fas fa-rupee-sign"></i></div>
+            <div class="dtm-kpi-body">
+                <div class="dtm-kpi-label">Total Target</div>
+                <div class="dtm-kpi-value" id="kpiTotalAmount">0</div>
+                <div class="dtm-kpi-sub" id="kpiAvgAmount">Avg 0</div>
+            </div>
+        </div>
+        <div class="dtm-kpi dtm-kpi-coverage" id="dtmKpiCoverage">
+            <div class="dtm-kpi-icon"><i class="fas fa-chart-pie"></i></div>
+            <div class="dtm-kpi-body">
+                <div class="dtm-kpi-label">Coverage</div>
+                <div class="dtm-kpi-value" id="kpiCoverage">0%</div>
+                <div class="dtm-kpi-bar"><span id="kpiCoverageBar"></span></div>
+                <div class="dtm-kpi-sub">Dealers with a target amount</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dtmEmptyState" class="dtm-empty">
+        <div class="dtm-empty-icon"><i class="fas fa-bullseye"></i></div>
+        <h4>No dealer targets loaded</h4>
+        <p>Select a Sales Person, Distributor and Month, then click <strong>Show</strong> to enter monthly dealer targets.</p>
+    </div>
+
+    <div id="tblDealerTargetList" class="dtm-grid-panel" style="display:none;">
+        <div class="dtm-grid-toolbar">
+            <div class="dtm-grid-title">
+                <i class="fas fa-table-list"></i>
+                <span>Dealer Target Details</span>
+            </div>
+            <div class="dtm-grid-meta">
+                <input type="text" id="txtDealerTargetSearch" class="dtm-search" placeholder="Search dealer, city..." autocomplete="off" />
+                <span class="dtm-period" id="dtmPeriodLabel">Select distributor and month</span>
+                <span class="dtm-record-badge" id="dtmRecordCount">0 dealers</span>
+            </div>
+        </div>
+        <div class="table-wrapper fixed-height-table dtm-table-wrap">
+            <table id="DealerTargetList" class="fixed-width-table table" style="--bs-table-bg: unset;">
+                <thead id="DealerTargetList-header">
+                </thead>
+                <tbody id="DealerTargetList-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="dtm-grid-footer">
+            <div class="paginator" id="paginator-DealerTargetList">
+            </div>
+        </div>
+    </div>
+</div>

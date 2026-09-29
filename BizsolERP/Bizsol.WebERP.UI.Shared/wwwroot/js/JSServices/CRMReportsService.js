@@ -14,10 +14,10 @@ const CRMReportsServices = {
         );
 
     },
-    GetDealerList: function GetDealerList(MarketingManMaster_Code=0) {
+    GetDealerList: function GetDealerList(MarketingManMaster_Code = 0, IsNested='Y') {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_ACCOUNT_MASTER + `/GetNestedDealerList?UserMaster_Code=${userMasterCode}&MarketingManMaster_Code=${MarketingManMaster_Code}`;
+        var URL = UrlService.API_ENDPOINT_ACCOUNT_MASTER + `/GetNestedDealerList?UserMaster_Code=${userMasterCode}&MarketingManMaster_Code=${MarketingManMaster_Code}&IsNested=${IsNested}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

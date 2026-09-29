@@ -2,6 +2,7 @@ import { PDIService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PDIServi
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { UrlService } from '../../Bizsol.WebERP.UI.Shared/js/URL.js';
+import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 let files = [];

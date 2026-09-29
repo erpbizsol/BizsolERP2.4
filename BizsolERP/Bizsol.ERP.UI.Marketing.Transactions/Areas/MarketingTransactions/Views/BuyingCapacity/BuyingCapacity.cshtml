@@ -4,18 +4,29 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BuyingCapacity.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+    if (typeof XLSX === 'undefined') {
+        var xlsxFallback = document.createElement('script');
+        xlsxFallback.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        document.head.appendChild(xlsxFallback);
+    }
+</script>
 <style>
-    /* Aligned with Layout - Hide page scrollbar */
-    html {
-        overflow: hidden !important;
-        height: 100% !important;
+    #BuyingCapacityPage {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: clip;
+        overscroll-behavior-x: none;
     }
 
-    body {
-        overflow: hidden !important;
-        height: 100vh !important;
-        margin: 0 !important;
-        padding: 0 !important;
+    /* Sideways scrolling must stay inside the grid, never shift the page pane */
+    body:has(#BuyingCapacityPage) #modern-content.modern-content,
+    body:has(#BuyingCapacityPage) #modern-content.modern-content > main {
+        overflow-x: clip !important;
+        overscroll-behavior-x: none;
+        max-width: 100%;
     }
 
     /* Card - Layout style (dashboard-card) */
@@ -33,18 +44,33 @@
         padding: 1rem 1.25rem !important;
     }
 
-    .fixed-width-table th,
-    .fixed-width-table td {
-        white-space: nowrap;
-        min-width: auto;
+    /* filter.css sets min-width:max-content, which pads the table past its last column */
+    #BuyingCapacityPage .fixed-width-table {
+        width: auto !important;
+        min-width: 0 !important;
+        table-layout: auto !important;
     }
 
-    /* Table wrapper - Layout vars, dynamic height */
+    #BuyingCapacityPage .fixed-width-table th,
+    #BuyingCapacityPage .fixed-width-table td {
+        white-space: nowrap;
+        overflow-wrap: normal;
+        word-break: keep-all;
+        min-width: unset;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    /* Outer shell: stays put and clips. position:relative keeps stray absolutely
+       positioned bits (filter panels, select2) from escaping and widening the page,
+       and overflow:hidden means they can never be scrolled to. */
     #BuyingCapacityPage .table-wrapper {
         position: relative;
-        overflow: auto;
-        max-height: calc(100vh - 260px);
-        min-height: 300px;
+        overflow: hidden;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        min-height: 0 !important;
         margin: 0 !important;
         background: var(--white-bg);
         border-radius: 16px;
@@ -52,32 +78,150 @@
         box-shadow: var(--shadow-sm);
     }
 
-    #BuyingCapacity {
+    /* Inner scroller: the shell above is the containing block, so only the table
+       counts towards this element's scroll width. Scroll ends at the last column. */
+    #BuyingCapacityPage .bc-scroll {
+        overflow-x: auto;
+        overflow-y: auto;
+        overscroll-behavior-x: contain;
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        max-height: calc(100vh - 260px);
+        min-height: 300px;
+        border-radius: inherit;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #BuyingCapacity {
+        width: auto !important;
+        min-width: 0 !important;
+        table-layout: auto !important;
         margin: 0 !important;
         margin-bottom: 0 !important;
         color: var(--text-dark);
     }
 
-    /* Sticky header - Different colour: Teal/Emerald gradient (Layout uses purple) */
+    #BuyingCapacity .form-control,
+    #BuyingCapacity .select2-container {
+        width: 100% !important;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    #BuyingCapacity thead th,
+    #BuyingCapacity tbody td {
+        padding: 0.45rem 0.5rem !important;
+        vertical-align: middle;
+    }
+
+    /* S.No. */
+    #BuyingCapacity th:nth-child(1),
+    #BuyingCapacity td:nth-child(1) {
+        width: 56px;
+        min-width: 56px;
+        text-align: right;
+    }
+
+    /* Party Name */
+    #BuyingCapacity th:nth-child(2),
+    #BuyingCapacity td:nth-child(2) {
+        min-width: 180px;
+        width: auto;
+    }
+
+    #BuyingCapacity tbody td:nth-child(2) {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    /* Mkt Person */
+    #BuyingCapacity th:nth-child(3),
+    #BuyingCapacity td:nth-child(3) {
+        min-width: 120px;
+    }
+
+    /* Country */
+    #BuyingCapacity th:nth-child(4),
+    #BuyingCapacity td:nth-child(4) {
+        min-width: 90px;
+    }
+
+    /* State */
+    #BuyingCapacity th:nth-child(5),
+    #BuyingCapacity td:nth-child(5) {
+        min-width: 110px;
+    }
+
+    /* City */
+    #BuyingCapacity th:nth-child(6),
+    #BuyingCapacity td:nth-child(6) {
+        min-width: 110px;
+    }
+
+    /* PinCode */
+    #BuyingCapacity th:nth-child(7),
+    #BuyingCapacity td:nth-child(7) {
+        min-width: 96px;
+        text-align: right;
+        white-space: nowrap !important;
+    }
+
+    #BuyingCapacity th:nth-child(7) .filter-table-heading,
+    #BuyingCapacity th:nth-child(7) .filter-table-heading-div {
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+    }
+
+    /* Buying Frequency, qty, rating params, Customer Rating, GP Rolling */
+    #BuyingCapacity th:nth-child(n+8),
+    #BuyingCapacity td:nth-child(n+8) {
+        min-width: 118px;
+    }
+
+    #BuyingCapacity .bc-rating-param,
+    #BuyingCapacity .bc-customer-rating,
+    #BuyingCapacity .text-end,
+    #BuyingCapacity .bc-col-numeric {
+        text-align: right;
+    }
+
+    #BuyingCapacity .bc-customer-rating[readonly] {
+        background-color: #f3f5fb;
+        color: #1f2937;
+        font-weight: 600;
+        cursor: default;
+    }
+
+    /* Sticky header — ProjectMaster / Layout indigo-purple */
     #BuyingCapacity thead {
         position: sticky;
         top: 0;
         z-index: 10;
-        background: var(--white-bg);
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
     }
 
     #BuyingCapacity thead th {
-        background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%) !important;
+        background: transparent !important;
         color: #fff !important;
         position: sticky;
         top: 0;
         z-index: 11;
         border-bottom: 2px solid var(--border-color);
-        padding: 0.5rem 1rem !important;
+        padding: 0.4rem 0.35rem !important;
         font-weight: 600;
-        font-size: 0.875rem;
-        letter-spacing: 0.02em;
+        font-size: 0.75rem;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        line-height: 1.25;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #BuyingCapacity thead th .filter-table-heading {
+        width: auto;
+        white-space: nowrap !important;
+        word-break: keep-all !important;
     }
 
     #BuyingCapacity tbody td {
@@ -85,17 +229,31 @@
         border-bottom: 1px solid var(--border-light);
     }
 
+    #BuyingCapacity tbody tr:nth-child(even) {
+        background: var(--light-bg) !important;
+    }
+
+    #BuyingCapacity tbody tr:nth-child(odd) {
+        background: #fff !important;
+    }
+
+    #BuyingCapacity tbody tr:hover {
+        background: rgba(102, 126, 234, .07) !important;
+    }
+
     #BuyingCapacityPage .btn-primary {
-        background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+        background: var(--primary-gradient);
         border: none;
         border-radius: 10px;
         font-weight: 600;
-        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+        box-shadow: var(--shadow-primary);
+        color: #fff;
     }
 
         #BuyingCapacityPage .btn-primary:hover {
-            background: linear-gradient(135deg, #0f766e 0%, #0e7490 100%);
-            box-shadow: 0 6px 16px rgba(13, 148, 136, 0.35);
+            background: linear-gradient(135deg, #4f46e5 0%, #667eea 100%);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, .45);
+            color: #fff;
         }
 
     #BuyingCapacityPage .form-label {
@@ -103,43 +261,161 @@
         font-weight: 500;
     }
 
-    /* Responsive height adjustments */
-    @@media (max-height: 800px) {
-        #BuyingCapacityPage .table-wrapper {
+    #BuyingCapacityPage .bc-toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    @@media (max-height: 800px) and (min-width: 992px) {
+        #BuyingCapacityPage .bc-scroll {
             max-height: calc(100vh - 200px);
             min-height: 300px;
         }
     }
 
-    @@media (max-height: 600px) {
-        #BuyingCapacityPage .table-wrapper {
+    @@media (max-height: 600px) and (min-width: 992px) {
+        #BuyingCapacityPage .bc-scroll {
             max-height: calc(100vh - 180px);
             min-height: 250px;
+        }
+    }
+
+    /* Phone / tablet: keep a real table, swipe sideways, stack the filter bar */
+    @@media (max-width: 991.98px) {
+        #BuyingCapacityPage .card {
+            margin-bottom: 0.65rem !important;
+            border-radius: 12px;
+        }
+
+        #BuyingCapacityPage .card-body {
+            padding: 0.7rem 0.75rem !important;
+        }
+
+        #BuyingCapacityPage .bc-toolbar-actions {
+            width: 100%;
+        }
+
+        #BuyingCapacityPage .bc-toolbar-actions .btn {
+            flex: 1 1 0;
+            min-height: 40px;
+            width: auto;
+        }
+
+        #BuyingCapacityPage .bc-scroll {
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+            max-height: calc(100dvh - 250px) !important;
+            min-height: 180px !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #BuyingCapacityPage .fixed-width-table th,
+        #BuyingCapacityPage .fixed-width-table td {
+            min-width: unset !important;
+        }
+
+        #BuyingCapacity {
+            table-layout: auto !important;
+            width: auto !important;
+            min-width: 0 !important;
+        }
+
+        #BuyingCapacity thead {
+            display: table-header-group;
+        }
+
+        #BuyingCapacity tbody {
+            display: table-row-group;
+        }
+
+        #BuyingCapacity tbody tr {
+            display: table-row;
+        }
+
+        #BuyingCapacity thead th,
+        #BuyingCapacity tbody td {
+            display: table-cell;
+            width: auto !important;
+            font-size: 0.78rem;
+            padding: 0.45rem 0.5rem !important;
+            white-space: nowrap;
+        }
+
+        #BuyingCapacity th:nth-child(1),
+        #BuyingCapacity td:nth-child(1) { min-width: 52px; }
+        #BuyingCapacity th:nth-child(2),
+        #BuyingCapacity td:nth-child(2) {
+            min-width: 170px;
+            white-space: normal;
+            max-width: 220px;
+        }
+        #BuyingCapacity th:nth-child(3),
+        #BuyingCapacity td:nth-child(3) { min-width: 120px; }
+        #BuyingCapacity th:nth-child(4),
+        #BuyingCapacity td:nth-child(4) { min-width: 80px; }
+        #BuyingCapacity th:nth-child(5),
+        #BuyingCapacity td:nth-child(5) { min-width: 110px; }
+        #BuyingCapacity th:nth-child(6),
+        #BuyingCapacity td:nth-child(6) { min-width: 100px; }
+        #BuyingCapacity th:nth-child(7),
+        #BuyingCapacity td:nth-child(7) { min-width: 96px !important; }
+        #BuyingCapacity th:nth-child(n+8),
+        #BuyingCapacity td:nth-child(n+8) { min-width: 120px; }
+
+        /* 16px prevents iOS input zoom */
+        #BuyingCapacity .form-control,
+        #BuyingCapacityPage #ddlMarketingMan,
+        #BuyingCapacityPage .select2-selection__rendered {
+            font-size: 16px !important;
+        }
+
+        #BuyingCapacity td .form-control,
+        #BuyingCapacity td .select2-container {
+            width: 100% !important;
+            min-width: 110px !important;
+            max-width: 100% !important;
+        }
+
+        #paginator-BuyingCapacity {
+            padding-bottom: 0.75rem;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        #BuyingCapacityPage .bc-scroll {
+            max-height: calc(100dvh - 270px) !important;
         }
     }
 </style>
 <div id="BuyingCapacityPage">
     <div class="card">
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-3">
+            <div class="row g-2 align-items-end bc-toolbar">
+                <div class="col-12 col-md-4 col-lg-3">
                     <label for="ddlMarketingMan" class="form-label">Sales Person <span class="text-danger">*</span></label>
-                    <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+                    <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" autocomplete="off" required disabled></select>
                 </div>
 
-                <div class="col-md-3 without-label-field">
-                    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width">Show</button>
+                <div class="col-12 col-md-8 col-lg-9 bc-toolbar-actions">
+                    <button type="button" id="btnShow" class="btn btn-primary btn-height btn-width" disabled>Show</button>
+                    <button type="button" id="btnExportExcel" class="btn btn-primary btn-height ms-md-auto" onclick="ExportExcel();" disabled>
+                        <i class="fas fa-download"></i> Download
+                    </button>
                 </div>
             </div>
         </div>
     </div>
     <div class="table-wrapper">
-        <table id="BuyingCapacity" class="fixed-width-table table">
-            <thead id="table-header-BuyingCapacity">
-            </thead>
-            <tbody id="table-body-BuyingCapacity">
-            </tbody>
-        </table>
+        <div class="bc-scroll">
+            <table id="BuyingCapacity" class="fixed-width-table table">
+                <thead id="table-header-BuyingCapacity">
+                </thead>
+                <tbody id="table-body-BuyingCapacity">
+                </tbody>
+            </table>
+        </div>
     </div>
     <div class="paginator" id="paginator-BuyingCapacity">
     </div>

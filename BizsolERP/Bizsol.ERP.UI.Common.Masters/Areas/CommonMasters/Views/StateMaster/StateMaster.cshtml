@@ -1,247 +1,994 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"> 
-<link href="~/assets/css/filter.css" rel="stylesheet" />
-<script type="module" src="~/_content/bizsol.WEBERP.ui.shared/js/BizsolPBControls.js"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/StateMaster.js"></script>
 
 <style>
-    /* Container styling for the toolbar */
-    /* .toolbar {
+    #StateMasterPage {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 4px 12px 0;
+        /* Pin to exactly the space modern-content provides so nothing spills outside */
+        height: calc(100vh - 174px); /* 174px = margin-top(70) + pad-top(24) + pad-bottom(80) */
+        overflow: hidden;
         display: flex;
-        background-color: #f4a261; 
-        padding: 5px;
-        border-radius: 2px;
-    } */
-
-    /* Style for each button */
-    /* .toolbar .nav-btn {
-        font-family: Arial, sans-serif;
-        font-weight: bold;
-        color: #333;
-        background-color: #f4a261;
-        border: 1px solid #333;
-        padding: 10px 15px;
-        margin-right: 5px;
-        cursor: pointer;
-        text-transform: uppercase;
-        border-radius: 5px;
-        transition: background-color 0.3s;
+        flex-direction: column;
     }
- */
-    /* Hover effect for buttons */
-   /*  .toolbar .nav-btn:hover {
-        background-color: #e9c46a; 
-    } */
 
-    /* Disabled button styling */
-   /*  .toolbar .nav-btn:disabled {
-        background-color: #d3d3d3; 
-        color: #a9a9a9; 
+    /* ── List header gradient bar ── */
+    .state-po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        margin-bottom: 0;
+    }
+
+    .state-po-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .state-po-list-header .state-hero-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+    }
+
+    .state-po-list-header .state-hero-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .state-po-list-header .state-hero-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .state-po-list-header .state-hero-sub {
+        font-size: 0.78rem;
+        color: rgba(255, 255, 255, 0.78);
+        margin-top: 4px;
+        font-weight: 500;
+    }
+
+    .state-po-create-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+        line-height: 1;
+        font-size: 0.85rem;
+    }
+
+    .state-po-create-btn:hover {
+        background: #f0f4ff;
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .state-po-create-btn .pm-plus {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: rgba(102, 126, 234, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    /* ── List panel fills remaining height ── */
+    #stateListPanel {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* ── Grid card ── */
+    .state-list-grid-wrap {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+        overflow: hidden;
+        margin-bottom: 0;
+        /* Grow to fill whatever vertical space #stateListPanel has left */
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .state-list-grid-wrap .pm-card-toolbar {
+        flex-shrink: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 18px 22px 16px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .state-list-grid-wrap .pm-table-wrap {
+        flex: 1;
+        min-height: 0;
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .state-list-grid-wrap .paginator {
+        flex-shrink: 0;
+        padding: 10px 16px 14px;
+        border-top: 1px solid #eef2ff;
+        background: #fafbff;
+    }
+
+    .state-toolbar-filter {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 200px;
+        max-width: 280px;
+    }
+
+    .state-filter-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-primary, #334155);
+    }
+
+    .state-filter-select {
+        padding: 9px 12px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        background: var(--light-bg);
+        color: var(--text-dark);
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .pm-search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+        max-width: 340px;
+    }
+
+    .pm-search-wrap i {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 13px;
+        pointer-events: none;
+    }
+
+    #stateSearch {
+        width: 100%;
+        padding: 9px 14px 9px 38px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        background: var(--light-bg);
+        color: var(--text-dark);
+        transition: border-color .2s, box-shadow .2s, background .2s;
+        box-sizing: border-box;
+    }
+
+    #stateSearch:focus {
+        border-color: var(--accent-primary);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
+    }
+
+    .pm-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        min-width: 600px;
+    }
+
+    .pm-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+
+    .pm-table thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 13px 16px;
+        text-align: left;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 12px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .pm-table thead th.center { text-align: center; }
+    .pm-table tbody tr { transition: background .12s; }
+    .pm-table tbody tr:nth-child(even) { background: var(--light-bg) !important; }
+    .pm-table tbody tr:nth-child(odd) { background: #fff !important; }
+    .pm-table tbody tr:hover { background: rgba(102, 126, 234, .07) !important; }
+
+    .pm-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        vertical-align: middle;
+    }
+
+    .pm-table td.center { text-align: center; }
+
+    .pm-sno {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--primary-gradient);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pm-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pm-icon-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: transform .14s, box-shadow .14s;
+        outline: none;
+    }
+
+    .pm-icon-btn:hover { transform: translateY(-2px); }
+    .pm-icon-btn:active { transform: translateY(0); }
+
+    .pm-icon-btn.view {
+        background: rgba(6, 182, 212, .12);
+        color: var(--accent-info);
+        border: 1px solid rgba(6, 182, 212, .25);
+    }
+
+    .pm-icon-btn.edit {
+        background: rgba(102, 126, 234, .12);
+        color: var(--accent-primary);
+        border: 1px solid rgba(102, 126, 234, .25);
+    }
+
+    .pm-icon-btn.del {
+        background: rgba(239, 68, 68, .1);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, .2);
+    }
+
+    /* ── Detail panel ── */
+    #stateDetailPanel {
+        flex: 1;
+        min-height: 0;
+        max-width: 100%;
+        margin: 0;
+        overflow-y: auto;
+    }
+
+    #stateDetailPanel .state-ci-po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    #stateDetailPanel .state-ci-entry-title {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    #stateDetailPanel .state-ci-entry-sub {
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 0.78rem;
+        display: block;
+        margin-top: 4px;
+    }
+
+    #stateDetailPanel .state-ci-po-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    #stateDetailPanel .state-ci-po-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+        line-height: 1;
+        font-size: 0.85rem;
+    }
+
+    #stateDetailPanel .state-ci-po-back-btn:hover {
+        background: #f0f4ff;
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    #stateDetailPanel .state-ci-po-footer-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    #stateDetailPanel .state-ci-po-step-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    #stateDetailPanel .state-ci-po-step-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 18px;
+        background: #fafbff;
+        border-bottom: 1px solid #eef0f8;
+        border-left: 4px solid #667eea;
+    }
+
+    #stateDetailPanel .state-ci-po-step-num {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #667eea;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.72rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+    }
+
+    #stateDetailPanel .state-ci-po-step-title {
+        font-weight: 700;
+        font-size: 0.84rem;
+        color: #1e293b;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        flex: 1;
+    }
+
+    #stateDetailPanel .state-ci-po-step-icon {
+        color: #667eea;
+        font-size: 1rem;
+        margin-left: auto;
+    }
+
+    #stateDetailPanel .state-ci-po-step-body {
+        padding: 20px 22px 24px;
+    }
+
+    /* ── State detail form (Bootstrap row / col-md-4) ── */
+    .state-detail-form {
+        --bs-gutter-x: 1.25rem;
+        --bs-gutter-y: 1rem;
+    }
+
+    .state-fg {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .state-fg label {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .state-fg input[type="text"],
+    .state-fg input[type="number"],
+    .state-fg select {
+        padding: 10px 13px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        background: var(--white-bg);
+        color: var(--text-dark);
+        transition: border-color .2s, box-shadow .2s;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .state-fg input:focus,
+    .state-fg select:focus {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
+    }
+
+    #stateDetailPanel .select2-container {
+        width: 100% !important;
+    }
+
+    #stateDetailPanel .select2-container--default .select2-selection--single {
+        min-height: 42px;
+        padding: 4px 10px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color) !important;
+        background: var(--white-bg);
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+    #stateDetailPanel .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
+    }
+
+    #stateDetailPanel .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 32px;
+        padding-left: 2px;
+        font-size: 13.5px;
+        color: var(--text-dark);
+    }
+
+    #stateDetailPanel .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+    }
+
+    /* ── Save button ── */
+    .btn-state-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+        border: none;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 28px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.45);
+        transition: all 0.2s;
+        cursor: pointer;
+        line-height: 1.4;
+    }
+
+    .btn-state-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+        color: #fff;
+    }
+
+    .btn-state-save:disabled {
+        opacity: 0.55;
         cursor: not-allowed;
-        border: 1px solid #a9a9a9; 
-    } */
+        transform: none;
+        box-shadow: none;
+    }
 
-    /* Style for the save button */
-    /* .toolbar .save-btn {
-        background-color: #e76f51; 
-        color: white;
-    } */
+    /* ── Readonly state ── */
+    #stateDetailPanel.state-readonly .state-fg input,
+    #stateDetailPanel.state-readonly .state-fg select {
+        background: var(--light-bg);
+        cursor: default;
+    }
 
-    /* Style for the cancel button */
-    /* .toolbar .cancel-btn {
-        background-color: #e76f51; 
-        color: white;
-    } */
+    #stateDetailPanel.state-readonly .select2-container--default .select2-selection--single {
+        background: var(--light-bg) !important;
+        cursor: default !important;
+    }
+
+    /* ── Inline validation ── */
+    .state-fg input.state-input-error,
+    .state-fg select.state-input-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+        background: #fff8f8 !important;
+    }
+
+    .state-field-error {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 7px;
+        color: #dc2626;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 3px;
+        animation: state-err-in .15s ease;
+    }
+
+    .state-field-error i { font-size: 13px; flex-shrink: 0; }
+
+    @@keyframes state-err-in {
+        from { opacity: 0; transform: translateY(-4px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Delete modal ── */
+    .pm-modal .modal-content {
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+    }
+
+    .pm-modal .modal-header {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: #fff;
+        border-bottom: none;
+        padding: 18px 22px;
+    }
+
+    .pm-modal .modal-title { color: #fff; font-weight: 700; }
+
+    .pm-close-btn {
+        background: rgba(255, 255, 255, .15);
+        border: none;
+        color: #fff;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .pm-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: none;
+        outline: none;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform .14s, box-shadow .14s;
+        min-height: 40px;
+    }
+
+    .pm-btn.secondary {
+        background: var(--light-bg);
+        color: var(--text-muted);
+        border: 1.5px solid var(--border-color);
+    }
+
+    .pm-btn.secondary:hover { background: var(--border-color); }
+
+    .pm-btn.danger {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: #fff !important;
+        border: none;
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.38);
+        font-size: 14px !important;
+    }
+
+    .pm-btn.danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.52);
+    }
+
+    @@media (max-width: 768px) {
+        #StateMasterPage {
+            height: auto;
+            min-height: calc(100dvh - 120px);
+            overflow: visible;
+            padding: 4px 8px 16px;
+        }
+
+        #stateListPanel {
+            overflow: visible;
+        }
+
+        .state-list-grid-wrap {
+            overflow: visible;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .state-po-list-header {
+            padding: 14px 16px 12px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .state-po-list-header .state-hero-icon {
+            width: 42px;
+            height: 42px;
+            font-size: 18px;
+        }
+
+        .state-po-list-header .state-hero-title {
+            font-size: 0.95rem;
+        }
+
+        .state-po-list-header .state-hero-sub {
+            font-size: 0.72rem;
+        }
+
+        .state-po-header-top {
+            gap: 10px;
+        }
+
+        .state-list-grid-wrap .pm-card-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 14px;
+            gap: 10px;
+        }
+
+        .pm-search-wrap {
+            max-width: 100%;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .state-toolbar-filter {
+            max-width: 100%;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .master-scroll-hint {
+            display: flex;
+        }
+
+        .state-list-grid-wrap .pm-table-wrap {
+            overflow-x: auto !important;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
+            max-height: calc(100dvh - 360px);
+        }
+
+        #StateMaster,
+        #StateMaster.fixed-width-table {
+            min-width: 760px !important;
+            width: max-content;
+        }
+
+        #StateMaster thead th,
+        #StateMaster tbody td {
+            white-space: nowrap;
+        }
+
+        #StateMaster thead th:last-child,
+        #StateMaster tbody td:last-child {
+            position: sticky;
+            right: 0;
+            z-index: 2;
+            min-width: 118px;
+            box-shadow: -4px 0 10px rgba(15, 23, 42, .08);
+        }
+
+        #StateMaster thead th:last-child {
+            z-index: 5;
+            background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+        }
+
+        #StateMaster tbody td:last-child {
+            background: #fff !important;
+        }
+
+        #StateMaster tbody tr:nth-child(even) td:last-child {
+            background: var(--light-bg) !important;
+        }
+
+        .pm-actions {
+            flex-wrap: nowrap;
+            gap: 4px;
+            min-width: 108px;
+        }
+
+        .pm-icon-btn {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+
+        .state-list-grid-wrap .paginator {
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px 10px;
+            padding: 12px 10px 14px;
+            font-size: 11px;
+        }
+
+        .state-list-grid-wrap .paginator button {
+            min-height: 32px;
+            padding: 4px 10px;
+        }
+
+        .state-list-grid-wrap .page-info,
+        .state-list-grid-wrap .page-size-select {
+            margin: 0 6px;
+        }
+
+        #stateDetailPanel .state-ci-po-list-header {
+            padding: 14px 16px 12px;
+        }
+
+        #stateDetailPanel .state-ci-po-header-top {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        #stateDetailPanel .state-ci-po-footer-right {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        #stateDetailPanel .state-ci-po-footer-right .state-ci-po-back-btn,
+        #stateDetailPanel .state-ci-po-footer-right .btn-state-save {
+            width: 100%;
+            justify-content: center;
+        }
+
+        #stateDetailPanel .state-ci-po-step-body {
+            padding: 16px 14px 20px;
+        }
+
+        .pm-modal .modal-dialog {
+            margin: 0.5rem auto;
+            max-width: calc(100vw - 1rem) !important;
+            width: calc(100vw - 1rem);
+        }
+
+        .pm-modal .modal-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .pm-modal .pm-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    .master-scroll-hint {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px 12px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--accent-primary, #667eea);
+        background: rgba(102, 126, 234, .08);
+        border-bottom: 1px solid rgba(102, 126, 234, .12);
+    }
+
+    @@media (max-width: 600px) {
+        #StateMasterPage { padding-left: 6px; padding-right: 6px; }
+        .state-po-create-btn .state-po-create-label { display: none; }
+        .state-po-create-btn { padding: 8px 12px; }
+    }
 </style>
-<div>
-    <div class="row">
-        <div class="col-md-6 form-group">
-            <label><b>Country Name</b></label>
-            <input type="text" Id="txtCode" class="form-control" value="0" style="display:none" autocomplete="off" tabindex="0" />
-            <select id="ddlCountry" class="form-control"></select>
+
+<div id="StateMasterPage">
+
+    <!-- ═══ LIST PANEL ═══ -->
+    <div id="stateListPanel">
+        <div class="state-po-list-header">
+            <div class="state-po-header-top">
+                <div class="state-hero-left">
+                    <div class="state-hero-icon">
+                        <i class="fas fa-map"></i>
+                    </div>
+                    <div>
+                        <div class="state-hero-title">State Master</div>
+                        <div class="state-hero-sub">Maintain states with country, initials and numeric code</div>
+                    </div>
+                </div>
+                <button type="button" class="state-po-create-btn" id="btnCreateState">
+                    <span class="pm-plus">+</span>
+                    <span class="state-po-create-label">Create New</span>
+                </button>
+            </div>
         </div>
-        <div class="col-md-6">
-            <label><b>State Name</b></label>
-            <input type="text" Id="txtState" class="form-control" placeholder="State" autocomplete="off" tabindex="0" />
-        </div>
-        <div class="col-md-6">
-            <label><b>State Initial</b></label>
-            <input type="text" Id="txtStateInitial" class="form-control" minlength="2" maxlength="2" autocomplete="off" placeholder="State Initial" tabindex="1" />
-        </div>
-        <div class="col-md-6">
-            <label><b>State Code</b></label>
-            <input type="text" Id="txtStateCode" class="form-control" maxlength="2" placeholder="State Code" autocomplete="off" onkeypress="allowNumberOnly(event)" tabindex="2" />
+
+        <div class="state-list-grid-wrap">
+            <div class="pm-card-toolbar">
+                <div class="pm-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="stateSearch" placeholder="Search by state, country, code…" autocomplete="off" />
+                </div>
+                <div class="state-toolbar-filter">
+                    <label for="ddlListCountryFilter" class="state-filter-label">Country</label>
+                    <select id="ddlListCountryFilter" class="state-filter-select"></select>
+                </div>
+            </div>
+            <div class="master-scroll-hint">
+                <i class="fas fa-arrows-alt-h"></i>
+                <span>Swipe to see all columns</span>
+            </div>
+            <div class="pm-table-wrap table-wrapper">
+                <table class="pm-table" id="StateMaster">
+                    <thead id="table-header-StateMaster"></thead>
+                    <tbody id="table-body-StateMaster"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-StateMaster"></div>
         </div>
     </div>
-<div id="PBControls"></div>
-  
+
+    <!-- ═══ DETAIL PANEL ═══ -->
+    <div id="stateDetailPanel" style="display:none;">
+        <input type="hidden" id="hfStateMaster_Code" value="0" />
+
+        <div class="state-ci-po-list-header">
+            <div class="state-ci-po-header-top">
+                <div>
+                    <h5 class="state-ci-entry-title">State Master</h5>
+                    <small class="state-ci-entry-sub">Select country and enter state name, initial and code</small>
+                </div>
+                <div class="state-ci-po-footer-right">
+                    <button type="button" class="state-ci-po-back-btn" id="btnBackToStateList" title="Back to list">
+                        <i class="fas fa-arrow-left"></i> <span>Back</span>
+                    </button>
+                    <button type="button" class="state-ci-po-back-btn" id="btnClearState">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                    <button type="button" class="btn-state-save" id="btnSaveState">
+                        <i class="fas fa-check"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="state-ci-po-step-card">
+            <div class="state-ci-po-step-header">
+                <span class="state-ci-po-step-num">1</span>
+                <span class="state-ci-po-step-title">State Details</span>
+                <i class="fas fa-map-marked-alt state-ci-po-step-icon" aria-hidden="true"></i>
+            </div>
+            <div class="state-ci-po-step-body">
+                <div class="row g-3 state-detail-form">
+                    <div class="col-12 col-md-3">
+                        <div class="state-fg">
+                            <label for="txtState">State Name <span class="text-danger">*</span></label>
+                            <input type="text" id="txtState" autocomplete="off" maxlength="100" placeholder="State name" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <div class="state-fg">
+                            <label for="txtStateInitial">State Initial</label>
+                            <input type="text" id="txtStateInitial" autocomplete="off" maxlength="10" placeholder="Optional abbreviation" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <div class="state-fg">
+                            <label for="txtStateCode">State Code <span class="text-danger">*</span></label>
+                            <input type="text" id="txtStateCode" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="1–2 digits" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <div class="state-fg">
+                            <label for="ddlCountry">Country Name <span class="text-danger">*</span></label>
+                            <select id="ddlCountry"></select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="~/assets/script/filter.js"></script>
-<script>
-    const queryString = window.location.search;
-    const urlParams = new URLSearchParams(queryString);
-    let editValue = urlParams.get('Edit');
-    let currentIndex = urlParams.get('Index');
-    let codeValues = JSON.parse(decodeURIComponent(urlParams.get('codeValues')));
-    const authToken = '{"ERPDBConStr":"Data Source=220.158.165.98,65446;Connection Timeout=0;Persist Security Info=true;Initial Catalog=BizSolERPDBBizDev; User ID=sa;pwd=biz1981;Packet Size=32000","ERPMainDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPMainDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDMSDBConStr":"data source = 220.158.165.98,65446; initial catalog = BizSolERPDMSDB_BizDev; uid = sa; PWD = biz1981; Max Pool Size = 5000","ERPDB_Name":"BizSolERPDBBizDev","ERPMainDB_Name":"BizSolERPMainDB_BizDev","ERPDMSDB_Name":"BizSolERPDMSDB_BizDev","AuthToken":"xyz","UserMaster_Code":"145","CompanyCode":"104"}';
-
-    $(document).ready(function () {
-        PBControls();
-        $('#ddlCountry').on('keydown', function (e) {
-            if (e.key === "Enter") {
-                $("#txtState").focus();
-            }
-        });
-        $('#txtState').on('keydown', function (e) {
-            if (e.key === "Enter") {
-                $("#txtStateInitial").focus();
-            }
-        });
-        $('#txtStateInitial').on('keydown', function (e) {
-            if (e.key === "Enter") {
-                $("#txtStateCode").focus();
-            }
-        });
-        $('#txtStateCode').on('keydown', function (e) {
-            if (e.key === "Enter") {
-                $("#ddlCountry").focus();
-            }
-        });
-
-        $.ajax({
-            url: 'https://web.bizsol.in/erpapidev/api/Country/GetCountryMasterList',
-            type: 'GET',
-            contentType: 'json',
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader('Auth-Key', authToken);
-            },
-            success: function (response) {
-                data = response;
-                let Country = '';
-                const rows = data.map(item => {
-                    return `<option>${item.CountryName}</option > `;
-                }).join('');
-                $('#ddlCountry').html(rows);
-            },
-            error: function (error) {
-                console.error('Error fetching data:', error);
-            }
-        });
-        if (editValue != null && editValue != '') {
-            EditData(editValue)
-            GetallData(editValue, currentIndex, codeValues, 'EditData',true);
-        } else {
-                setTimeout(() => {
-                NavigationButtonsControll();
-                }, 100);
-                ClearData();
-        }
-    });
-
-    function EditData(editValue) {
-        $.ajax({
-            url: 'https://web.bizsol.in/erpapidev/api/State/' + editValue,
-            type: 'GET',
-            contentType: 'json',
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader('Auth-Key', authToken);
-            },
-            success: function (response) {
-                if (response) {
-                    $("#txtCode").val(response.Code);
-                    $("#ddlCountry").val(response.CountryName);
-                    $("#txtState").val(response.StateName);
-                    $("#txtStateInitial").val(response.StateShortName);
-                    $("#txtStateCode").val(response.StateCode);
-                } else {
-                    alert('No states found.');
-                }
-            },
-            error: function (error) {
-                console.error('Error fetching data:', error);
-            }
-        });
-    }
-    
-    function Save() {
-        var Data = {
-            Code: $("#txtCode").val(),
-            CountryName: $("#ddlCountry").val(),
-            StateName: $("#txtState").val(),
-            StateShortName: $("#txtStateInitial").val(),
-            StateCode: $("#txtStateCode").val()
-        };
-
-        $.ajax({
-            url: 'https://web.bizsol.in/erpapidev/api/State/SaveStateMaster',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(Data),
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader('Auth-Key', authToken);
-            },
-            success: function (response) {
-                if (response) {
-                    alert(response.Msg);
-                    Back();
-                } else {
-                    alert('No states found.');
-                }
-            },
-            error: function (error) {
-                console.error('Error saving data:', error);
-            }
-        });
-    }
-
-    function Delete() {
-        var code = $("#txtCode").val();
-        $.ajax({
-            url: `https://web.bizsol.in/erpapidev/api/State/DeleteStateMaster?Code=${code}&UserMaster_Code=145&ReasonForDelete=Test&IPAddress=1&Location=1`,
-            type: 'Post',
-            contentType: 'application/json',
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader('Auth-Key', authToken);
-            },
-            success: function (response) {
-                if (response) {
-                    Back();
-                    alert(response.Msg);
-                } else {
-                    alert('No states found.');
-                }
-            },
-            error: function (error) {
-                console.error('Error deleting data:', error);
-            }
-        });
-    }
-
-    function Back() {
-        window.location.href = '/CommonMasters/statemaster/StateList';
-    }
-
-    function ClearData() {
-        $("#txtCode").val('0');
-        $("#ddlCountry").val('');
-        $("#txtState").val('');
-        $("#txtStateInitial").val('');
-        $("#txtStateCode").val('');
-    }
-
-    function buttonProperty() {
-        return {
-            Save: { color: 'btn-success', visible: true, disabled: false, title: 'Save' },
-            Print: { color: 'btn-secondary', visible: true, disabled: false, title: 'Print' },
-            Back: { color: 'btn-primary', visible: true, disabled: false, title: 'Back' },
-            Attachment: { color: 'btn-warning', visible: true, disabled: false, title: 'View' },
-            Delete: { color: 'btn-danger', visible: true, disabled: false, title: 'Delete' },
-            Verify: { color: 'btn-danger', visible: true, disabled: false, title: 'Verify' },
-            Other: { color: 'btn-primary', visible: true, disabled: false, title: 'Other' }
-        };
-    }
-
-</script>
+<!-- ═══ DELETE MODAL ═══ -->
+<div class="modal fade pm-modal" id="dvStateDeleteModal" tabindex="-1" role="dialog" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Confirm Delete</h5>
+                <button type="button" class="pm-close-btn" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="background:#fff; padding:22px 24px 18px;">
+                <p class="mb-3" style="color:var(--text-dark); font-size:14px;">Delete this state record?</p>
+                <label for="stateReasonForDelete" class="form-label" style="font-size:12.5px;font-weight:700;">
+                    Reason for deletion <span class="text-danger">*</span>
+                </label>
+                <input type="text" id="stateReasonForDelete" class="form-control" autocomplete="off"
+                       placeholder="Enter reason" />
+                <input type="hidden" id="hfStateDeleteCode" value="0" />
+            </div>
+            <div class="modal-footer" style="border-top:1px solid var(--border-color);">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-ban"></i> Cancel
+                </button>
+                <button type="button" class="pm-btn danger" id="btnStateConfirmDelete">
+                    <i class="fas fa-trash-alt me-1"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

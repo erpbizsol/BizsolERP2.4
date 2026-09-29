@@ -30,9 +30,32 @@ const BuyingCapacityService = {
         );
     },
     GetNestedMarketingManList: function GetNestedMarketingManList() {
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
+        var authRaw = sessionStorage.getItem('authKey');
+        if (!authRaw) {
+            return Promise.reject(new Error('Auth key not available'));
+        }
+        var authKeyData = JSON.parse(authRaw);
+        var userMasterCode = authKeyData && authKeyData.UserMaster_Code;
+        if (userMasterCode === undefined || userMasterCode === null || userMasterCode === '') {
+            return Promise.reject(new Error('UserMaster_Code not available'));
+        }
         var URL = UrlService.API_ENDPOINT_BuyingCapacity + `/BuyingCapacity_SalesPersonList?UserMaster_Code=` + userMasterCode;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetBuyingGPRollingCategory: function GetBuyingGPRollingCategory() {
+        var URL = UrlService.API_ENDPOINT_BuyingCapacity + "/GetBuyingGPRollingCategory";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetClientRatingMaster: function GetClientRatingMaster() {
+        var URL = UrlService.API_ENDPOINT_BuyingCapacity + "/GetClientRatingMaster";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

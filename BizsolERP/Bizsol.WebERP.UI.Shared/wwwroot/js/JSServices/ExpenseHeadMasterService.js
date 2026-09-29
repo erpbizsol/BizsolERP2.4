@@ -1,4 +1,4 @@
-﻿import { UrlService } from '../URL.js';
+import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 
@@ -13,6 +13,14 @@ const ExpenseHeadMasterService = {
     },
     GetDESIGNATIONAMEList: function GetDESIGNATIONAMEList() {
         var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + "/GetDESIGNATIONAMEList";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetExpenseGroupList: function GetExpenseGroupList() {
+        var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster + "/GetExpenseGroupList";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -39,5 +47,17 @@ const ExpenseHeadMasterService = {
             }
         );
     },
-    }
+    DeleteExpenseHeadMaster: function DeleteExpenseHeadMaster(code, reason) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData ? authKeyData.UserMaster_Code : 0;
+        var URL = UrlService.API_ENDPOINT_ExpenseHeadMaster +
+            '/DeleteExpenseHeadMaster' +
+            '?Code=' + encodeURIComponent(code) +
+            '&UserMaster_Code=' + encodeURIComponent(userMasterCode) +
+            '&ReasonForDelete=' + encodeURIComponent(reason || '');
+        return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
+            return value;
+        });
+    },
+}
 export { ExpenseHeadMasterService }

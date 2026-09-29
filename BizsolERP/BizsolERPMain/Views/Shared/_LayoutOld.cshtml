@@ -479,22 +479,56 @@
     <script src="~/assets/libs/select2-4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
-        // $(document).ready(function () {
-        var authKey = '@Html.Raw(ViewBag.AuthKey)';
-       if (authKey !== '') {
-              sessionStorage.setItem('authKey', authKey);
-              sessionStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
-               localStorage.setItem('authKey', authKey);
-               localStorage.setItem('AppBaseURL', '@Html.Raw(ViewBag.AppBaseURL)');
-             
-        }else{
-               let storedauthKey = localStorage.getItem('authKey');
-               let storedAppBaseURL = localStorage.getItem('AppBaseURL');
-                sessionStorage.setItem('authKey', storedauthKey);
-                sessionStorage.setItem('AppBaseURL', storedAppBaseURL);
+        (function () {
+            var SESSION_KEY = 'authKey';
+            var SESSION_URL = 'AppBaseURL';
 
-        }
-        
+            var authKey = '@Html.Raw(ViewBag.AuthKey)';
+            if (authKey && authKey !== '') {
+                sessionStorage.setItem(SESSION_KEY, authKey);
+                sessionStorage.setItem(SESSION_URL, '@Html.Raw(ViewBag.AppBaseURL)');
+            }
+
+            window.addEventListener('storage', function (e) {
+                if (e.key === 'bizsol_session_request' && e.newValue) {
+                    var myKey = sessionStorage.getItem(SESSION_KEY);
+                    var myURL = sessionStorage.getItem(SESSION_URL);
+                    if (myKey) {
+                        var req = JSON.parse(e.newValue);
+                        localStorage.setItem('bizsol_session_response_' + req.id,
+                            JSON.stringify({ authKey: myKey, appBaseURL: myURL }));
+                        setTimeout(function () {
+                            localStorage.removeItem('bizsol_session_response_' + req.id);
+                        }, 3000);
+                    }
+                }
+            });
+
+            var alreadyReloaded = sessionStorage.getItem('bizsol_session_reloaded');
+            if (!sessionStorage.getItem(SESSION_KEY) && !alreadyReloaded) {
+                var requestId = Date.now() + '_' + Math.random().toString(36).slice(2);
+                var responseKey = 'bizsol_session_response_' + requestId;
+
+                window.addEventListener('storage', function onResponse(e) {
+                    if (e.key === responseKey && e.newValue) {
+                        try {
+                            var data = JSON.parse(e.newValue);
+                            if (data && data.authKey) {
+                                sessionStorage.setItem(SESSION_KEY, data.authKey);
+                                sessionStorage.setItem(SESSION_URL, data.appBaseURL || '');
+                                sessionStorage.setItem('bizsol_session_reloaded', '1');
+                                localStorage.removeItem(responseKey);
+                                window.removeEventListener('storage', onResponse);
+                                location.reload();
+                            }
+                        } catch (_) {}
+                    }
+                });
+
+                localStorage.setItem('bizsol_session_request', JSON.stringify({ id: requestId }));
+                setTimeout(function () { localStorage.removeItem('bizsol_session_request'); }, 500);
+            }
+        })();
     </script>
     @* <script src="assets/js/pages/modal.init.js"></script>
 

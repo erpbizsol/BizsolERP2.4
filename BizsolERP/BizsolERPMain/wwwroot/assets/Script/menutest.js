@@ -1,16 +1,22 @@
 //import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
 import { MenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
+import { BizSolHelperFunction } from '../../_content/Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { UserDashboardMenuService } from '../../_content/Bizsol.WebERP.UI.Shared/js/JSServices/UserDashboardMenuService.js';
+
+var _menuAllItems = [];
+var _menuUserID = '';
+var _favouriteMenuCodes = [];
+var _FAV_COLLAPSE_KEY = 'sidebarFavouritesCollapsed';
 
 $(document).ready(function () {
         bindMenu();
 });
 
+
 function bindMenu() {
-   // var baseUrl = `${window.location.protocol}//${window.location.host}`;
     var baseUrl = sessionStorage.getItem('AppBaseURL');
     let LoginGodownName = JSON.parse(sessionStorage.getItem('authKey')).WebERPLoginGodownName;
         LoginGodownName = LoginGodownName ? `(${LoginGodownName})` : '';
-    //var baseUrl = window.AppBaseURL;
     MenuService.GetUserDetails()
         .then(function (res) {
             sessionStorage.setItem('UserDetails', JSON.stringify(res));
@@ -20,139 +26,577 @@ function bindMenu() {
             $('#ERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})${LoginGodownName}`;
             $('#mobileERPUserName')[0].innerHTML = UserDetailsobj[0].UserID;
             $('#mobileERPCompanyCode')[0].innerHTML = `(${UserDetailsobj[0].CompanyNameForShow})${LoginGodownName}`;
+            $('#ERPProfileUserName').text('( ' + (UserDetailsobj[0].UserName || UserDetailsobj[0].UserDesp || UserDetailsobj[0].UserID || '') + ' )');
+            bindUserProfileImage();
 
-            MenuService.GetMenuList(UserDetailsobj[0].UserID).then(function (value) {
-                var menuHtml = '';
-                var mobileMenuHtml = '';
-                var mobileMenuCount = 0;
-                var maxMobileItems = 5; // Limit mobile nav to 5 items
+            _menuUserID = UserDetailsobj[0].UserID;
 
-                $.each(value, function (index, item) {
-                    if (item.MasterCode === 0) {
-                        var childMenuHtml = getChildMenu(value, item.Code, baseUrl);
-                        var hasArrow = childMenuHtml ? 'has-arrow' : '';
+            applyUserHomeRedirection(sessionStorage.getItem('AppBaseURL') || '', _menuUserID).then(function (didRedirect) {
+                if (didRedirect) {
+                    return;
+                }
+                loadMenuAfterUserDetails(baseUrl);
+            }).catch(function () {
+                setHomeButtonTargets(buildHomeTargetUrl(sessionStorage.getItem('AppBaseURL') || '', ''), 'Home');
+                loadMenuAfterUserDetails(baseUrl);
+            });
+        });
+}
 
-                        // Desktop sidebar menu with data attribute
-                        menuHtml += '<a href="javascript:void(0);" class="sidebar-menu-item menu-toggle ' + hasArrow + '" data-menu-code="' + item.Code + '" data-menu-name="' + item.ModuleDesp + '">';
-                        menuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
-                        menuHtml += '<span>' + item.ModuleDesp + '</span>';
-                        menuHtml += '</a>';
+function loadMenuAfterUserDetails(baseUrl) {
+            MenuService.GetMenuList(_menuUserID).then(function (value) {
+                _menuAllItems = value;
 
-                        if (childMenuHtml) {
-                            menuHtml += '<div class="sub-menu" style="display: none;">' + childMenuHtml + '</div>';
-                        }
-
-                        // Mobile bottom navigation (only top-level items, limited to maxMobileItems)
-                        if (mobileMenuCount < maxMobileItems) {
-                            var firstChildUrl = getFirstChildUrl(value, item.Code, baseUrl);
-                            var mobileHref = childMenuHtml ? 'javascript:void(0);' : (firstChildUrl || 'javascript:void(0);');
-                            var mobileClass = childMenuHtml ? 'mobile-nav-item mobile-menu-toggle' : 'mobile-nav-item';
-
-                            mobileMenuHtml += '<a href="' + mobileHref + '" class="' + mobileClass + '" data-menu-code="' + item.Code + '" data-menu-name="' + item.ModuleDesp + '">';
-                            mobileMenuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
-                            mobileMenuHtml += '<span>' + truncateText(item.ModuleDesp, 10) + '</span>';
-                            mobileMenuHtml += '</a>';
-
-                            mobileMenuCount++;
-                        }
-                    }
-                });
-
-                $('#sidebar-menu').html(menuHtml);
-                $('.mobile-nav-items').html(mobileMenuHtml);
-
-                setActiveMenu();
-
-                // Handle menu toggle for desktop sidebar
-                $('.sidebar-menu-item.menu-toggle').click(function (e) {
-                    var menuItem = $(this);
-                    var subMenu = menuItem.next('.sub-menu');
-
-                    if (!menuItem.hasClass('has-arrow')) {
-                        return; // If it's not a parent with a submenu, do nothing
-                    }
-
-                    e.preventDefault();
-                    e.stopPropagation(); // Prevent event from bubbling to parent menus
-
-                    // Check if sidebar is collapsed
-                    if ($('#modern-sidebar').hasClass('collapsed')) {
-                        return; // Don't handle click when collapsed, let hover handle it
-                    }
-
-                    if (subMenu.is(":visible")) {
-                        subMenu.slideUp();
-                        menuItem.removeClass('active');
-                    } else {
-                        // Only close sibling submenus at the same level, not parent menus
-                        menuItem.siblings('.menu-toggle').next('.sub-menu').slideUp();
-                        menuItem.siblings('.menu-toggle').removeClass('active');
-
-                        subMenu.slideDown();
-                        menuItem.addClass('active'); 
-                    }
-                });
-
-                // Handle hover for collapsed sidebar
-                initCollapsedSidebarHover();
-
-                // Handle mobile menu items with submenus - open sidebar on mobile
-                $('.mobile-menu-toggle').click(function (e) {
-                    e.preventDefault();
-
-                    // Get the menu code from clicked mobile nav item
-                    var menuCode = $(this).data('menu-code');
-                    var menuName = $(this).data('menu-name');
-
-                    // Open the sidebar on mobile
-                    $('#modern-sidebar').addClass('show');
-                    $('#sidebar-overlay').addClass('show');
-
-                    // Find the corresponding menu item in sidebar by menu code
-                    var correspondingMenuItem = $('#sidebar-menu .sidebar-menu-item[data-menu-code="' + menuCode + '"]');
-
-                    if (correspondingMenuItem.length) {
-                        // Close all submenus first
-                        $('#sidebar-menu .sub-menu').slideUp();
-                        $('#sidebar-menu .sidebar-menu-item').removeClass('active');
-
-                        // Open the selected submenu
-                        var subMenu = correspondingMenuItem.next('.sub-menu');
-                        if (subMenu.length) {
-                            subMenu.slideDown();
-                            correspondingMenuItem.addClass('active');
-                        }
-                    }
+                // Load favourites first, then render menu
+                MenuService.GetFavouriteMenus(_menuUserID).then(function (favs) {
+                    _favouriteMenuCodes = (favs || []).map(function (f) { return f.MenuCode; });
+                    renderFullMenu(value, baseUrl);
+                    MenuService.GetIsUserMarkDayAttendance().then(function (res) {
+                        var isMarked = (Array.isArray(res) && res.length > 0) ? res[0].IsUserMarkDayAttendance
+                            : (res && res.IsUserMarkDayAttendance ? res.IsUserMarkDayAttendance : '');
+                        BizSolHelperFunction.checkAttendanceAndShowModal(value, isMarked);
+                    }).catch(function () { });
+                }).catch(function () {
+                    _favouriteMenuCodes = [];
+                    renderFullMenu(value, baseUrl);
+                    MenuService.GetIsUserMarkDayAttendance().then(function (res) {
+                        var isMarked = (Array.isArray(res) && res.length > 0) ? res[0].IsUserMarkDayAttendance
+                            : (res && res.IsUserMarkDayAttendance ? res.IsUserMarkDayAttendance : '');
+                        BizSolHelperFunction.checkAttendanceAndShowModal(value, isMarked);
+                    }).catch(function () { });
                 });
             });
-        })
-        
-   
+}
+
+function extractUserDefaultHomeUrl(res) {
+    if (!res) return '';
+    if (typeof res === 'string') return res.trim();
+    if (Array.isArray(res) && res.length > 0) {
+        var row = res[0];
+        return String(
+            row.UserDefultHomeURL || row.userDefultHomeURL ||
+            row.UserDefaultHomeURL || row.userDefaultHomeURL || ''
+        ).trim();
+    }
+    if (typeof res === 'object') {
+        return String(
+            res.UserDefultHomeURL || res.userDefultHomeURL ||
+            res.UserDefaultHomeURL || res.userDefaultHomeURL || ''
+        ).trim();
+    }
+    return '';
+}
+
+function getNormalizedAppBaseUrl(baseUrl) {
+    var appBase = (baseUrl || sessionStorage.getItem('AppBaseURL') || '').trim();
+    if (!appBase) {
+        appBase = window.location.origin;
+    }
+    try {
+        var parsed = new URL(appBase, window.location.href);
+        appBase = parsed.origin + parsed.pathname.replace(/\/+$/, '');
+    } catch (e) {
+        appBase = appBase.replace(/\/+$/, '');
+    }
+
+    var basePath = '';
+    try {
+        basePath = new URL(appBase, window.location.href).pathname.replace(/\/+$/, '');
+    } catch (e) { }
+
+    // Session AppBaseURL may be origin-only on some servers; infer virtual folder from current path.
+    if (!basePath) {
+        var inferred = inferPathBaseFromCurrentLocation();
+        if (inferred) {
+            appBase = window.location.origin + inferred;
+        }
+    }
+
+    return appBase;
+}
+
+function inferPathBaseFromCurrentLocation() {
+    var path = window.location.pathname.replace(/\/+$/, '') || '/';
+    var lower = path.toLowerCase();
+
+    if (lower === '/' || lower === '') return '';
+
+    if (lower.endsWith('/home/index')) {
+        return path.slice(0, -('/home/index'.length)).replace(/\/+$/, '');
+    }
+    if (lower.endsWith('/home')) {
+        return path.slice(0, -('/home'.length)).replace(/\/+$/, '');
+    }
+
+    var segments = path.split('/').filter(Boolean);
+    if (segments.length === 1) {
+        return '/' + segments[0];
+    }
+
+    return '';
+}
+
+function getAppPathBase(baseUrl) {
+    try {
+        return new URL(getNormalizedAppBaseUrl(baseUrl), window.location.href)
+            .pathname.replace(/\/+$/, '') || '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function buildHomeTargetUrl(baseUrl, userHomeUrl) {
+    var url = (userHomeUrl || '').trim();
+    var appBase = getNormalizedAppBaseUrl(baseUrl);
+
+    if (!url) {
+        return appBase + '/';
+    }
+
+    if (/^https?:\/\//i.test(url)) {
+        return url;
+    }
+
+    var pathBase = getAppPathBase(appBase);
+    var pathBaseLower = pathBase.toLowerCase();
+
+    // Normalize to a relative app path (no leading slash).
+    url = url.replace(/^\/+/, '');
+
+    // Avoid /erp25/erp25/... when DB value already includes the virtual folder.
+    if (pathBaseLower) {
+        var virtualPrefix = pathBaseLower.replace(/^\/+/, '') + '/';
+        if (url.toLowerCase().indexOf(virtualPrefix) === 0) {
+            url = url.substring(virtualPrefix.length);
+        }
+    }
+
+    try {
+        return new URL(url, appBase + '/').href;
+    } catch (e) {
+        return appBase + '/' + url;
+    }
+}
+
+function isDefaultLandingPage() {
+    var pathBase = getAppPathBase('').toLowerCase();
+    var currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+
+    var landingPaths = ['/', '/home', '/home/index'];
+    if (pathBase) {
+        landingPaths.push(pathBase, pathBase + '/home', pathBase + '/home/index');
+    }
+
+    return landingPaths.indexOf(currentPath) !== -1;
+}
+
+function setHomeButtonTargets(targetUrl, targetTitle) {
+    var solarHomeBtn = document.getElementById('solarHomeBtn');
+    if (solarHomeBtn) {
+        solarHomeBtn.title = targetTitle;
+        solarHomeBtn.setAttribute('aria-label', targetTitle);
+        solarHomeBtn.href = targetUrl;
+    }
+
+    var appLogoBtn = document.getElementById('appLogoBtn');
+    if (appLogoBtn) {
+        appLogoBtn.title = targetTitle;
+        appLogoBtn.setAttribute('aria-label', targetTitle);
+        appLogoBtn.href = targetUrl;
+    }
+}
+
+function firstDashboardRows(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    if (payload.$values && Array.isArray(payload.$values)) return payload.$values;
+    if (payload.data && Array.isArray(payload.data)) return payload.data;
+    if (payload.Data && Array.isArray(payload.Data)) return payload.Data;
+    return [];
+}
+
+function applyUserHomeRedirection(baseUrlForHome, userID) {
+    var defaultHomeUrl = buildHomeTargetUrl(baseUrlForHome, '');
+    var menuUrl = BizSolHelperFunction.getUserDashboardMenuUrl();
+
+    return MenuService.GetUserDefaultHomeURL(userID).then(function (res) {
+        var userHomeUrl = extractUserDefaultHomeUrl(res);
+        var hasCustomHome = userHomeUrl !== '';
+        var targetUrl = hasCustomHome ? buildHomeTargetUrl(baseUrlForHome, userHomeUrl) : defaultHomeUrl;
+
+        setHomeButtonTargets(targetUrl, 'Home');
+
+        return UserDashboardMenuService.GetUserDashboardDetails().then(function (dashRes) {
+            var rows = firstDashboardRows(dashRes);
+            BizSolHelperFunction.rememberUserDashboardCount(rows.length);
+
+            if (rows.length > 1) {
+                setHomeButtonTargets(menuUrl, 'User Dashboard Menu');
+            }
+
+            if (!isDefaultLandingPage()) {
+                return false;
+            }
+
+            if (rows.length > 0) {
+                window.location.href = menuUrl;
+                return true;
+            }
+
+            if (hasCustomHome) {
+                window.location.href = targetUrl;
+                return true;
+            }
+            return false;
+        }).catch(function () {
+            if (hasCustomHome && isDefaultLandingPage()) {
+                window.location.href = targetUrl;
+                return true;
+            }
+            return false;
+        });
+    }).catch(function () {
+        setHomeButtonTargets(defaultHomeUrl, 'Home');
+        return false;
+    });
+}
+
+function renderFullMenu(value, baseUrl) {
+    var menuHtml = '';
+    var mobileMenuHtml = '';
+    var mobileMenuCount = 0;
+    var maxMobileItems = 5;
+
+    // --- Favourites section (collapsible) ---
+    var favMenuHtml = buildFavouritesSection(value, baseUrl);
+    if (favMenuHtml) {
+        menuHtml += buildFavouritesToggleHtml(getFavouritesCount());
+        menuHtml += '<div id="fav-menu-section">' + favMenuHtml + '</div>';
+        menuHtml += '<div class="sidebar-section-label sidebar-static-label">All Menus</div>';
+    } else {
+        menuHtml += '<div id="fav-menu-section"></div>';
+    }
+
+    $.each(value, function (index, item) {
+        if (item.MasterCode === 0) {
+            var childMenuHtml = getChildMenu(value, item.Code, baseUrl);
+            var hasArrow = childMenuHtml ? 'has-arrow' : '';
+
+            menuHtml += '<a href="javascript:void(0);" class="sidebar-menu-item menu-toggle ' + hasArrow + '" data-menu-code="' + item.Code + '" data-menu-name="' + item.ModuleDesp + '">';
+            menuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
+            menuHtml += '<span>' + item.ModuleDesp + '</span>';
+            menuHtml += '</a>';
+
+            if (childMenuHtml) {
+                menuHtml += '<div class="sub-menu" style="display: none;">' + childMenuHtml + '</div>';
+            }
+
+            if (mobileMenuCount < maxMobileItems) {
+                var firstChildUrl = getFirstChildUrl(value, item.Code, baseUrl);
+                var mobileHref = childMenuHtml ? 'javascript:void(0);' : (firstChildUrl || 'javascript:void(0);');
+                var mobileClass = childMenuHtml ? 'mobile-nav-item mobile-menu-toggle' : 'mobile-nav-item';
+
+                mobileMenuHtml += '<a href="' + mobileHref + '" class="' + mobileClass + '" data-menu-code="' + item.Code + '" data-menu-name="' + item.ModuleDesp + '">';
+                mobileMenuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
+                mobileMenuHtml += '<span>' + item.ModuleDesp + '</span>';
+                mobileMenuHtml += '</a>';
+
+                mobileMenuCount++;
+            }
+        }
+    });
+
+    $('#sidebar-menu').html(menuHtml);
+    $('.mobile-nav-items').html(mobileMenuHtml);
+
+    setActiveMenu();
+    bindMenuToggleEvents();
+    initCollapsedSidebarHover();
+    bindMobileMenuEvents();
+    bindStarEvents();
+    bindFavouritesToggleEvents();
+    applyFavouritesCollapseState(false);
+}
+
+function getFavouritesCount() {
+    if (!_favouriteMenuCodes || !_favouriteMenuCodes.length) return 0;
+    var count = 0;
+    $.each(_favouriteMenuCodes, function (i, code) {
+        if (getMenuItemByCode(_menuAllItems, code)) count++;
+    });
+    return count;
+}
+
+function isFavouritesCollapsed() {
+    return sessionStorage.getItem(_FAV_COLLAPSE_KEY) === '1';
+}
+
+function setFavouritesCollapsed(collapsed) {
+    sessionStorage.setItem(_FAV_COLLAPSE_KEY, collapsed ? '1' : '0');
+}
+
+function buildFavouritesToggleHtml(count) {
+    var collapsed = isFavouritesCollapsed();
+    var activeClass = collapsed ? '' : ' active';
+    var ariaExpanded = collapsed ? 'false' : 'true';
+    var html = '<a href="javascript:void(0);" class="sidebar-fav-toggle has-arrow' + activeClass + '" id="fav-section-toggle" aria-expanded="' + ariaExpanded + '" title="Toggle Favourites">';
+    html += '<i class="fas fa-star fav-toggle-icon" aria-hidden="true"></i>';
+    html += '<span>Favourites</span>';
+    if (count > 0) {
+        html += '<span class="fav-count">' + count + '</span>';
+    }
+    html += '</a>';
+    return html;
+}
+
+function applyFavouritesCollapseState(animate) {
+    var $toggle = $('#fav-section-toggle');
+    var $section = $('#fav-menu-section');
+    if (!$toggle.length || !$section.length || !$section.children().length) {
+        return;
+    }
+
+    var collapsed = isFavouritesCollapsed();
+    if (collapsed) {
+        $toggle.removeClass('active').attr('aria-expanded', 'false');
+        if (animate) {
+            $section.stop(true, true).slideUp(200);
+        } else {
+            $section.hide();
+        }
+    } else {
+        $toggle.addClass('active').attr('aria-expanded', 'true');
+        if (animate) {
+            $section.stop(true, true).slideDown(200);
+        } else {
+            $section.show();
+        }
+    }
+}
+
+function bindFavouritesToggleEvents() {
+    $(document).off('click.favtoggle').on('click.favtoggle', '#fav-section-toggle', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if ($('#modern-sidebar').hasClass('collapsed')) {
+            return;
+        }
+
+        setFavouritesCollapsed(!isFavouritesCollapsed());
+        applyFavouritesCollapseState(true);
+    });
+}
+
+function ensureFavouritesSectionChrome() {
+    var $favSection = $('#fav-menu-section');
+    var favHtml = $favSection.html();
+    var hasFavs = favHtml && favHtml.trim().length > 0;
+    var $favToggle = $('#fav-section-toggle');
+    var $allMenusLabel = $favSection.next('.sidebar-static-label');
+
+    if (hasFavs) {
+        var count = getFavouritesCount();
+        if ($favToggle.length === 0) {
+            $favSection.before(buildFavouritesToggleHtml(count));
+        } else {
+            var $count = $favToggle.find('.fav-count');
+            if (count > 0) {
+                if ($count.length) {
+                    $count.text(count);
+                } else {
+                    $favToggle.append('<span class="fav-count">' + count + '</span>');
+                }
+            } else {
+                $count.remove();
+            }
+        }
+        if ($allMenusLabel.length === 0) {
+            $favSection.after('<div class="sidebar-section-label sidebar-static-label">All Menus</div>');
+        }
+    } else {
+        $favToggle.remove();
+        $allMenusLabel.remove();
+    }
+}
+
+function buildFavouritesSection(value, baseUrl) {
+    if (!_favouriteMenuCodes || _favouriteMenuCodes.length === 0) return '';
+    var html = '';
+    $.each(_favouriteMenuCodes, function (i, menuCode) {
+        var item = getMenuItemByCode(value, menuCode);
+        if (!item || !item.FormToOpen) return;
+        var separator = item.FormToOpen.indexOf('?') !== -1 ? '&' : '?';
+        var href = sessionStorage.getItem('AppBaseURL') + '/' + item.FormToOpen + separator + 'ModuleDesp=' + item.ModuleDesp;
+        html += '<a href="' + href + '" class="sidebar-menu-item fav-menu-link" data-menu-code="' + item.Code + '">';
+        html += '<i class="fas fa-star fav-star-icon" aria-hidden="true"></i>';
+        html += '<i class="' + getMenuIcon(item.ModuleDesp) + '" aria-hidden="true"></i>';
+        html += '<span>' + item.ModuleDesp + '</span>';
+        html += '</a>';
+    });
+    return html;
+}
+
+function getMenuItemByCode(value, code) {
+    var found = null;
+    $.each(value, function (i, item) {
+        if (item.Code === code) { found = item; return false; }
+    });
+    return found;
 }
 
 function getChildMenu(value, masterCode, baseUrl) {
-   
     var baseUrl = sessionStorage.getItem('AppBaseURL');
     var childMenuHtml = '';
     $.each(value, function (index, item) {
-        if (item.MasterCode === masterCode && item.NotificationApplicable==='N') {
+        if (item.MasterCode === masterCode && item.NotificationApplicable === 'N') {
             var subChildMenuHtml = getChildMenu(value, item.Code);
             var hasArrow = subChildMenuHtml ? 'has-arrow' : '';
-            
-            // Check if FormToOpen already contains a query parameter
+
             var separator = item.FormToOpen.indexOf('?') !== -1 ? '&' : '?';
-            
-            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + separator + 'ModuleDesp=' + item.ModuleDesp +'" class="sidebar-menu-item menu-toggle ' + hasArrow + '">';
-            childMenuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '"></i>';
+
+            var isLeaf = !subChildMenuHtml;
+            var isFav = _favouriteMenuCodes.indexOf(item.Code) !== -1;
+            var starClass = isFav ? 'fas fa-star menu-fav-star active-fav' : 'far fa-star menu-fav-star';
+            var starColor = isFav ? '' : 'menu-fav-inactive';
+
+            childMenuHtml += '<a href="' + baseUrl + '/' + item.FormToOpen + separator + 'ModuleDesp=' + item.ModuleDesp + '" class="sidebar-menu-item menu-toggle ' + hasArrow + '" data-menu-code="' + item.Code + '">';
+            if (isLeaf) {
+                childMenuHtml += '<i class="' + starClass + ' menu-star-btn ' + starColor + '" data-menu-code="' + item.Code + '" data-module-desp="' + item.ModuleDesp + '" title="Add to Favourites" aria-label="Toggle favourite"></i>';
+            }
+            childMenuHtml += '<i class="' + getMenuIcon(item.ModuleDesp) + '" aria-hidden="true"></i>';
             childMenuHtml += '<span>' + item.ModuleDesp + '</span>';
             childMenuHtml += '</a>';
-            
+
             if (subChildMenuHtml) {
                 childMenuHtml += '<div class="sub-menu" style="display: none;">' + subChildMenuHtml + '</div>';
             }
         }
     });
     return childMenuHtml;
+}
+
+function bindStarEvents() {
+    $(document).off('click.favstar').on('click.favstar', '.menu-star-btn', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var $star = $(this);
+        var menuCode = parseInt($star.data('menu-code'));
+        var moduleDesp = $star.data('module-desp');
+        var isNowFav = $star.hasClass('active-fav');
+        var newIsFav = !isNowFav;
+
+        // Optimistically update UI
+        if (newIsFav) {
+            $star.removeClass('far menu-fav-inactive').addClass('fas active-fav');
+            if (_favouriteMenuCodes.indexOf(menuCode) === -1) {
+                _favouriteMenuCodes.push(menuCode);
+            }
+        } else {
+            $star.removeClass('fas active-fav').addClass('far menu-fav-inactive');
+            _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
+        }
+
+        // Refresh favourites section
+        refreshFavouritesSection();
+
+        // Save to backend
+        MenuService.SaveFavouriteMenu(_menuUserID, menuCode, moduleDesp, newIsFav).then(function (res) {
+            if (res && res.Code === 1) {
+                toastr.success(res.Msg || 'Favourites updated.');
+            } else {
+                // Revert on API-level failure
+                if (newIsFav) {
+                    $star.removeClass('fas active-fav').addClass('far menu-fav-inactive');
+                    _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
+                } else {
+                    $star.removeClass('far menu-fav-inactive').addClass('fas active-fav');
+                    if (_favouriteMenuCodes.indexOf(menuCode) === -1) _favouriteMenuCodes.push(menuCode);
+                }
+                refreshFavouritesSection();
+                toastr.error(res && res.Msg ? res.Msg : 'Failed to update favourites.');
+            }
+        }).catch(function () {
+            // Revert on failure
+            if (newIsFav) {
+                $star.removeClass('fas active-fav').addClass('far menu-fav-inactive');
+                _favouriteMenuCodes = _favouriteMenuCodes.filter(function (c) { return c !== menuCode; });
+            } else {
+                $star.removeClass('far menu-fav-inactive').addClass('fas active-fav');
+                if (_favouriteMenuCodes.indexOf(menuCode) === -1) _favouriteMenuCodes.push(menuCode);
+            }
+            refreshFavouritesSection();
+            toastr.error('Failed to update favourites.');
+        });
+    });
+}
+
+function refreshFavouritesSection() {
+    var favHtml = buildFavouritesSection(_menuAllItems, sessionStorage.getItem('AppBaseURL'));
+    var $favSection = $('#fav-menu-section');
+
+    $favSection.html(favHtml);
+    ensureFavouritesSectionChrome();
+
+    if (favHtml) {
+        applyFavouritesCollapseState(false);
+        bindFavouritesToggleEvents();
+        setActiveMenu();
+    }
+}
+
+function bindMenuToggleEvents() {
+    $('.sidebar-menu-item.menu-toggle').click(function (e) {
+        var menuItem = $(this);
+        var subMenu = menuItem.next('.sub-menu');
+
+        if (!menuItem.hasClass('has-arrow')) {
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if ($('#modern-sidebar').hasClass('collapsed')) {
+            return;
+        }
+
+        if (subMenu.is(":visible")) {
+            subMenu.slideUp();
+            menuItem.removeClass('active');
+        } else {
+            menuItem.siblings('.menu-toggle').next('.sub-menu').slideUp();
+            menuItem.siblings('.menu-toggle').removeClass('active');
+
+            subMenu.slideDown();
+            menuItem.addClass('active');
+        }
+    });
+}
+
+function bindMobileMenuEvents() {
+    $('.mobile-menu-toggle').click(function (e) {
+        e.preventDefault();
+
+        var menuCode = $(this).data('menu-code');
+
+        $('#modern-sidebar').addClass('show');
+        $('#sidebar-overlay').addClass('show');
+
+        var correspondingMenuItem = $('#sidebar-menu .sidebar-menu-item[data-menu-code="' + menuCode + '"]');
+
+        if (correspondingMenuItem.length) {
+            $('#sidebar-menu .sub-menu').slideUp();
+            $('#sidebar-menu .sidebar-menu-item').removeClass('active');
+
+            var subMenu = correspondingMenuItem.next('.sub-menu');
+            if (subMenu.length) {
+                subMenu.slideDown();
+                correspondingMenuItem.addClass('active');
+            }
+        }
+    });
 }
 
 function normalizeModuleDesp(value) {
@@ -197,10 +641,16 @@ function setActiveMenu() {
     $('.mobile-nav-item').removeClass('active');
 
     // Find and activate the current page menu item
+    var activeInFavourites = false;
+
     $('#sidebar-menu a').each(function () {
         var menuLink = $(this).attr('href');
         if (menuLink && menuLink !== 'javascript:void(0);' && menuLinkMatchesCurrentPage(menuLink)) {
             $(this).addClass('active');
+
+            if ($(this).closest('#fav-menu-section').length) {
+                activeInFavourites = true;
+            }
 
             // Show all parent submenus
             $(this).parents('.sub-menu').each(function() {
@@ -210,6 +660,11 @@ function setActiveMenu() {
             });
         }
     });
+
+    if (activeInFavourites) {
+        setFavouritesCollapsed(false);
+        applyFavouritesCollapseState(false);
+    }
 
     // Set active state for mobile nav
     $('.mobile-nav-item').each(function () {
@@ -233,14 +688,6 @@ function getFirstChildUrl(value, masterCode, baseUrl) {
         }
     });
     return firstUrl;
-}
-
-// Helper function to truncate text for mobile display
-function truncateText(text, maxLength) {
-    if (text.length <= maxLength) {
-        return text;
-    }
-    return text.substr(0, maxLength);
 }
 
 // Helper function to get appropriate icon based on menu name
@@ -293,6 +740,45 @@ function initCollapsedSidebarHover() {
     var popupMenu = null;
     var hideTimeout = null;
 
+    function removePopupMenu() {
+        if (popupMenu) {
+            popupMenu.remove();
+            popupMenu = null;
+        }
+        $('.sidebar-popup-menu').remove();
+    }
+
+    function createFavouritesPopupMenu() {
+        var favLinks = $('#fav-menu-section a.fav-menu-link');
+        if (!favLinks.length) {
+            return null;
+        }
+
+        var popupHtml = '<div class="sidebar-popup-menu sidebar-fav-popup">';
+        popupHtml += '<div class="popup-menu-title"><i class="fas fa-star" style="margin-right:5px;font-size:0.6rem;color:#b45309;"></i>Favourites</div>';
+
+        favLinks.each(function () {
+            var $link = $(this);
+            var name = $link.find('span').text();
+            var href = $link.attr('href');
+            var iconClass = 'fas fa-star';
+            $link.find('i').each(function () {
+                if (!$(this).hasClass('fav-star-icon')) {
+                    iconClass = $(this).attr('class');
+                    return false;
+                }
+            });
+
+            popupHtml += '<a href="' + href + '" class="popup-menu-item">';
+            popupHtml += '<i class="' + iconClass + '"></i>';
+            popupHtml += '<span>' + name + '</span>';
+            popupHtml += '</a>';
+        });
+
+        popupHtml += '</div>';
+        return $(popupHtml);
+    }
+
     // Create popup menu element
     function createPopupMenu(menuItem) {
         var menuName = menuItem.find('span').text();
@@ -342,14 +828,77 @@ function initCollapsedSidebarHover() {
         return $(popupHtml);
     }
 
+    function positionPopup($popup, $trigger) {
+        var menuItemOffset = $trigger.offset();
+        $popup.css({
+            top: menuItemOffset.top + 'px',
+            display: 'block'
+        });
+    }
+
+    function bindPopupHover($popup) {
+        var subMenuHideTimeout = null;
+
+        $popup.find('.popup-menu-item.has-arrow').on('mouseenter', function () {
+            clearTimeout(subMenuHideTimeout);
+            var $subMenu = $(this).next('.popup-submenu');
+            $popup.find('.popup-submenu').not($subMenu).slideUp(200);
+            $subMenu.slideDown(200);
+        }).on('mouseleave', function () {
+            var $subMenu = $(this).next('.popup-submenu');
+            subMenuHideTimeout = setTimeout(function () {
+                $subMenu.slideUp(200);
+            }, 300);
+        });
+
+        $popup.find('.popup-submenu').on('mouseenter', function () {
+            clearTimeout(subMenuHideTimeout);
+        }).on('mouseleave', function () {
+            var $subMenu = $(this);
+            subMenuHideTimeout = setTimeout(function () {
+                $subMenu.slideUp(200);
+            }, 300);
+        });
+
+        $popup.hover(
+            function () {
+                clearTimeout(hideTimeout);
+            },
+            function () {
+                hidePopupMenu();
+            }
+        );
+
+        $popup.find('a.popup-menu-item').click(function () {
+            removePopupMenu();
+        });
+    }
+
+    function showFavouritesPopup(triggerItem) {
+        if (!$('#modern-sidebar').hasClass('collapsed')) {
+            return;
+        }
+
+        removePopupMenu();
+        clearTimeout(hideTimeout);
+
+        popupMenu = createFavouritesPopupMenu();
+        if (!popupMenu) {
+            return;
+        }
+
+        $('body').append(popupMenu);
+        positionPopup(popupMenu, triggerItem);
+        bindPopupHover(popupMenu);
+    }
+
     // Show popup menu
     function showPopupMenu(menuItem) {
         if (!$('#modern-sidebar').hasClass('collapsed')) {
-            return; // Only show popup when sidebar is collapsed
+            return;
         }
 
-        // Remove existing popup
-        $('.sidebar-popup-menu').remove();
+        removePopupMenu();
         clearTimeout(hideTimeout);
 
         popupMenu = createPopupMenu(menuItem);
@@ -358,79 +907,38 @@ function initCollapsedSidebarHover() {
         }
 
         $('body').append(popupMenu);
-
-        // Position the popup
-        var menuItemOffset = menuItem.offset();
-        var menuItemHeight = menuItem.outerHeight();
-
-        popupMenu.css({
-            top: menuItemOffset.top + 'px',
-            display: 'block'
-        });
-
-        // Handle popup menu item hover to show nested submenus
-        var subMenuHideTimeout = null;
-
-        popupMenu.find('.popup-menu-item.has-arrow').on('mouseenter', function() {
-            clearTimeout(subMenuHideTimeout);
-            var $subMenu = $(this).next('.popup-submenu');
-            popupMenu.find('.popup-submenu').not($subMenu).slideUp(200);
-            $subMenu.slideDown(200);
-        }).on('mouseleave', function() {
-            var $subMenu = $(this).next('.popup-submenu');
-            subMenuHideTimeout = setTimeout(function() {
-                $subMenu.slideUp(200);
-            }, 300);
-        });
-
-        popupMenu.find('.popup-submenu').on('mouseenter', function() {
-            clearTimeout(subMenuHideTimeout);
-        }).on('mouseleave', function() {
-            var $subMenu = $(this);
-            subMenuHideTimeout = setTimeout(function() {
-                $subMenu.slideUp(200);
-            }, 300);
-        });
-
-        // Keep popup visible when hovering over it
-        popupMenu.hover(
-            function() {
-                clearTimeout(hideTimeout);
-            },
-            function() {
-                hideTimeout = setTimeout(function() {
-                    popupMenu.fadeOut(200, function() {
-                        $(this).remove();
-                    });
-                }, 300);
-            }
-        );
-
-        // Close popup when clicking a link
-        popupMenu.find('a').click(function() {
-            popupMenu.remove();
-        });
+        positionPopup(popupMenu, menuItem);
+        bindPopupHover(popupMenu);
     }
 
     // Hide popup menu
     function hidePopupMenu() {
-        hideTimeout = setTimeout(function() {
-            if (popupMenu) {
-                popupMenu.fadeOut(200, function() {
-                    $(this).remove();
-                });
-            }
+        hideTimeout = setTimeout(function () {
+            removePopupMenu();
         }, 300);
     }
 
     // Attach hover events to menu items (only parent items with submenus)
-    $(document).on('mouseenter', '#sidebar-menu > a.sidebar-menu-item.has-arrow', function() {
+    $(document).on('mouseenter', '#sidebar-menu > a.sidebar-menu-item.has-arrow', function () {
         if ($('#modern-sidebar').hasClass('collapsed')) {
             showPopupMenu($(this));
         }
     });
 
-    $(document).on('mouseleave', '#sidebar-menu > a.sidebar-menu-item.has-arrow', function() {
+    $(document).on('mouseleave', '#sidebar-menu > a.sidebar-menu-item.has-arrow', function () {
+        if ($('#modern-sidebar').hasClass('collapsed')) {
+            hidePopupMenu();
+        }
+    });
+
+    // Favourites star — popup when sidebar collapsed
+    $(document).on('mouseenter', '#fav-section-toggle', function () {
+        if ($('#modern-sidebar').hasClass('collapsed')) {
+            showFavouritesPopup($(this));
+        }
+    });
+
+    $(document).on('mouseleave', '#fav-section-toggle', function () {
         if ($('#modern-sidebar').hasClass('collapsed')) {
             hidePopupMenu();
         }
@@ -444,4 +952,49 @@ function initCollapsedSidebarHover() {
             }
         }, 100);
     });
+}
+
+function byteArrayToBase64(bytes) {
+    if (!bytes || !bytes.length) return '';
+    var binaryString = '';
+    var chunkSize = 8192;
+    for (var i = 0; i < bytes.length; i += chunkSize) {
+        binaryString += String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize));
+    }
+    return btoa(binaryString);
+}
+
+function extractUserImageSrc(data) {
+    if (!data) return '';
+    if (typeof data === 'string') {
+        if (!data.length) return '';
+        return data.indexOf('data:') === 0 ? data : ('data:image/jpeg;base64,' + data);
+    }
+
+    var list = data;
+    if (data.$values && Array.isArray(data.$values)) list = data.$values;
+    var item = Array.isArray(list) ? list[0] : list;
+    if (!item) return '';
+
+    var raw = item.UserImage || item.userImage || item.ImageDataBase64 || item.ImageBase64 || item.PhotoBase64 || '';
+    if (Array.isArray(raw)) raw = byteArrayToBase64(raw);
+    if (typeof raw !== 'string' || !raw.length) return '';
+
+    raw = raw.trim();
+    if (raw.indexOf('data:') === 0) return raw;
+    return 'data:image/jpeg;base64,' + raw;
+}
+
+function applyUserProfileImageSrc(src) {
+    if (!src) return;
+    var img = document.getElementById('ERPUserProfileImage') || document.querySelector('.profile-avatar');
+    if (img) img.src = src;
+}
+
+function bindUserProfileImage() {
+    MenuService.GetUserImage()
+        .then(function (data) {
+            applyUserProfileImageSrc(extractUserImageSrc(data));
+        })
+        .catch(function () { });
 }

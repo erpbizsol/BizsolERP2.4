@@ -3,6 +3,7 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 import { BOMService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BOMService.js';
+import { ExpenseHeadMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ExpenseHeadMasterService.js';
 
 let G_ProjectList         = [];
 let G_SubProjectList      = [];
@@ -12,6 +13,17 @@ let G_ItemCacheByWorkType = {};
 let G_BOMRows             = [];
 let G_BOMList             = [];
 let G_BOMHeader           = {};
+/** Entry type: BOM (default) | EXPENSE */
+let G_EntryMode           = 'BOM';
+let G_ExpenseGroupList    = [];
+let G_ExpenseLoadedForKey = '';
+/** Last Copy From source — shown in modal until Save All. */
+let G_CopyFromSource        = { active: false, projectCode: 0, subProjectCode: 0, projectName: '', subProjectDesp: '' };
+
+const BOM_MAX_RATE    = 999999.99;
+const BOM_MAX_QTY     = 99999.99;
+// const BOM_MAX_AMOUNT  = 99999999.99;
+const BOM_MAX_GST_PCT = 100;
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
@@ -21,11 +33,22 @@ $(document).ready(function () {
     loadCategoryAndWorkTypeMaster();
 
     $('#btnCreateBOM').on('click', function () { openNewBOM(); });
-    $('#btnAddBomRow').on('click', function () { addNewBomRow(); });
-    $('#btnSaveAllBomRows').on('click', function () { saveAllRows(); });
+    $('#btnCopyFromBom').on('click', function () { openCopyFromModal(); });
+    $('#btnCopyFromFill').on('click', function () { fillBomFromCopy(); });
+    $('#btnAddBomRow').on('click', function () {
+        if (isExpenseMode()) addNewExpenseRow();
+        else addNewBomRow();
+    });
+    $('#btnSaveAllBomRows').on('click', function () {
+        if (isExpenseMode()) saveAllExpenseRows();
+        else saveAllRows();
+    });
     $('#btnVerifyAllBomRows').on('click', function () { verifyAllRows(); });
     $('#btnBackToBomList').on('click', function () { showBOMListView(); });
     $('#btnConfirmDeleteBOM').on('click', function () { confirmDeleteBOM(); });
+    $('input[name="bomEntryMode"]').on('change', function () {
+        setEntryMode($(this).val() || 'BOM');
+    });
 
     $('#tblBOMList').on('click', '.js-bom-view', function () {
         const $tr = $(this).closest('tr');
@@ -39,10 +62,29 @@ $(document).ready(function () {
         const $tr = $(this).closest('tr');
         deleteBOMFromList($tr.data('id'), $tr.data('sub-id') || 0);
     });
+    $('#tblBOMList').on('click', '.js-bom-history', function () {
+        const $tr = $(this).closest('tr');
+        openBomAmendmentHistoryModal($tr.data('id'), $tr.data('sub-id') || 0);
+    });
 
     $('#bomSearch').on('input', function () {
         filterBOMs($(this).val().toLowerCase().trim());
     });
+
+    $('#dvBOMViewModal, #dvBOMCopyFromModal, #dvBomAmendmentHistoryModal, #dvBOMDeleteConfirmModal')
+        .on('shown.bs.modal', function () {
+            document.documentElement.classList.add('bom-modal-open');
+            document.body.classList.add('bom-modal-open');
+        })
+        .on('hidden.bs.modal', function () {
+            const anyOpen = $('#dvBOMViewModal, #dvBOMCopyFromModal, #dvBomAmendmentHistoryModal, #dvBOMDeleteConfirmModal')
+                .toArray()
+                .some(function (el) { return el.classList.contains('show'); });
+            if (!anyOpen) {
+                document.documentElement.classList.remove('bom-modal-open');
+                document.body.classList.remove('bom-modal-open');
+            }
+        });
 });
 function loadBOMList() {
     if (!BOMService || typeof BOMService.GetBOMList !== 'function') return;
@@ -77,6 +119,82 @@ function formatInrAmountNum(n, minDec, maxDec) {
 function formatInrQtyNum(n) {
     if (n == null || isNaN(n)) return '—';
     return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+}
+
+/** Base amount (qty × rate, before GST) for list / view — matches BOM summary "Amount" column. */
+function getBomListBaseAmount(item) {
+    if (!item) return 0;
+    const amountKeys = ['Amount', 'amount', 'BaseAmount', 'SumAmount', 'TotalBaseAmount'];
+    for (let i = 0; i < amountKeys.length; i++) {
+        const v = item[amountKeys[i]];
+        if (v != null && v !== '') {
+            const n = parseFloat(v);
+            if (!isNaN(n)) return n;
+        }
+    }
+    const total = parseFloat(item.TotalAmount || 0) || 0;
+    const gst = parseFloat(item.GSTAmount ?? item.GstAmount ?? item.TotalGSTAmount ?? item.GSTAmt ?? 0) || 0;
+    if (total && gst) return Math.max(0, total - gst);
+    return 0;
+}
+
+/** Indian numbering: amount in words after ₹ for BOM summary footer (no "Rupees" / "Only"). */
+const _INR_ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+const _INR_TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+function _inrWordsBelowHundred(n) {
+    n = Math.floor(Math.abs(n));
+    if (n < 20) return _INR_ONES[n] || '';
+    const t = Math.floor(n / 10);
+    const o = n % 10;
+    return _INR_TENS[t] + (o ? ' ' + _INR_ONES[o] : '');
+}
+
+function _inrWordsBelowThousand(n) {
+    n = Math.floor(Math.abs(n));
+    if (n === 0) return '';
+    if (n < 100) return _inrWordsBelowHundred(n);
+    const h = Math.floor(n / 100);
+    const rest = n % 100;
+    return _INR_ONES[h] + ' Hundred' + (rest ? ' ' + _inrWordsBelowHundred(rest) : '');
+}
+
+function numToWordsIndian(n) {
+    n = Math.floor(Math.abs(Number(n)));
+    if (n === 0) return 'Zero';
+    if (n >= 10000000) {
+        const crore = Math.floor(n / 10000000);
+        const rest = n % 10000000;
+        const cw = crore < 1000 ? _inrWordsBelowThousand(crore) : numToWordsIndian(crore);
+        if (!rest) return cw + ' Crore';
+        const rw = numToWordsIndian(rest);
+        return cw + ' Crore ' + (rw === 'Zero' ? '' : rw);
+    }
+    let rem = n;
+    const lakh = Math.floor(rem / 100000);
+    rem %= 100000;
+    const thousand = Math.floor(rem / 1000);
+    rem %= 1000;
+    const parts = [];
+    if (lakh) parts.push(_inrWordsBelowThousand(lakh) + ' Lakh');
+    if (thousand) parts.push(_inrWordsBelowThousand(thousand) + ' Thousand');
+    if (rem) parts.push(_inrWordsBelowThousand(rem));
+    return parts.length ? parts.join(' ') : 'Zero';
+}
+
+function inrAmountWordsRupeeSymbol(amount) {
+    if (amount == null || isNaN(amount)) return '';
+    const rounded = Math.round(Number(amount) * 100) / 100;
+    const rupees = Math.floor(rounded);
+    const paise = Math.round((rounded - rupees) * 100);
+    let w = numToWordsIndian(rupees);
+    if (rupees === 0 && paise === 0) w = 'Zero';
+    let s = '₹ ' + w;
+    if (paise > 0) {
+        s += ' and ' + numToWordsIndian(paise) + ' Paise';
+    }
+    return s;
 }
 
 /* Same comma rules as Project Master budget field (formatBudgetRaw). */
@@ -117,26 +235,34 @@ function bindBOMGrid(list) {
     if (!list || list.length === 0) {
         $tbody.append(`
             <tr>
-                <td colspan="6">
+                <td colspan="8">
                     <div class="pm-empty">
                         <div class="pm-empty-icon"><i class="fas fa-folder-open"></i></div>
                         <div class="pm-empty-title">No BOM records found</div>
-                        <div class="pm-empty-sub">Click "New BOM" to create your first BOM.</div>
+                        <div class="pm-empty-sub">Click &quot;New BOM&quot; to create your first BOM.</div>
                     </div>
                 </td>
             </tr>`);
+        $('#bomListGrandAmount').text('—');
         $('#bomListGrandTotal').text('—');
+        $('#bomListGrandExpense').text('—');
         return;
     }
 
+    let grandAmount = 0;
     let grandTotal = 0;
+    let grandExpense = 0;
 
     list.forEach(function (item, index) {
         const projectName    = item.ProjectName || item.ProjectDesp || '';
         const subProjectName = item.SubProjectName || item.SubProjectDesp || '';
         const totalItems     = item.TotalItems  || 0;
+        const baseAmount     = getBomListBaseAmount(item);
         const totalAmount    = parseFloat(item.TotalAmount || 0);
+        const expenseAmount  = parseFloat(item.ExpenseAmount ?? item.expenseAmount ?? 0) || 0;
+        grandAmount += baseAmount;
         grandTotal += totalAmount;
+        grandExpense += expenseAmount;
 
         const bomId    = item.ProjectMaster_Code || item.Code || 0;
         const subBomId = item.SubProjectMaster_Code || 0;
@@ -147,7 +273,9 @@ function bindBOMGrid(list) {
                 <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis;">${escHtml(projectName)}</td>
                 <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis;">${escHtml(subProjectName)}</td>
                 <td class="center">${totalItems}</td>
-                <td class="right">${formatInrAmountNum(totalAmount, 2, 2)}</td>
+                <td class="right pm-budget">${formatInrAmountNum(baseAmount, 2, 2)}</td>
+                <td class="right pm-budget">${formatInrAmountNum(totalAmount, 2, 2)}</td>
+                <td class="right pm-budget">${formatInrAmountNum(expenseAmount, 2, 2)}</td>
                 <td class="center">
                     <div class="bom-actions">
                         <button type="button" class="bom-btn icon view js-bom-view" title="View">
@@ -155,6 +283,9 @@ function bindBOMGrid(list) {
                         </button>
                         <button type="button" class="bom-btn icon edit js-bom-edit" title="Edit">
                             <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="bom-btn icon history js-bom-history" title="Amendment history">
+                            <i class="fas fa-history"></i>
                         </button>
                         <button type="button" class="bom-btn icon del js-bom-delete" title="Delete">
                             <i class="fas fa-trash-alt"></i>
@@ -164,15 +295,236 @@ function bindBOMGrid(list) {
             </tr>`);
     });
 
+    $('#bomListGrandAmount').text(formatInrAmountNum(grandAmount, 2, 2));
     $('#bomListGrandTotal').text(formatInrAmountNum(grandTotal, 2, 2));
+    $('#bomListGrandExpense').text(formatInrAmountNum(grandExpense, 2, 2));
 }
 function filterBOMs(query) {
     if (!query) { bindBOMGrid(G_BOMList); return; }
     const filtered = (G_BOMList || []).filter(function (item) {
-        return (item.ProjectName || item.ProjectDesp || '').toLowerCase().includes(query);
+        const projectName = (item.ProjectName || item.ProjectDesp || '').toLowerCase();
+        const subProjectName = (item.SubProjectName || item.SubProjectDesp || '').toLowerCase();
+        return projectName.includes(query) || subProjectName.includes(query);
     });
     bindBOMGrid(filtered);
 }
+
+function normalizeAmendmentHistoryResponse(resp) {
+    if (Array.isArray(resp)) return resp;
+    if (resp && Array.isArray(resp.data)) return resp.data;
+    if (resp && Array.isArray(resp.Data)) return resp.Data;
+    return [];
+}
+
+/** Map API / serializer variants to stable column names used by USP_GetCommonAmendmentDetails. */
+function amendmentCanonicalColumnName(key) {
+    if (key == null) return key;
+    const t = String(key).trim();
+    const compact = t.replace(/\s+/g, '').toLowerCase();
+    const aliases = {
+        trancode: 'TranCode',
+        type: 'Type',
+        amendmentno: 'Amendment No',
+        amendmentdate: 'Amendment Date',
+        amendmenttime: 'Amendment Time',
+        amendmentby: 'Amendment By'
+    };
+    return aliases[compact] || t;
+}
+
+function formatAmendmentHistoryDate(val) {
+    if (val == null || val === '') return '';
+    try {
+        const d = new Date(val);
+        if (isNaN(d.getTime())) return String(val);
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch (e) {
+        return String(val);
+    }
+}
+
+function orderAmendmentHistoryColumns(allKeys) {
+    const priority = ['Type', 'Amendment No', 'Amendment Date', 'Amendment Time', 'Amendment By'];
+    const head = priority.filter(function (k) { return allKeys.indexOf(k) >= 0; });
+    const rest = allKeys.filter(function (k) { return priority.indexOf(k) < 0; }).sort(function (a, b) {
+        return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+    });
+    return head.concat(rest);
+}
+
+/** Build rows with same keys (pivot columns may differ per amendment), format dates, show nulls as — for numeric pivots. */
+function prepareAmendmentHistoryGridRows(rawRows) {
+    const list = Array.isArray(rawRows) ? rawRows : [];
+    const canonicalRows = list.map(function (row) {
+        const o = {};
+        Object.keys(row).forEach(function (k) {
+            o[amendmentCanonicalColumnName(k)] = row[k];
+        });
+        return o;
+    });
+
+    const keySet = new Set();
+    canonicalRows.forEach(function (r) {
+        Object.keys(r).forEach(function (k) { keySet.add(k); });
+    });
+    const orderedKeys = orderAmendmentHistoryColumns(Array.from(keySet));
+
+    const numericPivotNames = ['Amount', 'Qty Required', 'Rate', 'Tolerance', 'Rate Tolerance', 'GST Amount', 'Total Amount', 'GST %'];
+
+    function formatAmendmentPivotNumber(columnName, raw) {
+        if (raw === '' || raw === null || raw === undefined) return raw;
+        const n = parseFloat(String(raw).replace(/,/g, '').trim());
+        if (isNaN(n)) return raw;
+        /* Large floats from SQL/JSON often stringify as 4e+007 — normalize to INR / qty display */
+        if (columnName === 'Amount' || columnName === 'Rate' || columnName === 'GST Amount' || columnName === 'Total Amount') {
+            return formatInrAmountNum(n, 2, 2);
+        }
+        if (columnName === 'Qty Required' || columnName === 'Tolerance' || columnName === 'Rate Tolerance') {
+            return formatInrQtyNum(n);
+        }
+        if (columnName === 'GST %') {
+            return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        return raw;
+    }
+
+    return canonicalRows.map(function (r) {
+        const out = {};
+        orderedKeys.forEach(function (k) {
+            let v = r.hasOwnProperty(k) ? r[k] : '';
+            if (k === 'Amendment Date' && v !== '' && v != null) {
+                out[k] = formatAmendmentHistoryDate(v);
+                return;
+            }
+            if (v === null || v === undefined) {
+                v = '';
+            }
+            if (v === '' && numericPivotNames.indexOf(k) >= 0) {
+                out[k] = '—';
+            } else if (numericPivotNames.indexOf(k) >= 0 && v !== '') {
+                out[k] = formatAmendmentPivotNumber(k, v);
+            } else {
+                out[k] = v;
+            }
+        });
+        return out;
+    });
+}
+
+function sortAmendmentHistoryRows(rows) {
+    return rows.slice().sort(function (a, b) {
+        const noA = parseInt(a['Amendment No'], 10) || 0;
+        const noB = parseInt(b['Amendment No'], 10) || 0;
+        if (noA !== noB) return noB - noA;
+        const tcA = parseInt(a.TranCode, 10) || 0;
+        const tcB = parseInt(b.TranCode, 10) || 0;
+        if (tcA !== tcB) return tcA - tcB;
+        const timeA = String(a['Amendment Time'] || '');
+        const timeB = String(b['Amendment Time'] || '');
+        if (timeA !== timeB) return timeB.localeCompare(timeA);
+        const rank = { OldValue: 0, NewValue: 1 };
+        const ra = rank.hasOwnProperty(a.Type) ? rank[a.Type] : 9;
+        const rb = rank.hasOwnProperty(b.Type) ? rank[b.Type] : 9;
+        return ra - rb;
+    });
+}
+
+/**
+ * Opens modal and binds amendment grid (BizsolCustomFilterGrid — same pattern as Buying Capacity).
+ */
+function openBomAmendmentHistoryModal(projectMasterCode, subProjectMasterCode) {
+    const code = parseInt(projectMasterCode || '0', 10) || 0;
+    const sub  = parseInt(subProjectMasterCode || '0', 10) || 0;
+    if (!code) {
+        toastr.warning('Invalid project for this BOM row.');
+        return;
+    }
+
+    const Grid = window.BizsolCustomFilterGrid;
+    if (!Grid || typeof Grid.CreateDataTable !== 'function') {
+        toastr.error('Grid component not loaded. Ensure filter.js is included on the page.');
+        return;
+    }
+
+    const row = (G_BOMList || []).find(function (x) {
+        return String(x.ProjectMaster_Code || x.Code || 0) === String(code)
+            && String(x.SubProjectMaster_Code || 0) === String(sub);
+    });
+    const proj = row ? (row.ProjectName || row.ProjectDesp || '') : '';
+    const subn = row ? (row.SubProjectName || row.SubProjectDesp || '') : '';
+    $('#bomAmendmentHistorySubtitle').text((proj || '—') + (subn ? ' · ' + subn : ''));
+
+    $('#table-header-BomAmendmentHistory').empty();
+    $('#table-body-BomAmendmentHistory').empty();
+    $('#paginator-tblBomAmendmentHistory').empty();
+
+    showModal('dvBomAmendmentHistoryModal');
+
+    Showloader && Showloader();
+    BOMService.GetBOMAmendmentDetails(sub)
+        .then(function (response) {
+            HideLoader && HideLoader();
+            const raw = normalizeAmendmentHistoryResponse(response);
+            if (!raw.length) {
+                $('#table-body-BomAmendmentHistory').html(
+                    '<tr><td colspan="99" style="text-align:center;padding:24px;color:var(--text-muted);">No amendment history found.</td></tr>'
+                );
+                return;
+            }
+
+            let rows = prepareAmendmentHistoryGridRows(raw);
+            rows = sortAmendmentHistoryRows(rows);
+
+            const keys = Object.keys(rows[0]);
+            /* Must not appear in String/Numeric/Date filter lists, or Filter.js renders a visible header for them. */
+            const AMENDMENT_HIDDEN_COLUMNS = ['TranCode'];
+            const hiddenColumns = AMENDMENT_HIDDEN_COLUMNS.filter(function (k) {
+                return keys.indexOf(k) >= 0;
+            });
+            const DateFilterColumn = keys.indexOf('Amendment Date') >= 0 ? ['Amendment Date'] : [];
+            const numericCandidates = ['Amendment No'];
+            const pivotNumeric = keys.filter(function (k) {
+                return ['Amount', 'Rate', 'Qty Required', 'Tolerance', 'Rate Tolerance', 'GST Amount', 'Total Amount', 'GST %'].indexOf(k) >= 0;
+            });
+            const NumericFilterColumn = numericCandidates.concat(pivotNumeric).filter(function (k) {
+                return keys.indexOf(k) >= 0 && hiddenColumns.indexOf(k) < 0;
+            });
+            const StringFilterColumn = keys.filter(function (k) {
+                return hiddenColumns.indexOf(k) < 0
+                    && DateFilterColumn.indexOf(k) < 0
+                    && NumericFilterColumn.indexOf(k) < 0;
+            });
+            const StringdoubleFilterColumn = [];
+            const ColumnAlignment = {};
+            keys.forEach(function (k) {
+                if (NumericFilterColumn.indexOf(k) >= 0) {
+                    ColumnAlignment[k] = 'right';
+                } else if (k === 'Type') {
+                    ColumnAlignment[k] = 'center';
+                }
+            });
+
+            Grid.CreateDataTable(
+                'table-header-BomAmendmentHistory',
+                'table-body-BomAmendmentHistory',
+                rows,
+                false,
+                [],
+                StringFilterColumn,
+                NumericFilterColumn,
+                DateFilterColumn,
+                StringdoubleFilterColumn,
+                hiddenColumns,
+                ColumnAlignment,
+                true
+            );
+        })
+        .catch(function (err) {
+            HideLoader && HideLoader();
+            toastr.error((err && err.Msg) || 'Could not load amendment history.');
+        });
+}
+
 function viewBOM(id, subId) {
     if (!G_BOMList || !G_BOMList.length) return;
     const row = G_BOMList.find(function (x) {
@@ -186,7 +538,11 @@ function viewBOM(id, subId) {
     $('#viewBOMSubProjectName').text(row.SubProjectName || row.SubProjectDesp || '—');
     $('#viewBOMTotalItems').text(row.TotalItems || 0);
     $('#viewBOMTotalQty').text(row.TotalQty != null ? formatInrQtyNum(parseFloat(row.TotalQty)) : '—');
+    $('#viewBOMAmount').text(formatInrAmountNum(getBomListBaseAmount(row), 2, 2));
     $('#viewBOMTotalAmount').text(formatInrAmountNum(parseFloat(row.TotalAmount || 0), 2, 2));
+    if ($('#viewBOMExpenseAmount').length) {
+        $('#viewBOMExpenseAmount').text(formatInrAmountNum(parseFloat(row.ExpenseAmount || 0), 2, 2));
+    }
 
     showModal('dvBOMViewModal');
 }
@@ -195,6 +551,53 @@ function showBOMListView() {
     $('#dvBOMGrid').show();
     loadBOMList();
 }
+function isExpenseMode() {
+    return G_EntryMode === 'EXPENSE';
+}
+
+function getSelectedEntryMode() {
+    const v = ($('input[name="bomEntryMode"]:checked').val() || 'BOM').toUpperCase();
+    return v === 'EXPENSE' ? 'EXPENSE' : 'BOM';
+}
+
+function setEntryMode(mode, options) {
+    options = options || {};
+    const next = (mode || 'BOM').toUpperCase() === 'EXPENSE' ? 'EXPENSE' : 'BOM';
+    G_EntryMode = next;
+    if (next === 'EXPENSE') {
+        $('#rdoExpenseMode').prop('checked', true);
+        $('#rdoBomMode').prop('checked', false);
+    } else {
+        $('#rdoBomMode').prop('checked', true);
+        $('#rdoExpenseMode').prop('checked', false);
+    }
+
+    if (next === 'EXPENSE') {
+        $('#dvBomTableWrap').hide();
+        $('#bomEntryScrollHint').hide();
+        $('#dvExpenseTableWrap').show();
+        applyExpenseSummaryHeaders();
+        ensureExpenseGroupList().then(function () {
+            if (!$('#tblExpenseBOM tbody tr').length) {
+                addNewExpenseRow();
+            }
+            if (!options.skipLoad) {
+                loadExpenseForCurrentSelection();
+            }
+            refreshExpenseSummary();
+        });
+    } else {
+        $('#dvExpenseTableWrap').hide();
+        $('#dvBomTableWrap').show();
+        $('#bomEntryScrollHint').show();
+        applyBomSummaryHeaders();
+        if (!$('#tblBOM tbody tr').length) {
+            addNewBomRow();
+        }
+        refreshBOMSummary();
+    }
+}
+
 function openNewBOM() {
     $('#dvBOMGrid').hide();
     $('#dvBOMEntry').show();
@@ -210,9 +613,171 @@ function openNewBOM() {
         : Promise.resolve();
 
     Promise.all([projectPromise, masterPromise])
-        .then(function ()  { HideLoader && HideLoader(); addNewBomRow(); })
-        .catch(function () { HideLoader && HideLoader(); addNewBomRow(); });
+        .then(function ()  {
+            HideLoader && HideLoader();
+            /* setEntryMode adds exactly one blank row when the grid is empty */
+            setEntryMode('BOM', { skipLoad: true });
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            setEntryMode('BOM', { skipLoad: true });
+        });
 }
+/** GETBYCODE / COPYFROM response may be a bare array or wrapped in Data/data. */
+function normalizeBOMDetailResponse(response) {
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
+
+/** When API returns { Status, Msg, Data }, surface validation errors from SP. */
+function getBomApiFailureMessage(response, fallback) {
+    if (!response || typeof response !== 'object' || Array.isArray(response)) return '';
+    if (response.Status === 'Y') return '';
+    return (response.Msg || response.Message || fallback || '').toString().trim();
+}
+
+/**
+ * Bind main form Project / Sub Project from BOM detail rows (GETBYCODE / COPYFROM).
+ */
+function bindBomHeaderFromDetailRows(detailRows, options) {
+    options = options || {};
+    if (!detailRows || !detailRows.length) return;
+
+    const first  = detailRows[0];
+    const pCode  = parseInt(options.projectCode || first.ProjectMaster_Code || 0, 10) || 0;
+    const spCode = parseInt(options.subProjectCode || first.SubProjectMaster_Code || first.ProjectSubCategory_Code || 0, 10) || 0;
+    const spDesp = (options.subProjectDesp || first.SubProjectDesp || first.SubProjectName || '').trim();
+    const pName  = (options.projectName || first.ProjectName || first.ProjectDesp || '').trim();
+
+    if (!G_ProjectList.length) {
+        bindProjectDropdown();
+    } else if ($('#ddlProject option').length <= 1) {
+        bindProjectDropdown();
+    }
+
+    if (pCode) {
+        $('#ddlProject').val(String(pCode));
+    }
+    if (!$('#ddlProject').val() && pName) {
+        const needle = pName.toLowerCase();
+        $('#ddlProject option').each(function () {
+            if ($(this).text().trim().toLowerCase() === needle) {
+                $('#ddlProject').val($(this).val());
+                return false;
+            }
+        });
+    }
+
+    bindSubProjectDropdown();
+
+    var spBound = false;
+    if (spCode) {
+        $('#ddlSubProject').val(String(spCode));
+        if ($('#ddlSubProject').val()) spBound = true;
+    }
+    if (!spBound && spDesp) {
+        const needle = spDesp.toLowerCase();
+        $('#ddlSubProject option').each(function () {
+            if ($(this).text().trim().toLowerCase() === needle) {
+                $('#ddlSubProject').val($(this).val());
+                spBound = true;
+                return false;
+            }
+        });
+    }
+
+    G_BOMHeader = {
+        ProjectMaster_Code: parseInt($('#ddlProject').val() || pCode, 10) || pCode,
+        SubProjectMaster_Code: parseInt($('#ddlSubProject').val() || spCode, 10) || spCode
+    };
+
+    if (options.lockDropdowns) {
+        $('#ddlProject, #ddlSubProject').prop('disabled', true);
+    } else if (options.enableDropdowns !== false) {
+        $('#ddlProject, #ddlSubProject').prop('disabled', false);
+    }
+}
+
+/**
+ * Rebuilds the BOM grid from API detail rows (sets data-detail-code from DB).
+ * Used after load and after Save so a second Save sends real detail Codes, not 0.
+ */
+function applyBomDetailRows(detailRows) {
+    $('#tblBOM tbody').empty();
+
+    if (detailRows.length > 0) {
+        detailRows.forEach(function (d) {
+            addNewBomRow();
+            var $tr = $('#tblBOM tbody tr').last();
+
+            $tr.attr('data-detail-code',    d.Code || 0);
+            $tr.attr('data-uom-code',        parseInt(d.UOMMaster_Code || 0, 10) || 0);
+            $tr.attr('data-item-code',       parseInt(d.ItemMaster_Code || 0, 10) || 0);
+            $tr.attr('data-work-type-name',  (d.WorkTypeDesp || '').trim().toUpperCase());
+
+            $tr.find('.bom-project-category').val(String(d.ProjectCategory_Code || ''));
+
+            setWorkTypeSilent($tr, d.WorkTypeMaster_Code || 0, d.WorkTypeDesp || '');
+
+            var $itemDdl = $tr.find('.bom-item');
+            $itemDdl.empty().append('<option value="">Select</option>');
+            if (d.ItemMaster_Code) {
+                var cachedUom = getUomTextFromCache(d.WorkTypeDesp || '', d.ItemMaster_Code);
+                var uomText   = d.UOM || cachedUom || '';
+                var gstForOpt = d.GSTRate != null ? d.GSTRate : (d.GSTPercent != null ? d.GSTPercent : 0);
+
+                $itemDdl.append(
+                    `<option value="${d.ItemMaster_Code}"
+                             data-uom="${escHtml(uomText)}"
+                             data-uom-code="${parseInt(d.UOMMaster_Code || 0, 10) || 0}"
+                             data-item-spec="${escHtml(d.ItemSpecificationDesp || '')}"
+                             data-gst-rate="${parseFloat(gstForOpt) || 0}">
+                        ${escHtml(d.ItemName || '')}
+                     </option>`
+                );
+                $tr.find('.bom-uom').val(uomText);
+            }
+            $itemDdl.val(String(d.ItemMaster_Code || 0));
+
+            $tr.find('.bom-item-spec').val(    d.ItemSpecificationDesp != null ? d.ItemSpecificationDesp : '');
+            $tr.find('.bom-tolerance').val(   d.Tolerance         != null ? d.Tolerance         : '');
+            $tr.find('.bom-qty-required').val( d.QtyRequired      != null ? d.QtyRequired        : '');
+            $tr.find('.bom-rate-tol').val(     d.RateTolerance    != null ? d.RateTolerance      : '');
+            if (d.Rate != null && d.Rate !== '') {
+                $tr.find('.bom-est-rate').val(formatBomMoneyRaw(String(d.Rate)));
+            } else {
+                $tr.find('.bom-est-rate').val('');
+            }
+            if (d.Amount != null && d.Amount !== '') {
+                $tr.find('.bom-amount').val(formatBomMoneyRaw(Number(d.Amount).toFixed(2)));
+            } else {
+                $tr.find('.bom-amount').val('');
+            }
+            const gstRate = d.GSTRate != null ? d.GSTRate : (d.GSTPercent != null ? d.GSTPercent : (d['GST %'] != null ? d['GST %'] : ''));
+            if (gstRate !== '' && gstRate != null) {
+                $tr.find('.bom-gst-pct').val(formatBomMoneyRaw(Number(gstRate).toFixed(2)));
+            } else {
+                $tr.find('.bom-gst-pct').val('');
+            }
+            /* TotalAmount is not stored — always derive GST Amount + Total from Amount & GSTRate */
+            recalcGstAndTotal($tr);
+
+            bindItemDropdownForRow($tr, {
+                preselectCode: d.ItemMaster_Code || 0,
+                preserveGst: true
+            });
+        });
+
+        prefetchUOMsForRows(detailRows);
+        refreshBOMSummary();
+    } else {
+        addNewBomRow();
+        refreshBOMSummary();
+    }
+}
+
 function openBOMFromList(id, mode, subProjectCode) {
     const projectCode    = parseInt(id             || '0', 10) || 0;
     const subProjCode    = parseInt(subProjectCode || '0', 10) || 0;
@@ -222,6 +787,7 @@ function openBOMFromList(id, mode, subProjectCode) {
     $('#dvBOMEntry').show();
     resetBomForm();
     $('#hfBOMCode').val(projectCode);
+    setEntryMode('BOM', { skipLoad: true });
 
     if (mode === 'view') {
         $('#btnSaveAllBomRows').prop('disabled', true);
@@ -250,137 +816,22 @@ function openBOMFromList(id, mode, subProjectCode) {
             HideLoader && HideLoader();
 
             const response = results[2];
+            var detailRows = normalizeBOMDetailResponse(response);
 
-            // GETBYCODE returns a flat array: [{ row1 }, { row2 }, …]
-            var detailRows = [];
-            if (Array.isArray(response))                    detailRows = response;
-            else if (response && Array.isArray(response.Data)) detailRows = response.Data;
-            else if (response && Array.isArray(response.data)) detailRows = response.data;
-
-            // ── Bind header controls ──────────────────────────────────────
             if (detailRows.length > 0) {
-                const first  = detailRows[0];
-                const pCode  = parseInt(first.ProjectMaster_Code     || 0, 10) || projectCode;
-                const spCode = parseInt(first.ProjectSubCategory_Code || 0, 10) || 0;
-                // SubProjectDesp stored on save — use as primary text match key
-                const spDesp = (first.SubProjectDesp || '').trim();
-
-                // ── Project Name ──
-                // If G_ProjectList is loaded but options haven't been rendered yet, force rebuild
-                if (G_ProjectList.length && $('#ddlProject option').length <= 1) {
-                    bindProjectDropdown();
-                }
-                // Bind by ProjectMaster_Code (option value = project Code)
-                $('#ddlProject').val(String(pCode));
-                // Fallback: text match using ProjectName returned by GETBYCODE (PM.ProjectDesp AS ProjectName)
-                if (!$('#ddlProject').val()) {
-                    const pName = (first.ProjectName || first.ProjectDesp || '').trim().toLowerCase();
-                    if (pName) {
-                        $('#ddlProject option').each(function () {
-                            if ($(this).text().trim().toLowerCase() === pName) {
-                                $('#ddlProject').val($(this).val());
-                                return false;
-                            }
-                        });
-                    }
-                }
-
-                // Rebuild sub-project list filtered to the now-selected project
-                // GetSubProjectList fields: Code, ProjectMaster_Code, SubProjectDesp
+                bindBomHeaderFromDetailRows(detailRows);
+            } else if (projectCode) {
+                $('#ddlProject').val(String(projectCode));
                 bindSubProjectDropdown();
-
-                // ── Sub Project Name ──
-                // Primary: match by SubProjectDesp text (stored on save, matches option text)
-                var spBound = false;
-                if (spDesp) {
-                    const needle = spDesp.toLowerCase();
-                    $('#ddlSubProject option').each(function () {
-                        if ($(this).text().trim().toLowerCase() === needle) {
-                            $('#ddlSubProject').val($(this).val());
-                            spBound = true;
-                            return false;
-                        }
-                    });
-                }
-                // Fallback: match by ProjectSubCategory_Code (= sub project Code)
-                if (!spBound && spCode) {
-                    $('#ddlSubProject').val(String(spCode));
-                }
-
-                G_BOMHeader = { ProjectMaster_Code: pCode, ProjectSubCategory_Code: spCode };
+                if (subProjCode) $('#ddlSubProject').val(String(subProjCode));
             }
 
-            // ── Build detail rows ─────────────────────────────────────────
-            $('#tblBOM tbody').empty();
-
-            if (detailRows.length > 0) {
-                detailRows.forEach(function (d) {
-                    addNewBomRow();
-                    var $tr = $('#tblBOM tbody tr').last();
-
-                    // Store DB code, UOM code, item code and work-type name as attributes
-                    // (work-type name is needed later by applyUOMsFromCache)
-                    $tr.attr('data-detail-code',    d.Code || 0);
-                    $tr.attr('data-uom-code',        parseInt(d.UOMMaster_Code || 0, 10) || 0);
-                    $tr.attr('data-item-code',       parseInt(d.ItemMaster_Code || 0, 10) || 0);
-                    $tr.attr('data-work-type-name',  (d.WorkTypeDesp || '').trim().toUpperCase());
-
-                    // Project Category (bind by code)
-                    $tr.find('.bom-project-category').val(String(d.ProjectCategory_Code || ''));
-
-                    // Work Type — set silently by CODE first, then name, so item dropdown
-                    // is NOT cleared (setWorkTypeSilent does NOT fire the change event)
-                    setWorkTypeSilent($tr, d.WorkTypeMaster_Code || 0, d.WorkTypeDesp || '');
-
-                    // Inject the saved item as the only option so it shows immediately
-                    var $itemDdl = $tr.find('.bom-item');
-                    $itemDdl.empty().append('<option value="">Select</option>');
-                    if (d.ItemMaster_Code) {
-                        // UOM text: try from GETBYCODE (d.UOM) or from item cache (if pre-loaded)
-                        var cachedUom = getUomTextFromCache(d.WorkTypeDesp || '', d.ItemMaster_Code);
-                        var uomText   = d.UOM || cachedUom || '';
-
-                        $itemDdl.append(
-                            `<option value="${d.ItemMaster_Code}"
-                                     data-uom="${escHtml(uomText)}"
-                                     data-uom-code="${parseInt(d.UOMMaster_Code || 0, 10) || 0}">
-                                ${escHtml(d.ItemName || '')}
-                             </option>`
-                        );
-                        $tr.find('.bom-uom').val(uomText);
-                    }
-                    $itemDdl.val(String(d.ItemMaster_Code || 0));
-
-                    // Numeric / text fields — exact SP column names
-                    $tr.find('.bom-item-spec').val(    d.ItemSpecificationDesp != null ? d.ItemSpecificationDesp : '');
-                    $tr.find('.bom-tolerance').val(   d.Tolerance         != null ? d.Tolerance         : '');
-                    $tr.find('.bom-qty-required').val( d.QtyRequired      != null ? d.QtyRequired        : '');
-                    $tr.find('.bom-rate-tol').val(     d.RateTolerance    != null ? d.RateTolerance      : '');
-                    if (d.Rate != null && d.Rate !== '') {
-                        $tr.find('.bom-est-rate').val(formatBomMoneyRaw(String(d.Rate)));
-                    } else {
-                        $tr.find('.bom-est-rate').val('');
-                    }
-                    if (d.Amount != null && d.Amount !== '') {
-                        $tr.find('.bom-amount').val(formatBomMoneyRaw(Number(d.Amount).toFixed(2)));
-                    } else {
-                        $tr.find('.bom-amount').val('');
-                    }
-                });
-
-                // Async-fetch item lists for each work type present in these rows so UOM
-                // text gets filled even when GETBYCODE does not return IM.UOM
-                prefetchUOMsForRows(detailRows);
-                refreshBOMSummary();
-            } else {
-                addNewBomRow();
-                refreshBOMSummary();
-            }
+            applyBomDetailRows(detailRows);
+            G_ExpenseLoadedForKey = '';
 
             if (mode === 'view') {
                 disableEntryForm();
             } else {
-                // Lock project/sub-project dropdowns — project is fixed for an existing BOM
                 $('#ddlProject, #ddlSubProject').prop('disabled', true);
                 $('#btnSaveAllBomRows').prop('disabled', false);
                 $('#btnVerifyAllBomRows').prop('disabled', false);
@@ -395,7 +846,10 @@ function openBOMFromList(id, mode, subProjectCode) {
 }
 function disableEntryForm() {
     $('#tblBOM .bom-input, #tblBOM .bom-select').prop('disabled', true).prop('readonly', true);
+    $('#tblExpenseBOM .bom-input, #tblExpenseBOM .bom-select').prop('disabled', true).prop('readonly', true);
     $('#ddlProject, #ddlSubProject').prop('disabled', true);
+    $('input[name="bomEntryMode"]').prop('disabled', true);
+    $('#btnCopyFromBom, #btnAddBomRow, #btnSaveAllBomRows').prop('disabled', true);
 }
 function enableEntryFormHeader() {
     $('#ddlProject, #ddlSubProject').prop('disabled', false);
@@ -499,6 +953,287 @@ function bindSubProjectDropdown() {
             $ddl.append(`<option value="${code}" data-name="${escHtml(name)}">${escHtml(name)}</option>`);
         });
 }
+
+function bindCopyFromProjectDropdown() {
+    const $ddl = $('#ddlCopyFromProject');
+    $ddl.empty().append('<option value="">-- Select Project --</option>');
+    (G_ProjectList || []).forEach(function (p) {
+        const code = p.Code || 0;
+        const name = (p.ProjectDesp || p.ProjectName || '').trim() || ('Project ' + code);
+        $ddl.append(`<option value="${code}">${escHtml(name)}</option>`);
+    });
+    $ddl.off('change.copyfrom').on('change.copyfrom', function () {
+        bindCopyFromSubProjectDropdown();
+    });
+}
+
+function bindCopyFromSubProjectDropdown() {
+    const $ddl = $('#ddlCopyFromSubProject');
+    const selectedProject = $('#ddlCopyFromProject').val();
+
+    $ddl.empty();
+
+    if (!G_SubProjectList.length) {
+        $ddl.append('<option value="">No sub-projects found</option>');
+        return;
+    }
+    if (!selectedProject) {
+        $ddl.append('<option value="">Select project first</option>');
+        return;
+    }
+
+    $ddl.append('<option value="">-- Select Sub Project --</option>');
+
+    G_SubProjectList
+        .filter(function (row) {
+            return String(row.ProjectMaster_Code || row.MasterProjectCode || 0) === String(selectedProject);
+        })
+        .forEach(function (sp) {
+            const code = sp.Code || 0;
+            const name = (sp.SubProjectDesp || sp.SubProjectName || '').trim() || ('Sub Project ' + code);
+            $ddl.append(`<option value="${code}" data-name="${escHtml(name)}">${escHtml(name)}</option>`);
+        });
+}
+
+function clearCopyFromSession() {
+    G_CopyFromSource = { active: false, projectCode: 0, subProjectCode: 0, projectName: '', subProjectDesp: '' };
+    $('#copyFromSessionInfo').hide().text('').attr('title', '');
+    $('#copyFromModalFilledInfo').hide().text('');
+}
+
+function rememberCopyFromSource(projectCode, subProjectCode, projectName, subProjectDesp) {
+    G_CopyFromSource = {
+        active: true,
+        projectCode: parseInt(projectCode || '0', 10) || 0,
+        subProjectCode: parseInt(subProjectCode || '0', 10) || 0,
+        projectName: (projectName || '').trim(),
+        subProjectDesp: (subProjectDesp || '').trim()
+    };
+    updateCopyFromDisplay();
+}
+
+function updateCopyFromDisplay() {
+    if (!G_CopyFromSource.active) {
+        clearCopyFromSession();
+        return;
+    }
+    const label = 'Filled from: ' + G_CopyFromSource.projectName
+        + (G_CopyFromSource.subProjectDesp ? ' / ' + G_CopyFromSource.subProjectDesp : '');
+    $('#copyFromSessionInfo').text(label).attr('title', label).show();
+    $('#copyFromModalFilledInfo')
+        .html('<i class="fas fa-info-circle"></i> Table loaded from <strong>'
+            + escHtml(G_CopyFromSource.projectName)
+            + (G_CopyFromSource.subProjectDesp ? ' / ' + escHtml(G_CopyFromSource.subProjectDesp) : '')
+            + '</strong>. Save to clear.')
+        .show();
+}
+
+function restoreCopyFromModalSelections() {
+    if (!G_CopyFromSource.active) return;
+    bindCopyFromProjectDropdown();
+    if (G_CopyFromSource.projectCode) {
+        $('#ddlCopyFromProject').val(String(G_CopyFromSource.projectCode));
+        bindCopyFromSubProjectDropdown();
+    }
+    if (G_CopyFromSource.subProjectCode) {
+        $('#ddlCopyFromSubProject').val(String(G_CopyFromSource.subProjectCode));
+    }
+    updateCopyFromDisplay();
+}
+
+function openCopyFromModal() {
+    if (!$('#dvBOMEntry').is(':visible')) {
+        toastr.warning('Please open BOM entry before using Copy From.');
+        return;
+    }
+
+    const ensureMasters = (!G_ProjectList.length || !G_SubProjectList.length)
+        ? loadProjectsAndSubProjects()
+        : Promise.resolve();
+
+    Showloader && Showloader();
+    ensureMasters
+        .then(function () {
+            HideLoader && HideLoader();
+            if (G_CopyFromSource.active) {
+                restoreCopyFromModalSelections();
+            } else {
+                bindCopyFromProjectDropdown();
+                bindCopyFromSubProjectDropdown();
+                $('#ddlCopyFromProject').val('');
+                $('#ddlCopyFromSubProject').empty().append('<option value="">Select project first</option>');
+                $('#copyFromModalFilledInfo').hide().text('');
+            }
+            showModal('dvBOMCopyFromModal');
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            toastr.error('Error loading project list for Copy From.');
+        });
+}
+
+function prepareCopyFromDetailRows(detailRows) {
+    return (detailRows || []).map(function (d) {
+        return Object.assign({}, d, {
+            Code     : 0,
+            Verify   : 'N',
+            VerifyON : null,
+            VerifyBy : null
+        });
+    });
+}
+
+function clearBomTableAndSummary() {
+    $('#tblBOM tbody').empty();
+    $('#tblExpenseBOM tbody').empty();
+    $('#tblBOMSummary tbody').empty();
+    $('#bomSummaryTotalsLine').empty();
+    $('#sumQtyRequired').text('—');
+    $('#sumAmount').text('—');
+    $('#sumTotalAmount').text('—');
+    $('#dvBOMSummary').hide();
+    G_BOMRows = [];
+}
+
+function applyCopyFromResponse(detailRows) {
+    clearBomTableAndSummary();
+    /* Do not change main form Project / Sub Project — target stays as user selected externally. */
+    const copyRows = prepareCopyFromDetailRows(detailRows);
+    applyBomDetailRows(copyRows);
+    enableBomEntryRows();
+}
+
+function enableBomEntryRows() {
+    $('#tblBOM tbody tr').each(function () {
+        $(this).attr('data-state', 'edit');
+        $(this).find('.bom-input:not(.bom-uom):not(.bom-amount):not(.bom-gst-amount):not(.bom-total-amount)').prop('readonly', false);
+        $(this).find('.bom-select').prop('disabled', false);
+        $(this).find('.bom-uom, .bom-amount, .bom-gst-amount, .bom-total-amount').prop('readonly', true);
+    });
+}
+
+function fillBomFromCopy() {
+    const targetProjectCode = parseInt($('#ddlProject').val() || '0', 10) || 0;
+    const targetSubCode     = parseInt($('#ddlSubProject').val() || '0', 10) || 0;
+    const sourceProjectCode = parseInt($('#ddlCopyFromProject').val() || '0', 10) || 0;
+    const sourceSubCode     = parseInt($('#ddlCopyFromSubProject').val() || '0', 10) || 0;
+
+    if (!sourceProjectCode) {
+        toastr.warning('Please select source project in Copy From.');
+        $('#ddlCopyFromProject').focus();
+        return;
+    }
+    if (!sourceSubCode) {
+        toastr.warning('Please select source sub-project in Copy From.');
+        $('#ddlCopyFromSubProject').focus();
+        return;
+    }
+    if (targetProjectCode && targetSubCode
+        && String(targetProjectCode) === String(sourceProjectCode)
+        && String(targetSubCode) === String(sourceSubCode)) {
+        toastr.warning('Source and target project/sub-project cannot be the same.');
+        return;
+    }
+
+    if (isExpenseMode()) {
+        fillExpenseFromCopy(sourceProjectCode, sourceSubCode);
+        return;
+    }
+
+    if (!BOMService || typeof BOMService.GetBOMCopyFrom !== 'function') {
+        toastr.error('Copy From service is not available.');
+        return;
+    }
+
+    Showloader && Showloader();
+    BOMService.GetBOMCopyFrom(sourceProjectCode, sourceSubCode)
+        .then(function (response) {
+            const failMsg = getBomApiFailureMessage(response, 'Could not copy BOM.');
+            if (failMsg) {
+                HideLoader && HideLoader();
+                toastr.warning(failMsg);
+                return;
+            }
+
+            const detailRows = normalizeBOMDetailResponse(response);
+            if (!detailRows.length) {
+                HideLoader && HideLoader();
+                toastr.warning('No BOM lines found for the selected project and sub-project.');
+                return;
+            }
+
+            const loadPromises = [];
+            if (!G_ProjectList.length || !G_SubProjectList.length) {
+                loadPromises.push(loadProjectsAndSubProjects());
+            }
+            if (!G_CategoryList.length || !G_WorkTypeList.length) {
+                loadPromises.push(loadCategoryAndWorkTypeMaster());
+            }
+            const masterPromise = loadPromises.length ? Promise.all(loadPromises) : Promise.resolve();
+
+            return masterPromise.then(function () {
+                const $srcSub = $('#ddlCopyFromSubProject option:selected');
+                const $srcPrj = $('#ddlCopyFromProject option:selected');
+                const srcProjectName = ($srcPrj.text() || '').trim();
+                const srcSubDesp = ($srcSub.data('name') || $srcSub.text() || '').trim();
+
+                applyCopyFromResponse(detailRows);
+                rememberCopyFromSource(sourceProjectCode, sourceSubCode, srcProjectName, srcSubDesp);
+
+                hideModal('dvBOMCopyFromModal');
+                HideLoader && HideLoader();
+                toastr.success('Copied ' + detailRows.length + ' line(s). Target project/sub-project unchanged.');
+            });
+        })
+        .catch(function (error) {
+            HideLoader && HideLoader();
+            toastr.warning((error && error.Msg) || 'Error while copying BOM.');
+        });
+}
+
+function fillExpenseFromCopy(sourceProjectCode, sourceSubCode) {
+    if (!BOMService || typeof BOMService.GetExpenseBOMCopyFrom !== 'function') {
+        toastr.error('Expense Copy From service is not available.');
+        return;
+    }
+
+    Showloader && Showloader();
+    ensureExpenseGroupList()
+        .then(function () {
+            return BOMService.GetExpenseBOMCopyFrom(sourceProjectCode, sourceSubCode);
+        })
+        .then(function (response) {
+            const failMsg = getBomApiFailureMessage(response, 'Could not copy expense budget.');
+            if (failMsg) {
+                HideLoader && HideLoader();
+                toastr.warning(failMsg);
+                return;
+            }
+
+            const detailRows = normalizeBOMDetailResponse(response);
+            if (!detailRows.length) {
+                HideLoader && HideLoader();
+                toastr.warning('No expense budget lines found for the selected project and sub-project.');
+                return;
+            }
+
+            const $srcSub = $('#ddlCopyFromSubProject option:selected');
+            const $srcPrj = $('#ddlCopyFromProject option:selected');
+            const srcProjectName = ($srcPrj.text() || '').trim();
+            const srcSubDesp = ($srcSub.data('name') || $srcSub.text() || '').trim();
+
+            applyExpenseDetailRows(prepareCopyFromDetailRows(detailRows));
+            rememberCopyFromSource(sourceProjectCode, sourceSubCode, srcProjectName, srcSubDesp);
+            hideModal('dvBOMCopyFromModal');
+            HideLoader && HideLoader();
+            toastr.success('Copied ' + detailRows.length + ' expense line(s). Target project/sub-project unchanged.');
+        })
+        .catch(function (error) {
+            HideLoader && HideLoader();
+            toastr.warning((error && error.Msg) || 'Error while copying expense budget.');
+        });
+}
+
 function loadCategoryAndWorkTypeMaster() {
     if (!BOMService) return Promise.resolve();
 
@@ -525,16 +1260,31 @@ function loadCategoryAndWorkTypeMaster() {
 function resetBomForm() {
     G_BOMRows   = [];
     G_BOMHeader = {};
+    G_ExpenseLoadedForKey = '';
+    clearCopyFromSession();
 
     $('#hfBOMCode').val(0);
     $('#ddlProject').val('').prop('disabled', false);
     $('#ddlSubProject').empty().append('<option value="">Select project first</option>').prop('disabled', false);
     $('#tblBOM tbody').empty();
+    $('#tblExpenseBOM tbody').empty();
     $('#tblBOMSummary tbody').empty();
-    $('#bomSummaryTotalsLine').text('');
+    $('#bomSummaryTotalsLine').empty();
+    $('#sumQtyRequired').text('—');
+    $('#sumAmount').text('—');
+    $('#sumTotalAmount').text('—');
     $('#dvBOMSummary').hide();
     $('#btnVerifyAllBomRows').hide().prop('disabled', false);
     $('#btnSaveAllBomRows').prop('disabled', false);
+    $('#btnCopyFromBom, #btnAddBomRow').prop('disabled', false);
+    $('input[name="bomEntryMode"]').prop('disabled', false);
+    $('#rdoBomMode').prop('checked', true);
+    $('#rdoExpenseMode').prop('checked', false);
+    G_EntryMode = 'BOM';
+    $('#dvExpenseTableWrap').hide();
+    $('#dvBomTableWrap').show();
+    $('#bomEntryScrollHint').show();
+    applyBomSummaryHeaders();
 }
 function addNewBomRow() {
     const $tbody    = $('#tblBOM tbody');
@@ -544,7 +1294,7 @@ function addNewBomRow() {
     const $tr = $(`
         <tr data-row-id="${rowId}" data-state="edit" data-detail-code="0" data-uom-code="0">
             <td class="center">${nextIndex}</td>
-            <td>
+            <td class="bom-col-category">
                 <select class="bom-select bom-project-category">
                     <option value="">Select</option>
                 </select>
@@ -554,31 +1304,45 @@ function addNewBomRow() {
                     <option value="">Select</option>
                 </select>
             </td>
-            <td>
-                <select class="bom-select bom-item">
-                    <option value="">Select</option>
-                </select>
+            <td class="bom-col-item-name">
+                <div style="display:flex;align-items:center;gap:4px;">
+                    <select class="bom-select bom-item" style="flex:1;min-width:0;">
+                        <option value="">Select</option>
+                    </select>
+                    <button type="button" class="item-add-btn js-open-item-master" title="Add New Item">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
             </td>
-            <td>
+            <td class="bom-col-uom center">
                 <input type="text" class="bom-input bom-uom" readonly />
             </td>
-            <td>
+            <td class="bom-col-spec">
                 <input type="text" class="bom-input bom-item-spec" />
             </td>
-            <td>
+            <td class="bom-col-tolerance">
                 <input type="text" class="bom-input bom-tolerance right" />
             </td>
-            <td>
+            <td class="bom-col-qty">
                 <input type="text" class="bom-input bom-qty-required right" />
             </td>
-            <td>
+            <td class="bom-col-rate-tol">
                 <input type="text" class="bom-input bom-rate-tol right" />
             </td>
-            <td>
+            <td class="bom-col-rate">
                 <input type="text" class="bom-input bom-est-rate right" />
             </td>
-            <td>
+            <td class="bom-col-amount">
                 <input type="text" class="bom-input bom-amount right" readonly />
+            </td>
+            <td class="bom-col-gst-pct">
+                <input type="text" class="bom-input bom-gst-pct right" />
+            </td>
+            <td class="bom-col-gst-amt">
+                <input type="text" class="bom-input bom-gst-amount right" readonly />
+            </td>
+            <td class="bom-col-total-amt">
+                <input type="text" class="bom-input bom-total-amount right" readonly />
             </td>
             <td class="center">
                 <button type="button" class="bom-btn icon del js-bom-row-delete" title="Remove">
@@ -636,15 +1400,112 @@ function setWorkTypeSilent($tr, workTypeCode, workTypeName) {
         }
     });
 }
-function bindItemDropdownForRow($tr) {
+function getItemGstRateFromMaster(item) {
+    if (!item) return 0;
+    const raw = item.GSTRate != null ? item.GSTRate
+        : (item.DutyValue != null ? item.DutyValue
+        : (item.GSTPercent != null ? item.GSTPercent : 0));
+    const n = parseFloat(raw);
+    return isNaN(n) ? 0 : n;
+}
+
+function findBomItemInCache(workTypeName, itemCode) {
+    const cacheKey = (workTypeName || '').trim().toUpperCase();
+    if (!cacheKey || !itemCode) return null;
+    const code = parseInt(itemCode, 10) || 0;
+    const items = G_ItemCacheByWorkType[cacheKey] || [];
+    return items.find(function (it) { return (it.Code || 0) === code; }) || null;
+}
+
+/**
+ * Apply item master fields to row (same pattern as PO Store OnItemChange).
+ * @param {jQuery} $tr
+ * @param {object|null} item - row from GetItemMasterList cache
+ * @param {object} options - { bindGstFromMaster: true }
+ */
+function applyItemMasterFieldsToRow($tr, item, options) {
+    options = options || {};
+    const bindGst = options.bindGstFromMaster !== false;
+
+    if (!item) {
+        $tr.find('.bom-uom').val('');
+        $tr.attr('data-uom-code', 0);
+        $tr.find('.bom-item-spec').val('');
+        if (bindGst) $tr.find('.bom-gst-pct').val('');
+        recalcGstAndTotal($tr);
+        refreshBOMSummary();
+        return;
+    }
+
+    const uom     = item.UOM || '';
+    const uomCode = parseInt(item.UOMMaster_Code || 0, 10) || 0;
+    const spec    = (item.ItemSpecification || item.ItemSpecificationDesp || '').trim();
+    const gstRate = getItemGstRateFromMaster(item);
+
+    $tr.attr('data-item-code', item.Code || 0);
+    $tr.find('.bom-uom').val(uom);
+    $tr.attr('data-uom-code', uomCode);
+    $tr.find('.bom-item-spec').val(spec);
+
+    if (bindGst) {
+        $tr.find('.bom-gst-pct').val(formatBomMoneyRaw(gstRate.toFixed(2)));
+    }
+
+    recalcGstAndTotal($tr);
+    refreshBOMSummary();
+}
+
+function onBomItemSelected($tr, options) {
+    options = options || {};
+    const $item    = $tr.find('.bom-item');
+    const itemCode = $item.val();
+
+    if (!itemCode) {
+        applyItemMasterFieldsToRow($tr, null, { bindGstFromMaster: true });
+        return;
+    }
+
+    const workTypeName = ($tr.find('.bom-work-type option:selected').data('worktype') || '').toString().trim();
+    const cachedItem   = findBomItemInCache(workTypeName, itemCode);
+
+    if (cachedItem) {
+        applyItemMasterFieldsToRow($tr, cachedItem, options);
+        return;
+    }
+
+    /* Fallback: single injected option (edit row before full list loads) */
+    const $opt    = $item.find('option:selected');
+    const uom     = $opt.attr('data-uom') || '';
+    const uomCode = parseInt($opt.attr('data-uom-code') || 0, 10) || 0;
+    const spec    = $opt.attr('data-item-spec') || '';
+    const gstRate = parseFloat($opt.attr('data-gst-rate') || 0) || 0;
+
+    $tr.attr('data-item-code', parseInt(itemCode, 10) || 0);
+    $tr.find('.bom-uom').val(uom);
+    $tr.attr('data-uom-code', uomCode);
+    $tr.find('.bom-item-spec').val(spec);
+
+    if (options.bindGstFromMaster !== false) {
+        $tr.find('.bom-gst-pct').val(formatBomMoneyRaw(gstRate.toFixed(2)));
+    }
+
+    recalcGstAndTotal($tr);
+    refreshBOMSummary();
+}
+
+function bindItemDropdownForRow($tr, options) {
+    options = options || {};
     const $wt          = $tr.find('.bom-work-type');
     const selectedCode = $wt.val();
     const workTypeName = ($wt.find('option:selected').data('worktype') || '').toString().trim();
 
     const $item = $tr.find('.bom-item');
+    const prevItemCode = options.preselectCode || $item.val();
     $item.empty().append('<option value="">Select</option>');
-    $tr.find('.bom-uom').val('');
-    $tr.attr('data-uom-code', 0);
+    if (!options.preserveFields) {
+        $tr.find('.bom-uom').val('');
+        $tr.attr('data-uom-code', 0);
+    }
 
     if (!selectedCode || !workTypeName) return;
 
@@ -656,24 +1517,25 @@ function bindItemDropdownForRow($tr) {
             const name     = (it.ItemName || '').trim();
             const uom      = it.UOM || '';
             const uomCode  = parseInt(it.UOMMaster_Code || 0, 10) || 0;
-            const itemSpec = (it.ItemSpecification || '').trim();
+            const itemSpec = (it.ItemSpecification || it.ItemSpecificationDesp || '').trim();
+            const gstRate  = getItemGstRateFromMaster(it);
             $item.append(
-                `<option value="${itemCode}" data-uom="${escHtml(uom)}" data-uom-code="${uomCode}" data-item-spec="${escHtml(itemSpec)}">${escHtml(name)}</option>`
+                `<option value="${itemCode}" data-uom="${escHtml(uom)}" data-uom-code="${uomCode}" data-item-spec="${escHtml(itemSpec)}" data-gst-rate="${gstRate}">${escHtml(name)}</option>`
             );
         });
 
-        $item.off('change').on('change', function () {
-            const $opt    = $(this).find('option:selected');
-            const uom     = $opt.data('uom') || '';
-            const uomCode = parseInt($opt.data('uom-code') || 0, 10) || 0;
-            const spec    = $opt.data('item-spec') || '';
-            $tr.find('.bom-uom').val(uom);
-            $tr.attr('data-uom-code', uomCode);
-            $tr.find('.bom-item-spec').val(spec);
-            refreshBOMSummary();
+        $item.off('change.bomItem').on('change.bomItem', function () {
+            onBomItemSelected($tr, { bindGstFromMaster: true });
         });
 
-        if ($item.val()) $item.trigger('change');
+        if (prevItemCode) {
+            $item.val(String(prevItemCode));
+            if ($item.val()) {
+                onBomItemSelected($tr, {
+                    bindGstFromMaster: !options.preserveGst
+                });
+            }
+        }
     }
 
     if (G_ItemCacheByWorkType[cacheKey]) {
@@ -755,23 +1617,41 @@ function applyUOMsFromCache(cacheKey) {
 
         var uom     = found.UOM || '';
         var uomCode = parseInt(found.UOMMaster_Code || 0, 10) || 0;
+        var gstRate = getItemGstRateFromMaster(found);
+        var itemSpec = (found.ItemSpecification || found.ItemSpecificationDesp || '').trim();
 
-        // Update the injected option so future item change-events carry correct UOM
         $tr.find('.bom-item option[value="' + itemCode + '"]')
             .attr('data-uom', uom)
-            .attr('data-uom-code', uomCode);
+            .attr('data-uom-code', uomCode)
+            .attr('data-item-spec', itemSpec)
+            .attr('data-gst-rate', gstRate);
 
-        // Fill the visible UOM field and row attribute
         $tr.find('.bom-uom').val(uom);
         $tr.attr('data-uom-code', uomCode);
+
+        if (!$tr.find('.bom-gst-pct').val()) {
+            $tr.find('.bom-gst-pct').val(formatBomMoneyRaw(gstRate.toFixed(2)));
+            recalcGstAndTotal($tr);
+        }
     });
     refreshBOMSummary();
 }
 function initRowEvents($tr) {
-    $tr.find('.bom-qty-required').on('input', function () { enforceNumeric(this, 3); recalcAmount($tr); });
-    $tr.find('.bom-est-rate').on('input', function () { formatBomMoneyInput(this); recalcAmount($tr); });
+    $tr.find('.bom-qty-required').on('input', function () {
+        enforceNumericWithMax(this, 2, BOM_MAX_QTY);
+        recalcAmount($tr);
+    });
+    $tr.find('.bom-est-rate').on('input', function () {
+        enforceBomRateInput(this);
+        recalcAmount($tr);
+    });
     $tr.find('.bom-tolerance').on('input',   function () { enforceNumeric(this, 3); refreshBOMSummary(); });
     $tr.find('.bom-rate-tol').on('input',    function () { enforceNumeric(this, 3); refreshBOMSummary(); });
+    $tr.find('.bom-gst-pct').on('input', function () {
+        enforceNumericWithMax(this, 2, BOM_MAX_GST_PCT);
+        recalcGstAndTotal($tr);
+        refreshBOMSummary();
+    });
 
     $tr.find('.js-bom-row-delete').on('click', function () { deleteBomRow($tr); });
 }
@@ -804,7 +1684,10 @@ function buildRowPayload($tr) {
         QtyRequired       : parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0,
         RateTolerance     : parseFloat(($tr.find('.bom-rate-tol').val() || '0').replace(/,/g, '')) || 0,
         EstRate           : parseBomMoney($tr.find('.bom-est-rate').val()),
-        Amount            : parseBomMoney($tr.find('.bom-amount').val())
+        Amount            : parseBomMoney($tr.find('.bom-amount').val()),
+        GSTRate           : parseFloat(($tr.find('.bom-gst-pct').val() || '0').replace(/,/g, '')) || 0,
+        GSTAmount         : parseBomMoney($tr.find('.bom-gst-amount').val()),
+        TotalAmount       : getBomRowLineTotal($tr)
     };
 }
 function saveAllRows() {
@@ -842,7 +1725,7 @@ function saveAllRows() {
         const limit = spRow ? (parseFloat(spRow.Budget || spRow.SubProjectBudget || 0) || 0) : 0;
         if (limit > 0) {
             let bomSum = 0;
-            payloads.forEach(function (p) { bomSum += parseFloat(p.Amount || 0) || 0; });
+            payloads.forEach(function (p) { bomSum += parseFloat(p.TotalAmount || p.Amount || 0) || 0; });
             if (bomSum > limit) {
                 toastr.warning(
                     'Total BOM amount (' + formatInrAmountNum(bomSum, 2, 2)
@@ -878,13 +1761,15 @@ function saveAllRows() {
             Code                             : p.DetailCode || 0,
             ProjectMaster_Code               : projectMaster_Code,
             ProjectCategory_Code             : p.CategoryCode || 0,
-            ProjectSubCategory_Code          : subProjectCode,
+            ProjectSubCategory_Code          : 0,
             F_CommonValues_WorkType_Code     : 0,
             WorkTypeMaster_Code              : p.WorkTypeCode || 0,
             UOMMaster_Code                   : p.UOMMaster_Code || 0,
             QtyRequired                      : p.QtyRequired || 0,
             Rate                             : p.EstRate || 0,
             Amount                           : p.Amount || 0,
+            GSTRate                          : p.GSTRate || 0,
+            GSTAmount                        : p.GSTAmount || 0,
             ItemMaster_Code                  : p.ItemCode || 0,
             GodownMaster_Code                : 0,
             SubProjectDesp                   : subProjectDesp,
@@ -906,25 +1791,37 @@ function saveAllRows() {
     }
 
     Showloader && Showloader();
+    let saveSuccessMsg = '';
     BOMService.SaveBOM(payload)
         .then(function (resp) {
-            HideLoader && HideLoader();
             if (resp && resp.Status === 'Y') {
-                // Ensure hfBOMCode always holds the project code after a successful save
-                // (important for new BOM where it was 0 before first save)
+                saveSuccessMsg = resp.Msg || 'BOM saved successfully.';
                 $('#hfBOMCode').val(projectMaster_Code);
-
-                lockAllRowsAfterSave();
-                $('#btnVerifyAllBomRows').show();
-                toastr.success(resp.Msg || 'BOM saved successfully.');
-                loadBOMList();
-            } else {
-                toastr.warning((resp && (resp.Msg || resp.Message)));
+                if (BOMService && typeof BOMService.GetBOMByCode === 'function') {
+                    return BOMService.GetBOMByCode(projectMaster_Code, subProjectCode);
+                }
+                return Promise.resolve(null);
             }
-        })
-        .catch(function () {
             HideLoader && HideLoader();
-            toastr.error('Error while saving BOM.');
+            toastr.warning((resp && (resp.Msg || resp.Message)));
+            return Promise.reject(new Error());
+        })
+        .then(function (reloadResponse) {
+            HideLoader && HideLoader();
+            if (reloadResponse !== null && reloadResponse !== undefined) {
+                const detailRows = normalizeBOMDetailResponse(reloadResponse);
+                applyBomDetailRows(detailRows);
+            }
+            lockAllRowsAfterSave();
+            $('#btnVerifyAllBomRows').show();
+            clearCopyFromSession();
+            toastr.success(saveSuccessMsg || 'BOM saved successfully.');
+            loadBOMList();
+        })
+        .catch(function (err) {
+            HideLoader && HideLoader();
+            if (err && err.message === 'save_failed') return;
+            // toastr.error('Error while saving BOM or reloading lines.');
         });
 }
 function lockAllRowsAfterSave() {
@@ -985,6 +1882,22 @@ function validateRow($tr) {
     if (rateTol && !isValidNumber(rateTol)) { toastr.warning('Please enter valid Rate Tol (%).');     return false; }
     if (estRate && !isValidNumber(estRate)) { toastr.warning('Please enter valid Est. Rate.');        return false; }
 
+    const rateNum = parseBomMoney(estRate);
+    const qtyNum  = parseFloat((qty || '').toString().replace(/,/g, '')) || 0;
+    const amtNum  = parseBomMoney($tr.find('.bom-amount').val());
+    //if (rateNum > BOM_MAX_RATE) {
+    //    toastr.warning('Est. Rate cannot exceed ' + BOM_MAX_RATE.toLocaleString('en-IN') + '.');
+    //    return false;
+    //}
+    //if (qtyNum > BOM_MAX_QTY) {
+    //    toastr.warning('Qty Required cannot exceed ' + BOM_MAX_QTY.toLocaleString('en-IN') + '.');
+    //    return false;
+    //}
+    //if (amtNum > BOM_MAX_AMOUNT) {
+    //    toastr.warning('Amount cannot exceed ' + BOM_MAX_AMOUNT.toLocaleString('en-IN') + '.');
+    //    return false;
+    //}
+
     return true;
 }
 
@@ -1001,6 +1914,43 @@ function enforceNumeric(input, maxDecimals) {
     if (p2[1]) v = p2[0] + '.' + p2[1].slice(0, maxDecimals);
     input.value = v;
 }
+
+function enforceNumericWithMax(input, maxDecimals, maxValue) {
+    enforceNumeric(input, maxDecimals);
+    if (!input.value) return;
+    const n = parseFloat(input.value);
+    if (!isNaN(n) && maxValue != null && n > maxValue) {
+        input.value = maxDecimals > 0 ? maxValue.toFixed(maxDecimals) : String(maxValue);
+    }
+}
+
+function enforceBomRateInput(input) {
+    formatBomMoneyInput(input);
+    // const n = parseBomMoney(input.value);
+    // if (n > BOM_MAX_RATE) {
+    //     input.value = formatBomMoneyRaw(BOM_MAX_RATE.toFixed(2));
+    // }
+}
+
+function capBomMoneyAmount(n) {
+    const v = parseFloat(n);
+    if (isNaN(v)) return 0;
+    return v;
+}
+
+/** Base amount (Qty × Rate) without GST. */
+function getBomRowBaseAmount($tr) {
+    return parseBomMoney($tr.find('.bom-amount').val());
+}
+
+/** Line total = Total Amt field, or Amount + GST Amount when total not yet calculated. */
+function getBomRowLineTotal($tr) {
+    const totalFld = parseBomMoney($tr.find('.bom-total-amount').val());
+    if (totalFld > 0) return totalFld;
+    const amount = parseBomMoney($tr.find('.bom-amount').val());
+    const gstAmt = parseBomMoney($tr.find('.bom-gst-amount').val());
+    return capBomMoneyAmount(amount + gstAmt);
+}
 function getCategoryGroupKey($tr) {
     const code = ($tr.find('.bom-project-category').val() || '').trim();
     return code || '_uncat';
@@ -1014,82 +1964,218 @@ function getCategoryLabelFromRow($tr) {
     return t || ('Category ' + v);
 }
 
+function applyBomSummaryHeaders() {
+    $('#bomSummaryHeaderText').text('BOM Summary by Prj Category');
+    $('#bomSummaryScrollHintText').text('Swipe to see Total Amount');
+    $('#bomSummaryColgroup').html(
+        '<col class="bom-sum-col-cat" />' +
+        '<col class="bom-sum-col-qty" />' +
+        '<col class="bom-sum-col-amt" />' +
+        '<col class="bom-sum-col-total" />'
+    );
+    $('#bomSummaryThead').html(
+        '<tr>' +
+        '<th>Prj Category</th>' +
+        '<th class="right">Qty Required</th>' +
+        '<th class="right">Amount</th>' +
+        '<th class="right">Total Amount</th>' +
+        '</tr>'
+    );
+    $('#bomSummaryTfoot').html(
+        '<tr>' +
+        '<td><strong>Grand Total</strong></td>' +
+        '<td class="right" id="sumQtyRequired">—</td>' +
+        '<td class="right" id="sumAmount">—</td>' +
+        '<td class="right" id="sumTotalAmount">—</td>' +
+        '</tr>'
+    );
+}
+
+function applyExpenseSummaryHeaders() {
+    $('#bomSummaryHeaderText').text('Expense Budget Summary by Expense Group');
+    $('#bomSummaryScrollHintText').text('Swipe to see Expense Amount');
+    $('#bomSummaryColgroup').html(
+        '<col class="bom-sum-col-cat" />' +
+        '<col class="bom-sum-col-total" />'
+    );
+    $('#bomSummaryThead').html(
+        '<tr>' +
+        '<th>Expense Group</th>' +
+        '<th class="right">Expense Amount</th>' +
+        '</tr>'
+    );
+    $('#bomSummaryTfoot').html(
+        '<tr>' +
+        '<td><strong>Grand Total</strong></td>' +
+        '<td class="right" id="sumTotalAmount">—</td>' +
+        '</tr>'
+    );
+}
+
 function refreshBOMSummary() {
+    if (isExpenseMode()) {
+        refreshExpenseSummary();
+        return;
+    }
+
+    applyBomSummaryHeaders();
     const groups = {};
 
     $('#tblBOM tbody tr').each(function () {
         const $tr = $(this);
-        const qty  = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
-        const rate = parseFloat(($tr.find('.bom-est-rate').val()     || '0').replace(/,/g, '')) || 0;
-        const amt  = parseFloat(($tr.find('.bom-amount').val()       || '0').replace(/,/g, '')) || 0;
-        const item = $tr.find('.bom-item').val();
+        const qty       = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
+        const baseAmt   = getBomRowBaseAmount($tr);
+        const totalAmt  = getBomRowLineTotal($tr);
+        const item      = $tr.find('.bom-item').val();
 
-        if (!item && qty === 0 && amt === 0) return;
+        if (!item && qty === 0 && baseAmt === 0 && totalAmt === 0) return;
 
         const key = getCategoryGroupKey($tr);
         if (!groups[key]) {
-            groups[key] = { label: getCategoryLabelFromRow($tr), qty: 0, rateTimesQty: 0, amount: 0 };
+            groups[key] = { label: getCategoryLabelFromRow($tr), qty: 0, amount: 0, totalAmount: 0 };
         }
         groups[key].qty += qty;
-        groups[key].rateTimesQty += qty * rate;
-        groups[key].amount += amt;
+        groups[key].amount += baseAmt;
+        groups[key].totalAmount += totalAmt;
     });
 
     const keys = Object.keys(groups).filter(function (k) {
         const g = groups[k];
-        return g.qty !== 0 || g.amount !== 0;
+        return g.qty !== 0 || g.amount !== 0 || g.totalAmount !== 0;
     });
     if (!keys.length) {
         $('#dvBOMSummary').hide();
-        $('#bomSummaryTotalsLine').text('');
+        $('#bomSummaryTotalsLine').empty();
         return;
     }
 
     const $tbody = $('#tblBOMSummary tbody');
     $tbody.empty();
 
-    let gQty = 0, gRateTimesQty = 0, gAmt = 0;
+    let gQty = 0, gBaseAmt = 0, gTotalAmt = 0;
 
     keys.sort().forEach(function (k) {
         const g = groups[k];
         gQty += g.qty;
-        gRateTimesQty += g.rateTimesQty;
-        gAmt += g.amount;
-
-        const wAvg = g.qty > 0 ? (g.rateTimesQty / g.qty) : 0;
+        gBaseAmt += g.amount;
+        gTotalAmt += g.totalAmount;
 
         $tbody.append(`
             <tr>
                 <td><span class="uom-badge">${escHtml(g.label)}</span></td>
                 <td class="right">${formatInrQtyNum(g.qty)}</td>
-                <td class="right">${formatInrAmountNum(wAvg, 2, 2)}</td>
-                <td class="right"><strong>${formatInrAmountNum(g.amount, 2, 2)}</strong></td>
+                <td class="right">${formatInrAmountNum(g.amount, 2, 2)}</td>
+                <td class="right"><strong>${formatInrAmountNum(g.totalAmount, 2, 2)}</strong></td>
             </tr>`);
     });
 
-    const grandWAvg = gQty > 0 ? (gRateTimesQty / gQty) : 0;
     $('#sumQtyRequired').text(formatInrQtyNum(gQty));
-    $('#sumEstRate').text(formatInrAmountNum(grandWAvg, 2, 2));
-    $('#sumAmount').text(formatInrAmountNum(gAmt, 2, 2));
+    $('#sumAmount').text(formatInrAmountNum(gBaseAmt, 2, 2));
+    $('#sumTotalAmount').text(formatInrAmountNum(gTotalAmt, 2, 2));
 
-    $('#bomSummaryTotalsLine').text(
-        'Total Qty: ' + formatInrQtyNum(gQty) +
-            ', Total EST. Rate (wt. avg): ' + formatInrAmountNum(grandWAvg, 2, 2) +
-            ', Total Amount: ' + formatInrAmountNum(gAmt, 2, 2)
+    const amtFormatted = formatInrAmountNum(gTotalAmt, 2, 2);
+    const wordsFormatted = inrAmountWordsRupeeSymbol(gTotalAmt);
+    $('#bomSummaryTotalsLine').html(
+        '<div class="bom-summary-footer-qty">Total Qty: ' + escHtml(formatInrQtyNum(gQty)) + '</div>' +
+        '<div class="bom-summary-footer-row bom-summary-footer-total-amt">' +
+        '<span class="bom-summary-footer-label">Amount :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(formatInrAmountNum(gBaseAmt, 2, 2)) + '</span></div>' +
+        '<div class="bom-summary-footer-row bom-summary-footer-total-amt">' +
+        '<span class="bom-summary-footer-label">Total Amount :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(amtFormatted) + '</span></div>' +
+        '<div class="bom-summary-footer-row bom-summary-footer-amt-words">' +
+        '<span class="bom-summary-footer-label">Amount In Words :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(wordsFormatted) + '</span></div>'
     );
 
+    $('#dvBOMSummary').show();
+}
+
+function refreshExpenseSummary() {
+    applyExpenseSummaryHeaders();
+    const groups = {};
+
+    $('#tblExpenseBOM tbody tr').each(function () {
+        const $tr = $(this);
+        const groupCode = parseInt($tr.find('.bom-expense-group').val() || '0', 10) || 0;
+        const amt = parseBomMoney($tr.find('.bom-expense-amount').val());
+        if (!groupCode && amt === 0) return;
+
+        const label = groupCode
+            ? (($tr.find('.bom-expense-group option:selected').text() || '').trim() || ('Group ' + groupCode))
+            : 'Uncategorized';
+        const key = groupCode ? String(groupCode) : '_none';
+        if (!groups[key]) {
+            groups[key] = { label: label, amount: 0 };
+        }
+        groups[key].amount += amt;
+    });
+
+    const keys = Object.keys(groups).filter(function (k) {
+        return groups[k].amount !== 0 || k !== '_none';
+    });
+    if (!keys.length) {
+        $('#dvBOMSummary').hide();
+        $('#bomSummaryTotalsLine').empty();
+        return;
+    }
+
+    const $tbody = $('#tblBOMSummary tbody');
+    $tbody.empty();
+    let gTotal = 0;
+
+    keys.sort(function (a, b) {
+        return String(groups[a].label).localeCompare(String(groups[b].label), undefined, { sensitivity: 'base' });
+    }).forEach(function (k) {
+        const g = groups[k];
+        gTotal += g.amount;
+        $tbody.append(
+            '<tr>' +
+            '<td><span class="uom-badge">' + escHtml(g.label) + '</span></td>' +
+            '<td class="right"><strong>' + formatInrAmountNum(g.amount, 2, 2) + '</strong></td>' +
+            '</tr>'
+        );
+    });
+
+    $('#sumTotalAmount').text(formatInrAmountNum(gTotal, 2, 2));
+    $('#bomSummaryTotalsLine').html(
+        '<div class="bom-summary-footer-row bom-summary-footer-total-amt">' +
+        '<span class="bom-summary-footer-label">Total Expense Amount :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(formatInrAmountNum(gTotal, 2, 2)) + '</span></div>' +
+        '<div class="bom-summary-footer-row bom-summary-footer-amt-words">' +
+        '<span class="bom-summary-footer-label">Amount In Words :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(inrAmountWordsRupeeSymbol(gTotal)) + '</span></div>'
+    );
     $('#dvBOMSummary').show();
 }
 function recalcAmount($tr) {
     const qty  = parseFloat(($tr.find('.bom-qty-required').val() || '0').replace(/,/g, '')) || 0;
     const rate = parseBomMoney($tr.find('.bom-est-rate').val());
-    const amt  = qty * rate;
+    const amt  = capBomMoneyAmount(qty * rate);
     if (isNaN(amt)) {
         $tr.find('.bom-amount').val('');
     } else {
         $tr.find('.bom-amount').val(formatBomMoneyRaw(amt.toFixed(2)));
     }
+    recalcGstAndTotal($tr);
     refreshBOMSummary();
+}
+
+function recalcGstAndTotal($tr) {
+    const amount = parseBomMoney($tr.find('.bom-amount').val());
+    const gstPct = parseFloat(($tr.find('.bom-gst-pct').val() || '0').replace(/,/g, '')) || 0;
+
+    if (!amount && !gstPct) {
+        $tr.find('.bom-gst-amount').val('');
+        $tr.find('.bom-total-amount').val('');
+        return;
+    }
+
+    const gstAmt   = capBomMoneyAmount(amount * gstPct / 100);
+    const totalAmt = capBomMoneyAmount(amount + gstAmt);
+
+    $tr.find('.bom-gst-amount').val(formatBomMoneyRaw(gstAmt.toFixed(2)));
+    $tr.find('.bom-total-amount').val(formatBomMoneyRaw(totalAmt.toFixed(2)));
 }
 function escHtml(str) {
     return String(str || '')
@@ -1118,3 +2204,339 @@ function hideModal(id) {
         }
     } catch (e) { $(`#${id}`).modal('hide'); }
 }
+
+// ── Expense Budget entry ─────────────────────────────────────────────────────
+
+function normalizeExpenseGroupList(response) {
+    let rows = Array.isArray(response) ? response
+        : (response && Array.isArray(response.data) ? response.data
+        : (response && Array.isArray(response.Data) ? response.Data : []));
+    return (rows || []).map(function (item) {
+        return {
+            Code: item.Code || item.code || 0,
+            Desp: (item.Desp || item.ExpenseGroupDesp || item.ExpenseGroupName || item.Name || '').trim()
+        };
+    }).filter(function (x) { return x.Code; });
+}
+
+function ensureExpenseGroupList() {
+    if (G_ExpenseGroupList && G_ExpenseGroupList.length) {
+        return Promise.resolve(G_ExpenseGroupList);
+    }
+
+    const tryBom = (BOMService && typeof BOMService.GetExpenseGroupList === 'function')
+        ? BOMService.GetExpenseGroupList()
+        : Promise.reject(new Error('no_bom_expense_group'));
+
+    return tryBom
+        .then(function (response) {
+            G_ExpenseGroupList = normalizeExpenseGroupList(response);
+            if (G_ExpenseGroupList.length) return G_ExpenseGroupList;
+            throw new Error('empty');
+        })
+        .catch(function () {
+            if (!ExpenseHeadMasterService || typeof ExpenseHeadMasterService.GetExpenseGroupList !== 'function') {
+                return [];
+            }
+            return ExpenseHeadMasterService.GetExpenseGroupList().then(function (response) {
+                G_ExpenseGroupList = normalizeExpenseGroupList(response);
+                return G_ExpenseGroupList;
+            });
+        })
+        .catch(function () {
+            G_ExpenseGroupList = [];
+            return [];
+        });
+}
+
+function bindExpenseGroupDropdown($select, selectedCode) {
+    const $ddl = $select;
+    const prev = selectedCode != null ? selectedCode : $ddl.val();
+    $ddl.empty().append('<option value="">-- Select Expense Group --</option>');
+    (G_ExpenseGroupList || []).forEach(function (g) {
+        $ddl.append('<option value="' + g.Code + '">' + escHtml(g.Desp || ('Group ' + g.Code)) + '</option>');
+    });
+    if (prev) $ddl.val(String(prev));
+}
+
+function addNewExpenseRow(detail) {
+    detail = detail || {};
+    const $tbody = $('#tblExpenseBOM tbody');
+    const nextIndex = $tbody.children('tr').length + 1;
+    const rowId = 'expRow_' + Date.now() + '_' + nextIndex;
+    const $tr = $(
+        '<tr data-row-id="' + rowId + '" data-state="edit" data-detail-code="' + (detail.Code || 0) + '">' +
+        '<td class="center">' + nextIndex + '</td>' +
+        '<td><select class="bom-select bom-expense-group"><option value="">-- Select Expense Group --</option></select></td>' +
+        '<td><input type="text" class="bom-input bom-expense-amount right" inputmode="decimal" autocomplete="off" /></td>' +
+        '<td class="center">' +
+        '<button type="button" class="bom-btn icon del js-expense-row-delete" title="Remove">' +
+        '<i class="fas fa-times-circle"></i></button></td>' +
+        '</tr>'
+    );
+    $tbody.append($tr);
+    bindExpenseGroupDropdown($tr.find('.bom-expense-group'), detail.ExpenseGroupMaster_Code || 0);
+    if (detail.ExpenseAmount != null && detail.ExpenseAmount !== '') {
+        $tr.find('.bom-expense-amount').val(formatBomMoneyRaw(Number(detail.ExpenseAmount).toFixed(2)));
+    }
+    initExpenseRowEvents($tr);
+    refreshExpenseSummary();
+}
+
+function initExpenseRowEvents($tr) {
+    $tr.find('.bom-expense-amount').on('input', function () {
+        formatBomMoneyInput(this);
+        refreshExpenseSummary();
+    });
+    $tr.find('.bom-expense-group').on('change', function () {
+        refreshExpenseSummary();
+    });
+    $tr.find('.js-expense-row-delete').on('click', function () {
+        deleteExpenseRow($tr);
+    });
+}
+
+function deleteExpenseRow($tr) {
+    const $tbody = $('#tblExpenseBOM tbody');
+    if ($tbody.children('tr').length <= 1) {
+        $tr.attr('data-detail-code', 0);
+        $tr.find('.bom-expense-group').val('');
+        $tr.find('.bom-expense-amount').val('');
+        refreshExpenseSummary();
+        return;
+    }
+    $tr.remove();
+    $tbody.children('tr').each(function (idx) {
+        $(this).find('td').first().text(idx + 1);
+    });
+    refreshExpenseSummary();
+}
+
+function applyExpenseDetailRows(detailRows) {
+    $('#tblExpenseBOM tbody').empty();
+    const rows = Array.isArray(detailRows) ? detailRows : [];
+    if (!rows.length) {
+        addNewExpenseRow();
+        refreshExpenseSummary();
+        return;
+    }
+    rows.forEach(function (d) {
+        addNewExpenseRow({
+            Code: d.Code || 0,
+            ExpenseGroupMaster_Code: d.ExpenseGroupMaster_Code || 0,
+            ExpenseAmount: d.ExpenseAmount
+        });
+    });
+    refreshExpenseSummary();
+}
+
+function loadExpenseForCurrentSelection() {
+    const projectCode = parseInt($('#hfBOMCode').val() || $('#ddlProject').val() || '0', 10) || 0;
+    const subCode = parseInt($('#ddlSubProject').val() || '0', 10) || 0;
+    const key = projectCode + '_' + subCode;
+
+    if (!projectCode) {
+        if (!$('#tblExpenseBOM tbody tr').length) addNewExpenseRow();
+        refreshExpenseSummary();
+        return Promise.resolve();
+    }
+
+    if (G_ExpenseLoadedForKey === key && $('#tblExpenseBOM tbody tr').length) {
+        refreshExpenseSummary();
+        return Promise.resolve();
+    }
+
+    if (!BOMService || typeof BOMService.GetExpenseBOMByCode !== 'function') {
+        if (!$('#tblExpenseBOM tbody tr').length) addNewExpenseRow();
+        return Promise.resolve();
+    }
+
+    Showloader && Showloader();
+    return ensureExpenseGroupList()
+        .then(function () {
+            return BOMService.GetExpenseBOMByCode(projectCode, subCode);
+        })
+        .then(function (response) {
+            HideLoader && HideLoader();
+            const failMsg = getBomApiFailureMessage(response, '');
+            if (failMsg && !normalizeBOMDetailResponse(response).length) {
+                toastr.warning(failMsg);
+            }
+            const detailRows = normalizeBOMDetailResponse(response);
+            applyExpenseDetailRows(detailRows);
+            G_ExpenseLoadedForKey = key;
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            if (!$('#tblExpenseBOM tbody tr').length) addNewExpenseRow();
+            toastr.error('Error loading expense budget details.');
+        });
+}
+
+function validateExpenseRow($tr) {
+    const groupCode = parseInt($tr.find('.bom-expense-group').val() || '0', 10) || 0;
+    const amtRaw = ($tr.find('.bom-expense-amount').val() || '').toString().trim();
+    const amt = parseBomMoney(amtRaw);
+
+    if (!groupCode) {
+        toastr.warning('Please select Expense Group.');
+        $tr.find('.bom-expense-group').focus();
+        return false;
+    }
+    if (!amtRaw || amt <= 0) {
+        toastr.warning('Please enter Expense Amount greater than 0.');
+        $tr.find('.bom-expense-amount').focus();
+        return false;
+    }
+    if (!isValidNumber(amtRaw)) {
+        toastr.warning('Please enter a valid float Expense Amount.');
+        $tr.find('.bom-expense-amount').focus();
+        return false;
+    }
+    return true;
+}
+
+function saveAllExpenseRows() {
+    const $rows = $('#tblExpenseBOM tbody tr');
+    if (!$rows.length) {
+        toastr.warning('Please add at least one expense row.');
+        return;
+    }
+
+    const details = [];
+    let hasError = false;
+    const groupSeen = {};
+
+    $rows.each(function () {
+        const $tr = $(this);
+        const groupCode = parseInt($tr.find('.bom-expense-group').val() || '0', 10) || 0;
+        const amt = parseBomMoney($tr.find('.bom-expense-amount').val());
+
+        if (!groupCode && amt === 0) return;
+
+        if (!validateExpenseRow($tr)) {
+            hasError = true;
+            return false;
+        }
+
+        if (groupSeen[groupCode]) {
+            toastr.warning('Duplicate Expense Group is not allowed in the same list.');
+            hasError = true;
+            return false;
+        }
+        groupSeen[groupCode] = true;
+
+        details.push({
+            Code: parseInt($tr.attr('data-detail-code') || '0', 10) || 0,
+            ExpenseGroupMaster_Code: groupCode,
+            ExpenseAmount: amt
+        });
+    });
+
+    if (hasError) return;
+    if (!details.length) {
+        toastr.warning('Please enter at least one complete expense line before saving.');
+        return;
+    }
+
+    const projectMaster_Code =
+        parseInt($('#hfBOMCode').val() || '0', 10) ||
+        parseInt($('#ddlProject').val() || '0', 10) || 0;
+    const subProjectCode = parseInt($('#ddlSubProject').val() || '0', 10) || 0;
+
+    if (!projectMaster_Code) {
+        toastr.warning('Please select a Project before saving.');
+        return;
+    }
+    if (!subProjectCode) {
+        toastr.warning('Please select a Sub Project before saving.');
+        return;
+    }
+
+    if (subProjectCode && G_SubProjectList && G_SubProjectList.length) {
+        const spRow = G_SubProjectList.find(function (s) { return String(s.Code) === String(subProjectCode); });
+        const limit = spRow ? (parseFloat(spRow.Budget || spRow.SubProjectBudget || 0) || 0) : 0;
+        if (limit > 0) {
+            let expSum = 0;
+            details.forEach(function (d) { expSum += parseFloat(d.ExpenseAmount || 0) || 0; });
+            if (expSum > limit) {
+                toastr.warning(
+                    'Total expense amount (' + formatInrAmountNum(expSum, 2, 2)
+                        + ') cannot exceed sub-project budget (' + formatInrAmountNum(limit, 2, 2) + ').'
+                );
+                return;
+            }
+        }
+    }
+
+    const payloadDetails = details.map(function (d) {
+        return {
+            Code: d.Code || 0,
+            ProjectMaster_Code: projectMaster_Code,
+            SubProjectMaster_Code: subProjectCode,
+            ExpenseGroupMaster_Code: d.ExpenseGroupMaster_Code,
+            ExpenseAmount: d.ExpenseAmount
+        };
+    });
+
+    const payload = { Code: projectMaster_Code, Details: payloadDetails };
+
+    if (!BOMService || typeof BOMService.SaveExpenseBOM !== 'function') {
+        toastr.error('Expense save service is not available.');
+        return;
+    }
+
+    Showloader && Showloader();
+    let saveSuccessMsg = '';
+    BOMService.SaveExpenseBOM(payload)
+        .then(function (resp) {
+            if (resp && resp.Status === 'Y') {
+                saveSuccessMsg = resp.Msg || 'Expense budget saved successfully.';
+                $('#hfBOMCode').val(projectMaster_Code);
+                return BOMService.GetExpenseBOMByCode(projectMaster_Code, subProjectCode);
+            }
+            HideLoader && HideLoader();
+            toastr.warning((resp && (resp.Msg || resp.Message)) || 'Expense budget save failed.');
+            return Promise.reject(new Error('save_failed'));
+        })
+        .then(function (reloadResponse) {
+            HideLoader && HideLoader();
+            const detailRows = normalizeBOMDetailResponse(reloadResponse);
+            applyExpenseDetailRows(detailRows);
+            G_ExpenseLoadedForKey = projectMaster_Code + '_' + subProjectCode;
+            clearCopyFromSession();
+            toastr.success(saveSuccessMsg || 'Expense budget saved successfully.');
+        })
+        .catch(function (err) {
+            HideLoader && HideLoader();
+            if (err && err.message === 'save_failed') return;
+            toastr.error('Error while saving expense budget.');
+        });
+}
+
+// ── Item Master Modal ────────────────────────────────────────────────────────
+
+function openItemMasterModal() {
+    const baseUrl = sessionStorage.getItem('AppBaseURL') || '';
+    document.getElementById('iframeItemMaster').src =
+        baseUrl + '/MarketingMasters/ItemMaster/ItemMaster?embedded=1&ModuleDesp=Item%20Master';
+    if (window.bootstrap && window.bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('modalAddItemMaster'),
+            { backdrop: 'static', keyboard: false }
+        ).show();
+    } else {
+        $('#modalAddItemMaster').modal('show');
+    }
+}
+
+document.getElementById('modalAddItemMaster').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('iframeItemMaster').src = '';
+    // Clear item cache so newly added items are fetched on next work-type selection
+    G_ItemCacheByWorkType = {};
+});
+
+// Delegate click on any + button next to an item dropdown (rows added dynamically)
+$(document).on('click', '.js-open-item-master', function () {
+    openItemMasterModal();
+});

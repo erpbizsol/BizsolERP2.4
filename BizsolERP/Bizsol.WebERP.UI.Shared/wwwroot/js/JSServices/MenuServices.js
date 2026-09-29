@@ -33,8 +33,51 @@ const MenuService = {
                 return value;
             }
         );
-
-
+    },
+    GetFavouriteMenus: function GetFavouriteMenus(UserID) {
+        let CompanyCode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
+        let url = UrlService.ERP_SIDE_MENU + `/GetFavouriteMenus?UserID=${UserID}&CompanyCode=${CompanyCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    SaveFavouriteMenu: function SaveFavouriteMenu(UserID, MenuCode, ModuleDesp, IsFavourite) {
+        let isFavYN = IsFavourite ? 'Y' : 'N';
+        let url = UrlService.ERP_SIDE_MENU + `/SaveFavouriteMenu?MenuCode=${MenuCode}&IsFavourite=${isFavYN}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetIsUserMarkDayAttendance: function GetIsUserMarkDayAttendance() {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+       const url = `${UrlService.ERP_SIDE_MENU}/GetIsUserMarkDayAttendance?UserMaster_Code=${userCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetUserDefaultHomeURL: function GetUserDefaultHomeURL(UserID) {
+        let companycode = JSON.parse(sessionStorage.getItem('authKey')).CompanyCode;
+        const url = `${UrlService.ERP_SIDE_MENU}/GetUserDefaultHomeURL?UserID=${UserID}&CompanyCode=${companycode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetUserImage: function GetUserImage() {
+        let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
+        const url = `${UrlService.ERP_SIDE_MENU}/GetUserImage?UserMaster_Code=${userCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '', { suppressErrorToast: true }).then(
+            function (value) {
+                return value;
+            }
+        );
     },
 }
 

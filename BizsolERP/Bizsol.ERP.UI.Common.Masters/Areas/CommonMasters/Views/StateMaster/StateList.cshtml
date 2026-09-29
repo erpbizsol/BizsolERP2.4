@@ -1,35 +1,4 @@
-﻿@{
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
-@* <link href="~/assets/css/filter.css" rel="stylesheet" /> *@
-<link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-
-<div class="mb-1" style="text-align:right">
-    <input type="button" onclick="CreateNew()" class="btn btn-primary btn-height" value="Create New" />
-</div>
-
-@* table filter gird begin *@
-<div class="table-wrapper fixed-height-table">
-    <table id="State" class="fixed-width-table table">
-        <thead id="table-header">
-        </thead>
-        <tbody id="table-body">
-        </tbody>
-    </table>
-</div>
-<div class="paginator" id="paginator-State">
-</div>
-@* table filter gird End *@
-
-
-<div id="DivGridRowEditModal">
-</div>
-
-<select id="ddlCountry" hidden="true" class="form-control"></select>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/StateMasterList.js"></script>
-@* <script src="~/assets/script/filter.js"></script>
- *@
- <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+@* List UI is merged into State Master; StateMasterController.StateList redirects to StateMaster. *@

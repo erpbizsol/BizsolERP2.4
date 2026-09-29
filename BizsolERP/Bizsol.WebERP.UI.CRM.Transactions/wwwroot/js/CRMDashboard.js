@@ -1,4 +1,5 @@
 ﻿import { CRMDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CRMDashboardService.js';
+import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 let marketingManMaster_Code = 0;
 let DetailKey = "";
 let AccountDesp = "All";
@@ -7,6 +8,10 @@ let showtodayIndashboard;
 let usertype;
 $(document).ready(function () {
     //BindDashBoard();
+    BizSolHelperFunction.applyUserDashboardMenuBackButton('#btnBackToUserDashboardMenu');
+    $('#btnBackToUserDashboardMenu').on('click', function () {
+        BizSolHelperFunction.goToUserDashboardMenu();
+    });
     GetSalespersonList();
     setTimeout(GetCRMFixedParameterConfig(), 2000);
     GetCRMDashboardRefreshText();

@@ -6,6 +6,71 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockAgeingReport.js"></script>
 <style>
+    /* Table area fills remaining viewport; rows scroll inside the grid */
+    body.sar-report-page #modern-content.modern-content > main {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sar-page {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        gap: 0.5rem;
+    }
+
+    #sar-filter-card {
+        flex-shrink: 0;
+    }
+
+    #sar-filter-card .card-body {
+        padding: 0.75rem 1rem;
+    }
+
+    #StockAgeingReportTableCard.sar-table-section {
+        flex: 1 1 auto;
+        min-height: 350px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        margin-bottom: 0;
+    }
+
+    #StockAgeingReportTableCard.sar-table-section > .card-body,
+    #StockAgeingReportTableCard.sar-table-section {
+        padding: 0;
+    }
+
+    #StockAgeingReportTableCard .sar-table-scroll {
+        flex: 1 1 auto;
+        min-height: 350px;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        background: #fff;
+    }
+
+    #StockAgeingReportTableCard .sar-table-scroll.table-wrapper.filtered {
+        min-height: 350px;
+    }
+
+    #StockAgeingReportTableCard .paginator {
+        flex-shrink: 0;
+        margin-top: 0;
+    }
+
+    #StockWithChart.sar-chart-section {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
     #StockAgeingReport tfoot th,
     #StockAgeingReport tfoot td {
         color: #fff !important;
@@ -14,10 +79,154 @@
         font-weight: 600;
     }
 
+    /* ── Stock With Chart ── */
+    .swc-chart-card {
+        border-radius: 16px;
+        box-shadow: 0 2px 14px rgba(102,126,234,.1);
+        border: 1px solid rgba(102,126,234,.12);
+        background: #fff;
+        padding: 1rem 1rem .5rem;
+    }
+    .swc-chart-title {
+        font-size: .78rem;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        color: #94a3b8;
+        text-transform: uppercase;
+    }
+    .swc-badge-filter {
+        font-size: .72rem;
+        background: linear-gradient(135deg,#667eea,#0dcaf0);
+        color: #fff;
+        border-radius: 20px;
+        padding: 2px 10px;
+        font-weight: 600;
+    }
+    .swc-table thead tr { background: linear-gradient(135deg,#1a7a7a 0%,#0db0cc 100%); }
+    .swc-table thead th { font-size:.82rem; font-weight:600; border:none !important; padding:.65rem .85rem; color:#fff; }
+    .swc-table tbody tr { transition: background .15s; }
+    .swc-table tbody tr:hover { background-color: #f0f9ff; }
+    .swc-table tbody td { font-size:.82rem; padding:.42rem .85rem; vertical-align:middle; }
+    .swc-item-link { color:#667eea; cursor:pointer; font-weight:600; text-decoration:none; }
+    .swc-item-link:hover { text-decoration:underline; color:#4f46e5; }
+    .swc-size-link { color:#0891b2; cursor:pointer; font-weight:500; }
+    .swc-size-link:hover { text-decoration:underline; }
+    .swc-sub-row-2 > td:first-child { padding-left:2.2rem !important; }
+    .swc-sub-row-3 > td:first-child { padding-left:3.8rem !important; }
+    .swc-sub-row-2 { background:#f8fafc; }
+    .swc-sub-row-3 { background:#f0f9ff; }
+    .swc-expand-icon { margin-right:5px; font-size:.65rem; color:#94a3b8; transition:transform .2s; display:inline-block; }
+    .swc-expand-icon.expanded { transform:rotate(90deg); color:#667eea; }
+    .swc-btn-reset {
+        background: linear-gradient(135deg,#667eea 0%,#0dcaf0 100%);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: .75rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        transition: all .2s;
+    }
+    .swc-btn-reset:hover, .swc-btn-reset:focus {
+        background: linear-gradient(135deg,#4f46e5 0%,#0891b2 100%);
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102,126,234,.35);
+    }
+    #btnSizeControl {
+        background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: .4px;
+        transition: all .2s;
+    }
+    #btnSizeControl:hover, #btnSizeControl:focus {
+        background: linear-gradient(135deg, #ea6c0a 0%, #dc2626 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(249,115,22,.4);
+        transform: translateY(-1px);
+    }
+    #btnAgeingParameter {
+        background: linear-gradient(135deg, #4a90d9 0%, #1a5fa8 100%);
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: .4px;
+        transition: all .2s;
+    }
+    #btnAgeingParameter:hover, #btnAgeingParameter:focus {
+        background: linear-gradient(135deg, #357abd 0%, #154f90 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(74,144,217,.45);
+        transform: translateY(-1px);
+    }
+    #spanAgeingParamLabel {
+        display: inline-block;
+        background: #1a5fa8;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 1px 8px;
+        margin-left: 5px;
+        vertical-align: middle;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #StockAgeingReport thead th {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        background: linear-gradient(180deg, #5c95ce 0%, #4e86bf 100%) !important;
+        color: #fff !important;
+        font-weight: 600;
+        vertical-align: middle;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        border-color: #4a7caf !important;
+    }
+    #StockAgeingReport thead th .filter-table-heading {
+        color: #fff !important;
+    }
+    #StockAgeingReport thead th .table-filter-arrow .fa-angle-down {
+        color: #fff !important;
+        opacity: 0.95;
+    }
+    #StockAgeingReport thead th .filter-dropdown,
+    #StockAgeingReport thead th .filter-dropdown-double {
+        z-index: 40;
+    }
+    #StockAgeingReport thead th .dropdown-content {
+        z-index: 45;
+    }
+    #StockAgeingReport a.ls-drilldown-link {
+        color: #2563eb;
+        font-weight: 600;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    #StockAgeingReport a.ls-drilldown-link:hover {
+        color: #1d4ed8;
+    }
+    #LogicalStockDetailModal .modal-body {
+        max-height: 70vh;
+        overflow: auto;
+    }
 </style>
-<div class="card">
+<script>
+    document.body.classList.add('sar-report-page');
+</script>
+<div class="sar-page">
+<div class="card" id="sar-filter-card">
     <div class="card-body">
         <div class="row">
+            <div class="col-md-3">
+                <label for="ddlReportOption" class="form-label filter-label">Report Option <span class="text-danger">*</span></label>
+                <select id="ddlReportOption" name="ddlReportOption" class="form-control form-control-sm box_border" placeholder="Select.." autocomplete="off" required></select>
+            </div>
             <div class="col-md-3">
                 <label for="ddlCategory" class="form-label filter-label">Category <span class="text-danger">*</span></label>
                 <select id="ddlCategory" name="ddlCategory" class="form-control form-control-sm box_border" placeholder="Select.." multiple style="width: 300px;" autocomplete="off" required onchange="Bind_ddlItemMaster();"></select>
@@ -38,40 +247,121 @@
                 <label for="ddlItemNameFilter" class="form-label filter-label">Item Name <span class="text-danger">*</span></label>
                 <select id="ddlItemNameFilter" name="ddlItemNameFilter" class="form-control form-control-sm box_border" placeholder="Select.." autocomplete="off" required></select>
             </div>
-            <div class="col-md-3">
-                <label for="ddlReportOption" class="form-label filter-label">Report Option <span class="text-danger">*</span></label>
-                <select id="ddlReportOption" name="ddlReportOption" class="form-control form-control-sm box_border" placeholder="Select.." autocomplete="off" required></select>
-            </div>
+            
             <div class="col-md-3">
                 <label for="ddlSizeParameter" class="form-label filter-label">Size Parameter <span class="text-danger">*</span></label>
                 <select id="ddlSizeParameter" name="ddlSizeParameter" class="form-control form-control-sm box_border" multiple style="width: 300px;" placeholder="Select.." autocomplete="off" required></select>
             </div>
             <div class="col-md-3" style="margin-top: 27px;">
-                <button id="btnSizeControl" class="btn btn-primary btn-height" onclick="ShowSizeControlModal();">Size Parameter Filter</button>
+                <button type="button" id="btnStockAgeingReportShow" class="btn btn-primary btn-height">Show</button>
             </div>
             <div class="col-md-12" style="text-align:right">
-                <button type="button" id="btnStockAgeingReportShow" class="btn btn-primary btn-height">Show</button>
+                @* <button id="btnAgeingParameter" class="btn btn-height" onclick="ShowAgeingParameterModal();">
+                    Ageing Parameter
+                    <span id="spanAgeingParamLabel" style="display:none;"></span>
+                </button> *@
+                <button id="btnSizeControl" class="btn btn-height" onclick="ShowSizeControlModal();">Size Parameter Filter</button>
                 <button type="button" id="btn" class="btn btn-primary btn-height" onclick="ExportExcel();">Download</button>
             </div>
         </div>
     </div>
 </div>
-<div class="row">
-    <div class="col-sm-12">
-        <div class="card" id="StockAgeingReportTableCard">
-            <div class="table-wrapper" style="min-height:400px;">
-                <table id="StockAgeingReport" class="fixed-width-table table">
-                    <thead id="table-head-StockAgeingReport">
-                    </thead>
-                    <tbody id="table-body-StockAgeingReport">
-                    </tbody>
-                    <tfoot id="table-foot-StockAgeingReport">
-                    </tfoot>
-                </table>
+<div class="card sar-table-section" id="StockAgeingReportTableCard">
+    <div class="table-wrapper sar-table-scroll" id="sarTableWrapper">
+        <table id="StockAgeingReport" class="fixed-width-table table table-bordered table-sm mb-0">
+            <thead id="table-head-StockAgeingReport">
+            </thead>
+            <tbody id="table-body-StockAgeingReport">
+            </tbody>
+            <tfoot id="table-foot-StockAgeingReport">
+            </tfoot>
+        </table>
+    </div>
+    <div class="paginator px-2 py-2 border-top bg-light" id="paginator-StockAgeingReport">
+    </div>
+</div>
+<!-- Stock With Chart section (shown only when Report Option = Stock With Chart) -->
+<div id="StockWithChart" class="sar-chart-section" style="display:none;">
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="swc-chart-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="swc-chart-title">STOCKS</div>
+                    <button class="swc-btn-reset" id="swcBtnResetFilters">&#8635; Reset</button>
+                </div>
+                <div id="swcChartCategory" style="min-height:320px;"></div>
             </div>
-            <div class="paginator" id="paginator-StockAgeingReport">
+        </div>
+    </div>
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="swc-chart-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="swc-chart-title">WAREHOUSE</div>
+                    <span id="swcLblGodownFilter" class="swc-badge-filter" style="display:none;"></span>
+                </div>
+                <div id="swcChartGodown" style="min-height:360px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-3 mb-3" id="swcChartItemsRow" style="display:none;">
+        <div class="col-12">
+            <div class="swc-chart-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="swc-chart-title">ITEMS</div>
+                    <div>
+                        <span id="swcLblCategoryFilter" class="swc-badge-filter me-1" style="display:none;"></span>
+                        <span id="swcLblItemGodownFilter" class="swc-badge-filter" style="display:none;"></span>
+                    </div>
+                </div>
+                <div id="swcChartItems" style="min-height:280px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="row" id="swcGridSection" style="display:none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="swc-table table table-bordered mb-0">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th class="text-end" style="width:140px;">Qty MT</th>
+                                <th class="text-end" style="width:120px;">Qty PC</th>
+                            </tr>
+                        </thead>
+                        <tbody id="swcTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
+</div>
+
+<div class="modal fade" id="LogicalStockDetailModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="LogicalStockDetailModalTitle">Details</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" onclick="CloseLogicalStockDetailModal()" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper">
+                    <table id="LogicalStockDetail" class="fixed-width-table table table-bordered table-sm mb-0">
+                        <thead id="table-head-LogicalStockDetail"></thead>
+                        <tbody id="table-body-LogicalStockDetail"></tbody>
+                    </table>
+                </div>
+                <div class="paginator px-2 py-2 border-top bg-light" id="paginator-LogicalStockDetail"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-height" onclick="CloseLogicalStockDetailModal()" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

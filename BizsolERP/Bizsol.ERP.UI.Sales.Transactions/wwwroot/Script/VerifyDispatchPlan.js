@@ -11,6 +11,7 @@ let G_DispatchPlanlist = [];
 let G_DispatchAdviceNo = 0;
 let G_DispatchMaster_Code = 0;
 let G_AccountMaster_Code = 0;
+let G_ViewAll_Code = 0;
 
 let _vdpHeightRaf = 0;
 let _vdpHeightHandlersBound = false;
@@ -30,9 +31,43 @@ function getFooterViewportOverlapHeight() {
     return overlap > 0 && isFinite(overlap) ? overlap : 0;
 }
 function adjustVerifyDispatchPlanTableHeight() {
+    const twin = document.getElementById('dvTransporterReportTwinGrids');
+    if (twin && !twin.classList.contains('d-none') && twin.offsetParent !== null) {
+        const dv = document.getElementById('dvTableDispatch');
+        if (!dv || dv.offsetParent === null) return;
+        const layoutBottom = window.innerHeight || document.documentElement.clientHeight || getViewportHeight();
+        const footerHeight = getFooterViewportOverlapHeight();
+        const bottomGap = 0;
+        const twinRect = twin.getBoundingClientRect();
+        const topInset = Math.max(0, twinRect.top);
+        let availableHeight = layoutBottom - topInset - footerHeight - bottomGap;
+        if (!isFinite(availableHeight)) return;
+        const gap = 6;
+        const labelReserve = 18;
+        const minWrapperPx = 350;
+        const minTwinOuter = minWrapperPx + gap + labelReserve;
+        availableHeight = Math.max(minTwinOuter, Math.floor(availableHeight));
+        twin.style.height = availableHeight + 'px';
+        twin.style.maxHeight = 'none';
+        let contentHeight = availableHeight - gap - labelReserve;
+        if (contentHeight <= 0) {
+            return;
+        }
+        if (contentHeight < minWrapperPx) {
+            contentHeight = minWrapperPx;
+            availableHeight = contentHeight + gap + labelReserve;
+            twin.style.height = availableHeight + 'px';
+        }
+        const w1 = document.getElementById('tableWrapperTransporterR1');
+        if (w1) {
+            w1.style.height = contentHeight + 'px';
+            w1.style.maxHeight = contentHeight + 'px';
+        }
+        return;
+    }
     const tableWrapper = document.getElementById('tableWrapper');
     if (!tableWrapper) return;
-    if (tableWrapper.offsetParent === null) return; // hidden (display:none)
+    if (tableWrapper.offsetParent === null) return;
 
     const rect = tableWrapper.getBoundingClientRect();
     const viewportHeight = getViewportHeight();
@@ -85,8 +120,10 @@ $(document).ready(function () {
         $("#ddlStatus").val('P');
     } else if (decodeURI(urlParams['FrmAction']) == 'Verify') {
         $("#ddlStatus").val('D');
-    } else {
+    } else if (decodeURI(urlParams['FrmAction']) == 'Verify Marketing') {
         $("#ddlStatus").val('M');
+    } else {
+        $("#ddlStatus").val('AR');
     }
 
     bindVerifyDispatchPlanTableHeightHandlers();
@@ -98,35 +135,85 @@ $(document).ready(function () {
     //     GetDispatchAdvicePlanList($(this).val());
     // })
     var initialStatus = $("#ddlStatus").val();
-    if (initialStatus === 'R' || initialStatus === 'T') {
+    if (initialStatus === 'R' || initialStatus === 'T' || initialStatus === 'TR' || initialStatus === 'DR' || initialStatus === 'FL') {
         $(".despatch-activity-filter").removeClass('d-none');
         $("#dvTableDispatch").hide();
+        $("#dvApprovedTransporterDashboard").removeClass('show').hide();
+        if (initialStatus === 'TR') {
+            ShowTransporterReportList();
+        } else if (initialStatus === 'DR') {
+            ShowDelayReportList();
+        } else if (initialStatus === 'FL') {
+            ShowFreightLossReportList();
+        }
+    } else if (initialStatus === 'AR') {
+        $(".despatch-activity-filter").removeClass('d-none');
+        $("#dvDelayReportCards").hide();
+        $("#dvTableDispatch").hide();
+        openApprovedTransporterDashboard();
     } else {
         $(".despatch-activity-filter").addClass('d-none');
+        $("#dvApprovedTransporterDashboard").removeClass('show').hide();
         GetDispatchAdvicePlanList(initialStatus);
     }
     $("#ddlStatus").change(function () {
         var status = $(this).val();
-        if (status === 'R' || status === 'T') {
+        if (status === 'R' || status === 'T' || status === 'TR' || status === 'DR' || status === 'FL') {
             $(".despatch-activity-filter").removeClass('d-none');
             $("#dvTableDispatch").hide();
+            $("#dvApprovedTransporterDashboard").removeClass('show').hide();
+            if (status === 'TR') {
+                ShowTransporterReportList();
+            } else if (status === 'DR') {
+                ShowDelayReportList();
+            } else if (status === 'FL') {
+                ShowFreightLossReportList();
+            }
+        } else if (status === 'AR') {
+            $(".despatch-activity-filter").removeClass('d-none');
+            $("#dvDelayReportCards").hide();
+            $("#dvTableDispatch").hide();
+            openApprovedTransporterDashboard();
         } else {
             $(".despatch-activity-filter").addClass('d-none');
+            $("#dvApprovedTransporterDashboard").removeClass('show').hide();
             GetDispatchAdvicePlanList(status);
         }
     });
     $("#txtFromDate").change(function () {
-        if ($("#ddlStatus").val() === 'R') {
+        var s = $("#ddlStatus").val();
+        if (s === 'R' || s === 'TR' || s === 'AR' || s === 'DR' || s === 'FL') {
             ShowFilteredList();
         }
     });
     $("#txtToDate").change(function () {
-        if ($("#ddlStatus").val() === 'R') {
+        var s = $("#ddlStatus").val();
+        if (s === 'R' || s === 'TR' || s === 'AR' || s === 'DR' || s === 'FL') {
             ShowFilteredList();
         }
     });
 });
+function ensureStandardGridLayout() {
+    $('#dvDelayReportCards').hide();
+    $('#dvTransporterReportTwinGrids').addClass('d-none').removeClass('d-flex');
+    $('#tableWrapper').removeClass('d-none');
+}
+
+function ensureTransporterTwinLayout() {
+    $('#dvDelayReportCards').hide();
+    $('#tableWrapper').addClass('d-none');
+    $('#dvTransporterReportTwinGrids').removeClass('d-none').addClass('d-flex');
+}
+
 function GetDispatchAdvicePlanList(Status, fromdate, todate) {
+    if (Status === 'TR') {
+        ShowTransporterReportList();
+        return;
+    }
+    // Hide Approved Transporter Dashboard when showing table
+    $("#dvApprovedTransporterDashboard").removeClass('show').hide();
+    
+    ensureStandardGridLayout();
     if (fromdate == undefined) {
         fromdate = '';
     }
@@ -148,7 +235,11 @@ function GetDispatchAdvicePlanList(Status, fromdate, todate) {
             const stringDoubleFilterColumn = [];
             const showButtons = [];
             const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"
-                , "Remarks", "Marketing Remark", "PPC Remark","CityMaster_Code_Freight"];
+                , "Remarks", "CityMaster_Code_Freight", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
+            // Show remark columns for Approved Quotation (T); hide for other locate statuses
+            if (Status !== 'T') {
+                hiddenColumns.push("Marketing Remark", "PPC Remark", "Despatch Remark", "Dispatch Remark");
+            }
             const columnAlignment = {
                 "Ord Qty Pc": "right;max-width:30px;",
                 "Ord Qty MT": "right",
@@ -947,7 +1038,7 @@ $(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumeri
         totals.creditDays = domTotals.creditDays;
         totals.creditLimit = domTotals.creditLimit;
         totals.availableLimit = domTotals.availableLimit;
-        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
+        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
         addTotalsRow(totals, hiddenColumns);
         applyFixedWidthsByIndex();
         applyTableBorders();
@@ -973,7 +1064,7 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
         totals.creditDays = domTotals.creditDays;
         totals.creditLimit = domTotals.creditLimit;
         totals.availableLimit = domTotals.availableLimit;
-        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode"];
+        const hiddenColumns = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "LV1_TransporterCode", "LV3_TransporterCode", "LV2_TransporterCode", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
         addTotalsRow(totals, hiddenColumns);
         applyFixedWidthsByIndex();
         applyTableBorders();
@@ -981,6 +1072,158 @@ $(document).on('click', '[id^="pageSize-"], [id^="firstBtn-"], [id^="prevBtn-"],
 });
 function ExportExcel() {
     var status = $("#ddlStatus").val();
+    if (status === 'AR') {
+        var arFrom = $('#txtFromDate').val();
+        var arTo = $('#txtToDate').val();
+        if (!arFrom || !arTo) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(arTo) < new Date(arFrom)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
+        Showloader();
+        VerifyDispatchPlanService.GetApprovedTransporterReport(arFrom, arTo).then(function (response) {
+            HideLoader();
+            var norm = normalizeApprovedTransporterReport(response);
+            var rows = (norm.dataRows || []).slice();
+            if (norm.grandRow) {
+                rows.push(norm.grandRow);
+            }
+            if (!rows.length) {
+                toastr.info('No data to export.');
+                return;
+            }
+            ExportToExcelControl.ExportToExcel(rows, [], 'ApprovedTransporterDashboard');
+            toastr.success('Export completed successfully.');
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || error.message || 'Error during export.');
+        });
+        return;
+    }
+    if (status === 'TR') {
+        var fromDate = $('#txtFromDate').val();
+        var toDate = $('#txtToDate').val();
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(toDate) < new Date(fromDate)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
+        Showloader();
+        VerifyDispatchPlanService.GetTransporterReport(fromDate, toDate).then(function (response) {
+            HideLoader();
+            const parsed = parseTransporterReportResults(response);
+            const has1 = parsed.result1 && parsed.result1.length > 0;
+            const has2 = parsed.result2 && parsed.result2.length > 0;
+            if (!has1 && !has2) {
+                toastr.info('No data to export.');
+                return;
+            }
+            if (typeof XLSX === 'undefined') {
+                toastr.error('Excel export is not available.');
+                return;
+            }
+            const wb = XLSX.utils.book_new();
+            if (has1) {
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(omitTransporterHiddenExportColumns(parsed.result1)), 'Result1_DO');
+            }
+            if (has2) {
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(omitTransporterHiddenExportColumns(renameTransporterSummaryColumns(parsed.result2))), 'Result2_Transporter');
+            }
+            XLSX.writeFile(wb, 'TransporterReport.xlsx');
+            toastr.success('Export completed successfully.');
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || error.message || 'Error during export.');
+        });
+        return;
+    }
+    if (status === 'DR') {
+        var fromDate = $('#txtFromDate').val();
+        var toDate = $('#txtToDate').val();
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(toDate) < new Date(fromDate)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
+        Showloader();
+        VerifyDispatchPlanService.GetDelayReport(fromDate, toDate).then(function (response) {
+            HideLoader();
+            const parsed = parseTransporterReportResults(response);
+            const detail = parsed.result1 && parsed.result1.length > 0 ? parsed.result1 : [];
+            const summary = parsed.result2 && parsed.result2.length > 0 ? parsed.result2 : [];
+            if (!detail.length && !summary.length) {
+                toastr.info('No data to export.');
+                return;
+            }
+            if (typeof XLSX === 'undefined') {
+                toastr.error('Excel export is not available.');
+                return;
+            }
+            const wb = XLSX.utils.book_new();
+            if (detail.length) {
+                // Excel: Unicode ballot icons (☑ / ☒) instead of SQL "?" placeholders
+                XLSX.utils.book_append_sheet(
+                    wb,
+                    XLSX.utils.json_to_sheet(decorateDelayReportStatusIcons(mapNullsToEmptyStrings(detail), false)),
+                    'DelayReport'
+                );
+            }
+            if (summary.length) {
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mapNullsToEmptyStrings(summary)), 'Summary');
+            }
+            XLSX.writeFile(wb, 'DispatchDelayReport.xlsx');
+            toastr.success('Export completed successfully.');
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || error.message || 'Error during export.');
+        });
+        return;
+    }
+    if (status === 'FL') {
+        var fromDate = $('#txtFromDate').val();
+        var toDate = $('#txtToDate').val();
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date before export.');
+            return;
+        }
+        if (new Date(toDate) < new Date(fromDate)) {
+            toastr.warning('To Date must be greater than or equal to From Date.');
+            return;
+        }
+        Showloader();
+        VerifyDispatchPlanService.GetFreightLossReport(fromDate, toDate).then(function (response) {
+            HideLoader();
+            var rows = formatFreightLossQtyColumns(mapNullsToEmptyStrings(normalizeFreightLossRows(response)));
+            if (!rows.length) {
+                toastr.info('No data to export.');
+                return;
+            }
+            if (typeof ExportToExcelControl !== 'undefined' && ExportToExcelControl.ExportToExcel) {
+                ExportToExcelControl.ExportToExcel(rows, [], 'FreightLossReport');
+            } else if (typeof XLSX !== 'undefined') {
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'FreightLossReport');
+                XLSX.writeFile(wb, 'FreightLossReport.xlsx');
+            } else {
+                toastr.error('Excel export is not available.');
+                return;
+            }
+            toastr.success('Export completed successfully.');
+        }).catch(function (error) {
+            HideLoader();
+            toastr.error(error.Msg || error.message || 'Error during export.');
+        });
+        return;
+    }
     if (status === 'R' || status === 'T') {
         var fromDate = $('#txtFromDate').val();
         var toDate = $('#txtToDate').val();
@@ -1009,7 +1252,7 @@ function ExportExcel() {
             return;
         }
         if (status === 'T') {
-            const hiddenFields = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+            const hiddenFields = ["Code", "AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
             Showloader();
             VerifyDispatchPlanService.GetDispatchAdvicePlanList(status, fromDate, toDate).then(function (response) {
                 HideLoader();
@@ -1026,7 +1269,7 @@ function ExportExcel() {
         }
         return;
     }
-    const hiddenFields = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC"];
+    const hiddenFields = ["Code","AutoOrderNo", "IsPlanned", "Dispatch Qty Pc", "Dispatch Qty MT", "Dispatch Qty MTRS", "BuyerPOMaster_Code", "BuyerPODetail_Code", "DespatchPlanCode", "ItemSizeMaster_Code", "Verified", "VarifyMarketing", "CheckedPPC", "DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
     VerifyDispatchPlanService.GetDispatchAdvicePlanList(status).then(function (response) {
         if (response && response.length > 0) {
             ExportToExcelControl.ExportToExcel(response, hiddenFields, "DispatchAdvicePlan");
@@ -1086,7 +1329,8 @@ function VerifyDispatch() {
         return;
     }
     var Code = $("#hfCode").val();
-    if (confirm("Are you sure you want to verify ?")) {
+    Promise.resolve(confirm("Are you sure you want to verify ?")).then(function (ok) {
+        if (!ok) return;
         Showloader();
         var Status = $("#ddlStatus").val();
         VerifyDispatchPlanService.Verify(Code, Status, Remark).then(function (response) {
@@ -1103,7 +1347,7 @@ function VerifyDispatch() {
             HideLoader();
             toastr.error(error.Message || 'Error During Verify ');
         });
-    }
+    });
 }
 function getFinancialYear() {
     var currentDate = new Date();
@@ -1115,6 +1359,7 @@ function getFinancialYear() {
     return startYear + "-" + (startYear + 1);
 }
 function ViewAll(Code) {
+    G_ViewAll_Code = Code;
     Showloader();
     VerifyDispatchPlanService.AllTransporterRateList(Code).then(function (response) {
         if (response && response.length > 0) {
@@ -1124,15 +1369,20 @@ function ViewAll(Code) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["DespatchAdviceMaster_Code","AccountMaster_Code"];
+            const hiddenColumns = ["DespatchAdviceMaster_Code", "AccountMaster_Code", "IsApproved", "IsTransporter"];
 
             const columnAlignment = {
                 Rate: 'right',
             };
             const updatedResponse = response.map(item => {
+                const isApprovedTransporter = item.IsTransporter === 'Y' || item.IsApproved === 'Y';
+                const actionButton = isApprovedTransporter
+                    ? `<button class="btn btn-info icon-height mb-1" onclick="UnApprovedQuotstion(${item.DespatchAdviceMaster_Code},${item.AccountMaster_Code})">Un-Approved</button>`
+                    : '';
                 const formattedItem = {
                     ...item,
-                    'Transporter Name': `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.AccountMaster_Code},${item.DespatchAdviceMaster_Code})">${item['Transporter Name']}</a>`,
+                    'Transporter Name': `<a href="javascript:void(0)" onclick="ApprovedQuotstion(${item.DespatchAdviceMaster_Code},${item.AccountMaster_Code})">${item['Transporter Name']}</a>`,
+                    'Action': actionButton
                 };
                 return formattedItem;
             });
@@ -1263,7 +1513,8 @@ function Update() {
         toastr.error('Please select at least one transporter.');
         return;
     }
-    if (confirm("Are you sure you want to update ?")) {
+    Promise.resolve(confirm("Are you sure you want to update ?")).then(function (ok) {
+        if (!ok) return;
         Showloader();
         VerifyDispatchPlanService.UpdateTransporter(codes).then(function (response) {
             if (response.Status == 'Y') {
@@ -1277,7 +1528,7 @@ function Update() {
         }).catch(function (error) {
             HideLoader();
         });
-    }
+    });
 }
 function SendMailToTransporter() {
     var ModuleName = "Delivery Order/Despatch Advice (GST)",
@@ -1310,9 +1561,10 @@ function SendMailToTransporter() {
                 toastr.error('Please enter remark.');
                 return;
             }
-            if (confirm("Are you sure you want to verify/send mail ?")) {
+            Promise.resolve(confirm("Are you sure you want to verify/send mail ?")).then(function (ok) {
+                if (!ok) return;
                 Showloader();
-                VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo,Remark).then(function (response) {
+                VerifyDispatchPlanService.SendMailToTransporter(TranporterCodes, G_DispatchAdviceNo, Remark).then(function (response) {
                     if (response.Status == 'Y') {
                         toastr.success(response.Message);
                         HideLoader();
@@ -1325,17 +1577,31 @@ function SendMailToTransporter() {
                 }).catch(function (error) {
                     HideLoader();
                 });
-            }
+            });
         }
     });
+}
+function hideVerifyModal(modalId) {
+    const element = document.getElementById(modalId);
+    if (element && window.bootstrap && bootstrap.Modal) {
+        const instance = bootstrap.Modal.getInstance(element);
+        if (instance) {
+            instance.hide();
+            return;
+        }
+    }
+    $('#' + modalId).modal('hide');
 }
 function ApprovedTransporter() {
     Showloader();
     VerifyDispatchPlanService.ApprovedQuotation(G_DispatchMaster_Code, G_AccountMaster_Code).then(function (response) {
         if (response.Status == 'Y') {
             toastr.success(response.Message);
-            GetDispatchAdvicePlanList($("#ddlStatus").val());
             CloseApprovedModal();
+            GetDispatchAdvicePlanList($("#ddlStatus").val());
+            //if (G_ViewAll_Code) {
+            //    ViewAll(G_ViewAll_Code);
+            //}
             HideLoader();
         } else {
             toastr.error(response.Message);
@@ -1346,6 +1612,26 @@ function ApprovedTransporter() {
         toastr.error(error.Msg || 'Error During Approved Quotation ');
     });
 }
+function UnApprovedTransporter() {
+    Showloader();
+    VerifyDispatchPlanService.UnApprovedQuotation(G_DispatchMaster_Code, G_AccountMaster_Code).then(function (response) {
+        if (response.Status == 'Y') {
+            toastr.success(response.Message);
+            CloseUnApprovedModal();
+            GetDispatchAdvicePlanList($("#ddlStatus").val());
+            if (G_ViewAll_Code) {
+                ViewAll(G_ViewAll_Code);
+            }
+            HideLoader();
+        } else {
+            toastr.error(response.Message);
+            HideLoader();
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error During Un Approved Quotation ');
+    });
+}
 function ApprovedQuotstion(Code, TransporterCode) {
     G_DispatchMaster_Code = Code;
     G_AccountMaster_Code = TransporterCode;
@@ -1353,8 +1639,18 @@ function ApprovedQuotstion(Code, TransporterCode) {
     $('#dvApproved').modal('show');
     CloseModal();
 }
+function UnApprovedQuotstion(Code, TransporterCode) {
+    G_DispatchMaster_Code = Code;
+    G_AccountMaster_Code = TransporterCode;
+    $('#dvUnApproved').modal({ backdrop: 'static' });
+    $('#dvUnApproved').modal('show');
+    CloseModal();
+}
 function CloseApprovedModal() {
-    $('#dvApproved').modal('hide');
+    hideVerifyModal('dvApproved');
+}
+function CloseUnApprovedModal() {
+    hideVerifyModal('dvUnApproved');
 }
 function OpenVerifyModal(Code) {
     $('#hfCode').val(Code);
@@ -1964,6 +2260,7 @@ function setCurrentDateDespatchActivity() {
     $('#txtToDate').val(formatDate(today));
 }
 function ShowDespatchActivityList(fromDate, toDate) {
+    ensureStandardGridLayout();
     Showloader();
     VerifyDispatchPlanService.GetDespatchActivityReportList(fromDate, toDate).then(function (response) {
         HideLoader();
@@ -1998,6 +2295,22 @@ function ShowDespatchActivityList(fromDate, toDate) {
     });
 }
 function ShowFilteredList() {
+    if ($("#ddlStatus").val() === 'TR') {
+        ShowTransporterReportList();
+        return;
+    }
+    if ($("#ddlStatus").val() === 'DR') {
+        ShowDelayReportList();
+        return;
+    }
+    if ($("#ddlStatus").val() === 'FL') {
+        ShowFreightLossReportList();
+        return;
+    }
+    if ($("#ddlStatus").val() === 'AR') {
+        openApprovedTransporterDashboard();
+        return;
+    }
     var fromDate = $('#txtFromDate').val();
     var toDate = $('#txtToDate').val();
     if (!fromDate || !toDate) {
@@ -2025,6 +2338,7 @@ window.Verify = Verify;
 window.ExportExcel = ExportExcel;
 window.CloseModal = CloseModal;
 window.CloseApprovedModal = CloseApprovedModal;
+window.CloseUnApprovedModal = CloseUnApprovedModal;
 window.SendMail = SendMail;
 window.CloseTransporter = CloseTransporter;
 window.TransporterList = TransporterList;
@@ -2033,7 +2347,9 @@ window.updateSelected = updateSelected;
 window.UpdateTransporter = UpdateTransporter;
 window.SendMailToTransporter = SendMailToTransporter;
 window.ApprovedQuotstion = ApprovedQuotstion;
+window.UnApprovedQuotstion = UnApprovedQuotstion;
 window.ApprovedTransporter = ApprovedTransporter;
+window.UnApprovedTransporter = UnApprovedTransporter;
 window.UpdateQty = UpdateQty;
 window.OpenShowRemarksModal = OpenShowRemarksModal;
 window.CloseShowRemarksModal = CloseShowRemarksModal;
@@ -2042,3 +2358,1426 @@ window.CloseUpdateAreaModal = CloseUpdateAreaModal;
 window.SaveArea = SaveArea;
 window.ShowDespatchActivityList = ShowDespatchActivityList;
 window.ShowFilteredList = ShowFilteredList;
+
+function parseTransporterReportResults(response) {
+    var result1 = [];
+    var result2 = [];
+    if (!response) {
+        return { result1: result1, result2: result2 };
+    }
+    if (typeof response === 'object' && response !== null && !Array.isArray(response)) {
+        var r1 = response.Result1 != null ? response.Result1 : response.result1;
+        var r2 = response.Result2 != null ? response.Result2 : response.result2;
+        if (Array.isArray(r1)) result1 = r1;
+        if (Array.isArray(r2)) result2 = r2;
+        return { result1: result1, result2: result2 };
+    }
+    if (Array.isArray(response) && response.length > 0) {
+        var first = response[0];
+        if (first !== null && typeof first === 'object' && !Array.isArray(first)) {
+            return { result1: response, result2: [] };
+        }
+        if (Array.isArray(first)) {
+            return { result1: first, result2: [] };
+        }
+    }
+    return { result1: result1, result2: result2 };
+}
+
+function mapNullsToEmptyStrings(rows) {
+    if (!rows || !rows.length) return rows || [];
+    return rows.map(function (row) {
+        var out = {};
+        Object.keys(row).forEach(function (k) {
+            var v = row[k];
+            if (v === null || v === undefined) {
+                out[k] = '';
+            } else if (typeof v === 'string') {
+                var t = v.trim();
+                if (t === '' || t.toLowerCase() === 'null') {
+                    out[k] = '';
+                } else {
+                    out[k] = v;
+                }
+            } else {
+                out[k] = v;
+            }
+        });
+        return out;
+    });
+}
+
+function omitTransporterHiddenExportColumns(rows) {
+    var hide = ['DespatchAdviceMaster_Code', 'despatchAdviceMaster_Code'];
+    return mapNullsToEmptyStrings(rows).map(function (row) {
+        var o = {};
+        Object.keys(row).forEach(function (k) {
+            if (hide.indexOf(k) < 0) {
+                o[k] = row[k];
+            }
+        });
+        return o;
+    });
+}
+
+function isTransporterSummaryPctColumn(key) {
+    return /%\s*$/.test(String(key || '').trim());
+}
+
+function formatTransporterSummaryPct(v) {
+    if (v === null || v === undefined || v === '') return v;
+    var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, '').replace(/%/g, '').trim());
+    if (isNaN(n) || !isFinite(n)) return v;
+    return n.toFixed(2);
+}
+
+function renameTransporterSummaryColumns(rows) {
+    if (!rows || !rows.length) return rows || [];
+    return rows.map(function (row) {
+        var out = {};
+        Object.keys(row).forEach(function (k) {
+            var newKey = /^total\s*count$/i.test(String(k).trim()) ? 'Quotation Count Received' : k;
+            out[newKey] = isTransporterSummaryPctColumn(newKey) ? formatTransporterSummaryPct(row[k]) : row[k];
+        });
+        return out;
+    });
+}
+
+function getTransporterReportColumnFilters(rows) {
+    if (!rows || rows.length === 0) {
+        return { stringFilterColumn: [], numericFilterColumn: [], dateFilterColumn: [] };
+    }
+    const keys = Object.keys(rows[0]);
+    const dateFilterColumn = keys.filter(function (k) { return /date/i.test(k); });
+    const numericFilterColumn = keys.filter(function (k) {
+        if (dateFilterColumn.indexOf(k) >= 0) return false;
+        let sample = null;
+        for (let i = 0; i < Math.min(rows.length, 30); i++) {
+            const v = rows[i][k];
+            if (v !== null && v !== undefined && v !== '') {
+                sample = v;
+                break;
+            }
+        }
+        if (sample === null || sample === undefined) return false;
+        const n = typeof sample === 'number' ? sample : Number(String(sample).replace(/,/g, ''));
+        return !isNaN(n) && isFinite(n);
+    });
+    const stringFilterColumn = keys.filter(function (k) {
+        return dateFilterColumn.indexOf(k) < 0 && numericFilterColumn.indexOf(k) < 0;
+    });
+    return { stringFilterColumn: stringFilterColumn, numericFilterColumn: numericFilterColumn, dateFilterColumn: dateFilterColumn };
+}
+
+function getTransporterSummaryTotalColumns(rows) {
+    if (!rows || !rows.length) return [];
+    var keys = Object.keys(rows[0]);
+    var wanted = [
+        /^quotation(\s+count)?\s+received$/i,
+        /^approved$/i,
+        /^total\s+not\s+approved$/i,
+        /^declined$/i
+    ];
+    var found = [];
+    wanted.forEach(function (re) {
+        for (var i = 0; i < keys.length; i++) {
+            if (re.test(String(keys[i]).trim())) {
+                found.push(keys[i]);
+                break;
+            }
+        }
+    });
+    return found;
+}
+
+function bindTransporterResultGrid(headId, bodyId, rows, noDataElId) {
+    if (!rows || rows.length === 0) {
+        $('#' + headId).empty();
+        $('#' + bodyId).empty();
+        $('#' + noDataElId).removeClass('d-none');
+        $('#' + headId).closest('.table-wrapper').addClass('d-none');
+        return;
+    }
+    $('#' + noDataElId).addClass('d-none');
+    $('#' + headId).closest('.table-wrapper').removeClass('d-none');
+    const hiddenColumns = ["DespatchAdviceMaster_Code", "despatchAdviceMaster_Code"];
+    let filters = getTransporterReportColumnFilters(rows);
+    filters.stringFilterColumn = filters.stringFilterColumn.filter(function (c) { return hiddenColumns.indexOf(c) < 0; });
+    filters.numericFilterColumn = filters.numericFilterColumn.filter(function (c) { return hiddenColumns.indexOf(c) < 0; });
+    filters.dateFilterColumn = filters.dateFilterColumn.filter(function (c) { return hiddenColumns.indexOf(c) < 0; });
+    const button = false;
+    const stringDoubleFilterColumn = [];
+    const showButtons = [];
+    const columnAlignment = {
+         "Quotation Received":"right",
+        "Approved": "right",
+        "Total Not Approved": "right",
+        "Declined": "right",
+        "Approved %": "right",
+        "Not Approved %": "right",
+        "Declined %": "right"
+    };
+    const isSummaryGrid = bodyId === 'table-body-transporter-r2';
+    const totalColumns = isSummaryGrid ? getTransporterSummaryTotalColumns(rows) : [];
+    var fixedDecimal = {};
+    Object.keys(rows[0]).forEach(function (k) {
+        if (isTransporterSummaryPctColumn(k)) {
+            fixedDecimal[k] = 2;
+        }
+    });
+    totalColumns.forEach(function (k) {
+        columnAlignment[k] = 'right';
+        if (fixedDecimal[k] === undefined) {
+            fixedDecimal[k] = 0;
+        }
+    });
+    BizsolCustomFilterGrid.CreateDataTable(
+        headId,
+        bodyId,
+        rows,
+        button,
+        showButtons,
+        filters.stringFilterColumn,
+        filters.numericFilterColumn,
+        filters.dateFilterColumn,
+        stringDoubleFilterColumn,
+        hiddenColumns,
+        columnAlignment,
+        false,
+        totalColumns.length ? totalColumns : null,
+        fixedDecimal,
+        null,
+        false,
+        isSummaryGrid && totalColumns.length > 0
+    );
+    const tableHead = document.getElementById(headId);
+    if (tableHead) {
+        const totalsRow = tableHead.querySelector('.totals-row');
+        if (totalsRow) totalsRow.remove();
+    }
+}
+
+function ShowTransporterReportList() {
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+    Showloader();
+    VerifyDispatchPlanService.GetTransporterReport(fromDate, toDate).then(function (response) {
+        HideLoader();
+        ensureTransporterTwinLayout();
+        $('.transporter-rpt-label').eq(0).text('Transporter approved details');
+        const parsed = parseTransporterReportResults(response);
+        const hasR1 = parsed.result1 && parsed.result1.length > 0;
+        if (!hasR1) {
+            $("#dvTableDispatch").hide();
+            toastr.info('No data found for Transporter Report.');
+            return;
+        }
+        const r1Clean = mapNullsToEmptyStrings(parsed.result1 || []);
+        G_DispatchPlanlist = r1Clean;
+        bindTransporterResultGrid('table-head-transporter-r1', 'table-body-transporter-r1', r1Clean, 'transporterR1NoData');
+        $("#dvTableDispatch").show();
+        scheduleVerifyDispatchPlanTableHeightAdjust();
+    }).catch(function (error) {
+        HideLoader();
+        $("#dvTableDispatch").hide();
+        toastr.error(error.Msg || error.message || 'Error loading Transporter Report.');
+    });
+}
+
+window.ShowTransporterReportList = ShowTransporterReportList;
+
+function isDelayReportStatusColumn(colName) {
+    if (!colName) return false;
+    var k = String(colName);
+    return /MKT\s*Status/i.test(k) || /PPC\s*Status/i.test(k);
+}
+
+function delayReportStatusPlainText(val) {
+    if (val === null || val === undefined) return '';
+    var s = String(val).replace(/<[^>]*>/g, ' ').trim();
+    if (!s) return '';
+    // Strip leading placeholder (?), Wingdings leftovers, or Unicode ballot icons
+    return s.replace(/^[\?\u00FE\u00FD\u00FC\u2610\u2611\u2612\u2713\u2714\u2717\u2718\u2705\u274C\s]+/, '').trim();
+}
+
+function delayReportStatusWithIcon(val, forHtml) {
+    var text = delayReportStatusPlainText(val);
+    if (!text) return '';
+    if (/^late/i.test(text)) {
+        if (forHtml) {
+            // Black square + white X (matches Excel mockup)
+            return '<span class="dr-status dr-status-late">' +
+                '<span class="dr-status-icon" title="Late"><i class="fa-solid fa-xmark"></i></span>' +
+                '<span class="dr-status-text">' + text + '</span></span>';
+        }
+        return '\u2612 ' + text; // ☒ for Excel
+    }
+    if (/^on\s*time/i.test(text)) {
+        if (forHtml) {
+            // Black square + white check (matches Excel mockup)
+            return '<span class="dr-status dr-status-ok">' +
+                '<span class="dr-status-icon" title="On Time"><i class="fa-solid fa-check"></i></span>' +
+                '<span class="dr-status-text">' + text + '</span></span>';
+        }
+        return '\u2611 ' + text; // ☑ for Excel
+    }
+    return text;
+}
+
+function decorateDelayReportStatusIcons(rows, forHtml) {
+    if (!rows || !rows.length) return rows || [];
+    return rows.map(function (row) {
+        var o = {};
+        Object.keys(row).forEach(function (k) {
+            o[k] = isDelayReportStatusColumn(k) ? delayReportStatusWithIcon(row[k], forHtml) : row[k];
+        });
+        return o;
+    });
+}
+
+function ShowDelayReportList() {
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+    Showloader();
+    VerifyDispatchPlanService.GetDelayReport(fromDate, toDate).then(function (response) {
+        HideLoader();
+        ensureStandardGridLayout();
+        const parsed = parseTransporterReportResults(response);
+        const detailClean = mapNullsToEmptyStrings(parsed.result1 || []);
+        const summaryRow = (parsed.result2 && parsed.result2.length > 0) ? parsed.result2[0] : null;
+        if (!detailClean.length) {
+            $("#dvDelayReportCards").hide();
+            $("#dvTableDispatch").hide();
+            toastr.info('No data found for Dispatch Delay Report.');
+            return;
+        }
+        // Grid cells get real HTML icons (SQL "?" placeholders are replaced)
+        const detailForGrid = decorateDelayReportStatusIcons(detailClean, true);
+        G_DispatchPlanlist = detailForGrid;
+        const filters = getTransporterReportColumnFilters(detailForGrid);
+        // Status cols contain HTML — keep them out of filter dropdowns
+        filters.stringFilterColumn = filters.stringFilterColumn.filter(function (c) {
+            return !isDelayReportStatusColumn(c);
+        });
+        BizsolCustomFilterGrid.CreateDataTable('table-head', 'table-body', detailForGrid, false, [], filters.stringFilterColumn, filters.numericFilterColumn, filters.dateFilterColumn, [], [], {}, false);
+        const tableHead = document.getElementById('table-head');
+        if (tableHead) {
+            const totalsRow = tableHead.querySelector('.totals-row');
+            if (totalsRow) totalsRow.remove();
+        }
+        renderDelayReportCards(summaryRow, detailClean);
+        $("#dvDelayReportCards").show();
+        $("#dvTableDispatch").show();
+        scheduleVerifyDispatchPlanTableHeightAdjust();
+    }).catch(function (error) {
+        HideLoader();
+        $("#dvDelayReportCards").hide();
+        $("#dvTableDispatch").hide();
+        toastr.error(error.Msg || error.message || 'Error loading Dispatch Delay Report.');
+    });
+}
+
+function delayReportToNumber(v) {
+    if (v === null || v === undefined || v === '') return 0;
+    var n = Number(String(v).replace(/[^0-9.\-]/g, ''));
+    return isNaN(n) ? 0 : n;
+}
+
+function delayReportFormatNumber(v) {
+    var n = delayReportToNumber(v);
+    return (Math.round(n * 100) / 100).toString();
+}
+
+function delayReportStageFromStatus(rows, colName) {
+    var on = 0, late = 0, sumDelay = 0, lateCount = 0;
+    rows.forEach(function (r) {
+        var v = (r[colName] === null || r[colName] === undefined) ? '' : String(r[colName]).trim();
+        if (!v) return;
+        if (/late/i.test(v)) {
+            late++;
+            var m = v.match(/(\d+)\s*Min/i);
+            if (m) { sumDelay += parseInt(m[1], 10); lateCount++; }
+        } else if (/on\s*time/i.test(v)) {
+            on++;
+        }
+    });
+    var total = rows.length;
+    return {
+        on: on,
+        late: late,
+        score: total > 0 ? (on * 100 / total) : 0,
+        avg: lateCount > 0 ? (sumDelay / lateCount) : 0
+    };
+}
+
+function delayReportDispatchFromDetail(rows) {
+    var on = 0, late = 0;
+    rows.forEach(function (r) {
+        var t = (r['Dispatch verifyTime'] === null || r['Dispatch verifyTime'] === undefined) ? '' : String(r['Dispatch verifyTime']).trim();
+        var resp = (r['Delay Responsibility'] === null || r['Delay Responsibility'] === undefined) ? '' : String(r['Delay Responsibility']);
+        if (/dispatch/i.test(resp)) {
+            late++;
+        } else if (t) {
+            on++;
+        }
+    });
+    var total = rows.length;
+    return { on: on, late: late, score: total > 0 ? (on * 100 / total) : 0, avg: 0 };
+}
+
+function delayReportSetStage(prefix, o) {
+    $('#drc' + prefix + 'OnTime').text(o.on);
+    $('#drc' + prefix + 'Late').text(o.late);
+    $('#drc' + prefix + 'Score').text(delayReportFormatNumber(o.score) + '%');
+    $('#drc' + prefix + 'Avg').text(delayReportFormatNumber(o.avg));
+}
+
+function renderDelayReportCards(summaryRow, detail) {
+    var total, mkt, ppc, dsp;
+    if (summaryRow) {
+        total = delayReportToNumber(summaryRow['Total Indents']);
+        mkt = {
+            on: delayReportToNumber(summaryRow['On-Time by Marketing']),
+            late: delayReportToNumber(summaryRow['Late by Marketing']),
+            score: delayReportToNumber(summaryRow['Marketing Score %']),
+            avg: delayReportToNumber(summaryRow['Avg. Marketing Delay'])
+        };
+        ppc = {
+            on: delayReportToNumber(summaryRow['On-Time by PPC']),
+            late: delayReportToNumber(summaryRow['Late by PPC']),
+            score: delayReportToNumber(summaryRow['PPC Score %']),
+            avg: delayReportToNumber(summaryRow['Avg. PPC Delay'])
+        };
+        dsp = {
+            on: delayReportToNumber(summaryRow['On-Time by Dispatch']),
+            late: delayReportToNumber(summaryRow['Late by Dispatch']),
+            score: delayReportToNumber(summaryRow['Dispatch Score %']),
+            avg: delayReportToNumber(summaryRow['Avg. Dispatch Delay'])
+        };
+    } else {
+        total = detail.length;
+        mkt = delayReportStageFromStatus(detail, 'MKT Status (Before 4:00 PM/16:00)');
+        ppc = delayReportStageFromStatus(detail, 'PPC Status (Before 5:00 PM/17:00)');
+        dsp = delayReportDispatchFromDetail(detail);
+    }
+    $('#drcTotalIndents').text(total);
+    delayReportSetStage('Mkt', mkt);
+    delayReportSetStage('Ppc', ppc);
+    delayReportSetStage('Dsp', dsp);
+}
+
+window.ShowDelayReportList = ShowDelayReportList;
+
+function normalizeFreightLossRows(response) {
+    if (!response) return [];
+    if (Array.isArray(response)) {
+        if (response.length && Array.isArray(response[0])) return response[0];
+        return response;
+    }
+    var parsed = parseTransporterReportResults(response);
+    return parsed.result1 || [];
+}
+
+function isFreightLossQtyColumn(columnName) {
+    var name = String(columnName || '').replace(/[₹()]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!name) return false;
+    return /dispatch\s*advice\s*(mt|qty)/i.test(name)
+        || /^lorry\s*capacity/i.test(name)
+        || /dispatch\s*qty/i.test(name)
+        || /freight\s*loss\s*(mt|$)/i.test(name)
+        || /freight\s*rate/i.test(name)
+        || /freight\s*loss\s*amount/i.test(name);
+}
+
+function getFreightLossQtyColumns(rows) {
+    var keys = (rows && rows.length) ? Object.keys(rows[0]) : [];
+    var matched = keys.filter(isFreightLossQtyColumn);
+    if (matched.length) return matched;
+    return [
+        'Dispatch advice MT',
+        'Lorry capacity',
+        'Dispatch Qty MT',
+        'Dispatch Qty (MT)',
+        'Freight Loss MT',
+        'Freight Loss (MT)',
+        'Freight Rate MT',
+        'Freight Rate (₹/MT)',
+        'Freight Loss Amount',
+        'Freight Loss Amount (₹)'
+    ];
+}
+
+function getFreightLossAmountColumn(rows) {
+    var keys = (rows && rows.length) ? Object.keys(rows[0]) : [];
+    for (var i = 0; i < keys.length; i++) {
+        var name = String(keys[i] || '').replace(/[₹()]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (/freight\s*loss\s*amount/i.test(name)) return keys[i];
+    }
+    return keys.indexOf('Freight Loss Amount') >= 0 ? 'Freight Loss Amount' : '';
+}
+
+function formatFreightLossQtyValue(val) {
+    if (val === null || val === undefined || val === '') return val;
+    var n = typeof val === 'number' ? val : Number(String(val).replace(/,/g, ''));
+    if (isNaN(n) || !isFinite(n)) return val;
+    return n.toFixed(3);
+}
+
+function formatFreightLossQtyColumns(rows) {
+    var qtyCols = getFreightLossQtyColumns(rows);
+    return (rows || []).map(function (row) {
+        var next = Object.assign({}, row);
+        qtyCols.forEach(function (col) {
+            if (Object.prototype.hasOwnProperty.call(next, col)) {
+                next[col] = formatFreightLossQtyValue(next[col]);
+            }
+        });
+        return next;
+    });
+}
+
+function ShowFreightLossReportList() {
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+    Showloader();
+    VerifyDispatchPlanService.GetFreightLossReport(fromDate, toDate).then(function (response) {
+        HideLoader();
+        ensureStandardGridLayout();
+        $("#dvDelayReportCards").hide();
+        var rows = formatFreightLossQtyColumns(mapNullsToEmptyStrings(normalizeFreightLossRows(response)));
+        if (!rows.length) {
+            $("#dvTableDispatch").hide();
+            toastr.info('No data found for Freight Loss Report.');
+            return;
+        }
+        G_DispatchPlanlist = rows;
+        const filters = getTransporterReportColumnFilters(rows);
+        const qtyColumns = getFreightLossQtyColumns(rows);
+        const amountColumn = getFreightLossAmountColumn(rows);
+        const columnAlignment = {};
+        const fixedDecimalvalue = {};
+        qtyColumns.forEach(function (col) {
+            columnAlignment[col] = 'right';
+            fixedDecimalvalue[col] = 3;
+        });
+        const totalColumns = amountColumn ? [amountColumn] : [];
+        BizsolCustomFilterGrid.CreateDataTable(
+            'table-head',
+            'table-body',
+            rows,
+            false,
+            [],
+            filters.stringFilterColumn,
+            filters.numericFilterColumn,
+            filters.dateFilterColumn,
+            [],
+            [],
+            columnAlignment,
+            false,
+            totalColumns,
+            fixedDecimalvalue,
+            null,
+            false,
+            true
+        );
+        const tableHead = document.getElementById('table-head');
+        if (tableHead) {
+            const totalsRow = tableHead.querySelector('.totals-row');
+            if (totalsRow) totalsRow.remove();
+        }
+        $("#dvTableDispatch").show();
+        scheduleVerifyDispatchPlanTableHeightAdjust();
+    }).catch(function (error) {
+        HideLoader();
+        $("#dvTableDispatch").hide();
+        toastr.error(error.Msg || error.message || 'Error loading Freight Loss Report.');
+    });
+}
+
+window.ShowFreightLossReportList = ShowFreightLossReportList;
+
+/* --- Approved Transporter Dashboard (modal + GetApprovedTransporterReport) --- */
+var ATD_CHART = null;
+var ATD_RAW_RESPONSE = null;
+var ATD_NORMALIZED = null;
+var ATD_COLORS = ['#818cf8', '#38bdf8', '#a78bfa', '#34d399', '#f472b6', '#fbbf24', '#2dd4bf', '#fb7185', '#c084fc', '#60a5fa', '#4ade80', '#f59e0b', '#22d3ee', '#e879f9', '#94a3b8', '#f97316'];
+
+function closeApprovedTransporterDashboard() {
+    if (ATD_CHART) {
+        try {
+            ATD_CHART.destroy();
+        } catch (e) { /* ignore */ }
+        ATD_CHART = null;
+    }
+    $('#dvApprovedTransporterDashboard').removeClass('show').hide();
+    // Optionally, show the default view (adjust based on your needs)
+    // You can add logic here to return to a specific view if needed
+}
+
+function atdPick(obj, keys) {
+    for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') {
+            return obj[k];
+        }
+    }
+    return null;
+}
+
+function atdExtractArray(resp) {
+    if (!resp) return [];
+    if (Array.isArray(resp)) {
+        if (resp.length && Array.isArray(resp[0])) return resp[0];
+        return resp;
+    }
+    if (typeof resp !== 'object') return [];
+    var order = ['QuoteStatusMatrix', 'Matrix', 'Data', 'Rows', 'Table', 'Items', 'Result1', 'result1', 'Result', 'TransporterMatrix'];
+    for (var i = 0; i < order.length; i++) {
+        var v = resp[order[i]];
+        if (Array.isArray(v) && v.length) return v;
+    }
+    if (Array.isArray(resp.Result2) && resp.Result2.length) return resp.Result2;
+    return [];
+}
+
+function atdExtractDeclineArray(resp) {
+    if (!resp || typeof resp !== 'object') return [];
+    var order = ['DeclineStats', 'DeclineTransporterStats', 'Result3', 'result3', 'DeclineMatrix'];
+    for (var i = 0; i < order.length; i++) {
+        var v = resp[order[i]];
+        if (Array.isArray(v) && v.length) return v;
+    }
+    return [];
+}
+
+function atdIsGrandRow(row, nameKey) {
+    var n = row && nameKey ? row[nameKey] : '';
+    var s = n !== undefined && n !== null ? String(n).trim().toLowerCase() : '';
+    if (/^grand|^gran|^total/i.test(s)) return true;
+    if (row && (row.IsGrandTotal === true || row.isGrandTotal === true)) return true;
+    return false;
+}
+
+function atdGuessNameKey(sampleRow) {
+    if (!sampleRow || typeof sampleRow !== 'object') return null;
+    var keys = Object.keys(sampleRow);
+    var prefer = ['Transporter', 'TransporterName', 'Account Desp', 'AccountDesp', 'Transpo', 'Name', 'Account'];
+    for (var p = 0; p < prefer.length; p++) {
+        if (keys.indexOf(prefer[p]) >= 0) return prefer[p];
+    }
+    for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (/transporter|transpo|account|name|desp/i.test(k) && !/code|master/i.test(k)) return k;
+    }
+    return keys[0] || null;
+}
+
+function atdNumericKeys(row, nameKey) {
+    var keys = Object.keys(row);
+    var out = [];
+    for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k === nameKey) continue;
+        if (/indent\s*id|^indentid$/i.test(k)) continue;
+        var v = row[k];
+        if (v === null || v === undefined || v === '') continue;
+        var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
+        if (!isNaN(n) && isFinite(n)) out.push(k);
+    }
+    return out;
+}
+
+function normalizeApprovedTransporterReport(resp) {
+    var indentKpi = null;
+    var quoteKpi = null;
+    if (resp && typeof resp === 'object' && !Array.isArray(resp)) {
+        indentKpi = atdPick(resp, ['IndentIdCount', 'indentIdCount', 'TotalIndentId', 'IndentId', 'IndentCount', 'KPI_IndentId']);
+        quoteKpi = atdPick(resp, ['QuoteStatusCount', 'quoteStatusCount', 'TotalQuoteStatus', 'QuoteCount', 'KPI_QuoteStatus']);
+    }
+    var rows = atdExtractArray(resp).map(function (r) {
+        return typeof r === 'object' && r !== null ? r : {};
+    });
+    var declineRows = atdExtractDeclineArray(resp);
+    if (!rows.length) {
+        return {
+            indentKpi: indentKpi,
+            quoteKpi: quoteKpi,
+            nameKey: null,
+            valueKeys: [],
+            dataRows: [],
+            grandRow: null,
+            declineRows: declineRows
+        };
+    }
+    var nameKey = atdGuessNameKey(rows[0]);
+    var valueKeys = atdNumericKeys(rows[0], nameKey);
+    if (!valueKeys.length) {
+        valueKeys = Object.keys(rows[0]).filter(function (k) {
+            return k !== nameKey && k !== 'IndentId' && k !== 'Indent ID';
+        });
+    }
+    var dataRows = [];
+    var grandRow = null;
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        if (atdIsGrandRow(row, nameKey)) {
+            grandRow = row;
+        } else {
+            dataRows.push(row);
+        }
+    }
+    return {
+        indentKpi: indentKpi,
+        quoteKpi: quoteKpi,
+        nameKey: nameKey,
+        valueKeys: valueKeys,
+        dataRows: dataRows,
+        grandRow: grandRow,
+        declineRows: declineRows
+    };
+}
+
+function atdFormatInt(v) {
+    if (v === null || v === undefined || v === '') return '—';
+    var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
+    if (isNaN(n)) return String(v);
+    return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+
+/** True for API columns that are already row totals (exclude from sum-for-chart / KPI sum). */
+function atdIsTotalColumnKey(k) {
+    if (k === undefined || k === null) return false;
+    var s = String(k).trim().toLowerCase().replace(/\s+/g, '');
+    return s === 'grandtotal' || s.indexOf('grandtotal') === 0;
+}
+
+function atdKeysForDetailSum(valueKeys) {
+    if (!valueKeys || !valueKeys.length) return [];
+    return valueKeys.filter(function (k) {
+        return !atdIsTotalColumnKey(k);
+    });
+}
+
+function atdRowTotal(row, valueKeys) {
+    var keys = atdKeysForDetailSum(valueKeys);
+    var t = 0;
+    for (var i = 0; i < keys.length; i++) {
+        var v = row[keys[i]];
+        var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
+        if (isNaN(n)) continue;
+        t += n;
+    }
+    return t;
+}
+
+function atdGetFilteredDataRows(norm) {
+    if (!norm || !norm.dataRows) return [];
+    var nameKey = norm.nameKey;
+    var trans = ($('#atdFilterTransporter').val() || '').trim();
+    var indentVal = ($('#atdFilterIndent').val() || '').trim();
+    return norm.dataRows.filter(function (r) {
+        if (trans) {
+            var nm = nameKey ? String(r[nameKey] || '').trim() : '';
+            if (nm.toLowerCase() !== trans.toLowerCase()) return false;
+        }
+        if (indentVal) {
+            var hasIndent = r['IndentId'] !== undefined || r['Indent ID'] !== undefined;
+            if (hasIndent) {
+                var iv = r['IndentId'] !== undefined ? String(r['IndentId']) : String(r['Indent ID']);
+                if (iv !== indentVal) return false;
+            }
+        }
+        return true;
+    });
+}
+
+function atdVisibleValueKeys(norm) {
+    return norm.valueKeys || [];
+}
+
+function atdHasRowFilters() {
+    var trans = ($('#atdFilterTransporter').val() || '').trim();
+    var indentVal = ($('#atdFilterIndent').val() || '').trim();
+    return !!(trans || indentVal);
+}
+
+function atdBuildComputedGrandRow(filteredRows, nameKey, vkeys) {
+    var agg = {};
+    vkeys.forEach(function (k) {
+        agg[k] = 0;
+    });
+    filteredRows.forEach(function (r) {
+        vkeys.forEach(function (k) {
+            var v = r[k];
+            var n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
+            if (isNaN(n) || !isFinite(n)) return;
+            agg[k] += n;
+        });
+    });
+    var row = {};
+    row[nameKey || 'Name'] = 'Grand Total';
+    vkeys.forEach(function (k) {
+        row[k] = agg[k];
+    });
+    return row;
+}
+
+function atdFillFilterDropdowns(norm) {
+    var $t = $('#atdFilterTransporter');
+    var $i = $('#atdFilterIndent');
+    var nameKey = norm.nameKey;
+    var prevT = $t.val();
+    var prevI = $i.val();
+    $t.empty().append('<option value="">All</option>');
+    $i.empty().append('<option value="">All</option>');
+    var names = [];
+    var indents = [];
+    norm.dataRows.forEach(function (r) {
+        if (nameKey) {
+            var n = r[nameKey];
+            if (n !== undefined && n !== null && String(n).trim() !== '') names.push(String(n).trim());
+        }
+        if (r['IndentId'] !== undefined && r['IndentId'] !== null && String(r['IndentId']).trim() !== '') indents.push(String(r['IndentId']).trim());
+        if (r['Indent ID'] !== undefined && r['Indent ID'] !== null && String(r['Indent ID']).trim() !== '') indents.push(String(r['Indent ID']).trim());
+    });
+    names.sort();
+    indents.sort();
+    var seenN = {};
+    names.forEach(function (n) {
+        if (seenN[n]) return;
+        seenN[n] = true;
+        $t.append($('<option></option>').attr('value', n).text(n));
+    });
+    var seenI = {};
+    indents.forEach(function (n) {
+        if (seenI[n]) return;
+        seenI[n] = true;
+        $i.append($('<option></option>').attr('value', n).text(n));
+    });
+    if (prevT && $t.find('option[value="' + prevT.replace(/"/g, '\\"') + '"]').length) $t.val(prevT);
+    if (prevI && $i.find('option[value="' + prevI.replace(/"/g, '\\"') + '"]').length) $i.val(prevI);
+    if (!$i.find('option').length || $i.find('option').length === 1) {
+        $('#atdWrapIndent').addClass('d-none');
+    } else {
+        $('#atdWrapIndent').removeClass('d-none');
+    }
+}
+
+function atdRenderKpis(norm) {
+    $('#atdKpiIndent').text(atdFormatInt(norm.indentKpi));
+    $('#atdKpiQuote').text(atdFormatInt(norm.quoteKpi));
+    if (norm.dataRows && norm.dataRows.length && (norm.indentKpi === null || norm.indentKpi === undefined)) {
+        $('#atdKpiIndent').text(atdFormatInt(norm.dataRows.length));
+    }
+    if (norm.dataRows && norm.dataRows.length && (norm.quoteKpi === null || norm.quoteKpi === undefined)) {
+        var sum = 0;
+        norm.dataRows.forEach(function (r) {
+            sum += atdRowTotal(r, norm.valueKeys);
+        });
+        $('#atdKpiQuote').text(atdFormatInt(sum));
+    }
+}
+
+function atdRenderMatrix(norm) {
+    var head = document.getElementById('atdMatrixHead');
+    var body = document.getElementById('atdMatrixBody');
+    if (!head || !body) return;
+    head.innerHTML = '';
+    body.innerHTML = '';
+    var nameKey = norm.nameKey || 'Name';
+    var vkeys = atdVisibleValueKeys(norm);
+    var filteredRows = atdGetFilteredDataRows(norm);
+    var useFilteredGrand = atdHasRowFilters();
+    var grandForDisplay = useFilteredGrand ? atdBuildComputedGrandRow(filteredRows, nameKey, vkeys) : norm.grandRow;
+    if (!grandForDisplay && filteredRows.length) {
+        grandForDisplay = atdBuildComputedGrandRow(filteredRows, nameKey, vkeys);
+    }
+    var hr = document.createElement('tr');
+    var th0 = document.createElement('th');
+    th0.className = 'atd-th-name';
+    th0.textContent = nameKey.length > 18 ? nameKey.slice(0, 16) + '…' : nameKey;
+    th0.title = nameKey;
+    hr.appendChild(th0);
+    vkeys.forEach(function (k) {
+        var th = document.createElement('th');
+        th.className = 'atd-th-num';
+        th.textContent = k;
+        th.title = k;
+        hr.appendChild(th);
+    });
+    head.appendChild(hr);
+    filteredRows.forEach(function (row) {
+        var tr = document.createElement('tr');
+        var td0 = document.createElement('td');
+        td0.className = 'atd-text';
+        td0.textContent = row[nameKey] !== undefined && row[nameKey] !== null ? String(row[nameKey]) : '';
+        td0.title = td0.textContent;
+        tr.appendChild(td0);
+        vkeys.forEach(function (k) {
+            var td = document.createElement('td');
+            td.className = atdIsTotalColumnKey(k) ? 'atd-num atd-col-total' : 'atd-num';
+            var v = row[k];
+            td.textContent = v === undefined || v === null || v === '' ? '' : atdFormatInt(v);
+            tr.appendChild(td);
+        });
+        body.appendChild(tr);
+    });
+    if (grandForDisplay) {
+        var gtr = document.createElement('tr');
+        gtr.className = 'atd-grand-row';
+        var gtd0 = document.createElement('td');
+        gtd0.className = 'atd-text';
+        gtd0.textContent = grandForDisplay[nameKey] !== undefined ? String(grandForDisplay[nameKey]) : 'Grand Total';
+        gtr.appendChild(gtd0);
+        vkeys.forEach(function (k) {
+            var td = document.createElement('td');
+            td.className = atdIsTotalColumnKey(k) ? 'atd-num atd-col-total' : 'atd-num';
+            var v = grandForDisplay[k];
+            td.textContent = v === undefined || v === null || v === '' ? '' : atdFormatInt(v);
+            gtr.appendChild(td);
+        });
+        body.appendChild(gtr);
+    }
+}
+
+function atdRenderDecline(norm) {
+    var block = document.getElementById('atdDeclineBlock');
+    var dh = document.getElementById('atdDeclineHead');
+    var db = document.getElementById('atdDeclineBody');
+    if (!block || !dh || !db) return;
+    dh.innerHTML = '';
+    db.innerHTML = '';
+    var rows = norm.declineRows || [];
+    if (!rows.length) {
+        block.classList.add('d-none');
+        return;
+    }
+    block.classList.remove('d-none');
+    var keys = Object.keys(rows[0]);
+    var hr = document.createElement('tr');
+    keys.forEach(function (k) {
+        var th = document.createElement('th');
+        th.textContent = k;
+        hr.appendChild(th);
+    });
+    dh.appendChild(hr);
+    rows.forEach(function (row) {
+        var tr = document.createElement('tr');
+        keys.forEach(function (k) {
+            var td = document.createElement('td');
+            td.textContent = row[k] !== undefined && row[k] !== null ? String(row[k]) : '';
+            tr.appendChild(td);
+        });
+        db.appendChild(tr);
+    });
+}
+
+function atdRenderCategoryLegend(vkeys) {
+    var el = document.getElementById('atdCategoryLegend');
+    if (!el) return;
+    el.innerHTML = '';
+    var keys = atdKeysForDetailSum(vkeys || []);
+    keys.forEach(function (k, i) {
+        var d = document.createElement('div');
+        d.className = 'atd-legend-item';
+        var sw = document.createElement('span');
+        sw.className = 'atd-legend-swatch';
+        sw.style.background = ATD_COLORS[i % ATD_COLORS.length];
+        var lb = document.createElement('span');
+        lb.textContent = k;
+        d.appendChild(sw);
+        d.appendChild(lb);
+        el.appendChild(d);
+    });
+}
+
+function atdPieGrandTotalKey(valueKeys) {
+    if (!valueKeys) return null;
+    for (var i = 0; i < valueKeys.length; i++) {
+        if (atdIsTotalColumnKey(valueKeys[i])) return valueKeys[i];
+    }
+    return null;
+}
+
+function atdPieRowValue(row, valueKeys) {
+    // Prefer Grand Total column so pie % matches the table exactly
+    var gtKey = atdPieGrandTotalKey(valueKeys);
+    if (gtKey && row[gtKey] !== undefined && row[gtKey] !== null && row[gtKey] !== '') {
+        var g = typeof row[gtKey] === 'number' ? row[gtKey] : Number(String(row[gtKey]).replace(/,/g, ''));
+        if (!isNaN(g)) return g;
+    }
+    return atdRowTotal(row, valueKeys);
+}
+
+function atdFormatPct(val, total) {
+    if (!total) return '0.0';
+    return ((val / total) * 100).toFixed(1);
+}
+
+function atdWrapPieName(name, maxCharsPerLine) {
+    var words = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return ['—'];
+    maxCharsPerLine = maxCharsPerLine || 16;
+    var lines = [];
+    var cur = '';
+    words.forEach(function (w) {
+        var next = cur ? (cur + ' ' + w) : w;
+        if (next.length > maxCharsPerLine && cur) {
+            lines.push(cur);
+            cur = w;
+        } else {
+            cur = next;
+        }
+    });
+    if (cur) lines.push(cur);
+    if (lines.length > 2) {
+        lines = [lines[0], lines.slice(1).join(' ')];
+        if (lines[1].length > maxCharsPerLine + 2) {
+            lines[1] = lines[1].slice(0, maxCharsPerLine) + '…';
+        }
+    }
+    return lines;
+}
+
+function atdPreparePieSlices(labels, data) {
+    var items = [];
+    for (var i = 0; i < labels.length; i++) {
+        var val = Number(data[i]) || 0;
+        if (val <= 0) continue;
+        items.push({ name: labels[i], value: val });
+    }
+    items.sort(function (a, b) { return b.value - a.value; });
+    var total = items.reduce(function (s, x) { return s + x.value; }, 0);
+    return { items: items, total: total };
+}
+
+function atdIsMobileView() {
+    if (window.matchMedia) {
+        return window.matchMedia('(max-width: 767.98px)').matches;
+    }
+    return (window.innerWidth || 0) < 768;
+}
+
+function atdSetShareMode(isMobile) {
+    var root = document.getElementById('dvApprovedTransporterDashboard');
+    if (!root) return;
+    root.classList.toggle('atd-mobile-share-list', !!isMobile);
+    root.classList.toggle('atd-desktop-share-pie', !isMobile);
+}
+
+function atdPieCalloutLines(name, pctTxt, maxChars) {
+    var n = String(name || '').trim() || '—';
+    maxChars = maxChars || 20;
+    var nameLines = atdWrapPieName(n, maxChars);
+    nameLines.push('(' + pctTxt + ')');
+    return nameLines;
+}
+
+function atdEstimatePieHeight(sliceCount) {
+    var perSide = Math.max(1, Math.ceil(sliceCount / 2));
+    var block = 42;
+    var gap = 6;
+    return Math.max(480, Math.min(720, perSide * (block + gap) + 40));
+}
+
+/** Spread callout blocks so names never overlap, using each label's height. */
+function atdResolveLabelBlocks(items, canvasH, minGap) {
+    if (!items.length) return;
+    minGap = minGap || 6;
+    items.sort(function (a, b) { return a.y - b.y; });
+    var pad = 8;
+    function half(it) {
+        return Math.max(9, ((it.blockH || 18) / 2));
+    }
+    items[0].y = Math.max(items[0].y, pad + half(items[0]));
+    for (var i = 1; i < items.length; i++) {
+        var minY = items[i - 1].y + half(items[i - 1]) + minGap + half(items[i]);
+        if (items[i].y < minY) items[i].y = minY;
+    }
+    var last = items[items.length - 1];
+    var bottom = last.y + half(last);
+    if (bottom > canvasH - pad) {
+        var shift = bottom - (canvasH - pad);
+        for (var j = 0; j < items.length; j++) items[j].y -= shift;
+    }
+    if (items[0].y - half(items[0]) < pad) {
+        var totalBlocks = 0;
+        for (var k = 0; k < items.length; k++) totalBlocks += (items[k].blockH || 18);
+        var gaps = Math.max(1, items.length - 1);
+        var avail = canvasH - pad * 2;
+        var extra = Math.max(2, (avail - totalBlocks) / gaps);
+        var y = pad;
+        for (var m = 0; m < items.length; m++) {
+            items[m].y = y + half(items[m]);
+            y += (items[m].blockH || 18) + extra;
+        }
+    }
+}
+
+function atdRenderHtmlPieLegend(legEl, sliceItems, colors, total) {
+    if (!legEl) return;
+    legEl.innerHTML = '';
+    if (!sliceItems || !sliceItems.length) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'atd-pie-html-legend';
+    sliceItems.forEach(function (item, i) {
+        var pct = atdFormatPct(item.value, total);
+        var row = document.createElement('div');
+        row.className = 'atd-pie-html-legend-item';
+        var sw = document.createElement('span');
+        sw.className = 'atd-pie-html-legend-swatch';
+        sw.style.background = colors[i % colors.length];
+        var tx = document.createElement('span');
+        tx.className = 'atd-pie-html-legend-text';
+        tx.textContent = item.name + ' · ' + atdFormatInt(item.value) + ' (' + pct + '%)';
+        tx.title = item.name + ': ' + atdFormatInt(item.value) + ' (' + pct + '%)';
+        row.appendChild(sw);
+        row.appendChild(tx);
+        row.addEventListener('click', function () {
+            var $sel = $('#atdFilterTransporter');
+            if ($sel.find('option').filter(function () { return $(this).val() === item.name; }).length) {
+                $sel.val(item.name).trigger('change');
+            }
+        });
+        wrap.appendChild(row);
+    });
+    legEl.appendChild(wrap);
+}
+
+function atdRenderDonut(norm) {
+    var canvas = document.getElementById('atdDonutCanvas');
+    var leg = document.getElementById('atdDonutLegend');
+    var hintEl = document.getElementById('atdChartHint');
+    var isMobile = atdIsMobileView();
+    atdSetShareMode(isMobile);
+
+    if (ATD_CHART) {
+        try {
+            ATD_CHART.destroy();
+        } catch (e) { /* ignore */ }
+        ATD_CHART = null;
+    }
+
+    var nameKey = norm.nameKey;
+    var vkeys = atdVisibleValueKeys(norm);
+    var filteredRows = atdGetFilteredDataRows(norm);
+    var rawLabels = [];
+    var rawData = [];
+    filteredRows.forEach(function (r) {
+        var nm = nameKey ? String(r[nameKey] || '').trim() : '';
+        if (!nm) nm = '—';
+        var t = atdPieRowValue(r, vkeys);
+        if (t > 0) {
+            rawLabels.push(nm);
+            rawData.push(t);
+        }
+    });
+    if (hintEl) hintEl.textContent = '';
+    if (!rawData.length) {
+        if (leg) leg.textContent = 'No numeric data for chart.';
+        return;
+    }
+
+    var prepared = atdPreparePieSlices(rawLabels, rawData);
+    var sliceItems = prepared.items;
+    var labels = sliceItems.map(function (x) { return x.name; });
+    var data = sliceItems.map(function (x) { return x.value; });
+    var pieTotal = prepared.total;
+    var sliceColors = sliceItems.map(function (_, i) { return ATD_COLORS[i % ATD_COLORS.length]; });
+
+    if (hintEl) {
+        hintEl.textContent = isMobile
+            ? (sliceItems.length + ' transporters')
+            : (sliceItems.length + ' transporters · hover a slice for details');
+    }
+
+    if (isMobile) {
+        if (leg) atdRenderHtmlPieLegend(leg, sliceItems, sliceColors, pieTotal);
+        return;
+    }
+
+    if (!canvas || typeof Chart === 'undefined') {
+        if (leg) {
+            if (typeof Chart === 'undefined') {
+                leg.textContent = 'Chart library not loaded.';
+            } else {
+                atdRenderHtmlPieLegend(leg, sliceItems, sliceColors, pieTotal);
+            }
+        }
+        return;
+    }
+
+    if (leg) leg.innerHTML = '';
+
+    var wrapChars = 20;
+    var labelFontPx = 10;
+    var lineH = 13;
+    var sidePad = 152;
+    var vertPad = 20;
+    var ctx = canvas.getContext('2d');
+
+    var chartWrap = canvas.parentElement;
+    if (chartWrap && chartWrap.classList.contains('atd-chart-wrap')) {
+        var h = atdEstimatePieHeight(sliceItems.length);
+        chartWrap.style.minHeight = h + 'px';
+        chartWrap.style.height = h + 'px';
+        chartWrap.style.maxHeight = 'none';
+        chartWrap.style.overflow = 'visible';
+    }
+
+    var pieSliceLabels = {
+        id: 'pieSliceLabels',
+        afterDatasetsDraw: function (chart) {
+            var g = chart.ctx;
+            var meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data) return;
+            var ds = chart.data.datasets[0];
+            var chartLabels = chart.data.labels || [];
+            var total = ds.data.reduce(function (a, b) { return a + (Number(b) || 0); }, 0);
+            if (!total) return;
+            var canvasW = chart.width;
+            var canvasH = chart.height;
+            var leftItems = [];
+            var rightItems = [];
+
+            meta.data.forEach(function (arc, i) {
+                var val = Number(ds.data[i]) || 0;
+                if (val <= 0) return;
+                var pct = (val / total) * 100;
+                var mid = (arc.startAngle + arc.endAngle) / 2;
+                var cosM = Math.cos(mid);
+                var sinM = Math.sin(mid);
+                var pctTxt = atdFormatPct(val, total) + '%';
+                var sliceColor = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : ds.backgroundColor;
+                var midR = arc.innerRadius + (arc.outerRadius - arc.innerRadius) * 0.52;
+
+                if (pct >= 7) {
+                    var ix = arc.x + cosM * midR;
+                    var iy = arc.y + sinM * midR;
+                    var fontSize = pct >= 18 ? 13 : (pct >= 10 ? 11 : 10);
+                    g.save();
+                    g.textAlign = 'center';
+                    g.textBaseline = 'middle';
+                    g.font = '800 ' + fontSize + "px 'Segoe UI', system-ui, sans-serif";
+                    g.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                    g.shadowBlur = 3;
+                    g.fillStyle = '#ffffff';
+                    g.fillText(pctTxt, ix, iy);
+                    g.restore();
+                }
+
+                var fullName = String(chartLabels[i] || '').trim() || '—';
+                var nameLines = atdPieCalloutLines(fullName, pctTxt, wrapChars);
+                var item = {
+                    i: i,
+                    arc: arc,
+                    cosM: cosM,
+                    sinM: sinM,
+                    nameLines: nameLines,
+                    sliceColor: sliceColor,
+                    y: arc.y + sinM * (arc.outerRadius + 16),
+                    blockH: nameLines.length * lineH + 2
+                };
+                if (cosM >= 0) rightItems.push(item);
+                else leftItems.push(item);
+            });
+
+            function drawSide(items, isRight) {
+                if (!items.length) return;
+                atdResolveLabelBlocks(items, canvasH, 6);
+                items.forEach(function (it) {
+                    var arc = it.arc;
+                    var x0 = arc.x + it.cosM * arc.outerRadius;
+                    var y0 = arc.y + it.sinM * arc.outerRadius;
+                    var elbow = 14;
+                    var x1 = arc.x + it.cosM * (arc.outerRadius + elbow);
+                    var y1 = arc.y + it.sinM * (arc.outerRadius + elbow);
+                    var x2 = isRight ? Math.min(canvasW - 10, x1 + 36) : Math.max(10, x1 - 36);
+                    var y2 = it.y;
+                    var labelPad = 6;
+
+                    g.save();
+                    g.font = '700 ' + labelFontPx + "px 'Segoe UI', system-ui, sans-serif";
+                    var maxLineW = 0;
+                    it.nameLines.forEach(function (ln) {
+                        maxLineW = Math.max(maxLineW, g.measureText(ln).width);
+                    });
+                    if (isRight && x2 + labelPad + maxLineW > canvasW - 4) {
+                        x2 = Math.max(10, canvasW - 4 - maxLineW - labelPad);
+                    }
+                    if (!isRight && x2 - labelPad - maxLineW < 4) {
+                        x2 = Math.min(canvasW - 10, 4 + maxLineW + labelPad);
+                    }
+
+                    g.strokeStyle = it.sliceColor || '#ffffff';
+                    g.lineWidth = 1.4;
+                    g.lineJoin = 'round';
+                    g.beginPath();
+                    g.moveTo(x0, y0);
+                    g.lineTo(x1, y1);
+                    g.lineTo(x2, y2);
+                    g.stroke();
+                    g.beginPath();
+                    g.fillStyle = it.sliceColor || '#ffffff';
+                    g.arc(x0, y0, 2.4, 0, Math.PI * 2);
+                    g.fill();
+
+                    g.textAlign = isRight ? 'left' : 'right';
+                    g.textBaseline = 'middle';
+                    g.shadowColor = 'rgba(0, 0, 0, 0.85)';
+                    g.shadowBlur = 2;
+                    g.fillStyle = '#ffffff';
+                    var startY = y2 - ((it.nameLines.length - 1) * lineH) / 2;
+                    it.nameLines.forEach(function (ln, li) {
+                        var isPct = li === it.nameLines.length - 1;
+                        g.font = (isPct ? '600 ' : '700 ') + labelFontPx + "px 'Segoe UI', system-ui, sans-serif";
+                        g.fillStyle = isPct ? '#cbd5e1' : '#ffffff';
+                        g.fillText(ln, x2 + (isRight ? labelPad : -labelPad), startY + li * lineH);
+                    });
+                    g.restore();
+                });
+            }
+
+            drawSide(leftItems, false);
+            drawSide(rightItems, true);
+        }
+    };
+
+    ATD_CHART = new Chart(ctx, {
+        type: 'pie',
+        plugins: [pieSliceLabels],
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: sliceColors,
+                borderWidth: 2,
+                borderColor: 'rgba(15, 23, 42, 0.95)',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            rotation: -90,
+            layout: {
+                padding: { top: vertPad, bottom: vertPad, left: sidePad, right: sidePad }
+            },
+            color: '#ffffff',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        title: function (items) {
+                            return items && items[0] ? items[0].label : '';
+                        },
+                        label: function (c) {
+                            var val = typeof c.parsed === 'number' ? c.parsed : (c.raw || 0);
+                            var pct = atdFormatPct(val, pieTotal);
+                            return atdFormatInt(val) + '  (' + pct + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function atdRenderAll() {
+    if (!ATD_NORMALIZED) return;
+    atdFillFilterDropdowns(ATD_NORMALIZED);
+    atdRenderKpis(ATD_NORMALIZED);
+    atdRenderMatrix(ATD_NORMALIZED);
+    atdRenderCategoryLegend(atdVisibleValueKeys(ATD_NORMALIZED));
+    atdRenderDonut(ATD_NORMALIZED);
+    atdRenderDecline(ATD_NORMALIZED);
+}
+
+function bindDashboardTransporterSummary(response) {
+    var parsed = parseTransporterReportResults(response);
+    var r2Clean = renameTransporterSummaryColumns(mapNullsToEmptyStrings(parsed.result2 || []));
+    bindTransporterResultGrid('table-head-transporter-r2', 'table-body-transporter-r2', r2Clean, 'transporterR2NoData');
+}
+
+function openApprovedTransporterDashboard() {
+    // Hide table dispatch before showing dashboard
+    $('#dvTableDispatch').hide();
+    $('#dvApprovedTransporterDashboard').addClass('show').show();
+
+    var fromDate = $('#txtFromDate').val();
+    var toDate = $('#txtToDate').val();
+    if (!fromDate || !toDate) {
+        toastr.warning('Please select From Date and To Date.');
+        return;
+    }
+    if (new Date(toDate) < new Date(fromDate)) {
+        toastr.warning('To Date must be greater than or equal to From Date.');
+        return;
+    }
+
+    Showloader();
+    Promise.all([
+        VerifyDispatchPlanService.GetApprovedTransporterReport(fromDate, toDate),
+        VerifyDispatchPlanService.GetTransporterReport(fromDate, toDate).catch(function () { return null; })
+    ]).then(function (results) {
+        HideLoader();
+        var response = results[0];
+        ATD_RAW_RESPONSE = response;
+        ATD_NORMALIZED = normalizeApprovedTransporterReport(response);
+        if (!ATD_NORMALIZED.dataRows.length && !ATD_NORMALIZED.grandRow && !(ATD_NORMALIZED.declineRows && ATD_NORMALIZED.declineRows.length)) {
+            toastr.info('No data returned for Approved Transporter report.');
+        }
+        atdRenderAll();
+        bindDashboardTransporterSummary(results[1]);
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error((error && error.Msg) || (error && error.message) || 'Error loading Approved Transporter report.');
+    });
+}
+
+$(document).on('change', '#atdFilterTransporter, #atdFilterIndent', function () {
+    if (ATD_NORMALIZED) atdRenderAll();
+});
+
+var ATD_RESIZE_TIMER = null;
+$(window).on('resize', function () {
+    if (!$('#dvApprovedTransporterDashboard').hasClass('show') && !$('#dvApprovedTransporterDashboard').is(':visible')) return;
+    if (!ATD_NORMALIZED) return;
+    clearTimeout(ATD_RESIZE_TIMER);
+    ATD_RESIZE_TIMER = setTimeout(function () {
+        atdRenderDonut(ATD_NORMALIZED);
+    }, 200);
+});
+
+$(document).on('hidden.bs.modal', '#dvApprovedTransporterDashboard', function () {
+    if (ATD_CHART) {
+        try {
+            ATD_CHART.destroy();
+        } catch (e) { /* ignore */ }
+        ATD_CHART = null;
+    }
+});

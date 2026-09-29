@@ -1,15 +1,18 @@
 import { RMStockService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/RMStockService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
+import { loadYieldConfiguration, applyYieldCellColour } from '../../Bizsol.WebERP.UI.Shared/js/YieldConfigurationHelper.js';
 
 let G_today = '';
 let G_FromDateValue = '';
 let G_FromDateValueSlitted = '';
 let G_FromDateValueJobWork = '';
+let G_FromDateValueRMReport = '';
 let G_FromDateSlittedCoilStockValue = '';
 let G_ToDateValue = '';
 let G_ToDateValueSlitted = '';
 let G_ToDateValueJobWork = '';
+let G_ToDateValueRMReport = '';
 let G_ToDateSlittedCoilStockValue = '';
 let G_IdentificationNo = '';
 let G_Code = 0;
@@ -20,6 +23,8 @@ let G_SlittingPlanMaster_Code = 0;
 let G_AppendedRowKeys = {};
 let G_ItemMaster_CodeOnlyIssue = '';
 let G_Thickness_Code = 0;
+let G_SummaryData = [];
+let G_SlittedSummaryData = [];
 
 function applyAllowManualWeightState() {
     const AllowManualWeight = $('#AllowManualWeight').is(':checked');
@@ -30,21 +35,457 @@ function applyAllowManualWeightState() {
     }
 }
 
+const PLAN_SELECT2_FIELDS = '#PlannedMyModal select.ddlItemNameRow, #PlannedMyModal select.ddlSlitWidthRow, #PlannedMyModal select.ddlODWidthRow, #PlannedMyModal select#ddlMachineNo';
+const PLAN_DROPDOWN_MAX_LIST_HEIGHT = 220;
+const PLAN_DROPDOWN_MIN_LIST_HEIGHT = 96;
+// Search box + borders that sit above the option list inside the dropdown.
+const PLAN_DROPDOWN_CHROME_HEIGHT = 54;
+
+function isPlanCompactView() {
+    return window.matchMedia('(max-width: 991.98px)').matches;
+}
+
+function getPlanSelect2Container($select) {
+    return $select.next('.select2-container');
+}
+
+function getPlanDropdownParent() {
+    return $('#PlannedMyModal');
+}
+
+function findPlanSelect2PortalSpan($root) {
+    if (!$root || !$root.length) {
+        return $();
+    }
+    var $span = $root.children('span').filter(function () {
+        return $(this).find('.select2-dropdown').length > 0;
+    }).last();
+    return $span;
+}
+
+// Select2 attachBody appends a bare <span> (dropdownContainer) to dropdownParent.
+function getPlanOpenDropdown() {
+    var $wrapper = findPlanSelect2PortalSpan($('#PlannedMyModal'));
+    if (!$wrapper.length) {
+        $wrapper = findPlanSelect2PortalSpan($(document.body));
+    }
+    if (!$wrapper.length) {
+        return null;
+    }
+    var $dropdown = $wrapper.find('.select2-dropdown').first();
+    if (!$dropdown.length) {
+        return null;
+    }
+    return { $wrapper: $wrapper, $dropdown: $dropdown };
+}
+
+// Measured the same way Select2 measures the viewport when it picks a direction.
+function getPlanRoomBelow($container) {
+    return document.documentElement.clientHeight - $container[0].getBoundingClientRect().bottom;
+}
+
+function applyPlanDropdownListHeight($container) {
+    const modal = document.getElementById('PlannedMyModal');
+    if (!modal) {
+        return;
+    }
+    const usable = Math.floor(getPlanRoomBelow($container) - PLAN_DROPDOWN_CHROME_HEIGHT);
+    const listHeight = Math.max(PLAN_DROPDOWN_MIN_LIST_HEIGHT, Math.min(PLAN_DROPDOWN_MAX_LIST_HEIGHT, usable));
+    modal.style.setProperty('--plan-dd-list-height', listHeight + 'px');
+}
+
+// Select2 flips the list above the field when the space below it is smaller than
+// the list. Scrolling the modal body before the list is rendered gives it that
+// space, so it keeps opening downwards on small screens.
+function reservePlanDropdownSpace($select) {
+    const $container = getPlanSelect2Container($select);
+    if (!$container.length) {
+        return;
+    }
+    const scroller = document.querySelector('#PlannedMyModal .modal-body');
+    const wanted = PLAN_DROPDOWN_MAX_LIST_HEIGHT + PLAN_DROPDOWN_CHROME_HEIGHT;
+    const roomBelow = getPlanRoomBelow($container);
+    if (scroller && roomBelow < wanted) {
+        // Never scroll so far that the field itself leaves the modal body.
+        const roomAboveField = $container[0].getBoundingClientRect().top - scroller.getBoundingClientRect().top - 8;
+        const scrollLeftOver = Math.max(scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop, 0);
+        const shift = Math.min(wanted - roomBelow, roomAboveField, scrollLeftOver);
+        if (shift > 0) {
+            scroller.scrollTop += shift;
+        }
+    }
+    applyPlanDropdownListHeight($container);
+}
+
+function forcePlanDropdownBelow($container) {
+    const open = getPlanOpenDropdown();
+    if (!open || !open.$dropdown.hasClass('select2-dropdown--above')) {
+        return;
+    }
+    const $modal = $('#PlannedMyModal');
+    if (!$modal.length) {
+        return;
+    }
+    const modalOffset = $modal.offset();
+    const containerOffset = $container.offset();
+
+    open.$dropdown.removeClass('select2-dropdown--above').addClass('select2-dropdown--below');
+    $container.removeClass('select2-container--above').addClass('select2-container--below');
+    open.$wrapper.css({
+        top: containerOffset.top + $container.outerHeight(false) - modalOffset.top,
+        left: containerOffset.left - modalOffset.left
+    });
+}
+
+// The list is wider than the narrow grid columns it belongs to, so keep it from
+// spilling out of the modal (the modal clips horizontally).
+function clampPlanDropdownHorizontally() {
+    const open = getPlanOpenDropdown();
+    const $modal = $('#PlannedMyModal');
+    if (!open || !$modal.length) {
+        return;
+    }
+    const maxLeft = $modal.outerWidth() - open.$dropdown.outerWidth(false) - 8;
+    const currentLeft = parseFloat(open.$wrapper.css('left')) || 0;
+    open.$wrapper.css('left', Math.max(8, Math.min(currentLeft, maxLeft)));
+}
+
+function alignPlanDropdown($select) {
+    const $container = getPlanSelect2Container($select);
+    if (!$container.length) {
+        return;
+    }
+    applyPlanDropdownListHeight($container);
+    forcePlanDropdownBelow($container);
+    clampPlanDropdownHorizontally();
+}
+
+function setImportantStyle(el, prop, value) {
+    if (el) {
+        el.style.setProperty(prop, value, 'important');
+    }
+}
+
+// Phone: pin the open list to the bottom of the screen as a sheet so it cannot
+// leak out of the Plan card, and keep the search/filter box visible.
+function pinPlanDropdownSheet() {
+    const open = getPlanOpenDropdown();
+    if (!open) {
+        return;
+    }
+    const wrap = open.$wrapper[0];
+    const dd = open.$dropdown[0];
+    const results = dd.querySelector('.select2-results__options');
+    const search = dd.querySelector('.select2-search');
+    const sheetH = Math.round(Math.min(window.innerHeight * 0.5, 360));
+
+    open.$wrapper.addClass('plan-s2-sheet');
+    open.$dropdown.removeClass('select2-dropdown--above').addClass('select2-dropdown--below plan-s2-dd');
+    if (search) {
+        search.classList.remove('select2-search--hide');
+        setImportantStyle(search, 'display', 'block');
+    }
+
+    setImportantStyle(wrap, 'position', 'fixed');
+    setImportantStyle(wrap, 'top', 'auto');
+    setImportantStyle(wrap, 'left', '0');
+    setImportantStyle(wrap, 'right', '0');
+    setImportantStyle(wrap, 'bottom', '0');
+    setImportantStyle(wrap, 'width', '100%');
+    setImportantStyle(wrap, 'max-width', '100vw');
+    setImportantStyle(wrap, 'height', 'auto');
+    setImportantStyle(wrap, 'z-index', '100000');
+    setImportantStyle(wrap, 'transform', 'none');
+    setImportantStyle(wrap, 'margin', '0');
+
+    setImportantStyle(dd, 'position', 'relative');
+    setImportantStyle(dd, 'top', 'auto');
+    setImportantStyle(dd, 'left', 'auto');
+    setImportantStyle(dd, 'bottom', 'auto');
+    setImportantStyle(dd, 'width', '100%');
+    setImportantStyle(dd, 'max-height', sheetH + 'px');
+    setImportantStyle(dd, 'transition', 'none');
+    setImportantStyle(dd, 'display', 'block');
+    setImportantStyle(dd, 'z-index', '100000');
+
+    if (results) {
+        setImportantStyle(results, 'max-height', Math.max(120, sheetH - 72) + 'px');
+        setImportantStyle(results, 'overflow-y', 'auto');
+    }
+
+    open.$wrapper.addClass('plan-s2-ready');
+}
+
+function suppressPlanSearchAutoFocus() {
+    const $field = $('.select2-container--open .select2-dropdown .select2-search__field');
+    if (!$field.length) {
+        return;
+    }
+    $field.prop('readonly', true);
+    if (document.activeElement === $field[0]) {
+        $field[0].blur();
+    }
+    window.setTimeout(function () {
+        $field.prop('readonly', false);
+    }, 400);
+}
+
+function openPlanDropdownSheetMobile() {
+    function applyPin() {
+        if (!getPlanOpenDropdown()) {
+            return false;
+        }
+        pinPlanDropdownSheet();
+        return true;
+    }
+    if (applyPin()) {
+        requestAnimationFrame(applyPin);
+        return;
+    }
+    window.setTimeout(function () {
+        if (applyPin()) {
+            requestAnimationFrame(applyPin);
+            suppressPlanSearchAutoFocus();
+        }
+    }, 0);
+}
+
+function bindPlanSelect2DropDirection() {
+    if (window.__rmStockPlanSelect2DirectionBound) {
+        return;
+    }
+    window.__rmStockPlanSelect2DirectionBound = true;
+
+    $(document)
+        .on('select2:opening', PLAN_SELECT2_FIELDS, function () {
+            if (isPlanCompactView()) {
+                $('#PlannedMyModal').addClass('plan-s2-open');
+                return;
+            }
+            reservePlanDropdownSpace($(this));
+        })
+        .on('select2:open', PLAN_SELECT2_FIELDS, function () {
+            const $select = $(this);
+            if (isPlanCompactView()) {
+                openPlanDropdownSheetMobile();
+                window.setTimeout(function () {
+                    openPlanDropdownSheetMobile();
+                    suppressPlanSearchAutoFocus();
+                }, 16);
+                $(window).off('.planDropdown').on('resize.planDropdown orientationchange.planDropdown', function () {
+                    if (!getPlanOpenDropdown()) {
+                        return;
+                    }
+                    pinPlanDropdownSheet();
+                });
+                return;
+            }
+            alignPlanDropdown($select);
+            $(window).off('.planDropdown').on('resize.planDropdown orientationchange.planDropdown', function () {
+                if (!getPlanSelect2Container($select).hasClass('select2-container--open')) {
+                    return;
+                }
+                alignPlanDropdown($select);
+            });
+        })
+        .on('select2:close', PLAN_SELECT2_FIELDS, function () {
+            $(window).off('.planDropdown');
+            $('#PlannedMyModal').removeClass('plan-s2-open');
+            const modal = document.getElementById('PlannedMyModal');
+            if (modal) {
+                modal.style.removeProperty('--plan-dd-list-height');
+            }
+        });
+}
+
+function getPlanSelect2InitOpts() {
+    return {
+        dropdownParent: getPlanDropdownParent(),
+        width: '100%',
+        dropdownCssClass: 'plan-s2-dd',
+        minimumResultsForSearch: 0
+    };
+}
+
+function planSlitWidthKey(val) {
+    return val == null || val === '' ? '' : String(val);
+}
+
+function syncPlanSlitWidthCommitted($select) {
+    $select.data('planSlitWidthCommitted', planSlitWidthKey($select.val()));
+}
+
+function syncAllPlanSlitWidthCommittedStates() {
+    $('#RMStockCurrentPlanned select.ddlSlitWidthRow').each(function () {
+        syncPlanSlitWidthCommitted($(this));
+    });
+}
+
+function shouldRunSlitWidthApis($select, nextVal) {
+    var next = planSlitWidthKey(nextVal != null ? nextVal : $select.val());
+    var committed = $select.data('planSlitWidthCommitted');
+    return committed !== next;
+}
+
+function handleSlitWidthRowChange($select) {
+    if (!shouldRunSlitWidthApis($select)) {
+        return;
+    }
+    syncPlanSlitWidthCommitted($select);
+
+    var $row = $select.closest('tr');
+    var rowId = $row.attr('id');
+
+    if ($('#PartingCase').is(':checked')) {
+        calculateWeightPerSlit(rowId);
+    } else {
+        var $no = $row.find('.txtNoOfSlitsRow');
+        var $wps = $row.find('.txtWeightPerSlitRow');
+        var $tw = $row.find('.txtTotalWeightRow');
+        $no.val(0);
+        $wps.val(0);
+        $tw.val(0);
+        GetRMStockNumericValueWidthForRow(rowId);
+    }
+    updateTableTotals();
+    UpdateODSizeWidthSelection(rowId);
+}
+
+function bindPlanSlitWidthRowHandlers() {
+    if (window.__rmStockPlanSlitWidthBound) {
+        return;
+    }
+    window.__rmStockPlanSlitWidthBound = true;
+
+    $(document).on('select2:select', '#PlannedMyModal select.ddlSlitWidthRow', function (e) {
+        var $select = $(this);
+        var picked = (e.params && e.params.data && e.params.data.id != null)
+            ? e.params.data.id
+            : $select.val();
+        if (!shouldRunSlitWidthApis($select, picked)) {
+            return;
+        }
+        handleSlitWidthRowChange($select);
+    });
+
+    $('#RMStockCurrentPlanned').on('change', '.ddlSlitWidthRow', function () {
+        if ($(this).hasClass('select2-hidden-accessible')) {
+            return;
+        }
+        handleSlitWidthRowChange($(this));
+    });
+}
+
+function initPlanSelect2($el) {
+    if (!$el || !$el.length || !$.fn.select2) {
+        return;
+    }
+    $el.each(function () {
+        var $one = $(this);
+        try {
+            if ($one.data('select2')) {
+                try { $one.select2('close'); } catch (eClose) { }
+                $one.select2('destroy');
+            }
+        } catch (eDestroy) { }
+        $one.select2(getPlanSelect2InitOpts());
+    });
+    syncAllPlanSlitWidthCommittedStates();
+}
+
+function refreshPlanSelect2ForViewport() {
+    if (!$('#PlannedMyModal').hasClass('show')) {
+        return;
+    }
+    initPlanSelect2($(PLAN_SELECT2_FIELDS));
+}
+
+// Phone: the opening tap is replayed onto .select2-backdrop (~300ms later) and
+// Select2/layout treat that as "click outside" so the sheet closes before a
+// choice can be made. Hold the Plan modal list open through that ghost tap.
+function bindPlanSelect2MobileHoldOpen() {
+    if (window.__rmStockPlanSelect2HoldOpenBound) {
+        return;
+    }
+    window.__rmStockPlanSelect2HoldOpenBound = true;
+
+    var holdOpenUntil = 0;
+
+    function planModalIsOpen() {
+        return $('#PlannedMyModal').hasClass('show');
+    }
+
+    function shouldHoldPlanDropdown() {
+        return isPlanCompactView() && planModalIsOpen() && Date.now() < holdOpenUntil;
+    }
+
+    function blockGhostBackdropClose(e) {
+        if (!shouldHoldPlanDropdown()) {
+            return;
+        }
+        var t = e.target;
+        if (!t || !t.closest || !t.closest('.select2-backdrop')) {
+            return;
+        }
+        e.stopImmediatePropagation();
+        e.preventDefault();
+    }
+
+    ['pointerdown', 'mousedown', 'touchstart', 'touchend', 'click'].forEach(function (type) {
+        document.addEventListener(type, blockGhostBackdropClose, true);
+    });
+
+    $(document).on('select2:open', PLAN_SELECT2_FIELDS, function () {
+        if (!isPlanCompactView() || !planModalIsOpen()) {
+            return;
+        }
+        holdOpenUntil = Date.now() + 700;
+        var $backdrop = $('.select2-backdrop');
+        if ($backdrop.length) {
+            $backdrop.css('pointer-events', 'none');
+            window.setTimeout(function () {
+                $('.select2-backdrop').css('pointer-events', '');
+            }, 700);
+        }
+    });
+
+    $(document).on('select2:select', PLAN_SELECT2_FIELDS, function () {
+        holdOpenUntil = 0;
+    });
+
+    $(document).on('select2:closing', PLAN_SELECT2_FIELDS, function (e) {
+        if (shouldHoldPlanDropdown()) {
+            e.preventDefault();
+        }
+    });
+}
+
 $(document).ready(function () {
+    loadYieldConfiguration();
     let isInitialLoad = true;
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+    bindRMStockFilterTotalHooks();
+    bindPlanSelect2DropDirection();
+    bindPlanSelect2MobileHoldOpen();
+    bindPlanSlitWidthRowHandlers();
    
     $('#current-stock').show();
     $('#unApproved-planned').hide();
     $('#dispatch').hide();
     $('#slitted').hide();
     $('#job-work').hide();
+    $('#rm-report').hide();
     $('#stock-summary').hide();
     $('#slitted-coil-stock').hide();
     GetRMStockCurrentListTable();
     $('#exampleCheck').on("click", function () {
-        GetRMStockCurrentListTable();
-        GetUnApprovedPlannedList();
+        var activeTab = $('#rmStockTabs .nav-link.active').attr('data-bs-target');
+        if (activeTab === '#rm-report') {
+            ShowRMReportList();
+        } else {
+            GetRMStockCurrentListTable();
+            GetUnApprovedPlannedList();
+        }
     });
 
     $('#RMStockCurrentPlanned').on('change', '.ddlItemNameRow', function () {
@@ -100,25 +541,6 @@ $(document).ready(function () {
 
     $('#ddlMachineNo').on('change', function () {
         UpdateODSizeWidthSelection();
-    });
-
-    $('#RMStockCurrentPlanned').on('change', '.ddlSlitWidthRow', function () {
-        var $row = $(this).closest('tr');
-        var rowId = $row.attr('id');
-
-        if ($('#PartingCase').is(':checked')) {
-            calculateWeightPerSlit(rowId);
-        } else {
-            var $no = $row.find('.txtNoOfSlitsRow');
-            var $wps = $row.find('.txtWeightPerSlitRow');
-            var $tw = $row.find('.txtTotalWeightRow');
-            $no.val(0);
-            $wps.val(0);
-            $tw.val(0);
-            GetRMStockNumericValueWidthForRow(rowId);
-        }
-        updateTableTotals();
-        UpdateODSizeWidthSelection(rowId);
     });
 
     $('#AllowManualWeight').off('change').on('change', function () {
@@ -189,7 +611,7 @@ function GetRMStockCurrentListTable() {
                 };
             });
             calculateRMStockCurrentFooterTotals(response);
-            BizsolCustomFilterGrid.CreateDataTable("table-header-RMStockCurrent", "table-body-RMStockCurrent", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment,false);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-RMStockCurrent", "table-body-RMStockCurrent", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, null, null, null, 'Search by MRN No, Item Name, Vendor, Identification No, Grade...');
             PopulateTableForPrint(response);
         } else {
             HideLoader();
@@ -256,24 +678,37 @@ function ShowModelPlanned(rowData) {
             $('#PlannedMyModal').modal({
                 backdrop: 'static',
             });
-            $('#PlannedMyModal').modal('show');
-            ShowRMStockPlan();
-            //GetRMStockWidthList();
-            //GetRMStockItemNameList();
-            GetRMStockMachineNoList();
-            setCurrentDate();
-            updateTableTotals();
+            Showloader();
+            Promise.all([
+                ShowRMStockPlan(),
+                GetRMStockMachineNoList(true)
+            ]).then(function () {
+                setCurrentDate();
+                updateTableTotals();
+                if (isPlanCompactView()) {
+                    $('#PlannedMyModal').addClass('plan-modal-instant');
+                }
+                $('#PlannedMyModal').modal('show');
+            }).catch(function () {
+                setCurrentDate();
+                updateTableTotals();
+                $('#PlannedMyModal').modal('show');
+            }).finally(function () {
+                HideLoader();
+                $('#PlannedMyModal').one('shown.bs.modal', function () {
+                    $('#PlannedMyModal').removeClass('plan-modal-instant');
+                    refreshPlanSelect2ForViewport();
+                });
+            });
         }
     });
 }
 function ShowRMStockPlan() {
-    RMStockService.ShowRMStockData(G_IdentificationNo).then(function (response) {
+    return RMStockService.ShowRMStockData(G_IdentificationNo).then(function (response) {
         syncAllowManualWeightFromPlan(response);
-        fillTableWithExistingData(response);
-        setTimeout(function() {
-            updateTableTotals();
+        return fillTableWithExistingData(response).then(function () {
             applyAllowManualWeightState();
-        }, 100);
+        });
     });
 }
 function syncAllowManualWeightFromPlan(response) {
@@ -293,7 +728,11 @@ function syncAllowManualWeightFromPlan(response) {
     }
 }
 function fillTableWithExistingData(response) {
-    Promise.all([GetRMStockItemNameList(), GetRMStockWidthList(), GetRMStockODSizeList()])
+    return Promise.all([
+        GetRMStockItemNameList(undefined, true),
+        GetRMStockWidthList(true),
+        GetRMStockODSizeList(true)
+    ])
         .then(function ([itemNameList, widthList, odSizeList])
         {
     var tbody = $('#RMStockCurrentPlanned tbody');
@@ -372,31 +811,15 @@ function fillTableWithExistingData(response) {
                 $row.find('input.txtWeightPerSlitRow').val(weightPerSlitVal.toFixed(3));
                 $row.find('input.txtTotalWeightRow').val(weightVal);
             });
-            if ($('.ddlItemNameRow').length) {
-                $('.ddlItemNameRow').select2({
-                    dropdownParent: $('#PlannedMyModal'),
-                    width: '-webkit-fill-available'
-                });
-            }
-            if ($('.ddlSlitWidthRow').length) {
-                $('.ddlSlitWidthRow').select2({
-                    dropdownParent: $('#PlannedMyModal'),
-                    width: '-webkit-fill-available'
-                });
-            }
-            if ($('.ddlODWidthRow').length) {
-                $('.ddlODWidthRow').select2({
-                    dropdownParent: $('#PlannedMyModal'),
-                    width: '-webkit-fill-available'
-                });
-            }
-            enableNewRowAddition();
+            initPlanSelect2($('#RMStockCurrentPlanned select.ddlItemNameRow'));
+            initPlanSelect2($('#RMStockCurrentPlanned select.ddlSlitWidthRow'));
+            initPlanSelect2($('#RMStockCurrentPlanned select.ddlODWidthRow'));
             applyAllowManualWeightState();
-        } else {
-            enableNewRowAddition();
-            G_SlittingPlanMaster_Code = 0;
-            applyAllowManualWeightState();
+            return enableNewRowAddition();
         }
+        G_SlittingPlanMaster_Code = 0;
+        applyAllowManualWeightState();
+        return enableNewRowAddition();
     });
 }
 function enableNewRowAddition() {
@@ -430,52 +853,40 @@ function enableNewRowAddition() {
     $ddlItem.trigger('change');
     $ddlWidth.trigger('change');
 
-    GetRMStockItemNameList().then(function (itemNameList) {
+    const itemPromise = GetRMStockItemNameList().then(function (itemNameList) {
         BindSelectList1($row.find('select.ddlItemNameRow')[0], itemNameList);
-        if ($('.ddlItemNameRow').length) {
-            $('.ddlItemNameRow').select2({
-                dropdownParent: $('#PlannedMyModal'),
-                width: '-webkit-fill-available'
-            });
-        }
+        initPlanSelect2($ddlItem);
         if (itemNameList && itemNameList.length === 1) {
             var $itemDropdown = $row.find('select.ddlItemNameRow');
             if ($itemDropdown.length) {
                 var firstItemCode = itemNameList[0].Code;
-                setTimeout(function() {
-                    $itemDropdown.val(firstItemCode);
-                    if ($itemDropdown.data('select2')) {
-                        $itemDropdown.trigger('change.select2');
-                    } else {
-                        $itemDropdown.trigger('change');
-                    }
-                }, 100);
+                $itemDropdown.val(firstItemCode);
+                if ($itemDropdown.data('select2')) {
+                    $itemDropdown.trigger('change.select2');
+                } else {
+                    $itemDropdown.trigger('change');
+                }
             }
         }
     });
-    Promise.all([GetRMStockWidthList(), GetRMStockODSizeList()]).then(function ([slitWidthList, odSizeList]) {
+    const widthPromise = Promise.all([GetRMStockWidthList(), GetRMStockODSizeList()]).then(function ([slitWidthList, odSizeList]) {
         BindSelectList1($row.find('select.ddlSlitWidthRow')[0], slitWidthList);
         BindSelectList1($row.find('select.ddlODWidthRow')[0], odSizeList);
-        if ($('.ddlSlitWidthRow').length) {
-            $('.ddlSlitWidthRow').select2({
-                dropdownParent: $('#PlannedMyModal'),
-                width: '-webkit-fill-available'
-            });
-        }
-        if ($('.ddlODWidthRow').length) {
-            $('.ddlODWidthRow').select2({
-                dropdownParent: $('#PlannedMyModal'),
-                width: '-webkit-fill-available'
-            });
-        }
+        initPlanSelect2($ddlWidth);
+        initPlanSelect2($odDropdown);
         applyAllowManualWeightState();
     });
+    return Promise.all([itemPromise, widthPromise]);
 }
-function GetRMStockItemNameList(ItemMaster_CodeOnlyIssue) {
-    Showloader();
+function GetRMStockItemNameList(ItemMaster_CodeOnlyIssue, skipLoader) {
+    if (!skipLoader) {
+        Showloader();
+    }
     var itemMasterCodeOnlyIssue = ItemMaster_CodeOnlyIssue || G_ItemMaster_CodeOnlyIssue || '';
     return RMStockService.GetRMStockItemName(itemMasterCodeOnlyIssue).then(function (response) {
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             if (response && response.length > 0) {
                 const list = response.map((item) => ({ Code: item.Code, Desp: item.ItemName }));
                 return list; 
@@ -486,14 +897,20 @@ function GetRMStockItemNameList(ItemMaster_CodeOnlyIssue) {
         })
         .catch(function (error) {
             toastr.error('Error fetching item list');
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             return [];
         });
 }
-function GetRMStockWidthList() {
-    Showloader();
+function GetRMStockWidthList(skipLoader) {
+    if (!skipLoader) {
+        Showloader();
+    }
     return RMStockService.GetRMStockWidth().then(function (response) {
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             if (response && response.length > 0) {
                 const list = response.map((item) => ({ Code: item.Code, Desp: item.Desp }));
                 return list;
@@ -504,14 +921,20 @@ function GetRMStockWidthList() {
         })
         .catch(function (error) {
             toastr.error('Error fetching width list');
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             return [];
         });
 }
-function GetRMStockODSizeList() {
-    Showloader();
+function GetRMStockODSizeList(skipLoader) {
+    if (!skipLoader) {
+        Showloader();
+    }
     return RMStockService.GetRMStockODSize().then(function (response) {
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             if (response && response.length > 0) {
                 const list = response.map((item) => ({ Code: item.Code, Desp: item.Desp }));
                 return list;
@@ -522,7 +945,9 @@ function GetRMStockODSizeList() {
         })
         .catch(function (error) {
             toastr.error('Error fetching OD Size list');
-            HideLoader();
+            if (!skipLoader) {
+                HideLoader();
+            }
             return [];
         });
 }
@@ -705,33 +1130,36 @@ function CheckODSizeApplicabilityForRow(rowId, itemMasterCode) {
         }
     });
 }
-function GetRMStockMachineNoList() {
-    RMStockService.GetRMStockMachineNo().then(function (response) {
+function GetRMStockMachineNoList(skipLoader) {
+    if (!skipLoader) {
+        Showloader();
+    }
+    return RMStockService.GetRMStockMachineNo().then(function (response) {
+            if (!skipLoader) {
+                HideLoader();
+            }
         if (response && response.length > 0) {
             var machineList = response.map((item) => ({ Code: item.Code, Desp: item.MachineNo }));
             BindSelectList1($('#ddlMachineNo')[0], machineList);
-
-            $('#ddlMachineNo').select2({
-                dropdownParent: $('#PlannedMyModal'),
-                width: '-webkit-fill-available'
-            });
+            initPlanSelect2($('#ddlMachineNo'));
 
             if (response.length === 1) {
                 var firstMachineCode = response[0].Code;
-                setTimeout(function() {
-                    $('#ddlMachineNo').val(firstMachineCode);
-                    if ($('#ddlMachineNo').data('select2')) {
-                        $('#ddlMachineNo').trigger('change.select2');
-                    } else {
-                        $('#ddlMachineNo').trigger('change');
-                    }
-                }, 100);
+                $('#ddlMachineNo').val(firstMachineCode);
+                if ($('#ddlMachineNo').data('select2')) {
+                    $('#ddlMachineNo').trigger('change.select2');
+                } else {
+                    $('#ddlMachineNo').trigger('change');
+                }
             }
         } else {
             toastr.error('No data received or empty response');
         }
     }).catch(function (error) {
         toastr.error('Error fetching user list:', error);
+        if (!skipLoader) {
+            HideLoader();
+        }
     });
 }
 function validateIntegerInput(input) {
@@ -826,11 +1254,14 @@ function GetRMStockNumericValueWidthForRow(rowId) {
             } else {
                 toastr.warning("Slit Width value is greater then Original Width");
                 var $ddl = $row.find('.ddlSlitWidthRow');
+                $ddl.data('planSlitWidthCommitted', '');
                 if ($ddl.hasClass('select2-hidden-accessible')) {
-                    $ddl.val(null).trigger('change');
+                    $ddl.val(null).trigger('change.select2');
                 } else {
                     $ddl.val('');
                 }
+                updateTableTotals();
+                UpdateODSizeWidthSelection(rowId);
             }
         }
      });
@@ -926,30 +1357,9 @@ function copyFromPrevious() {
                         $newRow.find('#txtWeightPerSlit_' + rowId).val(weightPerSlitVal.toFixed(3));
                         $newRow.find('#txtTotalWeight_' + rowId).val(weightVal);
 
-                        if ($('.ddlItemNameRow').length) {
-                            $('.ddlItemNameRow').select2({
-                                dropdownParent: $('#PlannedMyModal'),
-                                width: '-webkit-fill-available'
-                            });
-                        }
-                        if ($('.ddlSlitWidthRow').length) {
-                            $('.ddlSlitWidthRow').select2({
-                                dropdownParent: $('#PlannedMyModal'),
-                                width: '-webkit-fill-available'
-                            });
-                        }
-                        if ($('.ddlODWidthRow').length) {
-                            $('.ddlODWidthRow').select2({
-                                dropdownParent: $('#PlannedMyModal'),
-                                width: '-webkit-fill-available'
-                            });
-                        }
-                        if ($.fn.select2) {
-                            try {
-                                $ddlItem.select2({ dropdownParent: $('#PlannedMyModal'), width: '-webkit-fill-available' });
-                                $ddlWidth.select2({ dropdownParent: $('#PlannedMyModal'), width: '-webkit-fill-available' });
-                            } catch (e) { }
-                        }
+                        initPlanSelect2($ddlItem);
+                        initPlanSelect2($ddlWidth);
+                        initPlanSelect2($newRow.find('select.ddlODWidthRow'));
                     });
 
                     setTimeout(function() {
@@ -1443,7 +1853,7 @@ function GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlitte
             let hiddenColumns = ["Code","Qty MTRS"];
             const columnAlignment = { "Qty PC": 'right', "Qty MT": 'right', "Qty MTRS": 'right',"Create Date":'center'};
             calculateTotalFooterSlitted_Coil_Stock(response);
-            BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted_Coil_Stock", "table-body-Slitted_Coil_Stock", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted_Coil_Stock", "table-body-Slitted_Coil_Stock", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, null, null, null, 'Search by Item Name, Identification No, Size...');
             PopulateTableForPrint(response);
         } else {
             HideLoader();
@@ -1490,6 +1900,8 @@ function loadTabData(tabId) {
     $('#Slitted thead tr').empty();
     $('#JobWorkData tbody').empty();
     $('#JobWorkData thead tr').empty();
+    $('#RMReport tbody').empty();
+    $('#RMReport thead tr').empty();
     $('#SummaryData tbody').empty();
     $('#SummaryData thead tr').empty();
     switch (tabId) {
@@ -1503,6 +1915,7 @@ function loadTabData(tabId) {
             $('#checkBoxHideAndShow').show();
             $('#slitted').hide();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#stock-summary').hide();
             GetRMStockCurrentListTable();
             break;
@@ -1516,6 +1929,7 @@ function loadTabData(tabId) {
             $('#stock-summary').hide();
             $('#slitted').hide();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#checkBoxHideAndShow').hide();
             $('#tblUnApproved_Planned').hide();
             GetUnApprovedPlannedList();
@@ -1529,6 +1943,7 @@ function loadTabData(tabId) {
             $('#stock-summary').hide();
             $('#slitted').hide();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#checkBoxHideAndShow').hide();
             $('#tblUnApproved_Planned').hide();
             $('#slitted-coil-stock').show();
@@ -1547,6 +1962,7 @@ function loadTabData(tabId) {
             $('#dispatch').show();
             $('#slitted').hide();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#stock-summary').hide();
             setCurrentDateDispatch();
             loadDispatchData(G_FromDateValue, G_ToDateValue);
@@ -1563,6 +1979,7 @@ function loadTabData(tabId) {
             $('#tblSlitted').hide();
             $('#slitted').show();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#stock-summary').hide();
             setCurrentDateDispatch();
             loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted);
@@ -1578,10 +1995,28 @@ function loadTabData(tabId) {
             $('#dispatch').hide();
             $('#slitted').hide();
             $('#stock-summary').hide();
+            $('#rm-report').hide();
             $('#tblJobWorkData').hide();
             $('#job-work').show();
             setCurrentDateDispatch();
-            loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork);
+            loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, $('#txtStatus').val() || 'All');
+            break;
+        case '#rm-report':
+            $('#tblReport tbody').empty();
+            $('#tblReport thead tr').empty();
+            $('#current-stock').hide();
+            $('#tblUnApproved_Planned').hide();
+            $('#unApproved-planned').hide();
+            $('#slitted-coil-stock').hide();
+            $('#checkBoxHideAndShow').show();
+            $('#dispatch').hide();
+            $('#slitted').hide();
+            $('#job-work').hide();
+            $('#stock-summary').hide();
+            $('#tblRMReport').hide();
+            $('#rm-report').show();
+            setCurrentDateDispatch();
+            loadRMReportData(G_FromDateValueRMReport, G_ToDateValueRMReport);
             break;
         case '#stock-summary':
             $('#tblReport tbody').empty();
@@ -1593,6 +2028,7 @@ function loadTabData(tabId) {
             $('#checkBoxHideAndShow').hide();
             $('#dispatch').hide();
             $('#job-work').hide();
+            $('#rm-report').hide();
             $('#slitted').hide();
             $('#tblSummaryData').hide();
             $('#stock-summary').show();
@@ -1617,18 +2053,22 @@ function setCurrentDateDispatch() {
      $('#txtFromDate').val(formatDate(firstOfMonth));  
      $('#txtFromDateSlitted').val(formatDate(firstOfMonth));  
      $('#txtFromDateJobWork').val(formatDate(firstOfMonth));  
+     $('#txtFromDateRMReport').val(formatDate(firstOfMonth));
      $('#txtFromDateSlittedCoilStock').val(formatDate(firstOfMonth));  
      $('#txtToDate').val(formatDate(today));    
      $('#txtToDateSlitted').val(formatDate(today));    
      $('#txtToDateJobWork').val(formatDate(today));    
+     $('#txtToDateRMReport').val(formatDate(today));
      $('#txtToDateSlittedCoilStock').val(formatDate(today));    
     G_FromDateValue = $('#txtFromDate').val();  
     G_FromDateValueSlitted = $('#txtFromDateSlitted').val();  
     G_FromDateValueJobWork = $('#txtFromDateJobWork').val();  
+    G_FromDateValueRMReport = $('#txtFromDateRMReport').val();
     G_FromDateSlittedCoilStockValue = $('#txtFromDateSlittedCoilStock').val();  
     G_ToDateValue = $('#txtToDate').val();    
     G_ToDateValueSlitted = $('#txtToDateSlitted').val();    
     G_ToDateValueJobWork = $('#txtToDateJobWork').val();    
+    G_ToDateValueRMReport = $('#txtToDateRMReport').val();
     G_ToDateSlittedCoilStockValue = $('#txtToDateSlittedCoilStock').val();
     
 }
@@ -1706,8 +2146,9 @@ function loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted) {
                 'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Entry Date': "center",
                 'Weight': "right;min-width:20px", 'ACT WT': "right;min-width:20px", 'Output Weight': "right", "Scrap": "right", "Yield %":"right", "Width Loss %":"right"
             };
-            calculateTotalFooterSlitted(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted", "table-body-Slitted", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+            rebuildSlittedFooter(Object.keys(response[0]));
+            calculateTotalFooterSlitted(response);
             HideLoader();
             PopulateTableForPrint(response);
         } else {
@@ -1723,34 +2164,160 @@ function loadSlittedData(G_FromDateValueSlitted, G_ToDateValueSlitted) {
 
         });
 }
+function rebuildSlittedFooter(columns) {
+    const $tfoot = $('#table-footer-Slitted');
+    if (!$tfoot.length || !columns || !columns.length) {
+        return;
+    }
+
+    const totalValueIds = {
+        'Weight': 'totalWt',
+        'ACT WT': 'totalActWt',
+        'Output Weight': 'totalSlittedOutputWt',
+        'Scrap': 'totalSlittedScrap'
+    };
+    const weightIdx = columns.indexOf('Weight');
+    const labelColspan = weightIdx > 0 ? weightIdx : 1;
+
+    let html = '<tr>';
+    html += '<td colspan="' + labelColspan + '" class="text-end">Totals</td>';
+
+    for (let i = labelColspan; i < columns.length; i++) {
+        const col = columns[i];
+        const cellId = totalValueIds[col];
+        if (cellId) {
+            html += '<td id="' + cellId + '" class="text-end">0.000</td>';
+        } else {
+            html += '<td></td>';
+        }
+    }
+    html += '</tr>';
+    $tfoot.html(html);
+}
 function calculateTotalFooterSlitted(rows) {
         try {
             let totalWt = 0;
             let totalActWt = 0;
+            let totalOutputWt = 0;
+            let totalScrap = 0;
             if (rows && rows.length) {
                 rows.forEach(function (r) {
                     totalWt += parseFloat(r['Weight']) || 0;
                     totalActWt += parseFloat(r['ACT WT']) || 0;
+                    totalOutputWt += parseFloat(r['Output Weight']) || 0;
+                    totalScrap += parseFloat(r['Scrap']) || 0;
                 });
             }
-            // Write into footer elements if they exist
             if ($('#totalWt').length) {
                 $('#totalWt').text(totalWt.toFixed(3));
             }
             if ($('#totalActWt').length) {
                 $('#totalActWt').text(totalActWt.toFixed(3));
             }
+            if ($('#totalSlittedOutputWt').length) {
+                $('#totalSlittedOutputWt').text(totalOutputWt.toFixed(3));
+            }
+            if ($('#totalSlittedScrap').length) {
+                $('#totalSlittedScrap').text(totalScrap.toFixed(3));
+            }
         } catch (e) {
         }
 }
 function ShowJobWorkList() {
     G_FromDateValueJobWork = $('#txtFromDateJobWork').val();
-    G_ToDateValueJobWork = $('#txtToDateJobWork').val();
-    loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork);
+    G_ToDateValueJobWork   = $('#txtToDateJobWork').val();
+    var status             = $('#txtStatus').val() || 'All';
+    loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, status);
 }
-function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork) {
+function ShowRMReportList() {
+    G_FromDateValueRMReport = $('#txtFromDateRMReport').val();
+    G_ToDateValueRMReport = $('#txtToDateRMReport').val();
+    loadRMReportData(G_FromDateValueRMReport, G_ToDateValueRMReport);
+}
+function loadRMReportData(fromDate, toDate) {
     Showloader();
-    RMStockService.GetRMStockJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork).then(function (response) {
+    RMStockService.GetRMStockRMReport(fromDate, toDate).then(function (response) {
+        HideLoader();
+        if (response && response.length > 0) {
+            $('#tblRMReport').show();
+            const stringFilterColumn = ["Invoice No", "Item Name", "Vendor", "COIL ID", "Brand", "Thickness", "Width", "Grade", "Warehouse", "Remark", "Entry No/Packing List No", "Slitting Combination"];
+            const numericFilterColumn = ["MRN No", "Challan Weight", "Act Weight"];
+            const dateFilterColumn = ["Receive Date", "Invoice Date"];
+            const button = false;
+            const stringDoubleFilterColumn = [];
+            const showButtons = [];
+            let hiddenColumns = [];
+            if (!$('#exampleCheck').is(':checked')) {
+                hiddenColumns = ["% E", "Hardness", "UTS", "YST", "BEND TEST", "Bend Test", "Bend test"];
+            }
+            const columnAlignment = {
+                'Invoice Date': 'center',
+                'Receive Date': 'center',
+                'Thickness': 'right',
+                'Width': 'right;min-width:60px',
+                'Challan Weight': 'right',
+                'Act Weight': 'right',
+                '% E': 'right;min-width:50px',
+                'Hardness': 'right',
+                'UTS': 'right;min-width:70px',
+                'YST': 'right;min-width:70px'
+            };
+            calculateRMReportFooterTotals(response);
+            BizsolCustomFilterGrid.CreateDataTable(
+                "table-header-RMReport",
+                "table-body-RMReport",
+                response,
+                button,
+                showButtons,
+                stringFilterColumn,
+                numericFilterColumn,
+                dateFilterColumn,
+                stringDoubleFilterColumn,
+                hiddenColumns,
+                columnAlignment,
+                false,
+                null,
+                null,
+                null,
+                'Search by MRN No, Item Name, Vendor, COIL ID, Grade...'
+            );
+            PopulateTableForPrint(response);
+        } else {
+            toastr.error('No Data Found');
+            $('#tblRMReport').hide();
+        }
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error during RM Report');
+        $('#tblRMReport').hide();
+    });
+}
+function calculateRMReportFooterTotals(rows) {
+    try {
+        let totalChallanWt = 0;
+        let totalActWt = 0;
+        const rowCount = Array.isArray(rows) ? rows.length : 0;
+        if (rows && rows.length) {
+            rows.forEach(function (r) {
+                totalChallanWt += parseFloat(r['Challan Weight']) || 0;
+                totalActWt += parseFloat(r['Act Weight']) || 0;
+            });
+        }
+        if ($('#RMReportRowCountValue').length) {
+            $('#RMReportRowCountValue').text('Count:' + rowCount);
+        }
+        if ($('#totalRMReportChallanWt').length) {
+            $('#totalRMReportChallanWt').text(totalChallanWt.toFixed(3));
+        }
+        if ($('#totalRMReportActWt').length) {
+            $('#totalRMReportActWt').text(totalActWt.toFixed(3));
+        }
+    } catch (e) {
+    }
+}
+function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, Status) {
+    Showloader();
+    RMStockService.GetRMStockJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, Status).then(function (response) {
         HideLoader();
         if (response.length > 0) {
             response = response.map(item => {
@@ -1769,7 +2336,7 @@ function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork) {
                 return item;
             });
             $('#tblJobWorkData').show();
-            const stringFilterColumn = ["Entry No","Thickness", "Width", "Grade", "Make", "Item Name", "Identification No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output Weight", "Scrap", "Yield %", "Width Loss %", "Party Name"];
+            const stringFilterColumn = ["Entry No", "Thickness", "Width", "Grade", "Make", "Item Name", "Id No", "Weight", "ACT WT", "Warehouse", "Slitting plan", "Output WT", "Scrap", "Yield %", "Width Loss %", "Party Name","Job Worker"];
             const numericFilterColumn = [];
             const dateFilterColumn = ["Entry Date"];
             const button = false;
@@ -1778,7 +2345,7 @@ function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork) {
             let hiddenColumns = []
             const columnAlignment = {
                 'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Entry Date': "center", "Party Name": "left;min-width:262px", "Warehouse":";min-width:110px",
-                'Weight': "right;min-width:20px", 'ACT WT': "right;min-width:20px", 'Output Weight': "right", "Scrap": "right", "Yield %": "right", "Width Loss %": "right"
+                'Weight': "right;min-width:20px", 'ACT WT': "right;min-width:20px", 'Output WT': "right", "Scrap": "right", "Yield %": "right", "Width Loss %": "right"
             };
             calculateTotalFooterJobWork(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-JobWorkData", "table-body-JobWorkData", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
@@ -1800,122 +2367,264 @@ function calculateTotalFooterJobWork(rows) {
     try {
         let totalWeight = 0;
         let totalActualWt = 0;
+        let totalOutputWeight = 0;
+        let totalScrap = 0;
+        let totalYieldPct = 0;
+        let totalWidthLossPct = 0;
         if (rows && rows.length) {
             rows.forEach(function (r) {
-                totalWeight += parseFloat(r['Weight']) || 0;
-                totalActualWt += parseFloat(r['ACT WT']) || 0;
+                totalWeight       += parseFloat(r['Weight'])        || 0;
+                totalActualWt     += parseFloat(r['ACT WT'])        || 0;
+                totalOutputWeight += parseFloat(r['Output Weight']) || 0;
+                totalScrap        += parseFloat(r['Scrap'])         || 0;
+                totalYieldPct     += parseFloat(r['Yield %'])       || 0;
+                totalWidthLossPct += parseFloat(r['Width Loss %'])  || 0;
             });
         }
-        if ($('#totalWeight').length) {
-            $('#totalWeight').text(totalWeight.toFixed(3));
-        }
-        if ($('#totalActualWt').length) {
-            $('#totalActualWt').text(totalActualWt.toFixed(3));
-        }
+        if ($('#totalWeight').length)        $('#totalWeight').text(totalWeight.toFixed(3));
+        if ($('#totalActualWt').length)      $('#totalActualWt').text(totalActualWt.toFixed(3));
+        if ($('#totalOutputWeight').length)  $('#totalOutputWeight').text(totalOutputWeight.toFixed(3));
+        if ($('#totalScrap').length)         $('#totalScrap').text(totalScrap.toFixed(3));
+        if ($('#totalYieldPct').length)      $('#totalYieldPct').text(totalYieldPct.toFixed(2));
+        if ($('#totalWidthLossPct').length)  $('#totalWidthLossPct').text(totalWidthLossPct.toFixed(2));
     } catch (e) {
     }
 }
+function rmsPickColumn(row, candidates) {
+    if (!row || !candidates) return candidates && candidates[0];
+    for (var i = 0; i < candidates.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(row, candidates[i])) {
+            return candidates[i];
+        }
+    }
+    return candidates[0];
+}
+
+function rmsNum(row, candidates) {
+    var key = rmsPickColumn(row, candidates);
+    if (!key || !row || row[key] === undefined || row[key] === null || row[key] === '') {
+        return 0;
+    }
+    var n = parseFloat(row[key]);
+    return isNaN(n) ? 0 : n;
+}
+
+const RMS_ITEM_TOTAL_COL = 'Total Weight';
+
+const RMS_SUMMARY_COLS = {
+    item:      ['Item Name'],
+    pcs:       ['PCS/Coil'],
+    weight:    ['Weight in MT'],
+    pending:   ['Job Work RM Weight', 'Pending Weight'],
+    itemTotal: [RMS_ITEM_TOTAL_COL]
+};
+
+const RMS_SLITTED_COLS = {
+    item:      ['Item Name'],
+    pcs:       ['PCS'],
+    weight:    ['Weight in MT', 'Weight'],
+    pending:   ['Job Work RM Weight', 'Pending on Job Work Weight'],
+    itemTotal: [RMS_ITEM_TOTAL_COL]
+};
+
+function rmsApplyItemTotalWeight(rows, weightCols, pendingCols) {
+    if (!Array.isArray(rows)) return rows;
+    rows.forEach(function (r) {
+        var stockWt = rmsNum(r, weightCols);
+        var pendingWt = rmsNum(r, pendingCols);
+        r[RMS_ITEM_TOTAL_COL] = +(stockWt + pendingWt).toFixed(3);
+    });
+    return rows;
+}
+
 function loadStockSummaryData() {
-    calculateStockSummary(); 
+    calculateStockSummary();
     Showloader();
     RMStockService.GetRMStockSummaryData().then(function (response) {
         HideLoader();
         if (response.length > 0) {
             $('#tblSummaryData').show();
-            const stringFilterColumn = ["Item Name", "No OF PC/Coil", "Total Weight", "No OF PC","Weight"];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
-            const button = false;
-            const stringDoubleFilterColumn = [];
-            const showButtons = [];
-            let hiddenColumns = []
+
+            const sample        = response[0];
+            const COL_ITEM      = rmsPickColumn(sample, RMS_SUMMARY_COLS.item);
+            const COL_PCS_GR    = rmsPickColumn(sample, RMS_SUMMARY_COLS.pcs);
+            const COL_WT_GR     = rmsPickColumn(sample, RMS_SUMMARY_COLS.weight);
+            const COL_PENDING   = rmsPickColumn(sample, RMS_SUMMARY_COLS.pending);
+            rmsApplyItemTotalWeight(response, RMS_SUMMARY_COLS.weight, RMS_SUMMARY_COLS.pending);
+
+            const stringFilterColumn  = [COL_ITEM];
+            const numericFilterColumn = [COL_PCS_GR, COL_WT_GR, COL_PENDING, RMS_ITEM_TOTAL_COL];
             const columnAlignment = {
-                "Item Name":";width:20px",
-                "No OF PC/Coil":"right;width:20px",
-                "Total Weight":"right;width:20px",
-                "No OF PC":"right;width:20px",
-                "Weight":"right;width:20px",
+                [COL_ITEM]:           'left',
+                [COL_PCS_GR]:         'right',
+                [COL_WT_GR]:          'right',
+                [COL_PENDING]:        'right',
+                [RMS_ITEM_TOTAL_COL]: 'right',
             };
-            calculateTotalFooterStockSummary(response);
-            BizsolCustomFilterGrid.CreateDataTable("table-header-SummaryData", "table-body-SummaryData", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false);
+
+            G_SummaryData = response;
+            calculateTotalFooterStockSummary(response, COL_PCS_GR, COL_WT_GR, COL_PENDING);
+            updateStockSummaryGrandTotal();
+            const FixedDecimalvalue = { [COL_WT_GR]: 3, [COL_PENDING]: 3, [RMS_ITEM_TOTAL_COL]: 3 };
+            BizsolCustomFilterGrid.CreateDataTable(
+                'table-header-SummaryData', 'table-body-SummaryData',
+                response, false, [],
+                stringFilterColumn, numericFilterColumn, [], [], [], columnAlignment, false,
+                null, FixedDecimalvalue
+            );
+
             PopulateTableForPrint(response);
         } else {
             HideLoader();
             toastr.error('No Data Found');
             $('#tblSummaryData').hide();
         }
-    })
-        .catch(function (error) {
-            HideLoader();
-            toastr.error(error.Msg || 'Error during SummaryData');
-            $('#tblSummaryData').hide();
-
-        });
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error during SummaryData');
+        $('#tblSummaryData').hide();
+    });
 }
 function loadStockSlittedCoilsStockSummary() {
-    calculateStockSummary(); 
+    calculateStockSummary();
     Showloader();
     RMStockService.GetRMStockSlittedCoilsStockSummary().then(function (response) {
         HideLoader();
         if (response.length > 0) {
             $('#tblSummaryData').show();
-            const stringFilterColumn = ["Item Name", "No OF PC/Coil", "Total Weight", "No OF PC"];
-            const numericFilterColumn = [];
-            const dateFilterColumn = [];
-            const button = false;
-            const stringDoubleFilterColumn = [];
-            const showButtons = [];
-            let hiddenColumns = []
+
+            const sample   = response[0];
+            const COL_ITEM = rmsPickColumn(sample, RMS_SLITTED_COLS.item);
+            const COL_PCS  = rmsPickColumn(sample, RMS_SLITTED_COLS.pcs);
+            const COL_WT   = rmsPickColumn(sample, RMS_SLITTED_COLS.weight);
+            const COL_JW   = rmsPickColumn(sample, RMS_SLITTED_COLS.pending);
+            rmsApplyItemTotalWeight(response, RMS_SLITTED_COLS.weight, RMS_SLITTED_COLS.pending);
+
+            const stringFilterColumn  = [COL_ITEM];
+            const numericFilterColumn = [COL_PCS, COL_WT, COL_JW, RMS_ITEM_TOTAL_COL];
             const columnAlignment = {
-                "Item Name":";width:20px",
-                "Total Weight":"right;width:20px",
-                "No OF PC":"right;width:20px",
+                [COL_ITEM]:           'left',
+                [COL_PCS]:            'right',
+                [COL_WT]:             'right',
+                [COL_JW]:             'right',
+                [RMS_ITEM_TOTAL_COL]: 'right',
             };
-           
-            const TotalColumns = ['No OF PC', 'Total Weight'];
-            BizsolCustomFilterGrid.CreateDataTable("table-header-SlittedCoilsStockSummary", "table-body-SlittedCoilsStockSummary", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, TotalColumns);
+
+            const TotalColumns = [COL_PCS, COL_WT, COL_JW, RMS_ITEM_TOTAL_COL];
+            const FixedDecimalvalue = { [COL_PCS]: 0, [COL_WT]: 3, [COL_JW]: 3, [RMS_ITEM_TOTAL_COL]: 3 };
+
+            G_SlittedSummaryData = response;
+            updateStockSummaryGrandTotal();
+            BizsolCustomFilterGrid.CreateDataTable(
+                "table-header-SlittedCoilsStockSummary", "table-body-SlittedCoilsStockSummary",
+                response, false, [],
+                stringFilterColumn, numericFilterColumn, [], [], [], columnAlignment,
+                false, TotalColumns, FixedDecimalvalue
+            );
             PopulateTableForPrint(response);
         } else {
             HideLoader();
             toastr.error('No Data Found');
             $('#tblSummaryData').hide();
         }
-    })
-        .catch(function (error) {
-            HideLoader();
-            toastr.error(error.Msg || 'Error during SlittedCoilsStockSummary');
-            $('#tblSummaryData').hide();
-
-        });
+    }).catch(function (error) {
+        HideLoader();
+        toastr.error(error.Msg || 'Error during SlittedCoilsStockSummary');
+        $('#tblSummaryData').hide();
+    });
 }
-function calculateTotalFooterStockSummary(rows) {
+function calculateTotalFooterStockSummary(rows, pcCoilGreterKey, totalWtGreterKey, pendingKey) {
     try {
-        let totalWeightStock = 0;
-        let totalNoOFPC = 0;
-        let totalNoOFPCCoil = 0;
-        let totalWtStock = 0;
+        var sample        = (rows && rows.length) ? rows[0] : null;
+        var colPcsGreter  = pcCoilGreterKey  || rmsPickColumn(sample, RMS_SUMMARY_COLS.pcs);
+        var colWtGreter   = totalWtGreterKey || rmsPickColumn(sample, RMS_SUMMARY_COLS.weight);
+        var colPending    = pendingKey       || rmsPickColumn(sample, RMS_SUMMARY_COLS.pending);
+
+        let totalPcsGreter  = 0;
+        let totalWtGreter   = 0;
+        let totalPending    = 0;
+        let totalItemTotal  = 0;
+
         if (rows && rows.length) {
             rows.forEach(function (r) {
-                totalWeightStock += parseFloat(r['Total Weight']) || 0;
-                totalNoOFPCCoil += parseFloat(r['No OF PC/Coil']) || 0;
-                totalNoOFPC += parseFloat(r['No OF PC']) || 0;
-                totalWtStock += parseFloat(r['Weight']) || 0;
+                var rowWt      = rmsNum(r, [colWtGreter].concat(RMS_SUMMARY_COLS.weight));
+                var rowPending = rmsNum(r, [colPending].concat(RMS_SUMMARY_COLS.pending));
+                totalPcsGreter  += rmsNum(r, [colPcsGreter].concat(RMS_SUMMARY_COLS.pcs));
+                totalWtGreter   += rowWt;
+                totalPending    += rowPending;
+                totalItemTotal  += rowWt + rowPending;
             });
         }
-        if ($('#totalWeightStock').length) {
-            $('#totalWeightStock').text(totalWeightStock.toFixed(3));
-        }
-        if ($('#totalWtStock').length) {
-            $('#totalWtStock').text(totalWtStock.toFixed(3));
-        }
-        if ($('#totalNoOFPCCoil').length) {
-            $('#totalNoOFPCCoil').text(totalNoOFPCCoil);
-        }
-        if ($('#totalNoOFPC').length) {
-            $('#totalNoOFPC').text(totalNoOFPC);
-        }
+
+        if ($('#totalPCSGreterThen').length)  $('#totalPCSGreterThen').text(totalPcsGreter);
+        if ($('#totalWeightGreterThen').length) $('#totalWeightGreterThen').text(totalWtGreter.toFixed(3));
+        if ($('#totalPendingJobWork').length) $('#totalPendingJobWork').text(totalPending.toFixed(3));
+        if ($('#totalItemTotalWeight').length) $('#totalItemTotalWeight').text(totalItemTotal.toFixed(3));
     } catch (e) {
     }
+}
+
+// Combined Grand Total across both summary tables (raw-coil summary + slitted-coil summary).
+// Pass filtered arrays when grid filters/search are active (BOM-style live totals).
+function updateStockSummaryGrandTotal(summaryRows, slittedRows) {
+    try {
+        var summary = Array.isArray(summaryRows) ? summaryRows : (G_SummaryData || []);
+        var slitted = Array.isArray(slittedRows) ? slittedRows : (G_SlittedSummaryData || []);
+        var grandPcs = 0, grandWt = 0, grandPending = 0, grandItemTotal = 0;
+
+        summary.forEach(function (r) {
+            var rowWt      = rmsNum(r, RMS_SUMMARY_COLS.weight);
+            var rowPending = rmsNum(r, RMS_SUMMARY_COLS.pending);
+            grandPcs       += rmsNum(r, RMS_SUMMARY_COLS.pcs);
+            grandWt        += rowWt;
+            grandPending   += rowPending;
+            grandItemTotal += rowWt + rowPending;
+        });
+
+        slitted.forEach(function (r) {
+            var rowWt      = rmsNum(r, RMS_SLITTED_COLS.weight);
+            var rowPending = rmsNum(r, RMS_SLITTED_COLS.pending);
+            grandPcs       += rmsNum(r, RMS_SLITTED_COLS.pcs);
+            grandWt        += rowWt;
+            grandPending   += rowPending;
+            grandItemTotal += rowWt + rowPending;
+        });
+
+        if ($('#grandTotalPCS').length)     $('#grandTotalPCS').text(grandPcs);
+        if ($('#grandTotalWeight').length)  $('#grandTotalWeight').text(grandWt.toFixed(3));
+        if ($('#grandTotalPending').length) $('#grandTotalPending').text(grandPending.toFixed(3));
+        if ($('#grandTotalItemTotal').length) $('#grandTotalItemTotal').text(grandItemTotal.toFixed(3));
+    } catch (e) {
+    }
+}
+
+function getRMStockFilteredRows(tableId) {
+    if (!tableId) return [];
+    if (Array.isArray(window['filteredData_' + tableId])) {
+        return window['filteredData_' + tableId];
+    }
+    if (Array.isArray(window['filteredDataTemp_' + tableId])) {
+        return window['filteredDataTemp_' + tableId];
+    }
+    return [];
+}
+
+function updateStockSummaryTotalsFromFilters() {
+    var summaryRows = Array.isArray(window['filteredData_SummaryData'])
+        ? window['filteredData_SummaryData']
+        : (G_SummaryData || []);
+    var slittedRows = Array.isArray(window['filteredData_SlittedCoilsStockSummary'])
+        ? window['filteredData_SlittedCoilsStockSummary']
+        : (G_SlittedSummaryData || []);
+
+    var sample = (summaryRows && summaryRows.length) ? summaryRows[0] : ((G_SummaryData && G_SummaryData[0]) || null);
+    calculateTotalFooterStockSummary(
+        summaryRows,
+        rmsPickColumn(sample, RMS_SUMMARY_COLS.pcs),
+        rmsPickColumn(sample, RMS_SUMMARY_COLS.weight),
+        rmsPickColumn(sample, RMS_SUMMARY_COLS.pending)
+    );
+    updateStockSummaryGrandTotal(summaryRows, slittedRows);
 }
 function Export() {
     var ReportType = "RMStockReport";
@@ -1975,6 +2684,9 @@ function refreshSlitted() {
 function refreshJobWork() {
     loadJobWorkData();
 }
+function refreshRMReport() {
+    loadRMReportData(G_FromDateValueRMReport, G_ToDateValueRMReport);
+}
 function refreshStockSummary() {
     loadStockSummaryData();
     loadStockSlittedCoilsStockSummary();
@@ -2003,7 +2715,10 @@ function Verify(Code,Level) {
     });
 }
 function VerifyPlan(Code, Level) {
-    if (confirm("Are you sure you want to verify ?")) {
+    Promise.resolve(confirm("Are you sure you want to verify ?")).then(function (ok) {
+        if (!ok) {
+            return;
+        }
         Showloader();
         RMStockService.VerifySlittingPlan(Code, Level).then(function (response) {
             if (response[0].Status = 'Y') {
@@ -2018,7 +2733,7 @@ function VerifyPlan(Code, Level) {
             HideLoader();
             toastr.error(error.Msg || 'Error During Verify ');
         });
-    }
+    });
 }
 function getFinancialYear() {
     var currentDate = new Date();
@@ -2030,10 +2745,50 @@ function getFinancialYear() {
     return startYear + "-" + (startYear + 1);
 }
 
-$(document).on('click', '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="ClearFilter"]', function () {
+// Live footer/grand-total refresh from filtered grid data (page-level only; no Filter.js change).
+function scheduleRMStockFooterTotalsRefresh() {
     setTimeout(function () {
         triggerActiveTabFooterTotals();
-    }, 300);
+    }, 50);
+}
+
+function bindRMStockFilterTotalHooks() {
+    if (window.__rmStockFilterTotalHooksBound) {
+        return;
+    }
+    window.__rmStockFilterTotalHooksBound = true;
+
+    [
+        'applyStringFilters',
+        'applyNumericFilter',
+        'applyfilterdate',
+        'applyfilterdouble',
+        'applyFilters',
+        'ClearFilter',
+        'applyGlobalSearch'
+    ].forEach(function (fnName) {
+        var original = window[fnName];
+        if (typeof original !== 'function') {
+            return;
+        }
+        window[fnName] = function () {
+            var result = original.apply(this, arguments);
+            scheduleRMStockFooterTotalsRefresh();
+            return result;
+        };
+    });
+}
+
+$(document).on(
+    'click',
+    '[onclick*="applyStringFilters"], [onclick*="applyNumericFilter"], [onclick*="applyfilterdate"], [onclick*="applyfilterdouble"], [onclick*="applyFilters"], [onclick*="ClearFilter"], [id^="global-search-clear-"]',
+    function () {
+        scheduleRMStockFooterTotalsRefresh();
+    }
+);
+
+$(document).on('input', '.bizsol-global-search-input', function () {
+    scheduleRMStockFooterTotalsRefresh();
 });
 
 function triggerActiveTabFooterTotals() {
@@ -2042,7 +2797,11 @@ function triggerActiveTabFooterTotals() {
         if (!context || typeof context.calculator !== 'function') {
             return;
         }
-        var filteredRows = window['filteredData_' + context.tableId] || [];
+        if (context.tableId === 'StockSummaryBoth') {
+            context.calculator();
+            return;
+        }
+        var filteredRows = getRMStockFilteredRows(context.tableId);
         context.calculator(filteredRows);
     } catch (e) {
     }
@@ -2060,13 +2819,19 @@ function getActiveTabFooterContext() {
         '#slitted-coil-stock': { tableId: 'Slitted_Coil_Stock', calculator: calculateTotalFooterSlitted_Coil_Stock },
         '#slitted': { tableId: 'Slitted', calculator: calculateTotalFooterSlitted },
         '#job-work': { tableId: 'JobWorkData', calculator: calculateTotalFooterJobWork },
-        '#stock-summary': { tableId: 'SummaryData', calculator: calculateTotalFooterStockSummary }
+        '#rm-report': { tableId: 'RMReport', calculator: calculateRMReportFooterTotals },
+        '#stock-summary': {
+            tableId: 'StockSummaryBoth',
+            calculator: updateStockSummaryTotalsFromFilters
+        }
     };
     return tabContexts[targetTab] || null;
 }
 
 document.addEventListener("DOMContentLoaded", function () {
     setInterval(ChangecolorTr, 1000); 
+    setInterval(ChangecolorTrYeald, 1000); 
+    setInterval(ChangecolorTrYeildSlitted, 1000); 
 });
 function ChangecolorTr() {
     const tbody = document.getElementById("table-body-UnApproved_Planned");
@@ -2079,39 +2844,47 @@ function ChangecolorTr() {
         if (tds.length <= statusColIndex) {
             return;
         }
-        tds[statusColIndex].style.backgroundColor = "";
-
         const rawText = tds[statusColIndex].textContent.trim();
-        const yieldValue = parseFloat(rawText);
-
-        if (isNaN(yieldValue)) {
-            return;
-        }
-
-        let color = "";
-        switch (true) {
-            case (yieldValue < 98):
-                color = "#f87171"; 
-                break;
-            case (yieldValue >= 98 && yieldValue < 99):
-                color = "#ebb861"; 
-                break;
-            case (yieldValue >= 99):
-                color = "#07bb72"; 
-                break;
-            default:
-                color = "";
-                break;
-        }
-        tds[statusColIndex].style.backgroundColor = color || "";
+        applyYieldCellColour(tds[statusColIndex], rawText);
     });
 }
 
+function ChangecolorTrYeald() {
+    const tbody = document.getElementById("table-body-JobWorkData");
+    if (!tbody) return;
+    const statusColIndex = 15;
+
+    const rows = tbody.querySelectorAll("tr");
+    rows.forEach((row) => {
+        const tds = row.querySelectorAll("td");
+        if (tds.length <= statusColIndex) {
+            return;
+        }
+        const rawText = tds[statusColIndex].textContent.trim();
+        applyYieldCellColour(tds[statusColIndex], rawText);
+    });
+}
+function ChangecolorTrYeildSlitted() {
+    const tbody = document.getElementById("table-body-Slitted");
+    if (!tbody) return;
+    const statusColIndex = 11;
+
+    const rows = tbody.querySelectorAll("tr");
+    rows.forEach((row) => {
+        const tds = row.querySelectorAll("td");
+        if (tds.length <= statusColIndex) {
+            return;
+        }
+        const rawText = tds[statusColIndex].textContent.trim();
+        applyYieldCellColour(tds[statusColIndex], rawText);
+    });
+}
 window.initializeTabs = initializeTabs;
 window.loadTabData = loadTabData;
 window.loadDispatchData = loadDispatchData;
 window.loadSlittedData = loadSlittedData;
 window.loadJobWorkData = loadJobWorkData;
+window.loadRMReportData = loadRMReportData;
 window.loadStockSummaryData = loadStockSummaryData;
 window.loadStockSlittedCoilsStockSummary = loadStockSlittedCoilsStockSummary;
 window.calculateStockSummary = calculateStockSummary;
@@ -2119,6 +2892,7 @@ window.refreshCurrentStock = refreshCurrentStock;
 window.refreshDispatch = refreshDispatch;
 window.refreshSlitted = refreshSlitted;
 window.refreshJobWork = refreshJobWork;
+window.refreshRMReport = refreshRMReport;
 window.refreshStockSummary = refreshStockSummary;
 window.ShowModelPlanned = ShowModelPlanned;
 window.CloseModal_RMStock = CloseModal_RMStock;
@@ -2139,4 +2913,5 @@ window.CloseModal = CloseModal;
 window.ShowDispatchList = ShowDispatchList;
 window.ShowSlittedList = ShowSlittedList;
 window.ShowJobWorkList = ShowJobWorkList;
+window.ShowRMReportList = ShowRMReportList;
 window.Verify = Verify;

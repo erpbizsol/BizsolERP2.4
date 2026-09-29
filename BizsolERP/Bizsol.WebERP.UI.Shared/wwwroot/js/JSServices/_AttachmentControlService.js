@@ -1,4 +1,4 @@
-﻿import { UrlService } from '../URL.js';
+import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const AttachmentControlService = {
@@ -22,13 +22,32 @@ const AttachmentControlService = {
         );
     },
     DownloadAllAttachment: function DownloadAllAttachment(MasterTableName, MasterTableCode, DetailTableName, DetailTableCode) {
-        //let url = UrlService.API_DOCUMENT_ATTECHMENT + `/DownloadAllAttachment?MasterTableName=${MasterTableName}&MasterTableCode=${MasterTableCode}&DetailTableName=${''}&DetailTableCode=${0}`
-        let url = UrlService.API_DOCUMENT_ATTECHMENT + `/DownloadAllAttachment?MasterTableName=${MasterTableName}&MasterTableCode=${MasterTableCode}&DetailTableName=${DetailTableName}&DetailTableCode=${DetailTableCode}`
+        const dName = DetailTableName != null && DetailTableName !== undefined ? String(DetailTableName) : '';
+        const dCode = parseInt(String(DetailTableCode ?? 0), 10) || 0;
+        let url = UrlService.API_DOCUMENT_ATTECHMENT
+            + `/DownloadAllAttachment?MasterTableName=${encodeURIComponent(MasterTableName || '')}`
+            + `&MasterTableCode=${parseInt(String(MasterTableCode ?? 0), 10) || 0}`
+            + `&DetailTableName=${encodeURIComponent(dName)}`
+            + `&DetailTableCode=${dCode}`;
         return promiseAjaxCallApi.CallAPIasBlobObj('GET', url, "").then(
             function (value) {
                 return value;
             }
         );
+    },
+    /** POST — remove all DocumentMaster rows for a master (and optional detail scope). Call after host deletes the grid row. */
+    DeleteAllAttachment: function DeleteAllAttachment(MasterTableName, MasterTableCode, DetailTableName, DetailTableCode) {
+        const dName = DetailTableName != null && DetailTableName !== undefined ? String(DetailTableName) : '';
+        const dCode = parseInt(String(DetailTableCode ?? 0), 10) || 0;
+        const url = UrlService.API_DOCUMENT_ATTECHMENT
+            + '/DeleteAllAttachment'
+            + `?MasterTableName=${encodeURIComponent(MasterTableName)}`
+            + `&MasterTableCode=${parseInt(String(MasterTableCode ?? 0), 10) || 0}`
+            + `&DetailTableName=${encodeURIComponent(dName)}`
+            + `&DetailTableCode=${dCode}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) {
+            return value;
+        });
     },
     SaveAttachment: function SaveAttachment(PayLoadData) {
         let userCode = JSON.parse(sessionStorage.getItem('authKey')).UserMaster_Code;
@@ -40,7 +59,7 @@ const AttachmentControlService = {
         );
     },
     DownloadAttachment: function DownloadAttachment(DocumentMaster_Code) {
-        let url = UrlService.API_DOCUMENT_ATTECHMENT + `/ShowDocumentAttachment?DocumentMaster_Code=${DocumentMaster_Code}&IsDownload=Y`
+        let url = UrlService.API_DOCUMENT_ATTECHMENT + `/ShowDocumentAttachment?DocumentMaster_Code=${encodeURIComponent(DocumentMaster_Code)}&IsDownload=Y`
         return promiseAjaxCallApi.CallAPIasBlobObj('GET', url, "").then(
             function (value) {
                 return value;

@@ -1,59 +1,51 @@
-﻿import { UrlService } from '../URL.js';
+import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
+function authUserCode() {
+    try {
+        const authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        return authKeyData.UserMaster_Code || 0;
+    } catch (e) {
+        return 0;
+    }
+}
 
 const StateMasterService = {
     GetStateMasterList: function GetStateMasterList(CountryName) {
-        //var URL = UrlService.API_ENDPOINT_POApproval + "/GetUnApprovedPO";
-        var URL = UrlService.API_ENDPOINT_STATE + `/GetStateList?CountryName=${CountryName}&UserId=145`;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
-            function (value) {
-                return value;
-            }
-        );
+        const URL =
+            UrlService.API_ENDPOINT_STATE +
+            `/GetStateList?CountryName=${encodeURIComponent(CountryName || 'All')}&UserId=${encodeURIComponent(authUserCode())}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
     },
-    GetCountryMasterList: function GetCountryMasterList() {
-        var URL = UrlService.API_ENDPOINT_POApproval + "/GetUnApprovedPO";
-        //var URL = UrlService.API_ENDPOINT_COUNTRY + `/GetCountryMasterList`;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
-            function (value) {
-                return value;
-            }
-        );
+    GetStateMasterByCode: function GetStateMasterByCode(code) {
+        const URL = UrlService.API_ENDPOINT_STATE + '/' + encodeURIComponent(code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
     },
-    GetStateMasterByCode: function GetStateMasterByCode(Code) {
-        var URL = UrlService.API_ENDPOINT_STATE + "/"+Code;
-        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
-            function (value) {
-                return value;
-            }
-        );
+    SaveStateMaster: function SaveStateMaster(data) {
+        const URL = UrlService.API_ENDPOINT_STATE + '/SaveStateMaster';
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data)).then(function (value) {
+            return value;
+        });
     },
-    SaveStateMaster: function SaveStateMaster(Data) {
-        var URL = UrlService.API_ENDPOINT_STATE + "/SaveStateMaster";
-        return promiseAjaxCallApi.CallAPI('POST', URL, Data).then(
-            function (value) {
-                return value;
-            }
-        );
+    DeleteStateMaster: function DeleteStateMaster(code, reason) {
+        const userCode = authUserCode();
+        const URL =
+            UrlService.API_ENDPOINT_STATE +
+            '/DeleteStateMaster?Code=' +
+            encodeURIComponent(code) +
+            '&UserMaster_Code=' +
+            encodeURIComponent(userCode) +
+            '&ReasonForDelete=' +
+            encodeURIComponent(reason || '') +
+            '&IPAddress=1&Location=1';
+        return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
+            return value;
+        });
     },
-    DeleteStateMaster: function DeleteStateMaster(Code, UserMaster_Code,Reason) {
-        var URL = UrlService.API_ENDPOINT_STATE + `/DeleteStateMaster?Code=${Code}&UserMaster_Code=${UserMaster_Code}&ReasonForDelete=${Reason}&IPAddress=1&Location=1`;
-        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(
-            function (value) {
-                return value;
-            }
-        );
-    },
-    GetCountryMasterList: function GetCountryMasterList() {
-        var Mode = 'LOCATE';
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var URL = UrlService.API_ENDPOINT_COUNTRY + `/GetCountryMasterList?Mode==` + Mode ;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
-            function (value) {
-                return value;
-            }
-        );
-    },
-}
-export { StateMasterService }
+};
+
+export { StateMasterService };

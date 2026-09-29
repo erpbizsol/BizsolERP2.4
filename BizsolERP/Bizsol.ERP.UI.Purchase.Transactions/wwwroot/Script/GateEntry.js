@@ -1,4 +1,5 @@
 import { GateEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GateEntryService.js';
+import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/menuservices.js';
@@ -9,6 +10,7 @@ $("#ERPHeading").text("Gate Entry");
 
 let ConfigGateEntry = [];
 let IsWithPo = false;
+let IsEntryWithoutExistingItem = false;
 let GateEntryMaster_Code = 0;
 let LoginGodownMaster_Code = 0;
 let G_PendingPONOList = [];
@@ -26,8 +28,9 @@ let GateEntryImageDetail = [{
     ImgOther: []
 
 }];
+let G_ScaleVehiclePhotoProvided = false;
 //let G_GateEntryLinkedERPDocuments = [{ TableName: "kumar", TableCode:5 }];
-let G_GateEntryLinkedERPDocuments = [{ TableName: "kumar", TableCode:5 }];
+let G_GateEntryLinkedERPDocuments = [];
 
 let baseUrl = sessionStorage.getItem('AppBaseURL');
 let G_TableName = '';
@@ -113,7 +116,7 @@ function GateEntryGirdByDates() {
             //    item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'editFull_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Out</a>'
             //});
             response.forEach(item => {
-                item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'editFull_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '_' + item.GodownMaster_Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '_' + item.GodownMaster_Code + '\')" >Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '_' + item.GodownMaster_Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '_' + item.GodownMaster_Code + '\')" >Out</a>'
+                item.Action = GateEntry_BuildGridActionButtons(item);
             });
         }
         else {
@@ -206,6 +209,7 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
             ClearEmptyOutOrLoadedOutFrm();
             UpdateLoadedIn_Emptyout(response);
             CopyWeightmentSlip('emptyOut');
+            GateEntry_ShowEntryNoBanner(response[0].GateEntryNo, 'out');
         });
 
     }
@@ -223,13 +227,13 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
             ClearEmptyOutOrLoadedOutFrm();
             UpdateEmptyIn_loadedout(response);
             CopyWeightmentSlip('loadedOut');
+            GateEntry_ShowEntryNoBanner(response[0].GateEntryNo, 'out');
         });
-        
+
     }
     else if (EntryType.includes('print') == true) {
-        ChangeMode(Mode);
         GateEntryMaster_Code = EntryType.split('_')[1];
-        PrintGateEntry(GateEntryMaster_Code);
+        GateEnty_PrintGateEntry(GateEntryMaster_Code);
     }
     else if (EntryType.includes('edit') == true) {
         
@@ -254,6 +258,7 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
                 } else {
                     ChangeMode(Mode);
                     EditGateEntry(response, EntryType);
+                    GateEntry_ShowEntryNoBanner(response[0].GateEntryNo, 'update');
                 }
             });
 
@@ -285,6 +290,7 @@ function ChangeMode(Mode) {
     }
 }
 function LoadedInNew() {
+    IsEntryWithoutExistingItem = false;
     $('#RowfrmLoadedInReportingDatetime').hide();
     $('#RowfrmLoadedInVehicleLoadedWeight').hide();
     $('#RowfrmLoadedInWeightmentSlipNoLoaded').hide();
@@ -301,8 +307,7 @@ function LoadedInNew() {
 
     $('#frmLoadedIn_txtDateIn').val(new Date().toISOString().slice(0, 10));
     $('#frmLoadedIn_txtVehicleInTime').val(`${new Date().getHours()}:${new Date().getMinutes()}`);
-
-
+    $('#frmLoadedIn_txtModeOfTransportation').val('');
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
         $('#frmLoadedIn_txtReportingDatetime').val('');
@@ -329,8 +334,11 @@ function LoadedInNew() {
         $('#RowfrmLoadedInPOAccess').show();
         $('#RowfrmLoadedInddlPurchaseOrder').show();
         IsWithPo = true;
+        IsEntryWithoutExistingItem = false;
         WithPO();
      }
+
+    GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState();
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
         $('#frmLoadedIn_txtChassisNo').val('');
@@ -362,24 +370,6 @@ function LoadedInNew() {
                 if (selectedItem) {
                     $('#frmLoadedIn_ddlPurchaseOrder').val('').trigger('change');
                     chnage_VendorNameGetPOByVendor();
-                }
-            }
-        );
-    });
-    GateEntryService.GetGoodDespList().then(function (response) {
-        // Map with UOM included for auto-suggestion
-        const goodsList = response.map((item) => ({ Desp: item.GoodDesp, UOM: item.UOM }));
-
-        // Setup auto-suggestion with selection callback to set UOM
-        AutoSuggestionControl.SetUpAutoSuggestion(
-            $('#frmLoadedIn_txtGoodsDescription'),
-            $('#frmLoadedIn_txtGoodsDescription_List'),
-            goodsList,
-            'StartWith',
-            true,
-            function(selectedItem) {
-                if (selectedItem && selectedItem.UOM) {
-                    $('#frmLoadedIn_txtUOM').val(selectedItem.UOM).trigger('change');
                 }
             }
         );
@@ -417,6 +407,7 @@ function EmptyInNew() {
     $('#frmEmptyIn_txtVehicleInTime').val(`${new Date().getHours()}:${new Date().getMinutes()}`);
 
     $('#frmEmptyIn_txtVehicleNo').val('');
+    $('#frmEmptyIn_txtModeOfTransportation').val('');
     $('#frmEmptyIn_txtDriverName').val('');
     $('#frmEmptyIn_txtDriverNo').val('');
     $('#frmEmptyIn_txtRemarks').val('');
@@ -432,6 +423,8 @@ function EmptyInNew() {
     $('#DivEmptyInDriverLicenseExpiredDate').hide();
     $('#RowfrmEmptyInTokenNo').hide();
     $('#DivEmptyInDriverAadharNo').hide();
+    $('#DivfrmEmptyIn_CustomerName').hide();
+    $('#frmEmptyIn_txtCustomerNameIn').val('');
 
     GateEntryService.GetTransportersNameList().then(function (response) {
         //console.log(response);
@@ -476,6 +469,14 @@ function EmptyInNew() {
         $('#RowfrmEmptyInTokenNo').show();
     }
 
+    const customerNameConfig = ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'CustomerNameInEmptyIN');
+    if (customerNameConfig && customerNameConfig.PerameterValue === 'Y') {
+        $('#DivfrmEmptyIn_CustomerName').show();
+        GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
+            AutoSuggestionControl.SetUpAutoSuggestion($('#frmEmptyIn_txtCustomerNameIn'), $('#frmEmptyIn_txtCustomerNameIn_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+        });
+    }
+
     $('#DivfrmEmptyIn_fileVehiclePhoto').show();
 
     $('#DivfrmLoadedOut').hide();
@@ -483,6 +484,7 @@ function EmptyInNew() {
 
 function UpdateLoadedIn_Emptyout(gateEntryData) {
     console.log(gateEntryData);
+    GateEntry_ApplyEntryWithoutExistingItemRadioVisibility();
     $('#RowfrmLoadedInReportingDatetime').hide();
     $('#RowfrmLoadedInVehicleLoadedWeight').hide();
     $('#RowfrmLoadedInWeightmentSlipNoLoaded').hide();
@@ -543,7 +545,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtVendorName').val(gateEntryData[0].VendorName);
 
     $('#frmLoadedIn_txtDocumentNo').val(gateEntryData[0].DocNo);
-    $('#frmLoadedIn_txtDocumentDate').val(gateEntryData[0].InvoiceDate == null ? '' : new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
+    $('#frmLoadedIn_txtDocumentDate').val(geFormatGateEntryInputDate(gateEntryData[0].InvoiceDate));
     $('#frmLoadedIn_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
     $('#frmLoadedIn_txtEWayBillDate').val(gateEntryData[0].EwaybillDate ==null?'': new Date(gateEntryData[0].EwaybillDate).toISOString().slice(0, 10));
     $('#frmLoadedIn_txtRemarks').val(gateEntryData[0].Remarks);
@@ -555,7 +557,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtDriverAadharNo').val(gateEntryData[0].DriverAadharNo);
     $('#frmLoadedIn_txtTokenNo').val(gateEntryData[0].TokenNo);
 
-
+    GateEntry_ApplyModeOfTransportationCode(GateEntry_ModeOfTransportationCodeFromData(gateEntryData));
 
     $('#frmLoadedIn_txtVehicleInTime').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtVehicleNo').attr('readonly', 'readonly');
@@ -587,6 +589,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtDriverLicenseExpiredDate').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtDriverAadharNo').attr('readonly', 'readonly');
     $('#frmLoadedIn_txtTokenNo').attr('readonly', 'readonly');
+    $('#frmLoadedIn_txtModeOfTransportation').attr('disabled', 'disabled');
 
     $('#DivfrmLoadedIn_fileVehiclePhoto').hide();
     $('#DivfrmLoadedIn_fileGoodsPhoto').hide();
@@ -604,7 +607,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmEmptyOut_btnSave').attr('onclick', "GateEntry_SaveData('UpdateLoadedInSave')");
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
-        
+
         $('#RowfrmLoadedInReportingDatetime').show();
     }
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'TokenApplicable').PerameterValue === 'Y') {
@@ -670,16 +673,29 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     if (parseInt(gateEntryData[0].PurchaseOrderMaster_Code) == 0) { //Entry saved without PO...
 
         IsWithPo = false;
+        const entryWithoutExisting =
+            gateEntryData[0].EntryWithOutExistingItem === 'Y' ||
+            gateEntryData[0].EntryWithOutExistingItem === true ||
+            String(gateEntryData[0].EntryWithOutExistingItem || '').toUpperCase() === 'Y';
+        const useWithoutExistingRadio = entryWithoutExisting && GateEntry_IsEntryWithoutExistingItemEnabled();
+        IsEntryWithoutExistingItem = useWithoutExistingRadio;
         WithPO();
         $('#frmLoadedIn_txtGoodsDescription').val(gateEntryData[0].GoodDescription);
         $('#frmLoadedIn_txtQTY').val(gateEntryData[0].Qty);
         $('#frmLoadedIn_txtUOM').attr('disabled', 'disabled');
         
-        jQuery('input:radio[name="rdPOAccess"]').filter('[value="withoutpo"]').attr('checked', true);
+        if (useWithoutExistingRadio) {
+            jQuery('input:radio[name="rdPOAccess"]').filter('[value="withoutexistingitem"]').prop('checked', true);
+        } else {
+            jQuery('input:radio[name="rdPOAccess"]').filter('[value="withoutpo"]').prop('checked', true);
+        }
     }
     else {
-        jQuery('input:radio[name="rdPOAccess"]').filter('[value="withpo"]').attr('checked', true);
+        IsEntryWithoutExistingItem = false;
+        jQuery('input:radio[name="rdPOAccess"]').filter('[value="withpo"]').prop('checked', true);
     }
+
+    GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState();
 
       $('#DivfrmEmptyOut').show();
       $('#RowfrmEmptyOut_fileVehiclePhoto').show();
@@ -698,6 +714,14 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_ddlTransporterName').val(gateEntryData[0].OtherTransporterName);
     $('#frmEmptyIn_txtRemarks').val(gateEntryData[0].Remarks);
     $('#frmEmptyIn_txtVehicleEmptyWeight').val(gateEntryData[0].EmptyWeight);
+    const updateEmptyInCustomerConfig = ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'CustomerNameInEmptyIN');
+    if (updateEmptyInCustomerConfig && updateEmptyInCustomerConfig.PerameterValue === 'Y') {
+        $('#frmEmptyIn_txtCustomerNameIn').val(gateEntryData[0].VendorName);
+        $('#frmEmptyIn_txtCustomerNameIn').attr('readonly', 'readonly');
+        $('#DivfrmEmptyIn_CustomerName').show();
+    } else {
+        $('#DivfrmEmptyIn_CustomerName').hide();
+    }
     $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val(gateEntryData[0].WeightmentSlipNumberIn);
     $('#frmEmptyIn_txtReportingDatetime').val(gateEntryData[0].ReportingDatetime);
     //$('#frmLoadedOut_txtDateOut').val(gateEntryData[0].GateEntryOutDate == null ? new Date().toISOString().slice(0, 10) : new Date(gateEntryData[0].GateEntryDate).toISOString().slice(0, 10));
@@ -715,6 +739,8 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').val(new Date(gateEntryData[0].DriverLicenseExpiredDate).toISOString().slice(0, 10));
     $('#frmEmptyIn_txtDriverAadharNo').val(gateEntryData[0].DriverAadharNo);
     $('#frmEmptyIn_txtTokenNo').val(gateEntryData[0].TokenNo);
+
+    GateEntry_ApplyModeOfTransportationCode(GateEntry_ModeOfTransportationCodeFromData(gateEntryData));
 
     G_TableName = gateEntryData[0].TableName;
     G_TableCode = gateEntryData[0].Table_Code;
@@ -734,6 +760,7 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').attr('readonly', 'readonly');
     $('#frmEmptyIn_txtDriverAadharNo').attr('readonly', 'readonly');
     $('#frmEmptyIn_txtTokenNo').attr('readonly', 'readonly');
+    $('#frmEmptyIn_txtModeOfTransportation').attr('disabled', 'disabled');
 
     
     $('#DivfrmEmptyIn_fileVehiclePhoto').hide();
@@ -775,6 +802,10 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
 
     GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
         AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedOut_txtCustomerName'), $('#frmLoadedOut_txtCustomerName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+        const emptyInCustomerVal = $('#frmEmptyIn_txtCustomerNameIn').val();
+        if (emptyInCustomerVal && emptyInCustomerVal !== '') {
+            $('#frmLoadedOut_txtCustomerName').val(emptyInCustomerVal);
+        }
     });
     GateEntryService.GetGoodDespList().then(function (response) {
         const goodsList = response.map((item) => ({ Desp: item.GoodDesp, UOM: item.UOM }));
@@ -858,26 +889,144 @@ function BindSelectList2(element, list) {
     });
     element.innerHTML = option;
 }
+function BindSelectList3(element, list) {
+    let option = '<option value="">Please select </option>';
+    $.each(list, function (key, val) {
+        option += '<option value="' + val.Desp + '">' + val.Desp + '</option>';
+    });
+    element.innerHTML = option;
+}
+function GateEntry_ModeOfTransportationCodeFromData(gateEntryData) {
+    if (!gateEntryData || !gateEntryData[0]) return '';
+    const d = gateEntryData[0];
+    const v = d.F_ModeOfTransportation_Code ?? d.ModeOfTransportationCode ?? d.ModeOfTransportation ?? d.modeOfTransportation;
+    return v === undefined || v === null ? '' : String(v);
+}
+
+function GateEntry_ApplyModeOfTransportationCode(code) {
+    const v = code === undefined || code === null || code === '' ? '' : String(code);
+    $('#frmEmptyIn_txtModeOfTransportation').val(v);
+    $('#frmLoadedIn_txtModeOfTransportation').val(v);
+}
+
+function GateEntry_IsModeOfTransportEnabled() {
+    if (!ConfigGateEntry || ConfigGateEntry.length === 0) return false;
+    const p = ConfigGateEntry.find((x) => x.PerameterName === 'EnableModeOfTransport');
+    return p && String(p.PerameterValue).toUpperCase() === 'Y';
+}
+
+/** When mode is By Hand or Courier, vehicle/driver/transporter/weight slip/vehicle photo are not mandatory (requires EnableModeOfTransport + matching option text). */
+function GateEntry_IsByHandOrCourierFromSelect($select) {
+    if (!$select || !$select.length) return false;
+    const t = ($select.find('option:selected').text() || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    return t === 'by hand' || t === 'courier';
+}
+
+function GateEntry_ApplyModeOfTransportVisibility() {
+    const show = GateEntry_IsModeOfTransportEnabled();
+    const $rows = $('#RowGateEntry_ModeOfTransportation_EmptyIn, #RowGateEntry_ModeOfTransportation_LoadedIn');
+    if (show) {
+        $rows.show();
+    } else {
+        $rows.hide();
+        $('#frmEmptyIn_txtModeOfTransportation').val('');
+        $('#frmLoadedIn_txtModeOfTransportation').val('');
+    }
+}
+
+function BindGateEntryTransportModeSelects() {
+    GateEntryService.GetTransportMode().then(function (response) {
+        if (!response || !Array.isArray(response)) return;
+        const list = response.map((item) => ({
+            Desp: item.Desp ?? item.desp ?? item.Description ?? item.ModeName ?? '',
+        })).filter((x) => x.Desp !== '');
+        const ids = ['frmEmptyIn_txtModeOfTransportation', 'frmLoadedIn_txtModeOfTransportation'];
+        ids.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) BindSelectList3(el, list);
+        });
+    });
+}
+
 function ShowGateEntryConfigurationModal() {
     GateEntryService.GetConfigGateEntry().then(function (response) {
-        //console.log(response);
+        const toleranceParamName = 'ToleranceToMatchNetWeightWithDocumentQty';
+        const matchParamName = 'MatchNetWeightWithDocumentQty';
+        const backdaysParamNames = new Set([
+            'NoOfBackdaysAllowedDocumentLoadedIn',
+            'NoOfBackdaysAllowedDocumentLoadedOut'
+        ]);
+
+        const matchParam = response.find(x => x.PerameterName === matchParamName);
+        const isMatchEnabled = matchParam && String(matchParam.PerameterValue).toUpperCase() === 'Y';
 
         let option = '';
         $.each(response, function (key, val) {
-            let Checked = val.PerameterValue.toLowerCase() === 'y'?'checked':''
-            option += `<div class="col-6"><input type="checkbox" class="box_border" ${Checked} onclick="setGateEntryParamater(this,'${val.PerameterName}','${val.PerameterValue}')" />&nbsp;<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName) }</label></div>`;
+            if (val.PerameterName === toleranceParamName) {
+                // Render as number textbox; only show when MatchNetWeightWithDocumentQty = Y
+                const displayStyle = isMatchEnabled ? '' : 'display:none;';
+                option += `<div class="col-6" id="DivConfig_${toleranceParamName}" style="${displayStyle}">` +
+                    `<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label>` +
+                    `&nbsp;<input type="number" min="0" max="100" step="0.01" class="form-control d-inline-block w-50" ` +
+                    `value="${val.PerameterValue}" onchange="setGateEntryToleranceParamater(this,'${val.PerameterName}')" /></div>`;
+            } else if (backdaysParamNames.has(val.PerameterName)) {
+                // Render as integer number textbox for backdays (0–90)
+                const numVal = parseInt(val.PerameterValue) || 0;
+                option += `<div class="col-6">` +
+                    `<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label>` +
+                    `&nbsp;<input type="number" min="0" max="90" step="1" class="form-control d-inline-block w-50" ` +
+                    `value="${numVal}" onchange="setGateEntryBackdaysParamater(this,'${val.PerameterName}')" /></div>`;
+            } else {
+                let Checked = String(val.PerameterValue).toLowerCase() === 'y' ? 'checked' : '';
+                let extraOnClick = val.PerameterName === matchParamName
+                    ? ` GateEntry_ToggleToleranceVisibility(this);`
+                    : '';
+                option += `<div class="col-6"><input type="checkbox" class="box_border" ${Checked} onclick="setGateEntryParamater(this,'${val.PerameterName}','${val.PerameterValue}');${extraOnClick}" />&nbsp;<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label></div>`;
+            }
         });
-
 
         $('#DivChkSetGateEntryConfiguration')[0].innerHTML = option;
         $("#GateEntryConfigurationModal").modal({
             backdrop: 'static',
-            // keyboard: false
         });
         $("#GateEntryConfigurationModal").modal('show');
     });
+}
 
-    
+function GateEntry_ToggleToleranceVisibility(checkbox) {
+    const div = document.getElementById('DivConfig_ToleranceToMatchNetWeightWithDocumentQty');
+    if (div) {
+        div.style.display = checkbox.checked ? '' : 'none';
+    }
+}
+
+function setGateEntryToleranceParamater(element, PerameterName) {
+    const val = parseFloat(element.value);
+    if (isNaN(val) || val < 0 || val > 100) {
+        toastr.error('Please enter a valid tolerance value between 0 and 100');
+        return;
+    }
+    GateEntryService.UpdateConfigGateEntry(PerameterName, String(val)).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            GetConfigGateEntry();
+        }
+    });
+}
+
+function setGateEntryBackdaysParamater(element, PerameterName) {
+    const val = parseInt(element.value);
+    if (isNaN(val) || val < 0 || val > 90) {
+        toastr.error('Please enter a valid number of back days between 0 and 90');
+        element.value = 0;
+        return;
+    }
+    GateEntryService.UpdateConfigGateEntry(PerameterName, String(val)).then(function (response) {
+        if (response.Status === 'Y') {
+            toastr.success(response.Msg);
+            GetConfigGateEntry();
+        }
+    });
 }
 function setGateEntryParamater(element, PerameterName, PerameterValue) {
     let SetPerameterValue = 'N';
@@ -895,11 +1044,69 @@ function setGateEntryParamater(element, PerameterName, PerameterValue) {
 
 }
 
+function GateEntry_IsEntryWithoutExistingItemEnabled() {
+    if (!ConfigGateEntry || ConfigGateEntry.length === 0) return false;
+    const p = ConfigGateEntry.find((x) => x.PerameterName === 'EntryWithOutExistingItem');
+    return p && String(p.PerameterValue).toUpperCase() === 'Y';
+}
+
+function GateEntry_ApplyEntryWithoutExistingItemRadioVisibility() {
+    const $wrap = $('#RowGateEntry_rdPOAccess_WithoutExistingItem');
+    if (!$wrap.length) return;
+    if (GateEntry_IsEntryWithoutExistingItemEnabled()) {
+        $wrap.removeClass('d-none');
+    } else {
+        $wrap.addClass('d-none');
+        const sel = $('input[name="rdPOAccess"]:checked').val();
+        if (sel === 'withoutexistingitem') {
+            $('input[name="rdPOAccess"][value="withpo"]').prop('checked', true);
+            IsWithPo = true;
+            IsEntryWithoutExistingItem = false;
+            WithPO();
+            GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState();
+        }
+    }
+}
+
+function GateEntry_clearLoadedInGoodsDescriptionAutoSuggestion() {
+    const $inp = $('#frmLoadedIn_txtGoodsDescription');
+    const $list = $('#frmLoadedIn_txtGoodsDescription_List');
+    $inp.off('focus input keydown');
+    $list.empty().hide();
+    $(document).off('click', '#frmLoadedIn_txtGoodsDescription_List li');
+}
+
+function GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState() {
+    if (IsEntryWithoutExistingItem) {
+        GateEntry_clearLoadedInGoodsDescriptionAutoSuggestion();
+        return;
+    }
+    GateEntryService.GetGoodDespList().then(function (response) {
+        const goodsList = response.map((item) => ({ Desp: item.GoodDesp, UOM: item.UOM }));
+        AutoSuggestionControl.SetUpAutoSuggestion(
+            $('#frmLoadedIn_txtGoodsDescription'),
+            $('#frmLoadedIn_txtGoodsDescription_List'),
+            goodsList,
+            'StartWith',
+            true,
+            function (selectedItem) {
+                if (selectedItem && selectedItem.UOM) {
+                    $('#frmLoadedIn_txtUOM').val(selectedItem.UOM).trigger('change');
+                }
+            }
+        );
+    });
+}
+
 function GetConfigGateEntry() {
     GateEntryService.GetConfigGateEntry().then(function (response) {
         ConfigGateEntry = response;
+        LockDocumntFutureDate();
         EnableScaleWeight();
         BindddlVehiclesStatusInFectory();
+        BindGateEntryTransportModeSelects();
+        GateEntry_ApplyModeOfTransportVisibility();
+        GateEntry_ApplyEntryWithoutExistingItemRadioVisibility();
 
     });
 }
@@ -908,10 +1115,16 @@ function GateEntry_rdPOAccess_onClick(ele) {
    
     if (ele.value === 'withpo') {
         IsWithPo = true;
+        IsEntryWithoutExistingItem = false;
+    } else if (ele.value === 'withoutexistingitem') {
+        IsWithPo = false;
+        IsEntryWithoutExistingItem = true;
     } else {
         IsWithPo = false;
+        IsEntryWithoutExistingItem = false;
     }
     WithPO();
+    GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState();
 }
 function WithPO() {
     if (IsWithPo ==true) {
@@ -938,16 +1151,723 @@ function WithPO() {
         $('#RowfrmLoadedInPoItemGrid').hide();
     }
 }
-function PrintGateEntry(GateEntyMaster_Code) {
-    GateEntryService.Print(GateEntyMaster_Code).then(function (response) {
-        let url = response.Url;
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.target = '_blank';
-        a.href = url;
-        document.body.appendChild(a);
-        a.click();
+function GateEntry_BuildGridActionButtons(item) {
+    const typeIn = item['Type In'].replace(' ', '');
+    const code = item.Code;
+    const godown = item.GodownMaster_Code;
+    const attachName = `${item['Type In']} ${item['Entry No']} ${item['Vehicle No']} ${String(item['Date In Time'] || '').replace(/[:/]/g, '')} ${String(item['Date Out Time'] || '').replace(/[:/]/g, '')}`;
+    const printBtn = `<a class="btn btn-info icon-height" onclick="GateEnty_PrintGateEntry(${code})" title="Print"> <i class="fa fa-print"></i></a>&nbsp;`;
+    const attachBtn = `<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(${code},'${attachName.replace(/'/g, '\\\'')}')"> <i class="fa fa-paperclip"></i></a>&nbsp;`;
+
+    if (item['Date Out Time'] !== '') {
+        return printBtn + attachBtn
+            + `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}editFull_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`
+            + `<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}view_${code}_${godown}')" ><i class="fa fa-eye"></i></a>`;
+    }
+    if (typeIn.toLowerCase() === 'loadedin') {
+        return printBtn + attachBtn
+            + `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}edit_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`
+            + `<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}emptyout_${code}_${godown}')" >Out</a>`;
+    }
+    return printBtn + attachBtn
+        + `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}edit_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`
+        + `<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}loadedout_${code}_${godown}')" >Out</a>`;
+}
+
+function geEscapeHtml(value) {
+    if (value == null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function gePickField(obj, keys, defaultValue) {
+    if (!obj) return defaultValue || '';
+    for (let i = 0; i < keys.length; i++) {
+        const val = obj[keys[i]];
+        if (val !== undefined && val !== null && String(val).trim() !== '') {
+            return val;
+        }
+    }
+    return defaultValue || '';
+}
+
+function geFormatGateEntryDate(value) {
+    if (!value) return '';
+    try {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleDateString('en-IN');
+        }
+    } catch (ex) { /* ignore */ }
+    return String(value).slice(0, 10);
+}
+
+function geFormatGateEntryDateTime(dateValue, timeValue) {
+    const datePart = geFormatGateEntryDate(dateValue);
+    const timePart = timeValue ? String(timeValue).trim() : '';
+    if (datePart && timePart) return `${datePart} ${timePart}`;
+    return datePart || timePart || '';
+}
+
+function geGetCompanyLogoFileName(companyName) {
+    const name = String(companyName || '').trim();
+    if (!name) {
+        return '';
+    }
+
+    const normalized = name.toLowerCase();
+    if (normalized.includes('allianz')) {
+        return 'allianzlog.jpeg';
+    }
+    if (normalized.includes('purshotam')) {
+        return 'pppllog.jpeg';
+    }
+
+    const firstWord = name.replace(/[^a-zA-Z0-9\s]/g, ' ').trim().split(/\s+/)[0] || '';
+    if (firstWord) {
+        return `${firstWord.toLowerCase()}log.jpeg`;
+    }
+
+    return '';
+}
+
+function geGetGateEntryCompanyInfo(data) {
+    let companyName = gePickField(data, ['CompanyName', 'companyName'], '');
+    let companyAddress = gePickField(data, ['CompanyAddress', 'companyAddress'], '');
+    try {
+        const userDetails = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        if (userDetails && userDetails[0]) {
+            if (!companyName) {
+                companyName = userDetails[0].CompanyName || userDetails[0].CompanyNameForShow || '';
+            }
+            if (!companyAddress) {
+                companyAddress = userDetails[0].CompanyAddress || '';
+            }
+        }
+    } catch (ex) { /* ignore */ }
+    const logoFileName = geGetCompanyLogoFileName(companyName);
+    const logoUrl = `${(sessionStorage.getItem('AppBaseURL') || '/').replace(/\/?$/, '/')}assets/images/${logoFileName}`;
+    return { companyName, companyAddress, logoUrl };
+}
+
+function geGetGateEntryCreatedBy(data) {
+    const fromApi = gePickField(data, ['CreatedBy', 'CreatedByName', 'UserName', 'UserID', 'createdBy'], '');
+    if (fromApi) return fromApi;
+    try {
+        const userDetails = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        if (userDetails && userDetails[0]) {
+            return userDetails[0].UserID || userDetails[0].UserName || '';
+        }
+    } catch (ex) { /* ignore */ }
+    return '';
+}
+
+function geIsImageFileName(fileName) {
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(String(fileName || ''));
+}
+
+function geBlobToDataUrl(blob) {
+    return new Promise(function (resolve) {
+        const reader = new FileReader();
+        reader.onloadend = function () { resolve(reader.result || ''); };
+        reader.onerror = function () { resolve(''); };
+        reader.readAsDataURL(blob);
     });
+}
+
+function geBytesToDataUrl(bytes) {
+    if (!bytes || !bytes.length) return '';
+    try {
+        const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        let binary = '';
+        for (let i = 0; i < arr.length; i++) {
+            binary += String.fromCharCode(arr[i]);
+        }
+        return 'data:image/jpeg;base64,' + btoa(binary);
+    } catch (ex) {
+        return '';
+    }
+}
+
+function geLoadAttachmentDataUrl(documentMasterCode) {
+    return AttachmentControlService.DownloadAttachment(documentMasterCode)
+        .then(function (blob) { return geBlobToDataUrl(blob); })
+        .catch(function () { return ''; });
+}
+
+function geExtractImageFromGateEntryDetails(data) {
+    const imageDetail = data.gateEntryImageDetail || data.GateEntryImageDetail;
+    if (!Array.isArray(imageDetail) || imageDetail.length === 0) {
+        return { inSrc: '', outSrc: '' };
+    }
+
+    let inSrc = '';
+    let outSrc = '';
+    imageDetail.forEach(function (imgRow, index) {
+        const vehicleSrc = geBytesToDataUrl(imgRow.imgVehicle || imgRow.ImgVehicle || []);
+        const materialSrc = geBytesToDataUrl(imgRow.imgMaterial || imgRow.ImgMaterial || []);
+        const src = materialSrc || vehicleSrc;
+        if (!src) return;
+        if (index === 0 && !inSrc) {
+            inSrc = src;
+        } else if (!outSrc) {
+            outSrc = src;
+        } else if (!inSrc) {
+            inSrc = src;
+        }
+    });
+    return { inSrc, outSrc };
+}
+
+function geFetchGateEntryPhotoSources(code, data) {
+    const fromDetails = geExtractImageFromGateEntryDetails(data);
+    return AttachmentControlService.GetAttachmentUploadFiles('GateEntryMaster', code, '', 0)
+        .then(function (response) {
+            const list = Array.isArray(response) ? response.filter(function (item) {
+                return geIsImageFileName(item.DocumentName);
+            }) : [];
+
+            let inAtt = null;
+            let outAtt = null;
+            list.forEach(function (att) {
+                const text = `${att.DocumentParticulars || ''} ${att.DocumentName || ''}`.toLowerCase();
+                if (!outAtt && (text.includes('out') || text.includes('loadedout') || text.includes('emptyout'))) {
+                    outAtt = att;
+                } else if (!inAtt && (text.includes('in') || text.includes('vehicle') || text.includes('goods') || text.includes('material'))) {
+                    inAtt = att;
+                }
+            });
+
+            if (!inAtt && list.length > 0) inAtt = list[0];
+            if (!outAtt && list.length > 1) outAtt = list[1];
+
+            const tasks = [];
+            if (!fromDetails.inSrc && inAtt) {
+                tasks.push(geLoadAttachmentDataUrl(inAtt.Code).then(function (src) { fromDetails.inSrc = src; }));
+            }
+            if (!fromDetails.outSrc && outAtt) {
+                tasks.push(geLoadAttachmentDataUrl(outAtt.Code).then(function (src) { fromDetails.outSrc = src; }));
+            }
+            return Promise.all(tasks).then(function () { return fromDetails; });
+        })
+        .catch(function () { return fromDetails; });
+}
+
+function geIsBlankOutPrintValue(value) {
+    if (value == null || value === undefined) {
+        return true;
+    }
+    const text = String(value).trim();
+    return text === '' || text === '0' || text === '00:00' || text.toLowerCase() === 'null';
+}
+
+function geIsGateEntryOutCompleted(data) {
+    const dateOutTime = gePickField(data, ['Date Out Time'], '');
+    const outNo = gePickField(data, ['Entry No OUT', 'GateEntryOutNo', 'gateEntryOutNo', 'OutEntryNo'], '');
+    if (!geIsBlankOutPrintValue(dateOutTime) || !geIsBlankOutPrintValue(outNo)) {
+        return true;
+    }
+
+    const outDate = gePickField(data, ['GateEntryOutDate'], '');
+    const vehicleOutTime = gePickField(data, ['VehicleOutTime'], '');
+    return !geIsBlankOutPrintValue(outDate) && !geIsBlankOutPrintValue(vehicleOutTime);
+}
+
+function geGetGateEntryOutDateTime(data) {
+    if (!geIsGateEntryOutCompleted(data)) {
+        return '';
+    }
+
+    const gridDateOutTime = gePickField(data, ['Date Out Time'], '');
+    if (!geIsBlankOutPrintValue(gridDateOutTime)) {
+        return gridDateOutTime;
+    }
+
+    return geFormatGateEntryDateTime(data.GateEntryOutDate, data.VehicleOutTime);
+}
+
+function geGetGateEntryVehicleOutTime(data) {
+    if (!geIsGateEntryOutCompleted(data)) {
+        return '';
+    }
+
+    const gridDateOutTime = gePickField(data, ['Date Out Time'], '');
+    if (!geIsBlankOutPrintValue(gridDateOutTime)) {
+        const parts = String(gridDateOutTime).trim().split(/\s+/);
+        if (parts.length > 1) {
+            return parts.slice(1).join(' ');
+        }
+    }
+
+    const vehicleOutTime = gePickField(data, ['VehicleOutTime'], '');
+    return geIsBlankOutPrintValue(vehicleOutTime) ? '' : vehicleOutTime;
+}
+
+function geFormatVehicleWeight(value) {
+    if (value == null || value === undefined || String(value).trim() === '') {
+        return '';
+    }
+    const num = parseFloat(String(value).replace(/,/g, ''));
+    if (isNaN(num) || num === 0) {
+        return '';
+    }
+    return num.toFixed(2);
+}
+
+function geGetGateEntryInVehicleWeight(data, isLoadedIn) {
+    const weight = isLoadedIn
+        ? gePickField(data, ['LoadedWeight', 'loadedWeight'], '')
+        : gePickField(data, ['EmptyWeight', 'emptyWeight'], '');
+    return geFormatVehicleWeight(weight);
+}
+
+function geGetGateEntryOutVehicleWeight(data, isLoadedIn) {
+    if (!geIsGateEntryOutCompleted(data)) {
+        return '';
+    }
+    const weight = isLoadedIn
+        ? gePickField(data, ['EmptyWeight', 'emptyWeight'], '')
+        : gePickField(data, ['LoadedWeight', 'loadedWeight'], '');
+    return geFormatVehicleWeight(weight);
+}
+
+function geGetGateEntryNetWeight(data) {
+    if (!geIsGateEntryOutCompleted(data)) {
+        return '';
+    }
+    return geFormatVehicleWeight(gePickField(data, ['NetWeight', 'netWeight'], ''));
+}
+
+function geFindGateEntryGridRow(code) {
+    if (!Array.isArray(ExcelExportDataArry) || ExcelExportDataArry.length === 0) {
+        return null;
+    }
+    const entryCode = parseInt(String(code), 10);
+    return ExcelExportDataArry.find(function (row) {
+        return parseInt(String(row.Code), 10) === entryCode;
+    }) || null;
+}
+
+function geMergeGateEntryPrintData(detailsRow, gridRow) {
+    const merged = Object.assign({}, detailsRow || {});
+    if (!gridRow) {
+        return merged;
+    }
+
+    if (!gePickField(merged, ['GateEntryNo', 'Entry No IN', 'Entry No', 'gateEntryNo'], '')) {
+        merged.GateEntryNo = gridRow['Entry No IN'] || gridRow['Entry No'] || gridRow.GateEntryNo;
+        merged['Entry No IN'] = merged.GateEntryNo;
+    }
+    if (!gePickField(merged, ['GateEntryOutNo', 'Entry No OUT', 'gateEntryOutNo', 'OutEntryNo'], '')) {
+        merged.GateEntryOutNo = gridRow['Entry No OUT'] || gridRow.GateEntryOutNo || gridRow.OutEntryNo;
+        merged['Entry No OUT'] = merged.GateEntryOutNo;
+    } else if (gridRow['Entry No OUT']) {
+        merged.GateEntryOutNo = gridRow['Entry No OUT'];
+        merged['Entry No OUT'] = gridRow['Entry No OUT'];
+    }
+    merged['Date Out Time'] = gridRow['Date Out Time'] || merged['Date Out Time'] || '';
+    if (geIsBlankOutPrintValue(gridRow['Date Out Time']) && geIsBlankOutPrintValue(gridRow['Entry No OUT'])) {
+        merged['Entry No OUT'] = '';
+        merged.GateEntryOutNo = '';
+        merged['Date Out Time'] = '';
+        merged.GateEntryOutDate = '';
+        merged.VehicleOutTime = '';
+    }
+    if (!gePickField(merged, ['Type In', 'TypeIn'], '')) {
+        merged['Type In'] = gridRow['Type In'];
+    }
+    if (!gePickField(merged, ['TransactionType', 'transactionType'], '')) {
+        merged.TransactionType = gridRow.TransactionType;
+    }
+    if (!gePickField(merged, ['GoodDescription', 'Good Desp', 'goodDescription', 'goodDesc'], '')) {
+        merged.GoodDescription = gridRow['Good Desp'] || gridRow.GoodDescription;
+        merged['Good Desp'] = merged.GoodDescription;
+    } else if (gridRow['Good Desp']) {
+        merged.GoodDescription = gridRow['Good Desp'];
+        merged['Good Desp'] = gridRow['Good Desp'];
+    }
+    if (!gePickField(merged, ['Qty', 'qty'], '')) {
+        merged.Qty = gridRow.Qty;
+    }
+    if (!gePickField(merged, ['UOM', 'Uom'], '')) {
+        merged.UOM = gridRow.UOM;
+    }
+    if (!gePickField(merged, ['VendorName', 'Party name'], '')) {
+        merged.VendorName = gridRow['Party name'] || gridRow.VendorName;
+    }
+    if (!gePickField(merged, ['DocumentType', 'Doc Type'], '')) {
+        merged.DocumentType = gridRow['Doc Type'] || gridRow.DocumentType;
+    }
+    if (!gePickField(merged, ['DocNo', 'Doc No'], '')) {
+        merged.DocNo = gridRow['Doc No'] || gridRow.DocNo;
+    }
+    if (!gePickField(merged, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], '')) {
+        merged.PurchaseOrderMaster_Code = gridRow.PurchaseOrderMaster_Code || gridRow.purchaseOrderMaster_Code;
+    }
+    if (!gePickField(merged, ['PONo', 'PO No'], '')) {
+        merged.PONo = gridRow['PO No'] || gridRow.PONo || gridRow.PONumber;
+    }
+    return merged;
+}
+
+function geGetGateEntryOutNo(data) {
+    if (!geIsGateEntryOutCompleted(data)) {
+        return '';
+    }
+    return gePickField(data, [
+        'GateEntryOutNo',
+        'gateEntryOutNo',
+        'Entry No OUT',
+        'EntryNoOut',
+        'OutEntryNo',
+        'GateEntryNoOut',
+        'Out Gate Entry No'
+    ], '');
+}
+
+function geResolveGateEntryPONo(data, poItems, pendingPoList) {
+    let poNo = gePickField(data, ['PONo', 'PO No', 'PONumber', 'PurchaseOrderNo', 'poNo'], '');
+    if (poNo) {
+        return poNo;
+    }
+
+    if (Array.isArray(poItems) && poItems.length > 0) {
+        poNo = gePickField(poItems[0], ['PONo', 'PO No', 'PONumber', 'Purchase Order No'], '');
+        if (poNo) {
+            return poNo;
+        }
+    }
+
+    const poCode = parseInt(gePickField(data, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], 0), 10);
+    if (poCode > 0) {
+        const poList = Array.isArray(pendingPoList) && pendingPoList.length > 0
+            ? pendingPoList
+            : (Array.isArray(G_PendingPONOList) ? G_PendingPONOList : []);
+        const found = poList.find(function (item) {
+            return parseInt(item.PurchaseOrderMaster_Code, 10) === poCode;
+        });
+        if (found && found.PONo) {
+            return found.PONo;
+        }
+    }
+
+    return '';
+}
+
+function geIsGateEntryWithPO(data, poItems) {
+    const poCode = parseInt(gePickField(data, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], 0), 10);
+    if (poCode > 0) {
+        return true;
+    }
+    if (geResolveGateEntryPONo(data, poItems)) {
+        return true;
+    }
+    return Array.isArray(poItems) && poItems.length > 0;
+}
+
+function geBuildGateEntryItemRows(data, poItems) {
+    const transactionType = String(gePickField(data, ['TransactionType', 'transactionType'], 'LIN')).toUpperCase();
+    const rows = [];
+
+    if (Array.isArray(poItems) && poItems.length > 0) {
+        poItems.forEach(function (item) {
+            rows.push({
+                itemName: gePickField(item, ['Item Name', 'ItemName', 'Product', 'GoodDescription', 'Good Desp'], ''),
+                specification: gePickField(item, ['Specification', 'ItemSpecificationDesp', 'Size Description'], ''),
+                billQty: gePickField(item, [
+                    'BILLED QTY', 'BiLLED QTY', 'Bill Qty', 'Bill QTY', 'BILL QTY',
+                    'Qty', 'Billed Qty', 'Recv Qty', 'RECV QTY', 'Received Qty'
+                ], ''),
+                uom: gePickField(item, ['UOM', 'Uom', 'Unit'], '')
+            });
+        });
+        return rows;
+    }
+
+    const itemName = gePickField(data, ['GoodDescription', 'Good Desp', 'goodDescription', 'goodDesc'], '');
+    const billQty = gePickField(data, ['Qty', 'qty'], '');
+    const uom = gePickField(data, ['UOM', 'Uom'], '');
+    if (itemName || billQty || uom) {
+        rows.push({
+            itemName: itemName,
+            specification: '',
+            billQty: billQty,
+            uom: uom
+        });
+    } else if (transactionType === 'EIN' && gePickField(data, ['GateEntryOutDate'], '')) {
+        rows.push({
+            itemName: '-',
+            specification: '-',
+            billQty: '-',
+            uom: '-'
+        });
+    }
+    return rows;
+}
+
+function geBuildGateEntryPrintHtml(data, poItems, photos, pendingPoList) {
+    const company = geGetGateEntryCompanyInfo(data);
+    const transactionType = String(gePickField(data, ['TransactionType', 'transactionType'], '')).toUpperCase();
+    const typeInDesp = String(gePickField(data, ['Type In', 'TypeIn'], '')).replace(/\s/g, '').toLowerCase();
+    const isLoadedIn = transactionType === 'LIN' || typeInDesp === 'loadedin';
+    const entryTypeLabel = isLoadedIn ? 'Loaded IN' : 'Empty IN';
+    const inPhotoLabel = isLoadedIn ? 'Loaded In photos' : 'Empty In photos';
+    const outPhotoLabel = isLoadedIn ? 'Empty Out Photos' : 'Loaded Out Photos';
+
+    const withPO = geIsGateEntryWithPO(data, poItems);
+    const poNo = geResolveGateEntryPONo(data, poItems, pendingPoList);
+    const withoutExistingItem =
+        gePickField(data, ['EntryWithOutExistingItem', 'entryWithOutExistingItem'], '') === 'Y' ||
+        gePickField(data, ['EntryWithOutExistingItem', 'entryWithOutExistingItem'], '') === true ||
+        String(gePickField(data, ['EntryWithOutExistingItem', 'entryWithOutExistingItem'], '')).toUpperCase() === 'Y';
+    const withoutPO = !withPO && !withoutExistingItem;
+    const poAccessHtml = isLoadedIn
+        ? `<strong>With PO</strong> ${withPO ? 'Y' : 'N'} &nbsp;&nbsp;
+           <strong>W/O PO</strong> ${withoutPO ? 'Y' : 'N'} &nbsp;&nbsp;
+           <strong>W/O Existing Item</strong> ${withoutExistingItem ? 'Y' : 'N'}`
+        : '';
+    const itemRows = geBuildGateEntryItemRows(data, poItems);
+    const itemRowsHtml = itemRows.length > 0
+        ? itemRows.map(function (row) {
+            return `<tr>
+                <td>${geEscapeHtml(row.itemName)}</td>
+                <td>${geEscapeHtml(row.specification)}</td>
+                <td style="text-align:center;">${geEscapeHtml(row.billQty)}</td>
+                <td style="text-align:center;">${geEscapeHtml(row.uom)}</td>
+            </tr>`;
+        }).join('')
+        : `<tr><td colspan="4" style="text-align:center;color:#666;">No item details</td></tr>`;
+    const vehicleRowHtml = isLoadedIn
+        ? `<tr>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Vehicle No.</strong><br>${geEscapeHtml(gePickField(data, ['VehicleNo', 'Vehicle No'], ''))}</td>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;">${poAccessHtml}</td>
+                </tr>`
+        : `<tr>
+                    <td colspan="4" style="border:1px solid #000;padding:6px 10px;"><strong>Vehicle No.</strong><br>${geEscapeHtml(gePickField(data, ['VehicleNo', 'Vehicle No'], ''))}</td>
+                </tr>`;
+    const poNoRowHtml = isLoadedIn && withPO
+        ? `<tr>
+                    <td colspan="4" style="border:1px solid #000;padding:6px 10px;"><strong>PO No.</strong><br>${geEscapeHtml(poNo)}</td>
+                </tr>`
+        : '';
+    const itemTableHtml = `<tr>
+                    <td colspan="4" style="border:1px solid #000;padding:0;">
+                        <table class="ge-item-table" style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="border:1px solid #000;padding:6px;text-align:left;">Item name</th>
+                                    <th style="border:1px solid #000;padding:6px;text-align:left;">Specification</th>
+                                    <th style="border:1px solid #000;padding:6px;text-align:center;width:90px;">Bill Qty</th>
+                                    <th style="border:1px solid #000;padding:6px;text-align:center;width:70px;">UOM</th>
+                                </tr>
+                            </thead>
+                            <tbody>${itemRowsHtml}</tbody>
+                        </table>
+                    </td>
+                </tr>`;
+
+    const inPhotoHtml = photos.inSrc
+        ? `<img src="${photos.inSrc}" alt="${geEscapeHtml(inPhotoLabel)}" style="max-width:100%;max-height:220px;object-fit:contain;" />`
+        : `<div class="photo-placeholder">No photo</div>`;
+    const outPhotoHtml = photos.outSrc
+        ? `<img src="${photos.outSrc}" alt="${geEscapeHtml(outPhotoLabel)}" style="max-width:100%;max-height:220px;object-fit:contain;" />`
+        : `<div class="photo-placeholder">No photo</div>`;
+
+    const gateEntryNo = gePickField(data, ['GateEntryNo', 'Entry No IN', 'Entry No', 'gateEntryNo'], '');
+    const gateEntryOutNo = geGetGateEntryOutNo(data);
+    const gateEntryInDateTime = geFormatGateEntryDateTime(data.GateEntryDate, data.TimeIO);
+    const gateEntryOutDateTime = geGetGateEntryOutDateTime(data);
+    const vehicleInTime = gePickField(data, ['TimeIO', 'VehicleInTime'], '');
+    const vehicleOutTime = geGetGateEntryVehicleOutTime(data);
+    const isOutCompleted = geIsGateEntryOutCompleted(data);
+    const vehicleInWeight = geGetGateEntryInVehicleWeight(data, isLoadedIn);
+    const vehicleOutWeight = geGetGateEntryOutVehicleWeight(data, isLoadedIn);
+    const netWeight = geGetGateEntryNetWeight(data);
+    const inWeightLabel = isLoadedIn ? 'Vehicle Loaded Weight (KG)' : 'Vehicle Empty Weight (KG)';
+    const outWeightLabel = isLoadedIn ? 'Vehicle Empty Weight (KG)' : 'Vehicle Loaded Weight (KG)';
+    const outPhotoDisplayHtml = isOutCompleted ? outPhotoHtml : `<div class="photo-placeholder">-</div>`;
+    const netWeightHtml = netWeight
+        ? `<div style="margin-top:6px;"><strong>Net Weight (KG)</strong><br>${geEscapeHtml(netWeight)}</div>`
+        : '';
+    return `
+        <div class="ge-print-wrap">
+            <table class="ge-print-table">
+                <tr>
+                    <td class="logo-cell" rowspan="2" style="width:120px;border:1px solid #000;text-align:center;vertical-align:middle;">
+                        <img src="${company.logoUrl}" alt="Logo" style="max-width:100px;max-height:70px;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+                        <div style="display:none;font-weight:bold;">LOGO</div>
+                    </td>
+                    <td colspan="3" style="border:1px solid #000;text-align:center;font-size:20px;font-weight:bold;padding:8px;">
+                        ${geEscapeHtml(company.companyName || 'Company Name')}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="border:1px solid #000;padding:6px 10px;">
+                        <strong>Address:</strong> ${geEscapeHtml(company.companyAddress)}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="border:1px solid #000;padding:6px 10px;font-weight:bold;background:#f5f5f5;">
+                        Gate Entry Print &mdash; 
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #000;padding:6px 10px;width:25%;"><strong>Gate entry no</strong><br>${geEscapeHtml(gateEntryNo)}</td>
+                    <td style="border:1px solid #000;padding:6px 10px;width:25%;"><strong>Gate entry Date and time</strong><br>${geEscapeHtml(gateEntryInDateTime)}</td>
+                    <td style="border:1px solid #000;padding:6px 10px;width:25%;"><strong>OUT entry no</strong><br>${geEscapeHtml(gateEntryOutNo)}</td>
+                    <td style="border:1px solid #000;padding:6px 10px;width:25%;"><strong>Out entry Date and time</strong><br>${geEscapeHtml(gateEntryOutDateTime)}</td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #000;padding:6px 10px;"><strong>Driver no</strong><br>${geEscapeHtml(gePickField(data, ['DriverMobile', 'Driver No'], ''))}</td>
+                    <td colspan="3" style="border:1px solid #000;padding:6px 10px;"><strong>Driver Name</strong><br>${geEscapeHtml(gePickField(data, ['DriverName'], ''))}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Transporter name</strong><br>${geEscapeHtml(gePickField(data, ['OtherTransporterName', 'Transporter Name'], ''))}</td>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Vendor name</strong><br>${geEscapeHtml(gePickField(data, ['VendorName', 'Party name'], ''))}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Document type</strong><br>${geEscapeHtml(gePickField(data, ['DocumentType', 'Doc Type'], ''))}</td>
+                    <td colspan="2" style="border:1px solid #000;padding:6px 10px;"><strong>Document No.</strong><br>${geEscapeHtml(gePickField(data, ['DocNo', 'Doc No'], ''))}</td>
+                </tr>
+                ${vehicleRowHtml}
+                ${poNoRowHtml}
+                ${itemTableHtml}
+                <tr>
+                    <td colspan="2" style="border:1px solid #000;padding:8px;text-align:center;vertical-align:top;">
+                        <div style="font-weight:bold;margin-bottom:8px;">${geEscapeHtml(inPhotoLabel)}</div>
+                        <div class="photo-box">${inPhotoHtml}</div>
+                        <div style="margin-top:8px;"><strong>Vehicle IN time</strong><br>${geEscapeHtml(vehicleInTime)}</div>
+                        <div style="margin-top:6px;"><strong>${geEscapeHtml(inWeightLabel)}</strong><br>${geEscapeHtml(vehicleInWeight)}</div>
+                    </td>
+                    <td colspan="2" style="border:1px solid #000;padding:8px;text-align:center;vertical-align:top;">
+                        <div style="font-weight:bold;margin-bottom:8px;">${geEscapeHtml(outPhotoLabel)}</div>
+                        <div class="photo-box">${outPhotoDisplayHtml}</div>
+                        <div style="margin-top:8px;"><strong>Vehicle Out time</strong><br>${geEscapeHtml(vehicleOutTime)}</div>
+                        <div style="margin-top:6px;"><strong>${geEscapeHtml(outWeightLabel)}</strong><br>${geEscapeHtml(vehicleOutWeight)}</div>
+                        ${netWeightHtml}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="border:1px solid #000;padding:8px 10px;">
+                        <strong>Created By:</strong> ${geEscapeHtml(geGetGateEntryCreatedBy(data))}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    `;
+}
+
+function geOpenGateEntryPrintWindow(html, title) {
+    const printWindow = window.open('', '_blank', 'width=980,height=760,scrollbars=yes');
+    if (!printWindow) {
+        toastr.error('Please allow pop-ups for this site');
+        return;
+    }
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>${geEscapeHtml(title)}</title>
+            <style>
+                @media print {
+                    body { margin: 0; padding: 8mm; }
+                    @page { size: A4; margin: 8mm; }
+                }
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 12px;
+                    color: #000;
+                }
+                .ge-print-wrap {
+                    max-width: 900px;
+                    margin: 0 auto;
+                }
+                .ge-print-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 13px;
+                }
+                .ge-item-table th,
+                .ge-item-table td {
+                    font-size: 12px;
+                }
+                .photo-box {
+                    min-height: 180px;
+                    border: 1px solid #999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 8px;
+                    background: #fafafa;
+                }
+                .photo-placeholder {
+                    color: #777;
+                    font-size: 12px;
+                }
+            </style>
+        </head>
+        <body>
+            ${html}
+            <script>
+                window.onload = function() {
+                    window.focus();
+                    setTimeout(function() { window.print(); }, 400);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+function GateEnty_PrintGateEntry(Code) {
+    Showloader();
+    GateEntryService.GetGateEntryDetails(Code).then(function (response) {
+        if (!response || response.length === 0) {
+            HideLoader();
+            toastr.error('No data found for this gate entry');
+            return;
+        }
+
+        const data = geMergeGateEntryPrintData(response[0], geFindGateEntryGridRow(Code));
+        const isLoadedInEntry =
+            String(gePickField(data, ['TransactionType', 'transactionType'], '')).toUpperCase() === 'LIN' ||
+            String(gePickField(data, ['Type In', 'TypeIn'], '')).replace(/\s/g, '').toLowerCase() === 'loadedin';
+        const poDetailPromise = isLoadedInEntry
+            ? GateEntryService.getPODetailByGateEntryCode(Code).catch(function () { return []; })
+            : Promise.resolve([]);
+        const pendingPoPromise = isLoadedInEntry
+            ? GateEntryService.GetPendingPONO().catch(function () { return G_PendingPONOList || []; })
+            : Promise.resolve(G_PendingPONOList || []);
+
+        return Promise.all([poDetailPromise, geFetchGateEntryPhotoSources(Code, data), pendingPoPromise]).then(function (results) {
+            const poItemsRaw = results[0];
+            const poItems = Array.isArray(poItemsRaw) ? poItemsRaw : (poItemsRaw && Array.isArray(poItemsRaw.data) ? poItemsRaw.data : []);
+            if (poItems.length > 0 && !gePickField(data, ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], '')) {
+                data.PurchaseOrderMaster_Code = gePickField(poItems[0], ['PurchaseOrderMaster_Code', 'purchaseOrderMaster_Code'], '');
+            }
+            const photos = results[1] || { inSrc: '', outSrc: '' };
+            const pendingPoList = Array.isArray(results[2]) ? results[2] : [];
+            const entryNo = gePickField(data, ['GateEntryNo', 'Entry No IN', 'Entry No'], Code);
+            const html = geBuildGateEntryPrintHtml(data, poItems, photos, pendingPoList);
+            geOpenGateEntryPrintWindow(html, `Gate Entry - ${entryNo}`);
+        });
+    }).catch(function (error) {
+        console.error('Gate entry print error:', error);
+        toastr.error('Failed to load gate entry for print');
+    }).finally(function () {
+        HideLoader();
+    });
+}
+
+function PrintGateEntry(GateEntyMaster_Code) {
+    GateEnty_PrintGateEntry(GateEntyMaster_Code);
 }
 function GateEntry_SaveData(Mode) {
     let valid = true;
@@ -994,19 +1914,33 @@ function GateEntry_SaveData(Mode) {
     let GRNo = "";
 
     let RejectEntry = 'N';
+    let ModeOfTransportation = '';
 
     if (Mode === 'EmptyInSave' || Mode === 'emptyinedit') {
         let PhotoLenth = 0;
         Time = $('#frmEmptyIn_txtVehicleInTime').val();
+        if (GateEntry_IsModeOfTransportEnabled()) {
+            ModeOfTransportation = $('#frmEmptyIn_txtModeOfTransportation').val() || '';
+            if (!ModeOfTransportation || ModeOfTransportation === '') {
+                valid = false;
+                toastr.error('Please Check! Mode Of Transportation can not be blank');
+                $('#frmEmptyIn_txtModeOfTransportation').focus();
+                return;
+            }
+        } else {
+            ModeOfTransportation = '';
+        }
+        const relaxHandCourierEmptyIn = GateEntry_IsModeOfTransportEnabled() && GateEntry_IsByHandOrCourierFromSelect($('#frmEmptyIn_txtModeOfTransportation'));
         VehicleNo = $('#frmEmptyIn_txtVehicleNo').val();
         DriverName = $('#frmEmptyIn_txtDriverName').val();
         DriverMobile = $('#frmEmptyIn_txtDriverNo').val();
         TransporterName = $('#frmEmptyIn_ddlTransporterName').val();
         Remark = $('#frmEmptyIn_txtRemarks').val();
         PhotoLenth = $('#frmEmptyIn_fileVehiclePhoto')[0].files.length;
+        if (PhotoLenth === 0 && (G_ScaleVehiclePhotoProvided || (GateEntryImageDetail && GateEntryImageDetail[0] && GateEntryImageDetail[0].imgVehicle && GateEntryImageDetail[0].imgVehicle.length > 0))) { PhotoLenth = 1; }
 
         
-        if (typeof VehicleNo === 'undefined' || VehicleNo === '' || VehicleNo === null) {
+        if (!relaxHandCourierEmptyIn && (typeof VehicleNo === 'undefined' || VehicleNo === '' || VehicleNo === null)) {
             valid = false;
             toastr.error('Please Check! Vehicle No can not be blank');
             $('#frmEmptyIn_txtVehicleNo').focus();
@@ -1053,33 +1987,38 @@ function GateEntry_SaveData(Mode) {
             
         }
 
-        if (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null) {
+        if (!relaxHandCourierEmptyIn && (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null)) {
             valid = false;
             toastr.error('Please Check! Driver Name can not be blank');
             $('#frmEmptyIn_txtDriverName').focus();
             return;
         }
-        if (typeof DriverMobile === 'undefined' || DriverMobile === '' || DriverMobile === null) {
+        if (!relaxHandCourierEmptyIn && (typeof DriverMobile === 'undefined' || DriverMobile === '' || DriverMobile === null)) {
             valid = false;
             toastr.error('Please Check! Driver No. can not be blank');
             $('#frmEmptyIn_txtDriverNo').focus();
             return;
         }
-        if (BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
+        if (!relaxHandCourierEmptyIn && BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
             valid = false;
             toastr.error('Please enter valid mobile number.');
             $('#frmEmptyIn_txtDriverNo').focus();
             return;
 
         }
-        if (typeof TransporterName === 'undefined' || TransporterName === '' || TransporterName === null) {
+        if (!relaxHandCourierEmptyIn && (typeof TransporterName === 'undefined' || TransporterName === '' || TransporterName === null)) {
             valid = false;
             toastr.error('Please Check! Transporter Name can not be blank');
             $('#frmEmptyIn_ddlTransporterName').focus();
             return;
         }
 
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+        const emptyInCustomerNameConfig = ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'CustomerNameInEmptyIN');
+        if (emptyInCustomerNameConfig && emptyInCustomerNameConfig.PerameterValue === 'Y') {
+            VendorName = $('#frmEmptyIn_txtCustomerNameIn').val();
+        }
+
+        if (!relaxHandCourierEmptyIn && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
             EmptyWeight = $('#frmEmptyIn_txtVehicleEmptyWeight').val();
             WeightmentSlipNumberIn = $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val();
 
@@ -1095,9 +2034,12 @@ function GateEntry_SaveData(Mode) {
                 $('#frmEmptyIn_txtWeightmentSlipNoEmpty').focus();
                 return;
             }
+        } else if (relaxHandCourierEmptyIn && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+            EmptyWeight = $('#frmEmptyIn_txtVehicleEmptyWeight').val();
+            WeightmentSlipNumberIn = $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val();
         }
 
-        if (Mode === 'EmptyInSave' && (typeof PhotoLenth === 'undefined' || PhotoLenth === 0)) {
+        if (Mode === 'EmptyInSave' && !relaxHandCourierEmptyIn && (typeof PhotoLenth === 'undefined' || PhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Vehicle Photo can not be blank');
             $('#frmEmptyIn_fileVehiclePhoto').focus();
@@ -1130,6 +2072,19 @@ function GateEntry_SaveData(Mode) {
         EmptyWeight = $('#frmEmptyIn_txtVehicleEmptyWeight').val();
         WeightmentSlipNumberIn = $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val();
 
+        if (GateEntry_IsModeOfTransportEnabled()) {
+            ModeOfTransportation = $('#frmEmptyIn_txtModeOfTransportation').val() || '';
+            if (!ModeOfTransportation || ModeOfTransportation === '') {
+                valid = false;
+                toastr.error('Please Check! Mode Of Transportation can not be blank');
+                $('#frmEmptyIn_txtModeOfTransportation').focus();
+                return;
+            }
+        } else {
+            ModeOfTransportation = '';
+        }
+        const relaxHandCourierLoadedOut = GateEntry_IsModeOfTransportEnabled() && GateEntry_IsByHandOrCourierFromSelect($('#frmEmptyIn_txtModeOfTransportation'));
+
         GateEntryOutDate = $('#frmLoadedOut_txtDateOut').val();
         VehicleOutTime = $('#frmLoadedOut_txtVehicleOutTime').val();
 
@@ -1156,6 +2111,7 @@ function GateEntry_SaveData(Mode) {
         let isOthersDocument = Documenttype && Documenttype.toLowerCase() === 'others';
 
         let VehiclePhotoLenth = $('#frmLoadedOut_fileVehiclePhoto')[0].files.length;
+        if (VehiclePhotoLenth === 0 && (G_ScaleVehiclePhotoProvided || (GateEntryImageDetail && GateEntryImageDetail[0] && GateEntryImageDetail[0].imgVehicle && GateEntryImageDetail[0].imgVehicle.length > 0))) { VehiclePhotoLenth = 1; }
         let GoodsPhotoLenth = $('#frmLoadedOut_fileGoodsPhoto')[0].files.length;
         let InvoicePhotoLenth = $('#frmLoadedOut_fileInvoicePhoto')[0].files.length;
         //let OtherPhotoLenth = $('#frmLoadedOut_fileOtherPhoto')[0].files.length;
@@ -1169,7 +2125,7 @@ function GateEntry_SaveData(Mode) {
             DriverAadharNo = $('#frmEmptyIn_txtDriverAadharNo').val();
         }
 
-        if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+        if (!relaxHandCourierLoadedOut && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
             LoadedWeight = $('#frmLoadedOut_txtVehicleLoadedWeight').val();
             WeightmentSlipNumberOut = $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val();
 
@@ -1191,8 +2147,15 @@ function GateEntry_SaveData(Mode) {
                 toastr.error('Please Check! vehicle loaded weight Should be greater than to vehicle empty weight');
                 return;
             }
+        } else if (relaxHandCourierLoadedOut && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+            LoadedWeight = $('#frmLoadedOut_txtVehicleLoadedWeight').val();
+            WeightmentSlipNumberOut = $('#frmLoadedOut_txtWeightmentSlipNoLoadedOut').val();
+            const lw = parseFloat(LoadedWeight) || 0;
+            const ew = parseFloat(EmptyWeight) || 0;
+            NetWeight = lw - ew;
+            $('#frmLoadedOut_txtNetWeightLoadedOut').val(parseFloat(NetWeight).toFixed(2));
         }
-        if (RejectEntry == 'N' && Mode === 'UpdateEmptyInSave' && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
+        if (RejectEntry == 'N' && Mode === 'UpdateEmptyInSave' && !relaxHandCourierLoadedOut && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
             valid = false;
             toastr.error('Please Check! Vehicle Photo can not be blank');
             $('#frmLoadedOut_fileVehiclePhoto').focus();
@@ -1268,10 +2231,45 @@ function GateEntry_SaveData(Mode) {
                 $('#frmLoadedOut_txtOutReason').focus();
                 return;
             }
+
+            // Net Weight vs Document Qty tolerance check (only for Loaded Out, not for Empty Out/Reject)
+            if (RejectEntry == 'N') {
+                const matchNetWeightParam = ConfigGateEntry.find(x => x.PerameterName === 'MatchNetWeightWithDocumentQty');
+                if (matchNetWeightParam && String(matchNetWeightParam.PerameterValue).toUpperCase() === 'Y') {
+                    const toleranceParam = ConfigGateEntry.find(x => x.PerameterName === 'ToleranceToMatchNetWeightWithDocumentQty');
+                    const tolerancePct = toleranceParam ? (parseFloat(toleranceParam.PerameterValue) || 0) : 0;
+                    const docQty = parseFloat($('#frmLoadedOut_txtQty').val()) || 0;
+                    const lw = parseFloat($('#frmLoadedOut_txtVehicleLoadedWeight').val()) || 0;
+                    const ew = parseFloat($('#frmEmptyIn_txtVehicleEmptyWeight').val()) || 0;
+                    const netWt = lw - ew;
+                    if (docQty > 0) {
+                        const allowedDiff = (tolerancePct / 100) * docQty;
+                        const minAllowed = docQty - allowedDiff;
+                        const maxAllowed = docQty + allowedDiff;
+                        if (netWt < minAllowed || netWt > maxAllowed) {
+                            valid = false;
+                            toastr.error(`Net Weight (${parseFloat(netWt).toFixed(2)}) does not match Document Qty (${docQty}) within tolerance of ${tolerancePct}%. Allowed range: ${parseFloat(minAllowed).toFixed(2)} - ${parseFloat(maxAllowed).toFixed(2)}`);
+                            return;
+                        }
+                    }
+                }
+            }
         }
     }
     else if (Mode === 'LoadedInSave' || Mode ==='loadedinedit') {
         Time = $('#frmLoadedIn_txtVehicleInTime').val();
+        if (GateEntry_IsModeOfTransportEnabled()) {
+            ModeOfTransportation = $('#frmLoadedIn_txtModeOfTransportation').val() || '';
+            if (!ModeOfTransportation || ModeOfTransportation === '') {
+                valid = false;
+                toastr.error('Please Check! Mode Of Transportation can not be blank');
+                $('#frmLoadedIn_txtModeOfTransportation').focus();
+                return;
+            }
+        } else {
+            ModeOfTransportation = '';
+        }
+        const relaxHandCourierLoadedIn = GateEntry_IsModeOfTransportEnabled() && GateEntry_IsByHandOrCourierFromSelect($('#frmLoadedIn_txtModeOfTransportation'));
         VehicleNo = $('#frmLoadedIn_txtVehicleNo').val();
         DriverName = $('#frmLoadedIn_txtDriverName').val();
         DriverMobile = $('#frmLoadedIn_txtDriverNo').val();
@@ -1296,6 +2294,7 @@ function GateEntry_SaveData(Mode) {
 
 
         let VehiclePhotoLenth = $('#frmLoadedIn_fileVehiclePhoto')[0].files.length;
+        if (VehiclePhotoLenth === 0 && (G_ScaleVehiclePhotoProvided || (GateEntryImageDetail && GateEntryImageDetail[0] && GateEntryImageDetail[0].imgVehicle && GateEntryImageDetail[0].imgVehicle.length > 0))) { VehiclePhotoLenth = 1; }
         let GoodsPhotoLenth = $('#frmLoadedIn_fileGoodsPhoto')[0].files.length;
         let InvoicePhotoLenth = $('#frmLoadedIn_fileInvoicePhoto')[0].files.length;
 
@@ -1303,7 +2302,7 @@ function GateEntry_SaveData(Mode) {
         // Check if document type is "Others" - if yes, only validate driver name
         let isOthersDocument = Documenttype && Documenttype.toLowerCase() === 'others';
         
-        if (!isOthersDocument && (typeof VehicleNo === 'undefined' || VehicleNo === '' || VehicleNo === null)) {
+        if (!isOthersDocument && !relaxHandCourierLoadedIn && (typeof VehicleNo === 'undefined' || VehicleNo === '' || VehicleNo === null)) {
             valid = false;
             toastr.error('Please Check! Vehicle No can not be blank');
             $('#frmLoadedIn_txtVehicleNo').focus();
@@ -1349,7 +2348,7 @@ function GateEntry_SaveData(Mode) {
             }
         }
         
-        if (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null) {
+        if (!relaxHandCourierLoadedIn && (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null)) {
             valid = false;
             toastr.error('Please Check! Driver Name can not be blank');
             $('#frmLoadedIn_txtDriverName').focus();
@@ -1361,13 +2360,13 @@ function GateEntry_SaveData(Mode) {
             // Only driver name is mandatory for "Others" document type
             // Skip all other field validations
         } else {
-            if (typeof DriverMobile === 'undefined' || DriverMobile === '' || DriverMobile === null) {
+            if (!relaxHandCourierLoadedIn && (typeof DriverMobile === 'undefined' || DriverMobile === '' || DriverMobile === null)) {
                 valid = false;
                 toastr.error('Please Check! Driver No. can not be blank');
                 $('#frmLoadedIn_txtDriverNo').focus();
                 return;
             }
-            if (BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
+            if (!relaxHandCourierLoadedIn && BizSolInputControl.IsMobileNumber(DriverMobile) == false) {
                 valid = false;
                 toastr.error('Please enter valid mobile number.');
                 $('#frmLoadedIn_txtDriverNo').focus();
@@ -1375,13 +2374,13 @@ function GateEntry_SaveData(Mode) {
 
             }
             
-            if (typeof TransporterName === 'undefined' || TransporterName === '' || TransporterName === null) {
+            if (!relaxHandCourierLoadedIn && (typeof TransporterName === 'undefined' || TransporterName === '' || TransporterName === null)) {
                 valid = false;
                 toastr.error('Please Check! Transporter Name can not be blank');
                 $('#frmLoadedIn_ddlTransporterName').focus();
                 return;
             }
-            if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+            if (!relaxHandCourierLoadedIn && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
                 LoadedWeight = $('#frmLoadedIn_txtVehicleLoadedWeight').val();
                 WeightmentSlipNumberIn = $('#frmLoadedIn_txtWeightmentSlipNoLoaded').val();
 
@@ -1398,9 +2397,12 @@ function GateEntry_SaveData(Mode) {
                     $('#frmLoadedIn_txtWeightmentSlipNoLoaded').focus();
                     return;
                 }
+            } else if (relaxHandCourierLoadedIn && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+                LoadedWeight = $('#frmLoadedIn_txtVehicleLoadedWeight').val();
+                WeightmentSlipNumberIn = $('#frmLoadedIn_txtWeightmentSlipNoLoaded').val();
             }
 
-            if (Mode === 'LoadedInSave' && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
+            if (Mode === 'LoadedInSave' && !relaxHandCourierLoadedIn && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
                 valid = false;
                 toastr.error('Please Check! Vehicle Photo can not be blank');
                 $('#frmLoadedIn_fileVehiclePhoto').focus();
@@ -1513,6 +2515,10 @@ function GateEntry_SaveData(Mode) {
             }
         }
 
+        // Note: Net Weight check is NOT done here for LoadedInSave/loadedinedit
+        // because at this stage empty weight is always zero (empty out not done yet).
+        // The check is applied in UpdateLoadedInSave (Loaded In + Empty Out complete entry).
+
     }
     else if (Mode == 'UpdateLoadedInSave' || Mode ==='loadedineditfull') {
         Time = $('#frmLoadedIn_txtVehicleInTime').val();
@@ -1522,6 +2528,19 @@ function GateEntry_SaveData(Mode) {
         TransporterName = $('#frmLoadedIn_ddlTransporterName').val();
 
         ReportingDatetime = $('#frmLoadedIn_txtReportingDatetime').val();
+
+        if (GateEntry_IsModeOfTransportEnabled()) {
+            ModeOfTransportation = $('#frmLoadedIn_txtModeOfTransportation').val() || '';
+            if (!ModeOfTransportation || ModeOfTransportation === '') {
+                valid = false;
+                toastr.error('Please Check! Mode Of Transportation can not be blank');
+                $('#frmLoadedIn_txtModeOfTransportation').focus();
+                return;
+            }
+        } else {
+            ModeOfTransportation = '';
+        }
+        const relaxHandCourierEmptyOut = GateEntry_IsModeOfTransportEnabled() && GateEntry_IsByHandOrCourierFromSelect($('#frmLoadedIn_txtModeOfTransportation'));
 
         WeightmentSlipNumberIn = $('#frmLoadedIn_txtWeightmentSlipNoLoaded').val();
         GoodDescription = $('#frmLoadedIn_txtGoodsDescription').val();
@@ -1553,7 +2572,7 @@ function GateEntry_SaveData(Mode) {
         let isOthersDocument = Documenttype && Documenttype.toLowerCase() === 'others';
         
         // Validate driver name (always mandatory)
-        if (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null) {
+        if (!relaxHandCourierEmptyOut && (typeof DriverName === 'undefined' || DriverName === '' || DriverName === null)) {
             valid = false;
             toastr.error('Please Check! Driver Name can not be blank');
             $('#frmLoadedIn_txtDriverName').focus();
@@ -1566,6 +2585,7 @@ function GateEntry_SaveData(Mode) {
             // Skip all other field validations
         } else {
             let VehiclePhotoLenth = $('#frmEmptyOut_fileVehiclePhoto')[0].files.length;
+            if (VehiclePhotoLenth === 0 && (G_ScaleVehiclePhotoProvided || (GateEntryImageDetail && GateEntryImageDetail[0] && GateEntryImageDetail[0].imgVehicle && GateEntryImageDetail[0].imgVehicle.length > 0))) { VehiclePhotoLenth = 1; }
             if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'VehicleOtherDetails').PerameterValue === 'Y') {
                 ChassisNo = $('#frmLoadedIn_txtChassisNo').val();
                 RCNo = $('#frmLoadedIn_txtRCNo').val();
@@ -1574,7 +2594,7 @@ function GateEntry_SaveData(Mode) {
                 DriverLicenseExpiredDate = $('#frmLoadedIn_txtDriverLicenseExpiredDate').val();
                 DriverAadharNo = $('#frmLoadedIn_txtDriverAadharNo').val();
             }
-            if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+            if (!relaxHandCourierEmptyOut && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
                 EmptyWeight = $('#frmEmptyOut_txtVehicleEmptyWeight').val();
                 WeightmentSlipNumberOut = $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val();
 
@@ -1596,12 +2616,18 @@ function GateEntry_SaveData(Mode) {
                     toastr.error('Please Check! vehicle Empty weight Should be less than to vehicle Loaded weight');
                     return;
                 }
+            } else if (relaxHandCourierEmptyOut && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
+                EmptyWeight = $('#frmEmptyOut_txtVehicleEmptyWeight').val();
+                WeightmentSlipNumberOut = $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val();
+                const lw = parseFloat(LoadedWeight) || 0;
+                const ew = parseFloat(EmptyWeight) || 0;
+                NetWeight = lw - ew;
             }
             if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'ReportingDatetimeApplicable').PerameterValue === 'Y') {
                 ReportingDatetime = $('#frmLoadedIn_txtReportingDatetime').val();
             }
             
-            if (RejectEntry == 'N' && Mode == 'UpdateLoadedInSave' &&(typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
+            if (RejectEntry == 'N' && Mode == 'UpdateLoadedInSave' && !relaxHandCourierEmptyOut && (typeof VehiclePhotoLenth === 'undefined' || VehiclePhotoLenth === 0)) {
                 valid = false;
                 toastr.error('Please Check! Vehicle Photo can not be blank');
                 $('#frmEmptyOut_fileVehiclePhoto').focus();
@@ -1614,9 +2640,32 @@ function GateEntry_SaveData(Mode) {
                 $('#frmEmptyOut_txtOutReason').focus();
                 return;
             }
+
+            // Net Weight vs Document Qty tolerance check (only for Loaded In, not for Loaded Out/Reject)
+            if (RejectEntry == 'N') {
+                const matchNetWeightParam = ConfigGateEntry.find(x => x.PerameterName === 'MatchNetWeightWithDocumentQty');
+                if (matchNetWeightParam && String(matchNetWeightParam.PerameterValue).toUpperCase() === 'Y') {
+                    const toleranceParam = ConfigGateEntry.find(x => x.PerameterName === 'ToleranceToMatchNetWeightWithDocumentQty');
+                    const tolerancePct = toleranceParam ? (parseFloat(toleranceParam.PerameterValue) || 0) : 0;
+                    const docQty = parseFloat($('#frmLoadedIn_txtQTY').val()) || 0;
+                    const lw = parseFloat($('#frmLoadedIn_txtVehicleLoadedWeight').val()) || 0;
+                    const ew = parseFloat($('#frmEmptyOut_txtVehicleEmptyWeight').val()) || 0;
+                    const netWt = lw - ew;
+                    if (docQty > 0) {
+                        const allowedDiff = (tolerancePct / 100) * docQty;
+                        const minAllowed = docQty - allowedDiff;
+                        const maxAllowed = docQty + allowedDiff;
+                        if (netWt < minAllowed || netWt > maxAllowed) {
+                            valid = false;
+                            toastr.error(`Net Weight (${parseFloat(netWt).toFixed(2)}) does not match Document Qty (${docQty}) within tolerance of ${tolerancePct}%. Allowed range: ${parseFloat(minAllowed).toFixed(2)} - ${parseFloat(maxAllowed).toFixed(2)}`);
+                            return;
+                        }
+                    }
+                }
+            }
         }
     }
-    
+
     if (EmptyWeight == ""){
         EmptyWeight = "0";
     }
@@ -1685,7 +2734,9 @@ function GateEntry_SaveData(Mode) {
                     outType: OutType,
                     outReason: OutReason,
                     gRNo: GRNo,
-                    driverAadharNo: DriverAadharNo
+                    driverAadharNo: DriverAadharNo,
+                    modeOfTransportation: ModeOfTransportation,
+                    entryWithOutExistingItem: IsEntryWithoutExistingItem ? 'Y' : 'N'
                 }
             ],
 
@@ -1701,10 +2752,11 @@ function GateEntry_SaveData(Mode) {
         GateEntryService.SaveGateEntryMaster(JSON.stringify(GateEntryPostdata), POItemsData, 'SAVEDATA').then(function (response) {
             if (response.Status === 'Y') {
                 HideLoader();
-                toastr.success(`Entry save success`);
-                // window.location.href = sessionStorage.getItem('AppBaseURL') +'PurchaseTransactions/GateEntry/GateEntryView';
-                GateEntyMode_GateEntry('grid', '');
-                GateEntryGirdByDates();
+                //toastr.success(`Entry save success`);
+                        ShowGateEntrySaveSuccessModal(response.Msg);
+                        // window.location.href = sessionStorage.getItem('AppBaseURL') +'PurchaseTransactions/GateEntry/GateEntryView';
+                        GateEntyMode_GateEntry('grid', '');
+                        GateEntryGirdByDates();
             }
             else {
                 toastr.error(response.Msg);
@@ -2107,6 +3159,8 @@ function frmLoadedOut_ddlDocumentType(callby) {
 }
 
 function ClearAllFrm() {
+    $('#GateEntryFormEntryNoBanner').remove();
+    G_ScaleVehiclePhotoProvided = false;
     GateEntryImageDetail = [{
         imgVehicle: [],
         imgMaterial: [],
@@ -2263,8 +3317,10 @@ function ClearAllFrm() {
     $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'POWiseEntryMendatory').PerameterValue === 'Y') {
         IsWithPo = true;
+        IsEntryWithoutExistingItem = false;
     }
     WithPO();
+    GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState();
     ClearEmptyOutOrLoadedOutFrm();
 
 
@@ -2281,10 +3337,15 @@ function ClearAllFrm() {
 
     $('#frmEmptyOut_btnSave').removeAttr('onclick');
     $('#frmEmptyOut_btnSave').attr('onclick', "GateEntry_SaveData('UpdateLoadedInSave')");
-    
 
+    $('#frmEmptyIn_txtModeOfTransportation').removeAttr('disabled');
+    $('#frmLoadedIn_txtModeOfTransportation').removeAttr('disabled');
+    GateEntry_ApplyModeOfTransportVisibility();
+    GateEntry_ApplyEntryWithoutExistingItemRadioVisibility();
+    ClearWeightScalePreviews();
 }
 function ClearEmptyOutOrLoadedOutFrm() {
+    G_ScaleVehiclePhotoProvided = false;
     GateEntryImageDetail = [{
         imgVehicle: [],
         imgMaterial: [],
@@ -2325,6 +3386,7 @@ function ClearEmptyOutOrLoadedOutFrm() {
     $('#frmEmptyOut_txtVehicleEmptyWeight').val('');
     $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val('');
     $('#frmEmptyOut_txtRemarks').val('');
+    ClearWeightScalePreviews();
 }
 function ViewGateEntry(gateEntryData, EntryType) {
     
@@ -2352,6 +3414,9 @@ function ViewGateEntry(gateEntryData, EntryType) {
 
 
         $('#frmEmptyOut_btnSave').attr('disabled', 'disabled')
+
+        $('#frmEmptyIn_txtModeOfTransportation').attr('disabled', 'disabled');
+        $('#frmLoadedIn_txtModeOfTransportation').attr('disabled', 'disabled');
         
     }
     else if (mode.toLowerCase() === 'emptyinview') {
@@ -2387,7 +3452,7 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtCustomerName').val(gateEntryData[0].VendorName);
         
         $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
-        $('#frmLoadedOut_txtDocumentDate').val(new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
+        $('#frmLoadedOut_txtDocumentDate').val(geFormatGateEntryInputDate(gateEntryData[0].InvoiceDate));
         $('#frmLoadedOut_txtManualDocNo').val(gateEntryData[0].ManualDocNo);
         $('#frmLoadedOut_txtGRNo').val(gateEntryData[0].GRNo);
 
@@ -2423,6 +3488,9 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtOutReason').attr('readonly', 'readonly');
 
         $('#frmLoadedOut_btnSave').attr('disabled', 'disabled')
+
+        $('#frmEmptyIn_txtModeOfTransportation').attr('disabled', 'disabled');
+        $('#frmLoadedIn_txtModeOfTransportation').attr('disabled', 'disabled');
     }
 
 }
@@ -2524,7 +3592,7 @@ function EditGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtCustomerName').val(gateEntryData[0].VendorName);
 
         $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
-        $('#frmLoadedOut_txtDocumentDate').val(new Date(gateEntryData[0].InvoiceDate).toISOString().slice(0, 10));
+        $('#frmLoadedOut_txtDocumentDate').val(geFormatGateEntryInputDate(gateEntryData[0].InvoiceDate));
 
         $('#frmLoadedOut_txtManualDocNo').val(gateEntryData[0].ManualDocNo);
         $('#frmLoadedOut_txtGRNo').val(gateEntryData[0].GRNo);
@@ -2556,6 +3624,7 @@ function EditGateEntry(gateEntryData, EntryType) {
 }
 
 function EditLoaded() {
+    $('#frmLoadedIn_txtModeOfTransportation').removeAttr('disabled');
     $('#frmLoadedIn_txtVehicleInTime').removeAttr('readonly');
     $('#frmLoadedIn_txtVehicleNo').removeAttr('readonly');
     $('#frmLoadedIn_txtDriverName').removeAttr('readonly');
@@ -2596,6 +3665,7 @@ function EditLoaded() {
     $('#frmLoadedIn_txtUOM').removeAttr('disabled');
 }
 function EditEmptyIn() {
+    $('#frmEmptyIn_txtModeOfTransportation').removeAttr('disabled');
     $('#frmEmptyIn_txtVehicleNo').removeAttr('readonly')
     $('#frmEmptyIn_txtDriverName').removeAttr('readonly')
     $('#frmEmptyIn_txtDriverNo').removeAttr('readonly')
@@ -2611,6 +3681,14 @@ function EditEmptyIn() {
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').removeAttr('readonly');
     $('#frmEmptyIn_txtDriverAadharNo').removeAttr('readonly');
 
+    const editEmptyInCustomerConfig = ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'CustomerNameInEmptyIN');
+    if (editEmptyInCustomerConfig && editEmptyInCustomerConfig.PerameterValue === 'Y') {
+        $('#frmEmptyIn_txtCustomerNameIn').removeAttr('readonly');
+        GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
+            AutoSuggestionControl.SetUpAutoSuggestion($('#frmEmptyIn_txtCustomerNameIn'), $('#frmEmptyIn_txtCustomerNameIn_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+        });
+    }
+
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'TokenApplicable').PerameterValue === 'Y') {
         $('#frmEmptyIn_txtTokenNo').attr('readonly', 'readonly');
         $('#frmEmptyIn_txtReportingDatetime').attr('readonly', 'readonly');
@@ -2618,9 +3696,25 @@ function EditEmptyIn() {
 }
 function LockDocumntFutureDate() {
     let maxDate = new Date().toISOString().slice(0, 10);
-    let MinDate = new Date()///.toISOString().slice(0, 10);
-    MinDate.setDate(MinDate.getDate() - 30);
-    MinDate=MinDate.toISOString().slice(0, 10);
+
+    // Read per-field backdays from config; default to 30 if not configured or zero
+    const backdaysInParam = ConfigGateEntry && ConfigGateEntry.find(x => x.PerameterName === 'NoOfBackdaysAllowedDocumentLoadedIn');
+    const backdaysOutParam = ConfigGateEntry && ConfigGateEntry.find(x => x.PerameterName === 'NoOfBackdaysAllowedDocumentLoadedOut');
+    const backdaysIn = (backdaysInParam && parseInt(backdaysInParam.PerameterValue) > 0) ? parseInt(backdaysInParam.PerameterValue) : 30;
+    const backdaysOut = (backdaysOutParam && parseInt(backdaysOutParam.PerameterValue) > 0) ? parseInt(backdaysOutParam.PerameterValue) : 30;
+
+    let MinDateIn = new Date();
+    MinDateIn.setDate(MinDateIn.getDate() - backdaysIn);
+    let MinDateInStr = MinDateIn.toISOString().slice(0, 10);
+
+    let MinDateOut = new Date();
+    MinDateOut.setDate(MinDateOut.getDate() - backdaysOut);
+    let MinDateOutStr = MinDateOut.toISOString().slice(0, 10);
+
+    // Shared min date for EWayBill / Reporting (use the more permissive of the two, or keep 30-day default)
+    let MinDateShared = new Date();
+    MinDateShared.setDate(MinDateShared.getDate() - 30);
+    let MinDateSharedStr = MinDateShared.toISOString().slice(0, 10);
 
     $('#frmLoadedOut_txtDocumentDate').attr('max', maxDate);
     $('#frmLoadedIn_txtDocumentDate').attr('max', maxDate);
@@ -2631,10 +3725,10 @@ function LockDocumntFutureDate() {
     //$('#txtFromDate').attr('max', maxDate);
     //$('#txtToDate').attr('max', maxDate);
 
-    $('#frmLoadedOut_txtDocumentDate').attr('min', MinDate);
-    $('#frmLoadedIn_txtDocumentDate').attr('min', MinDate);
-    $('#frmLoadedIn_txtEWayBillDate').attr('min', MinDate);
-    $('#frmLoadedOut_txtEWayBillDate').attr('min', MinDate);
+    $('#frmLoadedOut_txtDocumentDate').attr('min', MinDateOutStr);
+    $('#frmLoadedIn_txtDocumentDate').attr('min', MinDateInStr);
+    $('#frmLoadedIn_txtEWayBillDate').attr('min', MinDateSharedStr);
+    $('#frmLoadedOut_txtEWayBillDate').attr('min', MinDateSharedStr);
 
     $('#frmLoadedOut_txtDocumentDate').attr('value', maxDate);
     $('#frmLoadedIn_txtDocumentDate').attr('value', maxDate);
@@ -3130,6 +4224,13 @@ function GateEntry_changeDocumentType() {
                                 $('#frmLoadedOut_txtQty').val(parseFloat(sumtotalWeight).toFixed(2))
                                 $('#frmLoadedOut_txtGRNo').val(RespDocumentDetails[0].GRNo)
                                 $('#frmLoadedOut_ddlUOM').val(RespDocumentDetails[0].UOM).trigger('change')
+                                $('#frmLoadedOut_txtEWayBillNo').val(RespDocumentDetails[0].EWayBillNo)
+                                if (RespDocumentDetails[0].EWayBillDate) {
+                                    $('#frmLoadedOut_txtEWayBillDate').val(RespDocumentDetails[0].EWayBillDate.split('T')[0]);
+                                }
+                                if (RespDocumentDetails[0].DocumentDate) {
+                                    $('#frmLoadedOut_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
+                                }
 
                                // G_TableName = RespDocumentDetails[0].TableName;
                                // G_TableCode = RespDocumentDetails[0].Code;
@@ -3277,6 +4378,13 @@ function GateEntry_changeDocumentType_LoadedIn() {
                                 $('#frmLoadedIn_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
                                 $('#frmLoadedIn_txtQTY').val(parseFloat(sumtotalWeight).toFixed(2))
                                 $('#frmLoadedIn_txtUOM').val(RespDocumentDetails[0].UOM).trigger('change')
+                                $('#frmLoadedIn_txtEWayBillNo').val(RespDocumentDetails[0].EWayBillNo)
+                                if (RespDocumentDetails[0].EWayBillDate) {
+                                    $('#frmLoadedIn_txtEWayBillDate').val(RespDocumentDetails[0].EWayBillDate.split('T')[0]);
+                                }
+                                if (RespDocumentDetails[0].DocumentDate) {
+                                    $('#frmLoadedIn_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
+                                }
 
                                 $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
                                 $('#frmLoadedIn_txtGoodsDescription').attr('readonly', 'readonly');
@@ -3301,17 +4409,182 @@ function GateEntry_changeDocumentType_LoadedIn() {
     }
 }
 
+function ShowGateEntrySaveSuccessModal(msg) {
+    $('#GateEntrySaveSuccessModal').remove();
+    let modalHtml = `
+        <div class="modal fade" id="GateEntrySaveSuccessModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title"><i class="fa fa-check-circle"></i>&nbsp;Entry Saved Successfully</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="mb-2">${msg}</p>
+                        <div class="alert alert-warning mb-0 text-start">
+                            <i class="fa fa-exclamation-triangle"></i>&nbsp;<strong>Note:</strong> Entry No. is auto-generated and <strong>cannot be decreased</strong> once saved.
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <a class="btn btn-success px-4" data-bs-dismiss="modal">OK</a>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    $('body').append(modalHtml);
+    const modalEl = document.getElementById('GateEntrySaveSuccessModal');
+    const bsModal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+    bsModal.show();
+    modalEl.addEventListener('hidden.bs.modal', function () { $(this).remove(); });
+}
+
+function GateEntry_ShowEntryNoBanner(entryNo, operation) {
+    $('#GateEntryFormEntryNoBanner').remove();
+    if (!entryNo || parseInt(entryNo) <= 0) return;
+    let opLabel = operation === 'out' ? 'Entry Out' : 'Update Entry';
+    let bannerHtml = `<div id="GateEntryFormEntryNoBanner" class="alert alert-info alert-dismissible fade show mb-2 py-2">
+        <i class="fa fa-info-circle"></i>&nbsp;<strong>${opLabel}</strong>&nbsp;&mdash;&nbsp;Entry No:&nbsp;<strong class="text-primary fs-5">${entryNo}</strong>
+        <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>`;
+    $('#DivGateEntryForm').prepend(bannerHtml);
+}
+
+document.addEventListener('weightScaleDataReceived', function (e) {
+    const d = e.detail;
+    if (!d) return;
+    // Clear any existing weight-scale previews before handling new data
+    ClearWeightScalePreviews();
+
+    const outputID = d.outputTextElementID || '';
+
+    if (d.weight) {
+        if (outputID) {
+            $('#' + outputID).val(d.weight);
+        }
+    }
+
+    if (d.vehicleNo) {
+        const vehicleFieldMap = {
+            'frmEmptyIn_txtVehicleEmptyWeight': 'frmEmptyIn_txtVehicleNo',
+            'frmLoadedIn_txtVehicleLoadedWeight': 'frmLoadedIn_txtVehicleNo',
+            'frmLoadedOut_txtVehicleLoadedWeight': 'frmEmptyIn_txtVehicleNo',
+            'frmEmptyOut_txtVehicleEmptyWeight': 'frmLoadedIn_txtVehicleNo'
+        };
+        const vehicleFieldID = vehicleFieldMap[outputID];
+        if (vehicleFieldID) {
+            let $vf = $('#' + vehicleFieldID);
+            if ($vf.length && !$vf.prop('readonly') && !$vf.prop('disabled')) {
+                $vf.val(d.vehicleNo);
+            }
+        }
+    }
+
+    const imageFieldMap = {
+        'frmEmptyIn_txtVehicleEmptyWeight': 'frmEmptyIn_fileVehiclePhoto',
+        'frmLoadedIn_txtVehicleLoadedWeight': 'frmLoadedIn_fileVehiclePhoto',
+        'frmLoadedOut_txtVehicleLoadedWeight': 'frmLoadedOut_fileVehiclePhoto',
+        'frmEmptyOut_txtVehicleEmptyWeight': 'frmEmptyOut_fileVehiclePhoto'
+    };
+    const previewContainerMap = {
+        'frmEmptyIn_txtVehicleEmptyWeight': 'DivfrmEmptyIn_fileVehiclePhoto',
+        'frmLoadedIn_txtVehicleLoadedWeight': 'DivfrmLoadedIn_fileVehiclePhoto',
+        'frmLoadedOut_txtVehicleLoadedWeight': 'RowLoadedOut_fileVehiclePhoto',
+        'frmEmptyOut_txtVehicleEmptyWeight': 'RowfrmEmptyOut_fileVehiclePhoto'
+    };
+
+    if (outputID && imageFieldMap[outputID]) {
+        G_ScaleVehiclePhotoProvided = true;
+
+        const imgSrc = d.frontImage || d.backImage || '';
+        const previewDivID = previewContainerMap[outputID];
+
+        if (previewDivID) {
+            const previewID = previewDivID + '_WeightScalePreview';
+            $('#' + previewID).remove();
+            if (d.frontImage || d.backImage) {
+                const previewHtml = '<div id="' + previewID + '" class="mt-1">'
+                    + (d.frontImage ? '<img src="data:image/jpeg;base64,' + d.frontImage + '" style="max-height:80px;border:1px solid #ccc;margin-right:4px;" title="Front Camera" />' : '')
+                    + (d.backImage ? '<img src="data:image/jpeg;base64,' + d.backImage + '" style="max-height:80px;border:1px solid #ccc;" title="Back Camera" />' : '')
+                    + '</div>';
+                $('#' + previewDivID).after(previewHtml);
+            }
+        }
+
+        const base64ToByteArray = function (base64) {
+            try {
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                return Array.from(bytes);
+            } catch (ex) { return []; }
+        };
+
+        GateEntryImageDetail = [{
+            imgVehicle: imgSrc ? base64ToByteArray(imgSrc) : [],
+            imgMaterial: [],
+            imgDoc: [],
+            ImgOther: []
+        }];
+    }
+});
+
+function ClearWeightScalePreviews() {
+    try {
+        const previewContainers = [
+            'DivfrmEmptyIn_fileVehiclePhoto',
+            'DivfrmLoadedIn_fileVehiclePhoto',
+            'RowLoadedOut_fileVehiclePhoto',
+            'RowfrmEmptyOut_fileVehiclePhoto'
+        ];
+        previewContainers.forEach(function (id) {
+            const previewID = id + '_WeightScalePreview';
+            $('#' + previewID).remove();
+        });
+    } catch (ex) {
+        // ignore
+    }
+}
+
+function geFormatGateEntryInputDate(value) {
+    if (!value) return '';
+
+    if (typeof value === 'string') {
+        const datePart = value.trim().slice(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+            return datePart;
+        }
+    }
+
+    try {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+    } catch (ex) { /* ignore */ }
+
+    return '';
+}
+
 window.GateEntyMode_GateEntry = GateEntyMode_GateEntry
 window.GateEntryGirdByDates = GateEntryGirdByDates
 window.ViewAttachment_GateEntry = ViewAttachment_GateEntry
 window.ShowGateEntryConfigurationModal = ShowGateEntryConfigurationModal
 window.setGateEntryParamater = setGateEntryParamater
+window.GateEntry_ToggleToleranceVisibility = GateEntry_ToggleToleranceVisibility
+window.setGateEntryToleranceParamater = setGateEntryToleranceParamater
+window.setGateEntryBackdaysParamater = setGateEntryBackdaysParamater
 window.GateEntry_rdPOAccess_onClick = GateEntry_rdPOAccess_onClick
 window.GateEntry_SaveData = GateEntry_SaveData
 window.GateEntry_frmLoadedIn_ddlPurchaseOrder_Change = GateEntry_frmLoadedIn_ddlPurchaseOrder_Change
 window.GateEntry_InitSelectMachineToGetWeightControl = GateEntry_InitSelectMachineToGetWeightControl
 window.GateEnty_PrintPreviewToken = GateEnty_PrintPreviewToken
+window.GateEnty_PrintGateEntry = GateEnty_PrintGateEntry
 window.GateEntry_ExportExecl = GateEntry_ExportExecl
 window.GateEntry_changeDocumentType = GateEntry_changeDocumentType
 window.GateEntry_changeDocumentType_LoadedIn = GateEntry_changeDocumentType_LoadedIn
 window.GateEntry_GetNetWeight = GateEntry_GetNetWeight
+
+

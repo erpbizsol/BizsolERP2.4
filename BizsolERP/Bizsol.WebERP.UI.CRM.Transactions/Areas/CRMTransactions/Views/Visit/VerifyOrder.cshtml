@@ -6,6 +6,10 @@
         width: 140%;
     }
 
+    #txtTable {
+        padding-bottom: 0.75rem;
+    }
+
     .align-items-end{
         margin-top:24px;
     }
@@ -31,8 +35,49 @@
     .modal {
         overflow: visible !important;
         position: absolute;
-        top:  9%;
+        top:  9%;
 
+    }
+
+    @@media (max-width: 768px) {
+        #txtTable {
+            padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+        }
+
+        #paginator-Visit {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        #paginator-Visit .page-size-select {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex: 1 1 100%;
+            margin: 0;
+            gap: 0.5rem;
+        }
+
+        #paginator-Visit .page-size-select select {
+            min-width: 72px;
+            font-size: 16px;
+        }
+
+        #paginator-Visit .page-info {
+            flex: 1 1 auto;
+            margin: 0;
+            min-width: 84px;
+            text-align: center;
+            white-space: normal;
+            line-height: 1.2;
+        }
+
+        #paginator-Visit .paginator-btn,
+        #paginator-Visit button {
+            margin: 0;
+            min-height: 40px;
+        }
     }
 </style>
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/Filter.css" rel="stylesheet" />

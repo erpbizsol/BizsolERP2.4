@@ -10,6 +10,14 @@ const StockAgeingReportService = {
             }
         );
     },
+    GetLogicalStockDetail: function GetLogicalStockDetail(Payload) {
+        var URL = UrlService.API_DOCUMENT_StockAgeingReport + "/GetStockAgeingReportList";
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(Payload)).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetCategoryList: function GetCategoryList() {
         var URL = UrlService.API_DOCUMENT_StockAgeingReport + "/GetCategoryList";
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
@@ -58,7 +66,42 @@ const StockAgeingReportService = {
             }
         );
     },
+    GetStockData: function GetStockData(Level, Code, GodownMasterCode, FilterPayload) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var payload = FilterPayload || {};
+        payload.level            = Level;
+        payload.code             = Code;
+        payload.godownMasterCode = GodownMasterCode;
+        var URL = UrlService.API_DOCUMENT_StockAgeingReport + '/GetStockWithChart';
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload)).then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 
+    GetYieldConfigurationList: function GetYieldConfigurationList() {
+        var URL = UrlService.API_DOCUMENT_StockAgeingYieldConfiguration + '/GetYieldConfigurationList';
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+    SaveYieldConfigurationRow: function SaveYieldConfigurationRow(payload) {
+        var URL = UrlService.API_DOCUMENT_StockAgeingYieldConfiguration + '/SaveYieldConfigurationRow';
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload)).then(function (value) {
+            return value;
+        });
+    },
+
+    DeleteYieldConfigurationRow: function DeleteYieldConfigurationRow(code) {
+        var URL =
+            UrlService.API_DOCUMENT_StockAgeingYieldConfiguration +
+            '/DeleteYieldConfigurationRow?Code=' +
+            encodeURIComponent(code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
 }
 
 export { StockAgeingReportService }

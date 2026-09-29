@@ -20,6 +20,8 @@
         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
         min-height: 100%;
         background: #f1f3fb;
+        padding: 0 6px 20px;
+        box-sizing: border-box;
     }
 
     /* ═══════════════════════════════════════════════════
@@ -130,11 +132,12 @@
 
     /* ── Card Body ── */
     .vm-card-body {
-        padding: 18px 20px 26px;
+        padding: 18px 10px 26px;
     }
 
-    .vm-card-body {
-        padding: 18px 20px 26px;
+    #tblVendorMaster {
+        width: 100%;
+        max-width: none;
     }
 
     /* ── Grid Wrapper ── */
@@ -162,64 +165,128 @@
         z-index: 99999 !important;
     }
 
-    /* ── Table base ── */
+    /* ── Table base — full width of card; columns stay compact via th/td rules below ── */
     .vm-table-wrapper table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 600px;
+        min-width: 100%;
     }
-    /* ── Table ── */
-    th {
-        background: linear-gradient(135deg, #5b5ef4, #5b5ef4) !important;
-        color: #fff !important;
-        font-size: 12px !important;
-        font-weight: 600 !important;
-        padding: 5px 14px !important;
-        white-space: nowrap;
-        position: relative;
-        min-width: 99px !important;
-        letter-spacing: 0.02em;
-        transition: background 0.18s, color 0.18s !important;
-        cursor: default;
-        text-transform: uppercase;
-    }
+    /* ── Grid header cells (compact) ── */
+    #VendorMaster th {
+    background: linear-gradient(135deg, #5b5ef4, #5b5ef4) !important;
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 5px 6px !important;
+    white-space: nowrap;
+    position: relative;
+    min-width: 52px !important;
+    letter-spacing: 0.02em;
+    transition: background 0.18s, color 0.18s !important;
+    cursor: default;
+    text-transform: uppercase;
+}
 
-        th:hover {
+        #VendorMaster th:hover {
             background: linear-gradient(90deg, #e6091f 0%, #6b5ee6 100%) !important;
         }
 
 
-    td {
+    #VendorMaster td {
         font-size: 13px;
         color: #374151;
         border-bottom: 1px solid #f3f4f6;
         vertical-align: middle;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    tbody tr:last-child td {
+    #VendorMaster tbody tr:last-child td {
         border-bottom: none;
     }
 
-    tbody tr:nth-child(even) {
+    #VendorMaster tbody tr:nth-child(even) {
         background: #fafbff;
     }
 
-    tbody tr:nth-child(odd) {
+    #VendorMaster tbody tr:nth-child(odd) {
         background: #ffffff;
     }
 
-    tbody tr:hover {
+    #VendorMaster tbody tr:hover {
         background: #eef2ff !important;
         transition: background 0.12s;
     }
 
-    /* ── Action Buttons ── */
-    /* Action column: keep View / Edit / Delete on one row (grid sets inline width) */
-    #VendorMaster tbody td:last-child {
-        white-space: nowrap;
+    #VendorMaster tbody tr.vm-grid-row-attachment-modal-open {
+        box-shadow: inset 0 0 0 2px #059669 !important;
     }
 
-    .vm-btn-view, .vm-btn-edit, .vm-btn-delete, .vm-btn-verify {
+    #VendorMaster .vm-has-attachment-yes {
+        color: #059669;
+        font-weight: 700;
+    }
+
+    #VendorMaster .vm-has-attachment-no {
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    /* Attachment popup (loaded under VendorMaster) — existing files grid rows */
+    #VendorMaster_AttachmentControlmodal #tbAttachmentControl tbody tr {
+        background: #d1fae5 !important;
+    }
+
+    #VendorMaster_AttachmentControlmodal #tbAttachmentControl tbody tr:nth-child(even) {
+        background: #bbf7d0 !important;
+    }
+
+    #VendorMaster_AttachmentControlmodal #tbAttachmentControl tbody tr:hover {
+        background: #a7f3d0 !important;
+    }
+
+    /* ── Action column: 6 icons in 3×2 grid (target cell by content — key order may not be last) ── */
+    #VendorMaster thead th:last-child {
+        min-width: 106px;
+        max-width: 124px;
+        white-space: normal;
+        box-sizing: border-box;
+        vertical-align: middle;
+    }
+
+    #VendorMaster tbody td:has(.vm-action-btns),
+    #VendorMaster tbody td.vm-cell-action {
+        width: 118px;
+        max-width: 124px;
+        min-width: 106px !important;
+        white-space: normal;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+        box-sizing: border-box;
+        vertical-align: middle;
+        overflow: visible;
+    }
+
+    #VendorMaster .vm-action-btns {
+        display: grid;
+        grid-template-columns: repeat(3, 30px);
+        grid-auto-rows: 30px;
+        gap: 4px;
+        justify-content: center;
+        align-content: center;
+        width: max-content;
+        max-width: none;
+        margin: 0 auto;
+    }
+
+    #VendorMaster .vm-action-btns > button {
+        box-sizing: border-box;
+        flex-shrink: 0;
+        min-width: 30px;
+        min-height: 30px;
+    }
+
+    .vm-btn-view, .vm-btn-edit, .vm-btn-delete, .vm-btn-verify, .vm-btn-attach {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -229,8 +296,9 @@
         border: none;
         cursor: pointer;
         transition: all 0.13s;
-        margin-right: 3px;
+        margin-right: 0;
         vertical-align: middle;
+        flex: 0 0 auto;
     }
 
     .vm-btn-view {
@@ -270,13 +338,78 @@
         box-shadow: 0 3px 10px rgba(239,68,68,0.30);
     }
 
+    .vm-btn-attach {
+        background: #e0f2fe;
+        color: #0284c7;
+    }
+
+    .vm-btn-attach:hover {
+        background: #0284c7;
+        color: #fff;
+        transform: scale(1.10);
+        box-shadow: 0 3px 10px rgba(2,132,199,0.30);
+    }
+
+    /* Grid: paperclip when HasAttachment = Yes — green button, normal row */
+    .vm-btn-attach--yes {
+        background: linear-gradient(135deg, #34d399, #059669) !important;
+        color: #fff !important;
+    }
+
+    .vm-btn-attach--yes:hover {
+        background: linear-gradient(135deg, #10b981, #047857) !important;
+        color: #fff !important;
+        box-shadow: 0 3px 10px rgba(5, 150, 105, 0.35);
+    }
+
+    .vm-attach-btn-wrap { position: relative; display: inline-flex; align-items: center; }
+    .vm-temp-badge {
+        position: absolute; top: -7px; right: -7px;
+        min-width: 18px; height: 18px; border-radius: 9px;
+        background: #ef4444; color: #fff;
+        font-size: 0.68rem; font-weight: 800;
+        display: none; align-items: center; justify-content: center;
+        padding: 0 4px; border: 2px solid #fff; z-index: 1;
+    }
+
+    .vm-btn-attach-bar {
+        padding: 9px 18px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .vm-btn-attach-bar:hover {
+        filter: brightness(1.05);
+        box-shadow: 0 3px 12px rgba(2,132,199,0.35);
+    }
+
+    /* Edit/New footer: Attachment bar when HasAttachment Yes, file on record, or pending queue */
+    .vm-btn-attach-bar--yes {
+        background: linear-gradient(135deg, #34d399, #059669) !important;
+        color: #fff !important;
+        box-shadow: 0 3px 12px rgba(5, 150, 105, 0.35);
+    }
+
+    .vm-btn-attach-bar--yes:hover {
+        filter: brightness(1.06);
+        box-shadow: 0 4px 14px rgba(5, 150, 105, 0.45);
+    }
+
     .vm-btn-verify {
-        background: #ecfdf5;
-        color: #059669;
+        background: linear-gradient(135deg, #34d399, #059669);
+        color: #fff;
     }
 
     .vm-btn-verify:hover {
-        background: #059669;
+        background: linear-gradient(135deg, #10b981, #047857);
         color: #fff;
         transform: scale(1.10);
         box-shadow: 0 3px 10px rgba(5, 150, 105, 0.35);
@@ -291,11 +424,11 @@
         font-size: 12px;
         font-weight: 600;
         letter-spacing: 0.02em;
-        color: #047857;
-        background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
-        border: 1px solid #34d399;
+        color: #fff;
+        background: linear-gradient(135deg, #34d399, #059669);
+        border: 1px solid #047857;
         white-space: nowrap;
-        box-shadow: 0 1px 3px rgba(5, 80, 60, 0.12);
+        box-shadow: 0 1px 3px rgba(5, 80, 60, 0.18);
     }
 
     .vm-verify-status--with-detail {
@@ -306,6 +439,44 @@
 
     .paginator {
         margin-top: 14px;
+    }
+
+    .vm-industry-type-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .vm-industry-type-select {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* Select2 in this row shares global modal styles below — only flex the container */
+    .vm-industry-type-row .select2-container {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .vm-industry-add-btn {
+        flex-shrink: 0;
+        width: 42px;
+        height: 42px;
+        border-radius: 9px;
+        border: 1px solid #c4b5fd;
+        background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%);
+        color: #5b21b6;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .vm-industry-add-btn:hover {
+        transform: scale(1.06);
+        box-shadow: 0 4px 12px rgba(91, 33, 182, 0.25);
     }
 
     /* ═══════════════════════════════════════════════════
@@ -514,14 +685,26 @@
         margin-left: 2px;
     }
 
+    /* Add/Edit vendor modal: one visual system for text + all Select2 */
+    #vendorDialogBackdrop {
+        --vm-control-h: 42px;
+        --vm-control-radius: 9px;
+        --vm-control-border: 1.5px solid #dde0ee;
+        --vm-control-bg: #f8f9fc;
+        --vm-control-focus: #5b5ef4;
+    }
+
     .vm-input {
         width: 100%;
+        min-height: var(--vm-control-h, 42px);
+        box-sizing: border-box;
         padding: 9px 12px;
-        border-radius: 9px;
-        border: 1.5px solid #dde0ee;
+        border-radius: var(--vm-control-radius, 9px);
+        border: var(--vm-control-border, 1.5px solid #dde0ee);
         font-size: 13px;
+        line-height: 1.35;
         color: #111827;
-        background: #f8f9fc;
+        background: var(--vm-control-bg, #f8f9fc);
         outline: none;
         transition: border-color 0.13s, box-shadow 0.13s, background 0.13s;
         appearance: none;
@@ -529,7 +712,7 @@
     }
 
         .vm-input:focus {
-            border-color: #5b5ef4;
+            border-color: var(--vm-control-focus, #5b5ef4);
             box-shadow: 0 0 0 3px rgba(91,94,244,0.12);
             background: #fff;
         }
@@ -549,6 +732,54 @@
             color: #6b7280;
             cursor: not-allowed;
         }
+
+    /* Select2 single — match .vm-input (Nation, State, City, Nature, Industry Type, …) */
+    #vendorDialogBackdrop .select2-container {
+        width: 100% !important;
+    }
+
+    #vendorDialogBackdrop .select2-container .select2-selection--single {
+        height: var(--vm-control-h, 42px) !important;
+        min-height: var(--vm-control-h, 42px) !important;
+        box-sizing: border-box;
+        border-radius: var(--vm-control-radius, 9px) !important;
+        border: var(--vm-control-border, 1.5px solid #dde0ee) !important;
+        background: var(--vm-control-bg, #f8f9fc) !important;
+        display: flex !important;
+        align-items: center !important;
+        transition: border-color 0.13s, box-shadow 0.13s, background 0.13s;
+    }
+
+    #vendorDialogBackdrop .select2-container--default.select2-container--focus .select2-selection--single,
+    #vendorDialogBackdrop .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: var(--vm-control-focus, #5b5ef4) !important;
+        box-shadow: 0 0 0 3px rgba(91,94,244,0.12);
+        background: #fff !important;
+    }
+
+    #vendorDialogBackdrop .select2-container .select2-selection__rendered {
+        line-height: 1.35 !important;
+        padding-left: 12px !important;
+        padding-right: 32px !important;
+        color: #111827 !important;
+    }
+
+    #vendorDialogBackdrop .select2-container .select2-selection__arrow {
+        height: calc(var(--vm-control-h, 42px) - 2px) !important;
+        top: 50% !important;
+        transform: translateY(-50%);
+        right: 10px !important;
+    }
+
+    #vendorDialogBackdrop .select2-container .select2-selection__arrow b {
+        border-color: #6b7280 transparent transparent transparent !important;
+    }
+
+    /* Native selects before Select2 init — same footprint */
+    #vendorDialogBackdrop select.vm-input {
+        min-height: var(--vm-control-h, 42px);
+        height: var(--vm-control-h, 42px);
+    }
 
     /* ── Error / Dup text ── */
     .vm-err-text, .vm-dup-warning {
@@ -1821,10 +2052,26 @@
             <div class="vm-form-grid">
 
                 <div class="vm-form-group">
+                    <label for="VendorCode">Vendor Code <span class="vm-required">*</span></label>
+                    <input type="text" id="VendorCode" class="vm-input" placeholder="Vendor code" autocomplete="off" maxlength="20" />
+                    <span class="vm-err-text" id="err_VendorCode"><i class="fas fa-circle-exclamation"></i> Vendor Code is required.</span>
+                </div>
+
+                <div class="vm-form-group">
                     <label for="AccountDesp">Vendor Name <span class="vm-required">*</span></label>
                     <input type="text" id="AccountDesp" class="vm-input" placeholder="Enter vendor name" autocomplete="off"  maxlength="100"/>
                     <span class="vm-err-text" id="err_AccountDesp"><i class="fas fa-circle-exclamation"></i> Vendor Name is required.</span>
                     <span class="vm-dup-warning" id="dup_AccountDesp"><i class="fas fa-triangle-exclamation"></i> Already exists.</span>
+                </div>
+
+                <div class="vm-form-group">
+                    <label for="IndustryTypeMaster">Industry Type</label>
+                    <div class="vm-industry-type-row">
+                        <select id="IndustryTypeMaster" class="vm-input vm-industry-type-select" autocomplete="off"></select>
+                        <button type="button" class="vm-industry-add-btn" onclick="vmOpenIndustryTypeQuickAdd()" title="Add new Industry Type">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="vm-form-group">
@@ -1838,12 +2085,17 @@
                     <span class="vm-err-text" id="err_GSTNNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid GST format.</span>
                 </div>
                 <div class="vm-form-group">
-                    <label for="Address1">Address1</label>
-                    <input type="text" id="Address1" class="vm-input" placeholder="e.g. Address1" autocomplete="off" maxlength="100" />
+                    <label for="PANNo">PAN Number <span id="vm_pan_required_mark" class="text-danger">*</span></label>
+                    <input type="text" id="PANNo" class="vm-input" placeholder="e.g. AAAAA0000A" autocomplete="off" maxlength="10" style="text-transform:uppercase;" />
+                    <span class="vm-err-text" id="err_PANNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Enter a valid PAN. Required when GST is not entered.</span>
                 </div>
                 <div class="vm-form-group">
-                    <label for="Address2">Address2</label>
-                    <input type="text" id="Address2" class="vm-input" placeholder="e.g. Address2" autocomplete="off" maxlength="100" />
+                    <label for="Address1">Address Line 1</label>
+                    <input type="text" id="Address1" class="vm-input" placeholder="Street, building, etc." autocomplete="off" maxlength="100" />
+                </div>
+                <div class="vm-form-group">
+                    <label for="Address2">Address Line 2</label>
+                    <input type="text" id="Address2" class="vm-input" placeholder="Area, landmark, etc. (optional)" autocomplete="off" maxlength="100" />
                 </div>
                 <div class="vm-form-group">
                     <label for="Nature">Nature</label>
@@ -1871,15 +2123,7 @@
                 <i class="fas fa-location-dot"></i> Address Details
             </div>
             <div class="vm-form-grid">
-                <div class="vm-form-group">
-                    <label for="Nation">Nation / Country <span class="text-danger">*</span></label>
-                    <div class="vm-ac-wrap">
-                        @* <input type="text" id="Nation" class="vm-input" placeholder="Type to search country…" autocomplete="off" /> *@
-                        <select id="Nation" class="vm-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
-                        <ul class="vm-ac-dropdown" id="ac_Nation"></ul>
-                    </div>
-                    <span class="vm-err-text" id="err_Nation" style="display:none;"><i class="fas fa-circle-exclamation"></i> Please select country.</span>
-                </div>
+                
                 <div class="vm-form-group">
                     <label for="City">City <span class="text-danger">*</span></label>
                     <div class="vm-ac-wrap">
@@ -1900,10 +2144,35 @@
                     <span class="vm-err-text" id="err_State" style="display:none;"><i class="fas fa-circle-exclamation"></i> Please select state.</span>
                 </div>
                 <div class="vm-form-group">
+                    <label for="Nation">Nation / Country <span class="text-danger">*</span></label>
+                    <div class="vm-ac-wrap">
+                        @* <input type="text" id="Nation" class="vm-input" placeholder="Type to search country…" autocomplete="off" /> *@
+                        <select id="Nation" class="vm-input" autocomplete="off" tabindex="1" maxlength="50"> </select>
+                        <ul class="vm-ac-dropdown" id="ac_Nation"></ul>
+                    </div>
+                    <span class="vm-err-text" id="err_Nation" style="display:none;"><i class="fas fa-circle-exclamation"></i> Please select country.</span>
+                </div>
+                <div class="vm-form-group">
                     <label for="PinCode">Pincode</label>
                     <input type="text" id="PinCode" class="vm-input" tabindex="1" autocomplete="off" inputmode="numeric" maxlength="6" />
                     <span class="vm-pin-hint" id="pin_hint"><i class="fas fa-circle-check"></i> <span id="pin_hint_text"></span></span>
                     <span class="vm-err-text" id="err_PinCode" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid pincode.</span>
+                </div>
+
+                <div class="vm-form-group" style="grid-column:1/-1;">
+                    <label>Attachments</label>
+                    <p class="vm-attach-hint" style="margin:0;font-size:0.82rem;color:#64748b;line-height:1.45;">
+                        <i class="fas fa-paperclip" style="margin-right:6px;color:#0284c7;"></i>
+                        Use <strong>Attachment</strong> in the footer to add or manage files. Files queued before save upload after you save the vendor.
+                    </p>
+                    <div id="vmLegacyAttachRow" style="display:none;margin-top:10px;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span style="font-size:0.8rem;color:#64748b;">Legacy file from record:</span>
+                        <button type="button" id="vmViewAttachmentBtn" onclick="vmViewAttachment()"
+                                style="white-space:nowrap;padding:8px 14px;border-radius:8px;
+                                       background:#ede9fe;color:#4f46e5;border:1px solid #c4b5fd;font-size:0.8rem;font-weight:600;cursor:pointer;">
+                            <i class="fas fa-eye" style="margin-right:6px;"></i>View
+                        </button>
+                    </div>
                 </div>
 
             </div>
@@ -1971,9 +2240,15 @@
         </div>
 
         <div class="vm-modal-footer">
-            <button type="button" class="vm-btn-cancel" id="vmBtnCancelVendor">
+            <button type="button" class="vm-btn-cancel" id="vmBtnCancelVendor" style="margin-right:auto;">
                 <i class="fas fa-times"></i> Cancel
             </button>
+            <div class="vm-attach-btn-wrap">
+                <button type="button" class="vm-btn-attach-bar" onclick="openVendorMasterAttachmentControl()" title="Attachments">
+                    <i class="fas fa-paperclip"></i> Attachment
+                </button>
+                <span id="vmTempAttachBadge" class="vm-temp-badge">0</span>
+            </div>
             <button type="button" class="vm-btn-save" id="vmBtnSaveVendor" onclick="SaveVendor()">
                 <i class="fas fa-floppy-disk"></i>
                 <span id="vmBtnSaveText">Save Vendor</span>
@@ -1982,6 +2257,8 @@
 
     </div>
 </div>
+
+<div id="VendorMaster_AttachmentControlmodal"></div>
 
 <!-- ═══════════════ VIEW MODAL ═══════════════ -->
 <div id="viewVendorBackdrop" class="vm-backdrop">
@@ -2014,10 +2291,26 @@
             <div class="vm-view-fields-grid">
 
                 <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-barcode"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Vendor Code</div>
+                        <div class="vm-view-field-value" id="vf_VendorCode">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
                     <div class="vm-view-field-icon"><i class="fas fa-store"></i></div>
                     <div class="vm-view-field-info">
                         <div class="vm-view-field-label">Vendor Name</div>
                         <div class="vm-view-field-value" id="vf_VendorName">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-industry"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Industry Type</div>
+                        <div class="vm-view-field-value" id="vf_IndustryType">—</div>
                     </div>
                 </div>
 
@@ -2032,8 +2325,16 @@
                 <div class="vm-view-field">
                     <div class="vm-view-field-icon"><i class="fas fa-location-dot"></i></div>
                     <div class="vm-view-field-info">
-                        <div class="vm-view-field-label">Address</div>
+                        <div class="vm-view-field-label">Address Line 1</div>
                         <div class="vm-view-field-value" id="vf_Address1">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-location-dot"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Address Line 2</div>
+                        <div class="vm-view-field-value" id="vf_Address2">—</div>
                     </div>
                 </div>
 
@@ -2077,6 +2378,14 @@
                 </div>
 
                 <div class="vm-view-field">
+                    <div class="vm-view-field-icon"><i class="fas fa-id-card"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">PAN Number</div>
+                        <div class="vm-view-field-value" id="vf_PANNo">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field">
                     <div class="vm-view-field-icon"><i class="fas fa-envelope"></i></div>
                     <div class="vm-view-field-info">
                         <div class="vm-view-field-label">Email</div>
@@ -2089,6 +2398,24 @@
                     <div class="vm-view-field-info">
                         <div class="vm-view-field-label">Phone No</div>
                         <div class="vm-view-field-value" id="vf_PhoneNo">—</div>
+                    </div>
+                </div>
+
+                <div class="vm-view-field" id="vmViewAttachRow" style="display:none;">
+                    <div class="vm-view-field-icon"><i class="fas fa-paperclip"></i></div>
+                    <div class="vm-view-field-info">
+                        <div class="vm-view-field-label">Attachment</div>
+                        <div class="vm-view-field-value" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <span id="vf_AttachmentName">—</span>
+                            <button type="button" id="vmBtnViewVendorAttachment" onclick="vmViewVendorAttachmentFromModal()"
+                                    style="padding:6px 12px;border-radius:8px;background:#ede9fe;color:#4f46e5;border:1px solid #c4b5fd;font-size:0.78rem;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-eye" style="margin-right:5px;"></i>View
+                            </button>
+                            <button type="button" onclick="vmDownloadVendorAttachmentFromViewModal()"
+                                    style="padding:6px 12px;border-radius:8px;background:#ecfdf5;color:#047857;border:1px solid #6ee7b7;font-size:0.78rem;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-download" style="margin-right:5px;"></i>Download
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -2163,6 +2490,14 @@
             <button type="button" class="vm-btn-view-close" onclick="CloseVendorViewModal()">
                 <i class="fas fa-times"></i> Close
             </button>
+            <button type="button" class="vm-btn-view-close" onclick="PrintVendorFromView('preview')" title="Print Preview"
+                    style="background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;border:none;">
+                <i class="fas fa-search-plus"></i> Print Preview
+            </button>
+            <button type="button" class="vm-btn-view-close" onclick="PrintVendorFromView('print')" title="Print"
+                    style="background:linear-gradient(135deg,#1e293b,#334155);color:#fff;border:none;">
+                <i class="fas fa-print"></i> Print
+            </button>
             <button type="button" class="vm-btn-view-edit" onclick="EditFromVendorView()">
                 <i class="fas fa-pen"></i> Edit Vendor
             </button>
@@ -2217,6 +2552,35 @@
             </button>
             <button type="button" class="vm-btn-confirm-verify" onclick="DoVendorVerify()">
                 <i class="fas fa-check"></i> Yes, Verify
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ QUICK ADD: INDUSTRY TYPE (like PO Payment Terms +) ═══════════════ -->
+<div id="vmIndustryTypeQuickBackdrop" class="vm-backdrop" style="z-index: 1065;">
+    <div class="vm-modal" style="max-width:420px;">
+        <div class="vm-modal-header">
+            <div class="vm-modal-header-title">
+                <i class="fas fa-industry"></i>
+                <span>Add Industry Type</span>
+            </div>
+            <button type="button" class="vm-modal-close" onclick="vmCloseIndustryTypeQuickAdd()" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="vm-modal-body">
+            <div class="vm-form-group" style="margin:0;">
+                <label for="vmIndustryTypeNewName">Industry Type <span class="vm-required">*</span></label>
+                <input type="text" id="vmIndustryTypeNewName" class="vm-input" maxlength="200" placeholder="Enter new industry type" autocomplete="off" />
+            </div>
+        </div>
+        <div class="vm-modal-footer" style="justify-content:flex-end;gap:10px;">
+            <button type="button" class="vm-btn-cancel" onclick="vmCloseIndustryTypeQuickAdd()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="vm-btn-save" onclick="vmSaveNewIndustryType()">
+                <i class="fas fa-floppy-disk"></i> Save
             </button>
         </div>
     </div>

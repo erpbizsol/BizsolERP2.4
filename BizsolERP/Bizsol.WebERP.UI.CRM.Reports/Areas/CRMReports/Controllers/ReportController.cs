@@ -25,6 +25,13 @@ namespace Bizsol.WebERP.UI.CRM.Reports.Areas.CRMReports.Controllers
         {
             return View();
         }
-
+        public IActionResult ExpensesLedgerReport()
+        {
+            return View();
+        }
+        public IActionResult ProjectManagementReport()
+        {
+            return View();
+        }
     }
 }

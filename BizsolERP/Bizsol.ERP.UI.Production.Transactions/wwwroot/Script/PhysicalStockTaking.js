@@ -1,4 +1,4 @@
-﻿import { PhysicalStockTakingItemService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PhysicalStockTakingItemService.js';
+import { PhysicalStockTakingItemService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PhysicalStockTakingItemService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 
 let ItemMaster_Code = 0;
@@ -629,9 +629,20 @@ function PhysicalStock_Back() {
     PhysicalStockTackingSummary();
 }
 
+function escapeExcelCellText(value) {
+    if (value == null) {
+        return '';
+    }
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 function Physical_ExportButton() {
     var ReportType = "StockAudit";
-    var currentDate = new Date;
+    var currentDate = new Date();
     var dateString = currentDate.getFullYear() + "-" +
         (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
         currentDate.getDate().toString().padStart(2, "0") + "_" +
@@ -639,10 +650,43 @@ function Physical_ExportButton() {
         currentDate.getMinutes().toString().padStart(2, "0") + "-" +
         currentDate.getSeconds().toString().padStart(2, "0");
 
-    $("#tblReport").table2excel({
-        filename: ReportType + "_" + dateString,
-        fileext: ".xlsx"
-    });
+    var table = document.getElementById('tblReport');
+    if (!table) {
+        toastr.error('Nothing to export.');
+        return;
+    }
+
+    var theadRows = table.querySelectorAll('thead tr');
+    var tbodyRows = table.querySelectorAll('tbody tr');
+    if (theadRows.length === 0 && tbodyRows.length === 0) {
+        toastr.error('No data to export.');
+        return;
+    }
+
+    var parts = [];
+    parts.push('<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body><table>');
+
+    function appendRow(tr) {
+        parts.push('<tr>');
+        for (var c = 0; c < tr.cells.length; c++) {
+            parts.push('<td>' + escapeExcelCellText(tr.cells[c].textContent) + '</td>');
+        }
+        parts.push('</tr>');
+    }
+
+    theadRows.forEach(appendRow);
+    tbodyRows.forEach(appendRow);
+
+    parts.push('</table></body></html>');
+    var blob = new Blob([parts.join('')], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = ReportType + "_" + dateString + ".xls";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 function PopulateTableForPrint(data) {
     const tableBody = document.querySelector('#tblReport tbody');

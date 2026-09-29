@@ -8,7 +8,8 @@
     // Get BASE_URL from sessionStorage (set by the server in _Layout.cshtml), fallback to localhost
     // If localhost is detected, ensure port 5088 is used
     BASE_URL: (() => {
-        let baseUrl = sessionStorage.getItem('AppBaseURL')+'api' || 'http://localhost:5088';
+        let appBaseUrl = sessionStorage.getItem('AppBaseURL');
+        let baseUrl = appBaseUrl ? appBaseUrl + 'api' : 'http://localhost:5088';
         // If it contains localhost, ensure it uses port 5088
         if (baseUrl.toLowerCase().includes('localhost')) {
             // Replace any existing port with 5088

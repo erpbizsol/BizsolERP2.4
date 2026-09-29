@@ -4,8 +4,9 @@ import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSService
 import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
 
 let G_ProjectList         = [];
-let G_SubProjectsCache    = []; // all sub-projects (for validating project update vs existing subs)
-let G_ActiveStatusFilter  = 'all'; // 'all' | 'running' | 'pending'
+let G_SubProjectsCache    = []; 
+let G_ActiveStatusFilter  = 'all'; 
+let G_CompanyInfoList = [];
 
 function refreshSubProjectsCache() {
     return SubProjectMasterService.GetSubProjectList()
@@ -20,10 +21,232 @@ function refreshSubProjectsCache() {
         });
 }
 
+function firstPayloadArray(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload.data)) return payload.data;
+    if (Array.isArray(payload.Data)) return payload.Data;
+    return [];
+}
+
+/**
+ * Display text from GetCompanyInfoList row (SP: Code, UnitCode+'('+CompanyName+')').
+ * Supports a single concatenated column from API or separate UnitCode / CompanyName.
+ */
+function getCompanyInfoListDisplayText(item) {
+    if (!item) return '—';
+    const t =
+        item.CompanyInfo != null ? String(item.CompanyInfo)
+            : item.CompanyInfoText != null ? String(item.CompanyInfoText)
+                : item.DisplayText != null ? String(item.DisplayText)
+                    : item.Label != null ? String(item.Label)
+                        : item.Text != null ? String(item.Text)
+                            : item.Desp != null ? String(item.Desp)
+                                : item.Description != null ? String(item.Description)
+                                    : '';
+    if (t) return t;
+    const uc = item.UnitCode != null ? String(item.UnitCode) : (item.unitCode != null ? String(item.unitCode) : '');
+    const cn = item.CompanyName || item.companyName || '';
+    if (uc && cn) return uc + '(' + cn + ')';
+    if (cn) return cn;
+    if (uc) return uc;
+    return '—';
+}
+
+function companyInfoRowCode(item) {
+    if (!item) return '';
+    const c =
+        item.Code != null ? item.Code
+            : item.code != null ? item.code
+                : item.CompanyParameter_Code != null ? item.CompanyParameter_Code
+                    : item.companyParameter_Code != null ? item.companyParameter_Code
+                        : item.CompanyParameterCode != null ? item.CompanyParameterCode
+                            : '';
+    if (c === '' || c == null) return '';
+    const s = String(c).trim();
+    const n = normalizeCompanyInfoId(s);
+    if (n !== null && n <= 0) return '';
+    return s;
+}
+
+function normalizeCompanyInfoId(v) {
+    if (v === null || v === undefined || v === '') return null;
+    const n = parseInt(String(v).trim(), 10);
+    return isNaN(n) ? null : n;
+}
+
+function applyCompanyInfoDropdownSelection($ddl, rawCode, fallbackRow) {
+    if (rawCode === null || rawCode === undefined || rawCode === '') return;
+
+    const wantNum = normalizeCompanyInfoId(rawCode);
+    if (wantNum !== null && wantNum <= 0) return;
+    if (wantNum === null && String(rawCode).trim() === '0') return;
+
+    const rawStr = String(rawCode).trim();
+
+    if (wantNum !== null) {
+        $ddl.val(String(wantNum));
+        if ($ddl.val() === String(wantNum)) return;
+    }
+
+    $ddl.val(rawStr);
+    if ($ddl.val() === rawStr) return;
+
+    if (wantNum !== null) {
+        let matchedVal = null;
+        $ddl.find('option').each(function () {
+            const ov = $(this).attr('value');
+            if (ov === '' || ov == null) return;
+            if (normalizeCompanyInfoId(ov) === wantNum) {
+                matchedVal = ov;
+                return false;
+            }
+        });
+        if (matchedVal != null) {
+            $ddl.val(matchedVal);
+            return;
+        }
+    }
+
+    if (!fallbackRow) return;
+
+    const uc = fallbackRow.UnitCode != null ? String(fallbackRow.UnitCode) : (fallbackRow.unitCode != null ? String(fallbackRow.unitCode) : '');
+    const cn = fallbackRow.CompanyName || fallbackRow.companyName || '';
+    if (!cn && !uc) return;
+
+    let label = '';
+    if (uc && cn) label = uc + '(' + cn + ')';
+    else if (cn) label = cn;
+    else label = uc;
+
+    const valToUse = wantNum != null ? String(wantNum) : rawStr;
+    const hasVal = $ddl.find('option').filter(function () { return $(this).val() === valToUse; }).length > 0;
+    if (!hasVal) {
+        $ddl.append($('<option></option>').attr('value', valToUse).text(label));
+    }
+    $ddl.val(valToUse);
+}
+
+/**
+ * Binds #ddlCompanyInfo via ProjectMaster GetCompanyInfoList (SP: GETCompanyInfo → Code, CompanyInfo).
+ * @param {string|number} [selectedCode] - PM.CompanyParameter_Code for edit
+ * @param {object} [fallbackRow] - row from GetProjectByCode if option missing
+ */
+function loadCompanyInfoDropdown(selectedCode, fallbackRow) {
+    function bindOptions(response) {
+        G_CompanyInfoList = firstPayloadArray(response);
+        const $ddl = $('#ddlCompanyInfo');
+        $ddl.empty().append('<option value="">-- Select Company Info --</option>');
+        G_CompanyInfoList.forEach(function (item) {
+            const val = companyInfoRowCode(item);
+            if (!val) return;
+            const text = getCompanyInfoListDisplayText(item);
+            $ddl.append($('<option></option>').attr('value', val).text(text !== '—' ? text : ('Code ' + val)));
+        });
+        applyCompanyInfoDropdownSelection($ddl, selectedCode, fallbackRow);
+    }
+
+    return ProjectMasterService.GetCompanyInfoList()
+        .then(function (response) {
+            bindOptions(response);
+        })
+        .catch(function () {
+            G_CompanyInfoList = [];
+            toastr.error('Failed to load company information list.');
+            const $ddl = $('#ddlCompanyInfo');
+            $ddl.empty().append('<option value="">-- Select Company Info --</option>');
+            applyCompanyInfoDropdownSelection($ddl, selectedCode, fallbackRow);
+        });
+}
+
+function getCompanyInfoDisplayByCode(code) {
+    if (code == null || code === '') return '—';
+    const want = normalizeCompanyInfoId(code);
+    const item = (G_CompanyInfoList || []).find(function (x) {
+        const xv = companyInfoRowCode(x);
+        if (!xv) return false;
+        if (want !== null && normalizeCompanyInfoId(xv) === want) return true;
+        return String(xv).trim() === String(code).trim();
+    });
+    if (item) return getCompanyInfoListDisplayText(item);
+    return '—';
+}
+
+/** Reads FK from API row (PascalCase / camelCase / nested). Empty / 0 = no selection. */
+function resolveCompanyParameterCode(row) {
+    if (!row || typeof row !== 'object') return '';
+    const tryVals = [
+        row.CompanyParameter_Code,
+        row.companyParameter_Code,
+        row.CompanyParameterCode,
+        row.companyParameterCode,
+        row.Company_Parameter_Code
+    ];
+    for (let i = 0; i < tryVals.length; i++) {
+        const v = tryVals[i];
+        if (v !== undefined && v !== null && String(v).trim() !== '') {
+            const s = String(v).trim();
+            const n = normalizeCompanyInfoId(s);
+            if (n !== null && n <= 0) return '';
+            return s;
+        }
+    }
+    if (row.ProjectMaster && typeof row.ProjectMaster === 'object') {
+        return resolveCompanyParameterCode(row.ProjectMaster);
+    }
+    return '';
+}
+
+/** Normalizes GetProjectByCode / list API payloads. */
+function unwrapProjectRecord(response) {
+    if (response == null) return null;
+    if (Array.isArray(response) && response.length) return response[0];
+    if (response.Code != null || response.ProjectCode != null || response.ProjectDesp != null) return response;
+    if (response.Data !== undefined) {
+        const d = response.Data;
+        if (Array.isArray(d) && d.length) return d[0];
+        if (d && typeof d === 'object') return d;
+    }
+    if (response.data !== undefined) {
+        const d = response.data;
+        if (Array.isArray(d) && d.length) return d[0];
+        if (d && typeof d === 'object') return d;
+    }
+    if (response.Result !== undefined && response.Result != null && typeof response.Result === 'object') {
+        return unwrapProjectRecord(response.Result);
+    }
+    if (response.result !== undefined && response.result != null && typeof response.result === 'object') {
+        return unwrapProjectRecord(response.result);
+    }
+    if (response.ProjectMaster != null && typeof response.ProjectMaster === 'object') {
+        return response.ProjectMaster;
+    }
+    return null;
+}
+
+/**
+ * View label: prefer UnitCode(CompanyName) from company list by code; else use join columns from SQL
+ * (CompanyName, UnitCode on the same row as your INNER JOIN result).
+ */
+function getCompanyInfoDisplayForRow(row) {
+    const code = resolveCompanyParameterCode(row);
+    if (code) {
+        const fromList = getCompanyInfoDisplayByCode(code);
+        if (fromList !== '—') return fromList;
+    }
+    const uc = row.UnitCode != null ? String(row.UnitCode) : (row.unitCode != null ? String(row.unitCode) : '');
+    const cn = row.CompanyName || row.companyName || '';
+    if (uc && cn) return uc + '(' + cn + ')';
+    if (cn) return cn;
+    if (uc) return uc;
+    return '—';
+}
+
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
 
     refreshSubProjectsCache();
+    loadCompanyInfoDropdown();
     loadProjects();
 
     $('#btnCreateProject').on('click', function () {
@@ -68,6 +291,18 @@ $(document).ready(function () {
             $('.pm-stat-chip[data-filter]').removeClass('pm-stat-active');
             $(this).addClass('pm-stat-active');
             applyProjectFilters();
+        }
+    });
+
+    $('#dvProjectModal, #dvProjectViewModal').on('shown.bs.modal', function () {
+        document.documentElement.classList.add('pm-modal-open');
+        document.body.classList.add('pm-modal-open');
+    });
+
+    $('#dvProjectModal, #dvProjectViewModal').on('hidden.bs.modal', function () {
+        if (!$('#dvProjectModal').hasClass('show') && !$('#dvProjectViewModal').hasClass('show')) {
+            document.documentElement.classList.remove('pm-modal-open');
+            document.body.classList.remove('pm-modal-open');
         }
     });
 });
@@ -129,9 +364,35 @@ function OpenNew_ProjectMaster() {
             resetProjectForm();
             $('#txtProjectCode').val(getNextProjectCode());
             $('#project-modal-title').text('New Project');
+            loadCompanyInfoDropdown();
             showModal('dvProjectModal');
         }
     });
+}
+
+function bindProjectDetailToEditForm(row) {
+    $('#hfProjectCode').val(row.Code);
+    $('#txtProjectCode').val(row.ProjectCode || '');
+    $('#txtProjectName').val(row.ProjectDesp || row.ProjectName || '');
+
+    const budgetVal = row.Budget || row.ProjectBudget || 0;
+    $('#txtBudget').val(budgetVal ? formatBudgetRaw(String(budgetVal)) : '');
+
+    if (row.ProjectStartDate) {
+        const d = new Date(row.ProjectStartDate);
+        if (!isNaN(d.getTime())) {
+            $('#txtStartDate').val(formatDate(d));
+        }
+    }
+
+    $('#txtEstimatedDays').val(row.EstimatedCompletionDays || row.EstimatedDays || '');
+
+    if (row.EstimatedCompletionDate || row.EstimatedDate) {
+        const ed = new Date(row.EstimatedCompletionDate || row.EstimatedDate);
+        if (!isNaN(ed.getTime())) {
+            $('#txtEstimatedDate').val(formatDate(ed));
+        }
+    }
 }
 
 /* ── Edit ────────────────────────────────────────────────── */
@@ -147,43 +408,45 @@ function ProjectMaster_EditData(code) {
             return false;
         } else {
             resetProjectForm();
-            const row = (G_ProjectList || []).find(x => String(x.Code) === String(code));
-            if (row) {
-                $('#hfProjectCode').val(row.Code);
-                $('#txtProjectCode').val(row.ProjectCode || '');
-                $('#txtProjectName').val(row.ProjectDesp || row.ProjectName || '');
-
-                const budgetVal = row.Budget || row.ProjectBudget || 0;
-                $('#txtBudget').val(budgetVal ? formatBudgetRaw(String(budgetVal)) : '');
-
-                if (row.ProjectStartDate) {
-                    const d = new Date(row.ProjectStartDate);
-                    if (!isNaN(d.getTime())) {
-                        $('#txtStartDate').val(formatDate(d));
+            Showloader && Showloader();
+            ProjectMasterService.GetProjectByCode(code)
+                .then(function (apiResponse) {
+                    HideLoader && HideLoader();
+                    const fromList = (G_ProjectList || []).find(x => String(x.Code) === String(code));
+                    const fromApi = unwrapProjectRecord(apiResponse);
+                    const row = fromApi
+                        ? Object.assign({}, fromList || {}, fromApi)
+                        : fromList;
+                    if (!row) {
+                        toastr.warning('Project not found.');
+                        return;
                     }
-                }
-
-                $('#txtEstimatedDays').val(row.EstimatedCompletionDays || row.EstimatedDays || '');
-
-                if (row.EstimatedCompletionDate || row.EstimatedDate) {
-                    const ed = new Date(row.EstimatedCompletionDate || row.EstimatedDate);
-                    if (!isNaN(ed.getTime())) {
-                        $('#txtEstimatedDate').val(formatDate(ed));
+                    const companyParamCode = resolveCompanyParameterCode(row);
+                    loadCompanyInfoDropdown(companyParamCode, row).then(function () {
+                        bindProjectDetailToEditForm(row);
+                        $('#project-modal-title').text('Edit Project');
+                        showModal('dvProjectModal');
+                    });
+                })
+                .catch(function () {
+                    HideLoader && HideLoader();
+                    const row = (G_ProjectList || []).find(x => String(x.Code) === String(code));
+                    if (!row) {
+                        toastr.warning('Project not found.');
+                        return;
                     }
-                }
-
-                $('#project-modal-title').text('Edit Project');
-            }
-            showModal('dvProjectModal');
+                    const companyParamCode = resolveCompanyParameterCode(row);
+                    loadCompanyInfoDropdown(companyParamCode, row).then(function () {
+                        bindProjectDetailToEditForm(row);
+                        $('#project-modal-title').text('Edit Project');
+                        showModal('dvProjectModal');
+                    });
+                });
         }
     });
 }
 
-/* ── View ────────────────────────────────────────────────── */
-function viewProject(code) {
-    const row = (G_ProjectList || []).find(x => String(x.Code) === String(code));
-    if (!row) { toastr.warning('Project not found.'); return; }
-
+function fillProjectViewModal(row) {
     $('#viewProjectCode').text(row.ProjectCode || '—');
     $('#viewProjectName').text(row.ProjectDesp || row.ProjectName || '—');
 
@@ -213,7 +476,35 @@ function viewProject(code) {
     $('#viewEstimatedDate').text(estDateTxt);
     $('#viewEstDays').text((row.EstimatedCompletionDays || row.EstimatedDays || 0) + ' days');
 
-    showModal('dvProjectViewModal');
+    $('#viewCompanyInfo').text(getCompanyInfoDisplayForRow(row));
+}
+
+/* ── View ────────────────────────────────────────────────── */
+function viewProject(code) {
+    Showloader && Showloader();
+    ProjectMasterService.GetProjectByCode(code)
+        .then(function (apiResponse) {
+            HideLoader && HideLoader();
+            const row =
+                unwrapProjectRecord(apiResponse)
+                || (G_ProjectList || []).find(x => String(x.Code) === String(code));
+            if (!row) {
+                toastr.warning('Project not found.');
+                return;
+            }
+            fillProjectViewModal(row);
+            showModal('dvProjectViewModal');
+        })
+        .catch(function () {
+            HideLoader && HideLoader();
+            const row = (G_ProjectList || []).find(x => String(x.Code) === String(code));
+            if (!row) {
+                toastr.warning('Project not found.');
+                return;
+            }
+            fillProjectViewModal(row);
+            showModal('dvProjectViewModal');
+        });
 }
 
 /* ── Delete ──────────────────────────────────────────────── */
@@ -270,6 +561,7 @@ function resetProjectForm() {
     $('#txtStartDate').val(getTodayForInput());
     $('#txtEstimatedDate').val(getTodayForInput());
     $('#txtEstimatedDays').val('');
+    $('#ddlCompanyInfo').val('');
 }
 
 /* ── Validate ────────────────────────────────────────────── */
@@ -293,6 +585,12 @@ function validateProjectForm() {
         $('#txtEstimatedDays').focus();
         return false;
     }
+    const companyInfo = ($('#ddlCompanyInfo').val() || '').trim();
+    if (!companyInfo) {
+        toastr.warning('Please select Company Info.');
+        $('#ddlCompanyInfo').focus();
+        return false;
+    }
     return true;
 }
 
@@ -300,8 +598,9 @@ function validateProjectForm() {
 function saveProject() {
     if (!validateProjectForm()) return;
 
+    const editingCode = parseInt($('#hfProjectCode').val() || '0', 10) || 0;
     var ModuleName = "Project Master",
-        OptionName = "New",
+        OptionName = editingCode > 0 ? "Edit" : "New",
         ShowMsg    = "Y",
         FinYear    = getFinancialYear();
 
@@ -321,20 +620,18 @@ function callSaveProjectApi() {
     const newBudget = $('#txtBudget').val()
         ? parseFloat($('#txtBudget').val().toString().replace(/,/g, ''))
         : 0;
-    const newDays   = $('#txtEstimatedDays').val()
-        ? parseInt($('#txtEstimatedDays').val(), 10)
-        : 0;
 
     if (code > 0 && G_SubProjectsCache && G_SubProjectsCache.length) {
         const subs = G_SubProjectsCache.filter(function (s) {
             return String(s.ProjectMaster_Code || s.MasterProjectCode || 0) === String(code);
         });
-        let sumSubBud  = 0;
-        let sumSubDays = 0;
+
+        // Budget: combined sub-project budgets must not exceed the project budget
+        let sumSubBud = 0;
         subs.forEach(function (s) {
-            sumSubBud  += parseFloat(s.Budget || s.SubProjectBudget || 0) || 0;
-            sumSubDays += parseInt(s.EstimatedCompletionDays || s.EstimatedDays || 0, 10) || 0;
+            sumSubBud += parseFloat(s.Budget || s.SubProjectBudget || 0) || 0;
         });
+
         if (newBudget > 0 && sumSubBud > 0 && newBudget < sumSubBud) {
             toastr.warning(
                 'Project budget cannot be less than the combined sub-project budgets (total ₹ '
@@ -344,15 +641,48 @@ function callSaveProjectApi() {
             $('#txtBudget').focus();
             return;
         }
-        if (newDays > 0 && sumSubDays > 0 && newDays < sumSubDays) {
-            toastr.warning(
-                'Project estimated days cannot be less than the combined sub-project days (total '
-                    + sumSubDays + ' days).'
-            );
-            $('#txtEstimatedDays').focus();
-            return;
+
+        // Dates: when updating project dates, existing sub-projects must still fit within the new range.
+        // No sum-of-days check — only start/end date boundary is enforced.
+        // Use YYYY-MM-DD string comparison to avoid timezone/time-component issues.
+        const newStartStr = ($('#txtStartDate').val() || '').trim();
+        const newEndStr   = ($('#txtEstimatedDate').val() || '').trim();
+
+        if (newStartStr) {
+            const offender = subs.find(function (s) {
+                const sd = extractYMD(s.ProjectStartDate);
+                return sd && sd < newStartStr;
+            });
+            if (offender) {
+                toastr.warning(
+                    'Cannot move project start date forward: sub-project "' +
+                        (offender.SubProjectDesp || offender.SubProjectName || offender.Code) +
+                        '" starts before the new project start date (' + newStartStr + '). Adjust sub-projects first.'
+                );
+                $('#txtStartDate').focus();
+                return;
+            }
+        }
+
+        if (newEndStr) {
+            const offender = subs.find(function (s) {
+                const ed = extractYMD(s.EstimatedCompletionDate);
+                return ed && ed > newEndStr;
+            });
+            if (offender) {
+                toastr.warning(
+                    'Cannot move project end date backward: sub-project "' +
+                        (offender.SubProjectDesp || offender.SubProjectName || offender.Code) +
+                        '" ends after the new project end date (' + newEndStr + '). Adjust sub-projects first.'
+                );
+                $('#txtEstimatedDate').focus();
+                return;
+            }
         }
     }
+
+    const companyParameter_Code = parseInt($('#ddlCompanyInfo').val() || '0', 10) || 0;
+    const newDays = parseInt(($('#txtEstimatedDays').val() || '').trim(), 10) || 0;
 
     const payload = {
         Code:                    code,
@@ -361,7 +691,8 @@ function callSaveProjectApi() {
         Budget:                  newBudget,
         ProjectStartDate:        $('#txtStartDate').val() || null,
         ProjectEstimatedDate:    $('#txtEstimatedDate').val() || null,
-        EstimatedCompletionDays: newDays
+        EstimatedCompletionDays: newDays,
+        CompanyParameter_Code:   companyParameter_Code
     };
 
     Showloader && Showloader();
@@ -391,7 +722,8 @@ function loadProjects() {
     ProjectMasterService.GetProjectList()
         .then(function (response) {
             HideLoader && HideLoader();
-            G_ProjectList = Array.isArray(response) ? response : [];
+            const rows = firstPayloadArray(response);
+            G_ProjectList = rows.length ? rows : (Array.isArray(response) ? response : []);
             updateStats(G_ProjectList);
             applyProjectFilters();
             refreshSubProjectsCache();
@@ -431,6 +763,14 @@ function sumProjectListBudget(list) {
     return sum;
 }
 
+function sumProjectListEstDays(list) {
+    let sum = 0;
+    (list || []).forEach(function (x) {
+        sum += parseInt(x.EstimatedCompletionDays || x.EstimatedDays || 0, 10) || 0;
+    });
+    return sum;
+}
+
 function formatTotalBudgetInr(sum) {
     return '₹ ' + Number(sum).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -440,6 +780,8 @@ function updateProjectVisibleBudgetTotals(list) {
     const txt = formatTotalBudgetInr(sumProjectListBudget(list));
     $('#projectTableBudgetTotal').text(txt);
     $('#statTotalBudget').text(txt);
+    const daysTotal = sumProjectListEstDays(list);
+    $('#projectTableEstDaysTotal').text(daysTotal + ' days');
 }
 
 function bindProjectGrid(list) {
@@ -598,6 +940,14 @@ function calcEstimatedDateFromDays() {
     const estDate = new Date(start);
     estDate.setDate(estDate.getDate() + days);
     $('#txtEstimatedDate').val(formatDate(estDate));
+}
+
+/* Returns the YYYY-MM-DD portion of any date string/value without timezone shift.
+   Works correctly for both '2026-04-01' and '2026-04-01T00:00:00' API formats. */
+function extractYMD(dateVal) {
+    if (!dateVal) return null;
+    const m = String(dateVal).trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : null;
 }
 
 function escHtml(str) {

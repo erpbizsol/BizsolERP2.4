@@ -826,7 +826,7 @@ select.im-input {
         <!-- ── Table ── -->
         <div class="im-card-body">
             <div id="tblitemMaster">
-                <div class="im-table-wrapper">
+                <div class="im-table-wrapper table-wrapper">
                     <table id="ItemMaster" style="width:100%;border-collapse:collapse;font-size:13px;">
                         <thead id="ItemMaster-header"></thead>
                         <tbody id="ItemMaster-body"></tbody>
@@ -877,6 +877,12 @@ select.im-input {
                 </div>
 
                 <div class="im-form-group">
+                    <label for="ItemGroup">Group <span class="im-required">*</span></label>
+                    <select id="ItemGroup" class="im-input" autocomplete="off" tabindex="1"></select>
+                    <span class="im-err-text" id="err_ItemGroup"><i class="fas fa-circle-exclamation"></i> Group is required.</span>
+                </div>
+
+                <div class="im-form-group">
                     <label for="HSN">HSN Code <small style="color:#9ca3af;font-weight:400;text-transform:none;">(max 8 digits)</small></label>
                     <input type="text" id="HSN" class="im-input" placeholder="Enter HSN code" autocomplete="off"
                            inputmode="numeric" maxlength="8" />
@@ -887,8 +893,8 @@ select.im-input {
                     <label for="ItemType">Item Type</label>
                     <select id="ItemType" class="im-input" autocomplete="off">
                         <option value="">-- Select Type --</option>
-                        <option value="G">Good</option>
-                        <option value="S">Services</option>
+                        <option value="G">Goods</option>
+                        <option value="S">Service</option>
                     </select>
                 </div>
 
@@ -973,6 +979,14 @@ select.im-input {
                     <div class="im-view-field-info">
                         <div class="im-view-field-label">UOM</div>
                         <div class="im-view-field-value" id="vf_UOM">—</div>
+                    </div>
+                </div>
+
+                <div class="im-view-field">
+                    <div class="im-view-field-icon"><i class="fas fa-layer-group"></i></div>
+                    <div class="im-view-field-info">
+                        <div class="im-view-field-label">Group</div>
+                        <div class="im-view-field-value" id="vf_ItemGroup">—</div>
                     </div>
                 </div>
 

@@ -1,0 +1,1303 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/DashboardConfiguration.js?v=20260903i"></script>
+<style>
+    #DashboardConfigurationPage {
+        --dc-ink: #0f172a;
+        --dc-body: #334155;
+        --dc-muted: #64748b;
+        --dc-line: #e2e8f0;
+        --dc-primary: #0f766e;
+        --dc-primary-bright: #14b8a6;
+        --dc-primary-soft: #ccfbf1;
+        --dc-soft: #f0fdfa;
+        --dc-surface: #ffffff;
+        --dc-bg: #f1f5f9;
+        --dc-sky: #0284c7;
+        --dc-brand: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+        --dc-header-brand: var(--primary-gradient, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+        --dc-shadow: 0 10px 40px rgba(15, 23, 42, .06);
+        --dc-radius-xl: 20px;
+        --dc-radius-lg: 14px;
+        --dc-radius-md: 10px;
+        font-family: "Plus Jakarta Sans", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        padding: 20px 20px 36px;
+        color: var(--dc-body);
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        background:
+            radial-gradient(ellipse 70% 50% at 0% 0%, rgba(20, 184, 166, .10) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 40% at 100% 0%, rgba(2, 132, 199, .08) 0%, transparent 50%),
+            var(--dc-bg);
+        min-height: calc(100vh - var(--erp-header-height, 55px) - var(--erp-footer-height, 34px));
+    }
+
+    #DashboardConfigurationPage *,
+    #DashboardConfigurationPage *::before,
+    #DashboardConfigurationPage *::after { box-sizing: border-box; }
+
+    .dc-card {
+        background: var(--dc-surface);
+        border-radius: var(--dc-radius-xl);
+        border: 1px solid rgba(15, 23, 42, .06);
+        box-shadow: var(--dc-shadow);
+        overflow: hidden;
+    }
+
+    /* ── Header — ERP brand gradient ── */
+    .dc-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        padding: 16px 22px;
+        background: var(--dc-header-brand);
+        box-shadow: var(--shadow-primary, 0 8px 24px rgba(102, 126, 234, .3));
+        border-bottom: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dc-card-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at 12% 50%, rgba(255, 255, 255, .14) 0%, transparent 45%),
+            radial-gradient(circle at 88% 20%, rgba(13, 202, 240, .22) 0%, transparent 40%);
+        pointer-events: none;
+    }
+
+    .dc-card-header::after {
+        content: '';
+        position: absolute;
+        left: 0; right: 0; bottom: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #67e8f9, #a78bfa, #f0abfc);
+        pointer-events: none;
+    }
+
+    .dc-header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .dc-header-icon {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, .18);
+        border: 1px solid rgba(255, 255, 255, .32);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff;
+        font-size: 17px;
+        flex-shrink: 0;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, .12);
+    }
+
+    .dc-header-kicker {
+        margin: 0 0 3px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, .78);
+    }
+
+    .dc-header-title {
+        margin: 0;
+        color: #fff;
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: -.02em;
+        line-height: 1.2;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+    }
+
+    .dc-header-tagline {
+        margin: 4px 0 0;
+        color: rgba(255, 255, 255, .78);
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .dc-header-badge {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .16);
+        border: 1px solid rgba(255, 255, 255, .28);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        backdrop-filter: blur(6px);
+    }
+
+    /* ── Body ── */
+    .dc-card-body {
+        padding: 22px 24px 0;
+        overflow: visible;
+        position: relative;
+        z-index: 1;
+        background: #fcfdff;
+    }
+
+    /* ── Filters ── */
+    .dc-filter-bar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 22px;
+        padding: 0;
+        border-radius: 0;
+        border: none;
+        background: transparent;
+        overflow: visible;
+        position: relative;
+        z-index: 5;
+    }
+
+    .dc-fg {
+        position: relative;
+        min-width: 0;
+        padding: 16px 18px 18px;
+        border: 1px solid var(--dc-line);
+        background: #fff;
+        border-radius: var(--dc-radius-lg);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+    }
+
+    .dc-fg:hover {
+        border-color: #99f6e4;
+        box-shadow: 0 6px 18px rgba(13, 148, 136, .08);
+        transform: none;
+    }
+
+    .dc-fg label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--dc-muted);
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        margin-bottom: 10px;
+    }
+
+    .dc-fg label .dc-field-ico {
+        width: 26px; height: 26px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--dc-soft);
+        color: var(--dc-primary);
+        font-size: 11px;
+    }
+
+    .dc-fg label .dc-badge {
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .06em;
+        color: var(--dc-primary);
+        background: var(--dc-soft);
+        border: 1px solid #99f6e4;
+        border-radius: 999px;
+        padding: 2px 7px;
+    }
+
+    .dc-fg .select2-container { width: 100% !important; }
+
+    .dc-fg .select2-container--default .select2-selection--single,
+    .dc-fg .select2-container--default .select2-selection--multiple {
+        min-height: 46px;
+        padding: 6px 12px;
+        border-radius: var(--dc-radius-md) !important;
+        border: 1.5px solid #dbe2ef !important;
+        background: #fff !important;
+        transition: border-color .15s, box-shadow .15s !important;
+    }
+
+    .dc-fg .select2-container--default.select2-container--focus .select2-selection--single,
+    .dc-fg .select2-container--default.select2-container--focus .select2-selection--multiple {
+        border-color: #2dd4bf !important;
+        box-shadow: 0 0 0 4px rgba(20, 184, 166, .14) !important;
+    }
+
+    .dc-fg .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 32px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--dc-ink);
+    }
+
+    .dc-fg .select2-container--default .select2-selection--single .select2-selection__arrow { height: 44px; }
+
+    /* Multi-select */
+    .dc-multi-checkbox-root { position: relative; width: 100%; z-index: 1; }
+    .dc-multi-checkbox-root.is-open { z-index: 100; }
+
+    .dc-multi-trigger {
+        min-height: 46px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: var(--dc-radius-md);
+        border: 1.5px solid #dbe2ef;
+        background: #fff;
+        cursor: pointer;
+        font-family: inherit;
+        text-align: left;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+    .dc-multi-trigger:hover { border-color: #5eead4; }
+
+    .dc-multi-checkbox-root.is-open .dc-multi-trigger {
+        border-color: #2dd4bf;
+        box-shadow: 0 0 0 4px rgba(20, 184, 166, .14);
+    }
+
+    .dc-multi-trigger-text {
+        flex: 1;
+        min-width: 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--dc-ink);
+        line-height: 32px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dc-multi-trigger-text.is-placeholder { color: #94a3b8; font-weight: 500; }
+
+    .dc-multi-trigger-arrow {
+        color: #94a3b8;
+        font-size: 11px;
+        transition: transform .15s;
+    }
+
+    .dc-multi-checkbox-root.is-open .dc-multi-trigger-arrow { transform: rotate(180deg); }
+
+    .dc-multi-panel {
+        display: none;
+        position: absolute;
+        left: 0; right: 0;
+        top: calc(100% + 6px);
+        z-index: 200;
+        border: 1.5px solid #99f6e4;
+        border-radius: var(--dc-radius-lg);
+        background: #fff;
+        padding: 12px;
+        box-shadow: 0 20px 48px rgba(15,23,42,.16);
+        min-height: 120px;
+    }
+
+    .dc-multi-checkbox-root.is-open .dc-multi-panel { display: block; }
+
+    .dc-multi-empty {
+        padding: 14px 8px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 12.5px;
+        font-weight: 600;
+    }
+
+    .dc-multi-checkbox-search { margin-bottom: 8px; }
+
+    .dc-multi-checkbox-search input {
+        width: 100%;
+        height: 38px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0 12px;
+        font-size: 13px;
+        font-family: inherit;
+        outline: none;
+        background: var(--dc-soft);
+    }
+
+    .dc-multi-checkbox-search input:focus {
+        border-color: #2dd4bf;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(20, 184, 166, .14);
+    }
+
+    .dc-multi-checkbox-selectall {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px dashed #e2e8f0;
+    }
+
+    .dc-multi-checkbox-selectall label {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 7px;
+        margin: 0 !important;
+        font-size: 12.5px !important;
+        font-weight: 700 !important;
+        color: var(--dc-primary) !important;
+        cursor: pointer;
+    }
+
+    .dc-multi-checkbox-selectall input {
+        width: 15px; height: 15px;
+        accent-color: #0d9488;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .dc-multi-checkbox-list {
+        max-height: min(240px, 34vh);
+        overflow: auto;
+        border: 1px solid #eef0f6;
+        padding: 6px 8px;
+        border-radius: 10px;
+        background: #f8fffe;
+    }
+
+    .dc-multi-checkbox-item { padding: 6px 2px; }
+
+    .dc-multi-checkbox-item label {
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        margin: 0 !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: #1e293b !important;
+        cursor: pointer;
+    }
+
+    .dc-multi-checkbox-item input[type="checkbox"] {
+        width: 15px; height: 15px;
+        accent-color: #0d9488;
+        margin: 0;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .dc-multi-checkbox-item.is-hidden { display: none !important; }
+
+    .dc-multi-group {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        padding: 8px 4px 4px;
+    }
+
+    .dc-multi-group.is-assigned { color: #0f766e; }
+    .dc-multi-group.is-hidden { display: none !important; }
+
+    .dc-multi-checkbox-item.is-assigned label { color: #0f766e !important; }
+
+    .dc-default-pick {
+        display: inline-flex !important;
+        margin-left: auto;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid #fcd34d;
+        background: #fffbeb;
+        font-size: 10px !important;
+        font-weight: 800 !important;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #b45309 !important;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .dc-default-pick.is-on {
+        background: #d97706;
+        border-color: #d97706;
+        color: #fff !important;
+    }
+    .dc-default-pick input { accent-color: #d97706; margin: 0; cursor: pointer; pointer-events: none; }
+
+    .dc-section-default {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1.5px solid #fcd34d;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+        font-family: inherit;
+    }
+    .dc-section-default.is-visible { display: inline-flex; }
+    .dc-section-default.is-on {
+        background: #d97706;
+        border-color: #d97706;
+        color: #fff;
+    }
+    .dc-section-default input { display: none; }
+
+    .dc-jump-chip.is-default {
+        box-shadow: 0 0 0 2px #fcd34d;
+    }
+    .dc-jump-chip .dc-default-star {
+        font-size: 9px;
+        color: #d97706;
+    }
+
+    .dc-user-assigned-badge {
+        margin-left: auto;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #0f766e;
+        background: #ccfbf1;
+        border: 1px solid #99f6e4;
+        border-radius: 999px;
+        padding: 1px 6px;
+        flex-shrink: 0;
+    }
+
+    /* ── Empty placeholder ── */
+    .dc-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 12px;
+        padding: 40px 24px;
+        border: 1px solid var(--dc-line);
+        border-radius: var(--dc-radius-lg);
+        background: linear-gradient(180deg, #f8fffe 0%, #f8fafc 100%);
+        color: #64748b;
+    }
+
+    .dc-placeholder-ico {
+        width: 64px; height: 64px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #ccfbf1, #99f6e4);
+        color: #0f766e;
+        font-size: 26px;
+        box-shadow: 0 8px 24px rgba(13, 148, 136, .16);
+    }
+
+    .dc-placeholder h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .dc-placeholder p {
+        margin: 0;
+        max-width: 420px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #64748b;
+    }
+
+    /* ── Tiles section ── */
+    .dc-tiles-section { display: none; }
+    .dc-tiles-section.is-visible {
+        display: block;
+        animation: dcFadeUp .28s ease;
+        padding-bottom: 0;
+    }
+
+    @@keyframes dcFadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: none; }
+    }
+
+    .dc-stats-bar {
+        display: flex;
+        align-items: stretch;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+
+    .dc-stat {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-radius: 12px;
+        background: #fff;
+        border: 1px solid var(--dc-line);
+        min-width: 118px;
+    }
+
+    .dc-stat.is-selected {
+        background: var(--dc-soft);
+        border-color: #99f6e4;
+    }
+
+    .dc-stat-ico {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--dc-soft);
+        color: var(--dc-primary);
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .dc-stat.is-total .dc-stat-ico {
+        background: #e0f2fe;
+        color: var(--dc-sky);
+    }
+
+    .dc-stat-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--dc-muted);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        line-height: 1.2;
+    }
+
+    .dc-stat-value {
+        font-size: 17px;
+        font-weight: 800;
+        color: var(--dc-ink);
+        line-height: 1.2;
+    }
+
+    .dc-progress-wrap {
+        flex: 1;
+        min-width: 200px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: #fff;
+        border: 1px solid var(--dc-line);
+    }
+
+    .dc-progress-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #64748b;
+    }
+
+    .dc-progress-track {
+        height: 8px;
+        border-radius: 999px;
+        background: #e8edf5;
+        overflow: hidden;
+    }
+
+    .dc-progress-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: inherit;
+        background: var(--dc-brand);
+        transition: width .35s ease;
+    }
+
+    /* ── Toolbar ── */
+    .dc-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+        padding: 12px 16px;
+        border-radius: var(--dc-radius-lg);
+        border: 1px solid var(--dc-line);
+        background: #fff;
+    }
+
+    .dc-toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .dc-toolbar-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        white-space: nowrap;
+    }
+
+    .dc-toolbar-title i {
+        width: 32px; height: 32px;
+        border-radius: 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--dc-soft);
+        color: var(--dc-primary);
+        font-size: 13px;
+    }
+
+    .dc-jump-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .dc-jump-chip {
+        border: 1.5px solid color-mix(in srgb, var(--dc-g, #0d9488) 40%, #fff);
+        background: color-mix(in srgb, var(--dc-g, #0d9488) 12%, #fff);
+        color: var(--dc-g, #0d9488);
+        border-radius: 999px;
+        padding: 5px 11px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all .15s ease;
+    }
+
+    .dc-jump-chip:hover {
+        border-color: var(--dc-g, #0d9488);
+        color: var(--dc-g, #0d9488);
+        background: color-mix(in srgb, var(--dc-g, #0d9488) 18%, #fff);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px color-mix(in srgb, var(--dc-g, #0d9488) 20%, transparent);
+    }
+
+    .dc-jump-chip .dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--dc-g, #0d9488);
+        flex-shrink: 0;
+    }
+
+    .dc-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .dc-search { position: relative; }
+
+    .dc-search i {
+        position: absolute;
+        left: 12px; top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 12px;
+        pointer-events: none;
+    }
+
+    .dc-search input {
+        width: min(240px, 72vw);
+        height: 38px;
+        border: 1.5px solid #dbe2ef;
+        border-radius: 999px;
+        padding: 0 14px 0 34px;
+        font-size: 13px;
+        font-family: inherit;
+        outline: none;
+        background: #fff;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+    .dc-search input:focus {
+        border-color: #2dd4bf;
+        box-shadow: 0 0 0 4px rgba(20, 184, 166, .12);
+    }
+
+    .dc-count-badge {
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+        background: #f1f5f9;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 999px;
+        padding: 7px 13px;
+        transition: all .15s;
+    }
+
+    .dc-count-badge.has-selection {
+        color: var(--dc-primary);
+        background: var(--dc-soft);
+        border-color: #99f6e4;
+    }
+
+    .dc-tool-btn {
+        border: 1.5px solid #dbe2ef;
+        background: #fff;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: 10px;
+        padding: 8px 14px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all .15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .dc-tool-btn:hover {
+        background: var(--dc-soft);
+        border-color: #99f6e4;
+        color: #0f766e;
+    }
+
+    .dc-tool-btn.is-primary {
+        background: var(--dc-soft);
+        border-color: #99f6e4;
+        color: #0f766e;
+    }
+
+    /* ── Tiles panel ── */
+    .dc-tiles-panel {
+        position: relative;
+        border: 1px solid var(--dc-line);
+        border-radius: var(--dc-radius-lg);
+        background: #f8fafc;
+        padding: 16px;
+        max-height: min(52vh, 480px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+    }
+
+    .dc-tiles-panel::-webkit-scrollbar { width: 8px; }
+    .dc-tiles-panel::-webkit-scrollbar-track { background: #ecfdf5; border-radius: 999px; }
+    .dc-tiles-panel::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #5eead4, #0d9488);
+        border-radius: 999px;
+    }
+
+    .dc-tiles-list { display: block !important; width: 100% !important; }
+
+    /* ── Section — dashboard-wise color + border ── */
+    .dc-section {
+        --dc-g: #0d9488;
+        --dc-g-bg: #ccfbf1;
+        --dc-g-mid: #f0fdfa;
+        --dc-g-border: #5eead4;
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 18px;
+        background: var(--dc-g-mid);
+        border: 2px solid var(--dc-g-border);
+        border-left: 6px solid var(--dc-g);
+        border-radius: var(--dc-radius-lg);
+        overflow: hidden;
+        box-shadow: 0 4px 14px color-mix(in srgb, var(--dc-g) 10%, transparent);
+    }
+
+    .dc-section:hover { box-shadow: 0 8px 22px color-mix(in srgb, var(--dc-g) 16%, transparent); }
+    .dc-section:last-child { margin-bottom: 0; }
+
+    .dc-section[data-accent="0"] { --dc-g:#0d9488; --dc-g-bg:#ccfbf1; --dc-g-mid:#f0fdfa; --dc-g-border:#5eead4; }
+    .dc-section[data-accent="1"] { --dc-g:#0284c7; --dc-g-bg:#bae6fd; --dc-g-mid:#f0f9ff; --dc-g-border:#7dd3fc; }
+    .dc-section[data-accent="2"] { --dc-g:#7c3aed; --dc-g-bg:#ddd6fe; --dc-g-mid:#f5f3ff; --dc-g-border:#c4b5fd; }
+    .dc-section[data-accent="3"] { --dc-g:#d97706; --dc-g-bg:#fde68a; --dc-g-mid:#fffbeb; --dc-g-border:#fcd34d; }
+    .dc-section[data-accent="4"] { --dc-g:#db2777; --dc-g-bg:#fbcfe8; --dc-g-mid:#fdf2f8; --dc-g-border:#f9a8d4; }
+    .dc-section[data-accent="5"] { --dc-g:#4f46e5; --dc-g-bg:#c7d2fe; --dc-g-mid:#eef2ff; --dc-g-border:#a5b4fc; }
+
+    .dc-section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 12px 16px;
+        background: var(--dc-g-bg);
+        border-bottom: 1px solid var(--dc-g-border);
+    }
+
+    .dc-section-title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--dc-ink);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .dc-section-title .ico {
+        width: 32px; height: 32px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--dc-g-bg);
+        color: var(--dc-g);
+        font-size: 13px;
+        border: 1px solid rgba(0,0,0,.04);
+    }
+
+    .dc-section-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .dc-section-count {
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--dc-g);
+        border: none;
+        border-radius: 999px;
+        padding: 4px 10px;
+    }
+
+    .dc-section-body {
+        padding: 16px;
+        max-height: none;
+        overflow: visible;
+        background: var(--dc-g-mid);
+    }
+
+    .dc-section.is-empty .dc-section-body { padding: 14px; }
+
+    /* ── Tile cards (horizontal, toggle style) ── */
+    .dc-tile-grid {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        width: 100%;
+    }
+
+    @@media (max-width: 1100px) {
+        .dc-tile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .dc-tile-item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        min-height: 58px;
+        border-radius: 12px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        overflow: hidden;
+        transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, transform .18s ease;
+    }
+
+    .dc-tile-item:hover {
+        border-color: var(--dc-g);
+        box-shadow: 0 6px 16px color-mix(in srgb, var(--dc-g) 14%, transparent);
+        transform: translateY(-1px);
+    }
+
+    .dc-tile-item.is-hidden { display: none !important; }
+
+    /* Unchecked — white tile, grey icon & toggle */
+    .dc-tile-item:not(.is-checked) {
+        background: #fff;
+        border-color: #e2e8f0;
+    }
+
+    .dc-tile-item:not(.is-checked):hover {
+        background: #fff;
+        border-color: var(--dc-g-border);
+    }
+
+    /* Checked — same color as that dashboard */
+    .dc-tile-item.is-checked {
+        background: #fff;
+        border-color: var(--dc-g);
+        box-shadow: 0 1px 4px color-mix(in srgb, var(--dc-g) 16%, transparent);
+    }
+
+    .dc-tile-item.is-checked:hover {
+        border-color: var(--dc-g);
+        box-shadow: 0 6px 16px color-mix(in srgb, var(--dc-g) 18%, transparent);
+    }
+
+    .dc-tile-item input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+
+    .dc-tile-icon {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+        background: #f1f5f9;
+        color: #94a3b8;
+        transition: all .15s ease;
+    }
+
+    .dc-tile-item.is-checked .dc-tile-icon {
+        background: var(--dc-g-bg);
+        color: var(--dc-g);
+    }
+
+    .dc-tile-item:not(.is-checked) .dc-tile-icon {
+        background: #f8fafc;
+        color: #94a3b8;
+    }
+
+    .dc-tile-label {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.35;
+        color: #94a3b8;
+        transition: color .15s ease;
+    }
+
+    .dc-tile-item.is-checked .dc-tile-label {
+        color: var(--dc-ink);
+        font-weight: 600;
+    }
+
+    .dc-tile-item:not(.is-checked) .dc-tile-label {
+        color: #64748b;
+    }
+
+    /* Toggle — grey off, dashboard color on */
+    .dc-tile-toggle {
+        position: relative;
+        z-index: 1;
+        width: 40px; height: 22px;
+        border-radius: 999px;
+        background: #cbd5e1;
+        flex-shrink: 0;
+        transition: background .2s ease;
+    }
+
+    .dc-tile-toggle::after {
+        content: '';
+        position: absolute;
+        top: 3px; left: 3px;
+        width: 16px; height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(15,23,42,.2);
+        transition: transform .2s ease;
+    }
+
+    .dc-tile-item.is-checked .dc-tile-toggle {
+        background: var(--dc-g);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dc-g) 30%, transparent);
+    }
+
+    .dc-tile-item.is-checked .dc-tile-toggle::after {
+        transform: translateX(18px);
+    }
+
+    /* legacy check (hidden if present) */
+    .dc-tile-check { display: none !important; }
+    .dc-tile-top { display: contents; }
+
+    /* ── States ── */
+    .dc-section-empty {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--dc-g);
+        font-size: 12.5px;
+        font-weight: 600;
+        padding: 12px;
+        border: 1.5px dashed var(--dc-g-border);
+        border-radius: var(--dc-radius-md);
+        background: #fff;
+    }
+
+    .dc-no-match {
+        display: none;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 12.5px;
+        font-weight: 600;
+        padding: 16px 8px;
+    }
+
+    .dc-no-match.is-visible { display: block; }
+
+    .dc-tiles-loading {
+        display: none;
+        position: absolute;
+        inset: 0;
+        border-radius: var(--dc-radius-lg);
+        background: rgba(255,255,255,.78);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: #0f766e;
+        font-size: 13px;
+        font-weight: 700;
+        z-index: 2;
+    }
+
+    .dc-tiles-loading.is-visible { display: flex; }
+
+    .dc-tiles-empty {
+        display: none;
+        text-align: center;
+        padding: 32px 12px;
+        color: var(--dc-muted);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .dc-tiles-empty.is-visible { display: block; }
+
+    /* ── Footer save bar ── */
+    .dc-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 12px;
+        margin: 18px -24px 0;
+        padding: 16px 24px;
+        border-top: 1px solid var(--dc-line);
+        background: linear-gradient(180deg, #ffffff 0%, #f8fffe 100%);
+    }
+
+    .dc-btn-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 22px;
+        border: none;
+        border-radius: 12px;
+        background: var(--dc-brand);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        box-shadow: 0 8px 20px rgba(13, 148, 136, .28);
+        transition: opacity .15s, transform .15s, box-shadow .15s;
+    }
+
+    .dc-btn-save:hover {
+        opacity: .92;
+        transform: translateY(-1px);
+    }
+
+    .dc-btn-save:active { transform: translateY(0); }
+
+    .dc-btn-save:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+        transform: none;
+        filter: none;
+        box-shadow: none;
+    }
+
+    @@media (max-width: 900px) {
+        .dc-filter-bar { grid-template-columns: 1fr; }
+        .dc-stats-bar { flex-direction: column; }
+        .dc-progress-wrap { width: 100%; min-width: 0; }
+    }
+
+    @@media (max-width: 576px) {
+        #DashboardConfigurationPage { padding: 8px 10px 20px; }
+        .dc-card-body { padding: 16px 14px 0; }
+        .dc-actions { margin: 16px -14px 0; padding: 12px 14px; }
+        .dc-card-header { padding: 16px 16px 14px; }
+        .dc-header-badge { display: none; }
+        .dc-tile-grid { grid-template-columns: 1fr; }
+        .dc-tiles-panel { max-height: min(48vh, 420px); }
+        .dc-toolbar { flex-direction: column; align-items: stretch; }
+        .dc-toolbar-right { justify-content: space-between; }
+        .dc-search input { width: 100%; }
+        .dc-btn-save { width: 100%; justify-content: center; }
+    }
+</style>
+
+<div id="DashboardConfigurationPage">
+    <div class="dc-card">
+        <div class="dc-card-header">
+            <div class="dc-header-left">
+                <div class="dc-header-icon"><i class="fas fa-sliders"></i></div>
+                <div>
+                    <p class="dc-header-kicker">User preferences</p>
+                    <h1 class="dc-header-title">Dashboard Configuration</h1>
+                    <p class="dc-header-tagline">Choose which tiles appear on each user's dashboard</p>
+                </div>
+            </div>
+            <div class="dc-header-badge">
+                <i class="fas fa-user-gear"></i>
+                Customize tiles per user
+            </div>
+        </div>
+
+        <div class="dc-card-body">
+            <div class="dc-filter-bar">
+                <div class="dc-fg">
+                    <label>
+                        <span class="dc-field-ico"><i class="fas fa-layer-group"></i></span>
+                        Dashboard Detail <span class="text-danger">*</span>
+                        <span class="dc-badge">MULTI</span>
+                    </label>
+                    <div id="dcDashboardMulti" class="dc-multi-checkbox-root">
+                        <button type="button" id="btnDashboardTrigger" class="dc-multi-trigger" aria-haspopup="listbox" aria-expanded="false">
+                            <span id="dcDashboardTriggerText" class="dc-multi-trigger-text is-placeholder">Search or select dashboard detail…</span>
+                            <i class="fas fa-chevron-down dc-multi-trigger-arrow" aria-hidden="true"></i>
+                        </button>
+                        <div id="dcDashboardPanel" class="dc-multi-panel" role="listbox">
+                            <div class="dc-multi-checkbox-search">
+                                <input type="text" id="txtDashboardSearch" placeholder="Search dashboards…" autocomplete="off" />
+                            </div>
+                            <div class="dc-multi-checkbox-selectall">
+                                <label>
+                                    <input type="checkbox" id="chkDashboardSelectAll" />
+                                    Select All
+                                </label>
+                            </div>
+                            <div id="dcDashboardCheckList" class="dc-multi-checkbox-list"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="dc-fg">
+                    <label>
+                        <span class="dc-field-ico"><i class="fas fa-user"></i></span>
+                        User <span class="text-danger">*</span>
+                        <span class="dc-badge">MULTI</span>
+                    </label>
+                    <div id="dcUserMulti" class="dc-multi-checkbox-root">
+                        <button type="button" id="btnUserTrigger" class="dc-multi-trigger" aria-haspopup="listbox" aria-expanded="false">
+                            <span id="dcUserTriggerText" class="dc-multi-trigger-text is-placeholder">Search or select user…</span>
+                            <i class="fas fa-chevron-down dc-multi-trigger-arrow" aria-hidden="true"></i>
+                        </button>
+                        <div id="dcUserPanel" class="dc-multi-panel" role="listbox">
+                            <div class="dc-multi-checkbox-search">
+                                <input type="text" id="txtUserSearch" placeholder="Search users…" autocomplete="off" />
+                            </div>
+                            <div class="dc-multi-checkbox-selectall">
+                                <label>
+                                    <input type="checkbox" id="chkUserSelectAll" />
+                                    Select All
+                                </label>
+                            </div>
+                            <div id="dcUserCheckList" class="dc-multi-checkbox-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dcStartPlaceholder" class="dc-placeholder">
+                <div class="dc-placeholder-ico"><i class="fas fa-hand-pointer"></i></div>
+                <h3>Select a dashboard</h3>
+                <p>Pick dashboards, then click <strong>Default</strong> on the one that should open first for the selected users.</p>
+            </div>
+
+            <div id="dcTilesSection" class="dc-tiles-section">
+                <div class="dc-stats-bar">
+                    <div class="dc-stat is-selected">
+                        <div class="dc-stat-ico"><i class="fas fa-check-double"></i></div>
+                        <div>
+                            <div class="dc-stat-label">Selected</div>
+                            <div id="dcStatSelected" class="dc-stat-value">0</div>
+                        </div>
+                    </div>
+                    <div class="dc-stat is-total">
+                        <div class="dc-stat-ico"><i class="fas fa-border-all"></i></div>
+                        <div>
+                            <div class="dc-stat-label">Total tiles</div>
+                            <div id="dcStatTotal" class="dc-stat-value">0</div>
+                        </div>
+                    </div>
+                    <div class="dc-progress-wrap">
+                        <div class="dc-progress-meta">
+                            <span>Selection progress</span>
+                            <span id="dcProgressPct">0%</span>
+                        </div>
+                        <div class="dc-progress-track">
+                            <div id="dcProgressFill" class="dc-progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dc-toolbar">
+                    <div class="dc-toolbar-left">
+                        <h2 class="dc-toolbar-title"><i class="fas fa-th-large"></i> Dashboard Tiles</h2>
+                        <div id="dcJumpChips" class="dc-jump-chips"></div>
+                    </div>
+                    <div class="dc-toolbar-right">
+                        <div class="dc-search">
+                            <i class="fas fa-search"></i>
+                            <input type="search" id="txtTileSearch" placeholder="Search tiles…" autocomplete="off" />
+                        </div>
+                        <button type="button" class="dc-tool-btn is-primary" id="btnSelectAllTiles">
+                            <i class="fas fa-check-square"></i> Select all
+                        </button>
+                        <button type="button" class="dc-tool-btn" id="btnClearAllTiles">
+                            <i class="fas fa-eraser"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dc-tiles-panel">
+                    <div id="dcTilesLoading" class="dc-tiles-loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading tiles…
+                    </div>
+                    <div id="dcTilesList" class="dc-tiles-list"></div>
+                    <div id="dcTilesEmpty" class="dc-tiles-empty">
+                        <i class="fas fa-inbox"></i> No tiles found for selected dashboard(s).
+                    </div>
+                </div>
+
+                <div class="dc-actions">
+                    <button type="button" class="dc-btn-save" id="btnSaveDashboardConfig">
+                        <i class="fas fa-floppy-disk"></i>
+                        <span id="btnSaveDashboardConfigText">Save Configuration</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

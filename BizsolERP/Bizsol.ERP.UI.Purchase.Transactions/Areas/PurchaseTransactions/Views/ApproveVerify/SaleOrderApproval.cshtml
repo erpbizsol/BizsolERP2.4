@@ -6,12 +6,48 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/SaleOrderApproval.js"></script> 
 <style>
+    /* ── PAGE HEADER ──────────────────────────────────────────── */
+    .pla-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 18px rgba(102,126,234,0.28);
+    }
+    .pla-header h5  { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .pla-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; margin-top: 3px; }
+
+    .pla-stat-chip {
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 10px;
+        padding: 5px 14px;
+        text-align: center;
+        min-width: 78px;
+    }
+    .pla-stat-chip .val { font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1; }
+    .pla-stat-chip .lbl { font-size: 0.64rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    .section-entry-animation { animation: fadeSlideIn 0.3s ease both; }
+    @@keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
     .modal-dialog {
         max-width: 1100px;
     }
     /* Sale Order Detail — wider readable layout */
     #myModal .modal-dialog.modal-lg {
         max-width: 940px;
+        height: calc(100vh - 2.5rem);
+        max-height: 880px;
+        margin: 1.25rem auto;
     }
 
     #myModal .modal-content {
@@ -19,28 +55,58 @@
         border-radius: 14px;
         overflow: hidden;
         box-shadow: 0 22px 55px rgba(15, 23, 42, 0.22);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
     #myModal .modal-header {
         position: relative;
         display: flex;
         align-items: center;
-        background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%);
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: #fff;
         border-bottom: none;
-        padding: 0.85rem 3rem 0.85rem 1.25rem;
+        padding: 0.85rem 3.25rem 0.85rem 1.25rem;
+        gap: 0.75rem;
     }
 
-    /* Center title text only; × stays on the right */
-    #myModal .modal-header .modal-title {
+    #myModal .sod-modal-header-main {
         flex: 1 1 auto;
-        width: 100%;
+        min-width: 0;
+        text-align: center;
+    }
+
+    #myModal .modal-header .modal-title {
         margin: 0;
         padding: 0 0.25rem;
         font-weight: 700;
         font-size: 1.05rem;
         letter-spacing: 0.02em;
         text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #myModal .sod-modal-header-date {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.2rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.92);
+        letter-spacing: 0.02em;
+    }
+
+    #myModal .sod-modal-header-date .sod-od-chip {
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: 6px;
+        padding: 0.12rem 0.55rem;
+        font-weight: 700;
     }
 
     #myModal .modal-header button.close,
@@ -91,6 +157,12 @@
     #myModal .modal-body {
         background: #eef2f7;
         padding: 1rem 1.15rem 1.1rem;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto minmax(130px, 1fr) auto;
+        gap: 0.75rem;
     }
 
     #myModal .sod-modal-verify {
@@ -104,7 +176,8 @@
         color: #b45309;
         font-size: 0.8125rem;
         font-weight: 600;
-        margin-bottom: 0.85rem;
+        margin-bottom: 0;
+        flex-shrink: 0;
     }
 
     #myModal .sod-modal-verify .fa {
@@ -117,12 +190,17 @@
         border-radius: 10px;
         border: 1px solid #e2e8f0;
         padding: 0.65rem 0.75rem 0.75rem;
-        margin-bottom: 0.85rem;
+        margin-bottom: 0;
         box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+        flex-shrink: 0;
     }
 
-    #myModal .sod-modal-section:last-of-type {
-        margin-bottom: 0;
+    #myModal .sod-modal-section--lineitems {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     #myModal .sod-modal-section__title {
@@ -132,12 +210,363 @@
         letter-spacing: 0.07em;
         color: #64748b;
         margin-bottom: 0.5rem;
-        padding-bottom: 0.35rem;
+        padding: 0 0 0.35rem 0.55rem;
         border-bottom: 1px solid #f1f5f9;
+        border-left: 3px solid #ef4444;
+        flex-shrink: 0;
+    }
+
+    #myModal .sod-table-scroll {
+        flex: 1 1 auto;
+        min-height: 90px;
+        max-height: 100%;
+        overflow-y: auto;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    /* Bottom: Delivery (left) | Packing (right) — 50/50 with red center partition */
+    #myModal .sod-modal-bottom-partition {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: stretch;
+        flex-shrink: 0;
+        min-height: 0;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+        position: relative;
+    }
+
+    #myModal .sod-modal-bottom-partition::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 0.45rem;
+        bottom: 0.45rem;
+        width: 2px;
+        background: #ef4444;
+        transform: translateX(-50%);
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    #myModal .sod-modal-bottom-partition .sod-modal-section {
+        min-width: 0;
+        margin-bottom: 0;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 0.65rem 0.8rem 0.75rem;
+    }
+
+    #myModal .sod-modal-bottom-partition .sod-modal-section--terms {
+        padding-right: 0.95rem;
+        padding-left: 0.65rem;
+    }
+
+    #myModal .sod-modal-bottom-partition .sod-modal-section--charges {
+        padding-left: 0.95rem;
+        padding-right: 0.65rem;
+    }
+
+    #myModal .sod-modal-bottom-partition #saleOrderDetailHeaderPanel.sod-charge-panel {
+        border: none;
+        box-shadow: none;
+        padding: 0.15rem 0 0;
+        background: transparent;
+    }
+
+    #myModal .sod-modal-bottom-partition .sod-charge-grid {
+        grid-template-columns: 4.25rem minmax(0, 1fr) 2.85rem 3.35rem;
+        gap: 0.32rem 0.35rem;
+    }
+
+    #myModal .sod-modal-bottom-partition .sod-charge-col-h {
+        font-size: 0.58rem;
+    }
+
+    #myModal .sod-modal-bottom-partition .form-control-sm {
+        font-size: 0.72rem;
+        min-height: calc(1.4em + 0.3rem + 2px);
+        padding: 0.22rem 0.4rem;
+    }
+
+    #myModal .sod-modal-bottom-partition .sod-g-lbl {
+        font-size: 0.72rem;
+        padding-right: 0.45rem;
+    }
+
+    #myModal .sod-modal-section--terms .sod-terms-scroll {
+        max-height: none;
+        overflow-x: hidden;
+        overflow-y: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+
+    #myModal .sod-party-outstanding-panel {
+        margin-top: 0.55rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.45rem;
+    }
+
+    #myModal .sod-party-outstanding-item {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.45rem 0.55rem;
+        min-width: 0;
+    }
+
+    #myModal .sod-party-outstanding-item--out {
+        border-left: 3px solid #667eea;
+    }
+
+    #myModal .sod-party-outstanding-item--over {
+        border-left: 3px solid #ef4444;
+    }
+
+    #myModal .sod-party-outstanding-lbl {
+        display: block;
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        margin-bottom: 0.15rem;
+    }
+
+    #myModal .sod-party-outstanding-val {
+        display: block;
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: #0f172a;
+        word-break: break-word;
+    }
+
+    #myModal .sod-party-outstanding-item--out .sod-party-outstanding-val {
+        color: #667eea;
+    }
+
+    #myModal .sod-party-outstanding-item--over .sod-party-outstanding-val {
+        color: #dc2626;
+    }
+
+    #myModal .sod-party-outstanding-val.is-loading {
+        color: #94a3b8;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable {
+        width: 100%;
+        min-width: 0;
+        table-layout: fixed;
+        margin-bottom: 0;
+    }
+
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable th,
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable td {
+        white-space: normal;
+        word-break: break-word;
+        font-size: 0.72rem;
+        padding: 5px 6px;
+        vertical-align: top;
+    }
+
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable th:nth-child(1),
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable td:nth-child(1) {
+        width: 28%;
+    }
+
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable th:nth-child(2),
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable td:nth-child(2),
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable th:nth-child(3),
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable td:nth-child(3) {
+        width: 18%;
+    }
+
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable th:nth-child(4),
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable td:nth-child(4),
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable th:nth-child(5),
+    #myModal .sod-modal-section--terms #SaleOrderDeliveryTermsTable td:nth-child(5) {
+        width: 18%;
+    }
+
+    #myModal .sod-modal-section--terms .sod-terms-scroll .table-wrapper {
+        margin-bottom: 0;
+        overflow: visible;
     }
 
     #myModal .sod-modal-section .table-wrapper {
         margin-bottom: 0;
+    }
+
+    #myModal .sod-modal-section--lineitems .sod-table-scroll .table-wrapper {
+        margin-bottom: 0;
+        overflow: visible;
+    }
+
+    /* Mobile card views — hidden on desktop */
+    .sod-lineitems-mobile-cards,
+    .sod-terms-mobile-cards,
+    .sod-charges-mobile-cards {
+        display: none;
+    }
+
+    .sod-li-mobile-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 3px solid #667eea;
+        border-radius: 10px;
+        padding: 0.6rem 0.65rem;
+        margin-bottom: 0.55rem;
+    }
+
+    .sod-li-mobile-card:last-child { margin-bottom: 0; }
+
+    .sod-li-mobile-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.45rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .sod-li-mobile-sno {
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 800;
+        border-radius: 6px;
+        padding: 0.15rem 0.45rem;
+    }
+
+    .sod-li-mobile-item {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .sod-li-mobile-size {
+        font-size: 0.73rem;
+        color: #475569;
+        margin-bottom: 0.4rem;
+        padding: 0.35rem 0.45rem;
+        background: #fff;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        word-break: break-word;
+    }
+
+    .sod-li-mobile-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem 0.45rem;
+    }
+
+    .sod-li-mobile-kv {
+        background: #fff;
+        border: 1px solid #eef2f7;
+        border-radius: 6px;
+        padding: 0.32rem 0.45rem;
+        min-width: 0;
+    }
+
+    .sod-li-mobile-kv--full { grid-column: 1 / -1; }
+
+    .sod-li-mobile-lbl {
+        display: block;
+        font-size: 0.58rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #94a3b8;
+        margin-bottom: 0.1rem;
+    }
+
+    .sod-li-mobile-val {
+        display: block;
+        font-size: 0.76rem;
+        font-weight: 600;
+        color: #334155;
+        word-break: break-word;
+    }
+
+    .sod-li-mobile-val.is-num {
+        text-align: right;
+        color: #667eea;
+    }
+
+    .sod-dt-mobile-card,
+    .sod-charge-mobile-block {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.55rem 0.65rem;
+    }
+
+    .sod-dt-mobile-kv,
+    .sod-charge-mobile-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.38rem 0;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .sod-dt-mobile-kv:last-child,
+    .sod-charge-mobile-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .sod-dt-mobile-lbl,
+    .sod-charge-mobile-lbl {
+        flex: 0 0 44%;
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #64748b;
+        line-height: 1.35;
+    }
+
+    .sod-dt-mobile-val,
+    .sod-charge-mobile-val {
+        flex: 1 1 auto;
+        text-align: right;
+        font-size: 0.76rem;
+        font-weight: 600;
+        color: #1e293b;
+        word-break: break-word;
+    }
+
+    .sod-charge-mobile-group {
+        margin-bottom: 0.55rem;
+    }
+
+    .sod-charge-mobile-group:last-child { margin-bottom: 0; }
+
+    .sod-charge-mobile-group-title {
+        font-size: 0.68rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #475569;
+        margin-bottom: 0.35rem;
+        padding-left: 0.45rem;
+        border-left: 3px solid #ef4444;
     }
 
     #myModal .sod-modal-section .paginator {
@@ -147,15 +576,18 @@
 
     #myModal #SaleOrderApprovalTable thead th,
     #myModal #SaleOrderDeliveryTermsTable thead th {
-        background: linear-gradient(180deg, #1e3a5f 0%, #152a45 100%) !important;
+        background: linear-gradient(180deg, #5b4fcf 0%, #4338ca 100%) !important;
         color: #fff !important;
         font-weight: 700 !important;
         font-size: 0.7rem !important;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        border-color: #2d4a6f !important;
+        border-color: #6d5fe0 !important;
         vertical-align: middle;
         white-space: nowrap;
+        position: sticky;
+        top: 0;
+        z-index: 2;
     }
 
     #myModal #SaleOrderApprovalTable tbody tr:nth-child(even),
@@ -175,9 +607,40 @@
         display: flex;
         justify-content: flex-end;
         align-items: center;
+        gap: 0.5rem;
         background: #f8fafc;
         border-top: 1px solid #e2e8f0;
         padding: 0.7rem 1.15rem;
+        flex-shrink: 0;
+    }
+
+    /* Verify action lives inside the detail modal; keep it on the left */
+    #myModal .modal-footer .btn-sod-verify.btn {
+        margin-right: auto;
+        min-width: 7rem;
+        font-weight: 700;
+        font-size: 0.875rem;
+        border-radius: 8px;
+        padding: 0.45rem 1.35rem;
+        color: #fff !important;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        border: none !important;
+        box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    #myModal .modal-footer .btn-sod-verify.btn:hover,
+    #myModal .modal-footer .btn-sod-verify.btn:focus {
+        color: #fff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 16px rgba(16, 185, 129, 0.5);
+    }
+
+    #myModal .modal-footer .btn-sod-verify.btn:active {
+        transform: scale(0.98);
     }
 
     /* Solid footer button — theme overrides often break outline-secondary (invisible text) */
@@ -304,7 +767,8 @@
         font-weight: 600;
         color: #3d4a5c;
         line-height: 1.25;
-        padding-right: 0.15rem;
+        padding-right: 0.65rem;
+        border-right: 2px solid #ef4444;
     }
 
     #saleOrderDetailHeaderPanel.sod-charge-panel .sod-g-inp-desc {
@@ -358,98 +822,119 @@
     */
     @@media (max-width: 767.98px) {
         #myModal .modal-dialog.modal-lg {
-            max-width: calc(100% - 0.5rem);
-            margin: 0.25rem auto;
-        }
-
-        #myModal .modal-body {
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-            overflow-x: hidden;
-        }
-
-        #myModal .modal-body > .table-wrapper {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin-left: -0.5rem;
-            margin-right: -0.5rem;
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-        }
-
-        #saleOrderDetailHeaderPanel.sod-charge-panel {
             max-width: 100%;
-            overflow-x: hidden;
-        }
-
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-charge-grid {
-            grid-template-columns: 1fr;
-            gap: 0.3rem;
-        }
-
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-g-lbl {
-            text-align: left;
-            max-width: none;
             width: 100%;
-            padding-top: 0.4rem;
-            padding-right: 0;
-            margin-top: 0.35rem;
-            border-top: 1px solid #c5dce8;
+            max-height: 100dvh;
+            height: 100dvh;
+            margin: 0;
+            border-radius: 0;
         }
 
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-charge-grid > .sod-g-lbl:first-child {
-            margin-top: 0;
-            padding-top: 0;
-            border-top: none;
+        #myModal .modal-content {
+            border-radius: 0;
+            height: 100%;
         }
 
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-charge-col-h {
-            display: none;
+        #myModal .modal-header {
+            padding: 0.65rem 2.65rem 0.65rem 0.7rem;
+            align-items: flex-start;
         }
 
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-charge-mid {
-            display: none;
-        }
-
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-g-inp-desc,
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-g-inp-num {
-            width: 100%;
-            max-width: none;
-        }
-
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-g-inp-desc {
+        #myModal .modal-header .modal-title {
             white-space: normal;
             overflow: visible;
-            text-overflow: clip;
-            word-break: break-word;
+            text-overflow: unset;
+            font-size: 0.8rem;
+            line-height: 1.35;
+            text-align: left;
         }
 
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-freight-lbl {
-            grid-column: 1;
+        #myModal .sod-modal-header-main { text-align: left; }
+
+        #myModal .sod-modal-header-date {
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            font-size: 0.66rem;
         }
 
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-freight-span {
-            grid-column: 1;
+        /* Single scroll — all sections readable top to bottom */
+        #myModal .modal-body {
+            padding: 0.6rem 0.55rem 0.7rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
             flex-direction: column;
-            align-items: stretch;
+            gap: 0.55rem;
+            grid-template-rows: unset;
+            min-height: 0;
         }
 
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-freight-span .sod-freight-field {
-            width: 100%;
-            max-width: none;
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
+        #myModal .sod-modal-verify {
+            font-size: 0.74rem;
+            padding: 0.42rem 0.6rem;
+            flex-shrink: 0;
         }
 
-        #saleOrderDetailHeaderPanel.sod-charge-panel .sod-g-lbl.sod-g-row-divider {
-            border-top: 1px solid #c5dce8;
+        #myModal .sod-modal-section__title {
+            font-size: 0.64rem;
+            margin-bottom: 0.4rem;
         }
+
+        #myModal .sod-modal-section--lineitems {
+            flex: 0 0 auto;
+            min-height: auto;
+            overflow: visible;
+        }
+
+        /* Hide desktop tables on mobile */
+        #myModal .sod-lineitems-table-wrap,
+        #myModal .sod-terms-table-wrap,
+        #myModal .sod-charges-desktop-wrap {
+            display: none !important;
+        }
+
+        #myModal .sod-lineitems-mobile-cards,
+        #myModal .sod-terms-mobile-cards,
+        #myModal .sod-charges-mobile-cards {
+            display: block;
+        }
+
+        #myModal .sod-modal-bottom-partition {
+            grid-template-columns: 1fr;
+            flex-shrink: 0;
+        }
+
+        #myModal .sod-modal-bottom-partition::before { display: none; }
+
+        #myModal .sod-modal-bottom-partition .sod-modal-section--terms {
+            padding: 0.55rem 0.65rem 0.65rem;
+            border-bottom: 2px solid #ef4444;
+        }
+
+        #myModal .sod-modal-bottom-partition .sod-modal-section--charges {
+            padding: 0.55rem 0.65rem 0.65rem;
+        }
+
+        #myModal .modal-footer {
+            flex-wrap: wrap;
+            padding: 0.55rem 0.65rem;
+            gap: 0.4rem;
+            flex-shrink: 0;
+        }
+
+        #myModal .modal-footer .btn-sod-verify.btn,
+        #myModal .modal-footer .btn-sod-close.btn {
+            flex: 1 1 calc(50% - 0.25rem);
+            min-width: 0;
+        }
+
+        #myModal .modal-footer .btn-sod-verify.btn { margin-right: 0; }
     }
 
     /* —— PO approval cards (list view) —— */
     .sopa-list-wrap {
-        max-width: 920px;
-        margin: 0 auto 1rem;
+        margin-bottom: 14px;
     }
 
     .sopa-cards {
@@ -463,7 +948,14 @@
         border-radius: 16px;
         box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
         border: 1px solid #eef0f4;
+        border-left: 4px solid #667eea;
         overflow: hidden;
+        transition: box-shadow 0.2s ease, transform 0.15s ease;
+    }
+
+    .sopa-card:hover {
+        box-shadow: 0 6px 22px rgba(102, 126, 234, 0.16);
+        transform: translateY(-1px);
     }
 
     .sopa-card-head {
@@ -477,12 +969,12 @@
 
     .sopa-po-badge {
         flex: 0 0 auto;
-        background: linear-gradient(135deg, #5b4fcf 0%, #4338ca 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: #fff;
         border-radius: 12px;
         padding: 0.45rem 0.75rem;
         min-width: 7.5rem;
-        box-shadow: 0 4px 12px rgba(67, 56, 202, 0.28);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
     }
 
     .sopa-po-label {
@@ -518,7 +1010,7 @@
     }
 
     .sopa-company-title .fa-building {
-        color: #3b82f6;
+        color: #667eea;
         margin-top: 0.15rem;
         flex-shrink: 0;
     }
@@ -544,9 +1036,9 @@
         gap: 0.25rem;
         padding: 0.15rem 0.45rem;
         border-radius: 6px;
-        border: 1px solid #bfdbfe;
-        background: #eff6ff;
-        color: #1d4ed8;
+        border: 1px solid rgba(102, 126, 234, 0.18);
+        background: rgba(102, 126, 234, 0.08);
+        color: #667eea;
         font-weight: 600;
         font-size: 0.72rem;
     }
@@ -560,7 +1052,7 @@
     .sopa-amount {
         font-size: 1.05rem;
         font-weight: 800;
-        color: #2563eb;
+        color: #667eea;
         line-height: 1.2;
     }
 
@@ -632,7 +1124,7 @@
 
     .sopa-card-foot {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
         align-items: center;
         gap: 0.5rem;
         flex-wrap: wrap;
@@ -640,6 +1132,65 @@
         background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
         border-top: 1px solid #f0f2f6;
     }
+
+    .av-card-attach-btns {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .btn-av-attach-icon {
+        width: 36px;
+        height: 32px;
+        border: none;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+        color: #fff;
+    }
+
+    .btn-av-attach-icon:hover {
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    .btn-av-modal-attach {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        padding: 9px 16px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        box-shadow: 0 3px 10px rgba(14, 165, 233, 0.35);
+        transition: all 0.2s;
+        cursor: pointer;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    }
+
+    .btn-av-modal-attach:hover {
+        transform: translateY(-1px);
+        color: #fff;
+        box-shadow: 0 5px 14px rgba(2, 132, 199, 0.45);
+    }
+
+    .btn-av-modal-attach.av-attach-has-files {
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        box-shadow: 0 3px 10px rgba(22, 163, 74, 0.35);
+    }
+
+    .btn-av-modal-attach.av-attach-has-files:hover {
+        box-shadow: 0 5px 14px rgba(22, 163, 74, 0.45);
+    }
+
+    #AttachmentControlmodal { z-index: 1080 !important; }
 
     .sopa-btn {
         display: inline-flex;
@@ -670,15 +1221,16 @@
     }
 
     .sopa-btn--secondary {
-        background: #fff;
-        color: #4338ca;
-        border: 1px solid #c7d2fe;
+        background: #eff6ff;
+        color: #2563eb;
+        border: 1.5px solid #bfdbfe;
         box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
     }
 
     .sopa-btn--secondary:hover {
-        background: #eef2ff;
-        color: #3730a3;
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
     }
 
     .sopa-empty {
@@ -715,7 +1267,7 @@
         height: 32px;
         border-radius: 50%;
         border: none;
-        background: #1e3a5f;
+        background: #667eea;
         color: #fff;
         display: inline-flex;
         align-items: center;
@@ -778,17 +1330,39 @@
 
         .sopa-card-foot {
             justify-content: stretch;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .sopa-card-foot .av-card-attach-btns {
+            width: 100%;
+            justify-content: flex-start;
         }
 
         .sopa-btn {
             flex: 1 1 auto;
             justify-content: center;
+            width: 100%;
         }
     }
 
 </style>
 
-<div id="SaleOrderApprovalList" class="sopa-list-wrap">
+<!-- PAGE HEADER -->
+<div class="pla-header section-entry-animation">
+    <div>
+        <h5><i class="fa fa-file-invoice me-2"></i><span id="soPageTitle">Sale Order Approval</span></h5>
+        <small id="soPageSubtitle">Review and verify pending sale orders</small>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <div class="pla-stat-chip">
+            <div class="val" id="statPendingSaleOrder">—</div>
+            <div class="lbl">Pending</div>
+        </div>
+    </div>
+</div>
+
+<div id="SaleOrderApprovalList" class="sopa-list-wrap section-entry-animation">
     <div id="SaleOrderApprovalCards" class="sopa-cards" role="list"></div>
     <div id="sopa-cards-paginator" class="sopa-paginator"></div>
 </div>
@@ -808,7 +1382,14 @@
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="myModalTitle">Sale Order Detail</h5>
+                <div class="sod-modal-header-main">
+                    <h5 class="modal-title" id="myModalTitle">Sale Order Detail</h5>
+                    <div class="sod-modal-header-date" id="myModalOrderDateWrap" style="display:none;">
+                        <i class="fa fa-calendar-alt" aria-hidden="true"></i>
+                        <span>Order Date:</span>
+                        <span class="sod-od-chip" id="myModalOrderDate"></span>
+                    </div>
+                </div>
                 <button type="button" class="close modal-close" aria-label="Close" onclick="CloseModal()"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
@@ -817,22 +1398,54 @@
                     <span>Please verify — pending</span>
                 </div>
 
-                <div class="sod-modal-section">
+                <div class="sod-modal-section sod-modal-section--lineitems">
                     <div class="sod-modal-section__title">Line items</div>
-                    <div class="table-wrapper">
-                        <table id="SaleOrderApprovalTable" class="fixed-width-table table">
-                            <thead id="table-header-SaleOrderApprovalTable">
-                            </thead>
-                            <tbody id="table-body-SaleOrderApprovalTable">
-                            </tbody>
-                        </table>
+                    <div class="sod-table-scroll sod-lineitems-table-wrap">
+                        <div class="table-wrapper">
+                            <table id="SaleOrderApprovalTable" class="fixed-width-table table">
+                                <thead id="table-header-SaleOrderApprovalTable">
+                                </thead>
+                                <tbody id="table-body-SaleOrderApprovalTable">
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div class="paginator" id="paginator-SaleOrderApprovalTable">
+                    <div id="sodLineItemsMobileCards" class="sod-lineitems-mobile-cards" aria-label="Line items"></div>
+                    <div class="paginator d-none" id="paginator-SaleOrderApprovalTable" aria-hidden="true">
+                    </div>
+                </div>
+
+                <div class="sod-modal-bottom-partition">
+                <div class="sod-modal-section sod-modal-section--terms">
+                    <div class="sod-modal-section__title">Delivery &amp; payment terms</div>
+                    <div class="sod-terms-scroll sod-terms-table-wrap">
+                        <div class="table-wrapper">
+                            <table id="SaleOrderDeliveryTermsTable" class="fixed-width-table table">
+                                <thead id="table-header-SaleOrderDeliveryTermsTable">
+                                </thead>
+                                <tbody id="table-body-SaleOrderDeliveryTermsTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="sodDeliveryTermsMobile" class="sod-terms-mobile-cards" aria-label="Delivery and payment terms"></div>
+                    <div id="sodPartyOutstandingPanel" class="sod-party-outstanding-panel" aria-label="Party outstanding summary">
+                        <div class="sod-party-outstanding-item sod-party-outstanding-item--out">
+                            <span class="sod-party-outstanding-lbl">Outstanding</span>
+                            <span class="sod-party-outstanding-val is-loading" id="sodPartyOutstandingAmt">Loading…</span>
+                        </div>
+                        <div class="sod-party-outstanding-item sod-party-outstanding-item--over">
+                            <span class="sod-party-outstanding-lbl">Overdue</span>
+                            <span class="sod-party-outstanding-val is-loading" id="sodPartyOverdueAmt">Loading…</span>
+                        </div>
+                    </div>
+                    <div class="paginator d-none" id="paginator-SaleOrderDeliveryTermsTable" aria-hidden="true">
                     </div>
                 </div>
 
                 <div class="sod-modal-section sod-modal-section--charges">
                     <div class="sod-modal-section__title">Packing, other charges &amp; freight</div>
+                    <div class="sod-charges-desktop-wrap">
                     <div id="saleOrderDetailHeaderPanel" class="sod-charge-panel small" aria-label="Order charges and freight">
                         <div class="sod-charge-grid">
                             <span class="sod-charge-col-h sod-charge-col-h--spacer" aria-hidden="true"></span>
@@ -857,28 +1470,28 @@
                             </div>
                         </div>
                     </div>
+                    </div>
+                    <div id="sodChargesMobile" class="sod-charges-mobile-cards" aria-label="Packing and freight charges"></div>
                 </div>
-
-                <div class="sod-modal-section">
-                    <div class="sod-modal-section__title">Delivery &amp; payment terms</div>
-                    <div class="table-wrapper">
-                        <table id="SaleOrderDeliveryTermsTable" class="fixed-width-table table">
-                            <thead id="table-header-SaleOrderDeliveryTermsTable">
-                            </thead>
-                            <tbody id="table-body-SaleOrderDeliveryTermsTable">
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="paginator" id="paginator-SaleOrderDeliveryTermsTable">
-                    </div>
                 </div>
             </div>
             <div class="modal-footer">
+                <input type="hidden" id="hfSodAttachOrderNo" value="" />
+                <input type="hidden" id="hfSodAttachOrderDate" value="" />
+                <button type="button" id="btnSaleOrderModalAttachment" class="btn-av-modal-attach"
+                        onclick="OpenSaleOrderApprovalAttachmentFromModal()" title="Attachments">
+                    <i class="fa fa-paperclip"></i>Attachment
+                </button>
+                <button type="button" id="btnSaleOrderVerify" class="btn btn-height btn-sod-verify" style="display:none;">
+                    <i class="fa fa-check" aria-hidden="true"></i>&nbsp;<span id="btnSaleOrderVerifyLabel">Verify</span>
+                </button>
                 <button type="button" class="btn btn-height btn-sod-close" onclick="CloseModal()" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
+
+<div id="SaleOrderApproval_AttachmentControlmodal"></div>
 
 <div class="modal fade" id="OTPModalDisplay" tabindex="-1" role="dialog">
     <div class="modal-dialog" >

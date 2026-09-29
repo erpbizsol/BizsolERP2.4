@@ -13,183 +13,298 @@ let G_ItemMasterList = [];
 let G_UOMMasterList = [];
 let G_CompanyNation = "";
 let G_Status = "";
+/** Follow-up Status dropdown source: 'followup' → GetLeadStatuslist, 'close' → GetLeadCloseStatuslist */
+var G_FollowUpStatusMode = 'followup';
+var ENQUIRY_FILTER_SS_KEY_SP = "EnquiryMaster_ddlSalesPerson";
+var ENQUIRY_FILTER_SS_KEY_ST = "EnquiryMaster_ddlStatus";
+var ENQUIRY_FILTER_SS_KEY_LT = "EnquiryMaster_ddlLeadType";
+
+/** Split config / session values saved as Value1#Value2 into an array. */
+function splitHashValues(val) {
+    if (val == null || val === '') return [];
+    if (Array.isArray(val)) {
+        return val.map(function (v) { return String(v).trim(); }).filter(Boolean);
+    }
+    return String(val).split('#').map(function (s) { return s.trim(); }).filter(Boolean);
+}
+
+/** Join multi-select values as Value1#Value2 for save / sessionStorage. */
+function joinHashValues(val) {
+    if (val == null || val === '') return '';
+    if (Array.isArray(val)) {
+        return val.map(function (v) { return String(v).trim(); }).filter(Boolean).join('#');
+    }
+    return String(val).trim();
+}
+
+/** Merge GetLeadStatuslist + GetLeadCloseStatuslist into unique Value list (case-insensitive). */
+function mergeLeadStatusLists() {
+    return Promise.all([
+        LeadMasterService.GetLeadStatuslist().catch(function () { return []; }),
+        LeadMasterService.GetLeadCloseStatuslist().catch(function () { return []; })
+    ]).then(function (results) {
+        var seen = {};
+        var merged = [];
+        function pushItems(list) {
+            $.each(list || [], function (_, item) {
+                var val = (item.Value || item.value || item.Desp || item.desp || '').toString().trim();
+                if (!val) return;
+                var key = val.toLowerCase();
+                if (seen[key]) return;
+                seen[key] = true;
+                merged.push({
+                    Value: val,
+                    Desp: item.Desp || item.desp || val,
+                    value: val,
+                    desp: item.Desp || item.desp || val
+                });
+            });
+        }
+        pushItems(results[0]);
+        pushItems(results[1]);
+        return merged;
+    });
+}
+
+/** Valid option values that exist on a <select>. */
+function filterExistingSelectValues($sel, values) {
+    var list = splitHashValues(values);
+    return list.filter(function (v) {
+        return $sel.find('option').filter(function () { return this.value === v; }).length > 0;
+    });
+}
+
+function initStatusFilterSelect2() {
+    var $el = $('#ddlStatus');
+    if (!$el.length) return;
+    if ($el.data('select2')) {
+        try { $el.select2('destroy'); } catch (e) { /* ignore */ }
+    }
+    // Append to body — .enq-list-card has overflow:hidden and clips dropdownParent=.enq-filter-bar
+    $el.select2({
+        placeholder: 'Select status…',
+        allowClear: true,
+        width: '100%',
+        closeOnSelect: false,
+        dropdownParent: $(document.body),
+        dropdownCssClass: 'enq-filter-select2-dropdown'
+    });
+    BizSolHelperFunction.attachSelect2ScrollPrevention($el);
+}
+
+function initLeadTypeFilterSelect2() {
+    var $el = $('#ddlfilterLeadType');
+    if (!$el.length) return;
+    if ($el.data('select2')) {
+        try { $el.select2('destroy'); } catch (e) { /* ignore */ }
+    }
+    // Append to body — .enq-list-card has overflow:hidden and clips dropdownParent=.enq-filter-bar
+    $el.select2({
+        placeholder: 'Select lead type…',
+        allowClear: true,
+        width: '100%',
+        closeOnSelect: false,
+        dropdownParent: $(document.body),
+        dropdownCssClass: 'enq-filter-select2-dropdown'
+    });
+    BizSolHelperFunction.attachSelect2ScrollPrevention($el);
+}
+
+/** Apply # separated config defaults onto multi-select filter dropdowns. */
+function applyConfigToFilterDropdowns(defaultStatus, defaultLeadType) {
+    var $status = $('#ddlStatus');
+    var $lead = $('#ddlfilterLeadType');
+    var statusVals = filterExistingSelectValues($status, defaultStatus);
+    var leadVals = filterExistingSelectValues($lead, defaultLeadType);
+
+    if (statusVals.length) {
+        $status.val(statusVals).trigger('change');
+    } else {
+        restoreEnquiryStatusInput();
+    }
+    if (leadVals.length) {
+        $lead.val(leadVals).trigger('change');
+    } else {
+        restoreEnquiryLeadTypeSelect();
+    }
+}
+
+function saveEnquiryListFilters() {
+    try {
+        var sp = $("#ddlSalesPerson").val();
+        var st = joinHashValues($("#ddlStatus").val());
+        var lt = joinHashValues($("#ddlfilterLeadType").val());
+        if (sp != null && sp !== "") sessionStorage.setItem(ENQUIRY_FILTER_SS_KEY_SP, sp);
+        if (st !== "") sessionStorage.setItem(ENQUIRY_FILTER_SS_KEY_ST, st);
+        else sessionStorage.removeItem(ENQUIRY_FILTER_SS_KEY_ST);
+        sessionStorage.setItem(ENQUIRY_FILTER_SS_KEY_LT, lt);
+    } catch (e) { /* ignore quota / private mode */ }
+}
+function restoreEnquirySalesPersonSelect() {
+    try {
+        var saved = sessionStorage.getItem(ENQUIRY_FILTER_SS_KEY_SP);
+        if (!saved) return;
+        var $sel = $("#ddlSalesPerson");
+        var $match = $sel.find("option").filter(function () { return this.value === saved; });
+        if ($match.length) {
+            $sel.val(saved);
+        }
+    } catch (e) { /* ignore */ }
+}
+function restoreEnquiryStatusInput() {
+    try {
+        var saved = sessionStorage.getItem(ENQUIRY_FILTER_SS_KEY_ST);
+        if (saved == null || saved === "") return;
+        var vals = filterExistingSelectValues($("#ddlStatus"), saved);
+        if (vals.length) {
+            $("#ddlStatus").val(vals).trigger('change');
+        }
+    } catch (e) { /* ignore */ }
+}
+function restoreEnquiryLeadTypeSelect() {
+    try {
+        var saved = sessionStorage.getItem(ENQUIRY_FILTER_SS_KEY_LT);
+        if (saved == null) return;
+        var vals = filterExistingSelectValues($("#ddlfilterLeadType"), saved);
+        $("#ddlfilterLeadType").val(vals.length ? vals : null).trigger('change');
+    } catch (e) { /* ignore */ }
+}
+/** Select2 breaks when #dvLoad is display:none (wrong coordinates / label in header). Tear down while hidden; rebuild when list is shown. */
+function detachSalesPersonSelect2() {
+    var $el = $("#ddlSalesPerson");
+    if (!$el.length) return;
+    $el.off("select2:opening select2:open select2:close");
+    if ($el.data("select2")) {
+        try {
+            $el.select2("close");
+        } catch (e) { /* ignore */ }
+        try {
+            $el.select2("destroy");
+        } catch (e) { /* ignore */ }
+    }
+}
+function rebindSalesPersonSelect2() {
+    var $el = $("#ddlSalesPerson");
+    if (!$el.length || !$el.is("select")) return;
+    var saved = $el.val();
+    detachSalesPersonSelect2();
+    $el.select2({
+        width: "100%"
+    });
+    BizSolHelperFunction.attachSelect2ScrollPrevention($el);
+    if (saved != null && saved !== "") {
+        $el.val(saved);
+    }
+    if (G_UserType == "A") {
+        $el.prop("disabled", false);
+    } else {
+        $el.prop("disabled", true);
+    }
+}
+/** After BizsolCustomFilterGrid redraws the table, layout reflow can leave Select2's widget at wrong coordinates (floating near page header). Re-init after paint. */
+function scheduleSalesPersonSelect2LayoutFix() {
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            if (!$("#dvLoad").is(":visible")) return;
+            rebindSalesPersonSelect2();
+        });
+    });
+}
 $(document).ready(function () {
     GetDepartmentlist();
     GetCompanyParameter();
+
     $("#ERPHeading").text("Enquiry Master");
     $('#btnSubmit').click(function (e) {
         SaveData();
     });
-    GetNestedMarketingManList();
-    GetStatuslist();
+
+    Promise.all([
+        LeadMasterService.GetStatuslist().catch(function () { return []; }),
+        mergeLeadStatusLists().catch(function () { return []; }),
+        LeadMasterService.GetEnquiryMasterConfig().catch(function () { return null; })
+    ]).then(function (results) {
+        var statusList  = results[0] || [];
+        var leadList    = results[1] || [];
+        var config      = results[2];
+
+        // ── Populate #ddlStatus ────────────────────────────────────────────
+        var statusOption = '';
+        for (var i = 0; i < statusList.length; i++) {
+            statusOption += '<option value="' + statusList[i].Desp + '">' + statusList[i].Desp + '</option>';
+        }
+        $('#ddlStatus').empty().append(statusOption);
+        initStatusFilterSelect2();
+
+        // ── Populate #ddlfilterLeadType & #ddlLeadStatus (Lead + Close status) ──
+        var leadOption = '';
+        var leadOptionWithAll = '<option value="">All</option>';
+        $.each(leadList, function (key, val) {
+            leadOption += '<option value="' + val.Value + '">' + val.Value + '</option>';
+            leadOptionWithAll += '<option value="' + val.Value + '">' + val.Value + '</option>';
+        });
+        $('#ddlLeadStatus').empty().append(leadOptionWithAll);
+        $('#ddlfilterLeadType').empty().append(leadOption);
+        initLeadTypeFilterSelect2();
+
+        // ── Normalise config (handles array or object response) ───────────
+        var rawCfg = {};
+        if (Array.isArray(config) && config.length > 0) rawCfg = config[0];
+        else if (config && typeof config === 'object') rawCfg = config;
+
+        function cfgVal(key) {
+            if (!rawCfg) return '';
+            var lk = key.toLowerCase();
+            var found = Object.keys(rawCfg).find(function (k) { return k.toLowerCase() === lk; });
+            return found ? (rawCfg[found] || '') : '';
+        }
+
+        // Config stores multi values as First#Second#Third
+        var defaultStatus   = cfgVal('defaultStatus').trim();
+        var defaultLeadType = cfgVal('defaultLeadType').trim();
+        applyConfigToFilterDropdowns(defaultStatus, defaultLeadType);
+
+        GetNestedMarketingManList();
+    }).catch(function () {
+        Bind_ddlLeadStatus();
+        GetStatuslist();
+        GetNestedMarketingManList();
+    });
     if (G_UserType == 'A') {
         $("#ddlSalesPerson").prop("disabled",false)
     } else {
         $("#ddlSalesPerson").prop("disabled", true)
     }
     $("#ddlSalesPerson").change(function () {
+        saveEnquiryListFilters();
         var SalesPerson = $(this).val();
-        var Status = $("#ddlStatus").val();
-        
         if (G_originalData && G_originalData.length > 0) {
-            let updatedResponse = [];
-            let filteredData = [];
-
-            if (SalesPerson?.toLowerCase() === "all" && Status?.toLowerCase() === "all") {
-                filteredData = G_originalData;
-            } else {
-                filteredData = G_originalData.filter(item => {
-                    const salesMatch = SalesPerson?.toLowerCase() === "all"
-                        || item["Sales Person"]?.toLowerCase() === SalesPerson?.toLowerCase();
-
-                    const statusMatch = Status?.toLowerCase() === "all"
-                        || item["Status"]?.toLowerCase() === Status?.toLowerCase();
-
-                    return salesMatch && statusMatch;
-                });
-            }
-
-            const StringFilterColumn = ["Company Name", "City", "Sales Person", "Lead Type"];
-            const NumericFilterColumn = [];
-            const DateFilterColumn = ["Followup Date", "Next Follow Up Date"];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Followup Date", "Lead Date", "Lead Source", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "NextFollowupMode", "FollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No", "State","Next Followup Date"]
-            const ColumnAlignment = {
-            };
-            if (filteredData.length > 0) {
-                updatedResponse = filteredData.map(item => {
-                    const isDraft = item.Status === 'Draft';
-                    const isRejected = item.Status === 'Rejected';
-                    const isVerified = item.Verified === 'Y' || item.Status === 'Draft';
-                    const isUnverified = item.Verified === 'N';
-
-                    const followUpBtn = isUnverified ? '' : `<button class="btn btn-info icon-height mb-1" title="Follow Up" onclick="FollowUp(${item.Code})" ${isRejected ? 'disabled' : ''}><i class="fa-solid fa-user-plus"></i></button>&nbsp;`;
-                    const editBtn = `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)" ${isRejected ? 'disabled' : ''}><i class="fa fa-pencil"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="View" onclick="GetEnquiryDetailsForViewByCode(${item.Code})"><i class="fa fa-eye"></i></button>&nbsp;`;
-
-                    const verifyBtn = isVerified ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Verify" class="btn btn-success mb-1 btn-height" title="Verify" onclick="VerifyEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                    const assignBtn = isDraft ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Assign" class="btn btn-info mb-1 btn-height" title="Assign" onclick="AssignEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                    const deleteBtn = `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Delete" class="btn btn-danger mb-1 btn-height" title="Delete" onclick="Delete(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-
-                    const dropdown = `
-                        <div class="btn-group">
-                            <button type="button" style="margin-top:-4px" class="btn btn-primary icon-height dropdown-toggle" data-bs-toggle="dropdown" ${isRejected ? 'disabled' : ''}>
-                                ...
-                            </button>
-                            <ul class="dropdown-menu p-1">
-                                ${verifyBtn}
-                                ${assignBtn}
-                                ${deleteBtn}
-                            </ul>
-                        </div>
-                    `;
-                    const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
-
-                    var updatedItem = {
-                        ...item,
-                        Action: followUpBtn + editBtn + whatsappbtn + dropdown,
-                    };
-                    
-                    
-                    if (IsInvalidDate(item["Next Followup Date"])) {
-                        updatedItem["Next Followup Date"] = "";
-                    }
-                    
-                    return updatedItem;
-                });
-            }
-            if (filteredData.length === 0) {
-                $("#table-body").html("<tr><td colspan='10' style='text-align:center;'>No matching records found</td></tr>");
-                return;
-            }
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, SalesPerson, $("#ddlStatus").val(), $("#ddlfilterLeadType").val());
+            renderEnquiryListGridFromFilteredData(filteredData);
         } else {
             GetLeadMasterList(SalesPerson);
         }
     });
     $("#ddlStatus").change(function () {
+        saveEnquiryListFilters();
         var SalesPerson = $("#ddlSalesPerson").val();
         var Status = $("#ddlStatus").val();
-        let updatedResponse = [];
-        let filteredData = [];
-
-        if (SalesPerson?.toLowerCase() === "all" && Status?.toLowerCase() === "all") {
-            filteredData = G_originalData;
-        } else {
-            filteredData = G_originalData.filter(item => {
-                const salesMatch = SalesPerson?.toLowerCase() === "all"
-                    || item["Sales Person"]?.toLowerCase() === SalesPerson?.toLowerCase();
-
-                const statusMatch = Status?.toLowerCase() === "all"
-                    || item["Status"]?.toLowerCase() === Status?.toLowerCase();
-
-                return salesMatch && statusMatch;
-            });
-        }
-
-        const StringFilterColumn = ["Company Name", "City", "Sales Person", "Lead Type"];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = ["Next Follow Up Date"];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["Followup Date", "Lead Date", "Code", "Lead Source", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "NextFollowupMode", "FollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No", "State","Next Followup Date"]
-        const ColumnAlignment = {
-        };
-        if (filteredData.length > 0) {
-            updatedResponse = filteredData.map(item => {
-                const isDraft = item.Status === 'Draft';
-                const isRejected = item.Status === 'Rejected';
-                const isVerified = item.Verified === 'Y' || item.Status === 'Draft';
-                const isUnverified = item.Verified === 'N';
-
-                const followUpBtn = isUnverified ? '' : `<button class="btn btn-info icon-height mb-1" title="Follow Up" onclick="FollowUp(${item.Code})" ${isRejected ? 'disabled' : ''}><i class="fa-solid fa-user-plus"></i></button>&nbsp;`;
-                const editBtn = `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)" ${isRejected ? 'disabled' : ''}><i class="fa fa-pencil"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="View" onclick="GetEnquiryDetailsForViewByCode(${item.Code})"><i class="fa fa-eye"></i></button>&nbsp;`;
-
-                //if (isDraft) {
-                //    return {
-                //        ...item,
-                //        Action: followUpBtn + editBtn,
-                //    };
-                //}
-
-                const verifyBtn = isVerified ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Verify" class="btn btn-success mb-1 btn-height" title="Verify" onclick="VerifyEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                const assignBtn = isDraft ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Assign" class="btn btn-info mb-1 btn-height" title="Assign" onclick="AssignEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                const deleteBtn = `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Delete" class="btn btn-danger mb-1 btn-height" title="Delete" onclick="Delete(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-
-                const dropdown = `
-                    <div class="btn-group">
-                        <button type="button" style="margin-top:-4px" class="btn btn-primary icon-height dropdown-toggle" data-bs-toggle="dropdown" ${isRejected ? 'disabled' : ''}>
-                            ...
-                        </button>
-                        <ul class="dropdown-menu p-1">
-                            ${verifyBtn}
-                            ${assignBtn}
-                            ${deleteBtn}
-                        </ul>
-                    </div>
-                `;
-                const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
-
-                var updatedItem = {
-                    ...item,
-                    Action: followUpBtn + editBtn + whatsappbtn + dropdown,
-                };
-                
-                
-                if (IsInvalidDate(item["Next Followup Date"])) {
-                    updatedItem["Next Followup Date"] = "";
-                }
-                
-                return updatedItem;
-            });
-        }
-        if (filteredData.length === 0) {
-            $("#table-body").html("<tr><td colspan='10' style='text-align:center;'>No matching records found</td></tr>");
+        if (!G_originalData || G_originalData.length === 0) {
             return;
         }
-        BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+        const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, SalesPerson, Status, $("#ddlfilterLeadType").val());
+        renderEnquiryListGridFromFilteredData(filteredData);
+    });
+    $("#ddlfilterLeadType").change(function () {
+        saveEnquiryListFilters();
+        var SalesPerson = $("#ddlSalesPerson").val();
+        var Status = $("#ddlStatus").val();
+        var LeadType = $(this).val();
+        if (!G_originalData || G_originalData.length === 0) {
+            return;
+        }
+        const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, SalesPerson, Status, LeadType);
+        renderEnquiryListGridFromFilteredData(filteredData);
     });
     Bind_ddlCustomer();
     //Bind_ddlCustomerType();
@@ -506,6 +621,9 @@ function IsInvalidDate(dateValue) {
     if (dateStr.indexOf('1900') !== -1 || dateStr.indexOf('01-Jan-1900') !== -1 || dateStr.indexOf('1900-01-01') !== -1) {
         return true;
     }
+    if (/^0?1[-/]Jan[-/]1900$/i.test(dateStr) || /^Jan[-/]0?1[-/]1900$/i.test(dateStr)) {
+        return true;
+    }
     var date = new Date(dateStr);
     if (isNaN(date.getTime())) {
         return true;
@@ -574,111 +692,230 @@ function GetNestedMarketingManList() {
         if (response.length > 0) {
             BindSelectForSalePerson($('#ddlSalesPerson')[0], response.map((item) => ({ Code: item.PersonName, Desp: item.PersonName })));
             $('#ddlSalesPerson').select2({
-                width: '-webkit-fill-available'
+                width: '100%'
             });
             BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlSalesPerson'));
+            restoreEnquirySalesPersonSelect();
             BindSelectList($('#ddlAssignSalesman')[0], response.map((item) => ({ Code: item.PersonName, Desp: item.PersonName })));
             $('#ddlAssignSalesman').select2({
                 width: '-webkit-fill-available'
             });
             BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlAssignSalesman'));
             BindSelectList($('#ddlAssignTo')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })));
-            $('#ddlAssignTo').select2({
-                width: '-webkit-fill-available'
-            });
-            BizSolHelperFunction.attachSelect2ScrollPrevention($('#ddlAssignTo'));
+            initAssignToSelect2();
+            $("#ddlSalesPerson").trigger("change");
+        } else {
+            GetLeadMasterList($("#ddlSalesPerson").val());
         }
-        GetLeadMasterList($("#ddlSalesPerson").val());
     });
 }
 function GetStatuslist() {
-    LeadMasterService.GetStatuslist().then(function (response) {
-        if (response.length > 0) {
-            $('#ddlStatusList option').empty();
-            var option = '<option data-code="0">All</option>';
-            for (var i = 0; i < response.length; i++) {
-
-                option += '<option data-code="' + response[i].Desp + '">' + response[i].Desp + '</option>'
-
-            }
-            $('#ddlStatusList')[0].innerHTML = option;
+    return LeadMasterService.GetStatuslist().then(function (response) {
+        $('#ddlStatus').empty();
+        var option = '';
+        for (var i = 0; i < response.length; i++) {
+            option += '<option value="' + response[i].Desp + '">' + response[i].Desp + '</option>';
         }
-
-
+        $('#ddlStatus')[0].innerHTML = option;
+        initStatusFilterSelect2();
+        restoreEnquiryStatusInput();
     });
+}
+function normalizeFilterValues(val) {
+    return splitHashValues(val).map(function (s) { return s.toLowerCase(); });
+}
+function filterEnquiryListBySalesAndStatus(data, salesPerson, status, leadType) {
+    if (!data || !data.length) return [];
+    const sp = String(salesPerson ?? "all").toLowerCase();
+    const statusArr = normalizeFilterValues(status);
+    const leadArr = normalizeFilterValues(leadType);
+    const statusAll = !statusArr.length || statusArr.indexOf('all') >= 0;
+    const leadAll = !leadArr.length || leadArr.indexOf('all') >= 0;
+    if (sp === "all" && statusAll && leadAll) {
+        return data.slice();
+    }
+    return data.filter(item => {
+        const salesMatch = sp === "all"
+            || item["Sales Person"]?.toLowerCase() === sp;
+        const itemStatus = (item["Status"] || '').toLowerCase();
+        const itemLead = (item["Lead Type"] || '').toLowerCase();
+        const statusMatch = statusAll || statusArr.indexOf(itemStatus) >= 0;
+        const leadMatch = leadAll || leadArr.indexOf(itemLead) >= 0;
+        return salesMatch && statusMatch && leadMatch;
+    });
+}
+function normalizeEnquiryStatus(value) {
+    return String(value ?? '').trim().toLowerCase().replace(/\s+/g, '-');
+}
+
+function isEnquiryStatusClosed(item) {
+    if (!item) return false;
+    const statusVal = normalizeEnquiryStatus(item.Status);
+    const leadType = normalizeEnquiryStatus(item['Lead Type'] ?? item.LeadType);
+    const entryStatus = normalizeEnquiryStatus(item['Entry Status'] ?? item.EntryStatus);
+    return statusVal === 'closed' || statusVal === 'close'
+        || leadType === 'closed' || leadType === 'close'
+        || entryStatus === 'closed' || entryStatus === 'close';
+}
+
+function isEnquiryStatusInProcess(item) {
+    if (!item) return false;
+    const statusVal = normalizeEnquiryStatus(item.Status);
+    return statusVal === 'in-process' || statusVal === 'inprocess';
+}
+
+/**
+ * Row colour class from STATUS (overdue is applied separately, except Closed).
+ * Closed (dark green) | In-Process (light green) | Unassigned (amber) | Assigned / else (white)
+ */
+function getEnquiryListRowClass(item) {
+    if (!item) return '';
+    const statusVal = normalizeEnquiryStatus(item.Status);
+    const leadType = normalizeEnquiryStatus(item['Lead Type'] ?? item.LeadType);
+    const salesPersonLc = String(item['Sales Person'] ?? item.SalesPerson ?? '').trim().toLowerCase();
+    const mktCode = item.MarketingPersonMaster_Code;
+    const mktNum = mktCode === null || mktCode === undefined || mktCode === ''
+        ? NaN
+        : Number(mktCode);
+
+    // Closed — always dark green (overdue must not override)
+    if (isEnquiryStatusClosed(item)) return 'enq-row-closed';
+
+    // In-Process — light green (overdue pink still overrides this later)
+    if (isEnquiryStatusInProcess(item)) return 'enq-row-inprocess';
+
+    // Assigned — white (no class)
+    if (statusVal === 'assigned') return '';
+
+    if (statusVal === 'unassigned' || leadType === 'unassigned') return 'enq-row-unassigned';
+
+    // Unassigned — no sales person assigned
+    const noSalesPerson =
+        salesPersonLc === ''
+        || salesPersonLc === 'unassigned'
+        || salesPersonLc === 'n/a'
+        || salesPersonLc === 'na'
+        || salesPersonLc === '-'
+        || salesPersonLc === '0'
+        || salesPersonLc === 'select'
+        || salesPersonLc === 'all';
+    const noMktCode = Number.isNaN(mktNum) || mktNum <= 0;
+    if (noSalesPerson && noMktCode) return 'enq-row-unassigned';
+
+    return '';
+}
+
+function mapEnquiryItemToGridRow(item) {
+    const isDraft = item.Status === 'Draft';
+    const isRejected = item.Status === 'Rejected';
+    const isVerified = item.Verified === 'Y' || item.Status === 'Draft';
+    const isUnverified = item.Verified === 'N';
+    // Entry Status <> 'Close' AND Status <> 'N/A' AND Status <> 'Draft'
+    const entryStatus = String(item['Entry Status'] ?? item.EntryStatus ?? item['Lead Type'] ?? item.Status ?? '').trim().toLowerCase();
+    const statusVal = String(item.Status ?? '').trim().toLowerCase();
+    const isClosed = statusVal === 'closed' || statusVal === 'close';
+    const canCloseEntry = !isClosed
+        && entryStatus !== 'close'
+        && entryStatus !== 'closed'
+        && statusVal !== 'n/a'
+        && statusVal !== 'draft'
+        && !isRejected;
+
+    // Closed: hide Follow Up, Edit, Assign — show Re-Open instead
+    const followUpBtn = (isUnverified || isClosed)
+        ? ''
+        : `<button class="btn btn-info icon-height mb-1" title="Follow Up" onclick="FollowUp(${item.Code}, 'followup')" ${isRejected ? 'disabled' : ''}><i class="fa-solid fa-user-plus"></i></button>&nbsp;`;
+    const editOnlyBtn = (isClosed || isRejected)
+        ? ''
+        : `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)"><i class="fa fa-pencil"></i></button>&nbsp;`;
+    const viewBtn = `<button class="btn btn-info icon-height mb-1" title="View" onclick="GetEnquiryDetailsForViewByCode(${item.Code})"><i class="fa fa-eye"></i></button>&nbsp;`;
+
+    const verifyBtn = (isVerified || isClosed) ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Verify" class="btn btn-success mb-1 btn-height" title="Verify" onclick="VerifyEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
+    const assignBtn = (isDraft || isClosed) ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Assign" class="btn btn-info mb-1 btn-height" title="Assign" onclick="AssignEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
+    const closeBtn = canCloseEntry
+        ? `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Close" class="btn btn-secondary mb-1 btn-height" title="Close" onclick="event.stopPropagation(); CloseEnquiryEntry(${item.Code});"></li>`
+        : '';
+    const reOpenBtn = isClosed
+        ? `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Re-Open" class="btn btn-warning mb-1 btn-height" title="Re-Open" onclick="event.stopPropagation(); ReOpenEnquiryEntry(${item.Code});"></li>`
+        : '';
+    const deleteBtn = `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Delete" class="btn btn-danger mb-1 btn-height" title="Delete" onclick="Delete(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
+
+    const dropdown = `
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary icon-height dropdown-toggle" data-bs-toggle="dropdown" ${isRejected ? 'disabled' : ''}>
+                ...
+            </button>
+            <ul class="dropdown-menu p-1">
+                ${verifyBtn}
+                ${assignBtn}
+                ${closeBtn}
+                ${reOpenBtn}
+                ${deleteBtn}
+            </ul>
+        </div>&nbsp;
+    `;
+    const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
+
+    var updatedItem = {
+        ...item,
+        Action: `<div class="enq-action-wrap">${followUpBtn + editOnlyBtn + viewBtn + whatsappbtn + dropdown}</div>`,
+        __bizsolRowClass: getEnquiryListRowClass(item)
+    };
+
+    if (item["Next FollowUp Date"] !== undefined && IsInvalidDate(item["Next FollowUp Date"])) {
+        updatedItem["Next FollowUp Date"] = "";
+    }
+    if (item["Next Followup Date"] !== undefined && IsInvalidDate(item["Next Followup Date"])) {
+        updatedItem["Next Followup Date"] = "";
+    }
+
+    return updatedItem;
+}
+function renderEnquiryListGridFromFilteredData(filteredData) {
+    const StringFilterColumn = ["Person Name", "Company Name", "City", "Sales Person", "Contact No", "Status", "Lead Type"];
+    const NumericFilterColumn = [];
+    const DateFilterColumn = ["Followup Date",];
+    const Button = false;
+    const showButtons = [];
+    const StringdoubleFilterColumn = [];
+    const hiddenColumns = ["Followup Date", "Lead Date", "Lead Source", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "FollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No", "State", "__bizsolRowClass"];
+    const ColumnAlignment = {
+        Action: 'center'
+    };
+
+    if (!filteredData || filteredData.length === 0) {
+        $("#table-body").html("<tr><td colspan='10' style='text-align:center;'>No matching records found</td></tr>");
+        scheduleSalesPersonSelect2LayoutFix();
+        return;
+    }
+    const updatedResponse = filteredData.map(mapEnquiryItemToGridRow);
+    BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+    setTimeout(function () {
+        applyEnquiryListStatusRowColors();
+        applyEnquiryListOverdueNextFollowUpRowHighlight();
+        applyEnquiryListOurRemarkColumnBreak();
+    }, 100);
+    scheduleSalesPersonSelect2LayoutFix();
 }
 function GetLeadMasterList(SalesPerson) {
     LeadMasterService.GetLeadMasterList(SalesPerson).then(function (response) {
         $("#table").show();
         if (response.length > 0) {
             G_originalData = response;
-            const StringFilterColumn = ["Person Name", "Company Name", "City", "Sales Person", "Contact No","Status","Lead Type"];
-            const NumericFilterColumn = [];
-            const DateFilterColumn = ["Followup Date", "Next Follow Up Date"];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Followup Date", "Lead Date", "Lead Source", "Code", "ReferenceNo", "ReferenceDate", "PinCode", "CustomerFromMaster", "AccountContactPersonDetail", "UserID", "MarketingPersonMaster_Code", "Address1", "Address2", "Nation", "PhoneNo", "MobileNo", "FaxNo", "EMail", "Remark", "FinYear", "DeliveryDays", "VerifiedBy", "UserVerifiedBy", "VerifiedOn", "DeliveryRemark", "Specification", "CustomerType", "EnquiryType_Code", "EnquiryTypeName", "SortOrder", "FollowupMode", "LeadSourceMaster_Code", "LeadSourceDespName", "ReferenceBy", "Website", "CurrencyMaster_Code", "Currency", "ConversionRate", "FreightPerKG", "ContactPersonFromMaster", "ContactPersonName", "TestingGroupMaster_Code", "TestingGroup", "EnquiryToVendor", "EnquiryToVendorVerify", "PriceToVendorRemark", "ReasonForReject", "Enquiry No","State"];
-            const ColumnAlignment = {
-                Action: ";min-width:150px;"
-            };
-
-            const updatedResponse = response.map(item => {
-                const isDraft = item.Status === 'Draft';
-                const isRejected = item.Status === 'Rejected';
-                const isVerified = item.Verified === 'Y' || item.Status === 'Draft';
-                const isUnverified = item.Verified === 'N';
-
-                const followUpBtn = isUnverified ? '' : `<button class="btn btn-info icon-height mb-1" title="Follow Up" onclick="FollowUp(${item.Code})" ${isRejected ? 'disabled' : ''}><i class="fa-solid fa-user-plus"></i></button>&nbsp;`;
-                const editBtn = `<button class="btn btn-warning icon-height mb-1" title="Edit" onclick="GetEnquiryDetailsByCode(${item.Code},this)" ${isRejected ? 'disabled' : ''}><i class="fa fa-pencil"></i></button>&nbsp;<button class="btn btn-info icon-height mb-1" title="View" onclick="GetEnquiryDetailsForViewByCode(${item.Code})"><i class="fa fa-eye"></i></button>&nbsp;`;
-
-                //if (isDraft) {
-                //    return {
-                //        ...item,
-                //        Action: followUpBtn + editBtn ,
-                //    };
-                //}
-
-                const verifyBtn = isVerified ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Verify" class="btn btn-success mb-1 btn-height" title="Verify" onclick="VerifyEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                const assignBtn = isDraft ? '' : `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Assign" class="btn btn-info mb-1 btn-height" title="Assign" onclick="AssignEnquiry(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-                const deleteBtn = `<li style="padding:1px;"><input type="button" style="width:100%;height:30px;" value="Delete" class="btn btn-danger mb-1 btn-height" title="Delete" onclick="Delete(${item.Code})" ${isRejected ? 'disabled' : ''}></li>`;
-
-                const dropdown = `
-                    <div class="btn-group">
-                        <button type="button" style="margin-top:-4px" class="btn btn-primary icon-height dropdown-toggle" data-bs-toggle="dropdown" ${isRejected ? 'disabled' : ''}>
-                            ...
-                        </button>
-                        <ul class="dropdown-menu p-1">
-                            ${verifyBtn}
-                            ${assignBtn}
-                            ${deleteBtn}
-                        </ul>
-                    </div>&nbsp;
-                `;
-                const whatsappbtn = `<button class="btn btn-success icon-height mb-1" title="WhatsApp" onclick="WhatsApp(${item.Code})"><i class="fab fa-whatsapp"></i></button>&nbsp;`;
-                
-                var updatedItem = {
-                    ...item,
-                    Action: followUpBtn + editBtn + whatsappbtn + dropdown,
-                };
-                
-                if (IsInvalidDate(item["Next Follow Up Date"])) {
-                    updatedItem["Next Follow Up Date"] = "";
-                }
-                
-                return updatedItem;
-            });
-
-            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            const filteredData = filterEnquiryListBySalesAndStatus(G_originalData, $("#ddlSalesPerson").val(), $("#ddlStatus").val(), $("#ddlfilterLeadType").val());
+            renderEnquiryListGridFromFilteredData(filteredData);
         }
         else {
+            G_originalData = [];
             toastr.error('No Data Found');
             $("#table").hide();
         }
     });
 }
 function BackMaster() {
+    G_FollowUpStatusMode = 'followup';
     $("#dvLoad").show();
+    rebindSalesPersonSelect2();
     $("#dvEnquiry").hide();
     $('input[name="customerType"]').eq(0).prop('disabled', false);
     $('input[name="customerType"]').eq(0).prop('checked', true);
@@ -701,12 +938,15 @@ function BackMaster() {
     ClearFollowUpData();
 }
 function BackFolloupMaster() {
+    G_FollowUpStatusMode = 'followup';
     $("#dvLoad").show();
+    rebindSalesPersonSelect2();
     $("#dvEnquiry").hide();
     $('input[name="customerType"]').eq(0).prop('disabled', false);
     $('input[name="customerType"]').eq(0).prop('checked', true);
     $("#txtCompanyName").hide("");
     $('#ddlCompanyName').next('.select2-container').show();
+    GetLeadMasterList($("#ddlSalesPerson").val());
     $("#tblContactPerson").hide();
     $("#tblProductDetails").hide();
     $("#dvFollowup").hide();
@@ -732,7 +972,9 @@ function CreateNew() {
             return false;
         } else {
             $("#dvLoad").hide();
+            detachSalesPersonSelect2();
             $("#dvEnquiry").show();
+            scrollEnquiryFormToTop();
             let Grid = CreateContactNewRow();
             $("#ContactPersonGrid tbody").html(Grid);
             let grid = CreateProductNewRow();
@@ -921,7 +1163,7 @@ function SaveLeadEnquiryData() {
         nextFollowupdate: $('#txtNextFollowupDate').val(),
         nextFollowupmode: $('#ddlNextFollowupMode').val() || '',
         leadSourceDespName: $('#ddlLeadSource').val() || '',
-        referenceBy: '',
+        referenceBy: $('#txtReference').val(),
         website: $('#txtWebsite').val()
     }];
 
@@ -1015,19 +1257,67 @@ function SaveLeadEnquiryData() {
         toastr.error(error.Msg || 'An error occurred while saving.');
     });
 }
+function scrollEnquiryFormToTop() {
+    var scroller = document.getElementById('modern-content');
+    if (scroller) {
+        scroller.scrollTop = 0;
+    } else {
+        window.scrollTo(0, 0);
+    }
+}
+
 function HideShowTab(TabNo, ele) {
     const target = document.querySelector('#dvTab' + TabNo);
-    if (target) {
-        const offset = 100;
-        const topPosition = target.getBoundingClientRect().top + window.scrollY - offset;
+    if (!target) return;
 
-        window.scrollTo({
-            top: topPosition,
-            behavior: 'smooth'
-        });
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        ele.classList.add('active');
+    document.querySelectorAll('#dvEnquiry .tab').forEach(function (tab) {
+        tab.classList.remove('active');
+    });
+    if (ele) ele.classList.add('active');
+
+    // Scroll inside #modern-content (window does not scroll in this layout)
+    const scroller = document.getElementById('modern-content');
+    const nav = document.querySelector('#dvEnquiry .enq-section-nav');
+    const navH = nav ? (nav.offsetHeight + 6) : 8;
+
+    if (scroller) {
+        const parentTop = scroller.getBoundingClientRect().top;
+        // On mobile: pin tab bar to top of content pane, then show selected section under it
+        if (window.matchMedia('(max-width: 768px)').matches && nav) {
+            const navOffset = scroller.scrollTop + (nav.getBoundingClientRect().top - parentTop);
+            scroller.scrollTo({ top: Math.max(0, navOffset), behavior: 'smooth' });
+            // After nav is flush top, nudge so selected section sits just below sticky tabs
+            setTimeout(function () {
+                const tTop = target.getBoundingClientRect().top - parentTop;
+                if (tTop < navH || tTop > scroller.clientHeight * 0.55) {
+                    const next = scroller.scrollTop + (target.getBoundingClientRect().top - parentTop) - navH;
+                    scroller.scrollTo({ top: Math.max(0, next), behavior: 'smooth' });
+                }
+            }, 220);
+        } else {
+            const next = scroller.scrollTop + (target.getBoundingClientRect().top - parentTop) - navH;
+            scroller.scrollTo({ top: Math.max(0, next), behavior: 'smooth' });
+        }
+    } else {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+}
+function initAssignToSelect2() {
+    var $ddl = $('#ddlAssignTo');
+    if ($ddl.data('select2')) {
+        $ddl.off('select2:open.enqAssignZ');
+        $ddl.select2('destroy');
+    }
+    $ddl.select2({
+        width: '-webkit-fill-available',
+        dropdownParent: $('#AssignModal .modal-content')
+    });
+    BizSolHelperFunction.attachSelect2ScrollPrevention($ddl);
+    $ddl.on('select2:open.enqAssignZ', function () {
+        $('#AssignModal .select2-container--open, #AssignModal .select2-dropdown').each(function () {
+            this.style.setProperty('z-index', '99999', 'important');
+        });
+    });
 }
 function SelectOptionByText(Id, FindText) {
     var dd = document.getElementById(Id);
@@ -1036,6 +1326,10 @@ function SelectOptionByText(Id, FindText) {
             dd.selectedIndex = i;
             break;
         }
+    }
+    if (Id === 'ddlAssignTo') {
+        initAssignToSelect2();
+        return;
     }
     var $element = $('#' + Id);
     $element.select2({
@@ -1104,7 +1398,9 @@ async function GetEnquiryDetailsByCode(Code) {
 
         // 2. Show / Hide required sections
         $("#dvLoad").hide();
+        detachSalesPersonSelect2();
         $("#dvEnquiry").show();
+        scrollEnquiryFormToTop();
         $('input[name="customerType"]').eq(0).prop('disabled', true);
         $('input[name="customerType"]').eq(1).prop('checked', true);
         SelectOptionByText('ddlCompanyName', "Select");
@@ -1446,6 +1742,60 @@ function Delete(Code) {
 
     });
 }
+/** Close entry → open Follow Up tab; Status dropdown uses GetLeadCloseStatuslist. */
+function CloseEnquiryEntry(Code) {
+    FollowUp(Code, 'close');
+}
+
+/** Re-Open closed enquiry → remark modal → EnquiryReOpen API (no Follow Up page). */
+function ReOpenEnquiryEntry(Code) {
+    if (!Code) {
+        toastr.error("Invalid enquiry.");
+        return;
+    }
+    $("#txtReOpenEnquiryCode").val(Code);
+    $("#txtReOpenRemark").val("");
+    var el = document.getElementById("ReOpenEnquiryModal");
+    if (!el) {
+        toastr.error("Re-Open modal not found.");
+        return;
+    }
+    var modal = bootstrap.Modal.getOrCreateInstance(el);
+    modal.show();
+    setTimeout(function () { $("#txtReOpenRemark").focus(); }, 200);
+}
+function ConfirmReOpenEnquiry() {
+    var code = $("#txtReOpenEnquiryCode").val();
+    var remark = ($("#txtReOpenRemark").val() || "").trim();
+    if (!code) {
+        toastr.error("Invalid enquiry.");
+        return;
+    }
+    if (remark === "") {
+        toastr.error("Please enter a remark.");
+        $("#txtReOpenRemark").focus();
+        return;
+    }
+    LeadMasterService.EnquiryReOpen(code, remark).then(function (response) {
+        var res = Array.isArray(response) ? response[0] : response;
+        if (res && (res.Status === "Y" || res.status === "Y")) {
+            toastr.success(res.Msg || res.msg || "Enquiry re-opened successfully.");
+            HideReOpenEnquiryModal();
+            GetLeadMasterList($("#ddlSalesPerson").val());
+        } else {
+            toastr.error((res && (res.Msg || res.msg)) || "Failed to re-open enquiry.");
+        }
+    }).catch(function () {
+        toastr.error("An error occurred while re-opening enquiry.");
+    });
+}
+function HideReOpenEnquiryModal() {
+    var el = document.getElementById("ReOpenEnquiryModal");
+    var modal = el ? bootstrap.Modal.getInstance(el) : null;
+    if (modal) modal.hide();
+    $("#txtReOpenRemark").val("");
+    $("#txtReOpenEnquiryCode").val("");
+}
 function WhatsApp(Code) {
     try {
         if (!G_originalData || G_originalData.length === 0) {
@@ -1654,7 +2004,7 @@ function SaveLeadEnquiryOnChange() {
     const data = [{
         code: $('#hfCode').val() || 0,
         enquiryDate: $('#txtEnquiryDate').val(),
-        referenceNo: '',
+        referenceNo: $('#txtReference').val(),
         referenceDate: $('#txtReferenceDate').val(),
         customerFromMaster: '',
         accountMaster_Code: 0,
@@ -1804,13 +2154,25 @@ function CloseAssignModal() {
         modalInstance.hide();
     }
 }
-function FollowUp(EnquiryMaster_Code) {
+function FollowUp(EnquiryMaster_Code, statusMode) {
+    // Follow Up / Re-Open → GetLeadStatuslist; Close → GetLeadCloseStatuslist
+    if (statusMode === 'close') G_FollowUpStatusMode = 'close';
+    else if (statusMode === 'followup' || statusMode === 'reopen') G_FollowUpStatusMode = statusMode;
+
     $("#hfFollowUpEnquiryMaster_Code").val(EnquiryMaster_Code);
     $("#dvFollowup").show();
     $("#dvLoad").hide();
+    detachSalesPersonSelect2();
     Bind_ddlContactPersonDetail(EnquiryMaster_Code);
     CreateNewFollowUp();
-    Bind_ddlLeadStatus();
+    if (G_FollowUpStatusMode === 'close' || G_FollowUpStatusMode === 'reopen') {
+        // Close / Re-Open: always new follow-up entry
+        ClearFollowUpData();
+        SetTodayFollowUpDateFollowUp();
+    } else {
+        applyFollowUpNextRequiredUI();
+    }
+    Bind_ddlFollowUpLeadStatus();
     LeadMasterService.GetEnquiryFollowUpList(EnquiryMaster_Code).then(function (response) {
         if (response.length > 0) {
             $("#tblFollowUp").show();
@@ -1825,18 +2187,31 @@ function FollowUp(EnquiryMaster_Code) {
             const StringdoubleFilterColumn = [];
             const hiddenColumns = ["Code", "EnquiryMaster_Code", "FollowupMode", "EnquiryContactPersonDetail_Code", "EnquiryDate", "EnquiryNo", "CompanyName", "FollowupByName", "CustomerContactPersonName", "CustomerContactPhoneNumber", "CustomerContactEmailID"]
             const ColumnAlignment = {
+                Action: 'center'
             };
 
+            const cleanGridVal = (v) => {
+                if (v === null || v === undefined) return '';
+                if (typeof v === 'number' && !Number.isNaN(v)) return v;
+                const s = String(v).trim();
+                return s.toLowerCase() === 'null' ? '' : v;
+            };
+            const allowEdit = G_FollowUpStatusMode !== 'close';
             const updatedResponse = response.map(item => {
-                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit"  onclick="GetFollowupDetailsByCode(${item.Code},this)"><i class="fa fa-pencil"></i></button>
-                <button class="btn btn-danger icon-height mb-1" title="Delete"  onclick="DeleteFollowUp(${item.Code})"><i class="fa fa-times"></i></button>`;
+                const row = Object.fromEntries(
+                    Object.entries(item).map(([k, v]) => [k, cleanGridVal(v)])
+                );
+                let buttonsHTML = allowEdit
+                    ? `<span class="enq-fu-row-actions"><button type="button" class="btn btn-primary icon-height" title="Edit" onclick="GetFollowupDetailsByCode(${item.Code},this)"><i class="fa fa-pencil"></i></button><button type="button" class="btn btn-danger icon-height" title="Delete" onclick="DeleteFollowUp(${item.Code})"><i class="fa fa-times"></i></button></span>`
+                    : '';
                 return {
-                    ...item,
+                    ...row,
                     Action: buttonsHTML,
                 };
 
             });
             BizsolCustomFilterGrid.CreateDataTable("FollowUp-header", "FollowUp-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
+            applyFollowUpRemarksColumnWrap();
         }
         else {
             $("#tblFollowUp").hide();
@@ -1865,45 +2240,72 @@ function ClearFollowUpData() {
     $("#ddlFollowUpModeFollowUp").val("");
     $("#txtNextFollowUpDateFollowUp").val("");
     $("#ddlNextFollowUpModeFollowUp").val("");
-    $("#chkFollowUpRequired").prop("checked", true);
-    $("#dvNextFollowUpDateFollowUp").show();
-    $("#dvNextFollowUpModeFollowUp").show();
     $("#ddlLeadStatus").val("");
+    applyFollowUpNextRequiredUI();
+    // Close flow is always a new entry — never keep an edit Code
+    if (G_FollowUpStatusMode === 'close') {
+        $("#hfFollowUpMaster_Code").val("0");
+    }
+}
+
+/** Close entry: uncheck & hide Next Follow-up section; make selected fields optional. */
+function applyFollowUpNextRequiredUI() {
+    var isClose = G_FollowUpStatusMode === 'close';
+    if (isClose) {
+        $("#chkFollowUpRequired").prop("checked", false);
+        $("#dvNextFollowUpRequired").hide();
+        $("#dvNextFollowUpDateFollowUp").hide();
+        $("#dvNextFollowUpModeFollowUp").hide();
+        $("#txtNextFollowUpDateFollowUp").val("");
+        $("#ddlNextFollowUpModeFollowUp").val("");
+        // Hide * for optional fields in Close flow
+        $(".fu-req-optional-close").hide();
+    } else {
+        $("#dvNextFollowUpRequired").show();
+        $("#chkFollowUpRequired").prop("checked", true);
+        $("#dvNextFollowUpDateFollowUp").show();
+        $("#dvNextFollowUpModeFollowUp").show();
+        $(".fu-req-optional-close").show();
+    }
 }
 function SaveEnquiryFollowUp() {
-    var txtOurRemarks = $("#txtOurRemarks").val().trim();
-    var txtCustomerRemarks = $("#txtCustomerRemarks").val();
-    var ddlCustomerContactPersonName = $("#ddlCustomerContactPersonName").val().trim();
-    var txtFollowUpDateFollowUp = $("#txtFollowUpDateFollowUp").val().trim();
-    var ddlFollowUpModeFollowUp = $("#ddlFollowUpModeFollowUp").val().trim();
-    var txtNextFollowUpDateFollowUp = $("#txtNextFollowUpDateFollowUp").val().trim();
-    var ddlNextFollowUpModeFollowUp = $("#ddlNextFollowUpModeFollowUp").val().trim();
-    var ddlLeadStatus = $("#ddlLeadStatus").val().trim();
+    var isCloseMode = G_FollowUpStatusMode === 'close';
+    var txtOurRemarks = ($("#txtOurRemarks").val() || "").trim();
+    var txtCustomerRemarks = ($("#txtCustomerRemarks").val() || "").trim();
+    var ddlCustomerContactPersonName = ($("#ddlCustomerContactPersonName").val() || "").trim();
+    var txtFollowUpDateFollowUp = ($("#txtFollowUpDateFollowUp").val() || "").trim();
+    var ddlFollowUpModeFollowUp = ($("#ddlFollowUpModeFollowUp").val() || "").trim();
+    var txtNextFollowUpDateFollowUp = ($("#txtNextFollowUpDateFollowUp").val() || "").trim();
+    var ddlNextFollowUpModeFollowUp = ($("#ddlNextFollowUpModeFollowUp").val() || "").trim();
+    var ddlLeadStatus = ($("#ddlLeadStatus").val() || "").trim();
 
     if (txtOurRemarks === "") {
         toastr.error("Please enter our remark.");
         $("#txtOurRemarks").focus();
         return;
     }
-    if (txtCustomerRemarks === "") {
-        toastr.error("Please enter customer remark.");
-        $("#txtCustomerRemarks").focus();
-        return;
-    }
-    if (ddlCustomerContactPersonName === "") {
-        toastr.error("Please select customer contact Person Name.");
-        $("#ddlCustomerContactPersonName").focus();
-        return;
-    }
-    if (txtFollowUpDateFollowUp === "") {
-        toastr.error("Please select follow up date.");
-        $("#txtFollowUpDateFollowUp").focus();
-        return;
-    }
-    if (ddlFollowUpModeFollowUp === "") {
-        toastr.error("Please select follow up mode.");
-        $("#ddlFollowUpModeFollowUp").focus();
-        return;
+    // Close button: Customer Remarks / Contact Person / Follow Up Date / Mode are optional
+    if (!isCloseMode) {
+        if (txtCustomerRemarks === "") {
+            toastr.error("Please enter customer remark.");
+            $("#txtCustomerRemarks").focus();
+            return;
+        }
+        if (ddlCustomerContactPersonName === "") {
+            toastr.error("Please select customer contact Person Name.");
+            $("#ddlCustomerContactPersonName").focus();
+            return;
+        }
+        if (txtFollowUpDateFollowUp === "") {
+            toastr.error("Please select follow up date.");
+            $("#txtFollowUpDateFollowUp").focus();
+            return;
+        }
+        if (ddlFollowUpModeFollowUp === "") {
+            toastr.error("Please select follow up mode.");
+            $("#ddlFollowUpModeFollowUp").focus();
+            return;
+        }
     }
     // Prevent past date for Next Followup Date (when required)
     if ($("#chkFollowUpRequired").is(":checked") && txtNextFollowUpDateFollowUp && IsDateBeforeToday(txtNextFollowUpDateFollowUp)) {
@@ -1924,7 +2326,7 @@ function SaveEnquiryFollowUp() {
         }
     }
     if (ddlLeadStatus === "") {
-        toastr.error("Please select lead status.");
+        toastr.error("Please select lead type.");
         $("#ddlLeadStatus").focus();
         return;
     }
@@ -1969,6 +2371,10 @@ function SaveEnquiryFollowUp() {
 }
 
 async function GetFollowupDetailsByCode(Code) {
+    if (G_FollowUpStatusMode === 'close') {
+        toastr.warning('Edit is not allowed when closing an enquiry.');
+        return;
+    }
     $("#dvFollowTab1").hide();
     $("#dvFollowTab2").show();
     try {
@@ -1998,6 +2404,10 @@ async function GetFollowupDetailsByCode(Code) {
     }
 }
 function DeleteFollowUp(Code) {
+    if (G_FollowUpStatusMode === 'close') {
+        toastr.warning('Delete is not allowed when closing an enquiry.');
+        return;
+    }
     var ModuleName = "Enquiry",
         OptionName = "DELETE",
         ShowMsg = "Y",
@@ -2444,30 +2854,52 @@ function InitAttachmentControl(masterTableName, masterTableCode, detailTableName
     var url = `${sessionStorage.getItem('AppBaseURL')}/CustomControl/AttachmentControl`;
     $('#EnquiryMaster_AttachmentControlmodal').load(url, { MasterTableName: masterTableName, MasterTableCode: masterTableCode, DetailTableName: detailTableName, DetailTableCode: detailTableCode, EntryNo: entryNo, EntryDate: entryDate, Mode: mode });
 }
-function ChangecolorTr() {
-    const table = document.querySelector("#table-body").closest("table");
-    const headerCells = table.querySelectorAll("thead th");
-    let statusIndex = -1;
-    headerCells.forEach((th, index) => {
-        if (th.textContent.trim().toUpperCase() === "STATUS") {
-            statusIndex = index;
+/**
+ * Re-apply Assigned / Unassigned / Closed / Draft row classes from grid data.
+ * Uses filteredData (not header cell text — filter menus break exact header matching).
+ */
+function applyEnquiryListStatusRowColors() {
+    const tbody = document.getElementById("table-body");
+    if (!tbody) return;
+    const table = tbody.closest("table");
+    const tableId = table ? table.id : "table";
+    const filteredData = window[`filteredData_${tableId}`] || [];
+    const paginatorOn = !!window[`Paginator_${tableId}`];
+    const currentPage = window[`currentPage_${tableId}`] || 1;
+    const itemsPerPage = parseInt($(`#pageSize-${tableId}`).val(), 10) || 10;
+    const statusClasses = ["enq-row-assigned", "enq-row-inprocess", "enq-row-unassigned", "enq-row-closed", "enq-row-draft"];
+
+    tbody.querySelectorAll("tr").forEach(function (row, rowIdx) {
+        // Skip empty / total rows
+        if (row.querySelector("td.vce-empty, td[colspan]")) return;
+
+        let item = null;
+        const dataIndexAttr = row.getAttribute("data-index");
+        const dataIndex = dataIndexAttr != null ? parseInt(dataIndexAttr, 10) : rowIdx;
+
+        if (paginatorOn) {
+            // renderTable gets a page slice — data-index is index within that slice
+            const absIndex = (currentPage - 1) * itemsPerPage + dataIndex;
+            item = filteredData[absIndex] || filteredData[dataIndex] || null;
+        } else {
+            item = filteredData[dataIndex] || null;
         }
-    });
 
-    if (statusIndex === -1) return; // Exit if Status column not found
-
-    const rows = document.querySelectorAll("#table-body tr");
-    rows.forEach((row) => {
-        const tds = row.querySelectorAll("td");
-        const columnValue = tds[statusIndex]?.textContent.trim().toUpperCase();
-
-        if (columnValue === "DRAFT") {
-            row.style.backgroundColor = "#bcdbf3";
+        // Always recompute so "else → white" stays correct after filter/page change
+        let cls = "";
+        if (item) {
+            cls = getEnquiryListRowClass(item);
+            item.__bizsolRowClass = cls || "";
         }
+
+        statusClasses.forEach(function (c) { row.classList.remove(c); });
+        if (cls) row.classList.add(cls);
     });
 }
 
-setInterval(ChangecolorTr, 100);
+function ChangecolorTr() {
+    applyEnquiryListStatusRowColors();
+}
 function GetCompanyParameter() {
     LeadMasterService.GetCompanyParameter().then(function (response) {
         if (response.length > 0) {
@@ -2480,7 +2912,7 @@ function GetCompanyParameter() {
 function GetAssignDetails(Code) {
     LeadMasterService.GetAssignDetails(Code).then(function (response) {
         if (response.length > 0) {
-            $("#tblAssignDetails").show();
+            $("#dvAssignDetailsWrap").show();
             const StringFilterColumn = ["Name", "Assign Date"];
             const NumericFilterColumn = [];
             const DateFilterColumn = [];
@@ -2489,13 +2921,13 @@ function GetAssignDetails(Code) {
             const StringdoubleFilterColumn = [];
             const hiddenColumns = [];
             const ColumnAlignment = {
-                Action: ";width:150px;"
+                Action: 'center'
             };
 
             BizsolCustomFilterGrid.CreateDataTable("AssignDetails-header", "AssignDetails-body", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment,false)
         }
         else {
-            $("#tblAssignDetails").hide();
+            $("#dvAssignDetailsWrap").hide();
         }
     });
 }
@@ -2604,13 +3036,49 @@ function BackEnquiry() {
     BackMaster();
 }
 function Bind_ddlLeadStatus() {
-    $("#ddlLeadStatus").empty();
-    LeadMasterService.GetLeadStatuslist().then(function (resObj) {
-        let option = '<option value="" >Select</option>';
-        $.each(resObj, function (key, val) {
-            option += '<option value="' + val.Value + '" >' + val.Value + '</option>';
+    $("#ddlfilterLeadType").empty();
+    mergeLeadStatusLists().then(function (resObj) {
+        let leadOption = '';
+        $.each(resObj || [], function (key, val) {
+            leadOption += '<option value="' + val.Value + '" >' + val.Value + '</option>';
         });
-        $("#ddlLeadStatus").append(option);
+        $("#ddlfilterLeadType").append(leadOption);
+        initLeadTypeFilterSelect2();
+        restoreEnquiryLeadTypeSelect();
+    });
+}
+
+/** Follow-up form Status: followup → GetLeadStatuslist, close → GetLeadCloseStatuslist */
+function Bind_ddlFollowUpLeadStatus() {
+    var $ddl = $("#ddlLeadStatus");
+    $ddl.empty();
+    var apiCall = G_FollowUpStatusMode === 'close'
+        ? LeadMasterService.GetLeadCloseStatuslist()
+        : LeadMasterService.GetLeadStatuslist();
+
+    apiCall.then(function (resObj) {
+        var option = '<option value="">Select</option>';
+        $.each(resObj || [], function (key, val) {
+            var v = (val.Value || val.Desp || val.value || val.desp || '').toString().trim();
+            if (!v) return;
+            option += '<option value="' + v + '">' + v + '</option>';
+        });
+        $ddl.append(option);
+
+        if (G_FollowUpStatusMode === 'close') {
+            var $closeOpt = $ddl.find('option').filter(function () {
+                var t = String($(this).val() || '').trim().toLowerCase();
+                return t === 'close' || t === 'closed';
+            });
+            if ($closeOpt.length) {
+                $ddl.val($closeOpt.first().val());
+            }
+        }
+    }).catch(function () {
+        $ddl.html('<option value="">Select</option>');
+        toastr.error(G_FollowUpStatusMode === 'close'
+            ? 'Failed to load close status list.'
+            : 'Failed to load lead status list.');
     });
 }
 
@@ -2636,14 +3104,14 @@ async function GetEnquiryDetailsForViewByCode(Code) {
         
         if (resObj.ContactPersonsList?.length > 0) {
             modalHtml += `
-                <div class="card mb-3">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0">Contact Persons</h6>
+                <div class="enq-details-section">
+                    <div class="enq-details-section-head">
+                        <h6>Contact Persons</h6>
                     </div>
-                    <div class="card-body">
+                    <div class="enq-details-section-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="table-light">
+                            <table class="table table-bordered table-sm enq-details-table mb-0">
+                                <thead>
                                     <tr>
                                         <th>Name</th>
                                         <th>Department</th>
@@ -2666,7 +3134,7 @@ async function GetEnquiryDetailsForViewByCode(Code) {
                         <td>${person.Designation || '-'}</td>
                         <td>${person["Email Id"] || '-'}</td>
                         <td>${person["Contact No"] || '-'}</td>
-                        <td class="text-center">${isDefault ? '<i class="fa fa-check text-success"></i>' : '-'}</td>
+                        <td class="text-center">${isDefault ? '<i class="fa fa-check" style="color:#16a34a;"></i>' : '—'}</td>
                     </tr>`;
             });
 
@@ -2678,17 +3146,16 @@ async function GetEnquiryDetailsForViewByCode(Code) {
                 </div>
             `;
         }
-        // ---------------- Enquiry Details (Products) ----------------
         if (resObj.EnquiryDetails?.length > 0) {
             modalHtml += `
-                <div class="card mb-3">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="mb-0">Product Details</h6>
+                <div class="enq-details-section">
+                    <div class="enq-details-section-head">
+                        <h6>Product Details</h6>
                     </div>
-                    <div class="card-body">
+                    <div class="enq-details-section-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="table-light">
+                            <table class="table table-bordered table-sm enq-details-table mb-0">
+                                <thead>
                                     <tr>
                                         <th>Product Name</th>
                                         <th>Specification</th>
@@ -2718,21 +3185,20 @@ async function GetEnquiryDetailsForViewByCode(Code) {
                 </div>
             `;
         }
-        // ---------------- Enquiry Details (Products) ----------------
         if (resObj.EnquiryFollupDetails?.length > 0) {
             modalHtml += `
-                <div class="card mb-3">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="mb-0" style="color: white;">Follow Up Details</h6>
+                <div class="enq-details-section">
+                    <div class="enq-details-section-head">
+                        <h6>Follow Up Details</h6>
                     </div>
-                    <div class="card-body">
+                    <div class="enq-details-section-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="table-light">
+                            <table class="table table-bordered table-sm enq-details-table mb-0">
+                                <thead>
                                     <tr>
                                         <th>Follow Up Date</th>
                                         <th>Follow Up Mode</th>
-                                        <th>Next Follow Up Date	</th>
+                                        <th>Next Follow Up Date</th>
                                         <th>Next Follow Up Mode</th>
                                         <th>Our Remarks</th>
                                         <th>Customer Remarks</th>
@@ -2762,100 +3228,99 @@ async function GetEnquiryDetailsForViewByCode(Code) {
                 </div>
             `;
         }
-        // ---------------- Enquiry Master ----------------
         if (resObj.EnquiryMaster?.length > 0) {
             const data = resObj.EnquiryMaster[0];
-            
+
             modalHtml += `
-                <div class="card mb-3">
-                    <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0" style="color: white;">Enquiry Information</h6>
+                <div class="enq-details-section">
+                    <div class="enq-details-section-head">
+                        <h6>Enquiry Information</h6>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Company Name :</label>
-                                <span>${data.AccountDesp || '-'}</span>
+                    <div class="enq-details-section-body">
+                        <div class="enq-details-kv">
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Company Name</span>
+                                <span class="enq-kv-val">${data.AccountDesp || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Enquiry Type :</label>
-                                <span >${data.EnquiryTypeName || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Enquiry Type</span>
+                                <span class="enq-kv-val">${data.EnquiryTypeName || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Enquiry Date :</label>
-                                <span >${data.EnquiryDate || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Enquiry Date</span>
+                                <span class="enq-kv-val">${data.EnquiryDate || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Status :</label>
-                                <span >${data.Status || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Status</span>
+                                <span class="enq-kv-val">${data.Status || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Email :</label>
-                                <span >${data.EMail || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Email</span>
+                                <span class="enq-kv-val">${data.EMail || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Mobile No :</label>
-                                <span >${data.MobileNo || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Mobile No</span>
+                                <span class="enq-kv-val">${data.MobileNo || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Phone No :</label>
-                                <span >${data.PhoneNo || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Phone No</span>
+                                <span class="enq-kv-val">${data.PhoneNo || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Website :</label>
-                                <span >${data.Website || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Website</span>
+                                <span class="enq-kv-val">${data.Website || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Country :</label>
-                                <span >${data.Nation || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Country</span>
+                                <span class="enq-kv-val">${data.Nation || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">State :</label>
-                                <span >${data.State || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">State</span>
+                                <span class="enq-kv-val">${data.State || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">City :</label>
-                                <span >${data.City || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">City</span>
+                                <span class="enq-kv-val">${data.City || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Pin Code :</label>
-                                <span >${data.PinCode || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Pin Code</span>
+                                <span class="enq-kv-val">${data.PinCode || '—'}</span>
                             </div>
-                            <div class="col-md-12 mb-2">
-                                <label class="fw-bold">Address Line 1:</label>
-                                <span >${data.Address1 || '-'}</span>
+                            <div class="enq-kv-item enq-kv-full">
+                                <span class="enq-kv-label">Address Line 1</span>
+                                <span class="enq-kv-val">${data.Address1 || '—'}</span>
                             </div>
-                            <div class="col-md-12 mb-2">
-                                <label class="fw-bold">Address Line 2 :</label>
-                                <span >${data.Address2 || '-'}</span>
+                            <div class="enq-kv-item enq-kv-full">
+                                <span class="enq-kv-label">Address Line 2</span>
+                                <span class="enq-kv-val">${data.Address2 || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Enquiry Source :</label>
-                                <span >${data.LeadSourceDespName || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Enquiry Source</span>
+                                <span class="enq-kv-val">${data.LeadSourceDespName || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Reference By :</label>
-                                <span >${data.ReferenceBy || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Reference By</span>
+                                <span class="enq-kv-val">${data.ReferenceBy || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Reference Date :</label>
-                                <span >${data.ReferenceDate || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Reference Date</span>
+                                <span class="enq-kv-val">${data.ReferenceDate || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Assigned Salesman :</label>
-                                <span >${data.PersonName || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Assigned Salesman</span>
+                                <span class="enq-kv-val">${data.PersonName || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Next Followup Date :</label>
-                                <span >${data.NextFollowupDate || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Next Followup Date</span>
+                                <span class="enq-kv-val">${data.NextFollowupDate || '—'}</span>
                             </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="fw-bold">Next Followup Mode :</label>
-                                <span >${data.NextFollowupMode || '-'}</span>
+                            <div class="enq-kv-item">
+                                <span class="enq-kv-label">Next Followup Mode</span>
+                                <span class="enq-kv-val">${data.NextFollowupMode || '—'}</span>
                             </div>
-                            <div class="col-md-12 mb-2">
-                                <label class="fw-bold">Remarks:</label>
-                                <span >${data.Remark || '-'}</span>
+                            <div class="enq-kv-item enq-kv-full">
+                                <span class="enq-kv-label">Remarks</span>
+                                <span class="enq-kv-val">${data.Remark || '—'}</span>
                             </div>
                         </div>
                     </div>
@@ -2863,9 +3328,10 @@ async function GetEnquiryDetailsForViewByCode(Code) {
             `;
         }
 
-       
+        if (!modalHtml || !modalHtml.trim()) {
+            modalHtml = '<p class="text-muted text-center py-4 mb-0" style="font-size:0.9rem;">No enquiry details to display.</p>';
+        }
 
-        // Display in modal
         $("#EnquiryDetailsModaldv").html(modalHtml);
         $("#EnquiryDetailsModal").modal('show');
 
@@ -2878,6 +3344,251 @@ function CloseEnquiryDetails() {
     $("#EnquiryDetailsModal").modal('hide');
 }
 
+const FOLLOW_UP_WRAP_COLUMN_KEYS = ["OURREMARKS", "CUSTOMERREMARKS"];
+/** Insert line break when Our Remarks length exceeds this */
+const FOLLOW_UP_OUR_REMARK_BREAK_LEN = 50;
+const FOLLOW_UP_HARD_BREAK_COLUMN_KEYS = ["OURREMARKS"];
+
+function escapeFollowUpGridHtml(text) {
+    return String(text == null ? "" : text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+/** Break plain text every N characters with &lt;br&gt; (only when length &gt; N). */
+function breakTextEveryNChars(text, n) {
+    var s = String(text == null ? "" : text);
+    if (!s || s.length <= n) return escapeFollowUpGridHtml(s);
+    var parts = [];
+    for (var i = 0; i < s.length; i += n) {
+        parts.push(escapeFollowUpGridHtml(s.slice(i, i + n)));
+    }
+    return parts.join("<br>");
+}
+
+/** Follow Up grid: column indices for remark columns that should wrap */
+function getFollowUpRemarksWrapColumnIndices() {
+    const headers = document.querySelectorAll("#FollowUp-header th");
+    const indices = [];
+    for (let i = 0; i < headers.length; i++) {
+        const t = (headers[i].textContent || "").replace(/\s+/g, "").toUpperCase();
+        if (FOLLOW_UP_WRAP_COLUMN_KEYS.includes(t)) indices.push(i);
+    }
+    return indices;
+}
+
+function getFollowUpOurRemarkBreakColumnIndices() {
+    const headers = document.querySelectorAll("#FollowUp-header th");
+    const indices = [];
+    for (let i = 0; i < headers.length; i++) {
+        const t = (headers[i].textContent || "").replace(/\s+/g, "").toUpperCase();
+        if (FOLLOW_UP_HARD_BREAK_COLUMN_KEYS.includes(t)) indices.push(i);
+    }
+    return indices;
+}
+
+/** Follow Up grid: wrap remark columns; Our Remarks hard-breaks every 50 chars */
+function applyFollowUpRemarksColumnWrap() {
+    const wrapIndices = getFollowUpRemarksWrapColumnIndices();
+    const breakIndices = getFollowUpOurRemarkBreakColumnIndices();
+    const table = document.getElementById("FollowUp");
+    if (!table || (wrapIndices.length === 0 && breakIndices.length === 0)) return;
+    table.querySelectorAll("#FollowUp-header th").forEach(function (th, i) {
+        th.classList.toggle("enq-fu-col-wrap", wrapIndices.includes(i));
+    });
+    table.querySelectorAll("#FollowUp-body tr").forEach(function (row) {
+        row.querySelectorAll("td").forEach(function (td, i) {
+            td.classList.toggle("enq-fu-col-wrap", wrapIndices.includes(i));
+            if (!breakIndices.includes(i) || td.dataset.enqTextBroken === "1") return;
+            var plain = (td.textContent || "").trim();
+            if (plain.length > FOLLOW_UP_OUR_REMARK_BREAK_LEN) {
+                td.innerHTML = breakTextEveryNChars(plain, FOLLOW_UP_OUR_REMARK_BREAK_LEN);
+            }
+            td.dataset.enqTextBroken = "1";
+        });
+    });
+}
+
+/** Main enquiry list grid: find "Next Follow Up Date" column index from header row */
+function getEnquiryListHeaderLabel(th) {
+    const heading = th.querySelector(".filter-table-heading");
+    const raw = heading ? heading.textContent : th.textContent;
+    return (raw || "").replace(/\s+/g, "").toUpperCase();
+}
+
+function getEnquiryListNextFollowUpDateColumnIndex() {
+    const headers = document.querySelectorAll("#table-header th");
+    for (let i = 0; i < headers.length; i++) {
+        const t = getEnquiryListHeaderLabel(headers[i]);
+        if (t.indexOf("NEXTFOLLOWUPDATE") !== -1) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/** Main enquiry list: "Our Remark" / "Our Remarks" column index */
+function getEnquiryListOurRemarkColumnIndex() {
+    const headers = document.querySelectorAll("#table-header th");
+    for (let i = 0; i < headers.length; i++) {
+        const t = (headers[i].textContent || "").replace(/\s+/g, "").toUpperCase();
+        if (t === "OURREMARK" || t === "OURREMARKS") {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/** Enquiry list: if Our Remark text length > 50, insert line break every 50 chars */
+function applyEnquiryListOurRemarkColumnBreak() {
+    const colIdx = getEnquiryListOurRemarkColumnIndex();
+    if (colIdx < 0) return;
+    const headers = document.querySelectorAll("#table-header th");
+    if (headers[colIdx]) {
+        headers[colIdx].classList.add("enq-list-col-remark-wrap");
+    }
+    document.querySelectorAll("#table-body tr").forEach(function (row) {
+        const tds = row.querySelectorAll("td");
+        if (tds.length <= colIdx) return;
+        const td = tds[colIdx];
+        td.classList.add("enq-list-col-remark-wrap");
+        if (td.dataset.enqTextBroken === "1") return;
+        const plain = (td.textContent || "").trim();
+        if (plain.length > FOLLOW_UP_OUR_REMARK_BREAK_LEN) {
+            td.innerHTML = breakTextEveryNChars(plain, FOLLOW_UP_OUR_REMARK_BREAK_LEN);
+        }
+        td.dataset.enqTextBroken = "1";
+    });
+}
+
+function parseEnquiryListGridDateCell(text) {
+    if (!text || !String(text).trim()) return null;
+    const s = String(text).trim();
+    if (!s) return null;
+
+    // DD-MMM-YYYY  e.g. "22-Apr-2026"
+    const dmy = s.match(/^(\d{1,2})[-\/\s]([A-Za-z]{3})[-\/\s](\d{4})$/);
+    if (dmy) {
+        const months = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
+        const m = months[dmy[2].toLowerCase()];
+        if (m !== undefined) {
+            const d = new Date(parseInt(dmy[3]), m, parseInt(dmy[1]));
+            if (!isNaN(d.getTime()) && d.getFullYear() > 1900) return d;
+        }
+    }
+
+    // DD/MM/YYYY or DD-MM-YYYY
+    const dmy2 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmy2) {
+        const d = new Date(parseInt(dmy2[3]), parseInt(dmy2[2]) - 1, parseInt(dmy2[1]));
+        if (!isNaN(d.getTime()) && d.getFullYear() > 1900) return d;
+    }
+
+    // ISO YYYY-MM-DD
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) {
+        const d = new Date(parseInt(iso[1]), parseInt(iso[2]) - 1, parseInt(iso[3]));
+        if (!isNaN(d.getTime()) && d.getFullYear() > 1900) return d;
+    }
+
+    return null;
+}
+
+/** If Next Follow Up Date is strictly before today, highlight the whole row (light red). Closed rows stay dark green. */
+function applyEnquiryListOverdueNextFollowUpRowHighlight() {
+    const tbody = document.getElementById("table-body");
+    if (!tbody) return;
+    const colIdx = getEnquiryListNextFollowUpDateColumnIndex();
+    if (colIdx < 0) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const rows = tbody.querySelectorAll("tr");
+    rows.forEach(function (row) {
+        row.classList.remove("enq-row-overdue");
+        // Closed is status-only: never apply overdue colour
+        if (row.classList.contains("enq-row-closed")) return;
+        const tds = row.querySelectorAll("td");
+        if (tds.length <= colIdx) return;
+        // Prefer heading text from filter label (avoids matching filter-menu junk)
+        const cellText = tds[colIdx].textContent || "";
+        const cellDate = parseEnquiryListGridDateCell(cellText);
+        if (!cellDate) return;
+        const cd = new Date(cellDate.getTime());
+        cd.setHours(0, 0, 0, 0);
+        if (cd.getFullYear() > 1900 && cd < today) {
+            row.classList.add("enq-row-overdue");
+        }
+    });
+}
+
+(function initFollowUpRemarksWrapObserver() {
+    var debounceTimer = null;
+    function scheduleWrap() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () {
+            if ($("#tblFollowUp").is(":visible")) {
+                applyFollowUpRemarksColumnWrap();
+            }
+        }, 50);
+    }
+    function attachObserver() {
+        var tbody = document.getElementById("FollowUp-body");
+        if (!tbody) {
+            setTimeout(attachObserver, 300);
+            return;
+        }
+        var observer = new MutationObserver(scheduleWrap);
+        observer.observe(tbody, { childList: true, subtree: true });
+        var thead = document.getElementById("FollowUp-header");
+        if (thead) {
+            var headerObserver = new MutationObserver(scheduleWrap);
+            headerObserver.observe(thead, { childList: true, subtree: true });
+        }
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", attachObserver);
+    } else {
+        attachObserver();
+    }
+})();
+
+(function initEnquiryListOverdueHighlightObserver() {
+    var debounceTimer = null;
+    function scheduleHighlight() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () {
+            if (document.getElementById("dvLoad") && $("#dvLoad").is(":visible")) {
+                applyEnquiryListStatusRowColors();
+                applyEnquiryListOverdueNextFollowUpRowHighlight();
+                applyEnquiryListOurRemarkColumnBreak();
+            }
+        }, 50);
+    }
+    function attachObserver() {
+        var tbody = document.getElementById("table-body");
+        if (!tbody) {
+            setTimeout(attachObserver, 300);
+            return;
+        }
+        var observer = new MutationObserver(scheduleHighlight);
+        observer.observe(tbody, { childList: true, subtree: true });
+        var thead = document.getElementById("table-header");
+        if (thead) {
+            var headerObserver = new MutationObserver(scheduleHighlight);
+            headerObserver.observe(thead, { childList: true, subtree: true });
+        }
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", attachObserver);
+    } else {
+        attachObserver();
+    }
+})();
+
+
+
 window.ViewAttachment = ViewAttachment;
 window.ChangeContact = ChangeContact;
 window.ChangeProduct = ChangeProduct;
@@ -2887,6 +3598,10 @@ window.AddNewProductRow = AddNewProductRow;
 window.SetUOMValue = SetUOMValue;
 window.GetUOMValue = GetUOMValue;
 window.Delete = Delete;
+window.CloseEnquiryEntry = CloseEnquiryEntry;
+window.ReOpenEnquiryEntry = ReOpenEnquiryEntry;
+window.ConfirmReOpenEnquiry = ConfirmReOpenEnquiry;
+window.HideReOpenEnquiryModal = HideReOpenEnquiryModal;
 window.Verify = Verify;
 window.Reject = Reject;
 window.Assign = Assign;
@@ -2927,6 +3642,161 @@ window.SaveModalContactPersonDetails = SaveModalContactPersonDetails;
 window.ResetEnquiryFollowUp = ResetEnquiryFollowUp;
 window.BackEnquiry = BackEnquiry;
 window.WhatsApp = WhatsApp;
+// ─── Enquiry Configuration Modal ──────────────────────────────────────────────
+
+function ShowEnquiryConfigurationModal() {
+    var $leadDiv   = $('#DivChkLeadStatusConfig');
+    var $statusDiv = $('#DivChkStatusConfig');
+    var $saveBtn   = $('#btnSaveEnquiryConfig');
+
+    $leadDiv.html('<span class="text-muted" style="font-size:12px;">Loading…</span>');
+    $statusDiv.html('<span class="text-muted" style="font-size:12px;">Loading…</span>');
+    $saveBtn.prop('disabled', true);
+
+    // Reset mandatory checkboxes
+    $('#chkMandatoryAddress').prop('checked', false);
+    $('#chkMandatoryPinCode').prop('checked', false);
+    $('#chkMandatoryIndustryType').prop('checked', false);
+    $('#chkMandatoryPhoneNo').prop('checked', false);
+    $('#chkMandatoryEmail').prop('checked', false);
+
+    $("#EnquiryConfigurationModal").modal({ backdrop: 'static' });
+    $("#EnquiryConfigurationModal").modal('show');
+
+    // Load config + Default Lead Status (LeadStatus + LeadCloseStatus) + Default Status
+    Promise.all([
+        LeadMasterService.GetEnquiryMasterConfig().catch(function () { return null; }),
+        mergeLeadStatusLists().catch(function () { return []; }),
+        LeadMasterService.GetStatuslist().catch(function () { return []; })
+    ]).then(function (results) {
+        var config     = results[0];
+        var leadList   = results[1] || [];
+        var statusList = results[2] || [];
+
+        // Normalise saved config (API may return array or object)
+        var rawCfg = {};
+        if (Array.isArray(config) && config.length > 0) rawCfg = config[0];
+        else if (config && typeof config === 'object') rawCfg = config;
+
+        // Case-insensitive property lookup helper
+        function cfgVal(key) {
+            if (!rawCfg) return '';
+            var lk = key.toLowerCase();
+            var found = Object.keys(rawCfg).find(function (k) { return k.toLowerCase() === lk; });
+            return found ? (rawCfg[found] || '') : '';
+        }
+
+        // ── Mandatory field checkboxes ────────────────────────────────────
+        $('#chkMandatoryAddress').prop('checked',      cfgVal('isMandatoryAddress').toUpperCase()      === 'Y');
+        $('#chkMandatoryPinCode').prop('checked',      cfgVal('isMandatoryPinCode').toUpperCase()      === 'Y');
+        $('#chkMandatoryIndustryType').prop('checked', cfgVal('isMandatoryIndustryType').toUpperCase() === 'Y');
+        $('#chkMandatoryPhoneNo').prop('checked',      cfgVal('isMandatoryPhoneNo').toUpperCase()      === 'Y');
+        $('#chkMandatoryEmail').prop('checked',        cfgVal('isMandatoryEmail').toUpperCase()        === 'Y');
+
+        // ── Default Lead Status — multi-select checkboxes (saved as A#B#C) ─
+        var savedLeadSet = {};
+        splitHashValues(cfgVal('defaultLeadType')).forEach(function (v) {
+            savedLeadSet[v.toLowerCase()] = true;
+        });
+        if (!leadList.length) {
+            $leadDiv.html('<span class="text-muted" style="font-size:12px;">No data found.</span>');
+        } else {
+            var html = '';
+            $.each(leadList, function (i, item) {
+                var val   = (item.Value || item.value || item.Desp || item.desp || '').trim();
+                var label = item.Value  || item.Desp  || item.desp || val;
+                var uid   = 'chkLead_' + i;
+                var chk   = (val && savedLeadSet[val.toLowerCase()]) ? 'checked' : '';
+                html += '<div class="col-6">'
+                      + '<input type="checkbox" name="chkEnqLeadStatus" id="' + uid + '" value="' + val + '" ' + chk + ' />'
+                      + '&nbsp;<label for="' + uid + '">' + label + '</label>'
+                      + '</div>';
+            });
+            $leadDiv.html(html);
+        }
+
+        // ── Default Status — multi-select checkboxes (saved as A#B#C) ──────
+        var savedStatusSet = {};
+        splitHashValues(cfgVal('defaultStatus')).forEach(function (v) {
+            savedStatusSet[v.toLowerCase()] = true;
+        });
+        if (!statusList.length) {
+            $statusDiv.html('<span class="text-muted" style="font-size:12px;">No data found.</span>');
+        } else {
+            var html2 = '';
+            $.each(statusList, function (i, item) {
+                var val   = (item.Value || item.value || item.Desp || item.desp || '').trim();
+                var label = item.Value  || item.Desp  || item.desp || val;
+                var uid   = 'chkStatus_' + i;
+                var chk   = (val && savedStatusSet[val.toLowerCase()]) ? 'checked' : '';
+                html2 += '<div class="col-6">'
+                       + '<input type="checkbox" name="chkEnqStatus" id="' + uid + '" value="' + val + '" ' + chk + ' />'
+                       + '&nbsp;<label for="' + uid + '">' + label + '</label>'
+                       + '</div>';
+            });
+            $statusDiv.html(html2);
+        }
+
+        $saveBtn.prop('disabled', false);
+    });
+}
+
+function SaveEnquiryConfig() {
+    var $saveBtn = $('#btnSaveEnquiryConfig');
+    $saveBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Saving…');
+
+    var leadVals = [];
+    $('input[name="chkEnqLeadStatus"]:checked').each(function () {
+        var v = ($(this).val() || '').trim();
+        if (v) leadVals.push(v);
+    });
+    var statusVals = [];
+    $('input[name="chkEnqStatus"]:checked').each(function () {
+        var v = ($(this).val() || '').trim();
+        if (v) statusVals.push(v);
+    });
+
+    var defaultLeadType = joinHashValues(leadVals);
+    var defaultStatus = joinHashValues(statusVals);
+
+    var payload = [{
+        isMandatoryAddress:      $('#chkMandatoryAddress').is(':checked')      ? 'Y' : 'N',
+        isMandatoryPinCode:      $('#chkMandatoryPinCode').is(':checked')      ? 'Y' : 'N',
+        isMandatoryIndustryType: $('#chkMandatoryIndustryType').is(':checked') ? 'Y' : 'N',
+        isMandatoryPhoneNo:      $('#chkMandatoryPhoneNo').is(':checked')      ? 'Y' : 'N',
+        isMandatoryEmail:        $('#chkMandatoryEmail').is(':checked')        ? 'Y' : 'N',
+        defaultLeadType:  defaultLeadType,
+        defaultStatus:    defaultStatus
+    }];
+
+    LeadMasterService.SaveEnquiryMasterConfig(payload).then(function (res) {
+        $saveBtn.prop('disabled', false).html('<i class="fa fa-floppy-disk"></i> Save');
+        if (res && (res.Status === 'N' || res.status === 'N')) {
+            toastr.error(res.Msg || res.msg || 'Failed to save configuration.');
+            return;
+        }
+        toastr.success((res && (res.Msg || res.msg)) || 'Configuration saved successfully.');
+        // Apply saved multi values (split by #) onto filter dropdowns
+        applyConfigToFilterDropdowns(defaultStatus, defaultLeadType);
+        saveEnquiryListFilters();
+        if (G_originalData && G_originalData.length > 0) {
+            var filteredData = filterEnquiryListBySalesAndStatus(
+                G_originalData,
+                $("#ddlSalesPerson").val(),
+                $("#ddlStatus").val(),
+                $("#ddlfilterLeadType").val()
+            );
+            renderEnquiryListGridFromFilteredData(filteredData);
+        }
+    }).catch(function () {
+        $saveBtn.prop('disabled', false).html('<i class="fa fa-floppy-disk"></i> Save');
+        toastr.error('An error occurred while saving configuration.');
+    });
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 window.GetEnquiryDetailsForViewByCode = GetEnquiryDetailsForViewByCode;
 window.CloseEnquiryDetails = CloseEnquiryDetails;
+window.ShowEnquiryConfigurationModal = ShowEnquiryConfigurationModal;
+window.SaveEnquiryConfig = SaveEnquiryConfig;
 window.BackFolloupMaster = BackFolloupMaster;

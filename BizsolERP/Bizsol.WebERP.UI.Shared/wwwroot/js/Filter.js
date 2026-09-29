@@ -1,10 +1,265 @@
-﻿// Helper function to escape special characters in IDs for jQuery selectors
+// Helper function to escape special characters in IDs for jQuery selectors
 window.escapeId = function escapeId(id) {
     return id.replace(/([\/.:\[\]#@$%^&*()+=,!~`{}'"<>?|\\])/g, '\\$1');
 }
 
+/**
+ * Keep column filter panels visible when the grid scrolls or the page is zoomed.
+ * Uses fixed positioning relative to the header cell so panels are not clipped
+ * by overflow on .table-wrapper / .sa-table-wrapper.
+ */
+window.bizsolGetFilterAnchor = function bizsolGetFilterAnchor($panel) {
+    if (!$panel || !$panel.length) {
+        return $();
+    }
+    var $stored = $panel.data('bizsol-filter-anchor');
+    if ($stored && $stored.length && $stored.closest('body').length) {
+        return $stored;
+    }
+    var $anchor = $panel.closest('th');
+    if (!$anchor.length) {
+        $anchor = $panel.closest('.filter-table-heading-div');
+    }
+    return $anchor;
+};
+
+window.bizsolMoveFilterPanelToBody = function bizsolMoveFilterPanelToBody($panel) {
+    if (!$panel || !$panel.length || $panel.data('bizsol-filter-placeholder')) {
+        return;
+    }
+    var $placeholder = $('<span class="bizsol-filter-placeholder" aria-hidden="true"></span>');
+    $panel.after($placeholder);
+    $panel.data('bizsol-filter-placeholder', $placeholder);
+    $panel.appendTo(document.body);
+};
+
+window.bizsolRestoreFilterPanel = function bizsolRestoreFilterPanel($panel) {
+    if (!$panel || !$panel.length) {
+        return;
+    }
+    var $placeholder = $panel.data('bizsol-filter-placeholder');
+    if ($placeholder && $placeholder.length) {
+        $placeholder.before($panel);
+        $placeholder.remove();
+    }
+    $panel.removeData('bizsol-filter-placeholder');
+};
+
+window.bizsolFloatFilterPanel = function bizsolFloatFilterPanel($panel) {
+    if (!$panel || !$panel.length || !$panel.is(':visible')) {
+        return;
+    }
+
+    var $anchor = bizsolGetFilterAnchor($panel);
+    if (!$anchor.length) {
+        return;
+    }
+
+    $panel.data('bizsol-filter-anchor', $anchor);
+    bizsolMoveFilterPanelToBody($panel);
+
+    var $posSource = $anchor;
+    if ($panel.hasClass('filter-division')) {
+        var $arrow = $anchor.find('.table-filter-arrow').first();
+        if ($arrow.length) {
+            $posSource = $arrow;
+        }
+    }
+
+    var rect = $posSource[0].getBoundingClientRect();
+    $panel.addClass('bizsol-filter-floating').css({
+        position: 'fixed',
+        top: Math.round(rect.bottom + 2) + 'px',
+        left: Math.round(rect.left) + 'px',
+        right: 'auto',
+        zIndex: 10050
+    });
+
+    var panelWidth = $panel.outerWidth() || 200;
+    var panelHeight = $panel.outerHeight() || 140;
+    var top = rect.bottom + 2;
+    var left = rect.left;
+
+    if (left + panelWidth > window.innerWidth - 10) {
+        left = Math.max(10, rect.right - panelWidth);
+    }
+    if (top + panelHeight > window.innerHeight - 10) {
+        top = Math.max(10, rect.top - panelHeight - 2);
+    }
+
+    $panel.css({
+        top: Math.round(top) + 'px',
+        left: Math.round(left) + 'px'
+    });
+};
+
+window.bizsolResetFloatFilterPanel = function bizsolResetFloatFilterPanel($panel) {
+    if (!$panel || !$panel.length) {
+        return;
+    }
+    $panel.removeClass('bizsol-filter-floating').css({
+        position: '',
+        top: '',
+        left: '',
+        right: '',
+        zIndex: ''
+    }).removeData('bizsol-filter-anchor');
+    bizsolRestoreFilterPanel($panel);
+};
+
+window.repositionAllFloatingFilters = function repositionAllFloatingFilters() {
+    $('.filter-dropdown.bizsol-filter-floating:visible, .filter-dropdown-double.bizsol-filter-floating:visible, .filter-division.bizsol-filter-floating:visible').each(function () {
+        bizsolFloatFilterPanel($(this));
+    });
+};
+
+window.bizsolBindFilterFloatListeners = function bizsolBindFilterFloatListeners() {
+    if (window._bizsolFilterFloatListenersBound) {
+        return;
+    }
+    window._bizsolFilterFloatListenersBound = true;
+
+    var reposition = function () {
+        repositionAllFloatingFilters();
+    };
+
+    $(window).on('scroll.bizsolFilterFloat resize.bizsolFilterFloat', reposition);
+    document.addEventListener('scroll', reposition, true);
+};
+
+bizsolBindFilterFloatListeners();
+
+/**
+ * Format a number with Indian comma grouping  e.g. 2,00,000.00
+ * @param {number|string} value    - numeric value
+ * @param {number}        decimals - decimal places (default 2)
+ * @returns {string}
+ */
+window.formatIndianNumber = function formatIndianNumber(value, decimals) {
+    decimals = (decimals === undefined || decimals === null) ? 2 : decimals;
+    var num = parseFloat(value);
+    if (isNaN(num)) return String(value);
+    var fixed = num.toFixed(decimals);
+    var parts = fixed.split('.');
+    var intPart = parts[0];
+    var decPart = parts[1];
+    var sign = '';
+    if (intPart.charAt(0) === '-') { sign = '-'; intPart = intPart.slice(1); }
+    // Indian grouping: last 3 digits, then groups of 2 from right
+    var lastThree = intPart.length > 3 ? intPart.slice(-3) : intPart;
+    var rest = intPart.length > 3 ? intPart.slice(0, intPart.length - 3) : '';
+    var grouped = rest.length > 0 ? rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree : lastThree;
+    return sign + grouped + (decPart !== undefined ? '.' + decPart : '');
+};
+
+window.formatGridNumericDisplay = function formatGridNumericDisplay(value) {
+    if (value === null || value === undefined || value === '') {
+        return value;
+    }
+    var num = parseFloat(value);
+    if (!isFinite(num)) {
+        return value;
+    }
+    if (Math.abs(num - Math.round(num)) < 1e-9) {
+        return String(Math.round(num));
+    }
+    return String(num);
+};
+
+window.getForcedDecimalPlaces = function getForcedDecimalPlaces(key, fixedDecimalConfig) {
+    if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && Object.prototype.hasOwnProperty.call(fixedDecimalConfig, key)) {
+        return fixedDecimalConfig[key];
+    }
+    if (typeof fixedDecimalConfig === 'number') {
+        return fixedDecimalConfig;
+    }
+    return null;
+};
+
+/**
+ * Parse a grid cell for totalColumns / grand totals: plain numbers work; HTML (e.g. &lt;input value="100"&gt;) reads value="...".
+ */
+window.parseNumericCellForTotal = function parseNumericCellForTotal(raw) {
+    if (raw === null || raw === undefined) return NaN;
+    if (typeof raw === 'number' && isFinite(raw)) return raw;
+    var str = String(raw).trim();
+    if (str === '') return NaN;
+    var n = parseFloat(str.replace(/,/g, ''));
+    if (!isNaN(n) && isFinite(n)) return n;
+    var m = str.match(/value\s*=\s*"([^"]*)"/i);
+    if (m && m[1] !== undefined && m[1] !== '') {
+        n = parseFloat(String(m[1]).replace(/,/g, ''));
+        if (!isNaN(n) && isFinite(n)) return n;
+    }
+    m = str.match(/value\s*=\s*'([^']*)'/i);
+    if (m && m[1] !== undefined && m[1] !== '') {
+        n = parseFloat(String(m[1]).replace(/,/g, ''));
+        if (!isNaN(n) && isFinite(n)) return n;
+    }
+    return NaN;
+};
+
+window.normalizeFilterColKey = function normalizeFilterColKey(name) {
+    return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+};
+
+window.normalizeLastValueColumns = function normalizeLastValueColumns(lastValueColumns) {
+    if (lastValueColumns == null || lastValueColumns === false) {
+        return [];
+    }
+    if (typeof lastValueColumns === 'string') {
+        const name = lastValueColumns.trim();
+        return name ? [name] : [];
+    }
+    if (Array.isArray(lastValueColumns)) {
+        return lastValueColumns
+            .map(function (c) { return c == null ? '' : String(c).trim(); })
+            .filter(function (c) { return c !== ''; });
+    }
+    return [];
+};
+
+window.resolveLastValueColumnKey = function resolveLastValueColumnKey(requestedName, availableKeys) {
+    if (!requestedName) {
+        return '';
+    }
+    const keys = Array.isArray(availableKeys) ? availableKeys : [];
+    if (keys.includes(requestedName)) {
+        return requestedName;
+    }
+    const n = window.normalizeFilterColKey(requestedName);
+    const match = keys.find(function (k) {
+        return window.normalizeFilterColKey(k) === n;
+    });
+    return match || requestedName;
+};
+
+window.resolveLastValueColumns = function resolveLastValueColumns(lastValueColumns, availableKeys) {
+    return window.normalizeLastValueColumns(lastValueColumns).map(function (name) {
+        return window.resolveLastValueColumnKey(name, availableKeys);
+    }).filter(function (name) { return name !== ''; });
+};
+
+window.applyLastValueColumnTotals = function applyLastValueColumnTotals(totals, items, totalColumns, lastValueColumns) {
+    const availableKeys = (items && items.length)
+        ? Object.keys(items[0])
+        : (Array.isArray(totalColumns) ? totalColumns : []);
+    const resolved = window.resolveLastValueColumns(lastValueColumns, availableKeys);
+    if (!totals || !items || items.length === 0 || resolved.length === 0) {
+        return;
+    }
+    const lastItem = items[items.length - 1];
+    resolved.forEach(colName => {
+        if (totalColumns && Array.isArray(totalColumns) && !totalColumns.includes(colName)) {
+            return;
+        }
+        const value = window.parseNumericCellForTotal(lastItem[colName]);
+        totals[colName] = (!isNaN(value) && isFinite(value)) ? value : 0;
+    });
+};
+
 const BizsolCustomFilterGrid = {
-    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null) {
+    CreateDataTable: function CreateDataTable(headerId, bodyId, data, Button, ShowButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, HiddenColumns, ColumnAlignment, Paginator = true, TotalColumns = null, FixedDecimalvalue = null, CommaColumns = null, GlobalSearch = false, FloatingTotalRow = false, LastValueColumns = null) {
         const columns = Object.keys(data[0]);
         const tableId = $('#' + bodyId).closest('table').attr('id');
         renderTableHeader(HiddenColumns, headerId, bodyId, columns, Button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn);
@@ -12,6 +267,16 @@ const BizsolCustomFilterGrid = {
         window[`columnAlignment_${bodyId}`] = ColumnAlignment;
         window[`totalColumns_${bodyId}`] = TotalColumns;
         window[`fixedDecimalvalue_${bodyId}`] = FixedDecimalvalue;
+        window[`commaColumns_${bodyId}`] = Array.isArray(CommaColumns) ? CommaColumns : [];
+        window[`floatingTotalRow_${bodyId}`] = !!FloatingTotalRow;
+        window[`lastValueColumns_${bodyId}`] = window.normalizeLastValueColumns(LastValueColumns);
+
+        // Create or remove the sticky <tfoot> used for the floating total row
+        const $tbl = $('#' + bodyId).closest('table');
+        $tbl.find('tfoot.bizsol-floating-tfoot').remove();
+        if (FloatingTotalRow) {
+            $tbl.append('<tfoot class="bizsol-floating-tfoot" id="tfoot-' + bodyId + '"></tfoot>');
+        }
         renderTable(data, bodyId);
         window[`button_${tableId}`] = Button;
         window[`ShowButtons_${bodyId}`] = ShowButtons;
@@ -21,6 +286,7 @@ const BizsolCustomFilterGrid = {
         window[`currentPage_${tableId}`] = 1;
         window[`itemsPerPage_${tableId}`] = 10;
         window[`Paginator_${tableId}`] = Paginator;
+        window[`globalSearch_${tableId}`] = !!GlobalSearch;
 
         // Add filtered class if any filter columns are defined
         const hasFilterColumns = (StringFilterColumn && StringFilterColumn.length > 0) ||
@@ -30,6 +296,17 @@ const BizsolCustomFilterGrid = {
 
         if (hasFilterColumns) {
             $('#' + bodyId).closest('.table-wrapper').addClass('filtered');
+        }
+
+        // Inject global search box above table if enabled
+        if (GlobalSearch) {
+            const placeholder = (typeof GlobalSearch === 'string' && GlobalSearch.trim() !== '')
+                ? GlobalSearch
+                : 'Search...';
+            createGlobalSearchBox(tableId, bodyId, placeholder);
+        } else {
+            // Remove any existing search box when re-initialising with search disabled
+            $('#global-search-wrap-' + tableId).remove();
         }
 
         if (Paginator) {
@@ -85,8 +362,15 @@ window.toggleFilter = function (columnName, bodyId) {
     const escapedId = escapeId(uniqueId);
     $('#filter-' + escapedId).toggle();
     $('#filterDropdown-' + escapedId).toggle();
+    var $filterPanel = $('#filter-' + escapedId);
+    if ($filterPanel.is(':visible')) {
+        bizsolFloatFilterPanel($filterPanel);
+    }
 };
 window.closeAllFilters = function closeAllFilters() {
+    $('.filter-dropdown, .filter-division').each(function () {
+        bizsolResetFloatFilterPanel($(this));
+    });
     $('.filter-dropdown').hide();
     $('.filter-input').val('');
     $('.filter-dropdown-double').hide();
@@ -133,6 +417,10 @@ window.toggleFilterDouble = function (columnName, bodyId) {
     $('#filter-double-' + escapedId).toggle();
     $('.filter-dropdown').hide();
     $('#filterDropdown-' + escapedId).toggle();
+    var $filterPanel = $('#filter-double-' + escapedId);
+    if ($filterPanel.is(':visible')) {
+        bizsolFloatFilterPanel($filterPanel);
+    }
 };
 
 $(document).click(function (event) {
@@ -167,6 +455,10 @@ const escapedId = escapeId(uniqueId);
     
 $('#filter-' + escapedId).toggle();
 $('#filterDropdown-' + escapedId).toggle();
+var $filterPanel = $('#filter-' + escapedId);
+if ($filterPanel.is(':visible')) {
+    bizsolFloatFilterPanel($filterPanel);
+}
 var uniqueDates = new Set();
 window[`filteredData_${tableId}`].forEach(function (row) {
     if (row.hasOwnProperty(columnName)) {
@@ -252,6 +544,9 @@ checkboxContainer1.find('.month-checkbox').change(function () {
         $('#' + escapedTargetId).toggle();
         $(this).toggleClass('fa-plus fa-minus');
     });
+    if ($filterPanel.is(':visible')) {
+        bizsolFloatFilterPanel($filterPanel);
+    }
 }
 window.applyFilters = function applyFilters(bodyId) {
     var column1 = "";
@@ -312,6 +607,10 @@ window.toggleFilterNumeric = function (filterId, ColumnName, bodyId) {
     $('#filterDropdown-' + escapedId).toggle();
     $('#' + escapedFilterId).toggle();
     toggleNumericInputs(ColumnName, tableId);
+    var $filterPanel = $('#' + escapedFilterId);
+    if ($filterPanel.is(':visible')) {
+        bizsolFloatFilterPanel($filterPanel);
+    }
 };
 window.toggleNumericInputs = function (columnName, tableId) {
     const colId = columnName.replace(/\s+/g, '');
@@ -379,6 +678,9 @@ const maxValue = parseFloat($('#max-value-' + escapedId).val());
     closeAllFilters();
 };
 window.ClearFilter = function ClearFilter(bodyId) {
+    $('.filter-dropdown, .filter-dropdown-double, .filter-division').each(function () {
+        bizsolResetFloatFilterPanel($(this));
+    });
     $('.filter-dropdown').hide();
     $('.filter-input').val('');
     $('.filter-input-double').val('');
@@ -388,6 +690,14 @@ window.ClearFilter = function ClearFilter(bodyId) {
     const tableId = $('#' + bodyId).closest('table').attr('id');
     // Remove filtered class from table-wrapper
     //$('#' + bodyId).closest('.table-wrapper').removeClass('filtered');
+
+    // Also clear and hide the global search box if it exists
+    const $gsInput = $('#global-search-input-' + tableId);
+    if ($gsInput.length) {
+        $gsInput.val('');
+        $('#global-search-clear-' + tableId).hide();
+    }
+
     window[`filteredData_${tableId}`] = window[`filteredDataTemp_${tableId}`];
     renderTable(window[`filteredData_${tableId}`], bodyId);
     if (window[`Paginator_${tableId}`]) {
@@ -396,6 +706,87 @@ window.ClearFilter = function ClearFilter(bodyId) {
     }
     $("#" + tableId + " th span.filter-table-heading .fa-filter").remove();
 }
+// ─── GLOBAL SEARCH ──────────────────────────────────────────────────────────
+
+/**
+ * Injects a global full-text search box above the table-wrapper.
+ * @param {string} tableId
+ * @param {string} bodyId
+ * @param {string} placeholder  – text shown inside the input
+ */
+window.createGlobalSearchBox = function createGlobalSearchBox(tableId, bodyId, placeholder) {
+    // Remove any existing box so re-initialisation stays clean
+    $('#global-search-wrap-' + tableId).remove();
+
+    const html = `
+        <div id="global-search-wrap-${tableId}" class="bizsol-global-search-wrap">
+            <span class="bizsol-gs-icon"><i class="fa fa-search"></i></span>
+            <input  type="text"
+                    id="global-search-input-${tableId}"
+                    class="bizsol-global-search-input form-control"
+                    placeholder="${placeholder}"
+                    autocomplete="off" />
+            <span class="bizsol-gs-clear" id="global-search-clear-${tableId}" title="Clear search" style="display:none;">
+                <i class="fa fa-times-circle"></i>
+            </span>
+        </div>`;
+
+    // Prepend above the table-wrapper (or the table itself as fallback)
+    const $wrapper = $('#' + bodyId).closest('.table-wrapper');
+    if ($wrapper.length) {
+        $wrapper.before(html);
+    } else {
+        $('#' + bodyId).closest('table').before(html);
+    }
+
+    // Live-search on every keystroke
+    $('#global-search-input-' + tableId).on('input', function () {
+        const val = $(this).val();
+        $('#global-search-clear-' + tableId).toggle(val.length > 0);
+        applyGlobalSearch(tableId, bodyId);
+    });
+
+    // Clear button
+    $('#global-search-clear-' + tableId).on('click', function () {
+        $('#global-search-input-' + tableId).val('').trigger('input');
+    });
+};
+
+/**
+ * Filters the full data set against all visible columns and refreshes the grid.
+ * @param {string} tableId
+ * @param {string} bodyId
+ */
+window.applyGlobalSearch = function applyGlobalSearch(tableId, bodyId) {
+    const term = ($('#global-search-input-' + tableId).val() || '').toLowerCase().trim();
+    const fullData = window[`filteredDataTemp_${tableId}`] || [];
+    const hidden  = window[`hiddenColumns_${bodyId}`] || [];
+
+    let result;
+    if (!term) {
+        result = fullData;
+    } else {
+        result = fullData.filter(function (row) {
+            return Object.keys(row).some(function (key) {
+                if (hidden.includes(key)) return false;
+                const cell = row[key];
+                if (cell === null || cell === undefined) return false;
+                return String(cell).toLowerCase().includes(term);
+            });
+        });
+    }
+
+    window[`filteredData_${tableId}`] = result;
+    window[`currentPage_${tableId}`] = 1;
+
+    if (window[`Paginator_${tableId}`]) {
+        createPaginator(tableId, bodyId);
+        renderTableWithPagination(tableId, bodyId);
+    } else {
+        renderTable(result, bodyId);
+    }
+};
+
 window.applyStringFilters = function applyStringFilters(columnName, bodyId) {
     var column = columnName;
     var selectedValues = [];
@@ -516,6 +907,9 @@ if (useCheckboxFilter || useTextFilter) {
     closeAllFiltersDouble();
 };
 window.closeAllFiltersDouble = function closeAllFiltersDouble() {
+    $('.filter-dropdown-double').each(function () {
+        bizsolResetFloatFilterPanel($(this));
+    });
     $('.filter-dropdown-double').hide();
     $('.checkbox-container-double').hide();
 }
@@ -540,6 +934,12 @@ window.applyfilterdate = function applyfilterdate(columnName, bodyId) {
     closeAllFilters();
 }
 window.renderTableHeader = function renderTableHeader(hiddenColumns, headerId, bodyId, columns, button, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn) {
+if (typeof closeAllFilters === 'function') {
+    closeAllFilters();
+}
+if (typeof closeAllFiltersDouble === 'function') {
+    closeAllFiltersDouble();
+}
 const $header = $(`#${headerId}`);
 $header.empty();
 const tableId = $(`#${bodyId}`).closest('table').attr('id');
@@ -694,26 +1094,31 @@ columns.forEach(col => {
 }
 window.sortable = function sortable(element) {
     var column = $(element).data('column');
-    var index = $(element).closest('th').index();
     var order = $(element).data('order');
     var tbodyId = $(element).closest('table').find('tbody').attr('id');
-    $(element).data('order', order);
-    sortTable(index, order, tbodyId);
+    sortTable(column, order, tbodyId);
 };
-window.sortTable = function sortTable(columnIndex, order, tbodyId) {
-    var rows = $(`#${tbodyId} tr`).get();
-    rows.sort(function (a, b) {
-        var keyA = $(a).children('td').eq(columnIndex).text().trim();
-        var keyB = $(b).children('td').eq(columnIndex).text().trim();
+window.sortTable = function sortTable(column, order, tbodyId) {
+    const tableId = $('#' + tbodyId).closest('table').attr('id');
+    var data = window[`filteredData_${tableId}`];
+
+    data.sort(function (a, b) {
+        var keyA = a[column] !== undefined && a[column] !== null ? String(a[column]).trim() : '';
+        var keyB = b[column] !== undefined && b[column] !== null ? String(b[column]).trim() : '';
         if ($.isNumeric(keyA) && $.isNumeric(keyB)) {
-            return (order === 'asc') ? keyA - keyB : keyB - keyA;
+            return (order === 'asc') ? parseFloat(keyA) - parseFloat(keyB) : parseFloat(keyB) - parseFloat(keyA);
         } else {
             return (order === 'asc') ? keyA.localeCompare(keyB) : keyB.localeCompare(keyA);
         }
     });
-    $.each(rows, function (index, row) {
-        $(`#${tbodyId}`).append(row);
-    });
+
+    window[`filteredData_${tableId}`] = data;
+    renderTable(data, tbodyId);
+    if (window[`Paginator_${tableId}`]) {
+        window[`currentPage_${tableId}`] = 1;
+        createPaginator(tableId, tbodyId);
+        renderTableWithPagination(tableId, tbodyId);
+    }
     CloseFilter();
 }
 window.stopPropagationdouble = function stopPropagationdouble(event) {
@@ -728,7 +1133,12 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
     }
 
     const totalColumns = window[`totalColumns_${bodyId}`];
+    const lastValueColumns = window.resolveLastValueColumns(
+        window[`lastValueColumns_${bodyId}`],
+        (items && items.length) ? Object.keys(items[0]) : totalColumns
+    );
     const columnTotals = {};
+    let _floatingTfootHtml = null;
 
     // Calculate totals for specified columns (if not skipping)
     if (totalColumns && Array.isArray(totalColumns) && totalColumns.length > 0 && !skipTotalRow) {
@@ -738,12 +1148,16 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
 
         items.forEach(item => {
             totalColumns.forEach(colName => {
-                const value = parseFloat(item[colName]);
+                if (lastValueColumns.includes(colName)) {
+                    return;
+                }
+                const value = window.parseNumericCellForTotal(item[colName]);
                 if (!isNaN(value) && isFinite(value)) {
                     columnTotals[colName] += value;
                 }
             });
         });
+        window.applyLastValueColumnTotals(columnTotals, items, totalColumns, lastValueColumns);
     }
 
     let rows = items.map((item, index) => {
@@ -753,22 +1167,28 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 ? 'display:none'
                 : `text-align:${alignment}`;
 
-            // Format numeric values based on FixedDecimalvalue parameter
+            // Format numeric values based on FixedDecimalvalue / CommaColumns parameters
             let cellValue = item[key];
             const fixedDecimalConfig = window[`fixedDecimalvalue_${bodyId}`];
+            const commaColumns = window[`commaColumns_${bodyId}`] || [];
 
-            if (cellValue !== null && cellValue !== undefined && cellValue.toString().includes('.')==true && !isNaN(parseFloat(cellValue)) && isFinite(cellValue)) {
-                // Check if FixedDecimalvalue is configured and if current column is in the config
-                if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) {
-                    const decimalPlaces = fixedDecimalConfig[key];
-                    cellValue = parseFloat(cellValue).toFixed(decimalPlaces);
-                } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
-                    // If FixedDecimalvalue is a number, apply to all numeric columns
-                    cellValue = parseFloat(cellValue).toFixed(fixedDecimalConfig);
+            const isNumeric = cellValue !== null && cellValue !== undefined
+                              && !isNaN(parseFloat(cellValue)) && isFinite(cellValue);
+            const forcedDecimalPlaces = window.getForcedDecimalPlaces(key, fixedDecimalConfig);
+            const needsDecimalFormat = isNumeric && (
+                commaColumns.includes(key) ||
+                forcedDecimalPlaces !== null
+            );
+
+            if (needsDecimalFormat) {
+                let decimalPlaces = forcedDecimalPlaces !== null ? forcedDecimalPlaces : 3;
+                if (commaColumns.includes(key)) {
+                    cellValue = formatIndianNumber(parseFloat(item[key]), decimalPlaces);
                 } else {
-                    // Default behavior: show 3 decimal places
-                    cellValue = parseFloat(cellValue).toFixed(3);
+                    cellValue = parseFloat(cellValue).toFixed(decimalPlaces);
                 }
+            } else if (isNumeric) {
+                cellValue = window.formatGridNumericDisplay(cellValue);
             }
 
             return `<td style="${style}">${cellValue}</td>`;
@@ -800,7 +1220,12 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
             buttons += '</td>';
         }
 
-        return `<tr data-index="${index}">${row}${buttons}</tr>`;
+        const _bizsolRC = item.__bizsolRowClass;
+        const _trClass =
+            _bizsolRC != null && String(_bizsolRC).trim() !== ''
+                ? ` class="${String(_bizsolRC).replace(/"/g, '')}"`
+                : '';
+        return `<tr data-index="${index}"${_trClass}>${row}${buttons}</tr>`;
     }).join('');
 
     // Add total row if totalColumns is specified and not skipping
@@ -822,33 +1247,60 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 // First visible column shows "Total" label
                 cellContent = '<strong>Total</strong>';
             } else if (totalColumns.includes(key)) {
-                // Show total for specified columns with appropriate decimal places
-                let decimalPlaces = 3; // default
-                if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) {
-                    decimalPlaces = fixedDecimalConfig[key];
-                } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
-                    decimalPlaces = fixedDecimalConfig;
+                const commaColumns = window[`commaColumns_${bodyId}`] || [];
+                const forcedDecimalPlaces = window.getForcedDecimalPlaces(key, fixedDecimalConfig);
+                let totalValue;
+                if (commaColumns.includes(key) || forcedDecimalPlaces !== null) {
+                    const decimalPlaces = forcedDecimalPlaces !== null ? forcedDecimalPlaces : 3;
+                    totalValue = commaColumns.includes(key)
+                        ? formatIndianNumber(columnTotals[key], decimalPlaces)
+                        : columnTotals[key].toFixed(decimalPlaces);
+                } else {
+                    totalValue = window.formatGridNumericDisplay(columnTotals[key]);
                 }
-                const totalValue = columnTotals[key].toFixed(decimalPlaces);
                 cellContent = `<strong>${totalValue}</strong>`;
             }
 
-            return `<td style="${style}; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #333;">${cellContent}</td>`;
+            return `<td style="${style}; font-weight: bold; background-color: #ffffff; border-top: 2px solid #333;">${cellContent}</td>`;
         }).join('');
 
         let totalButtons = '';
         if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
-            totalButtons = '<td style="background-color: #f8f9fa; border-top: 2px solid #333;"></td>';
+            totalButtons = '<td style="background-color: #ffffff; border-top: 2px solid #333;"></td>';
         }
 
-        rows += `<tr class="total-row">${totalRow}${totalButtons}</tr>`;
+        const _isFloatingTotal = window[`floatingTotalRow_${bodyId}`];
+        if (_isFloatingTotal) {
+            // Store for tfoot update after tbody is written
+            _floatingTfootHtml = `<tr class="total-row">${totalRow}${totalButtons}</tr>`;
+        } else {
+            rows += `<tr class="total-row">${totalRow}${totalButtons}</tr>`;
+        }
     }
 
     $(`#${bodyId}`).html(rows);
+
+    // Push total row into sticky tfoot when floating mode is active
+    if (_floatingTfootHtml !== null) {
+        $(`#tfoot-${bodyId}`).html(_floatingTfootHtml);
+    }
+
+    if (tableId === "VendorMaster") {
+        const $body = $(`#${bodyId}`);
+        $body.find("td").removeClass("vm-cell-action");
+        $body.find(".vm-action-btns").closest("td").addClass("vm-cell-action");
+    }
+    if (tableId === "OrderList" && typeof window.applyOrderListTransferredRowColors === "function") {
+        window.applyOrderListTransferredRowColors();
+    }
 }
 window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
     const totalColumns = window[`totalColumns_${bodyId}`];
     const filteredData = window[`filteredData_${tableId}`];
+    const lastValueColumns = window.resolveLastValueColumns(
+        window[`lastValueColumns_${bodyId}`],
+        (filteredData && filteredData.length) ? Object.keys(filteredData[0]) : totalColumns
+    );
     const isPaginated = window[`Paginator_${tableId}`];
     
     console.log('renderGrandTotalRow called:', { tableId, bodyId, isPaginated, totalColumns, dataLength: filteredData?.length });
@@ -870,12 +1322,16 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
 
     filteredData.forEach(item => {
         totalColumns.forEach(colName => {
-            const value = parseFloat(item[colName]);
+            if (lastValueColumns.includes(colName)) {
+                return;
+            }
+            const value = window.parseNumericCellForTotal(item[colName]);
             if (!isNaN(value) && isFinite(value)) {
                 grandTotals[colName] += value;
             }
         });
     });
+    window.applyLastValueColumnTotals(grandTotals, filteredData, totalColumns, lastValueColumns);
 
     console.log('Grand Totals calculated:', grandTotals);
 
@@ -897,14 +1353,17 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
             // First visible column shows "Grand Total" label
             cellContent = '<strong>Grand Total</strong>';
         } else if (totalColumns.includes(key)) {
-            // Show grand total for specified columns with appropriate decimal places
-            let decimalPlaces = 2; // default for grand total
-            if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) {
-                decimalPlaces = fixedDecimalConfig[key];
-            } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
-                decimalPlaces = fixedDecimalConfig;
+            const commaColumns = window[`commaColumns_${bodyId}`] || [];
+            const forcedDecimalPlaces = window.getForcedDecimalPlaces(key, fixedDecimalConfig);
+            let totalValue;
+            if (commaColumns.includes(key) || forcedDecimalPlaces !== null) {
+                const decimalPlaces = forcedDecimalPlaces !== null ? forcedDecimalPlaces : 2;
+                totalValue = commaColumns.includes(key)
+                    ? formatIndianNumber(grandTotals[key], decimalPlaces)
+                    : grandTotals[key].toFixed(decimalPlaces);
+            } else {
+                totalValue = window.formatGridNumericDisplay(grandTotals[key]);
             }
-            const totalValue = grandTotals[key].toFixed(decimalPlaces);
             cellContent = `<strong>${totalValue}</strong>`;
         }
 
@@ -917,10 +1376,15 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
     }
 
     const grandTotalRowHtml = `<tr class="grand-total-row">${grandTotalRow}${totalButtons}</tr>`;
-    
-    console.log('Appending grand total row to:', bodyId);
-    // Append grand total row to tbody
-    $(`#${bodyId}`).append(grandTotalRowHtml);
+
+    const _isFloatingGrandTotal = window[`floatingTotalRow_${bodyId}`];
+    if (_isFloatingGrandTotal) {
+        // Overwrite the sticky tfoot with the grand total (covers all filtered data)
+        $(`#tfoot-${bodyId}`).html(grandTotalRowHtml);
+    } else {
+        // Append grand total row to tbody (default behaviour)
+        $(`#${bodyId}`).append(grandTotalRowHtml);
+    }
 }
 window.updatePageInfo = function updatePageInfo(tableId) {
     var filteredData = window[`filteredData_${tableId}`];
@@ -1045,13 +1509,21 @@ window.OpenFilter = function OpenFilter(columnName, event) {
     }
     
     // Close all other filter divisions first
+    $(".filter-division").each(function () {
+        bizsolResetFloatFilterPanel($(this));
+    });
     $(".filter-division").hide();
     
     // Show the clicked filter division
     const escapedId = escapeId(columnName);
-    $("#filterDropdown-" + escapedId).show();
+    var $filterDivision = $("#filterDropdown-" + escapedId);
+    $filterDivision.show();
+    bizsolFloatFilterPanel($filterDivision);
 }
 window.CloseFilter = function CloseFilter() {
+    $(".filter-division").each(function () {
+        bizsolResetFloatFilterPanel($(this));
+    });
     $(".filter-division").hide();
 }
 

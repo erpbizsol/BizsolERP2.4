@@ -7,7 +7,7 @@ let currentJsonData = {};
 let currentIsMachineWise = false;
 let filteredReportData = [];
 let activeSizeFilters = [];
-let activeSizeFiltersByCol = {}; 
+let activeSizeFiltersByCol = {};
 
 let _mwprHeightRaf = 0;
 let _mwprHeightHandlersBound = false;
@@ -182,7 +182,7 @@ function ClearTable() {
     currentReportData = [];
     filteredReportData = [];
     activeSizeFilters = [];
-    activeSizeFiltersByCol = {}; 
+    activeSizeFiltersByCol = {};
     currentJsonData = {};
     scheduleMillWiseProductionTableHeightAdjust();
 }
@@ -197,7 +197,7 @@ function RenderMillWiseProductionTable(data, isMachineWise) {
     var cfColumn = null;
     var totalColumn = null;
     var totalODColumn = null;
-    var numericColumn = null; 
+    var numericColumn = null;
     var monthMachineColumns = [];
 
     allColumns.forEach(function (col) {
@@ -388,7 +388,7 @@ function RenderMillWiseProductionTable(data, isMachineWise) {
     Array.from(selectedParamCols).forEach(function (col) {
         populateColumnFilterOptions(col);
     });
-    
+
     // Update filter icon colors to reflect active filter status
     $('.col-filter-icon').each(function () {
         var c = $(this).data('col');
@@ -725,10 +725,10 @@ function validateAndCleanActiveFilters() {
         activeSizeFiltersByCol = {};
         return;
     }
-    
+
     var allColumns = Object.keys(currentReportData[0] || {});
     var columnsToClean = Object.keys(activeSizeFiltersByCol);
-    
+
     columnsToClean.forEach(function (col) {
         // Only clean filters for columns that exist in current data
         if (allColumns.indexOf(col) >= 0) {
@@ -737,7 +737,7 @@ function validateAndCleanActiveFilters() {
                 var v = row[col] != null ? String(row[col]).trim() : '';
                 if (v) availableValues.add(v);
             });
-            
+
             // Remove filter values that no longer exist in the data
             if (activeSizeFiltersByCol[col]) {
                 var filteredSet = new Set();
@@ -746,7 +746,7 @@ function validateAndCleanActiveFilters() {
                         filteredSet.add(val);
                     }
                 });
-                
+
                 // If all values still exist or filter is now empty/all selected, clear the filter
                 if (filteredSet.size === 0 || filteredSet.size === availableValues.size) {
                     delete activeSizeFiltersByCol[col];
@@ -793,7 +793,7 @@ function populateColumnFilterOptions(columnName) {
     });
 
     $optionsHost.html(optionsHtml);
-    
+
     // Clear search field when refreshing
     var $dropdown = $('.col-filter-dropdown[data-col="' + col + '"]');
     $dropdown.find('.col-filter-search').val('');
@@ -919,33 +919,33 @@ function GetItemSizeParameter() {
                     placeholder: "Select..",
                     allowClear: true
                 });
-                
+
                 // Track when user is actively using this Select2
                 var isInteracting = false;
                 window.txtSizeParameterLastInteraction = 0;
-                
+
                 // When Select2 opens, focus the search field and track typing
-                $select.on('select2:open', function() {
+                $select.on('select2:open', function () {
                     isInteracting = true;
                     window.txtSizeParameterLastInteraction = new Date().getTime();
-                    setTimeout(function() {
+                    setTimeout(function () {
                         var $select2Container = $select.next('.select2-container');
                         var $searchField = $select2Container.find('.select2-search__field');
                         if ($searchField.length > 0) {
                             $searchField.focus();
                             // Track typing in the search field
-                            $searchField.on('keyup input', function() {
+                            $searchField.on('keyup input', function () {
                                 window.txtSizeParameterLastInteraction = new Date().getTime();
                                 isInteracting = true;
                             });
                         }
                     }, 0);
                 });
-                
+
                 // When Select2 closes, keep focus on the Select2 container if user was interacting
-                $select.on('select2:close', function(e) {
+                $select.on('select2:close', function (e) {
                     if (isInteracting) {
-                        setTimeout(function() {
+                        setTimeout(function () {
                             var $select2Container = $select.next('.select2-container');
                             if ($select2Container.length > 0) {
                                 $select2Container.find('.select2-selection').focus();
@@ -954,19 +954,19 @@ function GetItemSizeParameter() {
                         isInteracting = false;
                     }
                 });
-                
+
                 // Track interaction with txtSizeParameter Select2
-                $select.on('select2:select select2:unselect', function() {
+                $select.on('select2:select select2:unselect', function () {
                     window.txtSizeParameterLastInteraction = new Date().getTime();
                     isInteracting = true;
                 });
-                
+
                 // Prevent focus from moving to ddlMachineNo when user is typing in txtSizeParameter
-                $(document).on('focusin', '#ddlMachineNo', function(e) {
+                $(document).on('focusin', '#ddlMachineNo', function (e) {
                     var now = new Date().getTime();
                     // If txtSizeParameter was interacted with in the last 300ms, refocus it
                     if (window.txtSizeParameterLastInteraction && (now - window.txtSizeParameterLastInteraction < 300)) {
-                        setTimeout(function() {
+                        setTimeout(function () {
                             var $txtSizeParam = $('#txtSizeParameter');
                             var $txtSizeContainer = $txtSizeParam.next('.select2-container');
                             if ($txtSizeContainer.length > 0) {

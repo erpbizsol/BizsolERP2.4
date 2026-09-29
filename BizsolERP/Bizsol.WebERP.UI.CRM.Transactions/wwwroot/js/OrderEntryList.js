@@ -5,16 +5,11 @@ let fixedParaMeterConfigurationList = [];
 let QtyMTHeader = '';
 let QtyPCHeader = '';
 let QtyMTRHeader = '';
+let QtyBagsHeader = '';
+let CRM_Config_OEL = null;
 let selectedDates = [];
 $(document).ready(function () {
     $("#ERPHeading").text("Order Entry List");
-    var ObjUserDetails = JSON.parse(sessionStorage.getItem('UserDetails'));
-    if (ObjUserDetails !== undefined && ObjUserDetails[0].UserType == 'A') {
-        $('#btnCRMConfig').prop('hidden', false);
-    } else {
-        $('#btnCRMConfig').prop('hidden', true);
-    }
-
 
     GetOrderStatusList();
     GetUserNameList();
@@ -223,6 +218,66 @@ function convertDateFormat(dateString) {
     const monthAbbreviation = monthNames[parseInt(month, 10) - 1];
     return `${day}-${monthAbbreviation}-${year}`;
 }
+function getTransferredStatusValue(item) {
+    if (!item || typeof item !== 'object') return '';
+    if (item['Transferred Status'] != null && String(item['Transferred Status']).trim() !== '') {
+        return String(item['Transferred Status']).trim();
+    }
+    const key = Object.keys(item).find(function (k) {
+        return k.replace(/\s+/g, ' ').trim().toLowerCase() === 'transferred status';
+    });
+    return key ? String(item[key]).trim() : '';
+}
+function getTransferredStatusRowClassFromText(status) {
+    if (!status) return '';
+    const lower = status.toLowerCase();
+    if (lower.includes('partially')) {
+        return 'oel-row-partial';
+    }
+    if (lower === 'transferred' || (lower.includes('transferred') && !lower.includes('not'))) {
+        return 'oel-row-transferred';
+    }
+    return '';
+}
+function getTransferredStatusRowClass(item) {
+    return getTransferredStatusRowClassFromText(getTransferredStatusValue(item));
+}
+function isOrderEditAllowed(item) {
+    if (item.Status === 'UnVerified') return true;
+    const status = getTransferredStatusValue(item).toLowerCase();
+    if (status.includes('partially')) return true;
+    if (status.includes('not')) return true;
+    return false;
+}
+function applyOrderListTransferredRowColors() {
+    const $table = $('#OrderList');
+    if (!$table.length) return;
+
+    let transferredColIndex = -1;
+    $table.find('#table-header th').each(function (i) {
+        const heading = ($(this).find('.filter-table-heading').text() || $(this).text()).replace(/\s+/g, ' ').trim().toLowerCase();
+        if (heading === 'transferred status') {
+            transferredColIndex = i;
+            return false;
+        }
+    });
+
+    $table.find('#table-body tr').each(function () {
+        const $tr = $(this);
+        if ($tr.hasClass('total-row') || $tr.hasClass('grand-total-row')) return;
+
+        let rowClass = '';
+        if (transferredColIndex >= 0) {
+            const status = $tr.find('td').eq(transferredColIndex).text().replace(/\s+/g, ' ').trim();
+            rowClass = getTransferredStatusRowClassFromText(status);
+        }
+
+        $tr.removeClass('oel-row-transferred oel-row-partial');
+        if (rowClass) {
+            $tr.addClass(rowClass);
+        }
+    });
+}
 function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
     OrderEntryListService.GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus).then(function (response) {
         if (response && Array.isArray(response) && response.length > 0) {
@@ -233,7 +288,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            const hiddenColumns = ["Code", "VisitMaster_Code", "Verified On", "Verified By", "Verified", "Closed", "OtherCharges", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "VerifiedOn", "Order Type", "Total Amount"];
+            const hiddenColumns = ["Code", "VisitMaster_Code", "Verified On", "Verified By", "Verified", "Closed", "OtherCharges", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "VerifiedOn", "Order Type", "Total Amount", "__bizsolRowClass"];
             const ColumnAlignment = {
                 "Basic Rate": 'right',
                 "Amount": 'right',
@@ -242,6 +297,7 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                 "Verified": 'center',
                 "Closed": 'center',
                 "Credit Days": 'right',
+                "Avg. Cost/Crate": 'right',
             };
             if (QtyMTRHeader !== '') {
                 response = response.map(item => {
@@ -300,7 +356,17 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             } else {
                 hiddenColumns.push("Total Order Qty PC");
             }
-            //if (QtyMTRHeader !== '') {
+
+            // Hide Total Order Qty columns when AskTotalOrderQty is N
+            if (getAskTotalOrderQtyFlag() !== 'Y') {
+                hiddenColumns.push('Total Order Qty.', 'Total Order Qty PC', 'Total Order Qty MR');
+            }
+
+            // Hide Avg. Cost/Crate unless Qty unit is NOS
+            if (!isAvgCostCrateVisible()) {
+                hiddenColumns.push('Avg. Cost/Crate');
+            }
+
             //    response = response.map(item => {
             //        if (item.hasOwnProperty('Dispatched Qty MTRS')) {
             //            const reorderedItem = {};
@@ -349,7 +415,8 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             //    hiddenColumns.push("Dispatched Qty PC");
             //}
             const updatedResponse = response.map(item => {
-                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${item.Status !== 'UnVerified' ? 'disabled' : ''} onclick="openEditVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-pencil"></i></button>
+                const editDisabled = isOrderEditAllowed(item) ? '' : 'disabled';
+                let buttonsHTML = `<button class="btn btn-primary icon-height mb-1" title="Edit" ${editDisabled} onclick="openEditVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-pencil"></i></button>
                 <button class="btn btn-info icon-height mb-1" title="View" onclick="openViewVisitMaster(${item.VisitMaster_Code}, ${item.Code})"><i class="fa fa-eye"></i></button>
                 <button class="btn btn-danger icon-height mb-1" title="Delete" ${item.Status !== 'UnVerified' ? 'disabled' : ''} onclick="Delete('${item.Code}')"><i class="fa fa-times"></i></button>`;
 
@@ -372,7 +439,8 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
                     ...item,
                     Action: buttonsHTML,
                     Status: td_StatusBtn,
-                    Remarks: remarksWithTooltip, 
+                    Remarks: remarksWithTooltip,
+                    __bizsolRowClass: getTransferredStatusRowClass(item),
                 };
             });
 
@@ -380,8 +448,9 @@ function GetRouteDataFromOrderEntry(FromDate, ToDate, UserName, OrderStatus) {
             ColumnAlignment['Qty ' + QtyMTRHeader] = 'right';
             ColumnAlignment['Qty ' + QtyPCHeader] = 'right';
 
-            BizsolCustomFilterGrid.CreateDataTable("table-header","table-body",updatedResponse,button,showButtons,stringFilterColumn,numericFilterColumn,dateFilterColumn,stringDoubleFilterColumn,hiddenColumns,ColumnAlignment);
-            updateFooter(response); 
+            BizsolCustomFilterGrid.CreateDataTable("table-header", "table-body", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, ColumnAlignment);
+            applyOrderListTransferredRowColors();
+            updateFooter(updatedResponse); 
 
             var columnsToRemoveForPrint = ["Code", "VisitMaster_Code", "EditAllow", "DeleteAllow", "RejectedBy", "RejectedOn", "Reason", "Verified By", "Verified On", "Order Type", "Action", "Verified", "Closed", "Total Amount", "Total Order Qty PC", "Total Order Qty MR","Total Order Qty","OtherCharges"];
             response.forEach(function (row) {
@@ -592,7 +661,7 @@ function isViewButtonEnabled(order) {
 function GetFixedParameterConfiguration() {
     //OrderEntryListService.GetFixedParameterConfiguration().then(function (res) {
     OrderEntryListService.GetFixedParameterQtyConfig().then(function (res) {
-    
+
         fixedParaMeterConfigurationList = res;
         //QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMTHeader;
         //QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPCHeader;
@@ -600,7 +669,14 @@ function GetFixedParameterConfiguration() {
         QtyMTHeader = fixedParaMeterConfigurationList[0].QtyMT;
         QtyPCHeader = fixedParaMeterConfigurationList[0].QtyPC;
         QtyMTRHeader = fixedParaMeterConfigurationList[0].QtyMR;
-       
+        QtyBagsHeader = (fixedParaMeterConfigurationList[0].Unit || '').trim().toUpperCase() === 'AS PER MASTER' ? 'Crate' : '';
+
+    });
+    OrderEntryListService.GetCRMOrderEntryConfig().then(function (res) {
+        if (res && res.length > 0) {
+            CRM_Config_OEL = res[0];
+            sessionStorage.setItem('CRMOrderEntryConfig', JSON.stringify(res[0]));
+        }
     });
 }
 
@@ -621,84 +697,128 @@ function BindSelectList(element, list, FirstItem) {
     element.innerHTML = option;
 }
 
-function updateFooter(data) {
-    const calculateTotalAmount = "Total Amount";
-
-    if (calculateTotalAmount === "Total Amount") {
-        const rowCount = data.length;
-        let totalQuantity = 0;
-        //let totalBasicRate = 0;
-        let totalFinalAmount = 0;
-        //let totalFinalRate = 0;
-        //let totalDispatchQtyMTRS = 0;
-        //let totalDispatchQtyMT = 0;
-        //let totalDispatchQtyPC = 0;
-        let TotalOrderQty = 0;
-        let TotalOrderQtyPC = 0;
-        let TotalOrderQtyMR = 0;
-
-        data.forEach(row => {
-            totalQuantity += parseFloat(row['Qty ' + QtyMTHeader] || row['Qty ' + QtyMTRHeader] || row['Qty ' + QtyPCHeader] || 0);
-            //totalBasicRate += parseFloat(row["Basic Rate"] || 0);
-            totalFinalAmount += parseFloat(row["Amount"] || 0);
-            //totalFinalRate += parseFloat(row["Final Rate"] || 0);
-            //totalDispatchQtyMTRS += parseFloat(row["Dispatched Qty MTRS"] || 0);
-            //totalDispatchQtyMT += parseFloat(row["Dispatched Qty"] || 0);
-            //totalDispatchQtyPC += parseFloat(row["Dispatched Qty PC"] || 0);
-            if (QtyMTHeader != '') {
-                TotalOrderQty += parseFloat(row['Qty ' + QtyMTHeader]) || 0;
-            }
-            if (QtyPCHeader != '') {
-                TotalOrderQtyPC += parseFloat(row['Qty ' + QtyPCHeader]) || 0;
-            }
-            if (QtyMTRHeader != '') {
-                TotalOrderQtyMR += parseFloat(row['Qty ' + QtyMTRHeader]) || 0;
-            }
-        });
-
-        var tfootContent1 = ``;
-        var tfootContent2= ``;
-        var tfootContent3= ``;
-        var tfootContent4= ``;
-        var tfootContent = ``;
-
-        tfootContent1 = `
-        <tr>
-            <td colspan="3"><b>Row Count :</b> ${rowCount}</td>
-            <td><b>Total</b></td>
-            ${QtyMTHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQty.toFixed(2)}</b></td>` : ''}
-             ${QtyPCHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyPC.toFixed(2)}</b></td>` : ''}
-             ${QtyMTRHeader != '' ? `<td style="text-align:right"><b>${TotalOrderQtyMR.toFixed(2)}</b></td>` : ''}
-            <td style="text-align: right;"><b>${totalFinalAmount.toFixed(2)}</b></td>
-            <td style="text-align: right;"></td>   
-            
-            <td ></td>`;
-        //if (QtyMTRHeader !== '') {
-        //    tfootContent2 = `<td style="text-align: right;">${totalDispatchQtyMTRS.toFixed(2)}</td>`;
-        //}
-        //if (QtyMTHeader !== '') {
-        //    tfootContent3 = `<td style="text-align: right;">${totalDispatchQtyMT.toFixed(2)}</td>`;
-        //}
-        //if (QtyPCHeader !== '') {
-        //    tfootContent4 = `<td style="text-align: right;">${totalDispatchQtyPC.toFixed(2)}</td>`;
-        //}
-
-        tfootContent = `${tfootContent1}${tfootContent2}${tfootContent3}${tfootContent4}<td ></td><td ></td><td></td></tr>`;
-        const tfoot = document.querySelector("#OrderList tfoot");
-
-        if (tfoot) {
-            tfoot.innerHTML = tfootContent;
-        } else {
-            const table = document.querySelector("#OrderList");
-            if (table) {
-                const newTfoot = document.createElement("tfoot");
-                newTfoot.innerHTML = tfootContent;
-                table.appendChild(newTfoot);
-            } else {
-                console.error("Table element with id 'table' not found.");
-            }
+function getAskTotalOrderQtyFlag() {
+    var cfg = CRM_Config_OEL;
+    if (!cfg) {
+        try {
+            cfg = JSON.parse(sessionStorage.getItem('CRMOrderEntryConfig'));
+        } catch (e) {
+            cfg = null;
         }
     }
+    return cfg ? (cfg.AskTotalOrderQty || 'N') : 'N';
+}
+
+function isAvgCostCrateVisible() {
+    return QtyMTRHeader === 'NOS';
+}
+
+function getOrderListTotalColumns() {
+    const cols = [];
+    if (QtyMTHeader) {
+        cols.push('Qty ' + QtyMTHeader);
+    }
+    if (QtyPCHeader) {
+        cols.push('Qty ' + QtyPCHeader);
+    }
+    if (QtyMTRHeader) {
+        cols.push('Qty ' + QtyMTRHeader);
+    }
+    if (isAvgCostCrateVisible()) {
+        cols.push('Avg. Cost/Crate');
+    }
+    cols.push('Amount');
+    if (getAskTotalOrderQtyFlag() === 'Y') {
+        cols.push('Total Order Qty.');
+    }
+    return cols;
+}
+
+function getVisibleOrderListHeaders() {
+    const headers = [];
+    $('#OrderList #table-header th').each(function () {
+        const $th = $(this);
+        if ($th.css('display') === 'none') {
+            return;
+        }
+        const $heading = $th.find('.filter-table-heading').first();
+        const heading = ($heading.length ? $heading.text() : $th.text()).replace(/\s+/g, ' ').trim();
+        if (heading) {
+            headers.push(heading);
+        }
+    });
+    return headers;
+}
+
+function parseFooterNumber(value) {
+    if (value === null || value === undefined || value === '') {
+        return 0;
+    }
+    const n = parseFloat(String(value).replace(/,/g, '').trim());
+    return isNaN(n) ? 0 : n;
+}
+
+function updateFooter(data) {
+    const table = document.querySelector('#OrderList');
+    if (!table || !data || !data.length) {
+        const existing = document.querySelector('#OrderList tfoot');
+        if (existing) {
+            existing.innerHTML = '';
+        }
+        return;
+    }
+
+    const totalColumns = getOrderListTotalColumns();
+    const totalSet = {};
+    const totals = {};
+    totalColumns.forEach(function (col) {
+        totalSet[col] = true;
+        totals[col] = 0;
+    });
+
+    data.forEach(function (row) {
+        totalColumns.forEach(function (col) {
+            totals[col] += parseFooterNumber(row[col]);
+        });
+    });
+
+    const visibleHeaders = getVisibleOrderListHeaders();
+    if (!visibleHeaders.length) {
+        return;
+    }
+
+    const firstTotalIndex = visibleHeaders.findIndex(function (heading) {
+        return totalSet[heading];
+    });
+    const labelCols = firstTotalIndex > 0 ? firstTotalIndex : 1;
+
+    let html = '<tr class="total-row">';
+    visibleHeaders.forEach(function (heading, index) {
+        if (index === 0 && labelCols > 1) {
+            html += '<td colspan="' + (labelCols - 1) + '"><b>Row Count :</b> ' + data.length + '</td>';
+            return;
+        }
+        if (index < labelCols - 1) {
+            return;
+        }
+        if (index === labelCols - 1 && !totalSet[heading]) {
+            html += '<td><b>Total</b></td>';
+            return;
+        }
+        if (totalSet[heading]) {
+            html += '<td style="text-align:right"><b>' + totals[heading].toFixed(2) + '</b></td>';
+            return;
+        }
+        html += '<td></td>';
+    });
+    html += '</tr>';
+
+    let tfoot = table.querySelector('tfoot');
+    if (!tfoot) {
+        tfoot = document.createElement('tfoot');
+        table.appendChild(tfoot);
+    }
+    tfoot.innerHTML = html;
 }
 
 
@@ -781,3 +901,4 @@ window.DeleteModal = DeleteModal;
 window.CloseModal = CloseModal;
 window.GetFixedParameterConfiguration = GetFixedParameterConfiguration;
 window.ShowOrderList = ShowOrderList;
+window.applyOrderListTransferredRowColors = applyOrderListTransferredRowColors;

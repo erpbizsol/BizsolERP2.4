@@ -48,6 +48,17 @@
         border-radius: 3px;
     }
 
+    .qty-input,
+    #txtReturnCrate,
+    #txtReceivedPayments,
+    #totalQty {
+        text-align: right;
+    }
+
+    #salesReturnGrid th:nth-child(3) {
+        text-align: right;
+    }
+
     .grid-select2 {
         width: 100% !important;
     }
@@ -77,12 +88,16 @@
         font-size: 12px;
     }
 
-    .action-btn {
+    .action-btn,
+    .sr-action-btn {
         padding: 5px 10px;
         margin: 0 2px;
         border-radius: 4px;
         border: none;
-        cursor: pointer;
+        cursor: pointer !important;
+        pointer-events: auto !important;
+        position: relative;
+        z-index: 5;
     }
 
     .btn-edit {
@@ -178,22 +193,32 @@
                     <label for="txtDate" class="form-label">Date</label>
                     <input type="text" id="txtDate" class="form-control form-control-sm readonly-field" readonly />
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="ddlDealerName" class="form-label">Dealer Name</label>
                     <select id="ddlDealerName" class="form-control form-control-sm">
                         <option value="">Select Dealer</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="ddlDistributorName" class="form-label">Distributor Name</label>
                     <select id="ddlDistributorName" class="form-control form-control-sm">
                         <option value="">Select Distributor</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="txtInvoiceNo" class="form-label">Invoice No.</label>
                     <input id="txtInvoiceNo" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
 
+                </div>
+                <div class="col-md-2">
+                    <label for="txtInvoiceDate" class="form-label">Invoice Date <span class="text-danger">*</span></label>
+                    <input type="date" id="txtInvoiceDate" class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-2">
+                    <label for="ddlWarehouse" class="form-label">Warehouse</label>
+                    <select id="ddlWarehouse" class="form-control form-control-sm">
+                        <option value="">Select Warehouse</option>
+                    </select>
                 </div>
             </div>
             
@@ -221,7 +246,7 @@
                 <tfoot>
                     <tr class="total-row">
                         <td colspan="2" style="text-align: right;">Total</td>
-                        <td id="totalQty">0</td>
+                        <td id="totalQty" style="text-align: right;">0</td>
                         <td colspan="2"></td>
                     </tr>
                 </tfoot>
@@ -232,14 +257,20 @@
             <div class="col-md-3">
                 <label for="txtReturnCrate" class="form-label">Return Crate</label>
                 
-                <input id="txtReturnCrate" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="4" autocomplete="off">
+                <input id="txtReturnCrate" class="BizSolFormControl form-control form-control-sm text-end" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="4" autocomplete="off">
             </div>
             <div class="col-md-3">
                 <label for="txtReceivedPayments" class="form-label">
                     Received payments
                 </label>
                 
-                <input id="txtReceivedPayments" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="8" autocomplete="off">
+                <input id="txtReceivedPayments" class="BizSolFormControl form-control form-control-sm text-end" type="text" onkeypress="return BizSolInputControl.OnKeyDownPressNumericTextBox(event,this);" maxlength="8" autocomplete="off">
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-3">
+                <label for="txtCrateRemark" class="form-label">Crate Remark</label>
+                <input id="txtCrateRemark" class="BizSolFormControl form-control form-control-sm" type="text" onkeypress="BizSolhandleEnterKey(event)" autocomplete="off">
             </div>
         </div>
         <!-- Save Button -->

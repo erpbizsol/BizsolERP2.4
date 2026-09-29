@@ -1,0 +1,783 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+/* ═══════════════════════════════════════════
+   USER RIGHT DASHBOARD — BizSol ERP Theme
+   Uses layout vars: --primary-gradient, --accent-primary, --light-bg
+═══════════════════════════════════════════ */
+.urd-page, .urd-page *, .urd-page *::before, .urd-page *::after { box-sizing: border-box; }
+
+.urd-page {
+    --urd-ink:        var(--text-dark, #1e293b);
+    --urd-body:       var(--text-primary, #334155);
+    --urd-muted:      var(--text-muted, #64748b);
+    --urd-faint:      #94a3b8;
+    --urd-border:     var(--border-color, #e2e8f0);
+    --urd-border-2:   #cbd5e1;
+    --urd-surface:    var(--white-bg, #ffffff);
+    --urd-surface-2:  var(--card-hover, #f8fafc);
+    --urd-surface-3:  var(--border-light, #f1f5f9);
+    --urd-primary:       var(--accent-primary, #667eea);
+    --urd-primary-600:   var(--accent-primary, #667eea);
+    --urd-primary-700:   var(--accent-primary-dark, #4f46e5);
+    --urd-primary-800:   #4338ca;
+    --urd-primary-50:    #eef2ff;
+    --urd-primary-100:   #e0e7ff;
+    --urd-teal:          var(--accent-secondary, #0dcaf0);
+    --urd-teal-50:       #ecfeff;
+    --urd-teal-100:      #cffafe;
+    --urd-success:    var(--accent-success, #10b981);
+    --urd-success-50: #ecfdf5;
+    --urd-danger:     #dc2626;
+    --urd-radius-lg:  12px;
+    --urd-radius-md:  8px;
+    --urd-radius-sm:  6px;
+    --urd-shadow-sm:  var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+    --urd-shadow-md:  var(--shadow-md, 0 4px 16px rgba(0,0,0,0.08));
+    --urd-shadow-glow: var(--shadow-primary, 0 8px 24px rgba(102,126,234,0.3));
+    --urd-brand: var(--primary-gradient, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+    --urd-accent-line: var(--accent-gradient, linear-gradient(90deg, #667eea 0%, #0dcaf0 100%));
+    --urd-cat-0: #667eea;
+    --urd-cat-1: #0dcaf0;
+    --urd-cat-2: #10b981;
+    --urd-cat-3: #f59e0b;
+    --urd-cat-4: #764ba2;
+    --urd-cat-5: #64748b;
+    --urd-col-module: 300px;
+    --urd-col-access: 140px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    padding: 16px 16px 40px;
+    overflow: visible !important;
+    color: var(--urd-body);
+    background:
+        radial-gradient(ellipse 80% 60% at 0% 0%, rgba(102,126,234,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 50% at 100% 0%, rgba(13,202,240,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 50% 100%, rgba(118,75,162,0.08) 0%, transparent 55%),
+        var(--light-bg, #f0f4f8);
+    min-height: calc(100vh - var(--erp-header-height, 55px) - var(--erp-footer-height, 34px));
+}
+.urd-card {
+    background: var(--urd-surface);
+    border-radius: 16px;
+    border: 1px solid rgba(102,126,234,0.18);
+    box-shadow: 0 8px 32px rgba(102,126,234,0.12), var(--urd-shadow-md);
+    overflow: hidden;
+}
+.urd-card-body {
+    padding: 16px 20px 24px;
+    background: var(--urd-surface);
+}
+
+/* ════ HEADER — ERP brand gradient ════ */
+.urd-card-header {
+    background: var(--urd-brand);
+    padding: 16px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+    box-shadow: var(--urd-shadow-glow);
+    position: relative;
+    overflow: hidden;
+}
+.urd-card-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(circle at 12% 50%, rgba(255,255,255,0.14) 0%, transparent 45%),
+        radial-gradient(circle at 88% 20%, rgba(13,202,240,0.22) 0%, transparent 40%);
+    pointer-events: none;
+}
+.urd-card-header::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+    background: var(--urd-accent-line);
+}
+.urd-header-left { display:flex; align-items:center; gap:14px; flex:1; min-width:200px; position: relative; z-index: 1; }
+.urd-header-icon {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.32);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; color: #fff;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+}
+.urd-header-text { display: flex; flex-direction: column; gap: 2px; }
+.urd-header-kicker {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; width: fit-content;
+    color: rgba(255,255,255,0.78);
+}
+.urd-header-kicker i { color: #6ee7b7; font-size: 6px; }
+.urd-header-title { font-size: 1.25rem; font-weight: 800; color: #fff; line-height: 1.2; letter-spacing: -0.02em; margin: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+.urd-header-steps {
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 999px; padding: 4px 6px;
+    display: flex; align-items: center; gap: 0; flex-shrink: 0;
+    position: relative; z-index: 1;
+    backdrop-filter: blur(6px);
+}
+.urd-step {
+    display: flex; align-items: center; gap: 7px;
+    padding: 5px 12px; white-space: nowrap; border-radius: 999px; transition: background .2s;
+}
+.urd-step.is-active { background: rgba(255,255,255,0.18); }
+.urd-step-num {
+    width: 22px; height: 22px; border-radius: 50%; font-size: 10px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.65);
+}
+.urd-step.is-active .urd-step-num { background: #fff; color: var(--urd-primary-700); }
+.urd-step-text { color: rgba(255,255,255,0.6); font-size: 11.5px; font-weight: 600; }
+.urd-step.is-active .urd-step-text { color: #fff; font-weight: 700; }
+.urd-step-arrow { color: rgba(255,255,255,0.22); font-size: 9px; padding: 0 2px; }
+
+/* ════ ONE-LINE FILTER TOOLBAR ════ */
+.urd-filter-row {
+    display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;
+    padding: 14px 16px; margin-bottom: 16px;
+    background: linear-gradient(135deg, rgba(238,242,255,0.95) 0%, rgba(236,254,255,0.75) 100%);
+    border: 1px solid rgba(102,126,234,0.2);
+    border-radius: var(--urd-radius-lg);
+    box-shadow: 0 2px 12px rgba(102,126,234,0.08);
+    border-left: 4px solid var(--urd-primary);
+}
+.urd-field {
+    display: flex; flex-direction: column; gap: 5px; min-width: 0;
+}
+.urd-field-company { flex: 0 0 min(220px, 100%); }
+.urd-field-groups  { flex: 1 1 260px; }
+.urd-field-users   { flex: 1 1 220px; }
+.urd-field-go      { flex: 0 0 auto; }
+.urd-field-label {
+    font-size: 10px; font-weight: 800; color: var(--urd-muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px; line-height: 1;
+}
+.urd-field-label i { font-size: 10px; color: var(--urd-primary); }
+.urd-field-label-spacer { visibility: hidden; height: 10px; }
+.urd-user-count {
+    margin-left: auto;
+    background: var(--urd-primary-50); color: var(--urd-primary-800);
+    border-radius: 999px; padding: 2px 8px; font-size: 9px; font-weight: 800;
+    border: 1px solid var(--urd-primary-100); letter-spacing: 0;
+    text-transform: none;
+}
+
+/* Company select */
+.urd-select {
+    width: 100%; padding: 0 36px 0 12px; height: 40px;
+    border-radius: var(--urd-radius-md); border: 1px solid var(--urd-border);
+    font-size: 13px; font-weight: 600; color: var(--urd-ink);
+    background: #fff; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 13px center;
+    cursor: pointer; font-family: inherit;
+}
+.urd-select:hover { border-color: #a5b4fc; }
+.urd-select:focus { border-color: var(--urd-primary); box-shadow: 0 0 0 3px rgba(102,126,234,.18); }
+
+/* Groups — checkbox multi-select (same pattern as Dashboard Configuration) */
+.urd-multi-checkbox-root {
+    position: relative;
+    width: 100%;
+    z-index: 1;
+}
+.urd-multi-checkbox-root.is-open { z-index: 100; }
+.urd-multi-trigger {
+    min-height: 40px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 12px;
+    border-radius: var(--urd-radius-md);
+    border: 1px solid var(--urd-border);
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: border-color .15s, box-shadow .15s;
+}
+.urd-multi-trigger:hover { border-color: #a5b4fc; }
+.urd-multi-checkbox-root.is-open .urd-multi-trigger {
+    border-color: var(--urd-primary) !important;
+    box-shadow: 0 0 0 3px rgba(102,126,234,.12);
+}
+.urd-multi-trigger-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--urd-ink);
+    line-height: 1.35;
+    white-space: normal;
+    word-break: break-word;
+}
+.urd-multi-trigger-text.is-placeholder {
+    color: var(--urd-faint);
+    font-weight: 500;
+}
+.urd-multi-trigger-arrow {
+    color: var(--urd-muted);
+    font-size: 11px;
+    flex-shrink: 0;
+    transition: transform .15s ease;
+}
+.urd-multi-checkbox-root.is-open .urd-multi-trigger-arrow { transform: rotate(180deg); }
+.urd-multi-panel {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 200;
+    border: 1px solid var(--urd-primary-100);
+    border-radius: var(--urd-radius-md);
+    background: #fff;
+    padding: 10px;
+    box-shadow: 0 12px 28px rgba(15,23,42,0.16);
+    min-height: 120px;
+}
+.urd-multi-checkbox-root.is-open .urd-multi-panel { display: block; }
+.urd-multi-empty {
+    padding: 14px 8px;
+    text-align: center;
+    color: var(--urd-faint);
+    font-size: 12px;
+    font-weight: 600;
+}
+.urd-multi-checkbox-search { margin-bottom: 8px; }
+.urd-multi-checkbox-search input {
+    width: 100%;
+    height: 36px;
+    border: 1px solid var(--urd-border);
+    border-radius: var(--urd-radius-sm);
+    padding: 0 11px;
+    font-size: 12.5px;
+    font-family: inherit;
+    outline: none;
+}
+.urd-multi-checkbox-search input:focus {
+    border-color: var(--urd-primary);
+    box-shadow: 0 0 0 3px rgba(102,126,234,.12);
+}
+.urd-multi-checkbox-selectall {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--urd-border);
+}
+.urd-multi-checkbox-selectall label {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 7px;
+    margin: 0 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: var(--urd-primary-800) !important;
+    cursor: pointer;
+}
+.urd-multi-checkbox-selectall input {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--urd-primary);
+    margin: 0;
+    cursor: pointer;
+}
+.urd-multi-checkbox-list {
+    max-height: min(240px, 32vh);
+    overflow: auto;
+    border: 1px solid var(--urd-border);
+    padding: 6px 8px;
+    border-radius: var(--urd-radius-sm);
+    background: #fff;
+}
+.urd-multi-checkbox-item { padding: 5px 2px; }
+.urd-multi-checkbox-item label {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0 !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    color: var(--urd-ink) !important;
+    cursor: pointer;
+    line-height: 1.35;
+}
+.urd-multi-checkbox-item label span {
+    flex: 1;
+    white-space: normal;
+    word-break: break-word;
+}
+.urd-multi-checkbox-item input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--urd-primary);
+    margin: 2px 0 0;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.urd-multi-checkbox-item.is-hidden { display: none !important; }
+
+/* Users preview — resizable readonly list */
+.urd-users-preview {
+    width: 100%; min-height: 40px; max-height: 280px; height: 40px;
+    padding: 8px 12px; border-radius: var(--urd-radius-md);
+    border: 1px solid var(--urd-border); background: var(--urd-surface-2);
+    font-size: 12px; font-weight: 500; color: var(--urd-muted);
+    font-family: inherit; line-height: 1.45;
+    resize: vertical; overflow: auto;
+    cursor: default; outline: none;
+}
+.urd-users-preview.has-users { color: var(--urd-ink); background: #fff; }
+.urd-users-preview:focus { border-color: var(--urd-primary); box-shadow: 0 0 0 3px rgba(102,126,234,.12); }
+
+/* Load button inline */
+.urd-btn-go {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-width: 160px; height: 40px; padding: 0 24px;
+    border-radius: var(--urd-radius-md);
+    background: var(--urd-brand);
+    border: none; color: #fff; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: transform .2s, box-shadow .2s, filter .2s;
+    box-shadow: var(--urd-shadow-glow);
+    position: relative; overflow: hidden; white-space: nowrap;
+}
+.urd-btn-go::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    transform: translateX(-100%); transition: transform .5s ease;
+}
+.urd-btn-go:hover:not(:disabled)::before { transform: translateX(100%); }
+.urd-btn-go:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+    box-shadow: 0 10px 28px rgba(102,126,234,.35);
+}
+.urd-btn-go:active:not(:disabled) { transform: translateY(0); }
+.urd-btn-go:disabled { opacity: .55; cursor: not-allowed; transform: none; filter: none; }
+.urd-btn-go i { font-size: 11px; }
+
+/* Summary merged into matrix toolbar */
+.urd-summary { display: none !important; }
+
+/* ════ TABLE TOOLBAR ════ */
+.urd-table-toolbar {
+    display: none !important;
+}
+.urd-legend { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.urd-legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--urd-muted); }
+.urd-legend-swatch {
+    width: 22px; height: 22px; border-radius: 7px;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 12px;
+}
+.urd-legend-swatch.is-y { background: #ecfdf5; color: #059669; border: 1.5px solid #a7f3d0; }
+.urd-legend-swatch.is-n { background: #f8fafc; color: #cbd5e1; border: 1.5px solid #e2e8f0; }
+
+/* ════ MATRIX TABLE WRAPPER ════ */
+.urd-table-wrap {
+    border-radius: var(--urd-radius-lg);
+    border: 1px solid rgba(102,126,234,0.22);
+    overflow-x: auto; overflow-y: auto;
+    max-height: min(calc(100vh - var(--erp-header-height,55px) - var(--erp-footer-height,34px) - 260px), 760px);
+    -webkit-overflow-scrolling: touch;
+    background: var(--urd-surface);
+    box-shadow: 0 4px 20px rgba(102,126,234,0.1);
+}
+.urd-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 4px 12px 4px 4px; border-radius: var(--urd-radius-md);
+    font-size: 13px; font-weight: 700;
+    background: var(--urd-surface); border: 1px solid rgba(102,126,234,0.1);
+}
+.urd-badge-body { display: flex; flex-direction: column; }
+.urd-badge-val { font-size: 17px; font-weight: 800; color: var(--urd-ink); line-height: 1; }
+.urd-badge-lbl { font-size: 10px; font-weight: 600; color: var(--urd-muted); margin-top: 2px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.urd-table-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
+.urd-table-wrap::-webkit-scrollbar-track { background: var(--urd-surface-2); }
+.urd-table-wrap::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #667eea, #764ba2); border-radius: 8px; border: 2px solid var(--urd-surface-2); }
+
+/* ════ MATRIX TABLE ════ */
+.urd-table.urd-table-matrix {
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--urd-surface);
+    table-layout: fixed;
+    width: auto;
+    min-width: 0;
+}
+.urd-table-matrix th, .urd-table-matrix td {
+    border-bottom: 1px solid #dbeafe;
+    border-right: 1px solid #dbeafe;
+    vertical-align: middle;
+}
+.urd-table-matrix .urd-td-module,
+.urd-table-matrix .urd-th-module {
+    overflow: visible;
+    vertical-align: top;
+}
+.urd-table-matrix th:last-child, .urd-table-matrix td:last-child { border-right: none; }
+.urd-col-module { width: var(--urd-col-module) !important; }
+.urd-col-access { width: var(--urd-col-access) !important; }
+
+/* Sticky module column (toggle merged inside) */
+.urd-th-module, .urd-td-module {
+    position: sticky; left: 0; z-index: 12;
+    width: var(--urd-col-module) !important;
+    min-width: var(--urd-col-module) !important;
+    max-width: var(--urd-col-module) !important;
+    background: var(--urd-surface);
+    box-shadow: 4px 0 12px -2px rgba(15,23,42,0.06);
+    border-right: 2px solid var(--urd-border) !important;
+    box-sizing: border-box;
+    overflow: visible;
+    vertical-align: top;
+}
+.urd-th-user, .urd-td-access {
+    width: var(--urd-col-access) !important;
+    min-width: var(--urd-col-access) !important;
+    max-width: var(--urd-col-access) !important;
+    box-sizing: border-box;
+}
+
+.urd-th-module-inner {
+    display: flex; align-items: center;
+    padding: 8px 10px; overflow: hidden;
+}
+.urd-mod-row {
+    display: flex; align-items: flex-start; gap: 6px;
+    padding: 7px 10px; overflow: visible; min-width: 0;
+}
+.urd-mod-text {
+    flex: 1; min-width: 0;
+    white-space: normal; overflow-wrap: break-word; word-break: normal;
+    overflow: visible; line-height: 1.35;
+}
+.urd-toggle-spacer { width: 26px; min-width: 26px; flex-shrink: 0; }
+.urd-mod-row .urd-cat-inner {
+    flex: 1; min-width: 0; padding: 0; max-width: none;
+}
+.urd-th-module-label {
+    display: block; flex: 1; min-width: 0;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.05em;
+    text-transform: uppercase; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+    color: #fff;
+}
+.urd-th-module-label i { color: #a5f3fc; font-size: 10px; margin-right: 4px; }
+
+/* Table header — BizSol brand gradient */
+.urd-table thead th {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--urd-brand);
+    color: rgba(255,255,255,0.92); font-size: 10px; font-weight: 700; padding: 0;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    border-color: rgba(255,255,255,0.12);
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,0.1);
+}
+.urd-table thead .urd-th-module {
+    background: var(--urd-brand); z-index: 22; top: 0;
+    border-right: 2px solid rgba(255,255,255,0.18) !important;
+    box-shadow: 4px 0 12px -2px rgba(15,23,42,0.15);
+}
+.urd-th-user {
+    padding: 10px 8px; text-align: center; vertical-align: middle;
+    font-size: 10px; font-weight: 700; line-height: 1.25;
+    white-space: normal; overflow-wrap: break-word; word-break: normal;
+    text-transform: none; letter-spacing: 0.01em;
+    color: rgba(255,255,255,0.95);
+}
+.urd-table-matrix tbody tr.urd-row-hidden { display: none; }
+
+/* Category rows */
+.urd-row-category .urd-td-module.urd-td-category {
+    padding: 0; overflow: visible; vertical-align: top;
+}
+.urd-cat-inner {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 6px;
+    font-weight: 800; font-size: 11px; letter-spacing: 0.04em;
+    text-transform: uppercase; overflow: visible;
+    white-space: normal; overflow-wrap: break-word; word-break: normal; line-height: 1.35;
+}
+.urd-row-category .urd-td-category-gap {
+    padding: 0; background: var(--urd-surface) !important;
+    cursor: default; pointer-events: none;
+}
+.urd-cat-label {
+    display: inline-flex; align-items: flex-start; gap: 8px; min-width: 0;
+    overflow: visible; white-space: normal; word-break: break-word; line-height: 1.35;
+}
+.urd-cat-badge {
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    background: rgba(255,255,255,0.8); color: inherit;
+    border: 1px solid rgba(0,0,0,0.06); border-radius: 999px;
+    font-size: 10px; font-weight: 800; min-width: 24px; padding: 2px 8px;
+}
+.urd-cat-0 .urd-td-module.urd-td-category { background: #eef2ff; border-left: 4px solid var(--urd-cat-0); color: #4338ca; }
+.urd-cat-1 .urd-td-module.urd-td-category { background: #ecfeff; border-left: 4px solid var(--urd-cat-1); color: #0891b2; }
+.urd-cat-2 .urd-td-module.urd-td-category { background: #ecfdf5; border-left: 4px solid var(--urd-cat-2); color: #047857; }
+.urd-cat-3 .urd-td-module.urd-td-category { background: #fffbeb; border-left: 4px solid var(--urd-cat-3); color: #b45309; }
+.urd-cat-4 .urd-td-module.urd-td-category { background: #f5f3ff; border-left: 4px solid var(--urd-cat-4); color: #6b21a8; }
+.urd-cat-5 .urd-td-module.urd-td-category { background: #f8fafc; border-left: 4px solid var(--urd-cat-5); color: #334155; }
+.urd-cat-0 .urd-icon-n, .urd-cat-0 .urd-icon-m { color: var(--urd-cat-0) !important; }
+.urd-cat-1 .urd-icon-n, .urd-cat-1 .urd-icon-m { color: var(--urd-cat-1) !important; }
+.urd-cat-2 .urd-icon-n, .urd-cat-2 .urd-icon-m { color: var(--urd-cat-2) !important; }
+.urd-cat-3 .urd-icon-n, .urd-cat-3 .urd-icon-m { color: var(--urd-cat-3) !important; }
+.urd-cat-4 .urd-icon-n, .urd-cat-4 .urd-icon-m { color: var(--urd-cat-4) !important; }
+.urd-cat-5 .urd-icon-n, .urd-cat-5 .urd-icon-m { color: var(--urd-cat-5) !important; }
+.urd-table-matrix tbody tr.urd-row-category:hover .urd-td-module.urd-td-category { filter: brightness(0.98); }
+
+.urd-icon-n { color: var(--urd-primary); margin-right: 7px; font-size: 12px; }
+.urd-icon-m { color: var(--urd-teal); margin-right: 7px; font-size: 11px; }
+.urd-td-access:hover { background: #eef2ff !important; }
+
+.urd-th-module { padding: 0; text-align: left; vertical-align: middle; }
+
+.urd-table-matrix tbody tr { animation: urd-row-in .18s ease both; }
+.urd-table-matrix tbody tr:nth-child(even) td { background: #f8fafc; }
+.urd-table-matrix tbody tr:nth-child(even) .urd-td-module { background: #f8fafc; }
+.urd-table-matrix tbody tr:nth-child(even) .urd-td-access { background: #f1f5f9; }
+.urd-table-matrix tbody tr:hover td { background: #eef2ff !important; }
+.urd-table-matrix tbody tr:hover .urd-td-access.is-granted { background: #d1fae5 !important; }
+
+/* Permission rows */
+.urd-row-level-2 .urd-td-module { font-weight: 700; font-size: 13px; color: var(--urd-ink); }
+.urd-row-level-3 .urd-td-module { font-size: 12.5px; color: var(--urd-body); }
+.urd-row-level-4 .urd-td-module { font-size: 12px; color: var(--urd-muted); }
+.urd-td-module { padding: 0; font-size: 13px; color: var(--urd-ink); font-weight: 500; overflow: visible; }
+.urd-td-module.urd-td-category { padding: 0; }
+.urd-td-access {
+    width: var(--urd-col-access); min-width: var(--urd-col-access); padding: 6px 4px;
+    text-align: center; cursor: pointer;
+    background: #fafbff; transition: background .12s;
+}
+.urd-td-access.is-granted { background: #ecfdf5 !important; }
+.urd-td-access.is-readonly { cursor: default; }
+.urd-td-access.is-readonly:hover { background: var(--urd-surface) !important; }
+.urd-td-access.is-readonly:hover .urd-cell-empty,
+.urd-td-access.is-readonly:hover .urd-cell-granted { background: inherit; border-color: inherit; color: inherit; }
+.urd-icon-s { color: var(--urd-muted); margin-right: 7px; font-size: 10px; }
+.urd-icon-o { color: var(--urd-faint); margin-right: 7px; font-size: 10px; }
+.urd-toggle-btn {
+    width: 26px; height: 26px; border-radius: 6px;
+    border: 1px solid var(--urd-border); background: var(--urd-surface);
+    color: var(--urd-muted); cursor: pointer; font-size: 9px;
+    display: inline-flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.urd-toggle-btn:hover { background: var(--urd-primary-50); border-color: var(--urd-primary-100); color: var(--urd-primary-700); }
+.urd-cell-granted {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 8px;
+    background: #d1fae5; border: 2px solid #34d399; color: #047857;
+    font-size: 14px; font-weight: 800; letter-spacing: 0.02em;
+    box-shadow: 0 1px 4px rgba(16,185,129,0.25);
+    transition: all .15s;
+}
+.urd-td-access:hover .urd-cell-granted { background: #fef2f2; border-color: #f87171; color: #dc2626; box-shadow: none; }
+.urd-cell-empty {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 8px;
+    background: #fff;
+    border: 2px solid #94a3b8; color: #475569;
+    font-size: 14px; font-weight: 800; letter-spacing: 0.02em;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.08);
+    transition: all .15s;
+}
+.urd-td-access:hover .urd-cell-empty {
+    border-color: #34d399; color: #047857; background: #ecfdf5;
+    box-shadow: 0 1px 4px rgba(16,185,129,0.2);
+}
+.urd-matrix-saving {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--urd-primary-50); border: 1.5px solid var(--urd-primary-100); color: var(--urd-primary-700); font-size: 10px;
+    animation: urd-saving .7s ease infinite alternate;
+}
+@@keyframes urd-saving { from { opacity:.5; } to { opacity:1; } }
+@@keyframes urd-row-in { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
+
+/* Loading */
+.urd-loading {
+    display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 64px 24px;
+    background: var(--urd-surface); border-radius: var(--urd-radius-lg);
+    border: 1px solid var(--urd-border); box-shadow: var(--urd-shadow-md);
+}
+.urd-loading-spinner {
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 4px solid #eef2ff;
+    border-top-color: #667eea; border-right-color: #764ba2;
+    animation: urd-spin .8s linear infinite;
+}
+@@keyframes urd-spin { to { transform: rotate(360deg); } }
+.urd-loading-text { font-size: 15px; color: var(--urd-muted); font-weight: 700; }
+.urd-skel-line {
+    height: 12px; border-radius: 6px; margin-bottom: 9px;
+    background: linear-gradient(90deg, var(--urd-primary-50) 20%, var(--urd-primary-100) 40%, var(--urd-primary-50) 60%);
+    background-size: 200% 100%; animation: urd-shimmer 1.5s infinite;
+}
+@@keyframes urd-shimmer { to { background-position: -200% center; } }
+
+/* Placeholder */
+.urd-placeholder {
+    display: flex; flex-direction: column; align-items: center; gap: 18px;
+    padding: 72px 24px 80px; text-align: center;
+    background: var(--urd-surface); border-radius: var(--urd-radius-lg);
+    border: 1px solid var(--urd-border); box-shadow: var(--urd-shadow-md);
+}
+.urd-ph-ring {
+    width: 112px; height: 112px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff, #ecfeff);
+    box-shadow: 0 12px 40px -12px rgba(102,126,234,0.28), inset 0 2px 0 rgba(255,255,255,0.8);
+    margin-bottom: 4px;
+}
+.urd-ph-icon { font-size: 46px; color: var(--urd-primary); }
+.urd-ph-title { font-size: 1.35rem; font-weight: 800; color: var(--urd-ink); letter-spacing: -0.03em; }
+.urd-ph-text { font-size: 14px; color: var(--urd-muted); max-width: 430px; line-height: 1.65; font-weight: 500; }
+
+/* ════ RESPONSIVE ════ */
+@@media (max-width: 900px) {
+    .urd-card-header { padding: 12px 18px; gap: 12px; }
+    .urd-header-steps { display: none; }
+    .urd-filter-row { gap: 10px; padding: 12px; }
+    .urd-field-company { flex: 1 1 100%; }
+    .urd-field-groups, .urd-field-users { flex: 1 1 calc(50% - 10px); }
+    .urd-field-go { flex: 1 1 100%; }
+    .urd-btn-go { width: 100%; min-width: 0; }
+    .urd-card-body { padding: 14px 16px 22px; }
+}
+@@media (max-width: 640px) {
+    .urd-card-header { padding: 12px 14px; flex-direction: column; align-items: flex-start; gap: 8px; }
+    .urd-header-title { font-size: 1.1rem; }
+    .urd-card-body { padding: 12px 12px 20px; }
+    .urd-filter-row { flex-direction: column; align-items: stretch; }
+    .urd-field-company, .urd-field-groups, .urd-field-users, .urd-field-go { flex: 1 1 auto; width: 100%; }
+    .urd-field-label-spacer { display: none; }
+    .urd-page { --urd-col-module: 240px; --urd-col-access: 120px; }
+    .urd-table-wrap { max-height: min(calc(100vh - 220px), 480px); }
+}
+</style>
+
+<div class="urd-page">
+<div class="urd-card">
+
+    <!-- ════ HEADER ════ -->
+    <div class="urd-card-header">
+        <div class="urd-header-left">
+            <div class="urd-header-icon"><i class="fas fa-shield-alt"></i></div>
+            <div class="urd-header-text">
+                <div class="urd-header-kicker"><i class="fas fa-circle"></i> Secure Access Control</div>
+                <div class="urd-header-title" id="ERPHeading">User Right Dashboard</div>
+            </div>
+        </div>
+        <div class="urd-header-steps" id="urdHeaderSteps">
+            <div class="urd-step is-active" data-step="1"><span class="urd-step-num">1</span><span class="urd-step-text">Select company</span></div>
+            <i class="fas fa-chevron-right urd-step-arrow"></i>
+            <div class="urd-step" data-step="2"><span class="urd-step-num">2</span><span class="urd-step-text">Pick groups</span></div>
+            <i class="fas fa-chevron-right urd-step-arrow"></i>
+            <div class="urd-step" data-step="3"><span class="urd-step-num">3</span><span class="urd-step-text">Load dashboard</span></div>
+        </div>
+    </div>
+
+    <!-- ════ BODY ════ -->
+    <div class="urd-card-body">
+
+        <!-- One-line filter toolbar -->
+        <div class="urd-filter-row">
+
+            <div class="urd-field urd-field-company">
+                <label class="urd-field-label" for="ddlCompany"><i class="fas fa-building"></i> Company</label>
+                <select id="ddlCompany" class="urd-select">
+                    <option value="0">— Select Company —</option>
+                </select>
+            </div>
+
+            <div class="urd-field urd-field-groups">
+                <label class="urd-field-label" for="btnUrdGroupTrigger"><i class="fas fa-users-cog"></i> Groups</label>
+                <div id="urdGroupMulti" class="urd-multi-checkbox-root">
+                    <button type="button" id="btnUrdGroupTrigger" class="urd-multi-trigger" aria-haspopup="listbox" aria-expanded="false">
+                        <span id="urdGroupTriggerText" class="urd-multi-trigger-text is-placeholder">All groups</span>
+                        <i class="fas fa-chevron-down urd-multi-trigger-arrow" aria-hidden="true"></i>
+                    </button>
+                    <div id="urdGroupPanel" class="urd-multi-panel" role="listbox">
+                        <div class="urd-multi-checkbox-search">
+                            <input type="text" id="txtUrdGroupSearch" placeholder="Search groups…" autocomplete="off" />
+                        </div>
+                        <div class="urd-multi-checkbox-selectall">
+                            <label>
+                                <input type="checkbox" id="chkUrdGroupSelectAll" />
+                                Select All
+                            </label>
+                        </div>
+                        <div id="urdGroupCheckList" class="urd-multi-checkbox-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="urd-field urd-field-users">
+                <label class="urd-field-label"><i class="fas fa-user"></i> Users <span class="urd-user-count" id="urdUserCount">—</span></label>
+                <textarea id="urdUsersPreview" class="urd-users-preview" readonly rows="1" placeholder="Select groups to preview users"></textarea>
+                <select id="ddlUsers" multiple style="display:none" aria-hidden="true"></select>
+            </div>
+
+            <div class="urd-field urd-field-go">
+                <span class="urd-field-label urd-field-label-spacer">Go</span>
+                <button id="btnGo" class="urd-btn-go" type="button">
+                    <i class="fas fa-play"></i> Load Dashboard
+                </button>
+            </div>
+
+        </div><!-- /filter-row -->
+
+        <!-- Hidden hooks for JS (toolbar removed from UI) -->
+        <div class="urd-summary" aria-hidden="true">
+            <input type="search" id="urdModuleSearch" tabindex="-1" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;">
+            <span id="urd-count-groups"></span>
+            <span id="urd-count-modules"></span>
+            <span id="urd-banner-groups"></span>
+            <span id="urd-banner-modules"></span>
+        </div>
+
+        <!-- Loading -->
+        <div id="urd-loading" class="urd-loading" style="display:none;">
+            <div class="urd-loading-spinner"></div>
+            <div class="urd-loading-text">Loading permissions data…</div>
+            <div style="width:100%;max-width:480px;">
+                <div class="urd-skel-line" style="width:100%;"></div>
+                <div class="urd-skel-line" style="width:88%;"></div>
+                <div class="urd-skel-line" style="width:94%;"></div>
+                <div class="urd-skel-line" style="width:72%;"></div>
+            </div>
+        </div>
+
+        <!-- Placeholder -->
+        <div id="urd-placeholder" class="urd-placeholder">
+            <div class="urd-ph-ring"><i class="fas fa-shield-alt urd-ph-icon"></i></div>
+            <div class="urd-ph-title">User Right Dashboard</div>
+            <div class="urd-ph-text">
+                Select a <strong>Company</strong>, optionally pick <strong>Groups</strong> using checkboxes (leave none ticked for all groups), then click <strong>Load Dashboard</strong>.
+            </div>
+        </div>
+
+        <div id="urd-table-toolbar" class="urd-table-toolbar" style="display:none;"></div>
+
+        <!-- Dashboard Table -->
+        <div id="urd-table-wrap" class="urd-table-wrap" style="display:none;">
+            <table class="urd-table urd-table-matrix">
+                <colgroup id="urd-colgroup"></colgroup>
+                <thead id="urd-thead"></thead>
+                <tbody id="urd-tbody"></tbody>
+            </table>
+        </div>
+
+    </div><!-- /card-body -->
+</div><!-- /card -->
+</div><!-- /page -->
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserRightDashboardScript.js"></script>

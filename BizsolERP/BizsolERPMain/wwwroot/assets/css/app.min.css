@@ -742,10 +742,10 @@ body[data-layout=horizontal] .footer {
         margin-top: 70px
     }
 
-#sidebar-menu {
+/*#sidebar-menu {
     padding: 10px 9px;
 }
-
+*/
     #sidebar-menu .mm-active > .has-arrow:after {
         -webkit-transform: rotate(90deg);
         transform: rotate(90deg)
@@ -6270,7 +6270,7 @@ label {
 
 .modal {
     --bs-modal-margin: 0 !important;
-    padding: 9px;
+    padding: 0px;
     /*margin-top: 4rem;*/
 }
 

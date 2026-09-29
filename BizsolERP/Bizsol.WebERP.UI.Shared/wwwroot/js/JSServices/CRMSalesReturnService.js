@@ -18,15 +18,15 @@ const CRMSalesReturnService = {
         });
     },
 
-    DeleteCRMSalesReturn: function DeleteCRMSalesReturn(Code, UserMaster_Code, ReasonForDelete, IPAddress, Location) {
-        var URL = UrlService.API_ENDPOINT_CRM_SALESRETURN + `/DeleteCRMSalesReturn?Code=${Code}&UserMaster_Code=${UserMaster_Code}&ReasonForDelete=${encodeURIComponent(ReasonForDelete || '')}&IPAddress=${encodeURIComponent(IPAddress || '')}&Location=${encodeURIComponent(Location || '')}`;
+    DeleteCRMSalesReturn: function DeleteCRMSalesReturn(Code, CratesReceiveMaster_Code, UserMaster_Code, ReasonForDelete, IPAddress, Location) {
+        var URL = UrlService.API_ENDPOINT_CRM_SALESRETURN + `/DeleteCRMSalesReturn?Code=${Code || 0}&CratesReceiveMaster_Code=${CratesReceiveMaster_Code || 0}&UserMaster_Code=${UserMaster_Code}&ReasonForDelete=${encodeURIComponent(ReasonForDelete || '')}&IPAddress=${encodeURIComponent(IPAddress || '')}&Location=${encodeURIComponent(Location || '')}`;
         return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
             return value;
         });
     },
 
-    GetCRMSalesReturnShowData: function GetCRMSalesReturnShowData(CRMSalesReturnReplacementMaster_Code) {
-        var URL = UrlService.API_ENDPOINT_CRM_SALESRETURN + `/GetCRMSalesReturnShowData?CRMSalesReturnReplacementMaster_Code=${CRMSalesReturnReplacementMaster_Code}`;
+    GetCRMSalesReturnShowData: function GetCRMSalesReturnShowData(Code, CratesReceiveMaster_Code) {
+        var URL = UrlService.API_ENDPOINT_CRM_SALESRETURN + `/GetCRMSalesReturnShowData?Code=${Code || 0}&CratesReceiveMaster_Code=${CratesReceiveMaster_Code || 0}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });

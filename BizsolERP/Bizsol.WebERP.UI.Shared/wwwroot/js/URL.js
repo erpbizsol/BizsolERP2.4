@@ -1,5 +1,7 @@
 import { environment } from './environment.js';
 
+
+
 let UrlService = {
     BASE_URL: environment.BASE_URL,
     ERP_SIDE_MENU: `${environment.BASE_URL}/UserModule`,
@@ -46,7 +48,7 @@ let UrlService = {
     API_ENDPOINT_HRCONFIG: `${environment.BASE_URL}/ConfigHR`,
 
     API_ENDPOINT_TankDailyStock: `${environment.BASE_URL}/DailyTankStock`,
-    
+
     API_ENDPOINT_ACCOUNT_MASTER: `${environment.BASE_URL}/AccountMaster`,
     API_ENDPOINT_ServicePOApproval: `${environment.BASE_URL}/ServicePOApproval`,
     API_ENDPOINT_QuotationApproval: `${environment.BASE_URL}/QuotationApproval`,
@@ -77,11 +79,14 @@ let UrlService = {
     API_ENDPOINT_ITEM: `${environment.BASE_URL}/Item`,
     API_ENDPOINT_EXPENSE_ENTRY: `${environment.BASE_URL}/ExpenseEntryMaster`,
     API_ENDPOINT_DEALER_MASTER: `${environment.BASE_URL}/DealerMaster`,
+    API_ENDPOINT_DEALER_TARGET_MASTER: `${environment.BASE_URL}/DealerTargetMaster`,
+    API_ENDPOINT_TARGET_DASHBOARD_REPORT: `${environment.BASE_URL}/TargetDashboardReport`,
     API_ENDPOINT_PackingListFG: `${environment.BASE_URL}/PackingListFG`,
     API_ENDPOINT_QTY_CONFIG: `${environment.BASE_URL}/FixedParameterQtyConfig`,
     API_ENDPOINT_CRM_ORDERENTRY_CONFIG: `${environment.BASE_URL}/ConfigCRMOrderEntry`,
     
-
+    
+    API_ENDPOINT_WeightConfirmation: `${environment.BASE_URL}/WeightConfirmation`,
     API_ENDPOINT_BreakDown: `${environment.BASE_URL}/BreakDownStartOrEnd`,
     API_ENDPOINT_SlittingEntry: `${environment.BASE_URL}/SlittingEntry`,
     API_ENDPOINT_VisitorMaster: `${environment.BASE_URL}/VisitorMaster`,
@@ -107,16 +112,21 @@ let UrlService = {
     API_ENDPOINT_PDI: `${environment.BASE_URL}/PDI`,
     API_ENDPOINT_CustomerDashboard: `${environment.BASE_URL}/CustomerDashboard`,
     API_ENDPOINT_BuyingCapacity: `${environment.BASE_URL}/BuyingCapacity`,
+    API_ENDPOINT_TargetExecutiveWise: `${environment.BASE_URL}/TargetExecutiveWise`,
     API_ENDPOINT_ProspectiveCustomer: `${environment.BASE_URL}/ProspectiveCustomer`,
     API_DOCUMENT_DispatchAdvicePlan: `${environment.BASE_URL}/VerifyDispatchAdvice`,
+    API_ENDPOINT_FreightInvoice: `${environment.BASE_URL}/FreightInvoice`,
     API_DOCUMENT_StockAgeingReport: `${environment.BASE_URL}/StockAgeingReport`,
+    API_ENDPOINT_BillWiseOutStandingReport: `${environment.BASE_URL}/BillWiseOutStandingReport`,
     API_ENDPOINT_BalancePOCancellation: `${environment.BASE_URL}/BalancePOCancellation`,
+    API_ENDPOINT_MRNUpdation: `${environment.BASE_URL}/MRNUpdation`,
     API_ENDPOINT_CRM_SALESRETURN: `${environment.BASE_URL}/CRMSalesReturn`,
     API_ENDPOINT_SalesanalysisAST: `${environment.BASE_URL}/SalesanalysisAST`,
     API_ENDPOINT_QCPropertyGroupMaster: `${environment.BASE_URL}/QCPropertyGroupMaster`,
     API_ENDPOINT_QCPropertyMaster: `${environment.BASE_URL}/QCPropertyMaster`,
     API_ENDPOINT_QCPropertyTestTypeMaster: `${environment.BASE_URL}/QCPropertyTestTypeMaster`,
     API_ENDPOINT_RawMaterialOffer: `${environment.BASE_URL}/RawMaterialOffer`,
+    API_ENDPOINT_StockAllocation: `${environment.BASE_URL}/StockAllocation`,
     //MachineMaintenanceRequest
     API_ENDPOINT_MachineMaintenance: `${environment.BASE_URL}/MachineMaintenance`,
     API_ENDPOINT_FGInspectedOffer: `${environment.BASE_URL}/FGInspectedEntry`,
@@ -126,17 +136,59 @@ let UrlService = {
     API_ENDPOINT_Reports: `${environment.BASE_URL}/Reports`,
     API_ENDPOINT_ProjectMaster: `${environment.BASE_URL}/ProjectMaster`,
     API_ENDPOINT_SubProjectMaster: `${environment.BASE_URL}/SubProjectMaster`,
+    API_ENDPOINT_ProjectCategoryMaster: `${environment.BASE_URL}/ProjectCategoryMaster`,
     API_ENDPOINT_ItemMaster: `${environment.BASE_URL}/Item`,
     API_ENDPOINT_VendorMaster: `${environment.BASE_URL}/VendorMaster`,
     API_ENDPOINT_BOM: `${environment.BASE_URL}/BOM`,
     API_ENDPOINT_PurchaseOrderMaster: `${environment.BASE_URL}/PurchaseOrderMaster`,
     API_ENDPOINT_POApprovalConfig: `${environment.BASE_URL}/POApprovalConfig`,
     API_ENDPOINT_GRNPaymentApprovalConfig: `${environment.BASE_URL}/GRNPaymentApprovalConfiguration`,
+    API_ENDPOINT_MRNMasterApprovalConfig: `${environment.BASE_URL}/MRNMasterApprovalConfiguration`,//
     API_ENDPOINT_GRNService: `${environment.BASE_URL}/GRNService`,
     API_ENDPOINT_GRNPaymentEntry: `${environment.BASE_URL}/GRNPaymentEntry`,
     API_ENDPOINT_POLevelsApprove: `${environment.BASE_URL}/POLevelsApproval`,
-    API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`
+    API_ENDPOINT_GRNPaymentLevelsApproval: `${environment.BASE_URL}/GRNPaymentLevelsApproval`,
+    API_ENDPOINT_IMPORT_EXPORT: `${environment.BASE_URL}/ImportExport`,
+    API_ENDPOINT_MRNMasterLevelsApproval: `${environment.BASE_URL}/MRNMasterLevelsApproval`,//
+    API_ENDPOINT_CompanyInformation: `${environment.BASE_URL}/CompanyInformation`,
+    API_ENDPOINT_EWayBill: `${environment.BASE_URL}/EwayBill`,
+    API_ENDPOINT_EXPENSE_ENTRY_APPROVAL_CONFIG: `${environment.BASE_URL}/ExpenseEntryApprovalConfiguration`,
+    API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL: `${environment.BASE_URL}/ExpenseEntryLevelsApproval`,
+
+    //Finance Transactions API Service EndPoints
+    API_ENDPOINT_BANK_STATEMENT: `${environment.BASE_URL}/BankStatement`,
+    API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL: `${environment.BASE_URL}/ExpenseEntryLevelsApproval`,
+    API_ENDPOINT_AgeingParameter: `${environment.BASE_URL}/AgeingParameter`,
+    API_ENDPOINT_GROUPMASTER: `${environment.BASE_URL}/Group`,
+    API_ENDPOINT_USERMASTER: `${environment.BASE_URL}/UserMaster`,
+    API_ENDPOINT_USERRIGHTDASHBOARD: `${environment.BASE_URL}/UserRightDashboard`,
+    API_ENDPOINT_REASON_MASTER: `${environment.BASE_URL}/ReasonMaster`,
+    API_ENDPOINT_AREA_MASTER: `${environment.BASE_URL}/AreaMaster`,
+    API_ENDPOINT_TASKLIST_MASTER: `${environment.BASE_URL}/TaskListMaster`,
+    API_ENDPOINT_TASK_UPDATION: `${environment.BASE_URL}/TaskUpdation`,
+    API_ENDPOINT_CHECKLIST_MIS: `${environment.BASE_URL}/CheckListMIS`,
+    API_ENDPOINT_SendMail: `${environment.BASE_URL}/SendMail`,
+    API_ENDPOINT_ExpensesLedgerReport: `${environment.BASE_URL}/ExpensesLedgerReport`,
+    API_ENDPOINT_AREA_ExpensesLedgerReport: `${environment.BASE_URL}/ExpensesLedgerReport`,
+    API_ENDPOINT_ProjectManagementReport: `${environment.BASE_URL}/ProjectManagementReport`,
+    API_ENDPOINT_AREA_ProjectManagementReport: `${environment.BASE_URL}/ProjectManagementReport`,
+    API_ENDPOINT_MillWiseProductionReport: `${environment.BASE_URL}/MillWiseProductionReport`,
+    API_ENDPOINT_ProductionBreakDownReport: `${environment.BASE_URL}/ProductionBreakDownReport`,
+    API_DOCUMENT_StockAgeingYieldConfiguration: `${environment.BASE_URL}/StockAgeingYieldConfiguration`,
+    API_ENDPOINT_ProjectDetailDashboard: `${environment.BASE_URL}/ProjectDetail`,
+    API_ENDPOINT_SalesPersonTargetAchievement: `${environment.BASE_URL}/SalesPersonTargetAchievement`,
+    API_ENDPOINT_SalesPersonTargetAchievementReport: `${environment.BASE_URL}/SalesPersonTargetAchievementReport`,
+    API_ENDPOINT_SalesPersonDashboard: `${environment.BASE_URL}/SalesPersonDashboard`,
+    API_ENDPOINT_ExpenseDashboard: `${environment.BASE_URL}/ExpenseDashboard`,
+    API_ENDPOINT_IndentMaster: `${environment.BASE_URL}/IndentMaster`,
+    API_ENDPOINT_IndentMasterApprovalConfig: `${environment.BASE_URL}/IndentMasterApprovalConfig`,
+    API_ENDPOINT_IndentMasterLevelsApproval: `${environment.BASE_URL}/IndentMasterLevelsApproval`,
+    API_ENDPOINT_TEMPLETE_REPORT: `${environment.BASE_URL}/OrderLoadReport`,
+    API_ENDPOINT_DASHBOARD_CONFIGURATION: `${environment.BASE_URL}/DashboardConfiguration`,
+    API_ENDPOINT_ProductionOrder: `${environment.BASE_URL}/ProductionOrder`,
+    API_ENDPOINT_CRM_ORDER_IN_TRANSIT: `${environment.BASE_URL}/CRMOrderInTransit`,
+    API_ENDPOINT_USER_DASHBOARD_MENU: `${environment.BASE_URL}/UserDashboardMenu`,
 }
 
-export { UrlService  }
+export { UrlService }
 

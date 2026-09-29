@@ -1,15 +1,365 @@
-﻿import { AttachmentControlService } from '../../JSServices/_AttachmentControlService.js'
+import { AttachmentControlService } from '../../JSServices/_AttachmentControlService.js'
 
- 
+// ── Temp queue: persists in module memory for masterCode=0 (new/unsaved) entries ──
+let _acTempQueue = []; // [{ file: File, particulars: string }]
+
+/** Visible attachment modal (handles duplicate id when prior instance was left in body). */
+function _acGetVisibleModalEl() {
+    const nodes = document.querySelectorAll('[id="AttachmentControlmodal"]');
+    for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].classList.contains('show')) return nodes[i];
+    }
+    return nodes.length ? nodes[nodes.length - 1] : null;
+}
+
+function _acCleanupModalArtifacts() {
+    const openModals = document.querySelectorAll('.modal.show');
+    if (openModals.length > 0) return;
+    document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+}
+
+/** Remove stale attachment modals left in document.body from prior opens. */
+function _acPurgeStaleModals(keepEl) {
+    document.querySelectorAll('[id="AttachmentControlmodal"]').forEach(function (el) {
+        if (keepEl && el === keepEl) return;
+        if (window.bootstrap && window.bootstrap.Modal) {
+            window.bootstrap.Modal.getInstance(el)?.dispose();
+        }
+        el.remove();
+    });
+    _acCleanupModalArtifacts();
+}
+
+function _acOnModalHidden(e) {
+    const modalEl = e && e.target ? e.target : null;
+    if (!modalEl || modalEl.id !== 'AttachmentControlmodal') return;
+    if (window.bootstrap && window.bootstrap.Modal) {
+        window.bootstrap.Modal.getInstance(modalEl)?.dispose();
+    }
+    modalEl.remove();
+    _acCleanupModalArtifacts();
+}
+
+function PrepareAttachmentControlModal() {
+    const modals = document.querySelectorAll('[id="AttachmentControlmodal"]');
+    const keepEl = modals.length ? modals[modals.length - 1] : null;
+    _acPurgeStaleModals(keepEl);
+}
+
+function DestroyAllAttachmentControlModals() {
+    _acPurgeStaleModals(null);
+}
+
+function Show_AttachmentControl() {
+    const modalEl = _acGetVisibleModalEl();
+    if (!modalEl) return;
+
+    _acPurgeStaleModals(modalEl);
+
+    if (typeof window.erpMoveModalToBody === 'function') {
+        window.erpMoveModalToBody(modalEl);
+    } else if (modalEl.parentElement !== document.body) {
+        document.body.appendChild(modalEl);
+    }
+
+    modalEl.removeEventListener('hidden.bs.modal', _acOnModalHidden);
+    modalEl.addEventListener('hidden.bs.modal', _acOnModalHidden);
+
+    try {
+        if (window.bootstrap && window.bootstrap.Modal) {
+            const existing = window.bootstrap.Modal.getInstance(modalEl);
+            if (existing) existing.dispose();
+            window.bootstrap.Modal.getOrCreateInstance(modalEl, {
+                backdrop: 'static',
+                keyboard: true,
+                focus: true
+            }).show();
+        } else if (typeof window.jQuery !== 'undefined') {
+            window.jQuery(modalEl).modal({ backdrop: 'static', keyboard: true });
+            window.jQuery(modalEl).modal('show');
+        }
+    } catch (err) {
+        console.warn('Show_AttachmentControl', err);
+    }
+}
+
+function Close_AttachmentControl() {
+    const modalEl = _acGetVisibleModalEl();
+    if (!modalEl) {
+        _acCleanupModalArtifacts();
+        return;
+    }
+    try {
+        if (window.bootstrap && window.bootstrap.Modal) {
+            const inst = window.bootstrap.Modal.getInstance(modalEl)
+                ?? window.bootstrap.Modal.getOrCreateInstance(modalEl);
+            inst.hide();
+            return;
+        }
+        if (typeof window.jQuery !== 'undefined') {
+            window.jQuery(modalEl).modal('hide');
+            return;
+        }
+    } catch (err) {
+        console.warn('Close_AttachmentControl', err);
+    }
+    modalEl.classList.remove('show');
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.style.display = 'none';
+    _acOnModalHidden({ target: modalEl });
+}
+
+function _acOpenPreview(url, fileName) {
+    if (typeof window.openInAppViewer === 'function') {
+        window.openInAppViewer(url, fileName, { ownUrl: true });
+        return;
+    }
+    var overlay = document.getElementById('bizsolFileViewerFallbackAc');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'bizsolFileViewerFallbackAc';
+        overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:20050;background:#111827;flex-direction:column;';
+        overlay.innerHTML =
+            '<div style="display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 10px;background:#4f46e5;color:#fff;">' +
+            '<button type="button" id="bizsolFileViewerFallbackAcBack" style="min-width:72px;height:34px;border:1px solid rgba(255,255,255,.6);border-radius:6px;background:rgba(255,255,255,.16);color:#fff;font-weight:700;">Back</button>' +
+            '<div id="bizsolFileViewerFallbackAcTitle" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;"></div></div>' +
+            '<div style="flex:1;overflow:auto;background:#111;"><img id="bizsolFileViewerFallbackAcImg" alt="" style="display:none;width:100%;height:100%;object-fit:contain;" />' +
+            '<iframe id="bizsolFileViewerFallbackAcFrame" title="preview" style="display:none;width:100%;height:100%;border:0;background:#fff;"></iframe></div>';
+        document.body.appendChild(overlay);
+        document.getElementById('bizsolFileViewerFallbackAcBack').onclick = function () {
+            var img = document.getElementById('bizsolFileViewerFallbackAcImg');
+            var frame = document.getElementById('bizsolFileViewerFallbackAcFrame');
+            if (img) { img.removeAttribute('src'); img.style.display = 'none'; }
+            if (frame) { frame.src = 'about:blank'; frame.style.display = 'none'; }
+            overlay.style.display = 'none';
+            if (overlay._ownedUrl) {
+                try { URL.revokeObjectURL(overlay._ownedUrl); } catch (e) { }
+                overlay._ownedUrl = null;
+            }
+        };
+    }
+    overlay._ownedUrl = url;
+    overlay.style.display = 'flex';
+    var titleEl = document.getElementById('bizsolFileViewerFallbackAcTitle');
+    if (titleEl) titleEl.textContent = fileName || 'File';
+    var ext = String(fileName || '').split('.').pop().toLowerCase();
+    var img = document.getElementById('bizsolFileViewerFallbackAcImg');
+    var frame = document.getElementById('bizsolFileViewerFallbackAcFrame');
+    if (['png', 'gif', 'jpeg', 'jpg', 'webp', 'bmp'].indexOf(ext) >= 0) {
+        if (frame) frame.style.display = 'none';
+        if (img) { img.style.display = 'block'; img.src = url; }
+    } else {
+        if (img) img.style.display = 'none';
+        if (frame) { frame.style.display = 'block'; frame.src = url; }
+    }
+}
+
+function _acNotifySaveComplete() {
+    if (typeof window.toastr !== 'undefined') {
+        window.toastr.success('Upload saved.');
+    } else {
+        window.alert('Upload save..');
+    }
+}
+
+/** Restore modal interactivity after alert() / grid refresh (focus trap & backdrop). */
+function _acEnsureModalInteractive() {
+    const modalEl = _acGetVisibleModalEl();
+    if (!modalEl) return;
+    modalEl.style.pointerEvents = 'auto';
+    const z = parseInt(window.getComputedStyle(modalEl).zIndex || '1055', 10) || 1055;
+    modalEl.style.zIndex = String(z);
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    if (backdrops.length) {
+        backdrops[backdrops.length - 1].style.zIndex = String(z - 1);
+    }
+    if (document.body.classList.contains('modal-open') === false && modalEl.classList.contains('show')) {
+        document.body.classList.add('modal-open');
+    }
+}
+
+function _acIsTempMode() {
+    return parseInt(_acFieldValue('hfMasterTableCode') || '0', 10) <= 0;
+}
+
+function _acEscHtml(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function _acFileToByteArray(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = e => {
+            if (e.target.readyState === FileReader.DONE)
+                resolve(Array.from(new Uint8Array(e.target.result)));
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function _acNotifyQueueChange() {
+    const count = _acTempQueue.length;
+    const badge = document.getElementById('acQueueCountBadge');
+    if (badge) badge.textContent = count > 0 ? '(' + count + ')' : '';
+    if (typeof window.AttachmentControl_onQueueChange === 'function') {
+        window.AttachmentControl_onQueueChange(count);
+    }
+}
+
+function _acClearAttachmentTable() {
+    const thead = document.getElementById('table-header-tbAttachmentControl');
+    const tbody = document.getElementById('table-body-tbAttachmentControl');
+    const pag = document.getElementById('paginator-tbAttachmentControl');
+    if (thead) thead.innerHTML = '';
+    if (tbody) tbody.innerHTML = '';
+    if (pag) pag.innerHTML = '';
+}
+
+/**
+ * Current control context from hidden fields (master/detail/entry).
+ * Host pages should listen for `bizsol:attachmentcontrol:changed` on **document** (or window, after bubble),
+ * or use jQuery: `$(document).on('bizsol:attachmentcontrol:changed', function (_e, d) { ... })`.
+ */
+function _acFieldValue(id) {
+    var modal = _acGetVisibleModalEl();
+    var el = modal ? modal.querySelector('#' + id) : null;
+    if (!el) {
+        el = document.getElementById(id);
+    }
+    return el && el.value != null ? String(el.value) : '';
+}
+
+function _acReadContextFromDom() {
+    return {
+        masterTableName: String(_acFieldValue('hfMasterTableName') || '').trim(),
+        masterTableCode: parseInt(_acFieldValue('hfMasterTableCode') || '0', 10) || 0,
+        detailTableName: String(_acFieldValue('hfDetailTableName') || '').trim(),
+        detailTableCode: parseInt(_acFieldValue('hfDetailTableCode') || '0', 10) || 0,
+        entryNo: String(_acFieldValue('hfEntryNo') || '').trim(),
+        entryDate: String(_acFieldValue('hfEntryDate') || '').trim(),
+        mode: String(_acFieldValue('hfMode') || '').trim(),
+    };
+}
+
+/**
+ * Notify host shell after server-backed attachment mutations so outer grids can reload (e.g. HasAttach / green clip).
+ * @param {'save'|'delete'|'flush'} reason
+ * @param {Record<string, *>} [extra] e.g. { attachmentCount, masterTableCode } from API or flush
+ */
+function _acNotifyHostDataMutated(reason, extra) {
+    const base = _acReadContextFromDom();
+    const detail = Object.assign(
+        {
+            reason,
+            attachmentCount: 0,
+            hasServerAttachments: false,
+        },
+        base,
+        extra || {},
+        { reason }
+    );
+    const mc = parseInt(String(detail.masterTableCode ?? 0), 10) || 0;
+    detail.tempMode = mc <= 0;
+    if (typeof detail.attachmentCount === 'number' && detail.attachmentCount > 0) {
+        detail.hasServerAttachments = true;
+    }
+    try {
+        const payload = Object.assign({}, detail);
+        // Must target document with bubbles: true — window.dispatch + default bubbles:false
+        // does not invoke document.addEventListener handlers.
+        const evt = new CustomEvent('bizsol:attachmentcontrol:changed', {
+            detail: payload,
+            bubbles: true,
+            cancelable: false,
+        });
+        document.dispatchEvent(evt);
+    } catch (e) {
+        console.warn('AttachmentControl: bizsol:attachmentcontrol:changed', e);
+    }
+    if (typeof window.AttachmentControl_onDataChanged === 'function') {
+        try {
+            window.AttachmentControl_onDataChanged(Object.assign({}, detail));
+        } catch (e) {
+            console.warn('AttachmentControl_onDataChanged', e);
+        }
+    }
+    if (typeof window.jQuery !== 'undefined') {
+        try {
+            window.jQuery(document).trigger('bizsol:attachmentcontrol:changed', [Object.assign({}, detail)]);
+        } catch (e) { /* ignore */ }
+    }
+}
+
+/** Show/hide the existing/queued attachments block (header + table + download footer). */
+function _acSetExistingAttachmentsBlockVisible(visible) {
+    const el = document.getElementById('acExistingAttachmentsBlock');
+    if (!el) return;
+    el.style.display = visible ? '' : 'none';
+}
+
+function _acRenderTempQueueGrid() {
+    if (_acTempQueue.length === 0) {
+        _acSetExistingAttachmentsBlockVisible(false);
+        _acClearAttachmentTable();
+        return;
+    }
+    _acSetExistingAttachmentsBlockVisible(true);
+    const rows = _acTempQueue.map(function (item, i) {
+        return {
+            'Document Particulars': _acEscHtml(item.particulars || '—'),
+            'File': '<a href="#" onclick="window._acPreviewTempFile(' + i + '); return false;">' + _acEscHtml(item.file.name) + '</a>',
+            'Remove': '<button class="btn btn-danger icon-height" onclick="RemoveTempQueue_AttachmentControl(' + i + ')"><i class="fa fa-trash"></i></button>'
+        };
+    });
+    BizsolCustomFilterGrid.CreateDataTable(
+        'table-header-tbAttachmentControl', 'table-body-tbAttachmentControl',
+        rows, false, [], ['Document Particulars', 'File'], [], [], [], [], {}
+    );
+}
+
 function GatAllAttachment() {
+    const ctx = _acReadContextFromDom();
+    const _acMode = (ctx.mode || '').toLowerCase();
 
-    $('#hfMode').val().toLowerCase() == "view" ? $('#fileUploadForm').hide() : $('#fileUploadForm').show();
-    var DetailTableName = $('#hfDetailTableName').val() == undefined || $('#hfDetailTableName').val() == "" ? "" : $('#hfDetailTableName').val();
-    var DetailTableCode = $('#hfDetailTableCode').val() == undefined || $('#hfDetailTableCode').val() == "" ? 0 : $('#hfDetailTableCode').val();
-    AttachmentControlService.GetAttachmentUploadFiles($('#hfMasterTableName').val(), $('#hfMasterTableCode').val(), DetailTableName, DetailTableCode).then(function (response) {
+    // view: hide upload form; all/addview: show upload form (addview = upload allowed, delete not)
+    _acMode === "view" ? $('#fileUploadForm').hide() : $('#fileUploadForm').show();
+
+    // ── Temp mode: masterCode = 0 (unsaved entry) ──────────────────────────
+    if (_acIsTempMode()) {
+        const footerEl = document.getElementById('acFooterBar');
+        if (footerEl) footerEl.style.display = 'none';
+        _acRenderTempQueueGrid();
+        _acNotifyQueueChange();
+        const n = _acTempQueue.length;
+        return Promise.resolve({
+            tempMode: true,
+            attachmentCount: n,
+            hasServerAttachments: false,
+        });
+    }
+
+    _acSetExistingAttachmentsBlockVisible(false);
+
+    if (!ctx.masterTableName) {
+        return Promise.resolve({ tempMode: false, attachmentCount: 0, hasServerAttachments: false });
+    }
+    return AttachmentControlService.GetAttachmentUploadFiles(ctx.masterTableName, ctx.masterTableCode, ctx.detailTableName, ctx.detailTableCode).then(function (response) {
         console.log(response);
-        response = $('#hfMode').val().toLowerCase() == "view" ? response.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>' }))
-                    : response.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>', Action: '<a class="btn btn-danger icon-height" onclick="Delete_AttachmentControl(' + item.Code + ')"> <i class="fa fa-trash"></i></a>' }));
+        const raw = Array.isArray(response) ? response : [];
+        // view & addview: no delete column; all: include delete column
+        const mapped = (_acMode === "view" || _acMode === "addview")
+            ? raw.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>' }))
+            : raw.map((item) => ({ Code: item.Code, "Document Particulars": item.DocumentParticulars, "File": '<a href="#" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'N\')">' + item.DocumentName + '</a>', Download: '<a class="icon-height"><i class="fa fa-download" onclick="Download_AttachmentControl(' + item.Code + ',\'' + item.DocumentName + '\',\'Y\')"></i></a>', Action: '<a class="btn btn-danger icon-height" onclick="Delete_AttachmentControl(' + item.Code + ')"> <i class="fa fa-trash"></i></a>' }));
+        if (mapped.length === 0) {
+            _acSetExistingAttachmentsBlockVisible(false);
+            _acClearAttachmentTable();
+            return { tempMode: false, attachmentCount: 0, hasServerAttachments: false };
+        }
+        _acSetExistingAttachmentsBlockVisible(true);
         const StringFilterColumn = ["DocumentName", "DocumentParticulars"];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
@@ -18,88 +368,234 @@ function GatAllAttachment() {
         const StringdoubleFilterColumn = [];
         const hiddenColumns = ["Code"];
         const ColumnAlignment = {};
-        BizsolCustomFilterGrid.CreateDataTable("table-header-tbAttachmentControl", "table-body-tbAttachmentControl", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment)
-    })
+        BizsolCustomFilterGrid.CreateDataTable("table-header-tbAttachmentControl", "table-body-tbAttachmentControl", mapped, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
+        return { tempMode: false, attachmentCount: mapped.length, hasServerAttachments: true };
+    }).catch(function (err) {
+        console.warn('GatAllAttachment', err);
+        return { tempMode: false, attachmentCount: 0, hasServerAttachments: false, error: err };
+    });
 }
+function _acIsIOSClient() {
+    var ua = String(navigator.userAgent || '');
+    if (/iPhone|iPad|iPod/i.test(ua)) return true;
+    return navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1;
+}
+
+function _acIsMobileClient() {
+    var ua = String(navigator.userAgent || navigator.vendor || '');
+    if (/Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return true;
+    return _acIsIOSClient();
+}
+
+function _acSafeDownloadName(name, fallback) {
+    var n = String(name || fallback || 'download').replace(/[\\/:*?"<>|]/g, '_').trim();
+    return n || fallback || 'download';
+}
+
+function _acMimeFromFileName(fileName) {
+    var ext = String(fileName || '').split('.').pop().toLowerCase();
+    var map = {
+        pdf: 'application/pdf',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        gif: 'image/gif',
+        txt: 'text/plain',
+        xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        xls: 'application/vnd.ms-excel',
+        csv: 'text/csv',
+        zip: 'application/zip',
+        doc: 'application/msword',
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    };
+    return map[ext] || 'application/octet-stream';
+}
+
+function _acIsOfficeFile(fileName) {
+    var ext = String(fileName || '').split('.').pop().toLowerCase();
+    return ['xls', 'xlsx', 'csv', 'doc', 'docx'].indexOf(ext) >= 0;
+}
+
+function _acAsDownloadBlob(blob) {
+    try {
+        return new Blob([blob], { type: 'application/octet-stream' });
+    } catch (e) {
+        return blob;
+    }
+}
+
+function _acValidateDownloadBlob(blob) {
+    return new Promise(function (resolve, reject) {
+        if (!blob || !blob.size) {
+            reject(new Error('No file data received.'));
+            return;
+        }
+        var t = String(blob.type || '').toLowerCase();
+        if (t.indexOf('application/json') >= 0 || t.indexOf('text/html') >= 0) {
+            var reader = new FileReader();
+            reader.onload = function () {
+                var msg = 'Download failed.';
+                try {
+                    var j = JSON.parse(String(reader.result || ''));
+                    msg = j.Msg || j.msg || j.Message || j.message || msg;
+                } catch (e) { }
+                reject(new Error(msg));
+            };
+            reader.onerror = function () { reject(new Error('Download failed.')); };
+            reader.readAsText(blob);
+            return;
+        }
+        resolve(blob);
+    });
+}
+
+function _acTriggerAnchorDownload(blob, fileName) {
+    var downloadBlob = _acIsMobileClient() ? _acAsDownloadBlob(blob) : blob;
+    var url = window.URL.createObjectURL(downloadBlob);
+    var a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = fileName;
+    a.setAttribute('download', fileName);
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+        try { a.remove(); } catch (e) { }
+        try { window.URL.revokeObjectURL(url); } catch (e) { }
+    }, 4000);
+}
+
+function _acShareBlob(blob, fileName, mime) {
+    var file = new File([blob], fileName, { type: mime || 'application/octet-stream' });
+    return navigator.share({ files: [file], title: fileName });
+}
+
+/** Save a blob without previewing it. Mobile PDF/image MIME types otherwise auto-open. */
+function _acForceDownloadBlob(blob, fileName) {
+    fileName = _acSafeDownloadName(fileName, 'download');
+    // iOS: after an async API call the user-gesture is often gone, so Share fails
+    // for Excel. Open the same in-app viewer used for PDF; Download there is a tap.
+    if (_acIsIOSClient() && _acIsOfficeFile(fileName)) {
+        var url = window.URL.createObjectURL(blob);
+        _acOpenPreview(url, fileName);
+        return Promise.resolve();
+    }
+    if (_acIsIOSClient() && typeof File === 'function' && navigator.share) {
+        try {
+            var mime = _acMimeFromFileName(fileName);
+            return _acShareBlob(blob, fileName, mime).catch(function (err) {
+                if (err && err.name === 'AbortError') return;
+                return _acShareBlob(_acAsDownloadBlob(blob), fileName, 'application/octet-stream').catch(function (err2) {
+                    if (err2 && err2.name === 'AbortError') return;
+                    var url = window.URL.createObjectURL(blob);
+                    _acOpenPreview(url, fileName);
+                });
+            });
+        } catch (e) {
+            var previewUrl = window.URL.createObjectURL(blob);
+            _acOpenPreview(previewUrl, fileName);
+            return Promise.resolve();
+        }
+    }
+    _acTriggerAnchorDownload(blob, fileName);
+    return Promise.resolve();
+}
+
+function _acShowDownloadError(err, fallback) {
+    var msg = (err && err.message) ? err.message : (fallback || 'Download failed.');
+    if (typeof window.toastr !== 'undefined') {
+        window.toastr.error(msg);
+    } else {
+        alert(msg);
+    }
+}
+
 function Download_AttachmentControl(Code,fileName,IsDownload) {
-    //  alert('downloadlol' + Code);
     Showloader();
-    AttachmentControlService.DownloadAttachment(Code).then(blob => {
-        HideLoader();  
-        console.log(blob);
-        let IsOpen = false;
-        let extension = fileName.split('.').pop();
-        switch (extension.toLowerCase()) {
-            case "txt":
-                IsOpen = true;
-                break;
-            case "png":
-                IsOpen = true;
-                break;
-            case "gif":
-                IsOpen = true;
-                break;
-            case "jpeg":
-                IsOpen = true;
-                break;
-            case "jpg":
-                IsOpen = true;
-        }
+    AttachmentControlService.DownloadAttachment(Code).then(function (blob) {
+        return _acValidateDownloadBlob(blob).then(function (validBlob) {
+            HideLoader();
+            var IsOpen = false;
+            var extension = String(fileName || '').split('.').pop();
+            switch (extension.toLowerCase()) {
+                case "txt":
+                case "png":
+                case "gif":
+                case "jpeg":
+                case "jpg":
+                case "pdf":
+                    IsOpen = true;
+                    break;
+                case "xls":
+                case "xlsx":
+                case "csv":
+                    IsOpen = _acIsIOSClient();
+                    break;
+            }
 
-        const url = window.URL.createObjectURL(blob);
-        if (IsOpen == true && IsDownload==='N') {
-            window.open(url, '_blank');
-        } else {
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            // the filename you want
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-        }
-        window.URL.revokeObjectURL(url);
-
-    })
-        
-
-        
-
+            if (IsOpen == true && IsDownload === 'N') {
+                const url = window.URL.createObjectURL(validBlob);
+                _acOpenPreview(url, fileName);
+            } else {
+                return _acForceDownloadBlob(validBlob, fileName);
+            }
+        });
+    }).catch(function (err) {
+        HideLoader();
+        _acShowDownloadError(err, 'Download failed.');
+    });
 }
 function DownloadAll_AttachmentControl() {
-    //  alert('downloadlol' + Code);
-    let DetailTableName = $('#hfDetailTableName').val() == undefined || $('#hfDetailTableName').val() == "" ? "" : $('#hfDetailTableName').val();
-    let DetailTableCode = $('#hfDetailTableCode').val() == undefined || $('#hfDetailTableCode').val() == "" ? 0 : $('#hfDetailTableCode').val();
-    let SourceDownloadFileName = $('#hfSourceDownloadFileName').val() == undefined || $('#hfSourceDownloadFileName').val() == "" ? "" : $('#hfSourceDownloadFileName').val();
+    var ctx = _acReadContextFromDom();
+    var sourceName = _acFieldValue('hfSourceDownloadFileName');
+    var zipName = sourceName ? (sourceName + '.zip') : 'AllAttachement.zip';
+    if (!ctx.masterTableName || !ctx.masterTableCode) {
+        _acShowDownloadError(null, 'Unable to download attachments.');
+        return;
+    }
     Showloader();
-    AttachmentControlService.DownloadAllAttachment($('#hfMasterTableName').val(), $('#hfMasterTableCode').val(), DetailTableName, DetailTableCode).then(blob => {
-        HideLoader();
-        console.log(blob);
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            // the filename you want
-            a.download = SourceDownloadFileName == "" ? "AllAttachement.zip" : SourceDownloadFileName +".zip";
-            document.body.appendChild(a);
-            a.click();
-        window.URL.revokeObjectURL(url);
-    })
+    AttachmentControlService.DownloadAllAttachment(ctx.masterTableName, ctx.masterTableCode, ctx.detailTableName, ctx.detailTableCode)
+        .then(function (blob) {
+            return _acValidateDownloadBlob(blob).then(function (validBlob) {
+                HideLoader();
+                return _acForceDownloadBlob(validBlob, zipName);
+            });
+        })
+        .catch(function (err) {
+            HideLoader();
+            _acShowDownloadError(err, 'Download All failed.');
+        });
 }
 function Delete_AttachmentControl(Code) {
 
-    if (confirm("Are you sure! You want to delete this attachment ?") == true) {
+    Promise.resolve(confirm("Are you sure! You want to delete this attachment ?")).then(function (ok) {
+    if (ok == true) {
         AttachmentControlService.DeleteImage(Code,"NA").then(
             function (response) {
                 if (response.Status === 'Y') {
-                    alert('Attachment deleted!');
-                    GatAllAttachment();
+                    if (typeof window.toastr !== 'undefined') {
+                        window.toastr.success('Attachment deleted!');
+                    } else {
+                        alert('Attachment deleted!');
+                    }
+                    GatAllAttachment().then(function (info) {
+                        _acNotifyHostDataMutated('delete', info);
+                        setTimeout(_acEnsureModalInteractive, 0);
+                    }).catch(function (err) {
+                        console.warn('GatAllAttachment after delete', err);
+                    });
                 } else {
-                    alert(response.Msg);
+                    if (typeof window.toastr !== 'undefined') {
+                        window.toastr.error(response.Msg);
+                    } else {
+                        alert(response.Msg);
+                    }
                 }
             }
         )
-    } 
+    }
+    });
 }
 //------- Attachment Upload Begin-----------//
 //var fileInput = document.getElementById('file-input');
@@ -215,34 +711,26 @@ function ViewFile_AttachmentControl(index) {
         let extension = fileName.split('.').pop();
         switch (extension.toLowerCase()) {
             case "txt":
-                IsOpen = true;
-                break;
             case "png":
-                IsOpen = true;
-                break;
             case "gif":
-                IsOpen = true;
-                break;
             case "jpeg":
+            case "jpg":
+            case "pdf":
                 IsOpen = true;
                 break;
-            case "jpg":
-                IsOpen = true;
+            case "xls":
+            case "xlsx":
+            case "csv":
+                IsOpen = _acIsIOSClient();
+                break;
         }
 
         const url = window.URL.createObjectURL(file);
         if (IsOpen == true) {
-            window.open(url, '_blank');
+            _acOpenPreview(url, fileName);
         } else {
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-           
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
+            _acForceDownloadBlob(file, fileName);
         }
-        window.URL.revokeObjectURL(url);
     }
 }
 function Save_AttachmentControl() {
@@ -266,6 +754,17 @@ function Save_AttachmentControl() {
 
     if (validate == false) {
         return false;
+    }
+
+    // ── Temp mode: queue locally, do not upload yet ─────────────────────────
+    if (_acIsTempMode()) {
+        $.each(fileListArry, function (index, val) {
+            _acTempQueue.push({ file: val, particulars: $('#txtParticularsInput_' + index).val() });
+        });
+        fileList.innerHTML = '';
+        fileListArry = [];
+        GatAllAttachment();
+        return;
     }
 
     $.each(fileListArry, function (index, val) {
@@ -312,10 +811,17 @@ function Save_AttachmentControl() {
                     (response) => {
                         filesProcessed++
                         if (filesProcessed == fileListArry.length) {
-                            alert('Upload save..');
-                            GatAllAttachment();
                             fileList.innerHTML = '';
                             fileListArry = [];
+                            GatAllAttachment().then(function (info) {
+                                _acNotifyHostDataMutated('save', info);
+                                _acNotifySaveComplete();
+                                setTimeout(_acEnsureModalInteractive, 0);
+                            }).catch(function (err) {
+                                console.warn('GatAllAttachment after save', err);
+                                _acNotifySaveComplete();
+                                setTimeout(_acEnsureModalInteractive, 0);
+                            });
                         }
                     }
                 );
@@ -328,6 +834,110 @@ function Save_AttachmentControl() {
 } 
 
 //------------Attachment Upload End---------//
+
+// ── Generic temp-queue API (called by host pages) ────────────────────────────
+function RemoveTempQueue_AttachmentControl(index) {
+    _acTempQueue.splice(index, 1);
+    _acRenderTempQueueGrid();
+    _acNotifyQueueChange();
+}
+
+window._acPreviewTempFile = function (index) {
+    const item = _acTempQueue[index];
+    if (!item) return;
+    const ext = item.file.name.split('.').pop().toLowerCase();
+    const viewable = ['txt', 'png', 'gif', 'jpeg', 'jpg', 'pdf'].includes(ext);
+    if (viewable) {
+        _acOpenPreview(URL.createObjectURL(item.file), item.file.name);
+    } else {
+        _acForceDownloadBlob(item.file, item.file.name);
+    }
+};
+
+async function FlushPendingAttachments(masterCode, masterTableName, entryNo, entryDate) {
+    if (!_acTempQueue.length) return { uploaded: 0, failed: 0 };
+    const mc = parseInt(masterCode, 10) || 0;
+    if (mc <= 0) return { uploaded: 0, failed: 0 };
+    const tableName = masterTableName || $('#hfMasterTableName').val() || '';
+    const en = parseInt(entryNo, 10) || 0;
+    const dateIso = entryDate ? new Date(entryDate).toISOString() : new Date().toISOString();
+    const detail = $('#hfDetailTableName').length ? ($('#hfDetailTableName').val() || '') : '';
+    const detailCode = $('#hfDetailTableCode').length ? (parseInt($('#hfDetailTableCode').val() ?? '0', 10) || 0) : 0;
+    let uploaded = 0, failed = 0;
+    for (let i = 0; i < _acTempQueue.length; i++) {
+        const { file, particulars } = _acTempQueue[i];
+        try {
+            const byteArr = await _acFileToByteArray(file);
+            const payload = JSON.stringify([{
+                code: 0,
+                documentParticulars: particulars || file.name,
+                documentName: file.name,
+                remarks: '',
+                masterTableName: tableName,
+                masterTableCode: mc,
+                detailTableName: detail,
+                detailTableCode: detailCode,
+                linkedWith: 'N',
+                documentContent: byteArr,
+                entryNo: en,
+                entryDate: dateIso,
+                f_DefaultAttachmentOption_Code: 0
+            }]);
+            await AttachmentControlService.SaveAttachment(payload);
+            uploaded++;
+        } catch (e) {
+            console.error('FlushPendingAttachments[' + i + ']', e);
+            failed++;
+        }
+    }
+    _acTempQueue = [];
+    _acNotifyQueueChange();
+    if (uploaded > 0) {
+        _acNotifyHostDataMutated('flush', {
+            masterTableName: tableName,
+            masterTableCode: mc,
+            detailTableName: detail,
+            detailTableCode: detailCode,
+            attachmentCount: uploaded,
+            hasServerAttachments: true,
+            uploaded,
+            failed,
+        });
+    }
+    return { uploaded, failed };
+}
+
+function ClearPendingAttachments_AttachmentControl() {
+    _acTempQueue = [];
+    _acNotifyQueueChange();
+}
+
+function GetPendingAttachmentCount_AttachmentControl() {
+    return _acTempQueue.length;
+}
+
+/**
+ * Delete all attachments for a master row after the host successfully deletes that entry (e.g. grid delete).
+ * Uses API POST DocumentAttachment/DeleteAllAttachment.
+ * Fire-and-forget from hosts: .catch(() => {}) if you do not need the result.
+ *
+ * @param {string} masterTableName
+ * @param {number|string} masterTableCode
+ * @param {string} [detailTableName] default ''
+ * @param {number|string} [detailTableCode] default 0
+ * @returns {Promise<*>}
+ */
+function DeleteAllAttachmentsForMaster_AttachmentControl(masterTableName, masterTableCode, detailTableName, detailTableCode) {
+    const mtn = String(masterTableName ?? '').trim();
+    const mtc = parseInt(String(masterTableCode ?? 0), 10) || 0;
+    const dtn = detailTableName != null && detailTableName !== undefined ? String(detailTableName) : '';
+    const dtc = parseInt(String(detailTableCode ?? 0), 10) || 0;
+    if (!mtn || mtc <= 0) {
+        return Promise.resolve(null);
+    }
+    return AttachmentControlService.DeleteAllAttachment(mtn, mtc, dtn, dtc);
+}
+
 window.Download_AttachmentControl = Download_AttachmentControl;
 window.Delete_AttachmentControl = Delete_AttachmentControl;
 window.DownloadAll_AttachmentControl = DownloadAll_AttachmentControl;
@@ -335,6 +945,16 @@ window.DeleteFile_AttachmentControl = DeleteFile_AttachmentControl;
 window.ViewFile_AttachmentControl = ViewFile_AttachmentControl;
 window.Save_AttachmentControl = Save_AttachmentControl;
 window.GatAllAttachment = GatAllAttachment;
+window.Show_AttachmentControl = Show_AttachmentControl;
+window.Close_AttachmentControl = Close_AttachmentControl;
+window.PrepareAttachmentControlModal = PrepareAttachmentControlModal;
+window.DestroyAllAttachmentControlModals = DestroyAllAttachmentControlModals;
+window.DestroyExistingAttachmentControlModal = DestroyAllAttachmentControlModals;
+window.RemoveTempQueue_AttachmentControl = RemoveTempQueue_AttachmentControl;
+window.FlushPendingAttachments = FlushPendingAttachments;
+window.ClearPendingAttachments_AttachmentControl = ClearPendingAttachments_AttachmentControl;
+window.GetPendingAttachmentCount_AttachmentControl = GetPendingAttachmentCount_AttachmentControl;
+window.DeleteAllAttachmentsForMaster_AttachmentControl = DeleteAllAttachmentsForMaster_AttachmentControl;
 //window.loadatta = loadatta;
 //GatAllAttachment();
 //loadatta();

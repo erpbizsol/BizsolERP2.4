@@ -4,9 +4,105 @@
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentEntry.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentApproval.js"></script>
+
 
 
 <style>
+    /* Bank-statement embed: bank + amount locked from parent row */
+    select.gpa-bs-embed-locked,
+    input.gpa-bs-embed-locked,
+    input.gpa-bs-embed-locked:disabled {
+        background-color: #f1f5f9 !important;
+        cursor: not-allowed;
+        opacity: 1;
+    }
+
+    /* ── Bank Statement iframe embed (?embedded=1&bankStatementCode=…) ── */
+    body.erp-embedded.gpa-bs-embed-page .modern-content {
+        padding: 0.5rem 0.65rem 5.5rem !important;
+        min-height: 100% !important;
+        overflow-x: hidden !important;
+    }
+    body.erp-embedded.gpa-bs-embed-page #divGPAList {
+        display: none !important;
+    }
+    body.erp-embedded.gpa-bs-embed-page #divGPAForm {
+        margin-top: 0 !important;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    body.erp-embedded.gpa-bs-embed-page .po-form-wrap {
+        padding-bottom: 4.5rem;
+    }
+    body.erp-embedded.gpa-bs-embed-page #floatBar.po-float-bar {
+        margin-left: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        padding: 8px 10px;
+        z-index: 1200;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+     .btn-gpa-history {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#6366f1,#4f46e5);
+        border:none; color:#fff; border-radius:9px; padding:9px 18px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(99,102,241,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-history:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(99,102,241,0.5); color:#fff; }
+    .btn-gpa-reject {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#dc2626,#ef4444);
+        border:none; color:#fff; border-radius:9px; padding:9px 22px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(220,38,38,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }`
+    body.erp-embedded.gpa-bs-embed-page .po-float-bar-left {
+        display: none;
+    }
+    body.erp-embedded.gpa-bs-embed-page .po-float-bar-right {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    body.erp-embedded.gpa-bs-embed-page .gpa-bs-embed-hide {
+        display: none !important;
+    }
+    body.erp-embedded.gpa-bs-embed-page .gpa-hint-box-col {
+        display: none;
+    }
+    body.erp-embedded.gpa-bs-embed-page .po-step-body {
+        padding: 12px 10px;
+    }
+    body.erp-embedded.gpa-bs-embed-page .po-step-header {
+        padding: 10px 12px;
+    }
+    body.erp-embedded.gpa-bs-embed-page .items-desktop-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    @@media (min-width: 992px) {
+        body.erp-embedded.gpa-bs-embed-page .gpa-hint-box-col {
+            display: flex;
+        }
+    }
+    @@media (max-width: 576px) {
+        body.erp-embedded.gpa-bs-embed-page .btn-po-cancel,
+        body.erp-embedded.gpa-bs-embed-page .btn-po-save {
+            padding: 6px 14px;
+            font-size: 0.82rem;
+        }
+        body.erp-embedded.gpa-bs-embed-page #floatBar.po-float-bar {
+            padding: 6px 8px;
+        }
+    }
+
     /* ── Payment Entry — same visual system as GRN Service ── */
     .po-step-card {
         background: #fff;
@@ -113,8 +209,8 @@
         letter-spacing: 0.02em;
         text-transform: uppercase;
     }
-        th:hover {
-            background: linear-gradient(90deg, #e6091f 0%, #6b5ee6 100%) !important;
+        #divGPAList th:hover {
+            background: linear-gradient(135deg, #6d72f7, #5b5ef4) !important;
         }
     table, th, td, tr {
         border: 1px solid #ddd;
@@ -163,7 +259,6 @@
         }
     /* ── FLOATING SAVE BAR (GRN same) ── */
     #floatBar.po-float-bar {
-        display: flex !important;
         position: fixed;
         bottom: 44px;
         left: 0;
@@ -195,6 +290,14 @@
         display: flex;
         align-items: center;
         gap: 6px;
+    }
+    /* Same as GRN Service float bar — NEW / EDIT / SAVED / UPDATED */
+    .po-mode-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.05em;
     }
     .btn-po-save {
         background: linear-gradient(170deg, #ffffff, #ffffff);
@@ -258,117 +361,108 @@
         .po-float-bar-right { width: 100%; justify-content: flex-end; gap: 8px; }
         .po-form-wrap { padding-bottom: 150px; }
     }
-    /* ── LIST: title + status tabs + actions in one purple header ── */
+    /* ── LIST: PO Store style header + stat chips ── */
     .po-list-header {
-        background: linear-gradient(130deg, #5b5ef4 0%, #8b5cf6 55%, #a855f7 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 14px 14px 0 0;
-        padding: 16px 20px;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .po-header-top {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 14px 16px;
+        gap: 10px;
+        width: 100%;
     }
-    .po-list-header-left {
-        flex: 0 1 auto;
-        min-width: 160px;
+    .po-stats-strip {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        flex-wrap: nowrap;
+        padding-bottom: 2px;
+    }
+    .po-stats-strip::-webkit-scrollbar { display: none; }
+    .po-stat-chip {
+        background: rgba(255,255,255,0.18);
+        border-radius: 10px;
+        padding: 5px 14px;
+        text-align: center;
+        min-width: 80px;
+        border: 1px solid rgba(255,255,255,0.2);
+        text-decoration: none;
+        color: inherit;
+    }
+    .po-stat-chip .val { font-size: 1.15rem; font-weight: 800; color: #fff; line-height: 1; }
+    .po-stat-chip .lbl {
+        font-size: 0.65rem;
+        color: rgba(255,255,255,0.8);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .po-chip-link { transition: transform 0.18s ease, background 0.18s ease; cursor: pointer; pointer-events: auto; }
+    .po-chip-link:hover { background: rgba(255,255,255,0.32) !important; transform: scale(1.06); }
+    .po-stat-chip:not(.po-chip-link) { cursor: default; pointer-events: none; }
+    .po-filter-bar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        padding: 14px 18px 10px;
+        margin-bottom: 14px;
+    }
+    #divGPAList {
+        padding: 0;
+        margin-top: 0.75rem;
+    }
+    #divGPAList .gpa-list-top-panel {
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102,126,234,0.07);
+    }
+    #divGPAList .gpa-list-top-panel .po-list-header {
+        border-radius: 0;
+    }
+    #divGPAList .gpa-list-top-panel .po-filter-bar {
+        margin-bottom: 0;
+        border: none;
+        border-top: 1px solid #e8ecf4;
+        border-radius: 0;
+    }
+    .po-create-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        border: 2px solid rgba(255,255,255,0.6);
+        color: #667eea;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+        white-space: nowrap;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+        line-height: 1;
+        text-decoration: none;
+        font-size: 0.85rem;
+    }
+    .po-create-btn:hover { background: #f0f4ff; border-color: #667eea; color: #667eea; }
+    @@media (max-width: 480px) {
+        .po-stat-chip { min-width: 62px; padding: 4px 8px; }
+        .po-stat-chip .val { font-size: 1rem; }
+        .po-stat-chip .lbl { font-size: 0.6rem; }
     }
     .po-list-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
     .po-list-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; margin-top: 2px; }
-    .po-list-header-actions {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        flex: 0 0 auto;
-    }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: stretch;
-        justify-content: center;
-        gap: 8px;
-        flex: 1 1 260px;
-        padding: 0;
-        margin: 0;
-        background: transparent;
-        border: none;
-        min-width: 0;
-    }
-
-        #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab {
-            flex: 0 1 auto;
-            min-width: 187px;
-            max-width: 127px;
-            padding: 1px 12px 10px;
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.14);
-            cursor: pointer;
-            font-size: 0.62rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            color: rgba(255, 255, 255, 0.95);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            min-height: 50px;
-            transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
-        }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab:hover {
-        background: rgba(255,255,255,0.24);
-        border-color: rgba(255,255,255,0.55);
-        color: #fff;
-    }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active {
-        background: #fff;
-        border-color: #fff;
-        color: #4c1d95;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-    }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab:focus-visible {
-        outline: 2px solid #fff;
-        outline-offset: 2px;
-    }
-    #divGPAList .po-list-header .gpa-status-tab-lbl {
-        color: inherit;
-        font-size: 0.6rem;
-        line-height: 1.2;
-        text-align: center;
-    }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--u .gpa-status-tab-count { color: #fde047; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--p .gpa-status-tab-count { color: #6ee7b7; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--r .gpa-status-tab-count { color: #fca5a5; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active .gpa-status-tab-count { color: #5b21b6; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active.gpa-status-tab--p .gpa-status-tab-count { color: #047857; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active.gpa-status-tab--r .gpa-status-tab-count { color: #b91c1c; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active.gpa-status-tab--u .gpa-status-tab-count { color: #6d28d9; }
-    #divGPAList .po-list-header .gpa-status-tab-count {
-        font-size: 1rem;
-        font-weight: 800;
-        line-height: 1.1;
-    }
-    @@media (max-width: 992px) {
-        .po-list-header-left {
-            order: 1;
-            flex-basis: 100%;
-        }
-        #divGPAList .po-list-header .gpa-status-tabs--in-header {
-            order: 2;
-            flex-basis: 100%;
-            justify-content: center;
-        }
-        .po-list-header-actions {
-            order: 3;
-            width: 100%;
-            justify-content: center;
-            margin-left: 0;
-        }
-    }
     #divGPAList .po-grid-wrap {
         display: flex;
         flex-direction: column;
@@ -377,6 +471,7 @@
         border: 1px solid #e2e8f0;
         box-shadow: 0 2px 12px rgba(102,126,234,0.07);
         overflow: visible;
+        margin-top: 14px;
         margin-bottom: 8px;
     }
     #divGPAList .table-wrapper.po-table-scroll {
@@ -394,55 +489,119 @@
         top: 0;
         z-index: 2;
     }
-    .vm-btn-new {
-        background: rgba(255,255,255,0.18);
-        border: 1.5px solid rgba(255,255,255,0.55);
-        color: #fff !important;
-        border-radius: 10px;
-        padding: 6px 18px;
-        font-size: 0.88rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.14s;
-    }
-    .vm-btn-new:hover {
-        background: rgba(255,255,255,0.26);
-        border-color: rgba(255,255,255,0.80);
-        transform: translateY(-1px);
-    }
-
-    .vm-btn-approval-link {
-        display: inline-flex;
-        align-items: center;
-        padding: 11px 18px;
-        font-size: 0.82rem;
-        font-weight: 700;
-        color: #fff !important;
-        text-decoration: none !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.55);
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.12);
-        transition: background 0.14s, border-color 0.14s, transform 0.14s;
-        gap: 2px;
-    }
-    .vm-btn-approval-link:hover {
-        background: rgba(255,255,255,0.22);
-        border-color: rgba(255,255,255,0.85);
-        color: #fff !important;
-        transform: translateY(-1px);
-    }
     .im-btn-edit {
         display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
         background: #eff6ff; color: #2563eb; border: 1.5px solid #bfdbfe; border-radius: 7px;
         font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-right: 4px;
     }
     .im-btn-edit:hover { background: #2563eb; color: #fff; border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
+    .im-btn-view {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 32px; height: 28px; padding: 0 10px;
+        background: #0ea5e9; color: #fff; border: 1.5px solid #0284c7; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-right: 4px;
+    }
+    .im-btn-view:hover { background: #0284c7; color: #fff; border-color: #0369a1; box-shadow: 0 2px 8px rgba(2,132,199,0.35); }
     .im-btn-delete {
         display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
         background: #fee2e2; color: #dc2626; border: 1.5px solid #fca5a5; border-radius: 7px;
         font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
     }
     .im-btn-delete:hover { background: #dc2626; color: #fff; border-color: #dc2626; box-shadow: 0 2px 8px rgba(220,38,38,0.3); }
+    .im-btn-attach {
+        display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
+        background: #e0f2fe; color: #0284c7; border: 1.5px solid #7dd3fc; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-right: 4px;
+    }
+    .im-btn-attach:hover { background: #0284c7; color: #fff; border-color: #0284c7; box-shadow: 0 2px 8px rgba(2,132,199,0.3); }
+    /* HasAttachment = Yes: green attachment button only (row keeps normal striping) */
+    #gpaListTable .im-btn-attach.im-btn-attach--has-attachment {
+        background: #10b981;
+        color: #fff;
+        border-color: #059669;
+    }
+    #gpaListTable .im-btn-attach.im-btn-attach--has-attachment:hover {
+        background: #059669;
+        color: #fff;
+        border-color: #047857;
+        box-shadow: 0 2px 8px rgba(5,150,105,0.35);
+    }
+    /* Float bar Attachment: blue default; HasAttachment Yes, files on server, or pending uploads → green */
+    #floatBar .btn-gpa-footer-attach {
+        background: linear-gradient(135deg,#0ea5e9,#0284c7) !important;
+        box-shadow: 0 4px 14px rgba(14,165,233,0.35);
+        color: #fff !important;
+    }
+    #floatBar .btn-gpa-footer-attach:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(14,165,233,0.45);
+        color: #fff !important;
+        filter: brightness(1.03);
+    }
+    #floatBar .btn-gpa-footer-attach.btn-gpa-footer-attach--yes {
+        background: linear-gradient(135deg,#10b981,#059669) !important;
+        box-shadow: 0 4px 14px rgba(16,185,129,0.4);
+    }
+    #floatBar .btn-gpa-footer-attach.btn-gpa-footer-attach--yes:hover {
+        box-shadow: 0 6px 20px rgba(5,150,105,0.45);
+        filter: brightness(1.03);
+    }
+    /* Print / Print Preview — same idea as Purchase Order (Store) list */
+    .im-btn-print-preview {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 32px; height: 28px; padding: 0 8px; margin-right: 4px;
+        background: #64748b; color: #fff; border: 1.5px solid #475569; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
+    }
+    .im-btn-print-preview:hover { background: #475569; border-color: #334155; box-shadow: 0 2px 8px rgba(71,85,105,0.35); color: #fff; }
+    .im-btn-print {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 32px; height: 28px; padding: 0 8px; margin-right: 4px;
+        background: #1e293b; color: #fff; border: 1.5px solid #0f172a; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
+    }
+    .im-btn-print:hover { background: #0f172a; box-shadow: 0 2px 8px rgba(15,23,42,0.35); color: #fff; }
+    /* View detail modal */
+    .gpa-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .gpa-info-item { background: #fafbff; border: 1px solid #eef0f8; border-radius: 10px; padding: 8px 12px; }
+    .gpa-info-lbl { font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 3px; }
+    .gpa-info-val { font-size: 0.84rem; font-weight: 700; color: #1e293b; }
+    .gpa-level-stepper-wrap { background: #fafbff; border: 1px solid #eef0f8; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+    .gpa-level-stepper-title { font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .gpa-detail-stepper { display: flex; align-items: flex-start; overflow-x: auto; gap: 0; padding-bottom: 4px; }
+    .gpa-dstep-item { display: flex; flex-direction: column; align-items: center; text-align: center; flex-shrink: 0; min-width: 100px; }
+    .gpa-dstep-circle { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; margin-bottom: 7px; border: 2px solid transparent; }
+    .gpa-dstep-done .gpa-dstep-circle { background: linear-gradient(135deg,#10b981,#059669); color: #fff; }
+    .gpa-dstep-active .gpa-dstep-circle { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; }
+    .gpa-dstep-rejected .gpa-dstep-circle { background: linear-gradient(135deg,#dc2626,#ef4444); color: #fff; }
+    .gpa-dstep-pending .gpa-dstep-circle { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+    .gpa-dstep-line { flex-shrink: 0; width: 28px; height: 3px; align-self: flex-start; margin-top: 17px; border-radius: 2px; }
+    .gpa-dstep-line-done { background: linear-gradient(90deg,#10b981,#059669); }
+    .gpa-dstep-line-pending { background: #e2e8f0; }
+    .gpa-items-wrap { margin-bottom: 14px; }
+    .gpa-items-title { font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .gpa-items-table { width: 100%; border-collapse: collapse; }
+    .gpa-items-table thead tr th { background: #4f46e5; color: #fff; font-size: 0.72rem; font-weight: 600; text-align: center; padding: 8px 10px; white-space: nowrap; border: none; }
+    .gpa-items-table tbody tr td { padding: 7px 10px; vertical-align: middle; border: 1px solid #ede9fe; font-size: 0.8rem; color: #374151; }
+    .btn-gpa-modal-preview, .btn-gpa-modal-print, .btn-gpa-modal-attach, .btn-gpa-close {
+        display: inline-flex; align-items: center; gap: 5px; border: none; color: #fff; border-radius: 9px;
+        padding: 9px 16px; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-gpa-modal-preview { background: #64748b; }
+    .btn-gpa-modal-print { background: #1e293b; }
+    .btn-gpa-modal-attach { background: linear-gradient(135deg,#0ea5e9,#0284c7); }
+    .btn-gpa-close { background: linear-gradient(135deg,#f59e0b,#d97706); }
+    @@media (max-width: 768px) { .gpa-info-grid { grid-template-columns: repeat(2, 1fr); } }
+    /* ── Attachment badge on float bar button ── */
+    .gpa-attach-btn-wrap { position: relative; display: inline-flex; }
+    .gpa-temp-badge {
+        position: absolute; top: -7px; right: -7px;
+        min-width: 18px; height: 18px; border-radius: 9px;
+        background: #ef4444; color: #fff;
+        font-size: 0.68rem; font-weight: 800;
+        display: none; align-items: center; justify-content: center;
+        padding: 0 4px; border: 2px solid #fff; z-index: 1;
+    }
     /* Bill grid row delete (same as GRNService item table) */
     .del-row-btn {
         display: inline-flex;
@@ -466,40 +625,496 @@
         transform: scale(1.12);
         box-shadow: 0 2px 8px rgba(220,38,38,0.35);
     }
+
+    /* ── Entry List Card View (same design as GRN Payment Approval cards) ── */
+    .gpa-pay-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: box-shadow 0.2s ease, transform 0.15s ease;
+        border-left: 4px solid #667eea;
+    }
+    .gpa-pay-card:hover { box-shadow: 0 6px 22px rgba(102,126,234,0.16); transform: translateY(-1px); }
+    .gpa-pay-card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px 10px;
+    }
+    .gpa-entry-badge {
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        border-radius: 10px;
+        padding: 8px 12px;
+        min-width: 68px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        box-shadow: 0 3px 10px rgba(102,126,234,0.35);
+    }
+    .gpa-pay-card-vendor { flex: 1; min-width: 0; }
+    .gpa-pay-vendor-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 4px;
+    }
+    .gpa-pay-card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        font-size: 0.74rem;
+        color: #64748b;
+    }
+    .gpa-pay-level-chip {
+        background: rgba(102,126,234,0.08);
+        border: 1px solid rgba(102,126,234,0.18);
+        border-radius: 6px;
+        padding: 1px 7px;
+        color: #667eea;
+        font-weight: 600;
+    }
+    /* ── Party (vendor) add button — same green style as BOM item-add-btn ── */
+    .gpa-party-add-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 26px; height: 26px; border-radius: 7px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none; color: #fff; cursor: pointer; flex-shrink: 0;
+        font-size: 0.78rem; box-shadow: 0 2px 7px rgba(16,185,129,0.35);
+        transition: all 0.18s; vertical-align: middle;
+    }
+    .gpa-party-add-btn:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(16,185,129,0.5); }
+
+    .gpa-pay-card-right {
+        flex-shrink: 0;
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        align-items: flex-end;
+    }
+    .gpa-pay-amount { font-size: 0.92rem; font-weight: 800; color: #667eea; }
+    .gpa-pay-status-badge {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        display: inline-block;
+    }
+    .gpa-pay-card-levels {
+        padding: 8px 16px 10px;
+        border-top: 1px solid #f0f4ff;
+        background: #fafbff;
+    }
+    .gpa-pay-level-label {
+        font-size: 0.73rem;
+        color: #64748b;
+        margin-bottom: 8px;
+    }
+    .gpa-stepper {
+        display: flex;
+        align-items: center;
+        overflow-x: auto;
+        gap: 0;
+        padding-bottom: 2px;
+    }
+    .gpa-step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        flex-shrink: 0;
+    }
+    .gpa-step-circle {
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.72rem; font-weight: 800;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+    }
+    .gpa-step-done     { background: linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 2px 8px rgba(16,185,129,0.35); }
+    .gpa-step-active   { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 2px 8px rgba(102,126,234,0.4); animation: gpePulseStep 1.6s infinite; }
+    .gpa-step-rejected { background: linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 2px 8px rgba(220,38,38,0.35); }
+    .gpa-step-pending  { background: #f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
+    @@keyframes gpePulseStep {
+        0%,100% { box-shadow: 0 2px 8px rgba(102,126,234,0.4); }
+        50%     { box-shadow: 0 2px 18px rgba(102,126,234,0.75); }
+    }
+    .gpa-step-lbl { font-size: 0.63rem; color: #94a3b8; font-weight: 600; }
+    .gpa-step-connector {
+        flex: 1; height: 3px; min-width: 18px; max-width: 56px;
+        border-radius: 2px; margin-bottom: 12px;
+    }
+    .gpa-step-line-done    { background: linear-gradient(90deg,#10b981,#059669); }
+    .gpa-step-line-pending { background: #e2e8f0; }
+    .gpa-pay-card-footer {
+        padding: 8px 16px 12px;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .gpa-pay-card-print-btns {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .btn-gpa-print-icon {
+        width: 36px; height: 32px;
+        border: none; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 0.85rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-gpa-print-prev {
+        background: #64748b; color: #fff;
+        box-shadow: 0 2px 8px rgba(100,116,139,0.35);
+    }
+    .btn-gpa-print-go {
+        background: #1e293b; color: #fff;
+        box-shadow: 0 2px 8px rgba(30,41,59,0.35);
+    }
+    .btn-gpa-print-icon:hover { transform: translateY(-1px); color: #fff; }
+    @@media (max-width: 600px) {
+        .gpa-pay-card-header { flex-wrap: wrap; }
+        .gpa-pay-card-right { flex-direction: row; align-items: center; }
+        .gpa-pay-card-footer { flex-direction: column; align-items: stretch; }
+        .gpa-pay-card-print-btns { width: 100%; justify-content: flex-start; }
+    }
+
+    /* ── Party / PO History modal — green theme (matches GRN Service history) ── */
+    .gpa-history-summary {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    @@media (max-width: 992px) {
+        .gpa-history-summary { grid-template-columns: repeat(2, 1fr); }
+    }
+    @@media (max-width: 576px) {
+        .gpa-history-summary { grid-template-columns: 1fr; }
+    }
+    .gpa-history-card {
+        border-radius: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .gpa-history-card-lbl {
+        font-size: 0.68rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
+    }
+    .gpa-history-card-val {
+        font-size: 0.95rem; font-weight: 800; line-height: 1.3;
+    }
+    .gpa-history-card--po {
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        border: 1px solid #93c5fd;
+    }
+    .gpa-history-card--po .gpa-history-card-lbl { color: #1d4ed8; }
+    .gpa-history-card--po .gpa-history-card-val { color: #1e3a8a; }
+    .gpa-history-card--grn {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border: 1px solid #86efac;
+    }
+    .gpa-history-card--grn .gpa-history-card-lbl { color: #166534; }
+    .gpa-history-card--grn .gpa-history-card-val { color: #15803d; }
+    .gpa-history-card--payment {
+        background: linear-gradient(135deg, #faf5ff, #f3e8ff);
+        border: 1px solid #d8b4fe;
+    }
+    .gpa-history-card--payment .gpa-history-card-lbl { color: #7c3aed; }
+    .gpa-history-card--payment .gpa-history-card-val { color: #6d28d9; }
+    .gpa-history-card--balance {
+        background: linear-gradient(135deg, #fff7ed, #ffedd5);
+        border: 1px solid #fdba74;
+    }
+    .gpa-history-card--balance .gpa-history-card-lbl { color: #c2410c; }
+    .gpa-history-card--balance .gpa-history-card-val { color: #ea580c; }
+    .gpa-history-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 14px;
+        margin-bottom: 14px;
+        padding: 12px 14px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        font-size: 0.82rem; color: #475569;
+        align-items: end;
+    }
+    .gpa-history-meta strong { color: #166534; font-size: 0.88rem; }
+    .gpa-history-filter-lbl {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #166534;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+    .gpa-history-filter-select {
+        width: 100%;
+        font-size: 0.82rem;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 6px 10px;
+        background: #fff;
+        color: #1e293b;
+    }
+    .gpa-history-filter-select:disabled {
+        background: #f8fafc;
+        color: #94a3b8;
+    }
+    @@media (max-width: 768px) {
+        .gpa-history-meta { grid-template-columns: 1fr; }
+    }
+    .gpa-history-table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+    .gpa-history-table thead tr th {
+        background: #f0fdf4; color: #166534;
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        text-align: center; vertical-align: middle;
+        padding: 10px 10px; white-space: nowrap;
+        border-bottom: 2px solid #bbf7d0;
+    }
+    #modalGpaHistory .gpa-history-table thead tr th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f0fdf4;
+        box-shadow: 0 2px 0 #bbf7d0;
+    }
+    .gpa-history-table tbody tr td {
+        padding: 9px 10px; vertical-align: middle;
+        border-bottom: 1px solid #f3f4f6; font-size: 0.78rem; color: #374151;
+    }
+    .gpa-history-table tbody tr:hover td { background: #f0fdf4; }
+    .gpa-history-type {
+        display: inline-block; font-size: 0.68rem; font-weight: 700;
+        padding: 2px 8px; border-radius: 20px;
+    }
+    .gpa-history-type-po { background: #dbeafe; color: #1d4ed8; }
+    .gpa-history-type-grn { background: #d1fae5; color: #047857; }
+    .gpa-history-type-payment { background: #ede9fe; color: #6d28d9; }
+    #modalGpaHistory .modal-dialog {
+        max-width: 880px;
+        margin: 1.5rem auto;
+        max-height: calc(100vh - 2rem);
+    }
+    #modalGpaHistory .modal-content {
+        border-radius: 18px;
+        border: none;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 2rem);
+    }
+    #modalGpaHistory .gpa-history-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px 16px;
+        border: none;
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        color: #fff;
+    }
+    #modalGpaHistory .gpa-history-modal-header .modal-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    #modalGpaHistory .gpa-history-modal-close {
+        background: rgba(255, 255, 255, 0.18);
+        border: none;
+        color: #fff;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.15s;
+        flex-shrink: 0;
+    }
+    #modalGpaHistory .gpa-history-modal-close:hover { background: rgba(255, 255, 255, 0.32); }
+    #modalGpaHistory .gpa-history-modal-body {
+        padding: 16px 18px;
+        background: #fff;
+        flex: 1 1 auto;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+    #modalGpaHistory .gpa-history-modal-footer {
+        padding: 14px 22px;
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        justify-content: flex-end;
+        flex-shrink: 0;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    #modalGpaHistory .gpa-history-meta,
+    #modalGpaHistory .gpa-history-summary,
+    #modalGpaHistory .gpa-history-table-section > .gpa-items-title {
+        flex-shrink: 0;
+    }
+    #modalGpaHistory .gpa-history-table-section {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+    #modalGpaHistory .gpa-history-table-scroll-wrap {
+        flex: 1 1 auto;
+        overflow: auto;
+        min-height: 140px;
+        max-height: min(380px, calc(100vh - 430px));
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+    #modalGpaHistory .gpa-items-title {
+        color: #166534;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 10px;
+    }
+    #modalGpaHistory .gpa-budget-status {
+        display: inline-block;
+        min-width: 72px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    #modalGpaHistory .gpa-budget-status--approved { background: #dcfce7; color: #15803d; }
+    #modalGpaHistory .gpa-budget-status--completed { background: #e0f2fe; color: #0369a1; }
+    #modalGpaHistory .gpa-budget-status--pending { background: #dbeafe; color: #1d4ed8; }
+    #modalGpaHistory .gpa-budget-status--rejected { background: #fee2e2; color: #b91c1c; }
+    #modalGpaHistory .gpa-budget-status--hold { background: #ffedd5; color: #c2410c; }
+    #modalGpaHistory .gpa-budget-status--other { background: #f3f4f6; color: #374151; }
+    .btn-gpa-close {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none; color: #fff; border-radius: 9px; padding: 9px 20px;
+        font-size: 0.85rem; font-weight: 700;
+        box-shadow: 0 3px 12px rgba(245, 158, 11, 0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-gpa-close:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 16px rgba(245, 158, 11, 0.5);
+        color: #fff;
+    }
+    .btn-gpa-copy-narration {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none; color: #fff; border-radius: 9px; padding: 9px 18px;
+        font-size: 0.85rem; font-weight: 700;
+        box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .btn-gpa-copy-narration:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 16px rgba(16, 185, 129, 0.5);
+        color: #fff;
+    }
+    .btn-gpa-copy-narration:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
 </style>
 
-<!-- ── LIST VIEW ───────────────────────────────── -->
-<div id="divGPAList" class="container-fluid mt-3">
-    <div class="po-list-header">
-        <div class="po-list-header-left">
-            <h5><i class="fa fa-money-check-alt me-2"></i>Payment Entry List</h5>
-            <small>Payment Entry — filter by approval status</small>
+<!-- ── LIST VIEW (PO Store layout) ─────────────── -->
+<div id="divGPAList">
+    <div class="gpa-list-top-panel">
+        <div class="po-list-header">
+            <div class="po-header-top">
+                <div>
+                    <h5><i class="fa fa-money-check-alt me-2"></i>Payment Entry List</h5>
+                    <small>Manage and track payment entries</small>
+                </div>
+                <button type="button" class="po-create-btn" onclick="window.newGRNPaymentApproval()">
+                    <i class="fa fa-plus-circle"></i><span class="ms-1">New</span>
+                </button>
+            </div>
+            <div class="po-stats-strip">
+                <div class="po-stat-chip">
+                    <div class="val" id="gpaStatTotal">—</div>
+                    <div class="lbl">Total</div>
+                </div>
+                <div class="po-stat-chip" style="border:1.5px solid rgba(255,165,0,0.55);">
+                    <div class="val" id="gpaStatPending" style="color:#ffd580;">—</div>
+                    <div class="lbl">Pending</div>
+                </div>
+                <a href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
+                   class="po-stat-chip po-chip-link" style="border:1.5px solid rgba(255,165,0,0.55);"
+                   title="Open GRN payment approvals pending on me">
+                    <div class="val" id="gpaStatPendingOnMe" style="color:#c7206d;">—</div>
+                    <div class="lbl">Pending on Me</div>
+                </a>
+                <div class="po-stat-chip" style="border:1.5px solid rgba(16,185,129,0.55);">
+                    <div class="val" id="gpaStatApproved" style="color:#6ee7b7;">—</div>
+                    <div class="lbl">Approved</div>
+                </div>
+                <div class="po-stat-chip" style="border:1.5px solid rgba(248,113,113,0.55);">
+                    <div class="val" id="gpaStatRejected" style="color:#fca5a5;">—</div>
+                    <div class="lbl">Rejected</div>
+                </div>
+            </div>
         </div>
-        <div class="gpa-status-tabs gpa-status-tabs--in-header" id="gpaStatusTabs" role="tablist" aria-label="Payment entry status">
-            <button type="button" class="gpa-status-tab gpa-status-tab--u is-active" role="tab" data-gpa-status="U" aria-selected="true"
-                    onclick="onGpaListStatusTabClick('U')">
-                <span class="gpa-status-tab-count" id="gpaTabCountU">0</span>
-                <span class="gpa-status-tab-lbl">Pending</span>
-            </button>
-            <button type="button" class="gpa-status-tab gpa-status-tab--p" role="tab" data-gpa-status="P" aria-selected="false"
-                    onclick="onGpaListStatusTabClick('P')">
-                <span class="gpa-status-tab-count" id="gpaTabCountP">0</span>
-                <span class="gpa-status-tab-lbl">Approved</span>
-            </button>
-            <button type="button" class="gpa-status-tab gpa-status-tab--r" role="tab" data-gpa-status="R" aria-selected="false"
-                    onclick="onGpaListStatusTabClick('R')">
-                <span class="gpa-status-tab-count" id="gpaTabCountR">0</span>
-                <span class="gpa-status-tab-lbl">Rejected</span>
-            </button>
-        </div>
-        <div class="po-list-header-actions">
-            <a href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
-               class="vm-btn-approval-link">
-                <i class="fa fa-check-double me-1"></i> GRN Payment Approval
-            </a>
-            <button type="button" class="vm-btn-new" onclick="newGRNPaymentApproval()">
-                <i class="fa fa-plus me-1"></i> New
-            </button>
+        <div class="po-filter-bar">
+            <div class="row align-items-end g-2">
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Status</label>
+                    <select id="lstDdlStatus" class="form-control form-control-sm form-select"></select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">Bank Name</label>
+                    <select id="lstDdlBankName" class="form-control form-control-sm form-select"></select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">From Date <span class="req">*</span></label>
+                    <input type="date" id="lstTxtFromDate" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1" style="font-size:0.77rem;font-weight:600;color:#475569;">To Date <span class="req">*</span></label>
+                    <input type="date" id="lstTxtToDate" class="form-control form-control-sm" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-2 d-flex align-items-end pb-1">
+                    <button type="button" onclick="window.ShowGRNPaymentApprovalList()"
+                            style="background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;border-radius:9px;padding:7px 20px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(102,126,234,0.35);transition:all 0.2s;height:32px;white-space:nowrap;"
+                            onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+                        <i class="fa fa-search me-1"></i>Show
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     <div class="po-grid-wrap">
@@ -523,49 +1138,85 @@
             <i class="fa fa-file-invoice po-step-icon ms-auto"></i>
         </div>
         <div class="po-step-body">
-            <div class="row g-2">
+            <div class="row g-2 align-items-end">
                 <input type="hidden" id="hdnGRNPaymentMasterCode" value="0" />
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Entry No</label>
                     <input type="text" id="txtEntryNo" class="form-control form-control-sm" autocomplete="off" placeholder="Auto Generate" readonly>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Date <span class="req">*</span></label>
                     <input type="date" id="dtPaymentDate" class="form-control form-control-sm" autocomplete="off">
                 </div>
-                <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Party Name <span class="req">*</span></label>
-                    <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="onPartyChange()">
-                        <option value="">-- Select Party --</option>
+                <div class="col-md-4">
+                    <div class="form-check mb-1">
+                        <input type="checkbox" class="form-check-input" id="chkGpaPayToParty" checked onchange="window.onGpaPartyEmployeeModeChange()">
+                        <label class="form-check-label po-field-lbl mb-0" for="chkGpaPayToParty" style="font-size:0.8rem;font-weight:600;">Pay to party (vendor)</label>
+                    </div>
+                    <div id="wrapGpaPartyName">
+                        <label class="po-field-lbl d-block mb-1">Party Name <span class="req">*</span></label>
+                        <div class="d-flex align-items-center gap-1">
+                            <div style="flex:1;min-width:0;">
+                                <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="window.onPartyChange()">
+                                    <option value="">-- Select Party --</option>
+                                </select>
+                            </div>
+                            <button type="button" class="gpa-party-add-btn" id="btnGpaAddVendor" onclick="window.OpenVendorModal()" title="Add New Vendor">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="wrapGpaEmployeeName" style="display:none;">
+                        <label class="po-field-lbl d-block mb-1">Employee <span class="req">*</span></label>
+                        <select id="ddlEmployeeName" class="form-control form-control-sm" autocomplete="off" onchange="window.onGpaEmployeeChange()">
+                            <option value="">-- Select Employee --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="po-field-lbl d-block mb-1">Bank name <span class="req">*</span></label>
+                    <select id="ddlBankName" class="form-control form-control-sm" autocomplete="off" title="GetBankList (API)">
+                        <option value="">-- Select Bank --</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Payment mode</label>
-                    <select id="ddlPaymentMode" class="form-control form-control-sm" title="BANKPAYMENTTYPE (API)" onchange="syncRefNoRequiredUI()">
+                    <select id="ddlPaymentMode" class="form-control form-control-sm" title="BANKPAYMENTTYPE (API)" onchange="window.syncRefNoRequiredUI()">
                         <option value="">-- Select --</option>
                     </select>
                 </div>
             </div>
             <div class="row g-2 mt-1">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Ref No / CH No <span id="refNoReqMark" class="req" style="display: none;" aria-hidden="true">*</span></label>
                     <input type="text" id="txtRefNo" class="form-control form-control-sm" maxlength="50" autocomplete="off" placeholder="Reference / Cheque no.">
                 </div>
-                <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Amount</label>
+                <div class="col-md-2">
+                    <label class="po-field-lbl d-block mb-1">Amount <span class="req">*</span></label>
                     <input type="number" id="txtHeaderAmount" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off">
                 </div>
-                <div class="col-md-6 d-flex align-items-end">
+                <div class="col-md-2">
+                    <label class="po-field-lbl d-block mb-1">Work Type <span class="req">*</span></label>
+                    <select id="ddlWorkType" class="form-control form-control-sm" autocomplete="off" required onchange="window.onGpaWorkTypeChange()">
+                        <option value="">-- Select Work Type --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="po-field-lbl d-block mb-1">Payment for</label>
+                    <textarea id="txtPaymentFor" class="form-control form-control-sm" rows="2" maxlength="200" autocomplete="off" placeholder="Enter payment for (optional)"></textarea>
+                </div>
+                <div class="col-md-3 d-flex align-items-end gpa-hint-box-col">
                     <div class="gpa-hint-box w-100 mb-1">
                         <i class="fa fa-info-circle" style="color:#667eea;flex-shrink:0;"></i>
                         <span>Fill all working fields before save. Total payment + Advance / On account must not exceed Amount. Footer updates automatically unless you edit Advance.</span>
                     </div>
                 </div>
             </div>
+            
             <div class="row g-2 mt-1">
                 <div class="col-12">
                     <label class="po-field-lbl d-block mb-1">Narration</label>
-                    <textarea id="txtNarration" class="form-control form-control-sm" rows="2" maxlength="225" autocomplete="off" placeholder="Enter narration (optional)"></textarea>
+                    <textarea id="txtNarration" class="form-control form-control-sm" rows="2" maxlength="1000" autocomplete="off" placeholder="Enter narration (optional)"></textarea>
                 </div>
             </div>
         </div>
@@ -578,39 +1229,44 @@
             <span class="po-step-title">Bill allocation</span>
             <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
                 <div class="d-flex align-items-center gap-2" id="divGpaFillGridCheck" hidden style="display: none !important;">
-                    <input type="checkbox" class="form-check-input" id="chkGpaFillGrid" checked onchange="onGpaFillGridChange()">
+                    <input type="checkbox" class="form-check-input" id="chkGpaFillGrid" checked onchange="window.onGpaFillGridChange()">
                     <label class="form-check-label mb-0 po-field-lbl" for="chkGpaFillGrid" style="font-size: 0.8rem; font-weight: 600;">Fill Grid</label>
                 </div>
-                <button type="button" class="btn btn-sm btn-gpa-add-row" onclick="onAddBillRowClick()" title="Add bill">
+                <button type="button" class="btn btn-sm btn-gpa-add-row" onclick="window.onAddBillRowClick()" title="Add bill">
                     <i class="fa fa-plus me-1"></i> Add row
                 </button>
             </div>
         </div>
         <div class="po-step-body p-0">
             <div class="items-desktop-wrap table-responsive">
-                <table class="items-table" style="min-width:780px;">
+                <table class="items-table" style="min-width:1280px;">
                     <thead>
                         <tr>
                             <th>Bill no</th>
+                            <th>PO no</th>
+                            <th>Category</th>
+                            <th>Project <span id="gpaProjectReqMark" class="req" style="display: none;" aria-hidden="true">*</span></th>
+                            <th>Sub project</th>
                             <th>Bill date</th>
                             <th>Bill amount</th>
+                            <th>Deduction</th>
                             <th>Payable amount</th>
-                            <th>Payment amount</th>
+                            <th>Payment amount <span id="gpaPayAmtReqMark" class="req">*</span></th>
                             <th style="width:52px;text-align:center;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="billTbody"></tbody>
                     <tfoot class="gpa-tfoot">
                         <tr>
-                            <td colspan="3"></td>
+                            <td colspan="8"></td>
                             <td class="gpa-lbl">Total</td>
                             <td class="gpa-val"><input type="text" id="txtFooterTotal" class="form-control form-control-sm" readonly tabindex="-1" value="0.00"></td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td colspan="3"></td>
+                            <td colspan="8"></td>
                             <td class="gpa-lbl">Advance / On account</td>
-                            <td class="gpa-val"><input type="number" id="txtFooterAdvance" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off" value="0.00" onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); markFooterAdvanceManual();"></td>
+                            <td class="gpa-val"><input type="number" id="txtFooterAdvance" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off" value="0.00" onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this); window.markFooterAdvanceManual();"></td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -623,7 +1279,7 @@
 
 <!-- ── ADD BILL MODAL (same flow as GRNService Add Item) ── -->
 <div class="modal fade" id="gpaAddBillModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 640px;">
         <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.18);">
             <div class="modal-header" style="background: linear-gradient(135deg,#10b981,#059669); color: #fff; border: none;">
                 <h6 class="modal-title mb-0"><i class="fa fa-file-invoice-dollar me-2"></i>Add bill</h6>
@@ -635,21 +1291,44 @@
                 </div>
                 <div id="gpaAddBillModalForm">
                     <input type="hidden" id="gpaAddBillModalMrn" value="">
-                    <div class="mb-2">
-                        <label class="form-label mb-1 po-field-lbl">Party Name <span class="req">*</span></label>
-                        <select id="gpaAddBillModalParty" class="form-control form-control-sm" onchange="onGpaAddBillModalPartyChange()">
-                            <option value="">-- Select Party --</option>
-                        </select>
-                    </div>
                     <div id="gpaAddBillModalBillWrap" class="mb-2" style="display: none;">
                         <label class="form-label mb-1 po-field-lbl">Bill</label>
-                        <select id="gpaAddBillModalBill" class="form-control form-control-sm" onchange="onGpaAddBillModalBillChange()">
+                        <select id="gpaAddBillModalBill" class="form-control form-control-sm" onchange="window.onGpaAddBillModalBillChange()">
                             <option value="">-- Select bill --</option>
                         </select>
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1 po-field-lbl">Bill no</label>
-                        <input type="text" id="gpaAddBillModalBillNo" class="form-control form-control-sm" maxlength="64" autocomplete="off" placeholder="Bill no">
+                        <input type="text" id="gpaAddBillModalBillNo" class="form-control form-control-sm" maxlength="64" autocomplete="off" placeholder="Bill no"
+                               oninput="window.gpaOnAddBillModalBillNoInput()">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">PO no</label>
+                            <select id="gpaAddBillModalPo" class="form-control form-control-sm" onchange="window.onGpaAddBillModalPoChange()">
+                                <option value="">-- PO No --</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Category</label>
+                            <select id="gpaAddBillModalCategory" class="form-control form-control-sm">
+                                <option value="">-- Category --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Project</label>
+                            <select id="gpaAddBillModalProject" class="form-control form-control-sm" onchange="window.onGpaAddBillModalProjectPick()">
+                                <option value="">-- Project --</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Sub project</label>
+                            <select id="gpaAddBillModalSubProject" class="form-control form-control-sm" onchange="window.onGpaAddBillModalSubPick()">
+                                <option value="">-- Sub project --</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1 po-field-lbl">Bill date</label>
@@ -659,23 +1338,30 @@
                         <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Bill amount</label>
                             <input type="number" id="gpaAddBillModalBillAmt" class="form-control form-control-sm" min="0" step="0.01" placeholder="0"
-                                   onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); onGpaAddBillModalBillAmtInput();">
+                                   onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this); window.onGpaAddBillModalBillAmtInput();">
                         </div>
                         <div class="col-6">
-                            <label class="form-label mb-1 po-field-lbl">Payable amount</label>
-                            <input type="number" id="gpaAddBillModalPayable" class="form-control form-control-sm" min="0" step="0.01" placeholder="0" readonly style="background: #ede9fe; border-color: #c4b5fd;">
+                            <label class="form-label mb-1 po-field-lbl">Deduction</label>
+                            <input type="text" id="gpaAddBillModalDeduction" class="form-control form-control-sm" readonly tabindex="-1" placeholder="—" style="background:#f1f5f9;border-color:#cbd5e1;">
                         </div>
                     </div>
-                    <div class="mb-2">
-                        <label class="form-label mb-1 po-field-lbl">Payment amount <span class="req">*</span></label>
-                        <input type="number" id="gpaAddBillModalPayment" class="form-control form-control-sm" min="0" step="0.01" placeholder="0"
-                               onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this);">
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Payable amount</label>
+                            <input type="number" id="gpaAddBillModalPayable" class="form-control form-control-sm" min="0" step="0.01" placeholder="0" readonly style="background: #ede9fe; border-color: #c4b5fd;"
+                                   onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this);">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Payment amount <span class="req">*</span></label>
+                            <input type="number" id="gpaAddBillModalPayment" class="form-control form-control-sm" min="0" step="0.01" placeholder="0"
+                                   onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this);">
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer" style="border-top: 1px solid #e2e8f0; padding: 14px 24px;">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><i class="fa fa-times me-1"></i> Cancel</button>
-                <button type="button" class="btn btn-success btn-sm" onclick="saveGpaAddBillModalToGrid()"><i class="fa fa-check me-1"></i> Add to grid</button>
+                <button type="button" class="btn btn-success btn-sm" onclick="window.saveGpaAddBillModalToGrid()"><i class="fa fa-check me-1"></i> Add to grid</button>
             </div>
         </div>
     </div>
@@ -690,17 +1376,93 @@
             <span class="text-muted small ms-1">·</span>
             <span id="floatPayTitle">Payment Entry</span>
         </div>
+        <span class="po-mode-badge badge bg-success" id="gpaFloatModeBadge">NEW</span>
     </div>
     <div class="po-float-bar-right">
-        <button type="button" class="btn-po-cancel" onclick="cancelGRNPaymentApproval()">
+        <button type="button" class="btn-po-cancel gpa-bs-embed-hide" onclick="window.cancelGRNPaymentApproval()">
             <i class="fa fa-arrow-left me-1"></i> Back to List
         </button>
-        <button type="button" class="btn-po-cancel" onclick="resetGRNPaymentApprovalForm()">
+        <button type="button" class="btn-po-cancel" onclick="window.resetGRNPaymentApprovalForm()">
             <i class="fa fa-undo me-1"></i> Reset
         </button>
-        <button type="button" class="btn-po-save" onclick="saveGRNPaymentApproval()">
+        <button type="button" id="gpaBtnHistoryAction" class="btn-gpa-history" onclick="OpenApprovalHistory()" title="Party / Project history">
+                <i class="fa fa-history"></i>History
+          </button>
+        <div class="gpa-attach-btn-wrap">
+            <button type="button" id="btnGpaFooterAttach" class="btn-po-cancel btn-gpa-footer-attach" onclick="window.openGpaAttachmentControl()" title="Attachments">
+                <i class="fa fa-paperclip me-1"></i> Attachment
+            </button>
+            <span id="gpaTempAttachBadge" class="gpa-temp-badge">0</span>
+        </div>
+        <button type="button" class="btn-po-save" onclick="window.saveGRNPaymentApproval()">
             <i class="fa fa-save me-1"></i> Save
         </button>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGpaHistory" tabindex="-1" role="dialog"
+     aria-hidden="true" style="z-index:1070;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header gpa-history-modal-header">
+                <h5 class="modal-title mb-0">
+                    <i class="fa fa-history me-2"></i>Party / PO History
+                </h5>
+                <button type="button" class="gpa-history-modal-close" data-bs-dismiss="modal"
+                        aria-label="Close" onclick="CloseGpaApprovalHistoryModal()" title="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body gpa-history-modal-body">
+                <div id="gpaHistoryMeta" class="gpa-history-meta">
+                    <div id="gpaHistoryPartyWrap">
+                        <span class="gpa-history-filter-lbl">Party</span>
+                        <strong id="gpaHistoryPartyName">—</strong>
+                    </div>
+                    <div>
+                        <label class="gpa-history-filter-lbl" for="gpaHistDdlPO">PO No</label>
+                        <select id="gpaHistDdlPO" class="gpa-history-filter-select form-select form-select-sm"></select>
+                    </div>
+                </div>
+                <div id="gpaHistorySummary" class="gpa-history-summary"></div>
+                <div class="gpa-history-table-section">
+                    <div class="gpa-items-title">Transaction History</div>
+                    <div id="gpaHistoryLoading" style="display:none;text-align:center;padding:24px;color:#64748b;">
+                        <i class="fa fa-spinner fa-spin me-2"></i>Loading history…
+                    </div>
+                    <div id="gpaHistoryEmpty" style="display:none;text-align:center;padding:24px;color:#94a3b8;font-size:0.85rem;">
+                        No history found for the selected party and PO.
+                    </div>
+                    <div class="gpa-history-table-scroll-wrap" id="gpaHistoryTableWrap" style="display:none;">
+                        <table class="gpa-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Doc No</th>
+                                    <th>Date</th>
+                                    <th>Bill No</th>
+                                    <th>PO No</th>
+                                    <th>Project</th>
+                                    <th>Sub Project</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gpaHistoryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer gpa-history-modal-footer">
+                <button type="button" id="gpaBtnCopyNarration" class="btn-gpa-copy-narration"
+                        onclick="window.copyGpaHistoryNarrationToForm()" disabled title="Copy narration to payment entry">
+                    <i class="fa fa-copy"></i>Copy Narration
+                </button>
+                <button type="button" class="btn-gpa-close" onclick="CloseGpaApprovalHistoryModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -738,12 +1500,120 @@
     </div>
 </div>
 
+<!-- ── ADD VENDOR MODAL (iframe — same as Purchase Order) ── -->
+<div class="modal fade" id="modalGpaAddVendor" tabindex="-1" aria-labelledby="modalGpaAddVendorLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:96vw;width:96vw;">
+        <div class="modal-content" style="height:90vh;border-radius:16px;overflow:hidden;border:none;display:flex;flex-direction:column;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:12px 18px;flex-shrink:0;">
+                <h5 class="modal-title mb-0" id="modalGpaAddVendorLabel" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-user-tie me-2"></i>Add New Vendor
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="flex:1;overflow:hidden;">
+                <iframe id="iframeGpaVendorMaster"
+                        src=""
+                        style="width:100%;height:100%;border:none;display:block;"
+                        title="Vendor Master">
+                </iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── ATTACHMENT CONTROL PLACEHOLDER ── -->
+<div id="GRNPaymentEntry_AttachmentControlmodal"></div>
+
+<!-- View detail modal (Payment Entry list — eye icon) -->
+<div class="modal fade" id="modalGpaDetail" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 20px;border:none;">
+                <div>
+                    <h5 class="modal-title mb-0" style="font-size:0.95rem;font-weight:700;">
+                        <i class="fa fa-file-invoice-dollar me-2"></i><span id="gpaModalEntryTitle"></span>
+                    </h5>
+                    <small id="gpaModalParty" style="font-size:0.75rem;opacity:0.82;display:block;margin-top:2px;"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" onclick="CloseDetailModal()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding:16px;max-height:72vh;overflow-y:auto;">
+                <div id="gpaModalHeader"></div>
+                <div class="gpa-level-stepper-wrap">
+                    <div class="gpa-level-stepper-title"><i class="fa fa-layer-group me-1"></i>Approval Flow</div>
+                    <div id="gpaModalApprovalStepper"></div>
+                </div>
+                <div class="gpa-items-wrap">
+                    <div class="gpa-items-title"><i class="fa fa-receipt me-1"></i>Bill / payment lines (MRN)</div>
+                    <div class="table-responsive">
+                        <table class="gpa-items-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;">#</th>
+                                    <th>Bill no</th>
+                                    <th>PO no</th>
+                                    <th>Category</th>
+                                    <th>Project</th>
+                                    <th>Sub project</th>
+                                    <th>Bill date</th>
+                                    <th>Bill amount</th>
+                                    <th>Deduction</th>
+                                    <th>Payable amount</th>
+                                    <th>Payment amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gpaModalItemsBody">
+                                <tr><td colspan="11" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;"><i class="fa fa-spinner fa-spin me-1"></i>Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="gpaModalAttachList" style="display:none;"></div>
+                <div class="gpa-remarks-wrap">
+                    <label class="gpa-remarks-lbl"><i class="fa fa-comment me-1"></i>Remarks</label>
+                    <textarea id="gpaFrmRemarks" class="form-control form-control-sm" rows="2" placeholder="Enter approval or rejection remarks…"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
+                <input type="hidden" id="hfGpaPaymentCode" value="0" />
+                <input type="hidden" id="hfGpaLevelCode" value="0" />
+                <button type="button" class="btn-gpa-modal-preview" onclick="PrintGPAFromDetail('preview')" title="Print Preview"><i class="fa fa-search-plus"></i>Preview</button>
+                <button type="button" class="btn-gpa-modal-print" onclick="PrintGPAFromDetail('print')" title="Print"><i class="fa fa-print"></i>Print</button>
+                <button type="button" id="gpaBtnModalAttachment" class="btn-gpa-modal-attach" onclick="OpenGRNPaymentApprovalAttachmentFromModal()" title="Attachments"><i class="fa fa-paperclip"></i>Attachment</button>
+                <button type="button" id="gpaBtnRejectAction" class="btn-gpa-reject" onclick="SubmitApproval('Reject')" style="display:none;"><i class="fa fa-times"></i>Reject</button>
+                <button type="button" id="gpaBtnApproveAction" class="btn-gpa-approve" onclick="SubmitApproval('Approve')" style="display:none;"><i class="fa fa-check"></i>Approve</button>
+                <button type="button" class="btn-gpa-close ms-auto" onclick="CloseDetailModal()"><i class="fa fa-times-circle"></i>Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalGpaConfirm" tabindex="-1" role="dialog" aria-hidden="true" style="z-index:1060;">
+    <div class="modal-dialog modal-sm" style="margin-top:140px;">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header" id="gpaConfirmModalHeader" style="padding:12px 16px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+                <h5 class="modal-title mb-0" style="font-size:0.9rem;font-weight:700;" id="gpaConfirmTitle"></h5>
+            </div>
+            <div class="modal-body" style="padding:14px 16px;font-size:0.85rem;color:#475569;"><span id="gpaConfirmMessage"></span></div>
+            <div class="modal-footer" style="padding:10px 16px;gap:8px;border-top:1px solid #eef0f8;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="CloseConfirmModal()">Cancel</button>
+                <button type="button" id="gpaBtnConfirmAction"></button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="GRNPaymentApproval_AttachmentControlmodal"></div>
+
 <script>
     (function () {
         const sidebar = document.getElementById('modern-sidebar');
         const bar = document.getElementById('floatBar');
         if (!sidebar || !bar) return;
         function syncMargin() {
+            if (document.body.classList.contains('erp-embedded')) {
+                bar.style.marginLeft = '0';
+                return;
+            }
             if (window.innerWidth <= 768) { bar.style.marginLeft = ''; return; }
             bar.style.marginLeft = sidebar.classList.contains('collapsed') ? '70px' : '280px';
         }

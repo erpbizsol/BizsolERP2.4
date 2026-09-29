@@ -232,11 +232,11 @@ function GetMRNQCPropertyList() {
         if (response.length > 0) {
             G_PurchaseQualityCheckDataList = response;
             const StringFilterColumn = ["Party Name","Bill No"];
-            const NumericFilterColumn = ["MRN No"];
+            const NumericFilterColumn = [];
             const DateFilterColumn = ["MRN Date","Bill Date"];
             const Button = false;
             const showButtons = [];
-            const StringdoubleFilterColumn = [];
+            const StringdoubleFilterColumn = ["MRN No"];
             const hiddenColumns = ["MrnMaster_Code", "FinYear", "PartyMaster_Code", "Code","Verify"];
             const ColumnAlignment = { 'S.No.': 'center;width:10px', 'MRN Date': 'center','Bill Date':'center','MRN No':'center' };
 

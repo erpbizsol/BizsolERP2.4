@@ -1,8 +1,10 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js" asp-append-version="true"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentApproval.js" asp-append-version="true"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentEntry.js" asp-append-version="true"></script>
 
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/GRNPaymentApproval.js"></script>
 
 <style>
     /* ── PAGE HEADER (aligned with PO Level Approval) ─────────── */
@@ -21,16 +23,60 @@
     .gpa-header h5  { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
     .gpa-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; margin-top: 3px; }
 
-    .gpa-stat-chip {
-        background: rgba(255,255,255,0.18);
-        border: 1px solid rgba(255,255,255,0.25);
-        border-radius: 10px;
-        padding: 5px 14px;
-        text-align: center;
-        min-width: 78px;
+    /* Stat chips — same card language as Expense Entry / PO (count + uppercase label, tinted border) */
+    .gpa-header .gpa-stat-chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
     }
-    .gpa-stat-chip .val { font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1; }
-    .gpa-stat-chip .lbl { font-size: 0.64rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+    .gpa-header .gpa-stat-chips .btn-gpa-back {
+        margin-left: 4px;
+    }
+    .gpa-header .gpa-stat-chip {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-height: 52px;
+        min-width: 88px;
+        max-width: 140px;
+        padding: 8px 14px;
+        text-align: center;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1.5px solid rgba(255, 255, 255, 0.32);
+        transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    }
+    .gpa-header .gpa-stat-chip .val {
+        font-size: 1.15rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #fff;
+    }
+    .gpa-header .gpa-stat-chip .lbl {
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.95);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        line-height: 1.2;
+    }
+    .gpa-header .gpa-stat-chip--pending {
+        border-color: rgba(251, 191, 36, 0.75);
+    }
+    .gpa-header .gpa-stat-chip--pending .val {
+        color: #fde047;
+    }
+    /* Approved — green accent */
+    .gpa-header .gpa-stat-chip--approved {
+        border-color: rgba(52, 211, 153, 0.75);
+    }
+    .gpa-header .gpa-stat-chip--approved .val {
+        color: #6ee7b7;
+    }
 
     .gpa-filter-bar {
         background: #fff;
@@ -181,6 +227,7 @@
     }
     .gpa-step-done     { background: linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 2px 8px rgba(16,185,129,0.35); }
     .gpa-step-active   { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 2px 8px rgba(102,126,234,0.4); animation: pulseStep 1.6s infinite; }
+    .gpa-step-hold     { background: linear-gradient(135deg,#f97316,#ea580c); color:#fff; box-shadow:0 2px 8px rgba(249,115,22,0.4); animation: pulseStep 1.6s infinite; }
     .gpa-step-rejected { background: linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 2px 8px rgba(220,38,38,0.35); }
     .gpa-step-pending  { background: #f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
     @@keyframes pulseStep {
@@ -198,10 +245,33 @@
     .gpa-pay-card-footer {
         padding: 8px 16px 12px;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
         gap: 8px;
         flex-wrap: wrap;
     }
+    .gpa-pay-card-print-btns {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .btn-gpa-print-icon {
+        width: 36px; height: 32px;
+        border: none; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 0.85rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-gpa-print-prev {
+        background: #64748b; color: #fff;
+        box-shadow: 0 2px 8px rgba(100,116,139,0.35);
+    }
+    .btn-gpa-print-go {
+        background: #1e293b; color: #fff;
+        box-shadow: 0 2px 8px rgba(30,41,59,0.35);
+    }
+    .btn-gpa-print-icon:hover { transform: translateY(-1px); color: #fff; }
     .btn-gpa-card-approve {
         display: inline-flex; align-items: center; gap: 5px;
         background: linear-gradient(135deg,#10b981,#059669);
@@ -289,6 +359,7 @@
     }
     .gpa-dstep-done     .gpa-dstep-circle { background:linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 2px 10px rgba(16,185,129,0.35); }
     .gpa-dstep-active   .gpa-dstep-circle { background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 2px 10px rgba(102,126,234,0.4); animation:pulseStep 1.6s infinite; }
+    .gpa-dstep-hold     .gpa-dstep-circle { background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; box-shadow:0 2px 10px rgba(249,115,22,0.4); animation:pulseStep 1.6s infinite; }
     .gpa-dstep-rejected .gpa-dstep-circle { background:linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 2px 10px rgba(220,38,38,0.35); }
     .gpa-dstep-pending  .gpa-dstep-circle { background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
     .gpa-dstep-body { display:flex; flex-direction:column; align-items:center; gap:2px; }
@@ -300,6 +371,7 @@
     }
     .gpa-dstep-badge-done     { background:#d1fae5; color:#059669; }
     .gpa-dstep-badge-active   { background:#ede9fe; color:#667eea; }
+    .gpa-dstep-badge-hold     { background:#ffedd5; color:#ea580c; }
     .gpa-dstep-badge-rejected { background:#fee2e2; color:#dc2626; }
     .gpa-dstep-badge-pending  { background:#f1f5f9; color:#94a3b8; }
     .gpa-dstep-line {
@@ -333,7 +405,216 @@
         border: 1px solid #ede9fe; font-size: 0.8rem; color: #374151;
     }
 
-    .gpa-remarks-wrap  { margin-top: 10px; }
+    .gpa-history-summary {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    @@media (max-width: 992px) {
+        .gpa-history-summary { grid-template-columns: repeat(2, 1fr); }
+    }
+    @@media (max-width: 576px) {
+        .gpa-history-summary { grid-template-columns: 1fr; }
+    }
+    .gpa-history-card {
+        border-radius: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .gpa-history-card-lbl {
+        font-size: 0.68rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
+    }
+    .gpa-history-card-val {
+        font-size: 0.95rem; font-weight: 800; line-height: 1.3;
+    }
+    .gpa-history-card--po {
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        border: 1px solid #93c5fd;
+    }
+    .gpa-history-card--po .gpa-history-card-lbl { color: #1d4ed8; }
+    .gpa-history-card--po .gpa-history-card-val { color: #1e3a8a; }
+    .gpa-history-card--grn {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border: 1px solid #86efac;
+    }
+    .gpa-history-card--grn .gpa-history-card-lbl { color: #166534; }
+    .gpa-history-card--grn .gpa-history-card-val { color: #15803d; }
+    .gpa-history-card--payment {
+        background: linear-gradient(135deg, #faf5ff, #f3e8ff);
+        border: 1px solid #d8b4fe;
+    }
+    .gpa-history-card--payment .gpa-history-card-lbl { color: #7c3aed; }
+    .gpa-history-card--payment .gpa-history-card-val { color: #6d28d9; }
+    .gpa-history-card--balance {
+        background: linear-gradient(135deg, #fff7ed, #ffedd5);
+        border: 1px solid #fdba74;
+    }
+    .gpa-history-card--balance .gpa-history-card-lbl { color: #c2410c; }
+    .gpa-history-card--balance .gpa-history-card-val { color: #ea580c; }
+    .gpa-history-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px 14px;
+        margin-bottom: 14px;
+        padding: 12px 14px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        font-size: 0.82rem; color: #475569;
+        align-items: end;
+    }
+    .gpa-history-meta strong { color: #166534; }
+    .gpa-history-filter-lbl {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #166534;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+    .gpa-history-filter-select {
+        width: 100%;
+        font-size: 0.82rem;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 6px 10px;
+        background: #fff;
+        color: #1e293b;
+    }
+    .gpa-history-filter-select:disabled {
+        background: #f8fafc;
+        color: #94a3b8;
+    }
+    #gpaBudgetMeta.gpa-history-meta {
+        grid-template-columns: 1.15fr 1fr 1fr 0.85fr;
+    }
+    @@media (max-width: 992px) {
+        #gpaBudgetMeta.gpa-history-meta { grid-template-columns: 1fr 1fr; }
+    }
+    @@media (max-width: 768px) {
+        .gpa-history-meta { grid-template-columns: 1fr; }
+    }
+    .gpa-history-table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+    .gpa-history-table thead tr th {
+        background: #f0fdf4; color: #166534;
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        text-align: center; vertical-align: middle;
+        padding: 10px 10px; white-space: nowrap;
+        border-bottom: 2px solid #bbf7d0;
+    }
+    #modalGpaHistory .gpa-history-table thead tr th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f0fdf4;
+        box-shadow: 0 2px 0 #bbf7d0;
+    }
+    .gpa-history-table thead tr th:first-child { border-radius: 0; }
+    .gpa-history-table thead tr th:last-child  { border-radius: 0; }
+    .gpa-history-table tbody tr td {
+        padding: 9px 10px; vertical-align: middle;
+        border-bottom: 1px solid #f3f4f6; font-size: 0.78rem; color: #374151;
+    }
+    .gpa-history-table tbody tr:hover td { background: #f0fdf4; }
+    .gpa-history-type {
+        display: inline-block; font-size: 0.68rem; font-weight: 700;
+        padding: 2px 8px; border-radius: 20px;
+    }
+    .gpa-history-type-po { background: #dbeafe; color: #1d4ed8; }
+    .gpa-history-type-grn { background: #d1fae5; color: #047857; }
+    .gpa-history-type-payment { background: #ede9fe; color: #6d28d9; }
+
+    /* History modal — green theme (matches Approved Expense Entries modal) */
+    #modalGpaHistory .modal-dialog {
+        max-width: 880px;
+        margin: 1.5rem auto;
+        max-height: calc(100vh - 2rem);
+    }
+    #modalGpaHistory .modal-content {
+        border-radius: 18px;
+        border: none;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 2rem);
+    }
+    #modalGpaHistory .gpa-history-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px 16px;
+        border: none;
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        color: #fff;
+    }
+    #modalGpaHistory .gpa-history-modal-close {
+        background: rgba(255, 255, 255, 0.18);
+        border: none;
+        color: #fff;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.15s;
+        flex-shrink: 0;
+    }
+    #modalGpaHistory .gpa-history-modal-close:hover { background: rgba(255, 255, 255, 0.32); }
+    #modalGpaHistory .gpa-history-modal-body {
+        padding: 16px 18px;
+        background: #fff;
+        flex: 1 1 auto;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+    #modalGpaHistory .gpa-history-modal-footer {
+        padding: 14px 22px;
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        justify-content: flex-end;
+        flex-shrink: 0;
+    }
+    #modalGpaHistory .gpa-history-meta,
+    #modalGpaHistory .gpa-history-summary,
+    #modalGpaHistory .gpa-history-table-section > .gpa-items-title {
+        flex-shrink: 0;
+    }
+    #modalGpaHistory .gpa-history-table-section {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+    #modalGpaHistory .gpa-history-table-scroll-wrap {
+        flex: 1 1 auto;
+        overflow: auto;
+        min-height: 140px;
+        max-height: min(380px, calc(100vh - 430px));
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+    #modalGpaHistory .gpa-items-title {
+        color: #166534;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 10px;
+    }
+
+    .gpa-remarks-wrap  { margin-bottom: 14px; }
     .gpa-remarks-lbl { font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 5px; display: block; }
     .gpa-remarks-wrap textarea { font-size: 0.82rem; resize: vertical; }
 
@@ -346,6 +627,405 @@
         transition:all 0.2s; cursor:pointer;
     }
     .btn-gpa-approve:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(16,185,129,0.5); color:#fff; }
+    .btn-gpa-hold {
+        background: linear-gradient(135deg,#f97316,#ea580c);
+        border: none; color: #fff;
+        border-radius: 8px; padding: 8px 18px;
+        font-size: 0.82rem; font-weight: 700;
+        box-shadow: 0 3px 10px rgba(249,115,22,0.35);
+        transition: all 0.2s; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-gpa-hold:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(249,115,22,0.5); color:#fff; }
+    .btn-gpa-hold.gpa-btn-hold-disabled,
+    .btn-gpa-hold:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+        transform: none;
+        box-shadow: none;
+        filter: grayscale(0.25);
+    }
+    .btn-gpa-history {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#6366f1,#4f46e5);
+        border:none; color:#fff; border-radius:9px; padding:9px 18px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(99,102,241,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-history:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(99,102,241,0.5); color:#fff; }
+    /* History is hidden on GRN Payment Approval only */
+    #gpaBtnHistoryAction { display: none !important; }
+    .btn-gpa-budget {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#0ea5e9,#0284c7);
+        border:none; color:#fff; border-radius:9px; padding:9px 18px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(14,165,233,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-budget:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(14,165,233,0.5); color:#fff; }
+    .gpa-budget-view-toggle {
+        display: inline-flex;
+        gap: 0;
+        border: 1px solid #bae6fd;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 12px;
+        background: #f0f9ff;
+    }
+    .gpa-budget-view-btn {
+        border: none;
+        background: transparent;
+        color: #0369a1;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 8px 16px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+    }
+    .gpa-budget-view-btn.active {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: #fff;
+    }
+    #modalGpaBudgetBalance .modal-dialog {
+        max-width: min(1680px, calc(100vw - 1.5rem));
+        width: min(1680px, calc(100vw - 1.5rem));
+        margin: 1rem auto;
+        max-height: calc(100vh - 2rem);
+    }
+    #modalGpaBudgetBalance .modal-content {
+        border-radius: 18px; border: none;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+        overflow: hidden; display: flex; flex-direction: column;
+        max-height: calc(100vh - 2rem);
+        width: 100%;
+    }
+    #modalGpaBudgetBalance .gpa-budget-modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 22px 16px; border: none;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff;
+        flex-shrink: 0;
+    }
+    #modalGpaBudgetBalance .gpa-budget-modal-body {
+        padding: 16px 18px; background: #fff; flex: 1 1 auto; overflow: hidden;
+        display: flex; flex-direction: column; min-height: 0;
+    }
+    #modalGpaBudgetBalance .gpa-history-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 18px;
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        flex-shrink: 0;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table-scroll-wrap {
+        flex: 1 1 auto; overflow: auto; min-height: 120px;
+        max-height: min(420px, calc(100vh - 380px));
+        border: 1px solid #e5e7eb; border-radius: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table {
+        width: max-content; min-width: 100%; border-collapse: collapse; font-size: 0.78rem;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table thead tr th {
+        position: sticky; top: 0; z-index: 2;
+        background: #f0f9ff; color: #0369a1; font-weight: 700;
+        padding: 10px 10px; white-space: nowrap;
+        border-bottom: 2px solid #bae6fd;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table tbody tr td {
+        padding: 9px 10px; vertical-align: middle;
+        border-bottom: 1px solid #f3f4f6; color: #374151;
+        white-space: nowrap;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table tbody tr:hover td { background: #f0f9ff; }
+    #modalGpaBudgetBalance .gpa-budget-summary,
+    #modalGpaBudgetBalance #gpaBudgetPartySummary,
+    #modalGpaBudgetBalance #gpaBudgetEmployeeSummary {
+        display: flex !important;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 12px;
+        overflow-x: auto;
+        overflow-y: visible;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+        grid-template-columns: none !important;
+    }
+    #modalGpaBudgetBalance .gpa-budget-summary > * {
+        flex: 1 1 0;
+        min-width: 132px;
+        max-width: none;
+    }
+    #modalGpaBudgetBalance .gpa-budget-summary .gpa-history-card,
+    #modalGpaBudgetBalance .gpa-budget-summary .gpa-budget-card {
+        padding: 10px 8px;
+        overflow: visible;
+        min-width: 0;
+    }
+    #modalGpaBudgetBalance .gpa-budget-summary .gpa-history-card-lbl {
+        font-size: 0.62rem;
+        margin-bottom: 4px;
+        white-space: normal;
+        line-height: 1.25;
+    }
+    #modalGpaBudgetBalance .gpa-budget-summary .gpa-history-card-val {
+        font-size: 0.78rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        line-height: 1.3;
+    }
+    #modalGpaBudgetBalance .gpa-budget-summary--party:empty {
+        display: none !important;
+        margin: 0;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-section {
+        margin-bottom: 10px;
+        flex-shrink: 0;
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-scroll {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        flex: none;
+        min-height: auto;
+        max-height: none !important;
+        height: auto;
+        border: 1px solid #000;
+        border-radius: 0;
+        -webkit-overflow-scrolling: touch;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table {
+        width: 100%;
+        min-width: 1180px;
+        table-layout: auto;
+        border-collapse: collapse;
+        border: 1px solid #000;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table col {
+        width: auto;
+        min-width: 128px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table thead tr th {
+        position: static;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table th,
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table td {
+        border: 1px solid #000;
+        padding: 7px 8px;
+        white-space: nowrap;
+        word-break: normal;
+        line-height: 1.25;
+        font-size: 0.72rem;
+        color: #111;
+        background: #fff;
+        vertical-align: middle;
+        min-width: 128px;
+        overflow: visible;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table .gpa-budget-col-party,
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table .gpa-budget-party-group-row th.gpa-budget-col-party {
+        background: #ffff00;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table .gpa-budget-party-col-hdr {
+        font-weight: 700;
+        text-align: center;
+        white-space: normal;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table .gpa-budget-party-group-row th {
+        font-weight: 700;
+        text-align: center;
+        background: #f3f4f6;
+        font-size: 0.62rem;
+    }
+    #modalGpaBudgetBalance .gpa-budget-party-summary-table .gpa-budget-party-summary-row td {
+        text-align: right;
+        font-weight: 600;
+        font-size: 0.72rem;
+        white-space: nowrap;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-mode-panel.is-active {
+        display: flex !important;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+    #modalGpaBudgetBalance .gpa-budget-history-section {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        margin-top: 14px;
+        overflow: hidden;
+    }
+    #modalGpaBudgetBalance .gpa-budget-history-scroll-wrap {
+        flex: 1 1 auto;
+        min-height: 140px;
+        max-height: none;
+        overflow: auto;
+    }
+    #modalGpaBudgetBalance #gpaBudgetEmployeePanel .gpa-history-table-section {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+    #modalGpaBudgetBalance #gpaBudgetEmployeePanel .gpa-budget-table-scroll-wrap {
+        flex: 1 1 auto;
+        min-height: 140px;
+        max-height: none;
+    }
+    #modalGpaBudgetBalance .gpa-budget-summary,
+    #modalGpaBudgetBalance #gpaBudgetPartySummary,
+    #modalGpaBudgetBalance #gpaBudgetEmployeeSummary {
+        flex-shrink: 0;
+    }
+    @@media (max-width: 992px) {
+        #modalGpaBudgetBalance .gpa-budget-summary,
+        #modalGpaBudgetBalance #gpaBudgetPartySummary,
+        #modalGpaBudgetBalance #gpaBudgetEmployeeSummary {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            flex-wrap: unset;
+            overflow: visible;
+            gap: 8px;
+        }
+        #modalGpaBudgetBalance .gpa-budget-summary > * {
+            flex: none;
+            min-width: 0;
+            width: 100%;
+            max-width: none;
+        }
+        #modalGpaBudgetBalance .modal-dialog {
+            max-width: calc(100vw - 0.75rem);
+            width: calc(100vw - 0.75rem);
+            margin: 0.4rem auto;
+            max-height: calc(100dvh - 0.8rem);
+        }
+        #modalGpaBudgetBalance .modal-content {
+            max-height: calc(100dvh - 0.8rem);
+            width: 100%;
+        }
+        #modalGpaBudgetBalance .gpa-budget-modal-body {
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #modalGpaBudgetBalance .gpa-budget-mode-panel.is-active,
+        #modalGpaBudgetBalance .gpa-budget-history-section,
+        #modalGpaBudgetBalance #gpaBudgetEmployeePanel .gpa-history-table-section {
+            overflow: visible;
+            flex: 0 0 auto;
+            min-height: auto;
+            width: 100%;
+            max-width: 100%;
+        }
+        #modalGpaBudgetBalance .gpa-budget-table-scroll-wrap,
+        #modalGpaBudgetBalance .gpa-budget-history-scroll-wrap,
+        #modalGpaBudgetBalance .gpa-budget-party-summary-scroll,
+        #modalGpaBudgetBalance #gpaBudgetEmployeePanel .gpa-budget-table-scroll-wrap {
+            flex: none;
+            min-height: 0;
+            max-height: none;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+        }
+        #modalGpaBudgetBalance .gpa-budget-table {
+            min-width: 1080px;
+        }
+        #modalGpaBudgetBalance .gpa-budget-party-summary-table {
+            width: max-content;
+            min-width: 1180px;
+        }
+    }
+    @@media (max-width: 576px) {
+        #modalGpaBudgetBalance .gpa-budget-summary,
+        #modalGpaBudgetBalance #gpaBudgetPartySummary,
+        #modalGpaBudgetBalance #gpaBudgetEmployeeSummary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            overflow: visible;
+        }
+        #modalGpaBudgetBalance .gpa-budget-summary > * {
+            flex: none;
+            min-width: 0;
+        }
+        #modalGpaBudgetBalance .gpa-budget-summary .gpa-history-card-val {
+            font-size: 0.74rem;
+        }
+        #modalGpaBudgetBalance .gpa-budget-modal-header { padding: 12px 14px; }
+        #modalGpaBudgetBalance .gpa-budget-modal-body { padding: 12px; }
+        #modalGpaBudgetBalance .gpa-history-modal-footer { padding: 10px 12px; }
+    }
+    .gpa-budget-card {
+        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+        border: 1px solid #bae6fd;
+        border-radius: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .gpa-budget-card .gpa-history-card-lbl { color: #0369a1; }
+    .gpa-budget-card .gpa-history-card-val { color: #0c4a6e; }
+    #modalGpaBudgetBalance .gpa-history-table-section > .gpa-items-title {
+        color: #0369a1;
+    }
+    #modalGpaBudgetBalance .gpa-budget-history-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    #modalGpaBudgetBalance .gpa-budget-table .gpa-history-type,
+    #modalGpaHistory .gpa-history-table .gpa-history-type {
+        display: inline-block;
+        min-width: 62px;
+        text-align: center;
+    }
+    #modalGpaBudgetBalance .gpa-budget-status,
+    #modalGpaHistory .gpa-budget-status {
+        display: inline-block;
+        min-width: 72px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    #modalGpaBudgetBalance .gpa-budget-status--approved,
+    #modalGpaHistory .gpa-budget-status--approved { background: #dcfce7; color: #15803d; }
+    #modalGpaBudgetBalance .gpa-budget-status--completed,
+    #modalGpaHistory .gpa-budget-status--completed { background: #e0f2fe; color: #0369a1; }
+    #modalGpaBudgetBalance .gpa-budget-status--pending,
+    #modalGpaHistory .gpa-budget-status--pending { background: #dbeafe; color: #1d4ed8; }
+    #modalGpaBudgetBalance .gpa-budget-status--rejected,
+    #modalGpaHistory .gpa-budget-status--rejected { background: #fee2e2; color: #b91c1c; }
+    #modalGpaBudgetBalance .gpa-budget-status--hold,
+    #modalGpaHistory .gpa-budget-status--hold { background: #ffedd5; color: #c2410c; }
+    #modalGpaBudgetBalance .gpa-budget-status--other,
+    #modalGpaHistory .gpa-budget-status--other { background: #f3f4f6; color: #374151; }
+    #modalGpaBudgetBalance .gpa-budget-table tbody tr.gpa-budget-total-row td {
+        background: #f0f9ff;
+        font-weight: 800;
+        border-top: 2px solid #bae6fd;
+    }
+    .gpa-budget-mode-panel { display: none !important; }
     .btn-gpa-reject {
         display:inline-flex; align-items:center; gap:5px;
         background:linear-gradient(135deg,#dc2626,#ef4444);
@@ -364,6 +1044,36 @@
         transition:all 0.2s; cursor:pointer;
     }
     .btn-gpa-close:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(245,158,11,0.5); color:#fff; }
+    .btn-gpa-modal-preview {
+        display:inline-flex; align-items:center; gap:5px;
+        background:#64748b; border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(100,116,139,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-modal-preview:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(100,116,139,0.45); }
+    .btn-gpa-modal-print {
+        display:inline-flex; align-items:center; gap:5px;
+        background:#1e293b; border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(30,41,59,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-gpa-modal-print:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(30,41,59,0.45); }
+    .btn-gpa-modal-attach {
+        display:inline-flex; align-items:center; gap:5px;
+        border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(14,165,233,0.35);
+        transition:all 0.2s; cursor:pointer;
+        background:linear-gradient(135deg,#0ea5e9,#0284c7);
+    }
+    .btn-gpa-modal-attach:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(2,132,199,0.45); }
+    .btn-gpa-modal-attach.gpa-attach-has-files {
+        background:linear-gradient(135deg,#16a34a,#15803d);
+        box-shadow:0 3px 10px rgba(22,163,74,0.35);
+    }
+    .btn-gpa-modal-attach.gpa-attach-has-files:hover { box-shadow:0 5px 14px rgba(22,163,74,0.45); }
 
     .btn-gpa-confirm-approve {
         display:inline-flex; align-items:center; gap:4px;
@@ -379,6 +1089,13 @@
         font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;
     }
     .btn-gpa-confirm-reject:hover { transform:translateY(-1px); color:#fff; }
+    .btn-gpa-confirm-hold {
+        background: linear-gradient(135deg,#f97316,#ea580c);
+        border: none; color: #fff;
+        border-radius: 8px; padding: 7px 16px;
+        font-size: 0.82rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-gpa-confirm-hold:hover { transform:translateY(-1px); color:#fff; }
     .btn-gpa-reject-sm {
         background:#f1f5f9; border:1px solid #e2e8f0; color:#475569;
         border-radius:8px; padding:8px 16px; font-size:0.82rem; font-weight:600;
@@ -411,10 +1128,12 @@
             width: 100%; justify-content: space-between;
         }
         .gpa-info-grid { grid-template-columns: repeat(2, 1fr); }
-        .gpa-pay-card-footer { justify-content: stretch; }
+        .gpa-pay-card-footer { justify-content: stretch; flex-direction: column; align-items: stretch; }
+        .gpa-pay-card-footer .gpa-pay-card-print-btns { width: 100%; justify-content: flex-start; }
         .gpa-pay-card-footer .btn-gpa-card-approve,
         .gpa-pay-card-footer .btn-gpa-card-view { width: 100%; justify-content: center; }
-        .btn-gpa-approve, .btn-gpa-reject, .btn-gpa-close { padding: 9px 14px; font-size: 0.8rem; }
+        .btn-gpa-approve, .btn-gpa-reject, .btn-gpa-hold, .btn-gpa-close,
+        .btn-gpa-modal-preview, .btn-gpa-modal-print, .btn-gpa-modal-attach { padding: 9px 14px; font-size: 0.8rem; }
     }
     @@media (max-width: 576px) {
         .gpa-info-grid  { grid-template-columns: 1fr 1fr; }
@@ -431,16 +1150,16 @@
         <h5><i class="fa fa-money-check-alt me-2"></i>GRN Payment Approval</h5>
         <small>Review and approve GRN payment entries by approval level</small>
     </div>
-    <div class="d-flex align-items-center gap-2 flex-shrink-0">
-        <div class="gpa-stat-chip">
+    <div class="gpa-stat-chips flex-shrink-0">
+        <div class="gpa-stat-chip gpa-stat-chip--pending" title="Entries not fully approved">
             <div class="val" id="gpaStatPending">—</div>
             <div class="lbl">Pending</div>
         </div>
-        <div class="gpa-stat-chip">
+        <div class="gpa-stat-chip gpa-stat-chip--approved" title="Approved or otherwise completed in this list">
             <div class="val" id="gpaStatProcessed">—</div>
             <div class="lbl">Approved</div>
         </div>
-        <a onclick="NavigateToGRNService()" class="btn-gpa-back" title="Back to GRN Service">
+        <a onclick="NavigateToGRNService()" class="btn-gpa-back" title="Back to GRN Payment Entry">
             <i class="fa fa-arrow-left"></i>
             <span class="gpa-back-label">Back</span>
         </a>
@@ -466,9 +1185,10 @@
             <label class="form-label">Status</label>
             <select id="gpaDdlStatus" class="form-control form-control-sm form-select">
                 <option value="A">-- All Status --</option>
-                <option value="P">Pending</option>
-                <option value="Y">Approved</option>
+                <option value="U" selected>Pending</option>
+                <option value="P">Approved</option>
                 <option value="R">Rejected</option>
+                <option value="H">Hold</option>
             </select>
         </div>
         <div class="col-6 col-md-2 d-flex align-items-end mb-2">
@@ -528,16 +1248,21 @@
                             <thead>
                                 <tr>
                                     <th style="width:40px;">#</th>
-                                    <th>Bill No</th>
-                                    <th style="width:100px;">Bill Date</th>
-                                    <th style="width:120px;">Total bill</th>
-                                    <th style="width:120px;">Net payable</th>
+                                    <th>Bill no</th>
+                                    <th style="width:90px;">PO no</th>
+                                    <th style="width:100px;">Category</th>
+                                    <th style="width:130px;">Project</th>
+                                    <th style="width:130px;">Sub project</th>
+                                    <th style="width:100px;">Bill date</th>
+                                    <th style="width:110px;">Bill amount</th>
+                                    <th style="width:90px;">Deduction</th>
+                                    <th style="width:110px;">Payable amount</th>
                                     <th style="width:120px;">Payment amount</th>
                                 </tr>
                             </thead>
                             <tbody id="gpaModalItemsBody">
                                 <tr>
-                                    <td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                    <td colspan="11" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
                                         <i class="fa fa-spinner fa-spin me-1"></i>Loading…
                                     </td>
                                 </tr>
@@ -546,20 +1271,34 @@
                     </div>
                 </div>
 
+                <div id="gpaModalAttachList" style="display:none;"></div>
+
                 <div class="gpa-remarks-wrap">
                     <label class="gpa-remarks-lbl">
                         <i class="fa fa-comment me-1"></i>Remarks
-                        <small style="font-weight:400;color:#94a3b8;">(required for rejection)</small>
+                        <small style="font-weight:400;color:#94a3b8;">(required for reject / hold)</small>
                     </label>
                     <textarea id="gpaFrmRemarks" class="form-control form-control-sm" rows="2"
-                              placeholder="Enter approval or rejection remarks…"></textarea>
+                              placeholder="Enter approval / rejection / hold remarks…"></textarea>
                 </div>
             </div>
 
             <div class="modal-footer"
-                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;">
+                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
                 <input type="hidden" id="hfGpaPaymentCode" value="0" />
                 <input type="hidden" id="hfGpaLevelCode" value="0" />
+                <button type="button" class="btn-gpa-modal-preview"
+                        onclick="PrintGPAFromDetail('preview')" title="Print Preview">
+                    <i class="fa fa-search-plus"></i>Preview
+                </button>
+                <button type="button" class="btn-gpa-modal-print"
+                        onclick="PrintGPAFromDetail('print')" title="Print">
+                    <i class="fa fa-print"></i>Print
+                </button>
+                <button type="button" id="gpaBtnModalAttachment" class="btn-gpa-modal-attach"
+                        onclick="OpenGRNPaymentApprovalAttachmentFromModal()" title="Attachments">
+                    <i class="fa fa-paperclip"></i>Attachment
+                </button>
                 <button type="button" id="gpaBtnRejectAction" class="btn-gpa-reject"
                         onclick="SubmitApproval('Reject')" style="display:none;">
                     <i class="fa fa-times"></i>Reject
@@ -567,6 +1306,18 @@
                 <button type="button" id="gpaBtnApproveAction" class="btn-gpa-approve"
                         onclick="SubmitApproval('Approve')" style="display:none;">
                     <i class="fa fa-check"></i>Approve
+                </button>
+                <button type="button" id="gpaBtnHoldAction" class="btn-gpa-hold"
+                        onclick="SubmitApproval('Hold')" style="display:none;">
+                    <i class="fa fa-pause"></i>Hold
+                </button>
+                <button type="button" id="gpaBtnHistoryAction" class="btn-gpa-history" style="display:none;"
+                        onclick="OpenGpaApprovalHistory()" title="Party / Project history">
+                    <i class="fa fa-history"></i>History
+                </button>
+                <button type="button" id="gpaBtnBudgetBalanceAction" class="btn-gpa-budget"
+                        onclick="OpenGpaBudgetBalance()" title="Party / Employee budget balance">
+                    <i class="fa fa-balance-scale"></i>History
                 </button>
                 <button type="button" class="btn-gpa-close ms-auto" onclick="CloseDetailModal()">
                     <i class="fa fa-times-circle"></i>Close
@@ -592,6 +1343,159 @@
                 <button type="button" class="btn-gpa-reject-sm"
                         onclick="CloseConfirmModal()">Cancel</button>
                 <button type="button" id="gpaBtnConfirmAction"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="GRNPaymentApproval_AttachmentControlmodal"></div>
+
+<div class="modal fade" id="modalGpaHistory" tabindex="-1" role="dialog"
+     aria-hidden="true" style="z-index:1070;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;">
+            <div class="modal-header gpa-history-modal-header">
+                <h5 class="modal-title mb-0" style="font-size:1rem;font-weight:700;">
+                    <i class="fa fa-history me-2"></i>Party / Project History
+                </h5>
+                <button type="button" class="gpa-history-modal-close" data-bs-dismiss="modal"
+                        aria-label="Close" onclick="CloseGpaApprovalHistoryModal()" title="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body gpa-history-modal-body">
+                <div id="gpaHistoryMeta" class="gpa-history-meta">
+                    <div id="gpaHistoryPartyWrap">
+                        <span class="gpa-history-filter-lbl">Party</span>
+                        <strong id="gpaHistoryPartyName">—</strong>
+                    </div>
+                    <div>
+                        <label class="gpa-history-filter-lbl" for="gpaHistDdlProject">Project</label>
+                        <select id="gpaHistDdlProject" class="gpa-history-filter-select form-select form-select-sm"></select>
+                    </div>
+                    <div>
+                        <label class="gpa-history-filter-lbl" for="gpaHistDdlSubProject">Sub Project</label>
+                        <select id="gpaHistDdlSubProject" class="gpa-history-filter-select form-select form-select-sm"></select>
+                    </div>
+                </div>
+                <div id="gpaHistorySummary" class="gpa-history-summary"></div>
+                <div class="gpa-history-table-section">
+                    <div class="gpa-items-title">Transaction History</div>
+                    <div id="gpaHistoryLoading" style="display:none;text-align:center;padding:24px;color:#64748b;">
+                        <i class="fa fa-spinner fa-spin me-2"></i>Loading history…
+                    </div>
+                    <div id="gpaHistoryEmpty" style="display:none;text-align:center;padding:24px;color:#94a3b8;font-size:0.85rem;">
+                        No history found for the selected party, project and sub project.
+                    </div>
+                    <div class="gpa-history-table-scroll-wrap" id="gpaHistoryTableWrap" style="display:none;">
+                        <table class="gpa-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Doc No</th>
+                                    <th>Date</th>
+                                    <th>Bill No</th>
+                                    <th>PO No</th>
+                                    <th>Project</th>
+                                    <th>Sub Project</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gpaHistoryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer gpa-history-modal-footer">
+                <button type="button" class="btn-gpa-close" onclick="CloseGpaApprovalHistoryModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGpaBudgetBalance" tabindex="-1" role="dialog"
+     aria-hidden="true" style="z-index:1075;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header gpa-budget-modal-header">
+                <h5 class="modal-title mb-0" style="font-size:1rem;font-weight:700;">
+                    <i class="fa fa-balance-scale me-2"></i>Budget Balance
+                </h5>
+                <button type="button" class="gpa-history-modal-close" data-bs-dismiss="modal"
+                        aria-label="Close" onclick="CloseGpaBudgetBalanceModal()" title="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body gpa-budget-modal-body">
+                <div id="gpaBudgetMeta" class="gpa-history-meta">
+                    <div>
+                        <span class="gpa-history-filter-lbl" id="gpaBudgetCounterpartyLbl">Party</span>
+                        <strong id="gpaBudgetPartyName">—</strong>
+                    </div>
+                    <div id="gpaBudgetProjectFilterWrap">
+                        <label class="gpa-history-filter-lbl" for="gpaBudgetDdlProject">Project</label>
+                        <select id="gpaBudgetDdlProject" class="gpa-history-filter-select form-select form-select-sm"></select>
+                    </div>
+                    <div id="gpaBudgetSubProjectFilterWrap">
+                        <label class="gpa-history-filter-lbl" for="gpaBudgetDdlSubProject">Sub Project</label>
+                        <select id="gpaBudgetDdlSubProject" class="gpa-history-filter-select form-select form-select-sm"></select>
+                    </div>
+                    <div id="gpaBudgetTypeFilterWrap">
+                        <label class="gpa-history-filter-lbl" for="gpaBudgetDdlType">Type</label>
+                        <select id="gpaBudgetDdlType" class="gpa-history-filter-select form-select form-select-sm">
+                            <option value="">All Types</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="gpaBudgetPartyPanel" class="gpa-budget-mode-panel is-active">
+                    <div id="gpaBudgetPartySummary" class="gpa-budget-summary gpa-budget-summary--party"></div>
+                    <div id="gpaBudgetPartyLoading" style="display:none;text-align:center;padding:24px;color:#64748b;">
+                        <i class="fa fa-spinner fa-spin me-2"></i>Loading budget balance…
+                    </div>
+                    <div id="gpaBudgetPartyEmpty" style="display:none;text-align:center;padding:24px;color:#94a3b8;font-size:0.85rem;">
+                        No budget balance data found for the selected project and sub project.
+                    </div>
+                    <div class="gpa-history-table-section gpa-budget-history-section" id="gpaBudgetPartyHistorySection" style="display:none;">
+                        <div class="gpa-items-title">Budget History</div>
+                        <div id="gpaBudgetPartyHistoryEmpty" style="display:none;text-align:center;padding:20px;color:#94a3b8;font-size:0.85rem;">
+                            No budget history found for the selected project, sub project and type.
+                        </div>
+                        <div class="gpa-budget-table-scroll-wrap gpa-budget-history-scroll-wrap" id="gpaBudgetPartyHistoryTableWrap" style="display:none;">
+                            <table class="gpa-budget-table">
+                                <thead id="gpaBudgetPartyHistoryTableHead"></thead>
+                                <tbody id="gpaBudgetPartyHistoryTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="gpaBudgetEmployeePanel" class="gpa-budget-mode-panel">
+                    <div id="gpaBudgetEmployeeSummary" class="gpa-budget-summary gpa-budget-summary--employee"></div>
+                    <div class="gpa-history-table-section">
+                        <div class="gpa-items-title">Employee Wise Budget</div>
+                        <div id="gpaBudgetEmployeeLoading" style="display:none;text-align:center;padding:24px;color:#64748b;">
+                            <i class="fa fa-spinner fa-spin me-2"></i>Loading budget balance…
+                        </div>
+                        <div id="gpaBudgetEmployeeEmpty" style="display:none;text-align:center;padding:24px;color:#94a3b8;font-size:0.85rem;">
+                            No employee wise budget data found for the selected project and sub project.
+                        </div>
+                        <div class="gpa-budget-table-scroll-wrap" id="gpaBudgetEmployeeTableWrap" style="display:none;">
+                            <table class="gpa-budget-table">
+                                <thead id="gpaBudgetEmployeeTableHead"></thead>
+                                <tbody id="gpaBudgetEmployeeTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer gpa-history-modal-footer">
+                <button type="button" class="btn-gpa-close" onclick="CloseGpaBudgetBalanceModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
             </div>
         </div>
     </div>

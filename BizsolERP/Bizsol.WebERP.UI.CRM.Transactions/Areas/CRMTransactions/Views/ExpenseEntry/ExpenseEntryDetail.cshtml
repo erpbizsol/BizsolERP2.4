@@ -20,6 +20,13 @@
     .datepicker table tfoot { display: none; }
     #hidetexbox { display: none; }
     .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
+    #ExpenseEntryDetails .ee-ddl-project,
+    #ExpenseEntryDetails .ee-ddl-subproject,
+    #ExpenseEntryDetails .ee-ddl-expensehead {
+        min-width: 9rem;
+        max-width: 14rem;
+        font-size: 0.82rem;
+    }
 </style>
 
 <div class="ee-page">
@@ -51,6 +58,10 @@
                 <label for="txtMarketingManName" class="form-label fw-bold">Sales Person Name</label>
                 <input type="text" id="txtMarketingManName" name="txtMarketingManName" class="box_border form-control form-control-sm" readonly value="" />
             </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2 ee-closing-bal-wrap" id="eeClosingBalWrap">
+                <label for="txtClosingBalance" class="form-label fw-bold">Closing Balance</label>
+                <input type="text" id="txtClosingBalance" class="box_border form-control form-control-sm" readonly autocomplete="off" value="" style="text-align: right;" />
+            </div>
         </div>
     </div>
 </div>
@@ -71,7 +82,11 @@
     <div class="expense-entry-actions">
         <button type="button" name="btnSubmit" id="btnSubmit" class="btn btn-primary btn-height">Save</button>
         <button type="button" name="btnVerify" id="btnVerify" class="btn btn-success btn-height">Verify</button>
+        <button type="button" name="btnNewRow" id="btnNewRow" class="btn btn-info btn-height">New Row</button>
         <button type="button" name="btnBack" id="btnBack" class="btn btn-secondary btn-height">Back</button>
+        <button type="button" id="btnExpenseEntryMasterAttach" class="btn btn-success btn-height ee-btn-master-attach" title="Entry-level attachments (Expense Entry Master)">
+            <i class="fa fa-paperclip" aria-hidden="true"></i> Attachment
+        </button>
     </div>
 </div>
 </div>

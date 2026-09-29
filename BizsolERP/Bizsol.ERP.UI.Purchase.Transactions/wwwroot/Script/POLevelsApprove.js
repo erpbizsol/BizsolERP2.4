@@ -1,8 +1,6 @@
 import { POLevelsApproveService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/POLevelsApproveService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
-// ─── DUMMY MODE — set false when backend is ready ─────────────────────────────
-//const USE_DUMMY = true;
 const USE_DUMMY = false;
 
 // ─── DUMMY PO LIST ────────────────────────────────────────────────────────────
@@ -10,6 +8,8 @@ const DUMMY_PO_LIST = [
     {
         Code: 1001, 'PO No': 'PO/2025/0112', 'Party Name': 'Tata Steel Limited',
         'PO Date': '2025-07-01', 'Total Bill Amount': 485250.00,
+        IsPOAgainstProject: 'Y', ProjectName: 'Solar Plant Phase I', SubProjectName: 'Site A – Bangalore',
+        ProjectBudget: 8000000, SubProjectBudget: 2500000,
         ApprovalStatus: 'Pending', CurrentLevelNo: 2, TotalLevels: 3,
         CurrentLevelDesc: 'Finance Manager', LevelCode: 202,
         PaymentTerms: '30 Days Net',
@@ -122,20 +122,79 @@ let G_CurrentPO  = null;
 BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
 
 // ─── INIT ──────────────────────────────────────────────────────────────────────
-$(document).ready(function () {
-    InitDates();
-    LoadPOList();
+$(document).ready(async function () {
+    // Ensure dates are initialized before loading the PO list to avoid racing condition
+    try {
+        await InitDates();
+    } catch (e) {
+        // continue even if InitDates failed; LoadPOList will handle empty dates
+        console.error('InitDates failed', e);
+    }
+
+    try {
+        await LoadPOList();
+    } catch (e) {
+        console.error('LoadPOList failed', e);
+    }
 
     $('#lstSearch').on('input', function () {
         FilterCards($(this).val().toLowerCase().trim());
     });
+
+    window.AttachmentControl_onQueueChange = function (count) {
+        const n = parseInt(count, 10) || 0;
+        const $b = $('#btnModalAttachment');
+        if (n > 0) {
+            $b.addClass('pla-attach-has-files');
+        } else if (!PlaHasAttachmentYes(G_CurrentPO)) {
+            $b.removeClass('pla-attach-has-files');
+        }
+    };
+
+    /** PO Approval cards: refresh after attachments change on a saved PO (green clip / HasAttach). */
+    document.addEventListener('bizsol:attachmentcontrol:changed', function (ev) {
+        const d = ev.detail;
+        if (!d || d.tempMode) return;
+        if (d.masterTableName !== 'PurchaseOrderMaster') return;
+        if (!document.getElementById('poPendingList')) return;
+        LoadPOList();
+    });
 });
 
 function InitDates() {
-    const today    = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    $('#lstFromDate').val(FmtDateInput(firstDay));
+    const today = new Date();
     $('#lstToDate').val(FmtDateInput(today));
+    if (USE_DUMMY) {
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        $('#lstFromDate').val(FmtDateInput(firstDay));
+        return Promise.resolve();
+    }
+
+    // Request default FromDate from API; fallback to first day of month on error
+    return POLevelsApproveService.GetFirstPendingPODate()
+        .then(function (resp) {
+            // API may return an object { FirstPendingPODate: 'yyyy-MM-dd' } or a plain date string
+            let dateStr = '';
+            if (!resp) dateStr = '';
+            else if (typeof resp === 'string') dateStr = resp;
+            else if (resp[0] && resp[0].FirstPendingPODate) dateStr = resp[0].FirstPendingPODate;
+
+            // Try to parse ISO date (yyyy-MM-dd) or other recognized formats
+            let d = null;
+            if (dateStr) {
+                const parsed = new Date(dateStr);
+                if (!isNaN(parsed)) d = parsed;
+            }
+
+            if (!d) {
+                d = new Date(today.getFullYear(), today.getMonth(), 1);
+            }
+            $('#lstFromDate').val(FmtDateInput(d));
+        })
+        .catch(function () {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            $('#lstFromDate').val(FmtDateInput(firstDay));
+        });
 }
 
 function FmtDateInput(d) {
@@ -153,10 +212,106 @@ function FmtDateDisplay(d) {
            dt.getFullYear();
 }
 
+function FmtApprovedOnDisplay(d) {
+    if (!d && d !== 0) return '';
+    const s = String(d).trim();
+    if (s === '') return '';
+    // The approval procedure already returns a pre-formatted 'dd/MM/yyyy HH:mm'
+    // string. Showing it as-is keeps the time and avoids ambiguous client-side
+    // date parsing that silently drops the time when the day is <= 12.
+    if (s.indexOf('/') !== -1) return s;
+    const dt = new Date(s);
+    if (isNaN(dt.getTime())) return s;
+    const pad = function (n) { return String(n).padStart(2, '0'); };
+    return pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() +
+           ' ' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+}
+
 function FmtCurrency(val) {
     const n = parseFloat(val);
     if (isNaN(n)) return '—';
     return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Values for shared PO Store attachment control (EntryNo / EntryDate). */
+function PlaRawPONoForAttach(po) {
+    if (!po) return '';
+    const n = po.PONo || po.PO_No || po['PO No'] || po.PONumber || po.DocNo || '';
+    return n;
+}
+
+function PlaRawPODateForAttach(po) {
+    if (!po) return '';
+    const d = po.PODate || po.PO_Date || po['PO Date'] || po.DocDate || '';
+    const s = String(d);
+    return s.length >= 10 ? s.substring(0, 10) : '';
+}
+
+function PlaHasAttachmentYes(po) {
+    if (!po) return false;
+    const v = po.HasAttach != null ? po.HasAttach
+        : po.hasAttach != null ? po.hasAttach
+        : po.HasAttachment != null ? po.HasAttachment
+        : po['Has Attachment'];
+    return String(v || '').trim().toUpperCase() === 'Y';
+}
+
+function PlaIsPOAgainstProject(po) {
+    if (!po) return false;
+    const v = po.IsPOAgainstProject != null ? po.IsPOAgainstProject
+        : po.isPOAgainstProject != null ? po.isPOAgainstProject
+        : po['Is PO Against Project'];
+    return String(v || '').trim().toUpperCase() === 'Y';
+}
+
+function PlaProjectName(po) {
+    if (!po) return '';
+    const n = po.ProjectName != null && String(po.ProjectName).trim() !== '' ? po.ProjectName
+        : po['Project Name'] || po.Project || '';
+    return String(n || '').trim();
+}
+
+function PlaSubProjectName(po) {
+    if (!po) return '';
+    const n = po.SubProjectName != null && String(po.SubProjectName).trim() !== '' ? po.SubProjectName
+        : po['Sub Project Name'] || po.SubProject || '';
+    return String(n || '').trim();
+}
+
+/** Budget amounts from PO list row only (same payload as GetPendingPOList — no SubProject API). */
+function PlaNumericFromPoField(po, keys) {
+    if (!po) return null;
+    for (let i = 0; i < keys.length; i++) {
+        const raw = keys[i] !== undefined ? po[keys[i]] : undefined;
+        if (raw == null || raw === '') continue;
+        const n = parseFloat(String(raw).replace(/,/g, ''));
+        if (!isNaN(n)) return n;
+    }
+    return null;
+}
+
+/** Master project budget on the PO list row */
+function PlaProjectBudgetAmt(po) {
+    return PlaNumericFromPoField(po, [
+        'ProjectBudget', 'projectBudget', 'Project Budget'
+    ]);
+}
+
+/** Sub-project budget on the PO list row */
+function PlaSubProjectBudgetAmt(po) {
+    return PlaNumericFromPoField(po, [
+        'SubProjectBudget', 'subProjectBudget', 'Sub Project Budget'
+    ]);
+}
+
+/** Escape for use inside single-quoted JavaScript string in an HTML onclick="..." attribute. */
+function PlaEscapeForSingleQuotedJs(s) {
+    return String(s)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r\n/g, '\\n')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\n');
 }
 
 function EscHtml(str) {
@@ -164,6 +319,48 @@ function EscHtml(str) {
     return String(str)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function PlaNormStatus(status) {
+    return String(status || 'Pending').trim().toLowerCase();
+}
+
+function PlaIsHoldStatus(status) {
+    return PlaNormStatus(status) === 'hold';
+}
+
+function PlaIsPendingStatus(status) {
+    return PlaNormStatus(status) === 'pending';
+}
+
+function PlaNeedsApprovalAction(status) {
+    const s = PlaNormStatus(status);
+    return s === 'pending' || s === 'hold';
+}
+
+function PlaLevelRowIsOnHold(lvlInfo) {
+    if (!lvlInfo) return false;
+    if (String(lvlInfo.IsOnHold ?? lvlInfo.isOnHold ?? '').trim().toUpperCase() === 'Y') return true;
+    const ls = PlaNormStatus(lvlInfo.LevelStatus ?? lvlInfo.Status ?? lvlInfo.ApprovalStatus ?? '');
+    return ls === 'hold';
+}
+
+function PlaLevelIsOnHold(lvlInfo, poStatus) {
+    if (!lvlInfo) return PlaIsHoldStatus(poStatus);
+    if (PlaLevelRowIsOnHold(lvlInfo)) return true;
+    return PlaIsHoldStatus(poStatus);
+}
+
+/** True when PO is on hold or any approval level is marked On Hold — Hold action not allowed again. */
+function PlaPOHasAnyLevelOnHold(po) {
+    if (!po) return false;
+    const status = (po.ApprovalStatus || po.Status || 'Pending').trim();
+    if (PlaIsHoldStatus(status)) return true;
+    const levels = Array.isArray(po.LevelDetails) ? po.LevelDetails : [];
+    for (let i = 0; i < levels.length; i++) {
+        if (PlaLevelRowIsOnHold(levels[i])) return true;
+    }
+    return false;
 }
 
 // ─── NORMALIZE API RESPONSE ───────────────────────────────────────────────────
@@ -189,7 +386,7 @@ function NormalizePOList(list) {
 }
 
 // ─── LOAD PO LIST ─────────────────────────────────────────────────────────────
-function LoadPOList() {
+async function LoadPOList() {
     const fromDate = $('#lstFromDate').val() || '';
     const toDate   = $('#lstToDate').val()   || '';
     const status   = $('#lstDdlStatus').val() || '';
@@ -199,40 +396,39 @@ function LoadPOList() {
     document.getElementById('poPendingList').innerHTML = '';
 
     if (USE_DUMMY) {
-        setTimeout(function () {
-            ShowLoading(false);
-            let list = DUMMY_PO_LIST.slice();
-            if (status) {
-                list = list.filter(function (p) {
-                    return (p.ApprovalStatus || '').toLowerCase() === status.toLowerCase();
-                });
-            }
-            const search = ($('#lstSearch').val() || '').toLowerCase().trim();
-            if (search) {
-                list = list.filter(function (p) {
-                    return (p['PO No'] + ' ' + p['Party Name']).toLowerCase().includes(search);
-                });
-            }
-            G_POList = list;
-            UpdateStatChips();
-            RenderPOCards(G_POList);
-        }, 600);
+        await new Promise(function (res) { setTimeout(res, 600); });
+        ShowLoading(false);
+        let list = DUMMY_PO_LIST.slice();
+        if (status) {
+            list = list.filter(function (p) {
+                return (p.ApprovalStatus || '').toLowerCase() === status.toLowerCase();
+            });
+        }
+        const search = ($('#lstSearch').val() || '').toLowerCase().trim();
+        if (search) {
+            list = list.filter(function (p) {
+                return (p['PO No'] + ' ' + p['Party Name']).toLowerCase().includes(search);
+            });
+        }
+        G_POList = list;
+        UpdateStatChips();
+        RenderPOCards(G_POList);
         return;
     }
 
-    POLevelsApproveService.GetPendingPOList(fromDate, toDate, status)
-        .then(function (data) {
-            ShowLoading(false);
-            G_POList = NormalizePOList(Array.isArray(data) ? data : []);
-            UpdateStatChips();
-            RenderPOCards(G_POList);
-        })
-        .catch(function () {
-            ShowLoading(false);
-            G_POList = [];
-            ShowEmpty(true);
-            toastr.error('Error loading pending purchase orders.');
-        });
+    try {
+        const data = await POLevelsApproveService.GetPendingPOList(fromDate, toDate, status);
+        ShowLoading(false);
+        G_POList = NormalizePOList(Array.isArray(data) ? data : []);
+        UpdateStatChips();
+        RenderPOCards(G_POList);
+    } catch (err) {
+        ShowLoading(false);
+        G_POList = [];
+        ShowEmpty(true);
+        toastr.error('Error loading pending purchase orders.');
+        throw err;
+    }
 }
 
 function UpdateStatChips() {
@@ -266,13 +462,14 @@ function BuildPOCard(po) {
     const status   = (po.ApprovalStatus              || po.Status      || 'Pending').trim();
 
     let statusClr, statusBg;
-    if (status.toLowerCase() === 'approved')      { statusClr = '#059669'; statusBg = '#d1fae5'; }
-    else if (status.toLowerCase() === 'rejected') { statusClr = '#dc2626'; statusBg = '#fee2e2'; }
-    else                                          { statusClr = '#d97706'; statusBg = '#fef3c7'; }
+    if (PlaNormStatus(status) === 'approved')      { statusClr = '#059669'; statusBg = '#d1fae5'; }
+    else if (PlaNormStatus(status) === 'rejected') { statusClr = '#dc2626'; statusBg = '#fee2e2'; }
+    else if (PlaIsHoldStatus(status))              { statusClr = '#ea580c'; statusBg = '#ffedd5'; }
+    else                                           { statusClr = '#d97706'; statusBg = '#fef3c7'; }
 
     const stepperHtml = BuildCardStepper(curLvlNo, totalLvl, status);
 
-    const actionBtn = status.toLowerCase() === 'pending'
+    const actionBtn = PlaNeedsApprovalAction(status)
         ? `<button class="btn-pla-card-approve" onclick="OpenDetailModal(${code})">
                <i class="fa fa-check me-1"></i>Review &amp; Approve
            </button>`
@@ -280,8 +477,58 @@ function BuildPOCard(po) {
                <i class="fa fa-eye me-1"></i>View Details
            </button>`;
 
+    const rawPoNoAtt = PlaRawPONoForAttach(po);
+    const rawPoDateAtt = PlaRawPODateForAttach(po);
+    const escNo = PlaEscapeForSingleQuotedJs(rawPoNoAtt);
+    const escDt = PlaEscapeForSingleQuotedJs(rawPoDateAtt);
+
+    const printBtns =
+        `<div class="pla-po-card-print-btns">
+            <button type="button" class="btn-pla-print-icon btn-pla-print-prev" title="Print Preview" onclick="PrintPO(${code},'preview')">
+                <i class="fa fa-search-plus"></i>
+            </button>
+            <button type="button" class="btn-pla-print-icon btn-pla-print-go" title="Print" onclick="PrintPO(${code},'print')">
+                <i class="fa fa-print"></i>
+            </button>
+            <button type="button" class="btn-pla-print-icon btn-pla-attach-icon" title="Attachments"
+                    style="background:${PlaHasAttachmentYes(po) ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#0284c7)'};color:#fff;box-shadow:0 2px 8px rgba(14,165,233,0.35);"
+                    onclick="OpenPOApprovalAttachment(${code}, '${escNo}', '${escDt}')">
+                <i class="fa fa-paperclip"></i>
+            </button>
+        </div>`;
+
+    let dataSearchKey = ((po['Party Name'] || po.VendorName || po.Vendor || po.PartyName || '') + ' ' +
+        (po['PO No'] || po.PONo || po.PONumber || po.DocNo || '')).toLowerCase();
+    if (PlaIsPOAgainstProject(po)) {
+        dataSearchKey += ' ' + PlaProjectName(po).toLowerCase() + ' ' + PlaSubProjectName(po).toLowerCase();
+    }
+
+    const projBudAmt = PlaProjectBudgetAmt(po);
+    const subBudAmt  = PlaSubProjectBudgetAmt(po);
+    if (projBudAmt != null) dataSearchKey += ' ' + String(projBudAmt);
+    if (subBudAmt != null) dataSearchKey += ' ' + String(subBudAmt);
+
+    let projBudgetLine = '';
+    if (PlaIsPOAgainstProject(po) && (projBudAmt != null || subBudAmt != null)) {
+        const pb = projBudAmt != null ? FmtCurrency(projBudAmt) : '—';
+        const sb = subBudAmt != null ? FmtCurrency(subBudAmt) : '—';
+        projBudgetLine =
+            '<div class="pla-po-card-proj-bud" style="font-size:0.66rem;color:#64748b;margin-top:3px;line-height:1.3;font-weight:600;">' +
+            '<span>Proj budget: ' + pb + '</span> <span style="color:#cbd5e1;">·</span> ' +
+            '<span>Sub budget: ' + sb + '</span></div>';
+    }
+
+    const projLine = PlaIsPOAgainstProject(po)
+        ? ('<div class="pla-po-card-proj" style="font-size:0.7rem;color:#64748b;margin-top:4px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;" title="' +
+            EscHtml((PlaProjectName(po) || '—') + (PlaSubProjectName(po) ? ' / ' + PlaSubProjectName(po) : '')) + '">' +
+            '<i class="fa fa-diagram-project me-1" style="color:#667eea;font-size:0.68rem;"></i>' +
+            EscHtml(PlaProjectName(po) || '—') +
+            (PlaSubProjectName(po) ? ' <span style="color:#94a3b8;">·</span> ' + EscHtml(PlaSubProjectName(po)) : '') +
+            '</div>' + projBudgetLine)
+        : '';
+
     return `
-    <div class="pla-po-card section-entry-animation" data-code="${code}" data-search="${(vendor + ' ' + poNo).toLowerCase()}">
+    <div class="pla-po-card section-entry-animation" data-code="${code}" data-search="${EscHtml(dataSearchKey)}">
         <div class="pla-po-card-header">
             <div class="pla-po-no-badge">
                 <span style="font-size:0.6rem;font-weight:600;opacity:0.82;line-height:1;">PO#</span>
@@ -297,6 +544,7 @@ function BuildPOCard(po) {
                         <i class="fa fa-layer-group me-1"></i>${lvlDesc}
                     </span>
                 </div>
+                ${projLine}
             </div>
             <div class="pla-po-card-right">
                 <div class="pla-po-amount">${amount}</div>
@@ -311,6 +559,7 @@ function BuildPOCard(po) {
             ${stepperHtml}
         </div>
         <div class="pla-po-card-footer">
+            ${printBtns}
             ${actionBtn}
         </div>
     </div>`;
@@ -318,21 +567,25 @@ function BuildPOCard(po) {
 
 function BuildCardStepper(currentLevel, totalLevels, status) {
     if (!totalLevels || totalLevels < 1) totalLevels = 1;
+    const st = PlaNormStatus(status);
     let html = '<div class="pla-stepper">';
     for (let i = 1; i <= totalLevels; i++) {
         let stepClass;
-        if (status.toLowerCase() === 'approved')      { stepClass = 'pla-step-done'; }
+        if (st === 'approved')                        { stepClass = 'pla-step-done'; }
         else if (i < currentLevel)                    { stepClass = 'pla-step-done'; }
-        else if (i === currentLevel)                  { stepClass = status.toLowerCase() === 'rejected' ? 'pla-step-rejected' : 'pla-step-active'; }
+        else if (i === currentLevel && st === 'hold') { stepClass = 'pla-step-hold'; }
+        else if (i === currentLevel)                  { stepClass = st === 'rejected' ? 'pla-step-rejected' : 'pla-step-active'; }
         else                                          { stepClass = 'pla-step-pending'; }
 
-        const lineClass = (i < currentLevel || status.toLowerCase() === 'approved')
+        const lineClass = (i < currentLevel || st === 'approved')
             ? 'pla-step-line-done' : 'pla-step-line-pending';
 
         const iconHtml = stepClass === 'pla-step-done'
             ? '<i class="fa fa-check" style="font-size:0.6rem;"></i>'
             : stepClass === 'pla-step-rejected'
                 ? '<i class="fa fa-times" style="font-size:0.6rem;"></i>'
+                : stepClass === 'pla-step-hold'
+                    ? '<i class="fa fa-pause" style="font-size:0.6rem;"></i>'
                 : i;
 
         html += `<div class="pla-step-item">
@@ -361,71 +614,94 @@ function FilterCards(query) {
 
 // ─── OPEN DETAIL MODAL ─────────────────────────────────────────────────────────
 function OpenDetailModal(poCode) {
-    G_CurrentPO = G_POList.find(function (p) {
-        return (p.Code || p.PurchaseOrderMaster_Code || 0) == poCode;
-    });
-    if (!G_CurrentPO) return;
+  
+            G_CurrentPO = G_POList.find(function (p) {
+                return (p.Code || p.PurchaseOrderMaster_Code || 0) == poCode;
+            });
+            if (!G_CurrentPO) return;
 
-    const poNo     = G_CurrentPO['PO No']            || G_CurrentPO.PONo        || '—';
-    const vendor   = G_CurrentPO['Party Name']        || G_CurrentPO.VendorName  || '—';
-    const poDate   = FmtDateDisplay(G_CurrentPO['PO Date'] || G_CurrentPO.PODate);
-    const amount   = FmtCurrency(G_CurrentPO['Total Bill Amount'] || G_CurrentPO.TotalAmount || 0);
-    const curLvlNo = parseInt(G_CurrentPO.CurrentLevelNo  || G_CurrentPO.CurrentLevel || 1);
-    const totalLvl = parseInt(G_CurrentPO.TotalLevels     || G_CurrentPO.MaxLevel      || 3);
-    const pmtTerms = G_CurrentPO.PaymentTerms || G_CurrentPO['Payment Terms'] || '—';
-    const status   = (G_CurrentPO.ApprovalStatus || G_CurrentPO.Status || 'Pending').trim();
+            const poNo = G_CurrentPO['PO No'] || G_CurrentPO.PONo || '—';
+            const vendor = G_CurrentPO['Party Name'] || G_CurrentPO.VendorName || '—';
+            const poDate = FmtDateDisplay(G_CurrentPO['PO Date'] || G_CurrentPO.PODate);
+            const amount = FmtCurrency(G_CurrentPO['Total Bill Amount'] || G_CurrentPO.TotalAmount || 0);
+            const curLvlNo = parseInt(G_CurrentPO.CurrentLevelNo || G_CurrentPO.CurrentLevel || 1);
+            const totalLvl = parseInt(G_CurrentPO.TotalLevels || G_CurrentPO.MaxLevel || 3);
+            const pmtTerms = G_CurrentPO.PaymentTerms || G_CurrentPO['Payment Terms'] || '—';
+            const status = (G_CurrentPO.ApprovalStatus || G_CurrentPO.Status || 'Pending').trim();
 
-    $('#modalPONo').text('PO# ' + poNo);
-    $('#modalVendorName').text(vendor);
-    $('#hfPOCode').val(poCode);
-    $('#hfLevelCode').val(G_CurrentPO.LevelCode || G_CurrentPO.ApprovalLevel_Code || 0);
-    $('#frmRemarks').val('');
+            $('#modalPONo').text('PO# ' + poNo);
+            $('#modalVendorName').text(vendor);
+            $('#hfPOCode').val(poCode);
+            $('#hfLevelCode').val(G_CurrentPO.LevelCode || G_CurrentPO.ApprovalLevel_Code || 0);
+            $('#hfAttachPONo').val(String(PlaRawPONoForAttach(G_CurrentPO) || ''));
+            $('#hfAttachPODate').val(PlaRawPODateForAttach(G_CurrentPO) || '');
+            $('#btnModalAttachment').toggleClass('pla-attach-has-files', PlaHasAttachmentYes(G_CurrentPO));
+            $('#frmRemarks').val('');
 
-    // PO header info grid
-    $('#modalPOHeader').html(
-        '<div class="pla-info-grid">' +
-            BuildInfoItem('PO Number',     EscHtml(poNo),     'fa-file-invoice') +
-            BuildInfoItem('Vendor',        EscHtml(vendor),   'fa-building') +
-            BuildInfoItem('PO Date',       EscHtml(poDate || '—'), 'fa-calendar-alt') +
-            BuildInfoItem('Total Amount',  amount,            'fa-rupee-sign', '#667eea') +
-            BuildInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
-            BuildInfoItem('Status',        EscHtml(status),   'fa-info-circle') +
-        '</div>'
-    );
+            // PO header info grid
+            let headerHtml = '<div class="pla-info-grid">' +
+                BuildInfoItem('PO Number', EscHtml(poNo), 'fa-file-invoice') +
+                BuildInfoItem('Vendor', EscHtml(vendor), 'fa-building') +
+                BuildInfoItem('PO Date', EscHtml(poDate || '—'), 'fa-calendar-alt');
+            if (PlaIsPOAgainstProject(G_CurrentPO)) {
+                const proj = PlaProjectName(G_CurrentPO);
+                const subp = PlaSubProjectName(G_CurrentPO);
+                headerHtml += BuildInfoItem('Project', proj ? EscHtml(proj) : '—', 'fa-diagram-project');
+                headerHtml += BuildInfoItem('Sub Project', subp ? EscHtml(subp) : '—', 'fa-map-location-dot');
+                const mb = PlaProjectBudgetAmt(G_CurrentPO);
+                const sb = PlaSubProjectBudgetAmt(G_CurrentPO);
+                if (mb != null || sb != null) {
+                    headerHtml += BuildInfoItem('Project budget', mb != null ? EscHtml(FmtCurrency(mb)) : '—', 'fa-sack-dollar');
+                    headerHtml += BuildInfoItem('Sub-project budget', sb != null ? EscHtml(FmtCurrency(sb)) : '—', 'fa-coins');
+                }
+            }
+            headerHtml += BuildInfoItem('Total Amount', amount, 'fa-rupee-sign', '#667eea') +
+                BuildInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
+                BuildInfoItem('Status', EscHtml(status), 'fa-info-circle') +
+                '</div>';
+            $('#modalPOHeader').html(headerHtml);
 
-    // Approval level stepper
-    $('#modalApprovalStepper').html(BuildDetailStepper(G_CurrentPO));
+            // Approval level stepper
+            $('#modalApprovalStepper').html(BuildDetailStepper(G_CurrentPO));
 
-    // Show/hide approve & reject buttons
-    const isPending = status.toLowerCase() === 'pending';
-    $('#btnApproveAction').toggle(isPending);
-    $('#btnRejectAction').toggle(isPending);
+            // Show/hide approve, reject & hold buttons
+            const needsAction = PlaNeedsApprovalAction(status);
+            const holdBlocked = PlaPOHasAnyLevelOnHold(G_CurrentPO);
+            $('#btnApproveAction').toggle(needsAction);
+            $('#btnRejectAction').toggle(needsAction);
+            $('#btnHoldAction').toggle(needsAction);
+            $('#btnHoldAction')
+                .prop('disabled', holdBlocked)
+                .toggleClass('pla-btn-hold-disabled', holdBlocked)
+                .attr('title', holdBlocked ? 'This PO is already on hold at an approval level.' : 'Put on hold');
 
-    // Items placeholder
-    $('#modalItemsBody').html(
-        '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
-        '<i class="fa fa-spinner fa-spin me-1"></i>Loading items\u2026</td></tr>'
-    );
-
-    $('#modalPODetail').modal({ backdrop: 'static' });
-    $('#modalPODetail').modal('show');
-
-    // Load items async
-    if (USE_DUMMY) {
-        setTimeout(function () {
-            RenderModalItems(DUMMY_ITEMS[poCode] || []);
-        }, 400);
-        return;
-    }
-
-    POLevelsApproveService.GetPOItems(poCode)
-        .then(function (items) { RenderModalItems(items); })
-        .catch(function () {
+            // Items placeholder
             $('#modalItemsBody').html(
-                '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
-                '<i class="fa fa-exclamation-triangle me-1"></i>Error loading items.</td></tr>'
+                '<tr><td colspan="6" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+                '<i class="fa fa-spinner fa-spin me-1"></i>Loading items\u2026</td></tr>'
             );
-        });
+
+            $('#modalPODetail').modal({ backdrop: 'static' });
+            $('#modalPODetail').modal('show');
+
+            // Load items async
+            if (USE_DUMMY) {
+                setTimeout(function () {
+                    RenderModalItems(DUMMY_ITEMS[poCode] || []);
+                }, 400);
+                return;
+            }
+
+            POLevelsApproveService.GetPOItems(poCode)
+                .then(function (items) { RenderModalItems(items); })
+                .catch(function () {
+                    $('#modalItemsBody').html(
+                        '<tr><td colspan="6" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                        '<i class="fa fa-exclamation-triangle me-1"></i>Error loading items.</td></tr>'
+                    );
+                });
+      
+   
 }
 
 function BuildInfoItem(label, value, icon, valueColor) {
@@ -447,21 +723,24 @@ function BuildDetailStepper(po) {
         const lvlInfo    = levels.find(function (l) { return (l.LevelNo || l.Level || l.LevelOrder) == i; }) || {};
         const lvlName    = EscHtml(lvlInfo.LevelDesc || lvlInfo.LevelName || ('Level ' + i));
         const approver   = EscHtml(lvlInfo.ApproverName || lvlInfo.UserName || '');
-        const approvedOn = lvlInfo.ApprovedOn ? FmtDateDisplay(lvlInfo.ApprovedOn) : '';
+        const approvedOn = lvlInfo.ApprovedOn ? FmtApprovedOnDisplay(lvlInfo.ApprovedOn) : '';
         const remarks    = EscHtml(lvlInfo.Remarks || lvlInfo.Remark || '');
 
         let stepState;
-        if (status.toLowerCase() === 'approved' || i < curLvlNo) stepState = 'done';
-        else if (i === curLvlNo) stepState = status.toLowerCase() === 'rejected' ? 'rejected' : 'active';
+        if (PlaNormStatus(status) === 'approved' || i < curLvlNo) stepState = 'done';
+        else if (PlaLevelRowIsOnHold(lvlInfo) || (i === curLvlNo && PlaIsHoldStatus(status))) stepState = 'hold';
+        else if (i === curLvlNo) stepState = PlaNormStatus(status) === 'rejected' ? 'rejected' : 'active';
         else stepState = 'pending';
 
         const iconHtml = stepState === 'done'     ? '<i class="fa fa-check"></i>'
                        : stepState === 'rejected' ? '<i class="fa fa-times"></i>'
+                       : stepState === 'hold'     ? '<i class="fa fa-pause"></i>'
                        : stepState === 'active'   ? '<i class="fa fa-hourglass-half"></i>'
                        : i;
 
         const badgeLabel = stepState === 'done'     ? 'Approved'
                          : stepState === 'rejected' ? 'Rejected'
+                         : stepState === 'hold'     ? 'On Hold'
                          : stepState === 'active'   ? 'Pending'
                          : 'Waiting';
 
@@ -527,26 +806,37 @@ function SubmitApproval(action) {
     const remarks   = ($('#frmRemarks').val() || '').trim();
 
     if (!poCode) { toastr.warning('No PO selected.'); return; }
-    if (action === 'Reject' && !remarks) {
-        toastr.warning('Please enter remarks before rejecting.');
+    if (action === 'Hold' && PlaPOHasAnyLevelOnHold(G_CurrentPO)) {
+        toastr.warning('This PO is already on hold at an approval level.');
+        return;
+    }
+    if ((action === 'Reject' || action === 'Hold') && !remarks) {
+        toastr.warning('Please enter remarks before ' + action.toLowerCase() + 'ing.');
         $('#frmRemarks').focus();
         return;
     }
 
     const poNo   = G_CurrentPO ? (G_CurrentPO['PO No'] || G_CurrentPO.PONo || '') : '';
     const isAppr = action === 'Approve';
+    const isHold = action === 'Hold';
     const hdrBg  = isAppr
         ? 'background:linear-gradient(135deg,#059669,#10b981);color:#fff;'
-        : 'background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;';
-    const btnCls = isAppr ? 'btn-pla-confirm-approve' : 'btn-pla-confirm-reject';
+        : isHold
+            ? 'background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;'
+            : 'background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;';
+    const btnCls = isAppr ? 'btn-pla-confirm-approve' : (isHold ? 'btn-pla-confirm-hold' : 'btn-pla-confirm-reject');
     const btnTxt = isAppr
         ? '<i class="fa fa-check me-1"></i>Yes, Approve'
-        : '<i class="fa fa-times me-1"></i>Yes, Reject';
+        : isHold
+            ? '<i class="fa fa-pause me-1"></i>Yes, Hold'
+            : '<i class="fa fa-times me-1"></i>Yes, Reject';
     const msg = isAppr
         ? 'Are you sure you want to <strong>approve</strong> PO# <strong>' + EscHtml(poNo) + '</strong>?'
-        : 'Are you sure you want to <strong>reject</strong> PO# <strong>' + EscHtml(poNo) + '</strong>?';
+        : isHold
+            ? 'Are you sure you want to put PO# <strong>' + EscHtml(poNo) + '</strong> on <strong>hold</strong>?'
+            : 'Are you sure you want to <strong>reject</strong> PO# <strong>' + EscHtml(poNo) + '</strong>?';
 
-    $('#confirmTitle').text(isAppr ? 'Confirm Approval' : 'Confirm Rejection');
+    $('#confirmTitle').text(isAppr ? 'Confirm Approval' : (isHold ? 'Confirm Hold' : 'Confirm Rejection'));
     $('#confirmModalHeader').attr('style', 'padding:12px 16px;border:none;' + hdrBg);
     $('#confirmMessage').html(msg);
     $('#btnConfirmAction')
@@ -580,7 +870,12 @@ function ExecuteApproval(poCode, levelCode, remarks, action) {
 
     const serviceCall = action === 'Approve'
         ? POLevelsApproveService.ApprovePO(poCode, levelCode, remarks)
-        : POLevelsApproveService.RejectPO(poCode, levelCode, remarks);
+        : action === 'Hold'
+            ? POLevelsApproveService.HoldPO(poCode, levelCode, remarks)
+            : POLevelsApproveService.RejectPO(poCode, levelCode, remarks);
+
+    const successVerb = action === 'Approve' ? 'approved' : (action === 'Hold' ? 'put on hold' : 'rejected');
+    const failVerb = action === 'Approve' ? 'approving' : (action === 'Hold' ? 'holding' : 'rejecting');
 
     serviceCall
         .then(function (response) {
@@ -590,7 +885,7 @@ function ExecuteApproval(poCode, levelCode, remarks, action) {
                 response.Success === true || response === true
             );
             if (ok) {
-                toastr.success('PO ' + (action === 'Approve' ? 'approved' : 'rejected') + ' successfully.');
+                toastr.success('PO ' + successVerb + ' successfully.');
                 CloseDetailModal();
                 LoadPOList();
             } else {
@@ -601,7 +896,7 @@ function ExecuteApproval(poCode, levelCode, remarks, action) {
         })
         .catch(function () {
             HideLoader();
-            toastr.error('Error while ' + (action === 'Approve' ? 'approving' : 'rejecting') + ' PO.');
+            toastr.error('Error while ' + failVerb + ' PO.');
         });
 }
 
@@ -615,6 +910,150 @@ function CloseConfirmModal() {
     $('#modalConfirm').modal('hide');
 }
 
+function CloseBudgetHistoryModal() {
+    $('#modalPOBudgetHistory').modal('hide');
+}
+
+function plaPickHistoryField(row, keys) {
+    if (!row) return '';
+    for (let i = 0; i < keys.length; i++) {
+        if (row[keys[i]] !== undefined && row[keys[i]] !== null && String(row[keys[i]]).trim() !== '') {
+            return row[keys[i]];
+        }
+    }
+    const objKeys = Object.keys(row);
+    for (let i = 0; i < keys.length; i++) {
+        const want = String(keys[i]).toLowerCase().replace(/\s+/g, '');
+        const found = objKeys.find(function (k) {
+            return String(k).toLowerCase().replace(/\s+/g, '') === want;
+        });
+        if (found != null && row[found] !== undefined && row[found] !== null && String(row[found]).trim() !== '') {
+            return row[found];
+        }
+    }
+    return '';
+}
+
+function plaFmtHistoryAmt(val) {
+    const n = parseFloat(String(val == null ? '' : val).replace(/,/g, ''));
+    if (isNaN(n)) return '0.00';
+    return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function NormalizeBudgetHistoryList(data) {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.Data)) return data.Data;
+    if (Array.isArray(data.History)) return data.History;
+    return [];
+}
+
+function RenderBudgetHistoryRows(rows) {
+    const $body = $('#budgetHistoryBody');
+    if (!rows || rows.length === 0) {
+        $body.html(
+            '<tr><td colspan="7" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+            'No budget history found for this PO.</td></tr>'
+        );
+        return;
+    }
+
+    let html = '';
+    rows.forEach(function (row) {
+        const category = EscHtml(plaPickHistoryField(row, ['Category', 'BOS Type', 'BOS Tyep', 'CategoryName']) || '—');
+        const item = EscHtml(plaPickHistoryField(row, ['Item', 'Item Name', 'ItemName']) || '');
+        const budget = plaPickHistoryField(row, ['Budget Amount with GST', '(A) Total Budget Amt With Gst', 'BudgetAmtWithGst']);
+        const current = plaPickHistoryField(row, ['Current po amt with GST', '(B) Current PO/WO Amt With Gst', 'CurrentPOAmtWithGst']);
+        const other = plaPickHistoryField(row, ['Other PO sum value with GST', '(C )Old WO/PO Amt With Gst', 'OtherPOAmtWithGst']);
+        const net = plaPickHistoryField(row, ['Net PO amount', '(D)Net WO/PO Amt With GST', 'NetPOAmount']);
+        const balance = plaPickHistoryField(row, ['Balance', '(A) - (D)Balance Budget Amt', 'BalanceAmt']);
+        const balNum = parseFloat(String(balance == null ? '' : balance).replace(/,/g, ''));
+        const balCls = !isNaN(balNum) && balNum < 0 ? 'pla-history-neg' : 'pla-history-pos';
+
+        html += '<tr>' +
+            '<td class="text-center" style="font-weight:700;">' + category + '</td>' +
+            '<td style="font-weight:600;">' + (item || '<span style="color:#94a3b8;">—</span>') + '</td>' +
+            '<td class="text-end">' + plaFmtHistoryAmt(budget) + '</td>' +
+            '<td class="text-end">' + plaFmtHistoryAmt(current) + '</td>' +
+            '<td class="text-end">' + plaFmtHistoryAmt(other) + '</td>' +
+            '<td class="text-end" style="font-weight:700;">' + plaFmtHistoryAmt(net) + '</td>' +
+            '<td class="text-end ' + balCls + '">' + plaFmtHistoryAmt(balance) + '</td>' +
+            '</tr>';
+    });
+    $body.html(html);
+}
+
+function OpenBudgetHistoryModal() {
+    const poCode = parseInt($('#hfPOCode').val() || '0', 10);
+    if (!poCode) {
+        toastr.warning('No PO selected.');
+        return;
+    }
+
+    const poNo = G_CurrentPO ? (G_CurrentPO['PO No'] || G_CurrentPO.PONo || '') : '';
+    const vendor = G_CurrentPO ? (G_CurrentPO['Party Name'] || G_CurrentPO.VendorName || '') : '';
+    const project = PlaProjectName(G_CurrentPO) || '—';
+    const subProject = PlaSubProjectName(G_CurrentPO) || '—';
+
+    $('#budgetHistoryModalSub').text(
+        (poNo ? ('PO# ' + poNo) : 'As per budget amount') + (vendor ? (' · ' + vendor) : '')
+    );
+    $('#budgetHistoryProjectLine').html(
+        '<i class="fa fa-diagram-project me-1"></i>Project: ' + EscHtml(project) +
+        '&nbsp;&nbsp;|&nbsp;&nbsp;' +
+        '<i class="fa fa-map-location-dot me-1"></i>Sub Project: ' + EscHtml(subProject)
+    );
+    $('#budgetHistoryBody').html(
+        '<tr><td colspan="7" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<i class="fa fa-spinner fa-spin me-1"></i>Loading history…</td></tr>'
+    );
+
+    $('#modalPOBudgetHistory').modal({ backdrop: 'static' });
+    $('#modalPOBudgetHistory').modal('show');
+
+    if (USE_DUMMY) {
+        RenderBudgetHistoryRows([
+            {
+                Category: 'A', Item: 'module',
+                'Budget Amount with GST': 100000,
+                'Current po amt with GST': 20000,
+                'Other PO sum value with GST': 30000,
+                'Net PO amount': 50000,
+                Balance: 50000
+            },
+            {
+                Category: 'B', Item: 'Inventor',
+                'Budget Amount with GST': 100000,
+                'Current po amt with GST': 30000,
+                'Other PO sum value with GST': 40000,
+                'Net PO amount': 70000,
+                Balance: 30000
+            },
+            {
+                Category: 'C', Item: '',
+                'Budget Amount with GST': 100000,
+                'Current po amt with GST': 40000,
+                'Other PO sum value with GST': 20000,
+                'Net PO amount': 60000,
+                Balance: 40000
+            }
+        ]);
+        return;
+    }
+
+    POLevelsApproveService.GetBudgetHistory(poCode)
+        .then(function (response) {
+            RenderBudgetHistoryRows(NormalizeBudgetHistoryList(response));
+        })
+        .catch(function () {
+            $('#budgetHistoryBody').html(
+                '<tr><td colspan="7" class="text-center py-3" style="color:#ef4444;font-size:0.82rem;">' +
+                'Failed to load budget history.</td></tr>'
+            );
+        });
+}
+
 // ─── DISPLAY HELPERS ──────────────────────────────────────────────────────────
 function ShowLoading(show) {
     document.getElementById('poPendingLoading').style.display = show ? '' : 'none';
@@ -625,10 +1064,40 @@ function ShowEmpty(show) {
     document.getElementById('poPendingEmpty').style.display = show ? '' : 'none';
 }
 
+/** Same attachment host + API as PO Store grid (`PurchaseOrderStore.js`). */
+function OpenPOApprovalAttachment(code, poNo, poDate) {
+    if (typeof window.openPOListAttachmentControl !== 'function') {
+        toastr.error('Attachments are not available. Please refresh the page.');
+        return;
+    }
+    window.openPOListAttachmentControl(code, poNo, poDate, 'view');
+}
+
+function OpenPOApprovalAttachmentFromModal() {
+    const code = parseInt($('#hfPOCode').val() || '0', 10);
+    const poNo = $('#hfAttachPONo').val() || '';
+    const poDate = $('#hfAttachPODate').val() || '';
+    OpenPOApprovalAttachment(code, poNo, poDate);
+}
+
 function NavigateToPOStore() {
     const appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/'))
         .replace(/\/?$/, '/');
     window.location.href = appBase + 'PurchaseTransactions/PurchaseOrder/PurchaseOrderStore?ModuleDesp=Purchase%20Order%20(Store)';
+}
+
+/** Print / preview from detail modal — uses same flow as Purchase Order Store (PrintPO + modalPrintOptions). */
+function PrintPOFromDetail(mode) {
+    const c = parseInt($('#hfPOCode').val() || '0', 10);
+    if (!c) {
+        toastr.warning('No PO selected.');
+        return;
+    }
+    if (typeof window.PrintPO !== 'function') {
+        toastr.error('Print is not available. Please refresh the page.');
+        return;
+    }
+    window.PrintPO(c, mode === 'print' ? 'print' : 'preview');
 }
 
 // ─── EXPOSE GLOBALS (onclick handlers in HTML) ────────────────────────────────
@@ -637,4 +1106,9 @@ window.OpenDetailModal   = OpenDetailModal;
 window.SubmitApproval    = SubmitApproval;
 window.CloseDetailModal  = CloseDetailModal;
 window.CloseConfirmModal = CloseConfirmModal;
+window.OpenBudgetHistoryModal = OpenBudgetHistoryModal;
+window.CloseBudgetHistoryModal = CloseBudgetHistoryModal;
 window.NavigateToPOStore = NavigateToPOStore;
+window.PrintPOFromDetail = PrintPOFromDetail;
+window.OpenPOApprovalAttachment = OpenPOApprovalAttachment;
+window.OpenPOApprovalAttachmentFromModal = OpenPOApprovalAttachmentFromModal;

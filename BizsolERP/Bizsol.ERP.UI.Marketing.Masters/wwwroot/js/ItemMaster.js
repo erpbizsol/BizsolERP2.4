@@ -1,15 +1,18 @@
 import { ItemMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_ItemMasterService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
-//var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-//var G_UserMasterCode = authKeyData.UserMaster_Code;
+var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+var G_UserMasterCode = authKeyData.UserMaster_Code;
 var G_EditCode = 0;
 var G_ViewCode = 0;
+/** Rows from GetCategoryMasterList — used to resolve group name in view when API returns only code. */
+var G_ItemCategoryRows = [];
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
     GetItemMasterList();
     GetUOMList();
+    GetCategoryMasterListForItem();
 
     // Modal close buttons
     $("#btnModalClose, #btnCancelItem").on("click", CloseForm);
@@ -36,6 +39,14 @@ $(document).ready(function () {
                 "box-shadow": ""
             });
         }
+    });
+
+    $("#ItemGroup").on("change", function () {
+        $("#err_ItemGroup").hide();
+        $(this).nextAll(".select2-container").first().find(".select2-selection--single").css({
+            "border-color": "",
+            "box-shadow": ""
+        });
     });
 
     // HSN — numbers only, max 8 digits
@@ -66,15 +77,15 @@ function GetItemMasterList() {
 
         if (rows.length > 0) {
             $("#tblitemMaster").show();
-            const StringFilterColumn = ["Item Code", "Item Name", "UOM", "Type"];
+            const StringFilterColumn = ["Item Code", "Item Name", "UOM", "Type","Group"];
             const NumericFilterColumn = ["Entry No"];
             const DateFilterColumn = ["Entry Date"];
             const Button = false;
             const showButtons = [];
             const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["CurrentStatus", "MaintenanceType", "Priority", "NatureofBreakdown", "DescriptionofBreakdown", "SpareConsumed", "JobAssignedTo", "MobileNo", "RequestTime", "ConcernedPerson", "ConcenedPersonMobileNo", "Code", "Job Assigned", "Request Date", "Work Start Date", "Machine Failed Date", "Failed Remark", "Start Remark", "Description"];
+            const hiddenColumns = ["CurrentStatus", "MaintenanceType", "Priority", "NatureofBreakdown", "DescriptionofBreakdown", "SpareConsumed", "JobAssignedTo", "MobileNo", "RequestTime", "ConcernedPerson", "ConcenedPersonMobileNo", "Code", "Job Assigned", "Request Date", "Work Start Date", "Machine Failed Date", "Failed Remark", "Start Remark", "Description", "CategoryMaster_Code", "Category_Code", "CategoryName", "GroupName"];
             const ColumnAlignment = {
-                
+
                 "Action": "center;width:118px;",
             };
             var updatedResponse = rows.map(function (item) {
@@ -92,7 +103,9 @@ function GetItemMasterList() {
             });
 
             BizsolCustomFilterGrid.CreateDataTable(
-                "ItemMaster-header", "ItemMaster-body", updatedResponse,Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment
+                "ItemMaster-header", "ItemMaster-body", updatedResponse, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment,
+                true, null, null, null,
+                "Search by Item Code, Name, UOM, Type, Group..."
             );
 
         } else {
@@ -106,12 +119,23 @@ function GetItemMasterList() {
 
 // ── Open New Form ───────────────────────────────────────────
 function OpenNewItem() {
-    G_EditCode = 0;
-    ClearForm();
-    $("#formModalTitle").text("Add New Item");
-    $("#btnSaveText").text("Save Item");
-    $("#itemDialogBackdrop").addClass("show");
-    setTimeout(function () { $("#ItemName").focus(); }, 140);
+    var ModuleName = "Item Master",
+        OptionName = "New",
+        ShowMsg = "Y",
+        FinYear = getFinancialYear();
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+        if (response.CheckModuleOptionRight == 'N') {
+            toastr.error(response.Msg);
+            return false;
+        } else {
+            G_EditCode = 0;
+            ClearForm();
+            $("#formModalTitle").text("Add New Item");
+            $("#btnSaveText").text("Save Item");
+            $("#itemDialogBackdrop").addClass("show");
+            setTimeout(function () { $("#ItemName").focus(); }, 140);
+        }
+    });
 };
 
 // ── Open Edit Form ──────────────────────────────────────────
@@ -130,7 +154,17 @@ function EditItem(code) {
             ClearForm();
             $("#formModalTitle").text("Edit Item");
             $("#btnSaveText").text("Update Item");
-            ItemMasterService.GetItemMasterByCode(code).then(function (response) {
+            var pItem = ItemMasterService.GetItemMasterByCode(code);
+            var pCat =
+                G_ItemCategoryRows.length > 0
+                    ? Promise.resolve(null)
+                    : ItemMasterService.GetCategoryMasterList();
+            Promise.all([pItem, pCat]).then(function (results) {
+                var response = results[0];
+                var catRes = results[1];
+                if (catRes != null) {
+                    imApplyItemGroupDropdown(imNormalizeCategoryRows(catRes));
+                }
                 // ✅ VW_ItemMaster ke do arrays
                 var item = response && response.ItemMasterList
                     ? response.ItemMasterList[0]
@@ -143,6 +177,7 @@ function EditItem(code) {
                     $("#ItemCode").val(item.ItemCode || "");
                     $("#ItemName").val(item.ItemName || "");
                     SelectOptionByText('UOM', item.UOM);
+                    imBindItemGroupFromItemRow(item, otherDetail);
                     $("#GSTRate").val(item.DutyValue || "0");
                     $("#ItemType").val((otherDetail && otherDetail.ItemNature) ? otherDetail.ItemNature : "");
                     $("#HSN").val((otherDetail && otherDetail.HSNCode != null) ? otherDetail.HSNCode : "");
@@ -158,6 +193,13 @@ function EditItem(code) {
     });
 }
 
+/** GST value for display — no trailing % (label already says GST (%)). */
+function imGstValueForDisplay(duty) {
+    if (duty == null || duty === "") return "";
+    var s = String(duty).trim();
+    return s.replace(/%+\s*$/,"").trim();
+}
+
 // ── View Item ───────────────────────────────────────────────
 function ViewItem(code) {
     var ModuleName = "Item Master",
@@ -171,7 +213,17 @@ function ViewItem(code) {
         } else {
             G_ViewCode = code;
 
-            ItemMasterService.GetItemMasterByCode(code).then(function (response) {
+            var pItemV = ItemMasterService.GetItemMasterByCode(code);
+            var pCatV =
+                G_ItemCategoryRows.length > 0
+                    ? Promise.resolve(null)
+                    : ItemMasterService.GetCategoryMasterList();
+            Promise.all([pItemV, pCatV]).then(function (results) {
+                var response = results[0];
+                var catRes = results[1];
+                if (catRes != null) {
+                    imApplyItemGroupDropdown(imNormalizeCategoryRows(catRes));
+                }
                 var item = response && response.ItemMasterList ? response.ItemMasterList[0] : null;
                 var otherDetail = response && response.ItemMasterOtherDetail ? response.ItemMasterOtherDetail[0] : null;
 
@@ -181,28 +233,43 @@ function ViewItem(code) {
                 $("#viewItemCode").text(item.ItemCode || "—");
                 $("#viewItemName").text(item.ItemName || "—");
 
-                // Badges
-                var natureVal = item.ItemNature || "";
-                var typeText  = natureVal === 'G' ? 'Good' : natureVal === 'S' ? 'Services' : '';
+                // Badges — ItemNature lives on ItemMasterOtherDetail (same as EditItem)
+                var natureVal =
+                    (otherDetail && otherDetail.ItemNature != null && String(otherDetail.ItemNature).trim() !== "")
+                        ? String(otherDetail.ItemNature).trim()
+                        : (item.ItemNature != null ? String(item.ItemNature).trim() : "");
+                var typeText =
+                    natureVal === "G" ? "Goods" : natureVal === "S" ? "Service" : natureVal;
                 if (typeText) {
                     $("#viewItemTypeBadge").html('<i class="fas fa-cubes" style="margin-right:5px;font-size:10px;"></i>Type: ' + typeText).show();
                 } else {
                     $("#viewItemTypeBadge").hide();
                 }
-                if (item.DutyValue) {
-                    $("#viewGSTBadge").html('<i class="fas fa-percent" style="margin-right:5px;font-size:10px;"></i>GST: ' + item.DutyValue + '%').show();
+                var gstDisp = imGstValueForDisplay(item.DutyValue);
+                if (gstDisp) {
+                    $("#viewGSTBadge").html('<i class="fas fa-percent" style="margin-right:5px;font-size:10px;"></i>GST: ' + gstDisp).show();
                 } else {
                     $("#viewGSTBadge").hide();
                 }
 
-                // Fields
+                // Fields — ItemSpecification on item row (same as EditItem), fallback otherDetail
+                var specText = "";
+                if (item.ItemSpecification != null && String(item.ItemSpecification).trim() !== "") {
+                    specText = String(item.ItemSpecification).trim();
+                } else if (otherDetail && otherDetail.ItemSpecification != null && String(otherDetail.ItemSpecification).trim() !== "") {
+                    specText = String(otherDetail.ItemSpecification).trim();
+                }
+
+                var groupView = imResolveItemGroupDisplay(item, otherDetail);
+
                 $("#vf_ItemCode").text(item.ItemCode || "—");
                 $("#vf_ItemName").text(item.ItemName || "—");
                 $("#vf_UOM").text(item.UOM || "—");
-                $("#vf_GSTRate").text(item.DutyValue ? item.DutyValue + "%" : "—");
+                $("#vf_ItemGroup").text(groupView || "—");
+                $("#vf_GSTRate").text(gstDisp || "—");
                 $("#vf_ItemType").text(typeText || "—");
                 $("#vf_HSN").text((otherDetail && otherDetail.HSNCode != null && otherDetail.HSNCode !== "") ? otherDetail.HSNCode : "—");
-                $("#vf_ItemSpecification").text((otherDetail && otherDetail.ItemSpecification) ? otherDetail.ItemSpecification : "—");
+                $("#vf_ItemSpecification").text(specText || "—");
 
                 // Open view modal
                 $("#viewItemBackdrop").addClass("show");
@@ -237,7 +304,7 @@ function DoDelete() {
         OptionName = "Delete",
         ShowMsg = "Y",
         FinYear = getFinancialYear();
-        MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
+    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
         if (response.CheckModuleOptionRight == 'N') {
             toastr.error(response.Msg);
             return false;
@@ -272,58 +339,47 @@ function DoDelete() {
 
 // ── Save / Update (single function) ────────────────────────
 function SaveItem() {
-    var ModuleName = "Item Master",
-        OptionName = "New",
-        ShowMsg = "Y",
-        FinYear = getFinancialYear();
-    MenuService.CheckModuleOptionRight(ModuleName, OptionName, ShowMsg, FinYear).then(function (response) {
-        if (response.CheckModuleOptionRight == 'N') {
-            toastr.error(response.Msg);
-            return false;
+    if (!ValidateForm()) return;
+    var isEdit = G_EditCode > 0;
+    var payload = BuildPayload();
+    var btnSave = $("#btnSaveItem");
+    var origLabel = $("#btnSaveText").text();
+
+    btnSave.prop("disabled", true);
+    $("#btnSaveText").text(isEdit ? "Updating…" : "Saving…");
+
+    var serviceCall = isEdit
+        ? ItemMasterService.SaveItemMaster(payload)
+        : ItemMasterService.SaveItemMaster(payload);
+
+    serviceCall.then(function (response) {
+        if (response && response.Status === 'Y') {
+            CloseForm();
+            GetItemMasterList();
+            if (isEdit) {
+                ShowSuccessModal(
+                    "Updated Successfully!",
+                    response.Msg || "Item details have been saved successfully.",
+                    "fa-pen-to-square"
+                );
+            } else {
+                ShowSuccessModal(
+                    "Saved Successfully!",
+                    response.Msg || "New item has been added to the catalogue.",
+                    "fa-circle-check"
+                );
+            }
         } else {
-            if (!ValidateForm()) return;
-            var isEdit = G_EditCode > 0;
-            var payload = BuildPayload();
-            var btnSave = $("#btnSaveItem");
-            var origLabel = $("#btnSaveText").text();
-
-            btnSave.prop("disabled", true);
-            $("#btnSaveText").text(isEdit ? "Updating…" : "Saving…");
-
-            var serviceCall = isEdit
-                ? ItemMasterService.SaveItemMaster(payload)
-                : ItemMasterService.SaveItemMaster(payload);
-
-            serviceCall.then(function (response) {
-                if (response && response.Status === 'Y') {
-                    CloseForm();
-                    GetItemMasterList();
-                    if (isEdit) {
-                        ShowSuccessModal(
-                            "Updated Successfully!",
-                            response.Msg || "Item details have been saved successfully.",
-                            "fa-pen-to-square"
-                        );
-                    } else {
-                        ShowSuccessModal(
-                            "Saved Successfully!",
-                            response.Msg || "New item has been added to the catalogue.",
-                            "fa-circle-check"
-                        );
-                    }
-                } else {
-                    toastr.error(
-                        (response && response.Msg) ||
-                        (isEdit ? "Failed to update item." : "Failed to save item.")
-                    );
-                }
-            }).catch(function () {
-                toastr.error("An error occurred. Please try again.");
-            }).finally(function () {
-                btnSave.prop("disabled", false);
-                $("#btnSaveText").text(origLabel);
-            });
+            toastr.error(
+                (response && response.Msg) ||
+                (isEdit ? "Failed to update item." : "Failed to save item.")
+            );
         }
+    }).catch(function () {
+        toastr.error("An error occurred. Please try again.");
+    }).finally(function () {
+        btnSave.prop("disabled", false);
+        $("#btnSaveText").text(origLabel);
     });
 }
 
@@ -339,7 +395,7 @@ function BuildPayload() {
                 UOM: $("#UOM").val(),
                 DisplayName: $("#ItemName").val().trim(),
                 Category: "",
-                CategoryName: "",
+                CategoryName:  imItemGroupNameForPayload(),
                 SubCategoryName: "",
                 GroupName: "",
                 SubGroupName: "",
@@ -375,7 +431,7 @@ function BuildPayload() {
                 DecimalPoints: 0,
                 DutyValue: parseFloat($("#GSTRate").val()) || 0,
                 ItemSpecification: $("#ItemSpecification").val().trim(),
-               // UserMasterCode: G_UserMasterCode,
+                UserMasterCode: G_UserMasterCode,
             }
         ],
         ItemMasterOtherDetail: [
@@ -385,7 +441,7 @@ function BuildPayload() {
                 HSNCode: $("#HSN").val().trim(),
                 ItemNature: $("#ItemType").val() || '',
                 ItemCodeForGI: 0,
-                ItemGroupName: "",
+                ItemGroupName: imItemGroupNameForPayload(),
                 ItemNameForProductionReceive: "",
                 ItemNameForRolling: "",
                 ItemNamePurchase: "",
@@ -404,12 +460,28 @@ function BuildPayload() {
                 RequirementPerMonth: parseFloat(0)
             }
         ],
-        
+
     };
 }
 
 function ValidateForm() {
     var valid = true;
+
+    var grpVal = $("#ItemGroup").val();
+    if (!grpVal || String(grpVal).trim() === "") {
+        $("#err_ItemGroup").css("display", "flex");
+        $("#ItemGroup").nextAll(".select2-container").first().find(".select2-selection--single").css({
+            "border-color": "#ef4444",
+            "box-shadow": "0 0 0 3px rgba(239,68,68,0.10)"
+        });
+        valid = false;
+    } else {
+        $("#err_ItemGroup").hide();
+        $("#ItemGroup").nextAll(".select2-container").first().find(".select2-selection--single").css({
+            "border-color": "",
+            "box-shadow": ""
+        });
+    }
 
     ["ItemName"].forEach(function (id) {
         var el = $("#" + id);
@@ -427,7 +499,7 @@ function ValidateForm() {
     // UOM — select2 validation
     var uomVal = $("#UOM").val();
     var uomSelect2 = $("#UOM").nextAll(".select2-container").first()
-                              .find(".select2-selection--single");
+        .find(".select2-selection--single");
     if (!uomVal || uomVal.trim() === "") {
         $("#err_UOM").css("display", "flex");
         uomSelect2.css({ "border-color": "#ef4444", "box-shadow": "0 0 0 3px rgba(239,68,68,0.10)" });
@@ -461,6 +533,12 @@ function ClearForm() {
         "border-color": "",
         "box-shadow": ""
     });
+    $("#ItemGroup").val("").trigger("change");
+    $("#ItemGroup").nextAll(".select2-container").first().find(".select2-selection--single").css({
+        "border-color": "",
+        "box-shadow": ""
+    });
+    $("#err_ItemGroup").hide();
     $("#ItemType").val("").prop("disabled", false);
     $(".im-dup-warning").hide();
     // Restore Save button and Cancel label to default
@@ -493,6 +571,160 @@ function GetUOMList() {
         $('#UOM').select2({
             width: '-webkit-fill-available'
         });
+    });
+}
+
+function imNormalizeCategoryRows(resObj) {
+    var rows = [];
+    if (Array.isArray(resObj)) rows = resObj;
+    else if (resObj && Array.isArray(resObj.data)) rows = resObj.data;
+    else if (resObj && Array.isArray(resObj.Data)) rows = resObj.Data;
+    return rows;
+}
+
+function imApplyItemGroupDropdown(rows) {
+    G_ItemCategoryRows = rows;
+    BindSelectList(
+        $("#ItemGroup")[0],
+        rows.map(function (r) {
+            return {
+                Code: r.Code,
+                Desp: (r.CategoryName != null ? String(r.CategoryName) : "").trim() || ("#" + r.Code)
+            };
+        })
+    );
+    if ($("#ItemGroup").data("select2")) {
+        $("#ItemGroup").select2("destroy");
+    }
+    $("#ItemGroup").select2({
+        width: "-webkit-fill-available",
+        placeholder: "Select group",
+        allowClear: false
+    });
+}
+
+function GetCategoryMasterListForItem() {
+    ItemMasterService.GetCategoryMasterList().then(function (resObj) {
+        imApplyItemGroupDropdown(imNormalizeCategoryRows(resObj));
+    }).catch(function () {
+        toastr.error("Failed to load group (category) list.");
+    });
+}
+
+/** Category / CategoryMaster code for save — backend expects FK in `Category`. */
+function imItemGroupCodeForPayload() {
+    var v = $("#ItemGroup").val();
+    if (v == null || String(v).trim() === "") return "";
+    var n = parseInt(v, 10);
+    return isNaN(n) || n <= 0 ? "" : String(n);
+}
+
+/** Selected group’s CategoryName for API — prefers category master row (same as view/edit resolution). */
+function imItemGroupNameForPayload() {
+    var v = $("#ItemGroup").val();
+    if (v == null || String(v).trim() === "") return "";
+    var s = String(v).trim();
+    var found = imFindCategoryRowForItemGroup(s);
+    if (found && found.CategoryName != null && String(found.CategoryName).trim() !== "") {
+        return String(found.CategoryName).trim();
+    }
+    var opt = $("#ItemGroup option:selected");
+    var t = opt.length ? String(opt.text()).trim() : "";
+    if (!t || t.toLowerCase() === "select") return "";
+    return t;
+}
+
+/**
+ * Maps ItemMaster.CategoryMaster_Code (numeric PK, manual string like "CIVIL", or category name)
+ * to a row from GetCategoryMasterList. Dropdown options use numeric r.Code only.
+ */
+function imFindCategoryRowForItemGroup(ref) {
+    var rows = G_ItemCategoryRows || [];
+    var s = ref != null ? String(ref).trim() : "";
+    if (!s || s === "0") return null;
+    var i, r;
+    for (i = 0; i < rows.length; i++) {
+        r = rows[i];
+        if (String(r.Code) === s) return r;
+    }
+    var sl = s.toLowerCase();
+    for (i = 0; i < rows.length; i++) {
+        r = rows[i];
+        if (r.CategoryMaster_Code != null && String(r.CategoryMaster_Code).trim().toLowerCase() === sl) return r;
+        if (r.ManualID != null && String(r.ManualID).trim().toLowerCase() === sl) return r;
+        if (r.CategoryCode != null && String(r.CategoryCode).trim().toLowerCase() === sl) return r;
+    }
+    for (i = 0; i < rows.length; i++) {
+        r = rows[i];
+        if (r.CategoryName != null && String(r.CategoryName).trim().toLowerCase() === sl) return r;
+    }
+    return null;
+}
+
+function imBindItemGroupFromItemRow(item, otherDetail) {
+    var code =
+        item.CategoryMaster_Code != null
+            ? item.CategoryMaster_Code
+            : item.Category_Code != null
+                ? item.Category_Code
+                : item.Category;
+    if (code != null && String(code).trim() !== "" && String(code).trim() !== "0") {
+        var s = String(code).trim();
+        var row = imFindCategoryRowForItemGroup(s);
+        if (row != null && row.Code != null) {
+            SelectOptionByValue("ItemGroup", String(row.Code));
+            return;
+        }
+        SelectOptionByValue("ItemGroup", s);
+        return;
+    }
+    var name =
+        (item.GroupName != null && String(item.GroupName).trim() !== "")
+            ? String(item.GroupName).trim()
+            : (item.CategoryName != null && String(item.CategoryName).trim() !== "")
+                ? String(item.CategoryName).trim()
+                : (otherDetail && otherDetail.ItemGroupName != null && String(otherDetail.ItemGroupName).trim() !== "")
+                    ? String(otherDetail.ItemGroupName).trim()
+                    : "";
+    if (name) SelectOptionByText("ItemGroup", name);
+    else $("#ItemGroup").val("").trigger("change");
+}
+
+function imResolveItemGroupDisplay(item, otherDetail) {
+    var byName =
+        (item.GroupName != null && String(item.GroupName).trim() !== "")
+            ? String(item.GroupName).trim()
+            : (item.CategoryName != null && String(item.CategoryName).trim() !== "")
+                ? String(item.CategoryName).trim()
+                : (otherDetail && otherDetail.ItemGroupName != null && String(otherDetail.ItemGroupName).trim() !== "")
+                    ? String(otherDetail.ItemGroupName).trim()
+                    : "";
+    if (byName) return byName;
+    var code =
+        item.CategoryMaster_Code != null
+            ? item.CategoryMaster_Code
+            : item.Category_Code != null
+                ? item.Category_Code
+                : item.Category;
+    if (code == null || String(code).trim() === "") return "";
+    var found = imFindCategoryRowForItemGroup(code);
+    if (found && found.CategoryName != null) return String(found.CategoryName).trim();
+    return String(code).trim();
+}
+
+function SelectOptionByValue(Id, value) {
+    var dd = document.getElementById(Id);
+    if (!dd) return;
+    var s = value != null ? String(value) : "";
+    for (var i = 0; i < dd.options.length; i++) {
+        if (String(dd.options[i].value) === s) {
+            dd.selectedIndex = i;
+            break;
+        }
+    }
+    $("#" + Id).trigger("change");
+    $("#" + Id).select2({
+        width: "-webkit-fill-available"
     });
 }
 function BindSelectList(element, list) {

@@ -60,6 +60,14 @@ const VerifyDispatchPlanService = {
             }
         );
     },
+    UnApprovedQuotation: function UnApprovedQuotation(Code, Transporter_Code) {
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/UnApprovedQuotation?Code=" + encodeURIComponent(Code) + "&Transporter_Code=" + encodeURIComponent(Transporter_Code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetDespatchAdviceQtyForUpdate: function GetDespatchAdviceQtyForUpdate(Code) {
         var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetDespatchAdviceQtyForUpdate?Code=" + encodeURIComponent(Code);
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
@@ -112,6 +120,54 @@ const VerifyDispatchPlanService = {
     },
     SaveArea: function SaveArea(Code, CityMaster_Code) {
         var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/SaveDespatchAdviceArea?Code=" + encodeURIComponent(Code) + "&CityMaster_Code=" + encodeURIComponent(CityMaster_Code);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetTransporterReport: function GetTransporterReport(fromDate, toDate) {
+        var q = '';
+        if (fromDate && toDate) {
+            q = '?FromDate=' + encodeURIComponent(fromDate) + '&ToDate=' + encodeURIComponent(toDate);
+        }
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetTransporterReport" + q;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetApprovedTransporterReport: function GetApprovedTransporterReport(fromDate, toDate) {
+        var q = '';
+        if (fromDate && toDate) {
+            q = '?FromDate=' + encodeURIComponent(fromDate) + '&ToDate=' + encodeURIComponent(toDate);
+        }
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetApprovedTransporterReport" + q;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetDelayReport: function GetDelayReport(fromDate, toDate) {
+        var q = '';
+        if (fromDate && toDate) {
+            q = '?FromDate=' + encodeURIComponent(fromDate) + '&ToDate=' + encodeURIComponent(toDate);
+        }
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetDelayReport" + q;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetFreightLossReport: function GetFreightLossReport(fromDate, toDate) {
+        var q = '';
+        if (fromDate && toDate) {
+            q = '?FromDate=' + encodeURIComponent(fromDate) + '&ToDate=' + encodeURIComponent(toDate);
+        }
+        var URL = UrlService.API_DOCUMENT_DispatchAdvicePlan + "/GetFreightLossReport" + q;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

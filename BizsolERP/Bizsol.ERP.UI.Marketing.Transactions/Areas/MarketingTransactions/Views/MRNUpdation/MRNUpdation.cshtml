@@ -1,0 +1,197 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/MRNUpdation.js"></script>
+<style>
+    html {
+        overflow: hidden !important;
+        height: 100% !important;
+    }
+
+    body {
+        overflow: hidden !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .po-list-header h5 {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .po-header-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .po-filter-bar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
+        padding: 14px 18px 10px;
+        margin-bottom: 14px;
+    }
+
+    .po-grid-wrap {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    #MRNUpdationPage .table-wrapper {
+        position: relative;
+        overflow: auto;
+        max-height: calc(100vh - 280px);
+        min-height: 300px;
+        margin: 0 !important;
+    }
+
+    .fixed-width-table th,
+    .fixed-width-table td {
+        white-space: nowrap;
+        min-width: auto;
+    }
+
+    #MRNUpdation {
+        width: 100%;
+        margin: 0 !important;
+        border-collapse: collapse;
+    }
+
+    #MRNUpdation thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    #MRNUpdationPage #MRNUpdation thead tr th,
+    #table-header-MRNUpdation th {
+        background: #4f46e5 !important;
+        background-color: #4f46e5 !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        font-size: 0.73rem;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        padding: 8px 6px !important;
+        white-space: nowrap;
+        border: 1px solid rgba(255, 255, 255, 0.22) !important;
+        letter-spacing: 0.03em;
+    }
+
+    #MRNUpdationPage #MRNUpdation thead tr th .fa-filter,
+    #table-header-MRNUpdation th .fa-filter {
+        color: #fff !important;
+    }
+
+    #MRNUpdation tbody tr {
+        transition: background 0.15s;
+    }
+
+    #MRNUpdation tbody tr:hover {
+        background: #f5f3ff;
+    }
+
+    #MRNUpdation tbody td {
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    #MRNUpdationPage .form-label {
+        font-size: 0.77rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    #MRNUpdationPage .form-control,
+    #MRNUpdationPage .form-select {
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        background-color: #f5f3ff;
+        color: #1e1b4b;
+    }
+
+    #MRNUpdationPage .form-control:focus,
+    #MRNUpdationPage .form-select:focus {
+        border-color: #667eea;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+
+    .actual-weight-cell {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        justify-content: flex-end;
+    }
+
+    .actual-weight-cell input {
+        width: 110px;
+    }
+
+    .btn-scale-weight {
+        padding: 0.15rem 0.4rem;
+        line-height: 1;
+    }
+
+    @@media (max-height: 800px) {
+        #MRNUpdationPage .table-wrapper {
+            max-height: calc(100vh - 240px);
+            min-height: 250px;
+        }
+    }
+</style>
+<div id="MRNUpdationPage">
+    <div class="po-list-header">
+        <div class="po-header-top">
+            <div>
+                <h5><i class="fa fa-balance-scale me-2"></i>MRN Updation</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="po-filter-bar">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+                <label for="ddlMRNNo" class="form-label mb-1">MRN No <span class="text-danger">*</span></label>
+                <select id="ddlMRNNo" name="ddlMRNNo" class="form-control form-control-sm box_border" autocomplete="off" required></select>
+            </div>
+        </div>
+    </div>
+
+    <div class="po-grid-wrap">
+        <div class="table-wrapper mt-0">
+            <table id="MRNUpdation" class="fixed-width-table table table-sm table-hover mb-0">
+                <thead id="table-header-MRNUpdation"></thead>
+                <tbody id="table-body-MRNUpdation"></tbody>
+            </table>
+        </div>
+        <div class="paginator px-3 py-2" id="paginator-MRNUpdation"></div>
+    </div>
+</div>
+<div id="MRNUpdation_DivSelectMachineToGetWeightControl"></div>

@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -78,7 +78,7 @@
         .modern-header {
             background: #ffffff;
             box-shadow: 0 1px 12px rgba(102, 126, 234, 0.08);
-            padding: 0.75rem 1.5rem;
+            padding: 0.5rem 1.4rem;
             position: fixed;
             top: 0;
             left: 0;
@@ -93,7 +93,7 @@
             width: 280px;
             position: fixed;
             left: 0;
-            top: 70px;
+            top: 55px;
             bottom: 0;
             box-shadow: 4px 0 20px rgba(30, 27, 75, 0.15);
             overflow-y: auto;
@@ -1041,6 +1041,98 @@
             }
         }
 
+        /* ── Select2 Global Fixes ──────────────────────────────────────────── */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container--open .select2-dropdown {
+            z-index: 99999 !important;
+        }
+
+        /* Mobile: bottom-sheet style — dropdown slides up above the keyboard */
+        @@media (max-width: 991px) {
+            /* Prevent iOS auto-zoom (font-size must be >= 16px on inputs) */
+            .select2-search__field,
+            .select2-results__option {
+                font-size: 16px !important;
+            }
+
+            /* Drag-handle pip at the top of the bottom sheet */
+            .select2-container--open .select2-dropdown--below::before,
+            .select2-container--open .select2-dropdown--above::before {
+                content: '';
+                display: block;
+                width: 36px;
+                height: 4px;
+                background: rgba(0, 0, 0, 0.18);
+                border-radius: 2px;
+                margin: 10px auto 4px;
+                flex-shrink: 0;
+            }
+
+            .select2-container--open .select2-dropdown--below,
+            .select2-container--open .select2-dropdown--above {
+                position: fixed !important;
+                bottom: 0 !important;
+                top: auto !important;
+                left: 0 !important;
+                width: 100% !important;
+                max-height: 50vh;
+                border-radius: 16px 16px 0 0;
+                border-top: 3px solid var(--accent-primary);
+                box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25);
+                z-index: 99999 !important;
+                overflow: hidden;
+                /* Smooth slide when keyboard opens / closes */
+                transition: bottom 0.15s ease, max-height 0.15s ease;
+            }
+
+            .select2-container--open .select2-results__options {
+                overflow-y: auto;
+            }
+
+            /* Backdrop only covers the area ABOVE the bottom sheet.
+               The dropdown itself (bottom 50vh) is never overlapped,
+               so options remain fully tappable. */
+            .select2-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 50vh; /* stops where the dropdown begins */
+                background: rgba(0, 0, 0, 0.3);
+                z-index: 99998;
+                animation: backdropFadeIn 0.2s ease;
+            }
+        }
+
+        @@keyframes backdropFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        /* ── Embedded / iframe mode ─────────────────────────────────────────
+           When the page is loaded with ?embedded=1 (e.g. inside a modal iframe)
+           the header, sidebar, footer and mobile nav are hidden and the content
+           area fills the full viewport with no extra margins.
+        ─────────────────────────────────────────────────────────────────── */
+        body.erp-embedded .modern-header,
+        body.erp-embedded .modern-sidebar,
+        body.erp-embedded footer.modern-footer,
+        body.erp-embedded .mobile-bottom-nav,
+        body.erp-embedded #sidebar-overlay {
+            display: none !important;
+        }
+
+        body.erp-embedded .modern-content {
+            margin-left: 0 !important;
+            margin-top: 0 !important;
+            padding: 1rem !important;
+            padding-bottom: 1rem !important;
+            min-height: 100vh;
+        }
+
         /* ERP Heading */
         .erp-heading-wrapper {
             flex: 1;
@@ -1104,6 +1196,246 @@
                 color: var(--accent-primary);
             }
 
+        /* ── Notification bell + dropdown panel (well list) ── */
+        .modern-header .dropdown-menu.notification-dropdown,
+        .modern-header .dropdown-menu.profile-dropdown {
+            z-index: 1025;
+        }
+
+        .notification-dropdown {
+            min-width: 310px;
+            max-width: 400px;
+            padding: 0 !important;
+            margin-top: 0.15rem !important;
+            border-radius: 10px;
+            border: 1px solid #e8ecf1;
+            background: #ffffff;
+            box-shadow: 0 16px 48px rgba(15, 23, 42, 0.1), 0 4px 14px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+        #bell-icon .notification-badge.notification-bell-badge {
+            top: -4px !important;
+            right: -10px !important;
+            left: auto !important;
+            transform: none !important;
+        }
+
+        .notification-bell-badge {
+            background: #2563eb !important;
+            color: #fff !important;
+            border-radius: 999px !important;
+            min-width: 1.125rem;
+            min-height: 1.125rem;
+            padding: 1px 0.32rem !important;
+            font-size: 0.65rem !important;
+            font-weight: 700;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            animation: none !important;
+            box-shadow: 0 1px 3px rgba(37, 99, 235, 0.4);
+            line-height: 1;
+        }
+
+        #bell-icon.header-icon-btn {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #64748b;
+        }
+
+            #bell-icon.header-icon-btn:hover {
+                background: rgba(102, 126, 234, 0.08) !important;
+                color: #334155;
+            }
+
+        #bell-icon .fa-bell,
+        #bell-icon .fa-regular {
+            font-size: 1.15rem;
+        }
+
+        .notification-well-header {
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+            letter-spacing: 0.02em;
+            color: #0f172a;
+            padding: 0.55rem 1rem 0.45rem;
+            border-bottom: 1px solid #eeeeee;
+            background: #ffffff;
+        }
+
+        .notification-well-list {
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #ffffff;
+            scrollbar-width: thin;
+            scrollbar-color: #3b82f6 #f1f5f9;
+        }
+
+            .notification-well-list::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .notification-well-list::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 100px;
+            }
+
+            .notification-well-list::-webkit-scrollbar-thumb {
+                background: #3b82f6;
+                border-radius: 100px;
+            }
+
+        .notification-well-item {
+            display: flex;
+            gap: 0.6rem;
+            padding: 0.45rem 0.85rem;
+            text-decoration: none;
+            color: inherit;
+            border-bottom: 1px solid #eeeeee;
+            align-items: center;
+            transition: background 0.15s ease;
+        }
+
+            .notification-well-item:last-child {
+                border-bottom: none;
+            }
+
+            .notification-well-item:hover {
+                background: #f8fafc;
+            }
+
+        .notification-well-icon {
+            flex-shrink: 0;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82rem;
+        }
+
+            .notification-well-icon--danger {
+                background: #fce7f3;
+                color: #e11d48;
+            }
+
+            .notification-well-icon--warning {
+                background: #fef9c3;
+                color: #ca8a04;
+            }
+
+            .notification-well-icon--info {
+                background: #e0f2fe;
+                color: #2563eb;
+            }
+
+            .notification-well-icon--success {
+                background: #d1fae5;
+                color: #059669;
+            }
+
+        .notification-well-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .notification-well-title {
+            font-weight: 700;
+            font-size: 0.8125rem;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .notification-well-desc {
+            font-size: 0.75rem;
+            color: #64748b;
+            line-height: 1.25;
+        }
+
+        .notification-well-time {
+            font-size: 0.6875rem;
+            color: #9ca3af;
+            line-height: 1.2;
+        }
+
+        .notification-well-empty {
+            padding: 0.85rem 1rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        /* ── Profile dropdown (white card + accent bar) ── */
+        .profile-dropdown {
+            min-width: 232px;
+            padding: 0 !important;
+            margin-top: 0.35rem !important;
+            border: 1px solid #e8ecf1;
+            border-radius: 10px;
+            background: #ffffff;
+            box-shadow: 0 16px 48px rgba(15, 23, 42, 0.1), 0 4px 14px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+
+            .profile-dropdown .profile-dropdown-accent {
+                height: 3px;
+                background: #667eea;
+            }
+
+        .profile-dropdown .dropdown-item {
+            color: #0f172a;
+            padding: 0.7rem 1.15rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+            .profile-dropdown .dropdown-item i {
+                font-size: 1.05rem;
+                width: 1.25rem;
+                text-align: center;
+                color: #64748b;
+            }
+
+            .profile-dropdown .dropdown-item:hover,
+            .profile-dropdown .dropdown-item:focus {
+                background: #f8fafc;
+                color: #0f172a;
+            }
+
+                .profile-dropdown .dropdown-item:hover i {
+                    color: #334155;
+                }
+
+        .profile-dropdown .profile-dropdown-logout {
+            color: #b91c1c;
+        }
+
+            .profile-dropdown .profile-dropdown-logout i {
+                color: #dc2626;
+            }
+
+            .profile-dropdown .profile-dropdown-logout:hover,
+            .profile-dropdown .profile-dropdown-logout:focus {
+                background: #fef2f2;
+                color: #991b1b;
+            }
+
+        .profile-dropdown .dropdown-divider {
+            border-color: #eeeeee;
+            margin: 0;
+        }
+
         /* Scrollbar Styling for Light Theme */
         ::-webkit-scrollbar {
             width: 8px;
@@ -1124,7 +1456,7 @@
             }
     </style>
 </head>
-<body>
+<body class="@(Context.Request.Query["embedded"] == "1" ? "erp-embedded" : "")">
     <!-- Loader (hidden by default) -->
     <div id="loader" class="loader-overlay">
         <img src="~/assets/images/loader2.gif" alt="Loading..." class="loader-img">
@@ -1147,9 +1479,9 @@
                     <h4 class="mb-0 erpHedTextSize" id="ERPHeading">Dashboard</h4>
                 </div>
                 <div class="header-actions">
-                    <button type="button" class="header-icon-btn position-relative" id="bell-icon" data-bs-toggle="dropdown">
-                        <i class="fa fa-bell"></i>
-                        <span class="notification-badge position-absolute top-0 start-100 translate-middle" id="notificationCount"></span>
+                    <button type="button" class="header-icon-btn position-relative" id="bell-icon" data-bs-toggle="dropdown" aria-label="Notifications">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="notification-badge notification-bell-badge position-absolute" id="notificationCount" aria-hidden="true"></span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown"></div>
 
@@ -1161,17 +1493,19 @@
                     </div>
 
                     <div class="dropdown">
-                        <button type="button" class="header-icon-btn" data-bs-toggle="dropdown">
+                        <button type="button" class="header-icon-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
                             <img class="profile-avatar" src="~/assets/images/users/user.jpg" alt="User">
                         </button>
-                        <div class="dropdown-menu dropdown-menu-end">
+                        <div class="dropdown-menu dropdown-menu-end profile-dropdown">
+                            <div class="profile-dropdown-accent" aria-hidden="true"></div>
                             <a class="dropdown-item" href="#">
-                                <i class='bx bxs-user align-middle me-1'></i>
+                                <i class="fas fa-user-circle" aria-hidden="true"></i>
                                 <span>Profile</span>
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="#" onclick="logoutUser()">
-                                <i class="bx bx-log-out align-middle me-1"></i> <span>Logout</span>
+                            <a class="dropdown-item profile-dropdown-logout" href="#" onclick="logoutUser()">
+                                <i class="fas fa-right-from-bracket" aria-hidden="true"></i>
+                                <span>Logout</span>
                             </a>
                         </div>
                     </div>
@@ -1339,30 +1673,161 @@
             });
         }
 
-        $(document).on('select2:open', function () {
-            const scrollY = window.scrollY || window.pageYOffset;
-            document.documentElement.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.top = '-' + scrollY + 'px';
-            document.body.style.width = '100%';
-            document.body.setAttribute('data-scroll-y', scrollY);
-
-            if ($('.select2-search__field').length > 1) {
-                $('.select2-search__field')[1].focus()
-            }
-            else {
-                $('.select2-search__field')[0].focus();
+        // ── Select2 Global Defaults ───────────────────────────────────────────
+        $(function () {
+            if (typeof $.fn.select2 !== 'undefined') {
+                $.fn.select2.defaults.set('width', '100%');
             }
         });
 
+        // ── Keyboard-aware repositioning (mobile only) ────────────────────────
+        // _s2InitialVvpHeight: captures vvp.height BEFORE the keyboard animates in.
+        // This is needed because on iOS 15+ window.innerHeight ALSO shrinks with
+        // the keyboard, making the Method-1 calculation return 0.
+        var _s2ViewportHandler  = null;
+        var _s2InitialVvpHeight = null;
+
+        // ── Modal-scroll guard ────────────────────────────────────────────────
+        // Select2 focuses its search field BEFORE firing select2:open, which
+        // causes the nearest scrollable ancestor (.modal) to auto-scroll down
+        // to the newly-appended dropdown container. We save the scroll position
+        // in select2:opening (before any DOM change) and restore it in
+        // select2:open via requestAnimationFrame (before the browser paints).
+        var _s2ModalEl  = null;
+        var _s2ModalTop = 0;
+
+        $(document).on('select2:opening', function (e) {
+            var $modal = $(e.target).closest('.modal');
+            if ($modal.length) {
+                _s2ModalEl  = $modal[0];
+                _s2ModalTop = $modal[0].scrollTop;
+            } else {
+                _s2ModalEl = null;
+            }
+        });
+
+        function _adjustSelect2AboveKeyboard() {
+            if (!window.visualViewport) return;
+            var vvp = window.visualViewport;
+
+            // Method 1 – Android & older iOS:
+            //   keyboard height = layout viewport − (offset + visual viewport)
+            var kbH1 = Math.max(0, window.innerHeight - vvp.offsetTop - vvp.height);
+
+            // Method 2 – iOS 15+ (window.innerHeight also shrinks):
+            //   compare current vvp.height against the height captured before keyboard
+            var kbH2 = (_s2InitialVvpHeight !== null)
+                ? Math.max(0, _s2InitialVvpHeight - vvp.height)
+                : 0;
+
+            var keyboardHeight = Math.max(kbH1, kbH2);
+
+            var dropdown = document.querySelector('.select2-dropdown');
+            if (!dropdown) return;
+
+            // Push the dropdown above the keyboard
+            dropdown.style.bottom = keyboardHeight + 'px';
+
+            // Give the dropdown as much visible space as possible.
+            // vvp.height = visible area above keyboard.
+            // Cap at 50 % of the original (pre-keyboard) height so the sheet
+            // doesn’t fill the entire screen when no keyboard is open.
+            var baseHeight = _s2InitialVvpHeight || window.innerHeight;
+            var maxH = Math.min(
+                Math.max(150, vvp.height - 48),   // visible area minus 48 px top gap
+                Math.round(baseHeight * 0.50)      // never taller than 50 % of full screen
+            );
+            dropdown.style.maxHeight = maxH + 'px';
+
+            // Results list = dropdown minus drag handle (18 px) + search bar (54 px)
+            var results = dropdown.querySelector('.select2-results__options');
+            if (results) {
+                results.style.maxHeight = Math.max(80, maxH - 72) + 'px';
+            }
+
+            // Keep the backdrop ending exactly where the dropdown begins
+            var backdrop = document.querySelector('.select2-backdrop');
+            if (backdrop) {
+                backdrop.style.bottom = (keyboardHeight + maxH) + 'px';
+            }
+        }
+
+        // Auto-focus the search field when any Select2 opens
+        $(document).on('select2:open', function (e) {
+            // Restore the modal scroll position that Select2 disrupted by focusing
+            // its search input (which triggered a browser scroll-into-view on the
+            // dropdown element appended at the end of the modal DOM).
+            if (_s2ModalEl) {
+                var el  = _s2ModalEl;
+                var top = _s2ModalTop;
+                requestAnimationFrame(function () { el.scrollTop = top; });
+            }
+
+            setTimeout(function () {
+                // For multiple-select, the search field is INLINE — every instance
+                // keeps its own .select2-search__field in the DOM at all times.
+                // querySelectorAll returns ALL of them, so [last] always lands on
+                // the bottom-most row (Management). Instead, look up only the field
+                // that belongs to the Select2 that just opened.
+                var searchField = null;
+                try {
+                    var s2 = $(e.target).data('select2');
+                    if (s2 && s2.$container && s2.$container.length) {
+                        searchField = s2.$container[0].querySelector('.select2-search__field');
+                    }
+                } catch (err) {}
+
+                // Fallback for single-selects: their search lives in the dropdown
+                if (!searchField) {
+                    var fields = document.querySelectorAll('.select2-dropdown .select2-search__field');
+                    if (fields.length > 0) { searchField = fields[fields.length - 1]; }
+                }
+
+                if (searchField) { searchField.focus({ preventScroll: true }); }
+            }, 10);
+
+            // Mobile: add backdrop + prevent background scroll
+            if (window.innerWidth <= 991) {
+                if (!$('.select2-backdrop').length) {
+                    $('<div class="select2-backdrop"></div>').appendTo('body');
+                }
+                document.body.style.overflow = 'hidden';
+
+                // Capture viewport height BEFORE the keyboard animation starts
+                _s2InitialVvpHeight = window.visualViewport
+                    ? window.visualViewport.height
+                    : window.innerHeight;
+
+                if (window.visualViewport && !_s2ViewportHandler) {
+                    _s2ViewportHandler = _adjustSelect2AboveKeyboard;
+                    // 'resize' fires on Android; iOS Safari sometimes fires 'scroll'
+                    window.visualViewport.addEventListener('resize', _s2ViewportHandler);
+                    window.visualViewport.addEventListener('scroll', _s2ViewportHandler);
+                    // 300 ms delay lets the iOS keyboard finish its open animation
+                    setTimeout(_adjustSelect2AboveKeyboard, 300);
+                }
+            }
+        });
+
+        // Cleanup on close
         $(document).on('select2:close', function () {
-            const scrollY = document.body.getAttribute('data-scroll-y') || '0';
-            document.documentElement.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
-            window.scrollTo(0, parseInt(scrollY));
-            document.body.removeAttribute('data-scroll-y');
+            _s2ModalEl = null;
+            $('.select2-backdrop').remove();
+            document.body.style.overflow = '';
+
+            // Remove keyboard listeners
+            if (_s2ViewportHandler && window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', _s2ViewportHandler);
+                window.visualViewport.removeEventListener('scroll', _s2ViewportHandler);
+                _s2ViewportHandler  = null;
+            }
+            _s2InitialVvpHeight = null;
+        });
+
+        // Tap backdrop (top area above dropdown) to dismiss the open Select2.
+        // Use select2-hidden-accessible because Select2 hides the original <select>.
+        $(document).on('click', '.select2-backdrop', function () {
+            $('select.select2-hidden-accessible').select2('close');
         });
     </script>
 

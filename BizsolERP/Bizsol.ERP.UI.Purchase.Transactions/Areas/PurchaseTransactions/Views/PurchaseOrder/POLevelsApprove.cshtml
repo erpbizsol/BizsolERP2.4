@@ -1,7 +1,8 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/PurchaseOrderStore.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/POLevelsApprove.js"></script>
 
 <style>
@@ -185,6 +186,7 @@
     }
     .pla-step-done     { background: linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 2px 8px rgba(16,185,129,0.35); }
     .pla-step-active   { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 2px 8px rgba(102,126,234,0.4); animation: pulseStep 1.6s infinite; }
+    .pla-step-hold     { background: linear-gradient(135deg,#f97316,#ea580c); color:#fff; box-shadow:0 2px 8px rgba(249,115,22,0.4); animation: pulseStep 1.6s infinite; }
     .pla-step-rejected { background: linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 2px 8px rgba(220,38,38,0.35); }
     .pla-step-pending  { background: #f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
     @@keyframes pulseStep {
@@ -203,9 +205,42 @@
     .pla-po-card-footer {
         padding: 8px 16px 12px;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
         gap: 8px;
         flex-wrap: wrap;
+    }
+    .pla-po-card-print-btns {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .btn-pla-print-icon {
+        width: 36px;
+        height: 32px;
+        border: none;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-pla-print-prev {
+        background: #64748b;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(100, 116, 139, 0.35);
+    }
+    .btn-pla-print-go {
+        background: #1e293b;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(30, 41, 59, 0.35);
+    }
+    .btn-pla-print-icon:hover {
+        transform: translateY(-1px);
+        color: #fff;
     }
     .btn-pla-card-approve {
         display: inline-flex; align-items: center; gap: 5px;
@@ -297,6 +332,7 @@
     }
     .pla-dstep-done     .pla-dstep-circle { background:linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 2px 10px rgba(16,185,129,0.35); }
     .pla-dstep-active   .pla-dstep-circle { background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; box-shadow:0 2px 10px rgba(102,126,234,0.4); animation:pulseStep 1.6s infinite; }
+    .pla-dstep-hold     .pla-dstep-circle { background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; box-shadow:0 2px 10px rgba(249,115,22,0.4); animation:pulseStep 1.6s infinite; }
     .pla-dstep-rejected .pla-dstep-circle { background:linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 2px 10px rgba(220,38,38,0.35); }
     .pla-dstep-pending  .pla-dstep-circle { background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
     .pla-dstep-body { display:flex; flex-direction:column; align-items:center; gap:2px; }
@@ -309,6 +345,7 @@
     }
     .pla-dstep-badge-done     { background:#d1fae5; color:#059669; }
     .pla-dstep-badge-active   { background:#ede9fe; color:#667eea; }
+    .pla-dstep-badge-hold     { background:#ffedd5; color:#ea580c; }
     .pla-dstep-badge-rejected { background:#fee2e2; color:#dc2626; }
     .pla-dstep-badge-pending  { background:#f1f5f9; color:#94a3b8; }
     .pla-dstep-line {
@@ -367,6 +404,65 @@
         transition:all 0.2s; cursor:pointer;
     }
     .btn-pla-reject:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(220,38,38,0.5); color:#fff; }
+    .btn-pla-hold {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#f97316,#ea580c);
+        border:none; color:#fff; border-radius:9px; padding:9px 22px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(249,115,22,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-hold:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(249,115,22,0.5); color:#fff; }
+    .btn-pla-hold.pla-btn-hold-disabled,
+    .btn-pla-hold:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+        transform: none;
+        box-shadow: none;
+        filter: grayscale(0.25);
+    }
+    .btn-pla-modal-preview {
+        display:inline-flex; align-items:center; gap:5px;
+        background:#64748b; border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(100,116,139,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-modal-preview:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(100,116,139,0.45); }
+    .btn-pla-modal-print {
+        display:inline-flex; align-items:center; gap:5px;
+        background:#1e293b; border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(30,41,59,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-modal-print:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(30,41,59,0.45); }
+    .btn-pla-modal-attach {
+        display:inline-flex; align-items:center; gap:5px;
+        border:none; color:#fff; border-radius:9px; padding:9px 16px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 10px rgba(14,165,233,0.35);
+        transition:all 0.2s; cursor:pointer;
+        background:linear-gradient(135deg,#0ea5e9,#0284c7);
+    }
+    .btn-pla-modal-attach:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(2,132,199,0.45); }
+    .btn-pla-modal-attach.pla-attach-has-files {
+        background:linear-gradient(135deg,#16a34a,#15803d);
+        box-shadow:0 3px 10px rgba(22,163,74,0.35);
+    }
+    .btn-pla-modal-attach.pla-attach-has-files:hover {
+        box-shadow:0 5px 14px rgba(22,163,74,0.45);
+    }
+    .btn-pla-history {
+        display:inline-flex; align-items:center; gap:5px;
+        background:linear-gradient(135deg,#6366f1,#4f46e5);
+        border:none; color:#fff; border-radius:9px; padding:9px 18px;
+        font-size:0.85rem; font-weight:700;
+        box-shadow:0 3px 12px rgba(79,70,229,0.35);
+        transition:all 0.2s; cursor:pointer;
+    }
+    .btn-pla-history:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(79,70,229,0.5); color:#fff; }
     .btn-pla-close {
         display:inline-flex; align-items:center; gap:5px;
         background:linear-gradient(135deg,#f59e0b,#d97706);
@@ -376,6 +472,134 @@
         transition:all 0.2s; cursor:pointer;
     }
     .btn-pla-close:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(245,158,11,0.5); color:#fff; }
+
+    /* ── BUDGET HISTORY MODAL ─────────────────────────────────── */
+    #modalPOBudgetHistory .modal-dialog {
+        max-width: min(1180px, 96vw);
+        width: 96vw;
+        margin: 1.25rem auto;
+    }
+    #modalPOBudgetHistory .modal-content {
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.28);
+    }
+    #modalPOBudgetHistory .modal-body {
+        padding: 16px 18px;
+        max-height: min(78vh, 720px);
+        overflow: auto;
+        background: #f8fafc;
+    }
+    #modalPOBudgetHistory .modal-footer {
+        padding: 10px 16px;
+        background: #ffffff;
+        border-top: 1px solid #e2e8f0;
+    }
+    #modalPOBudgetHistory .pla-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+        background: #fff;
+    }
+    #modalPOBudgetHistory .pla-history-table thead th {
+        background: #ccfbf1;
+        color: #115e59;
+        font-weight: 700;
+        padding: 8px 10px;
+        border-bottom: 1px solid #99f6e4;
+        white-space: nowrap;
+        text-align: center;
+    }
+    #modalPOBudgetHistory .pla-history-table tbody td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #0f172a;
+        vertical-align: middle;
+    }
+    #modalPOBudgetHistory .pla-history-table tbody tr:hover {
+        background: #f8fafc;
+    }
+    #modalPOBudgetHistory .pla-history-neg {
+        background: #fecaca !important;
+        color: #991b1b !important;
+        font-weight: 800;
+    }
+    #modalPOBudgetHistory .pla-history-pos {
+        background: #d1fae5 !important;
+        color: #065f46 !important;
+        font-weight: 700;
+    }
+    #modalPOBudgetHistory .pla-history-header {
+        background: linear-gradient(135deg, #0f766e 0%, #0d9488 55%, #14b8a6 100%);
+        color: #fff;
+        padding: 14px 20px;
+        border: none;
+    }
+    #modalPOBudgetHistory #budgetHistoryModalSub {
+        font-size: 0.75rem;
+        opacity: 0.9;
+        display: block;
+        margin-top: 2px;
+    }
+    #modalPOBudgetHistory #budgetHistoryProjectLine {
+        font-size: 0.78rem;
+        font-weight: 600;
+        opacity: 0.95;
+        display: block;
+        margin-top: 4px;
+    }
+    #modalPOBudgetHistory .btn-pla-history-close-x {
+        width: 34px;
+        height: 34px;
+        border: none;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.15s ease;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+    #modalPOBudgetHistory .btn-pla-history-close-x:hover {
+        background: #dc2626;
+        color: #fff;
+        transform: translateY(-1px);
+    }
+    #modalPOBudgetHistory .btn-pla-history-close {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        border: none;
+        color: #fff;
+        border-radius: 9px;
+        padding: 9px 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        box-shadow: 0 3px 12px rgba(220, 38, 38, 0.35);
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    #modalPOBudgetHistory .btn-pla-history-close:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 16px rgba(220, 38, 38, 0.5);
+        color: #fff;
+    }
+    @@media (max-width: 768px) {
+        #modalPOBudgetHistory .modal-dialog {
+            max-width: calc(100% - 12px);
+            width: calc(100% - 12px);
+            margin: 8px auto;
+        }
+        #modalPOBudgetHistory .modal-body {
+            max-height: 72vh;
+            padding: 12px;
+        }
+    }
 
     /* ── CONFIRM MODAL BUTTONS ────────────────────────────────── */
     .btn-pla-confirm-approve {
@@ -392,6 +616,13 @@
         font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;
     }
     .btn-pla-confirm-reject:hover { transform:translateY(-1px); color:#fff; }
+    .btn-pla-confirm-hold {
+        display:inline-flex; align-items:center; gap:4px;
+        background:linear-gradient(135deg,#f97316,#ea580c);
+        border:none; color:#fff; border-radius:8px; padding:8px 18px;
+        font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;
+    }
+    .btn-pla-confirm-hold:hover { transform:translateY(-1px); color:#fff; }
     .btn-pla-reject-sm {
         background:#f1f5f9; border:1px solid #e2e8f0; color:#475569;
         border-radius:8px; padding:8px 16px; font-size:0.82rem; font-weight:600;
@@ -427,7 +658,8 @@
             width: 100%; justify-content: space-between;
         }
         .pla-info-grid { grid-template-columns: repeat(2, 1fr); }
-        .pla-po-card-footer { justify-content: stretch; }
+        .pla-po-card-footer { justify-content: stretch; flex-direction: column; align-items: stretch; }
+        .pla-po-card-footer .pla-po-card-print-btns { width: 100%; justify-content: flex-start; }
         .pla-po-card-footer .btn-pla-card-approve,
         .pla-po-card-footer .btn-pla-card-view { width: 100%; justify-content: center; }
         .btn-pla-approve, .btn-pla-reject, .btn-pla-close { padding: 9px 14px; font-size: 0.8rem; }
@@ -486,7 +718,8 @@
             <label class="form-label">Status</label>
             <select id="lstDdlStatus" class="form-control form-control-sm form-select">
                 <option value="A">-- All Status --</option>
-                <option value="N">Pending</option>
+                <option value="N" selected="selected">Pending</option>
+                <option value="H">Hold</option>
                 <option value="Y">Approved</option>
                 <option value="R">Rejected</option>
             </select>
@@ -579,17 +812,31 @@
                 <div class="pla-remarks-wrap">
                     <label class="pla-remarks-lbl">
                         <i class="fa fa-comment me-1"></i>Remarks
-                        <small style="font-weight:400;color:#94a3b8;">(required for rejection)</small>
+                        <small style="font-weight:400;color:#94a3b8;">(required for reject / hold)</small>
                     </label>
                     <textarea id="frmRemarks" class="form-control form-control-sm" rows="2"
-                              placeholder="Enter approval / rejection remarks…"></textarea>
+                              placeholder="Enter approval / rejection / hold remarks…"></textarea>
                 </div>
             </div>
 
             <div class="modal-footer"
-                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;">
+                 style="padding:10px 16px;background:#fafbff;border-top:1px solid #eef0f8;gap:8px;flex-wrap:wrap;">
                 <input type="hidden" id="hfPOCode" value="0" />
                 <input type="hidden" id="hfLevelCode" value="0" />
+                <input type="hidden" id="hfAttachPONo" value="" />
+                <input type="hidden" id="hfAttachPODate" value="" />
+                <button type="button" class="btn-pla-modal-preview"
+                        onclick="PrintPOFromDetail('preview')" title="Print preview (same as PO Store)">
+                    <i class="fa fa-search-plus"></i>Preview
+                </button>
+                <button type="button" class="btn-pla-modal-print"
+                        onclick="PrintPOFromDetail('print')" title="Print PO">
+                    <i class="fa fa-print"></i>Print
+                </button>
+                <button type="button" id="btnModalAttachment" class="btn-pla-modal-attach"
+                        onclick="OpenPOApprovalAttachmentFromModal()" title="Attachments (same as PO Store)">
+                    <i class="fa fa-paperclip"></i>Attachment
+                </button>
                 <button type="button" id="btnRejectAction" class="btn-pla-reject"
                         onclick="SubmitApproval('Reject')" style="display:none;">
                     <i class="fa fa-times"></i>Reject
@@ -598,6 +845,14 @@
                         onclick="SubmitApproval('Approve')" style="display:none;">
                     <i class="fa fa-check"></i>Approve
                 </button>
+                <button type="button" id="btnHoldAction" class="btn-pla-hold"
+                        onclick="SubmitApproval('Hold')" style="display:none;">
+                    <i class="fa fa-pause"></i>Hold
+                </button>
+                <button type="button" id="btnHistoryAction" class="btn-pla-history"
+                        onclick="OpenBudgetHistoryModal()" title="As per budget amount">
+                    <i class="fa fa-history"></i>History
+                </button>
                 <button type="button" class="btn-pla-close ms-auto" onclick="CloseDetailModal()">
                     <i class="fa fa-times-circle"></i>Close
                 </button>
@@ -605,6 +860,104 @@
         </div>
     </div>
 </div>
+
+<!-- ══════════════════════════════════════════════════
+     BUDGET HISTORY MODAL (As per budget amount)
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalPOBudgetHistory" tabindex="-1" role="dialog"
+     aria-hidden="true" style="z-index:1065;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header pla-history-header">
+                <div>
+                    <h5 class="modal-title mb-0" style="font-size:0.95rem;font-weight:700;">
+                        <i class="fa fa-history me-2"></i>History
+                    </h5>
+                    <small id="budgetHistoryModalSub">As per budget amount</small>
+                    <small id="budgetHistoryProjectLine"></small>
+                </div>
+                <button type="button" class="btn-pla-history-close-x"
+                        onclick="CloseBudgetHistoryModal()" aria-label="Close" title="Close">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="pla-items-title" style="margin-bottom:10px;">
+                    <i class="fa fa-chart-pie me-1"></i>As per budget amount
+                </div>
+                <div class="table-responsive">
+                    <table class="pla-history-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Item</th>
+                                <th>Budget Amount with GST</th>
+                                <th>Current po amt with GST</th>
+                                <th>Other PO sum value with GST</th>
+                                <th>Net PO amount</th>
+                                <th>Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="budgetHistoryBody">
+                            <tr>
+                                <td colspan="7" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                    <i class="fa fa-spinner fa-spin me-1"></i>Loading history…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-pla-history-close ms-auto" onclick="CloseBudgetHistoryModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print options (shared behaviour with Purchase Order Store) -->
+<div class="modal fade" id="modalPrintOptions" tabindex="-1" aria-labelledby="modalPrintOptionsLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false" style="z-index:1080;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;width:calc(100% - 24px);margin:auto;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#1a2a6c,#4f46e5);color:#fff;border:none;padding:14px 20px;">
+                <h5 class="modal-title mb-0" id="modalPrintOptionsLabel" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-print me-2"></i>Print Options
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding:20px 22px;">
+                <div class="form-check" style="margin-bottom:10px;">
+                    <input class="form-check-input" type="checkbox" id="chkIncludeGeneralTerms" checked
+                           style="width:1.1em;height:1.1em;margin-top:3px;cursor:pointer;" />
+                    <label class="form-check-label" for="chkIncludeGeneralTerms"
+                           style="font-size:0.85rem;font-weight:600;color:#1e293b;cursor:pointer;padding-left:4px;">
+                        Include General Terms &amp; Conditions
+                    </label>
+                    <div style="font-size:0.75rem;color:#64748b;margin-top:3px;padding-left:26px;">
+                        <i class="fa fa-info-circle me-1 text-primary"></i>
+                        Terms follow Work Type (Goods vs Service/Work), same as PO Store.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:10px 20px 16px;background:#fafafa;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <a class="btn btn-secondary btn-sm" data-bs-dismiss="modal"
+                   style="border:none;color:#fff;border-radius:8px;padding:7px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;">
+                    <i class="fa fa-times me-1"></i>Cancel
+                </a>
+                <a onclick="ConfirmPrintPO()"
+                   style="background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;color:#fff;border-radius:8px;padding:7px 18px;font-size:0.82rem;font-weight:700;box-shadow:0 3px 10px rgba(2,132,199,0.3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;">
+                    <i class="fa fa-search-plus me-1"></i>Preview / Print
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PO Store attachment control host (shared with PurchaseOrderStore.js) -->
+<div id="PurchaseOrderStore_AttachmentControlmodal"></div>
 
 <!-- ══════════════════════════════════════════════════
      CONFIRM MODAL

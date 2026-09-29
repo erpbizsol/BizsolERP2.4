@@ -3,7 +3,7 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const SalesanalysisASTService = {
 
-    GetSalesAnalysisData: function GetSalesAnalysisData(Mode, DealerCodes, FromDate, ToDate, SalesPersons, Cities, Status, GP, IndustryType) {
+    GetSalesAnalysisData: function GetSalesAnalysisData(Mode, DealerCodes, FromDate, ToDate, SalesPersons, Cities, Status, GP, IndustryType, NotPurchaseFromDays) {
 
         const formatDate = (d) => {
             if (d === '0') return "0";
@@ -28,7 +28,8 @@ const SalesanalysisASTService = {
             Cities: Cities,
             Status: Status,
             GP: GP,
-            IndustryType: IndustryType
+            IndustryType: IndustryType,
+            NotPurchaseFromDays: NotPurchaseFromDays === undefined || NotPurchaseFromDays === null || NotPurchaseFromDays === '' ? '0' : String(NotPurchaseFromDays)
         };
 
         let url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/GetSalesAnalysisData`;
@@ -39,7 +40,7 @@ const SalesanalysisASTService = {
             }
         );
     },
-    GetMultipleTableSalesAnalysisData: function GetMultipleTableSalesAnalysisData(Mode, DealerCodes, FromDate, ToDate, SalesPersons, Cities, Status, GP, IndustryType) {
+    GetMultipleTableSalesAnalysisData: function GetMultipleTableSalesAnalysisData(Mode, DealerCodes, FromDate, ToDate, SalesPersons, Cities, Status, GP, IndustryType, NotPurchaseFromDays) {
 
         const formatDate = (d) => {
             if (d === '0') return "0";
@@ -64,7 +65,8 @@ const SalesanalysisASTService = {
             Cities: Cities,
             Status: Status,
             GP: GP,
-            IndustryType: IndustryType
+            IndustryType: IndustryType,
+            NotPurchaseFromDays: NotPurchaseFromDays === undefined || NotPurchaseFromDays === null || NotPurchaseFromDays === '' ? '0' : String(NotPurchaseFromDays)
         };
 
         let url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/GetMultipleTableSalesAnalysisData`;
@@ -74,6 +76,18 @@ const SalesanalysisASTService = {
                 return value;
             }
         );
+    },
+    GetMonthWiseItemRMRateData: function GetMonthWiseItemRMRateData(FinYear, Month) {
+        const url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/GetMonthWiseItemRMRateData?FinYear=${encodeURIComponent(FinYear || '')}&Month=${encodeURIComponent(Month || '')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) {
+            return value;
+        });
+    },
+    SaveMonthWiseItemRMRateData: function SaveMonthWiseItemRMRateData(monthWiseItemRMRateConfigration) {
+        const url = `${UrlService.API_ENDPOINT_SalesanalysisAST}/SaveMonthWiseItemRMRateData`;
+        return promiseAjaxCallApi.CallAPI('POST', url, JSON.stringify(monthWiseItemRMRateConfigration || [])).then(function (value) {
+            return value;
+        });
     }
 }
 

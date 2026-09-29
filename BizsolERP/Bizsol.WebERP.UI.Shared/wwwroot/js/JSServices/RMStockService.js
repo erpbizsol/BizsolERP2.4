@@ -116,8 +116,16 @@ const RMStockService = {
             }
         );
     },
-    GetRMStockJobWorkData: function GetRMStockJobWorkData(FromDate, ToDate) {
-        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockJobWorkData?FromDate=" + FromDate + "&ToDate=" + ToDate;
+    GetRMStockJobWorkData: function GetRMStockJobWorkData(FromDate, ToDate, Status) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockJobWorkData?FromDate=" + FromDate + "&ToDate=" + ToDate + "&Status="+ encodeURIComponent(Status);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+    GetRMStockRMReport: function GetRMStockRMReport(FromDate, ToDate) {
+        var URL = UrlService.API_ENDPOINT_RMStock + "/GetRMStockRMReport?FromDate=" + FromDate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;

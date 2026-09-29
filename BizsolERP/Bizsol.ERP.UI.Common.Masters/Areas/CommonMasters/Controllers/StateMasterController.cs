@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Bizsol.WebERP.UI.Common.Masters.Areas.CommonMasters.Controllers
 {
@@ -11,7 +11,7 @@ namespace Bizsol.WebERP.UI.Common.Masters.Areas.CommonMasters.Controllers
         }
         public IActionResult StateList()
         {
-            return View();
+            return RedirectToAction(nameof(StateMaster));
         }
     }
 }

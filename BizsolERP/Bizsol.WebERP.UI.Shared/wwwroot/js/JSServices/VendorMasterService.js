@@ -13,6 +13,13 @@ const VendorMasterService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
 
+    GetGSTINStatus: function GetGSTINStatus(AccountDesp, GSTNNoToSearch) {
+        var URL = UrlService.API_ENDPOINT_VendorMaster +
+            `/GetGSTINStatus?AccountDesp=${encodeURIComponent(AccountDesp || "")}` +
+            `&GSTNNoToSearch=${encodeURIComponent(GSTNNoToSearch || "")}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
+
     SaveVendorMaster: function SaveVendorMaster(data) {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/SaveVendorMaster`;
         return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data)).then(function (value) { return value; });
@@ -43,6 +50,17 @@ const VendorMasterService = {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetNationList`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
+    GetCityMasterByName: function GetCityMasterByName(CityName, Mode) {
+        var URL =
+            UrlService.API_ENDPOINT_CITY +
+            `/GetCityMasterByName?CityName=` +
+            encodeURIComponent(CityName || "") +
+            `&Mode=` +
+            encodeURIComponent(Mode || "");
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) {
+            return value;
+        });
+    },
     GetServiceProviderNatureList: function GetServiceProviderNatureList() {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetServiceProviderNatureList`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
@@ -51,6 +69,20 @@ const VendorMasterService = {
         var URL = UrlService.API_ENDPOINT_FixedParameter + `/GetFixedParameterDetails`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
+    GetIndustryType: function GetIndustryType() {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetIndustryType`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
+    SaveIndustryType: function SaveIndustryType(IndustryType) {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/SaveIndustryType`;
+        var text = IndustryType != null && IndustryType !== undefined ? String(IndustryType).trim() : "";
+        var body = JSON.stringify(text);
+        return promiseAjaxCallApi.CallAPI("POST", URL, body).then(function (value) {
+            return value;
+        });
+    },
+    
+    
 };
 
 export { VendorMasterService };

@@ -44,6 +44,7 @@ function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListEleme
 
     // Trigger on focus
     AutoSuggestionInput.on('focus', function () {
+        if ($(this).is('[readonly]') || $(this).prop('readonly')) { return; }
         const inputValue = normalizeText($(this).val());
         const allItems = AutoSuggestionList.children();
 
@@ -61,6 +62,7 @@ function setupSearchFunction(AutoSuggestionInputElement, AutoSuggestionListEleme
 
     // Trigger on input
     AutoSuggestionInput.on('input', function () {
+        if ($(this).is('[readonly]') || $(this).prop('readonly')) { return; }
         const inputValue = normalizeText($(this).val());
         const allItems = AutoSuggestionList.children();
 
@@ -184,6 +186,7 @@ function setupMultiSearchFunction(AutoSuggestionInputElement, AutoSuggestionList
 
     // Trigger on focus
     AutoSuggestionInput.on('focus', function () {
+        if ($(this).is('[readonly]') || $(this).prop('readonly')) { return; }
         const inputValue = getCurrentInputValue($(this).val());
         const normalizedInput = normalizeText(inputValue);
         const allItems = AutoSuggestionList.children();
@@ -202,6 +205,7 @@ function setupMultiSearchFunction(AutoSuggestionInputElement, AutoSuggestionList
 
     // Trigger on input
     AutoSuggestionInput.on('input', function () {
+        if ($(this).is('[readonly]') || $(this).prop('readonly')) { return; }
         const inputValue = getCurrentInputValue($(this).val());
         const normalizedInput = normalizeText(inputValue);
         const allItems = AutoSuggestionList.children();

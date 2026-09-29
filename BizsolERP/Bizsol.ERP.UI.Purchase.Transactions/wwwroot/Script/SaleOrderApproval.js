@@ -1,4 +1,5 @@
 import { SaleOrderApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SaleOrderApprovalService.js';
+import { BillWiseOutStandingReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BillWiseOutStandingReportService.js';
 
 let FrmType = '';
 let FrmAction = '';
@@ -10,6 +11,7 @@ let SaleOrderApprovalFixedParaMeters = [];
 let G_SaleOrderListRaw = [];
 let G_SaleOrderCardPage = 1;
 let G_SaleOrderPageSize = 10;
+let G_CurrentSaleOrderCode = 0;
 
 const SALE_ORDER_DETAIL_GRID_HIDDEN = [
     "BuyerPOMaster_OtherChargesDesp1",
@@ -24,6 +26,8 @@ const SALE_ORDER_DETAIL_GRID_HIDDEN = [
     "MarketingMan",
     "Credit Limit",
     "CreditLimit",
+    "Order Date",
+    "OrderDate",
 ];
 function pickRowValue(row, keys) {
     if (!row) return "";
@@ -47,66 +51,54 @@ function stripKeysFromRows(rows, keysToStrip) {
         return o;
     });
 }
-function mergeTermsRowsWithMaster(termsRows, masterRow) {
-    if (!termsRows || !termsRows.length) return termsRows;
-    const marketing = masterRow ? pickRowValue(masterRow, ["Marketing Man", "MarketingMan"]) : "";
-    const creditRaw = masterRow ? pickRowValue(masterRow, ["Credit Limit", "CreditLimit"]) : "";
-    let creditCol = "";
-    if (creditRaw !== "") {
-        const t = creditRaw.trim();
-        creditCol = /days?$/i.test(t) ? t : t + " Days";
-    }
+const SALE_ORDER_DELIVERY_TERM_COLUMNS = [
+    { label: "Payment Terms Details", keys: ["Payment Terms Details", "PaymentTermsDetails", "Payment Terms"] },
+    { label: "Terms of Delivery", keys: ["Terms of Delivery", "TermsOfDelivery"] },
+    { label: "Inco Terms", keys: ["Inco Terms", "IncoTerms", "INCO Terms"] },
+    { label: "Marketing Man", keys: ["Marketing Man", "MarketingMan"] },
+    { label: "Credit Limit", keys: ["Credit Limit", "CreditLimit"] },
+];
+function formatCreditLimitDisplay(raw) {
+    if (raw == null || raw === "") return "";
+    const t = String(raw).trim();
+    return /days?$/i.test(t) ? t : t + " Days";
+}
+function buildDeliveryTermsDisplayRows(termsRows, masterRow) {
+    if (!termsRows || !termsRows.length) return [];
     return termsRows.map(function (row) {
-        const rest = {};
-        const keys = Object.keys(row);
-        for (let i = 0; i < keys.length; i++) {
-            const k = keys[i];
-            if (
-                k === "Marketing Man" ||
-                k === "MarketingMan" ||
-                k === "Credit Limit" ||
-                k === "CreditLimit"
-            )
-                continue;
-            rest[k] = row[k];
-        }
-        const out = Object.assign({}, rest);
-        out["Marketing Man"] = marketing;
-        out["Credit Limit"] = creditCol;
+        const out = {};
+        SALE_ORDER_DELIVERY_TERM_COLUMNS.forEach(function (col) {
+            let val = pickRowValue(row, col.keys);
+            if (col.label === "Marketing Man" && val === "" && masterRow) {
+                val = pickRowValue(masterRow, col.keys);
+            }
+            if (col.label === "Credit Limit") {
+                const masterCredit = masterRow ? pickRowValue(masterRow, col.keys) : "";
+                if (masterCredit !== "") val = masterCredit;
+                val = formatCreditLimitDisplay(val);
+            }
+            out[col.label] = val;
+        });
         return out;
     });
 }
-function normalizeSaleOrderDetailRows(rows) {
-    if (!rows || !rows.length) return rows;
-    return rows.map(function (row) {
-        const result = {};
-        const keys = Object.keys(row);
-        for (let i = 0; i < keys.length; i++) {
-            const k = keys[i];
-            if (k === "Qty KG" || k === "QtyKG") {
-                const mt = row["Qty MT"] ?? row["QtyMT"];
-                const kg = row[k];
-                result["Qty MT"] = mt != null && mt !== "" ? mt : kg;
-                continue;
+function getLineItemColumnKeys(rows) {
+    if (!rows || !rows.length) return [];
+    const hiddenKeys = new Set([
+        "Code", "BuyerPOMaster_Code", "Party Name", "Order No", "Against Rolling", "Order Date", "OrderDate",
+    ]);
+    SALE_ORDER_DETAIL_GRID_HIDDEN.forEach(function (k) { hiddenKeys.add(k); });
+    const keys = [];
+    const seen = new Set();
+    rows.forEach(function (row) {
+        Object.keys(row).forEach(function (k) {
+            if (!hiddenKeys.has(k) && !seen.has(k)) {
+                seen.add(k);
+                keys.push(k);
             }
-            if (k === "Qty MT" || k === "QtyMT") {
-                if (result["Qty MT"] === undefined) result["Qty MT"] = row[k];
-                continue;
-            }
-            if (k === "Qty SQM" || k === "QtySQM") {
-                const mr = row["Qty MR"] ?? row["QtyMR"];
-                const sqm = row[k];
-                result["Qty MR"] = mr != null && mr !== "" ? mr : sqm;
-                continue;
-            }
-            if (k === "Qty MR" || k === "QtyMR") {
-                if (result["Qty MR"] === undefined) result["Qty MR"] = row[k];
-                continue;
-            }
-            result[k] = row[k];
-        }
-        return result;
+        });
     });
+    return keys;
 }
 function populateSaleOrderDetailHeaderPanel(row) {
     $("#sod_BuyerPOMaster_OtherChargesDesp1").val(pickRowValue(row, ["BuyerPOMaster_OtherChargesDesp1"]));
@@ -116,9 +108,12 @@ function populateSaleOrderDetailHeaderPanel(row) {
     $("#sod_BuyerPOMaster_PackingChargesAmount").val(pickRowValue(row, ["BuyerPOMaster_PackingChargesAmount"]));
     $("#sod_FreightCondition").val(pickRowValue(row, ["Freight Condition", "FreightCondition"]));
     $("#sod_Freight").val(pickRowValue(row, ["Freight"]));
+    renderChargesMobilePanel();
 }
 function clearSaleOrderDetailHeaderPanel() {
     $("#saleOrderDetailHeaderPanel input").val("");
+    const chargesMobile = document.getElementById("sodChargesMobile");
+    if (chargesMobile) chargesMobile.innerHTML = "";
 }
 function escapeHtml(s) {
     if (s == null || s === "") return "";
@@ -156,6 +151,227 @@ function formatINRAmount(val) {
     );
 }
 
+function parseMoneyNumber(val) {
+    if (val == null || val === "") return NaN;
+    const n = parseFloat(String(val).replace(/,/g, "").replace(/[^\d.-]/g, "").trim());
+    return Number.isFinite(n) ? n : NaN;
+}
+
+function formatINRAmountPlain(val) {
+    const n = parseMoneyNumber(val);
+    if (isNaN(n)) return "\u2014";
+    return "\u20B9" + n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getAsonDateIsoToday() {
+    const d = new Date();
+    return (
+        d.getFullYear() +
+        "-" +
+        String(d.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(d.getDate()).padStart(2, "0")
+    );
+}
+
+function extractAccountMasterCode(row) {
+    if (!row) return "";
+    const code = pickRowValue(row, [
+        "AccountMaster_Code",
+        "AccountMaster Code",
+        "AccountMasterCode",
+        "DealerMaster_Code",
+        "DealerMaster Code",
+        "Party Code",
+        "Party_Code",
+    ]);
+    const n = parseInt(code, 10);
+    return n > 0 ? String(n) : "";
+}
+
+function rowBalanceAmount(row) {
+    if (!row) return 0;
+    const bal = parseMoneyNumber(
+        pickRowValue(row, ["Balance", "balance", "Outstanding", "Net Outstanding", "NetOutstanding"])
+    );
+    if (!isNaN(bal)) return bal;
+    const amt = parseMoneyNumber(pickRowValue(row, ["Amount", "amount"]));
+    const adj = parseMoneyNumber(
+        pickRowValue(row, ["Amount Adjusted", "AmountAdjusted", "amountAdjusted", "Amount_Adjusted"])
+    );
+    if (!isNaN(amt)) return amt - (isNaN(adj) ? 0 : adj);
+    return 0;
+}
+
+function rowDelayDays(row) {
+    if (!row) return 0;
+    const dd = parseMoneyNumber(
+        pickRowValue(row, ["DelayDays", "Delay Days", "delayDays", "Delay_Days"])
+    );
+    return isNaN(dd) ? 0 : dd;
+}
+
+function normalizeBillWiseRows(response) {
+    if (!response) return [];
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response.Data)) return response.Data;
+    if (Array.isArray(response.data)) return response.data;
+    return [];
+}
+
+function setPartyOutstandingDisplay(outstandingText, overdueText, loading) {
+    const $out = $("#sodPartyOutstandingAmt");
+    const $od = $("#sodPartyOverdueAmt");
+    $out.text(outstandingText);
+    $od.text(overdueText);
+    $out.toggleClass("is-loading", !!loading);
+    $od.toggleClass("is-loading", !!loading);
+}
+
+function clearSaleOrderPartyOutstanding() {
+    setPartyOutstandingDisplay("\u2014", "\u2014", false);
+}
+
+function aggregateOutstandingFromBillRows(rows) {
+    let outstanding = 0;
+    let overdue = 0;
+    rows.forEach(function (row) {
+        const bal = rowBalanceAmount(row);
+        if (bal <= 0) return;
+        outstanding += bal;
+        if (rowDelayDays(row) > 0) overdue += bal;
+    });
+    return { outstanding: outstanding, overdue: overdue };
+}
+
+function normalizePartyOutstandingSummary(response) {
+    if (!response) return null;
+    let rows = null;
+    if (Array.isArray(response)) rows = response;
+    else if (Array.isArray(response.Data)) rows = response.Data;
+    else if (Array.isArray(response.data)) rows = response.data;
+
+    if (rows && rows.length) {
+        const first = rows[0];
+        const hasSummary =
+            pickRowValue(first, ["Outstanding", "outstanding"]) !== "" ||
+            pickRowValue(first, ["Overdue", "overdue"]) !== "";
+        if (hasSummary) {
+            const outstanding = parseMoneyNumber(
+                pickRowValue(first, ["Outstanding", "outstanding", "txtOutStanding", "OutStanding"])
+            );
+            const overdue = parseMoneyNumber(
+                pickRowValue(first, ["Overdue", "overdue", "objGenCreditLimitOverDue", "OverDue", "Over Due"])
+            );
+            return {
+                outstanding: isNaN(outstanding) ? 0 : outstanding,
+                overdue: isNaN(overdue) ? 0 : overdue,
+            };
+        }
+        if (pickRowValue(first, ["Balance", "balance"]) !== "" || pickRowValue(first, ["DelayDays", "Delay Days"]) !== "") {
+            return aggregateOutstandingFromBillRows(rows);
+        }
+    }
+
+    let row = null;
+    if (rows && rows.length) row = rows[0];
+    else if (response.Outstanding != null || response.Overdue != null || response.outstanding != null) row = response;
+    if (!row) return null;
+    const outstanding = parseMoneyNumber(
+        pickRowValue(row, ["Outstanding", "outstanding", "txtOutStanding", "OutStanding"])
+    );
+    const overdue = parseMoneyNumber(
+        pickRowValue(row, ["Overdue", "overdue", "objGenCreditLimitOverDue", "OverDue", "Over Due"])
+    );
+    return {
+        outstanding: isNaN(outstanding) ? 0 : outstanding,
+        overdue: isNaN(overdue) ? 0 : overdue,
+    };
+}
+
+function loadPartyOutstandingFromBillWise(accountMasterCode) {
+    return BillWiseOutStandingReportService.GetBillWiseOutStandingReport(
+        "",
+        accountMasterCode,
+        getAsonDateIsoToday(),
+        "0",
+        "Y"
+    ).then(function (response) {
+        return aggregateOutstandingFromBillRows(normalizeBillWiseRows(response));
+    });
+}
+
+function loadPartyOutstandingFromApi(buyerPOCode) {
+    const bp = parseInt(buyerPOCode, 10) || 0;
+    return SaleOrderApprovalService.GetPartyOutstandingOverdue(bp).then(function (response) {
+        const summary = normalizePartyOutstandingSummary(response);
+        if (summary) return summary;
+        return Promise.reject(new Error("Empty outstanding summary"));
+    });
+}
+
+/**
+ * Outstanding / overdue for party — BillMaster balance & credit-days delay (user query logic).
+ * Primary: SaleOrderApproval/GetPartyOutstandingOverdue API.
+ * Fallback: bill-wise outstanding report aggregation.
+ */
+function loadSaleOrderPartyOutstanding(buyerPOCode, contextRow) {
+    setPartyOutstandingDisplay("Loading\u2026", "Loading\u2026", true);
+    const bpCode = parseInt(buyerPOCode, 10) || 0;
+    if (bpCode <= 0) {
+        clearSaleOrderPartyOutstanding();
+        return;
+    }
+
+    let accountCode = extractAccountMasterCode(contextRow);
+
+    function applySummary(agg) {
+        setPartyOutstandingDisplay(
+            formatINRAmountPlain(agg.outstanding),
+            formatINRAmountPlain(agg.overdue),
+            false
+        );
+    }
+
+    function tryBillWiseFallback() {
+        if (!accountCode) {
+            clearSaleOrderPartyOutstanding();
+            return;
+        }
+        loadPartyOutstandingFromBillWise(accountCode)
+            .then(applySummary)
+            .catch(function () {
+                clearSaleOrderPartyOutstanding();
+            });
+    }
+
+    loadPartyOutstandingFromApi(bpCode)
+        .then(applySummary)
+        .catch(function () {
+            if (!accountCode && bpCode > 0) {
+                SaleOrderApprovalService.SaleOrdersCreditLimitReports(bpCode)
+                    .then(function (response) {
+                        response = response || {};
+                        const amtBase = response.CreditLimitAmountBase || [];
+                        if (amtBase.length && amtBase[0]) {
+                            accountCode =
+                                extractAccountMasterCode(amtBase[0]) ||
+                                String(
+                                    amtBase[0].AccountMaster_Code ||
+                                    amtBase[0].AccountMasterCode ||
+                                    amtBase[0].CustomerMaster_Code ||
+                                    ""
+                                ).trim();
+                        }
+                        tryBillWiseFallback();
+                    })
+                    .catch(tryBillWiseFallback);
+            } else {
+                tryBillWiseFallback();
+            }
+        });
+}
+
 function formatQtyDisplay(val) {
     if (val == null || val === "") return "\u2014";
     const raw = String(val).replace(/,/g, "").trim();
@@ -164,43 +380,144 @@ function formatQtyDisplay(val) {
     return escapeHtml(String(val));
 }
 
+function reviewActionLabel() {
+    const a = (FrmAction || "Verify").trim();
+    if (/approve/i.test(a)) return "Review & Approve";
+    if (/check/i.test(a)) return "Review & Check";
+    return "Review & Verify";
+}
+
+function verifyButtonLabel() {
+    const a = (FrmAction || "Verify").trim();
+    if (/approve/i.test(a)) return "Approve";
+    if (/check/i.test(a)) return "Check";
+    return "Verify";
+}
+
+const SOD_ATTACHMENT_MASTER = "BuyerPOMaster";
+
+function escapeForSingleQuotedJs(s) {
+    return String(s ?? "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/\r\n/g, "\\n")
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\n");
+}
+
+function sodHasAttachmentYes(item) {
+    if (!item) return false;
+    const v = item.HasAttach != null ? item.HasAttach
+        : item.hasAttach != null ? item.hasAttach
+        : item.HasAttachment != null ? item.HasAttachment
+        : item["Has Attachment"];
+    return String(v || "").trim().toUpperCase() === "Y";
+}
+
+function sodRawOrderNoForAttach(item) {
+    if (!item) return "";
+    const n = rowField(item, ["Order No", "OrderNo"]);
+    return n === "\u2014" ? "" : String(n).trim();
+}
+
+function sodRawOrderDateForAttach(item) {
+    if (!item) return "";
+    const d = rowField(item, ["Order Date", "OrderDate"]);
+    const s = String(d).trim();
+    if (!s || s === "\u2014") return "";
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) {
+        return m[3] + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0");
+    }
+    const dt = new Date(s);
+    if (!isNaN(dt.getTime())) {
+        return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+    }
+    return s.length >= 10 ? s.substring(0, 10) : "";
+}
+
+function sodEntryDateParamForAttachmentControl(item) {
+    const raw = sodRawOrderDateForAttach(item);
+    if (!raw) return "";
+    const dt = new Date(raw);
+    return !isNaN(dt.getTime()) ? dt.toISOString() : "";
+}
+
+function InitSaleOrderAttachmentControl(masterCode, entryNo, entryDate) {
+    const appBase = (sessionStorage.getItem("AppBaseURL") || (window.location.origin + "/")).replace(/\/?$/, "/");
+    $("#SaleOrderApproval_AttachmentControlmodal").load(appBase + "CustomControl/AttachmentControl", {
+        MasterTableName: SOD_ATTACHMENT_MASTER,
+        MasterTableCode: parseInt(masterCode, 10) || 0,
+        DetailTableName: "",
+        DetailTableCode: 0,
+        EntryNo: parseInt(entryNo, 10) || 0,
+        EntryDate: entryDate || "",
+        Mode: "view",
+    });
+}
+
+function OpenSaleOrderApprovalAttachment(code, entryNo, entryDate) {
+    const masterCode = parseInt(code, 10) || 0;
+    if (masterCode <= 0) {
+        toastr.warning("Invalid record. Cannot open attachments.");
+        return;
+    }
+    const item = G_SaleOrderListRaw.find(function (x) {
+        return String(x.BuyerPOMaster_Code) === String(masterCode);
+    });
+    const en = entryNo != null && String(entryNo) !== "" ? entryNo : (item ? sodRawOrderNoForAttach(item) : "");
+    const ed = entryDate != null && String(entryDate) !== ""
+        ? entryDate
+        : (item ? sodEntryDateParamForAttachmentControl(item) : "");
+    InitSaleOrderAttachmentControl(masterCode, en, ed);
+}
+
+function OpenSaleOrderApprovalAttachmentFromModal() {
+    const code = G_CurrentSaleOrderCode || 0;
+    const entryNo = $("#hfSodAttachOrderNo").val() || "";
+    const entryDate = $("#hfSodAttachOrderDate").val() || "";
+    OpenSaleOrderApprovalAttachment(code, entryNo, entryDate);
+}
+
+function syncSaleOrderModalAttachmentButton(item) {
+    if (!item) return;
+    $("#hfSodAttachOrderNo").val(String(sodRawOrderNoForAttach(item) || ""));
+    $("#hfSodAttachOrderDate").val(sodEntryDateParamForAttachmentControl(item) || "");
+    $("#btnSaleOrderModalAttachment").toggleClass("av-attach-has-files", sodHasAttachmentYes(item));
+}
+
 function renderSaleOrderCard(item) {
     const code = item.BuyerPOMaster_Code;
     const orderNo = escapeHtml(rowField(item, ["Order No", "OrderNo"]));
     const party = escapeHtml(rowField(item, ["PartyName", "Party Name"]));
     const orderDate = escapeHtml(rowField(item, ["Order Date", "OrderDate"]));
-    const sales = escapeHtml(rowField(item, ["Sales Person", "SalesPerson", "Sales Man"]));
     const totalRaw = rowField(item, ["Total Order Amount", "TotalOrderAmount", "Amount"]);
     const amountText = formatINRAmount(totalRaw);
-    const qtyMt = formatQtyDisplay(rowField(item, ["Qty MT", "QtyMT", "Qty KG", "QtyKG"]));
-    const qtyPc = formatQtyDisplay(rowField(item, ["Qty PC", "QtyPC"]));
-    const qtyMr = formatQtyDisplay(rowField(item, ["Qty MR", "QtyMR", "Qty SQM", "QtySQM"]));
-    let lineAmtRaw = rowField(item, ["Amount", "Order Amount", "OrderAmount"]);
-    if (lineAmtRaw === "")
-        lineAmtRaw = rowField(item, ["Total Order Amount", "TotalOrderAmount"]);
-    const lineAmountText = lineAmtRaw !== "" ? formatINRAmount(lineAmtRaw) : "\u2014";
-    const canAction = !!item.Action;
     const frmLabel = escapeHtml(FrmAction || "\u2014");
-
-    const metaCreator =
-        sales !== ""
-            ? '<span class="sopa-tag"><i class="fa fa-user" aria-hidden="true"></i> ' + sales + "</span>"
-            : '<span class="sopa-tag"><i class="fa fa-user" aria-hidden="true"></i> ' + frmLabel + "</span>";
 
     const encCode = encodeURIComponent(String(code));
 
-    const actions = canAction
-        ? '<button type="button" class="sopa-btn sopa-btn--primary sopa-js-approve" data-bcode="' +
-          encCode +
-          '" title="' +
-          escapeHtml(FrmAction) +
-          '"><i class="fa fa-check-circle" aria-hidden="true"></i>Verify</button>' +
-          '<button type="button" class="sopa-btn sopa-btn--secondary sopa-js-view" data-bcode="' +
-          encCode +
-          '"><i class="fa fa-folder-open" aria-hidden="true"></i> Details</button>'
-        : '<button type="button" class="sopa-btn sopa-btn--secondary sopa-js-view" data-bcode="' +
-          encCode +
-          '"><i class="fa fa-folder-open" aria-hidden="true"></i> View details</button>';
+    const actionBtn =
+        '<button type="button" class="sopa-btn sopa-btn--primary sopa-js-view" data-bcode="' +
+        encCode +
+        '"><i class="fa fa-folder-open" aria-hidden="true"></i> ' +
+        escapeHtml(reviewActionLabel()) +
+        "</button>";
+
+    const rawNo = sodRawOrderNoForAttach(item);
+    const rawDt = sodEntryDateParamForAttachmentControl(item);
+    const escNo = escapeForSingleQuotedJs(rawNo);
+    const escDt = escapeForSingleQuotedJs(rawDt);
+    const attachBg = sodHasAttachmentYes(item)
+        ? "linear-gradient(135deg,#16a34a,#15803d)"
+        : "linear-gradient(135deg,#0ea5e9,#0284c7)";
+    const attachBtns =
+        '<div class="av-card-attach-btns">' +
+        '<button type="button" class="btn-av-attach-icon" title="Attachments" ' +
+        'style="background:' + attachBg + ';box-shadow:0 2px 8px rgba(14,165,233,0.35);" ' +
+        'onclick="event.stopPropagation();OpenSaleOrderApprovalAttachment(' + code + ", '" + escNo + "', '" + escDt + "')\">" +
+        '<i class="fa fa-paperclip"></i></button></div>';
 
     return (
         '<article class="sopa-card" role="listitem">' +
@@ -214,27 +531,16 @@ function renderSaleOrderCard(item) {
         '<div class="sopa-meta"><span><i class="far fa-calendar-alt" aria-hidden="true"></i>' +
         (orderDate || "\u2014") +
         "</span>" +
-        metaCreator +
+        '<span class="sopa-tag"><i class="fa fa-file-invoice" aria-hidden="true"></i> ' +
+        frmLabel +
+        "</span>" +
         "</div></div>" +
         '<div class="sopa-amount-block"><div class="sopa-amount">' +
         amountText +
         '</div><span class="sopa-status sopa-status--pending">Pending</span></div></div>' +
-        '<div class="sopa-metrics" role="group" aria-label="Quantities and amount">' +
-        '<div class="sopa-metric"><span class="sopa-metric-lbl">Qty MT</span><span class="sopa-metric-val">' +
-        qtyMt +
-        "</span></div>" +
-        '<div class="sopa-metric"><span class="sopa-metric-lbl">Qty PC</span><span class="sopa-metric-val">' +
-        qtyPc +
-        "</span></div>" +
-        '<div class="sopa-metric"><span class="sopa-metric-lbl">Qty MR</span><span class="sopa-metric-val">' +
-        qtyMr +
-        "</span></div>" +
-        '<div class="sopa-metric"><span class="sopa-metric-lbl">Amount</span><span class="sopa-metric-val">' +
-        lineAmountText +
-        "</span></div></div>" +
-        '<div class="sopa-verify-pending" role="status"><i class="fa fa-exclamation-circle" aria-hidden="true"></i><span>Please verify — pending</span></div>' +
         '<div class="sopa-card-foot">' +
-        actions +
+        attachBtns +
+        actionBtn +
         "</div></article>"
     );
 }
@@ -336,6 +642,12 @@ function renderSaleOrderPaginator(total, page, pageSize) {
         });
 }
 
+function updateSaleOrderStatChips() {
+    const pending = G_SaleOrderListRaw.length;
+    const el = document.getElementById("statPendingSaleOrder");
+    if (el) el.textContent = pending > 0 ? pending : "\u2014";
+}
+
 function paintSaleOrderCards() {
     const all = G_SaleOrderListRaw;
     const pageSize = G_SaleOrderPageSize;
@@ -370,13 +682,13 @@ $(document).ready(function () {
     }
     GetSaleOrderApproval();
 
-    $(document).on("click", "#SaleOrderApprovalCards .sopa-js-approve", function () {
-        const c = decodeURIComponent($(this).attr("data-bcode") || "");
-        if (c) SaleOrderApprovedlist(c);
-    });
     $(document).on("click", "#SaleOrderApprovalCards .sopa-js-view", function () {
         const c = decodeURIComponent($(this).attr("data-bcode") || "");
         if (c) ViewData(c);
+    });
+    $(document).on("click", "#btnSaleOrderVerify", function () {
+        const c = decodeURIComponent($(this).attr("data-bcode") || "") || G_CurrentSaleOrderCode;
+        if (c) SaleOrderApprovedlist(c);
     });
 });
 function GetSaleOrderApproval() {
@@ -385,10 +697,12 @@ function GetSaleOrderApproval() {
             G_SaleOrderListRaw = response;
             G_SaleOrderCardPage = 1;
             $("#SaleOrderApprovalList").show();
+            updateSaleOrderStatChips();
             paintSaleOrderCards();
         } else {
             toastr.error("No data found:", response);
             G_SaleOrderListRaw = [];
+            updateSaleOrderStatChips();
             $("#SaleOrderApprovalCards").html("");
             $("#sopa-cards-paginator").empty();
             $("#SaleOrderApprovalList").hide();
@@ -397,105 +711,261 @@ function GetSaleOrderApproval() {
         toastr.error("Error in fetching data:", error);
     });
 }
+const LINE_ITEM_MOBILE_HEAD = {
+    sno: ["SNO", "Sno", "SNo", "Sr No", "SrNo"],
+    item: ["Item Name", "ItemName", "ITEM NAME", "Item"],
+    size: ["SIZE DESP", "Size Desp", "SizeDesp", "Size Description", "Size"],
+};
+const LINE_ITEM_MOBILE_SKIP = new Set([
+    "SNO", "Sno", "SNo", "Sr No", "SrNo", "Item Name", "ItemName", "ITEM NAME", "Item",
+    "SIZE DESP", "Size Desp", "SizeDesp", "Size Description", "Size",
+]);
+const LINE_ITEM_NUMERIC = new Set(["Qty MT", "Qty PC", "Qty MR", "Qty KG", "Qty SQM", "Amount", "Freight/Unit"]);
+function fmtMobileVal(val) {
+    if (val == null || val === "") return "\u2014";
+    return String(val);
+}
+function buildLineItemMobileCard(row, keys, index) {
+    const sno = pickRowValue(row, LINE_ITEM_MOBILE_HEAD.sno) || String(index + 1);
+    const itemName = pickRowValue(row, LINE_ITEM_MOBILE_HEAD.item) || "Item";
+    const sizeDesp = pickRowValue(row, LINE_ITEM_MOBILE_HEAD.size);
+    const detailKeys = keys.filter(function (k) { return !LINE_ITEM_MOBILE_SKIP.has(k); });
+    const gridHtml = detailKeys.map(function (k) {
+        const val = row[k];
+        if (val == null || val === "") return "";
+        const isNum = LINE_ITEM_NUMERIC.has(k);
+        const full = k.length > 14 || String(val).length > 18 ? " sod-li-mobile-kv--full" : "";
+        return (
+            '<div class="sod-li-mobile-kv' + full + '">' +
+            '<span class="sod-li-mobile-lbl">' + escapeHtml(k) + "</span>" +
+            '<span class="sod-li-mobile-val' + (isNum ? " is-num" : "") + '">' + escapeHtml(String(val)) + "</span></div>"
+        );
+    }).join("");
+    return (
+        '<div class="sod-li-mobile-card">' +
+        '<div class="sod-li-mobile-head">' +
+        '<span class="sod-li-mobile-sno">#' + escapeHtml(String(sno)) + "</span>" +
+        '<span class="sod-li-mobile-item">' + escapeHtml(itemName) + "</span></div>" +
+        (sizeDesp ? '<div class="sod-li-mobile-size">' + escapeHtml(sizeDesp) + "</div>" : "") +
+        (gridHtml ? '<div class="sod-li-mobile-grid">' + gridHtml + "</div>" : "") +
+        "</div>"
+    );
+}
+function buildDeliveryTermsMobileCard(displayRows) {
+    if (!displayRows || !displayRows.length) return "";
+    return displayRows.map(function (row) {
+        const rowsHtml = SALE_ORDER_DELIVERY_TERM_COLUMNS.map(function (col) {
+            const show = fmtMobileVal(row[col.label]);
+            return (
+                '<div class="sod-dt-mobile-kv">' +
+                '<span class="sod-dt-mobile-lbl">' + escapeHtml(col.label) + "</span>" +
+                '<span class="sod-dt-mobile-val">' + escapeHtml(show) + "</span></div>"
+            );
+        }).join("");
+        return '<div class="sod-dt-mobile-card">' + rowsHtml + "</div>";
+    }).join("");
+}
+function renderChargesMobilePanel() {
+    const el = document.getElementById("sodChargesMobile");
+    if (!el) return;
+    const groups = [
+        {
+            title: "Packing",
+            rows: [
+                { lbl: "Description", val: $("#sod_BuyerPOMaster_PackingChargeDesp").val() },
+                { lbl: "Value", val: $("#sod_BuyerPOMaster_PackingChargesValue").val() },
+                { lbl: "Amount", val: $("#sod_BuyerPOMaster_PackingChargesAmount").val() },
+            ],
+        },
+        {
+            title: "Other charges",
+            rows: [
+                { lbl: "Description", val: $("#sod_BuyerPOMaster_OtherChargesDesp1").val() },
+                { lbl: "Amount", val: $("#sod_BuyerPOMaster_OtherCharges1").val() },
+            ],
+        },
+        {
+            title: "Freight",
+            rows: [
+                { lbl: "Condition", val: $("#sod_FreightCondition").val() },
+                { lbl: "Freight", val: $("#sod_Freight").val() },
+            ],
+        },
+    ];
+    el.innerHTML = groups.map(function (g) {
+        return (
+            '<div class="sod-charge-mobile-group">' +
+            '<div class="sod-charge-mobile-group-title">' + escapeHtml(g.title) + "</div>" +
+            '<div class="sod-charge-mobile-block">' +
+            g.rows.map(function (r) {
+                return (
+                    '<div class="sod-charge-mobile-row">' +
+                    '<span class="sod-charge-mobile-lbl">' + escapeHtml(r.lbl) + "</span>" +
+                    '<span class="sod-charge-mobile-val">' + escapeHtml(fmtMobileVal(r.val)) + "</span></div>"
+                );
+            }).join("") +
+            "</div></div>"
+        );
+    }).join("");
+}
+function clearSaleOrderLineItemsTable() {
+    document.getElementById("table-header-SaleOrderApprovalTable").innerHTML = "";
+    document.getElementById("table-body-SaleOrderApprovalTable").innerHTML =
+        '<tr><td colspan="8" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<i class="fa fa-spinner fa-spin me-1"></i>Loading line items\u2026</td></tr>';
+    const mobileEl = document.getElementById("sodLineItemsMobileCards");
+    if (mobileEl) {
+        mobileEl.innerHTML = '<div class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+            '<i class="fa fa-spinner fa-spin me-1"></i>Loading line items\u2026</div>';
+    }
+}
+function clearSaleOrderDeliveryTermsTable() {
+    document.getElementById("table-header-SaleOrderDeliveryTermsTable").innerHTML = "";
+    document.getElementById("table-body-SaleOrderDeliveryTermsTable").innerHTML = "";
+    const termsMobile = document.getElementById("sodDeliveryTermsMobile");
+    if (termsMobile) termsMobile.innerHTML = "";
+    const chargesMobile = document.getElementById("sodChargesMobile");
+    if (chargesMobile) chargesMobile.innerHTML = "";
+    clearSaleOrderPartyOutstanding();
+}
+function renderSaleOrderLineItems(rows) {
+    const tbody = document.getElementById("table-body-SaleOrderApprovalTable");
+    const thead = document.getElementById("table-header-SaleOrderApprovalTable");
+    const mobileEl = document.getElementById("sodLineItemsMobileCards");
+
+    if (!rows || !rows.length) {
+        thead.innerHTML = "";
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No line items found.</td></tr>';
+        if (mobileEl) mobileEl.innerHTML = '<div class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No line items found.</div>';
+        return;
+    }
+
+    const keys = getLineItemColumnKeys(rows);
+
+    thead.innerHTML = "<tr>" + keys.map(function (k) { return "<th>" + escapeHtml(k) + "</th>"; }).join("") + "</tr>";
+    tbody.innerHTML = rows.map(function (row) {
+        return "<tr>" + keys.map(function (k) {
+            const val = row[k] == null ? "" : row[k];
+            const align = LINE_ITEM_NUMERIC.has(k) ? ' style="text-align:right;"' : "";
+            return "<td" + align + ">" + escapeHtml(String(val)) + "</td>";
+        }).join("") + "</tr>";
+    }).join("");
+
+    if (mobileEl) {
+        mobileEl.innerHTML = rows.map(function (row, idx) {
+            return buildLineItemMobileCard(row, keys, idx);
+        }).join("");
+    }
+}
+function renderSaleOrderDeliveryTermsTable(rows, masterRow) {
+    const tbody = document.getElementById("table-body-SaleOrderDeliveryTermsTable");
+    const thead = document.getElementById("table-header-SaleOrderDeliveryTermsTable");
+    const mobileEl = document.getElementById("sodDeliveryTermsMobile");
+    const displayRows = buildDeliveryTermsDisplayRows(rows, masterRow);
+
+    if (!displayRows.length) {
+        thead.innerHTML = "";
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No delivery terms found.</td></tr>';
+        if (mobileEl) mobileEl.innerHTML = '<div class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No delivery terms found.</div>';
+        return;
+    }
+
+    const keys = SALE_ORDER_DELIVERY_TERM_COLUMNS.map(function (c) { return c.label; });
+    thead.innerHTML = "<tr>" + keys.map(function (k) { return "<th>" + escapeHtml(k) + "</th>"; }).join("") + "</tr>";
+    tbody.innerHTML = displayRows.map(function (row) {
+        return "<tr>" + keys.map(function (k) {
+            return "<td>" + escapeHtml(fmtMobileVal(row[k])) + "</td>";
+        }).join("") + "</tr>";
+    }).join("");
+
+    if (mobileEl) mobileEl.innerHTML = buildDeliveryTermsMobileCard(displayRows);
+}
+function setSaleOrderModalHeader(orderNo, party, orderDate) {
+    $("#myModalTitle").text(
+        (orderNo ? "PO# " + orderNo : "Sale Order Detail") + (party ? " — " + party : "")
+    );
+    const od = String(orderDate || "").trim();
+    if (od) {
+        $("#myModalOrderDate").text(od);
+        $("#myModalOrderDateWrap").show();
+    } else {
+        $("#myModalOrderDate").text("");
+        $("#myModalOrderDateWrap").hide();
+    }
+}
 function ViewData(Code) {
+    G_CurrentSaleOrderCode = Code;
+
+    const current = G_SaleOrderListRaw.find(function (x) {
+        return String(x.BuyerPOMaster_Code) === String(Code);
+    });
+    const canAction = current ? !!current.Action : false;
+    const orderNo = current ? rowField(current, ["Order No", "OrderNo"]) : "";
+    const party = current ? rowField(current, ["PartyName", "Party Name"]) : "";
+    const orderDate = current ? rowField(current, ["Order Date", "OrderDate"]) : "";
+
+    setSaleOrderModalHeader(orderNo, party, orderDate);
+    syncSaleOrderModalAttachmentButton(current);
+
+    const $verifyBtn = $("#btnSaleOrderVerify");
+    $("#btnSaleOrderVerifyLabel").text(verifyButtonLabel());
+    $verifyBtn.attr("data-bcode", encodeURIComponent(String(Code)));
+    $verifyBtn.toggle(canAction);
+
+    clearSaleOrderLineItemsTable();
+    clearSaleOrderDeliveryTermsTable();
+    loadSaleOrderPartyOutstanding(Code, current);
+
     SaleOrderApprovalService.GetSaleOrderDetail(Code).then(function (response) {
         if (response && response.length > 0) {
             $('#myModal').modal({
                 backdrop: 'static',
             });
             $('#myModal').modal('show');
-            const detailRows = normalizeSaleOrderDetailRows(response);
+            const detailRows = response;
             const lineGridRows = stripKeysFromRows(detailRows, SALE_ORDER_DETAIL_GRID_HIDDEN);
-            const StringFilterColumn = [];
-            const NumericFilterColumn = [];
-            const DateFilterColumn = [];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code", "BuyerPOMaster_Code"];
-            const ColumnAlignment = {
-                "Order Date": "center",
-                "BuyerPOMaster_Code": "center",
-                "Qty MT": "right",
-                "Qty PC": "right",
-                "Qty MR": "right",
-                "Qty KG": "right",
-                "Qty SQM": "right",
-                "Amount": "right",
-                "Freight/Unit": "right",
-            };
-            BizsolCustomFilterGrid.CreateDataTable(
-                "table-header-SaleOrderApprovalTable",
-                "table-body-SaleOrderApprovalTable",
-                lineGridRows,
-                Button,
-                showButtons,
-                StringFilterColumn,
-                NumericFilterColumn,
-                DateFilterColumn,
-                StringdoubleFilterColumn,
-                hiddenColumns,
-                ColumnAlignment
-            );
+            if (!orderDate && detailRows[0]) {
+                setSaleOrderModalHeader(
+                    orderNo,
+                    party,
+                    pickRowValue(detailRows[0], ["Order Date", "OrderDate"])
+                );
+            }
+            renderSaleOrderLineItems(lineGridRows);
             populateSaleOrderDetailHeaderPanel(detailRows[0]);
+            loadSaleOrderPartyOutstanding(Code, detailRows[0] || current);
             SaleOrderDeliveryTerms(Code, detailRows[0]);
         } else {
             clearSaleOrderDetailHeaderPanel();
+            clearSaleOrderLineItemsTable();
+            clearSaleOrderDeliveryTermsTable();
             toastr.error("No valid data found:", response);
         }
     }).catch(error => {
         clearSaleOrderDetailHeaderPanel();
+        clearSaleOrderLineItemsTable();
+        clearSaleOrderDeliveryTermsTable();
         toastr.error("Error in fetching data:", error);
     });
 }
 function SaleOrderDeliveryTerms(Code, masterRow) {
     SaleOrderApprovalService.GetSaleOrderDeliveryTermsDetail(Code).then(function (response) {
         if (response && response.length > 0) {
-            $('#myModal').modal({
-                backdrop: 'static',
-            });
-            $('#myModal').modal('show');
-            const termsRows = mergeTermsRowsWithMaster(normalizeSaleOrderDetailRows(response), masterRow);
-            const StringFilterColumn = [];
-            const NumericFilterColumn = [];
-            const DateFilterColumn = [];
-            const Button = false;
-            const showButtons = [];
-            const StringdoubleFilterColumn = [];
-            const hiddenColumns = ["Code", "BuyerPOMaster_Code"];
-            const ColumnAlignment = {
-                "Order Date": "center",
-                "BuyerPOMaster_Code": "center",
-                "Qty MT": "right",
-                "Qty PC": "right",
-                "Qty MR": "right",
-                "Qty KG": "right",
-                "Qty SQM": "right",
-                "Amount": "right",
-            };
-            BizsolCustomFilterGrid.CreateDataTable(
-                "table-header-SaleOrderDeliveryTermsTable",
-                "table-body-SaleOrderDeliveryTermsTable",
-                termsRows,
-                Button,
-                showButtons,
-                StringFilterColumn,
-                NumericFilterColumn,
-                DateFilterColumn,
-                StringdoubleFilterColumn,
-                hiddenColumns,
-                ColumnAlignment
-            );
-            $('#paginator-SaleOrderDeliveryTermsTable').hide();
+            renderSaleOrderDeliveryTermsTable(response, masterRow);
         } else {
-            toastr.error("No valid data found:", response);
+            renderSaleOrderDeliveryTermsTable([], masterRow);
         }
     }).catch(error => {
+        renderSaleOrderDeliveryTermsTable([], masterRow);
         toastr.error("Error in fetching data:", error);
     });
 }
 function CloseModal() {
     clearSaleOrderDetailHeaderPanel();
+    clearSaleOrderLineItemsTable();
+    clearSaleOrderDeliveryTermsTable();
+    $("#myModalOrderDate").text("");
+    $("#myModalOrderDateWrap").hide();
     $('#myModal').modal('hide');
 }
 function SaleOrderApprovedlist(BCode) {
@@ -530,6 +1000,7 @@ function SaleOrderApprovedlist(BCode) {
         }
 
         if (CheckCreditLimit === 'N' && DoCreditLimtCheck=='Y') {
+            $('#myModal').modal('hide');
             $('#OTPModalDisplay').modal({
                 backdrop: 'static',
             });
@@ -593,6 +1064,7 @@ function SaleOrderApprovedlist(BCode) {
             HideLoader();
             if (resdata.Status === "Y") {
                 toastr.success(resdata.Msg);
+                $('#myModal').modal('hide');
                 GetSaleOrderApproval();
                 GetWebNotificationList();
             } else if (resdata.Status === "N") {
@@ -674,3 +1146,5 @@ window.CloseModal = CloseModal;
 window.SaleOrderApprovedlist = SaleOrderApprovedlist;
 window.SaleOrder_Authentication = SaleOrder_Authentication;
 window.SaleOrder_OTPReceive = SaleOrder_OTPReceive;
+window.OpenSaleOrderApprovalAttachment = OpenSaleOrderApprovalAttachment;
+window.OpenSaleOrderApprovalAttachmentFromModal = OpenSaleOrderApprovalAttachmentFromModal;

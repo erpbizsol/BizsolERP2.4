@@ -421,8 +421,26 @@
     .pm-icon-btn.del:hover { background: rgba(239,68,68,.2); box-shadow: 0 4px 12px rgba(239,68,68,.22); }
 
     /* ── Modal ─────────────────────────────────────────────────── */
+    .pm-modal {
+        overflow: hidden !important;
+    }
+
+    html.spm-modal-open,
+    body.spm-modal-open {
+        overflow: hidden !important;
+        overscroll-behavior: none;
+    }
+
+    body.spm-modal-open #modern-content.modern-content {
+        overflow: hidden !important;
+    }
+
     .pm-modal .modal-dialog {
-        margin: auto;
+        margin: 1rem auto;
+        max-height: calc(100vh - 2rem);
+        max-height: calc(100dvh - 2rem);
+        display: flex;
+        flex-direction: column;
     }
 
     .pm-modal .modal-content {
@@ -430,6 +448,10 @@
         border: 1px solid var(--border-color);
         box-shadow: var(--shadow-xl);
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 2rem);
+        max-height: calc(100dvh - 2rem);
     }
 
     .pm-modal .modal-header {
@@ -440,6 +462,7 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        flex-shrink: 0;
     }
 
     .pm-modal-hdr-icon {
@@ -485,6 +508,11 @@
         padding: 22px 24px 14px;
         background: var(--light-bg);
         overflow-y: auto;
+        overflow-x: hidden;
+        flex: 1 1 auto;
+        min-height: 0;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
     }
 
     .pm-modal .modal-footer {
@@ -495,6 +523,7 @@
         align-items: center;
         gap: 10px;
         background: var(--white-bg);
+        flex-shrink: 0;
     }
 
     /* ── Form ──────────────────────────────────────────────────── */
@@ -722,6 +751,21 @@
 
     .pm-levels-table .select2-container { width: 100% !important; }
 
+    /* Collapse native multi-select until Select2 enhances it (hidden tabs). */
+    .pm-levels-table select.pm-level-user-select[multiple]:not(.select2-hidden-accessible) {
+        height: 36px !important;
+        min-height: 36px !important;
+        max-height: 36px !important;
+        overflow: hidden !important;
+    }
+
+    .pm-single-level-select select.pm-level-user-select[multiple]:not(.select2-hidden-accessible) {
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        overflow: hidden !important;
+    }
+
     .pm-levels-table .select2-container--default .select2-selection--multiple {
         border: 1.5px solid var(--border-color);
         border-radius: 8px;
@@ -759,6 +803,115 @@
         color: #fff;
     }
 
+    /* Applicable checkbox: keep strong contrast when disabled (default Bootstrap fade is too light, esp. unchecked) */
+    .pm-levels-table .chk-po-level-applicable,
+    #dvSingleLevelSelect .chk-po-level-applicable {
+        width: 1.1rem;
+        height: 1.1rem;
+        margin: 0;
+        flex-shrink: 0;
+        border-radius: 0.25rem;
+        vertical-align: middle;
+    }
+    .pm-levels-table .chk-po-level-applicable:disabled,
+    #dvSingleLevelSelect .chk-po-level-applicable:disabled {
+        opacity: 1 !important;
+        cursor: not-allowed !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .pm-levels-table .chk-po-level-applicable:disabled:checked,
+    #dvSingleLevelSelect .chk-po-level-applicable:disabled:checked {
+        accent-color: #4f46e5;
+        background-color: #6366f1;
+        border-color: #4338ca;
+    }
+    .pm-levels-table .chk-po-level-applicable:disabled:not(:checked),
+    #dvSingleLevelSelect .chk-po-level-applicable:disabled:not(:checked) {
+        accent-color: #64748b;
+        background-color: #f1f5f9;
+        border: 2px solid #64748b;
+    }
+    /* P anchor ends (first/last P): stronger outline so they read as “fixed” vs editable middle rows */
+    .pm-levels-table .chk-po-level-applicable.chk-lock-p-anchor:disabled:checked,
+    #dvSingleLevelSelect .chk-po-level-applicable.chk-lock-p-anchor:disabled:checked {
+        box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.45);
+        border-color: #312e81;
+    }
+    .pm-levels-table .chk-po-level-applicable.chk-lock-user:disabled:not(:checked),
+    #dvSingleLevelSelect .chk-po-level-applicable.chk-lock-user:disabled:not(:checked) {
+        background-color: #e2e8f0;
+        border-color: #475569;
+    }
+    .pm-levels-table .select2-container.select2-container--disabled .select2-selection--multiple,
+    #dvSingleLevelSelect .select2-container.select2-container--disabled .select2-selection--multiple,
+    .pm-single-level-select .select2-container.select2-container--disabled .select2-selection--multiple {
+        background: #e8ecf4 !important;
+        border-color: #94a3b8 !important;
+        cursor: not-allowed !important;
+        opacity: 1 !important;
+        box-shadow: none !important;
+    }
+
+    /* ── Approval level tabs (PO / Payment / Expense) ───────────── */
+    .pm-approval-level-tabs {
+        display: flex;
+        gap: 6px;
+        margin: 0 0 12px;
+        padding: 0 0 2px;
+        list-style: none;
+        border-bottom: 2px solid var(--border-light);
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .pm-approval-level-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .pm-approval-level-tabs .nav-item {
+        flex-shrink: 0;
+    }
+
+    .pm-approval-level-tabs .nav-link {
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 12.5px;
+        font-weight: 700;
+        padding: 8px 16px;
+        border-radius: 8px 8px 0 0;
+        cursor: pointer;
+        transition: color .15s, background .15s;
+        letter-spacing: .02em;
+        white-space: nowrap;
+    }
+
+    .pm-approval-level-tabs .nav-link:hover {
+        color: var(--accent-primary);
+        background: rgba(102,126,234,.06);
+    }
+
+    .pm-approval-level-tabs .nav-link.active {
+        color: #fff;
+        background: linear-gradient(135deg, #4f46e5, #667eea);
+        box-shadow: 0 2px 8px rgba(79,70,229,.25);
+    }
+
+    .pm-approval-tab-pane { display: none; }
+    .pm-approval-tab-pane.active { display: block; }
+
+    .pm-single-level-select .chk-po-level-applicable {
+        width: 1.1rem;
+        height: 1.1rem;
+        margin: 0;
+        flex-shrink: 0;
+        border-radius: 0.25rem;
+        vertical-align: middle;
+    }
+
     /* ── Responsive ────────────────────────────────────────────── */
     @@media (max-width: 880px) {
         .pm-stats { gap: 10px; }
@@ -774,12 +927,44 @@
         .pm-stat-chip { min-width: calc(50% - 7px); }
         .pm-form-grid { grid-template-columns: 1fr; }
         .pm-fg.span2, .pm-fg.span3 { grid-column: span 1; }
+        .pm-modal .modal-dialog {
+            margin: 0.5rem auto;
+            max-width: calc(100vw - 1rem) !important;
+            width: calc(100vw - 1rem);
+            max-height: calc(100dvh - 1rem);
+        }
+        .pm-modal .modal-content {
+            max-height: calc(100dvh - 1rem);
+            border-radius: 16px;
+        }
+        .pm-modal .modal-header {
+            padding: 14px 16px;
+        }
+        .pm-modal .modal-title {
+            font-size: 15px;
+        }
         .pm-modal .modal-body { padding: 14px 14px 10px; }
-        .pm-modal .modal-footer { flex-direction: column-reverse; align-items: stretch; }
+        .pm-modal .modal-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+            padding: 12px 14px;
+        }
         .pm-btn { width: 100%; justify-content: center; }
         .pm-card-toolbar { flex-direction: column; align-items: stretch; }
         .pm-search-wrap { max-width: 100%; }
         .pm-btn-new { width: 100%; justify-content: center; }
+        .pm-form-section { padding: 14px 14px 4px; }
+        .pm-approval-level-tabs .nav-link {
+            font-size: 11.5px;
+            padding: 7px 12px;
+        }
+        .pm-view-row {
+            flex-direction: column;
+            gap: 4px;
+        }
+        .pm-view-lbl {
+            min-width: 0;
+        }
     }
 </style>
 
@@ -854,7 +1039,9 @@
                     <tr>
                         <td colspan="3" class="right">Total Budget</td>
                         <td class="right pm-budget" id="subProjectTableBudgetTotal">₹ 0.00</td>
-                        <td colspan="4"></td>
+                        <td colspan="2"></td>
+                        <td class="center"><span class="pm-days-chip" id="subProjectTableEstDaysTotal">0 days</span></td>
+                        <td></td>
                     </tr>
                 </tfoot>
             </table>
@@ -868,7 +1055,7 @@
 ════════════════════════════════════════════════════════ -->
 <div class="modal fade pm-modal" id="dvSubProjectModal" tabindex="-1" role="dialog"
      aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width:700px;">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" style="max-width:min(780px, calc(100vw - 2rem));">
         <div class="modal-content">
 
             <div class="modal-header">
@@ -925,24 +1112,157 @@
                                 <input type="number" id="txtEstimatedDays" autocomplete="off" min="0" placeholder="0" style="text-align:right;" />
                             </div>
                         </div>
+                        <div class="col-md-8">
+                            <div class="pm-fg">
+                                <label for="ddlGRNCheckUsers">GRN Check</label>
+                                <select id="ddlGRNCheckUsers" multiple="multiple" style="width:100%;"></select>
+                            </div>
+                        </div>
+                        <!-- Site Representative -->
+                        <div class="col-12">
+                            <div class="pm-fg">
+                                <label>Site Representative</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="flex-grow-1" style="min-width:0;">
+                                        <select id="frmDdlSiteRepSPM" style="width:100%;"></select>
+                                    </div>
+                                    <button type="button"
+                                            onclick="OpenAddSiteRepModalSPM()"
+                                            title="Add / Edit Site Representative"
+                                            style="flex-shrink:0; width:38px; height:38px; border:none; border-radius:10px;
+                                                   background:linear-gradient(135deg,#34d399,#059669); color:#fff;
+                                                   display:inline-flex; align-items:center; justify-content:center;
+                                                   font-size:15px; cursor:pointer; box-shadow:0 3px 10px rgba(5,150,105,.3);
+                                                   transition:transform .14s;">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div id="divSiteRepDetailsSPM" style="display:none; margin-top:8px; padding:10px 14px;
+                                     border-radius:10px; border:1px solid #bbf7d0; background:#f0fdf4; font-size:13px;">
+                                    <div style="font-weight:700; color:#065f46;" id="siteRepSPMName"></div>
+                                    <div style="color:#374151; margin-top:3px;">
+                                        <i class="fas fa-phone me-1 text-muted" style="font-size:11px;"></i>
+                                        <span id="siteRepSPMMobile"></span>
+                                    </div>
+                                    <div style="color:#059669; margin-top:2px;">
+                                        <i class="fas fa-envelope me-1" style="font-size:11px;"></i>
+                                        <span id="siteRepSPMEmail"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         </div>
                         <div class="pm-form-section-title" style="margin-top:4px;">
-                            <i class="fas fa-shield-alt"></i> PO Approval Levels — User Assignment
+                            <i class="fas fa-shield-alt"></i> Approval Levels — Configuration
                         </div>
-                        <div id="dvSingleLevelSelect" class="pm-fg" style="display:none;"></div>
-                        <div id="dvPOLevelsTableWrap" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
-                            <table class="pm-levels-table" id="tblPOLevels">
-                                <thead>
-                                    <tr>
-                                        <th style="width:44px; text-align:center;">#</th>
-                                        <th style="min-width:160px;">Level</th>
-                                        <th style="min-width:220px;">Users to Verify PO</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tblPOLevelsBody">
-                                    <tr><td colspan="3" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
-                                </tbody>
-                            </table>
+                        <ul class="nav pm-approval-level-tabs" id="approvalLevelTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link active" data-approval-tab="PO" role="tab">PO</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link" data-approval-tab="GoodsPayment" role="tab">Goods Payment</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link" data-approval-tab="ServicesPayment" role="tab">Services Payment</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link" data-approval-tab="Expense" role="tab">Expense</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button type="button" class="nav-link" data-approval-tab="GRN" role="tab">GRN</button>
+                            </li>
+                        </ul>
+                        <div id="approvalLevelTabContent">
+                            <div class="pm-approval-tab-pane active" id="approvalTabPanePO" data-approval-tab="PO">
+                                <div id="dvSingleLevelSelect_PO" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_PO" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_PO">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;">Users to Verify PO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_PO">
+                                            <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="pm-approval-tab-pane" id="approvalTabPaneGoodsPayment" data-approval-tab="GoodsPayment">
+                                <div id="dvSingleLevelSelect_GoodsPayment" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_GoodsPayment" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_GoodsPayment">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;">Users to Verify Goods Payment</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_GoodsPayment">
+                                            <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="pm-approval-tab-pane" id="approvalTabPaneServicesPayment" data-approval-tab="ServicesPayment">
+                                <div id="dvSingleLevelSelect_ServicesPayment" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_ServicesPayment" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_ServicesPayment">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;">Users to Verify Services Payment</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_ServicesPayment">
+                                            <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="pm-approval-tab-pane" id="approvalTabPaneExpense" data-approval-tab="Expense">
+                                <div id="dvSingleLevelSelect_Expense" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_Expense" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_Expense">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;">Users to Verify Expense</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_Expense">
+                                            <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="pm-approval-tab-pane" id="approvalTabPaneGRN" data-approval-tab="GRN">
+                                <div id="dvSingleLevelSelect_GRN" class="pm-fg pm-single-level-select" style="display:none;"></div>
+                                <div id="dvLevelsTableWrap_GRN" style="overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
+                                    <table class="pm-levels-table" id="tblLevels_GRN">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:44px; text-align:center;">#</th>
+                                                <th style="min-width:160px;">Level</th>
+                                                <th style="width:100px; text-align:center;" title="Include this approval level for this sub-project">Applicable</th>
+                                                <th class="col-level-user-right" style="min-width:220px;">Users to Verify GRN</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tblLevelsBody_GRN">
+                                            <tr><td colspan="4" style="text-align:center;color:#94a3b8;font-size:13px;padding:14px;">Loading levels…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                         <input type="hidden" id="hfSubProjectCode" value="0" />
                 </div>
@@ -965,7 +1285,7 @@
      VIEW MODAL
 ════════════════════════════════════════════════════════ -->
 <div class="modal fade pm-modal" id="dvSubProjectViewModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:560px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:min(560px, calc(100vw - 2rem));">
         <div class="modal-content">
 
             <div class="modal-header" style="background: var(--info-gradient);">
@@ -1013,9 +1333,19 @@
                         <span class="pm-view-val" id="viewEstDays">—</span>
                     </div>
                     <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">Site Representative</span>
+                        <span class="pm-view-val" id="viewSiteRepresentative">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
+                    <div class="pm-view-row">
+                        <span class="pm-view-lbl">GRN Check</span>
+                        <span class="pm-view-val" id="viewGRNCheckUsers">—</span>
+                    </div>
+                    <div class="pm-view-divider"></div>
                     <div class="pm-view-row" style="align-items:flex-start;">
-                        <span class="pm-view-lbl">Verify PO Levels</span>
-                        <div class="pm-view-val" id="viewVerifyPOUsers" style="white-space:normal; overflow-x:auto;">—</div>
+                        <span class="pm-view-lbl">Approval Levels</span>
+                        <div class="pm-view-val" id="viewApprovalLevels" style="white-space:normal; overflow-x:auto;">—</div>
                     </div>
                 </div>
             </div>
@@ -1026,6 +1356,50 @@
                 </button>
             </div>
 
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     ADD / EDIT SITE REPRESENTATIVE MODAL
+════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalAddSiteRepSPM" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content" style="border-radius:16px; overflow:hidden; border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#34d399,#059669); color:#fff; border:none; padding:16px 20px;">
+                <h5 class="modal-title" style="font-size:0.92rem; font-weight:700;">
+                    <i class="fa fa-user-tie me-2"></i>Add Site Representative
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:18px 20px;">
+                <input type="hidden" id="hfSiteRepSPMCode" value="0" />
+                <div class="mb-3">
+                    <label style="font-size:0.79rem; font-weight:600; color:#475569;">Name <span class="text-danger">*</span></label>
+                    <input type="text" id="siteRepSPMTxtName" class="form-control form-control-sm mt-1"
+                           maxlength="100" placeholder="Enter name" autocomplete="off" />
+                </div>
+                <div class="mb-3">
+                    <label style="font-size:0.79rem; font-weight:600; color:#475569;">Mobile No</label>
+                    <input type="text" id="siteRepSPMTxtMobile" class="form-control form-control-sm mt-1"
+                           maxlength="15" placeholder="Mobile number" autocomplete="off" />
+                </div>
+                <div class="mb-1">
+                    <label style="font-size:0.79rem; font-weight:600; color:#475569;">Email</label>
+                    <input type="email" id="siteRepSPMTxtEmail" class="form-control form-control-sm mt-1"
+                           maxlength="100" placeholder="Email address" autocomplete="off" />
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none; padding:12px 20px; background:#fafafa; gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" onclick="SaveSiteRepresentativeSPM()"
+                        style="background:linear-gradient(135deg,#34d399,#059669); border:none; color:#fff;
+                               border-radius:8px; padding:7px 22px; font-size:0.82rem; font-weight:700;
+                               box-shadow:0 3px 10px rgba(5,150,105,.3);">
+                    <i class="fa fa-save me-1"></i>Save
+                </button>
+            </div>
         </div>
     </div>
 </div>

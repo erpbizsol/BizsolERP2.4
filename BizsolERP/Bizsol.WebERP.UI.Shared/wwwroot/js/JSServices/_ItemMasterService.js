@@ -31,10 +31,10 @@ const ItemMasterService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
 
-    //GetTypeMasterList: function GetTypeMasterList() {
-    //    var URL = UrlService.API_ENDPOINT_ItemMaster + `/GetTypeMasterList`;
-    //    return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
-    //},
+    GetCategoryMasterList: function GetCategoryMasterList() {
+        var URL = UrlService.API_ENDPOINT_ItemMaster + `/GetCategoryMasterList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
 
 };
 

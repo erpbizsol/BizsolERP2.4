@@ -113,8 +113,8 @@
         letter-spacing: 0.02em;
         text-transform: uppercase;
     }
-        th:hover {
-            background: linear-gradient(90deg, #e6091f 0%, #6b5ee6 100%) !important;
+        #divGPAList th:hover {
+            background: linear-gradient(135deg, #6d72f7, #5b5ef4) !important;
         }
     table, th, td, tr {
         border: 1px solid #ddd;
@@ -163,7 +163,6 @@
         }
     /* ── FLOATING SAVE BAR (GRN same) ── */
     #floatBar.po-float-bar {
-        display: flex !important;
         position: fixed;
         bottom: 44px;
         left: 0;
@@ -269,6 +268,16 @@
         flex-wrap: wrap;
         gap: 14px 16px;
     }
+    /* Tabs + GRN/New ek saath — beech mein bada gap nahi */
+    .po-list-header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        flex: 0 1 auto;
+        min-width: 0;
+    }
     .po-list-header-left {
         flex: 0 1 auto;
         min-width: 160px;
@@ -287,9 +296,9 @@
         display: flex;
         flex-wrap: wrap;
         align-items: stretch;
-        justify-content: center;
+        justify-content: flex-start;
         gap: 8px;
-        flex: 1 1 260px;
+        flex: 0 0 auto;
         padding: 0;
         margin: 0;
         background: transparent;
@@ -298,37 +307,40 @@
     }
 
         #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab {
-            flex: 0 1 auto;
-            min-width: 187px;
-            max-width: 127px;
-            padding: 1px 12px 10px;
-            border: 1px solid rgba(255, 255, 255, 0.35);
+            flex: 0 0 auto;
+            box-sizing: border-box;
+            width: 118px;
+            min-width: 118px;
+            max-width: 118px;
+            padding: 8px 6px 10px;
+            border: 1.5px solid rgba(255, 255, 255, 0.5);
             border-radius: 10px;
-            background: rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.12);
             cursor: pointer;
             font-size: 0.62rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.07em;
-            color: rgba(255, 255, 255, 0.95);
+            color: rgba(255, 255, 255, 0.98);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 4px;
-            min-height: 50px;
+            min-height: 52px;
             transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
         }
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab:hover {
-        background: rgba(255,255,255,0.24);
-        border-color: rgba(255,255,255,0.55);
+        background: rgba(255,255,255,0.22);
+        border-color: rgba(255,255,255,0.72);
         color: #fff;
     }
+    /* Active: same glass style as others — thoda zyada highlight, solid white block nahi */
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active {
-        background: #fff;
-        border-color: #fff;
-        color: #4c1d95;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        background: rgba(255, 255, 255, 0.34);
+        border-color: rgba(255, 255, 255, 0.95);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
     }
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab:focus-visible {
         outline: 2px solid #fff;
@@ -340,31 +352,87 @@
         line-height: 1.2;
         text-align: center;
     }
+    /* Count colours — Pending / Approved / Rejected; active par bhi same accent (tabs ek jaisa family) */
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--u .gpa-status-tab-count { color: #fde047; }
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--p .gpa-status-tab-count { color: #6ee7b7; }
     #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab--r .gpa-status-tab-count { color: #fca5a5; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active .gpa-status-tab-count { color: #5b21b6; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active.gpa-status-tab--p .gpa-status-tab-count { color: #047857; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active.gpa-status-tab--r .gpa-status-tab-count { color: #b91c1c; }
-    #divGPAList .po-list-header .gpa-status-tabs--in-header .gpa-status-tab.is-active.gpa-status-tab--u .gpa-status-tab-count { color: #6d28d9; }
     #divGPAList .po-list-header .gpa-status-tab-count {
         font-size: 1rem;
         font-weight: 800;
         line-height: 1.1;
+    }
+    /* Pending on me — same card as GRN Payment Approval header (gold border, magenta count) */
+    #divGPAList .po-list-header .gpa-list-chip-onme {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-height: 52px;
+        min-width: 100px;
+        max-width: 132px;
+        padding: 8px 12px;
+        margin: 0;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1.5px solid rgba(251, 191, 36, 0.9);
+        cursor: pointer;
+        font-family: inherit;
+        color: inherit;
+        text-decoration: none;
+        transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+        height: auto !important;
+        line-height: normal !important;
+        font-size: inherit !important;
+        -webkit-appearance: none;
+        appearance: none;
+        flex: 0 0 auto;
+    }
+    #divGPAList .po-list-header .gpa-list-chip-onme:hover {
+        background: rgba(255, 255, 255, 0.28);
+        transform: scale(1.04);
+    }
+    #divGPAList .po-list-header .gpa-list-chip-onme--active {
+        background: rgba(255, 255, 255, 0.32);
+        border-color: #fde68a;
+        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.16);
+    }
+    #divGPAList .po-list-header .gpa-list-chip-onme-val {
+        font-size: 1.15rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #c7206d;
+    }
+    #divGPAList .po-list-header .gpa-list-chip-onme-lbl {
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.95);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        line-height: 1.2;
+    }
+    #divGPAList .po-list-header .gpa-list-chip-onme:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
     }
     @@media (max-width: 992px) {
         .po-list-header-left {
             order: 1;
             flex-basis: 100%;
         }
-        #divGPAList .po-list-header .gpa-status-tabs--in-header {
+        .po-list-header-right {
             order: 2;
-            flex-basis: 100%;
+            width: 100%;
             justify-content: center;
+            flex-wrap: wrap;
+        }
+        #divGPAList .po-list-header .gpa-status-tabs--in-header {
+            justify-content: center;
+            flex: 1 1 auto;
         }
         .po-list-header-actions {
-            order: 3;
-            width: 100%;
+            width: auto;
             justify-content: center;
             margin-left: 0;
         }
@@ -394,42 +462,39 @@
         top: 0;
         z-index: 2;
     }
-    .vm-btn-new {
-        background: rgba(255,255,255,0.18);
-        border: 1.5px solid rgba(255,255,255,0.55);
+    /* GRN payment link + New — same full pill button (height, padding, flex) */
+    .po-list-header-actions .vm-btn-new,
+    .po-list-header-actions .vm-btn-approval-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 0 20px;
+        background: rgba(255, 255, 255, 0.22);
+        border: 1.5px solid rgba(255, 255, 255, 0.65);
         color: #fff !important;
         border-radius: 10px;
-        padding: 6px 18px;
         font-size: 0.88rem;
         font-weight: 700;
         cursor: pointer;
-        transition: all 0.14s;
-    }
-    .vm-btn-new:hover {
-        background: rgba(255,255,255,0.26);
-        border-color: rgba(255,255,255,0.80);
-        transform: translateY(-1px);
-    }
-
-    .vm-btn-approval-link {
-        display: inline-flex;
-        align-items: center;
-        padding: 11px 18px;
-        font-size: 0.82rem;
-        font-weight: 700;
-        color: #fff !important;
+        transition: background 0.14s, border-color 0.14s, transform 0.14s, box-shadow 0.14s;
         text-decoration: none !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.55);
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.12);
-        transition: background 0.14s, border-color 0.14s, transform 0.14s;
-        gap: 2px;
+        box-sizing: border-box;
+        line-height: 1.2;
+        white-space: nowrap;
+        -webkit-tap-highlight-color: transparent;
     }
-    .vm-btn-approval-link:hover {
-        background: rgba(255,255,255,0.22);
-        border-color: rgba(255,255,255,0.85);
+    .po-list-header-actions .vm-btn-new {
+        font-family: inherit;
+    }
+    .po-list-header-actions .vm-btn-new:hover,
+    .po-list-header-actions .vm-btn-approval-link:hover {
+        background: rgba(255, 255, 255, 0.34);
+        border-color: rgba(255, 255, 255, 0.95);
         color: #fff !important;
         transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     }
     .im-btn-edit {
         display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
@@ -443,6 +508,69 @@
         font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
     }
     .im-btn-delete:hover { background: #dc2626; color: #fff; border-color: #dc2626; box-shadow: 0 2px 8px rgba(220,38,38,0.3); }
+    .im-btn-attach {
+        display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
+        background: #e0f2fe; color: #0284c7; border: 1.5px solid #7dd3fc; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-right: 4px;
+    }
+    .im-btn-attach:hover { background: #0284c7; color: #fff; border-color: #0284c7; box-shadow: 0 2px 8px rgba(2,132,199,0.3); }
+    /* HasAttachment = Yes: green attachment button only (row keeps normal striping) */
+    #gpaListTable .im-btn-attach.im-btn-attach--has-attachment {
+        background: #10b981;
+        color: #fff;
+        border-color: #059669;
+    }
+    #gpaListTable .im-btn-attach.im-btn-attach--has-attachment:hover {
+        background: #059669;
+        color: #fff;
+        border-color: #047857;
+        box-shadow: 0 2px 8px rgba(5,150,105,0.35);
+    }
+    /* Float bar Attachment: blue default; HasAttachment Yes, files on server, or pending uploads → green */
+    #floatBar .btn-gpa-footer-attach {
+        background: linear-gradient(135deg,#0ea5e9,#0284c7) !important;
+        box-shadow: 0 4px 14px rgba(14,165,233,0.35);
+        color: #fff !important;
+    }
+    #floatBar .btn-gpa-footer-attach:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(14,165,233,0.45);
+        color: #fff !important;
+        filter: brightness(1.03);
+    }
+    #floatBar .btn-gpa-footer-attach.btn-gpa-footer-attach--yes {
+        background: linear-gradient(135deg,#10b981,#059669) !important;
+        box-shadow: 0 4px 14px rgba(16,185,129,0.4);
+    }
+    #floatBar .btn-gpa-footer-attach.btn-gpa-footer-attach--yes:hover {
+        box-shadow: 0 6px 20px rgba(5,150,105,0.45);
+        filter: brightness(1.03);
+    }
+    /* Print / Print Preview — same idea as Purchase Order (Store) list */
+    .im-btn-print-preview {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 32px; height: 28px; padding: 0 8px; margin-right: 4px;
+        background: #64748b; color: #fff; border: 1.5px solid #475569; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
+    }
+    .im-btn-print-preview:hover { background: #475569; border-color: #334155; box-shadow: 0 2px 8px rgba(71,85,105,0.35); color: #fff; }
+    .im-btn-print {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 32px; height: 28px; padding: 0 8px; margin-right: 4px;
+        background: #1e293b; color: #fff; border: 1.5px solid #0f172a; border-radius: 7px;
+        font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
+    }
+    .im-btn-print:hover { background: #0f172a; box-shadow: 0 2px 8px rgba(15,23,42,0.35); color: #fff; }
+    /* ── Attachment badge on float bar button ── */
+    .gpa-attach-btn-wrap { position: relative; display: inline-flex; }
+    .gpa-temp-badge {
+        position: absolute; top: -7px; right: -7px;
+        min-width: 18px; height: 18px; border-radius: 9px;
+        background: #ef4444; color: #fff;
+        font-size: 0.68rem; font-weight: 800;
+        display: none; align-items: center; justify-content: center;
+        padding: 0 4px; border: 2px solid #fff; z-index: 1;
+    }
     /* Bill grid row delete (same as GRNService item table) */
     .del-row-btn {
         display: inline-flex;
@@ -475,31 +603,39 @@
             <h5><i class="fa fa-money-check-alt me-2"></i>Payment Entry List</h5>
             <small>Payment Entry — filter by approval status</small>
         </div>
-        <div class="gpa-status-tabs gpa-status-tabs--in-header" id="gpaStatusTabs" role="tablist" aria-label="Payment entry status">
-            <button type="button" class="gpa-status-tab gpa-status-tab--u is-active" role="tab" data-gpa-status="U" aria-selected="true"
-                    onclick="onGpaListStatusTabClick('U')">
-                <span class="gpa-status-tab-count" id="gpaTabCountU">0</span>
-                <span class="gpa-status-tab-lbl">Pending</span>
-            </button>
-            <button type="button" class="gpa-status-tab gpa-status-tab--p" role="tab" data-gpa-status="P" aria-selected="false"
-                    onclick="onGpaListStatusTabClick('P')">
-                <span class="gpa-status-tab-count" id="gpaTabCountP">0</span>
-                <span class="gpa-status-tab-lbl">Approved</span>
-            </button>
-            <button type="button" class="gpa-status-tab gpa-status-tab--r" role="tab" data-gpa-status="R" aria-selected="false"
-                    onclick="onGpaListStatusTabClick('R')">
-                <span class="gpa-status-tab-count" id="gpaTabCountR">0</span>
-                <span class="gpa-status-tab-lbl">Rejected</span>
-            </button>
-        </div>
-        <div class="po-list-header-actions">
-            <a href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
-               class="vm-btn-approval-link">
-                <i class="fa fa-check-double me-1"></i> GRN Payment Approval
-            </a>
-            <button type="button" class="vm-btn-new" onclick="newGRNPaymentApproval()">
-                <i class="fa fa-plus me-1"></i> New
-            </button>
+        <div class="po-list-header-right">
+            <div class="gpa-status-tabs gpa-status-tabs--in-header" id="gpaStatusTabs" role="tablist" aria-label="Payment entry status">
+                <button type="button" class="gpa-status-tab gpa-status-tab--u is-active" role="tab" data-gpa-status="U" aria-selected="true"
+                        onclick="window.onGpaListStatusTabClick('U')">
+                    <span class="gpa-status-tab-count" id="gpaTabCountU">0</span>
+                    <span class="gpa-status-tab-lbl">Pending</span>
+                </button>
+                <button type="button" class="gpa-status-tab gpa-status-tab--p" role="tab" data-gpa-status="P" aria-selected="false"
+                        onclick="window.onGpaListStatusTabClick('P')">
+                    <span class="gpa-status-tab-count" id="gpaTabCountP">0</span>
+                    <span class="gpa-status-tab-lbl">Approved</span>
+                </button>
+                <button type="button" class="gpa-status-tab gpa-status-tab--r" role="tab" data-gpa-status="R" aria-selected="false"
+                        onclick="window.onGpaListStatusTabClick('R')">
+                    <span class="gpa-status-tab-count" id="gpaTabCountR">0</span>
+                    <span class="gpa-status-tab-lbl">Rejected</span>
+                </button>
+                <a href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
+                   class="gpa-list-chip-onme" id="gpaListChipPendingOnMe"
+                   title="Open GRN payment approvals">
+                    <span class="gpa-list-chip-onme-val" id="gpaListCountPendingOnMe">—</span>
+                    <span class="gpa-list-chip-onme-lbl">Pending on me</span>
+                </a>
+            </div>
+            <div class="po-list-header-actions">
+                <a id="gpaLinkGrnPayment" href="@Url.Action("GRNPaymentApproval", "GRNService", new { area = "PurchaseTransactions", returnUrl = Url.Action("GRNPaymentApproval", "GRNPaymentApproval", new { area = "PurchaseTransactions" }) })"
+                   class="vm-btn-approval-link" role="button" title="Open GRN payment approvals">
+                    <i class="fa fa-check-double" aria-hidden="true"></i><span>GRN payment</span>
+                </a>
+                <button type="button" class="vm-btn-new" onclick="window.newGRNPaymentApproval()">
+                    <i class="fa fa-plus" aria-hidden="true"></i><span>New</span>
+                </button>
+            </div>
         </div>
     </div>
     <div class="po-grid-wrap">
@@ -523,7 +659,7 @@
             <i class="fa fa-file-invoice po-step-icon ms-auto"></i>
         </div>
         <div class="po-step-body">
-            <div class="row g-2">
+            <div class="row g-2 align-items-end">
                 <input type="hidden" id="hdnGRNPaymentMasterCode" value="0" />
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Entry No</label>
@@ -534,14 +670,26 @@
                     <input type="date" id="dtPaymentDate" class="form-control form-control-sm" autocomplete="off">
                 </div>
                 <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Party Name <span class="req">*</span></label>
-                    <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="onPartyChange()">
-                        <option value="">-- Select Party --</option>
-                    </select>
+                    <div class="form-check mb-1">
+                        <input type="checkbox" class="form-check-input" id="chkGpaPayToParty" checked onchange="window.onGpaPartyEmployeeModeChange()">
+                        <label class="form-check-label po-field-lbl mb-0" for="chkGpaPayToParty" style="font-size:0.8rem;font-weight:600;">Pay to party (vendor)</label>
+                    </div>
+                    <div id="wrapGpaPartyName">
+                        <label class="po-field-lbl d-block mb-1">Party Name <span class="req">*</span></label>
+                        <select id="ddlPartyName" class="form-control form-control-sm" autocomplete="off" onchange="window.onPartyChange()">
+                            <option value="">-- Select Party --</option>
+                        </select>
+                    </div>
+                    <div id="wrapGpaEmployeeName" style="display:none;">
+                        <label class="po-field-lbl d-block mb-1">Employee <span class="req">*</span></label>
+                        <select id="ddlEmployeeName" class="form-control form-control-sm" autocomplete="off" onchange="window.onGpaEmployeeChange()">
+                            <option value="">-- Select Employee --</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label class="po-field-lbl d-block mb-1">Payment mode</label>
-                    <select id="ddlPaymentMode" class="form-control form-control-sm" title="BANKPAYMENTTYPE (API)" onchange="syncRefNoRequiredUI()">
+                    <select id="ddlPaymentMode" class="form-control form-control-sm" title="BANKPAYMENTTYPE (API)" onchange="window.syncRefNoRequiredUI()">
                         <option value="">-- Select --</option>
                     </select>
                 </div>
@@ -552,7 +700,7 @@
                     <input type="text" id="txtRefNo" class="form-control form-control-sm" maxlength="50" autocomplete="off" placeholder="Reference / Cheque no.">
                 </div>
                 <div class="col-md-3">
-                    <label class="po-field-lbl d-block mb-1">Amount</label>
+                    <label class="po-field-lbl d-block mb-1">Amount <span class="req">*</span></label>
                     <input type="number" id="txtHeaderAmount" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off">
                 </div>
                 <div class="col-md-6 d-flex align-items-end">
@@ -578,39 +726,42 @@
             <span class="po-step-title">Bill allocation</span>
             <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
                 <div class="d-flex align-items-center gap-2" id="divGpaFillGridCheck" hidden style="display: none !important;">
-                    <input type="checkbox" class="form-check-input" id="chkGpaFillGrid" checked onchange="onGpaFillGridChange()">
+                    <input type="checkbox" class="form-check-input" id="chkGpaFillGrid" checked onchange="window.onGpaFillGridChange()">
                     <label class="form-check-label mb-0 po-field-lbl" for="chkGpaFillGrid" style="font-size: 0.8rem; font-weight: 600;">Fill Grid</label>
                 </div>
-                <button type="button" class="btn btn-sm btn-gpa-add-row" onclick="onAddBillRowClick()" title="Add bill">
+                <button type="button" class="btn btn-sm btn-gpa-add-row" onclick="window.onAddBillRowClick()" title="Add bill">
                     <i class="fa fa-plus me-1"></i> Add row
                 </button>
             </div>
         </div>
         <div class="po-step-body p-0">
             <div class="items-desktop-wrap table-responsive">
-                <table class="items-table" style="min-width:780px;">
+                <table class="items-table" style="min-width:1100px;">
                     <thead>
                         <tr>
                             <th>Bill no</th>
+                            <th>Deduction</th>
+                            <th>Project</th>
+                            <th>Sub project</th>
                             <th>Bill date</th>
                             <th>Bill amount</th>
                             <th>Payable amount</th>
-                            <th>Payment amount</th>
+                            <th>Payment amount <span id="gpaPayAmtReqMark" class="req">*</span></th>
                             <th style="width:52px;text-align:center;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="billTbody"></tbody>
                     <tfoot class="gpa-tfoot">
                         <tr>
-                            <td colspan="3"></td>
+                            <td colspan="6"></td>
                             <td class="gpa-lbl">Total</td>
                             <td class="gpa-val"><input type="text" id="txtFooterTotal" class="form-control form-control-sm" readonly tabindex="-1" value="0.00"></td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td colspan="3"></td>
+                            <td colspan="6"></td>
                             <td class="gpa-lbl">Advance / On account</td>
-                            <td class="gpa-val"><input type="number" id="txtFooterAdvance" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off" value="0.00" onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); markFooterAdvanceManual();"></td>
+                            <td class="gpa-val"><input type="number" id="txtFooterAdvance" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00" autocomplete="off" value="0.00" onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this); window.markFooterAdvanceManual();"></td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -623,7 +774,7 @@
 
 <!-- ── ADD BILL MODAL (same flow as GRNService Add Item) ── -->
 <div class="modal fade" id="gpaAddBillModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 560px;">
         <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.18);">
             <div class="modal-header" style="background: linear-gradient(135deg,#10b981,#059669); color: #fff; border: none;">
                 <h6 class="modal-title mb-0"><i class="fa fa-file-invoice-dollar me-2"></i>Add bill</h6>
@@ -635,21 +786,30 @@
                 </div>
                 <div id="gpaAddBillModalForm">
                     <input type="hidden" id="gpaAddBillModalMrn" value="">
-                    <div class="mb-2">
-                        <label class="form-label mb-1 po-field-lbl">Party Name <span class="req">*</span></label>
-                        <select id="gpaAddBillModalParty" class="form-control form-control-sm" onchange="onGpaAddBillModalPartyChange()">
-                            <option value="">-- Select Party --</option>
-                        </select>
-                    </div>
                     <div id="gpaAddBillModalBillWrap" class="mb-2" style="display: none;">
                         <label class="form-label mb-1 po-field-lbl">Bill</label>
-                        <select id="gpaAddBillModalBill" class="form-control form-control-sm" onchange="onGpaAddBillModalBillChange()">
+                        <select id="gpaAddBillModalBill" class="form-control form-control-sm" onchange="window.onGpaAddBillModalBillChange()">
                             <option value="">-- Select bill --</option>
                         </select>
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1 po-field-lbl">Bill no</label>
-                        <input type="text" id="gpaAddBillModalBillNo" class="form-control form-control-sm" maxlength="64" autocomplete="off" placeholder="Bill no">
+                        <input type="text" id="gpaAddBillModalBillNo" class="form-control form-control-sm" maxlength="64" autocomplete="off" placeholder="Bill no"
+                               oninput="window.gpaOnAddBillModalBillNoInput()">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Project</label>
+                            <select id="gpaAddBillModalProject" class="form-control form-control-sm" onchange="window.onGpaAddBillModalProjectPick()">
+                                <option value="">-- Project --</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label mb-1 po-field-lbl">Sub project</label>
+                            <select id="gpaAddBillModalSubProject" class="form-control form-control-sm" onchange="window.onGpaAddBillModalSubPick()">
+                                <option value="">-- Sub project --</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1 po-field-lbl">Bill date</label>
@@ -659,23 +819,24 @@
                         <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Bill amount</label>
                             <input type="number" id="gpaAddBillModalBillAmt" class="form-control form-control-sm" min="0" step="0.01" placeholder="0"
-                                   onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this); onGpaAddBillModalBillAmtInput();">
+                                   onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this); window.onGpaAddBillModalBillAmtInput();">
                         </div>
                         <div class="col-6">
                             <label class="form-label mb-1 po-field-lbl">Payable amount</label>
-                            <input type="number" id="gpaAddBillModalPayable" class="form-control form-control-sm" min="0" step="0.01" placeholder="0" readonly style="background: #ede9fe; border-color: #c4b5fd;">
+                            <input type="number" id="gpaAddBillModalPayable" class="form-control form-control-sm" min="0" step="0.01" placeholder="0" readonly style="background: #ede9fe; border-color: #c4b5fd;"
+                                   onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this);">
                         </div>
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1 po-field-lbl">Payment amount <span class="req">*</span></label>
                         <input type="number" id="gpaAddBillModalPayment" class="form-control form-control-sm" min="0" step="0.01" placeholder="0"
-                               onkeydown="blockNonNumeric(event)" oninput="stripNonNumeric(this);">
+                               onkeydown="window.blockNonNumeric(event)" oninput="window.stripNonNumeric(this);">
                     </div>
                 </div>
             </div>
             <div class="modal-footer" style="border-top: 1px solid #e2e8f0; padding: 14px 24px;">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><i class="fa fa-times me-1"></i> Cancel</button>
-                <button type="button" class="btn btn-success btn-sm" onclick="saveGpaAddBillModalToGrid()"><i class="fa fa-check me-1"></i> Add to grid</button>
+                <button type="button" class="btn btn-success btn-sm" onclick="window.saveGpaAddBillModalToGrid()"><i class="fa fa-check me-1"></i> Add to grid</button>
             </div>
         </div>
     </div>
@@ -692,13 +853,19 @@
         </div>
     </div>
     <div class="po-float-bar-right">
-        <button type="button" class="btn-po-cancel" onclick="cancelGRNPaymentApproval()">
+        <button type="button" class="btn-po-cancel" onclick="window.cancelGRNPaymentApproval()">
             <i class="fa fa-arrow-left me-1"></i> Back to List
         </button>
-        <button type="button" class="btn-po-cancel" onclick="resetGRNPaymentApprovalForm()">
+        <button type="button" class="btn-po-cancel" onclick="window.resetGRNPaymentApprovalForm()">
             <i class="fa fa-undo me-1"></i> Reset
         </button>
-        <button type="button" class="btn-po-save" onclick="saveGRNPaymentApproval()">
+        <div class="gpa-attach-btn-wrap">
+            <button type="button" id="btnGpaFooterAttach" class="btn-po-cancel btn-gpa-footer-attach" onclick="window.openGpaAttachmentControl()" title="Attachments">
+                <i class="fa fa-paperclip me-1"></i> Attachment
+            </button>
+            <span id="gpaTempAttachBadge" class="gpa-temp-badge">0</span>
+        </div>
+        <button type="button" class="btn-po-save" onclick="window.saveGRNPaymentApproval()">
             <i class="fa fa-save me-1"></i> Save
         </button>
     </div>
@@ -738,9 +905,13 @@
     </div>
 </div>
 
+<!-- ── ATTACHMENT CONTROL PLACEHOLDER ── -->
+<div id="GRNPaymentEntry_AttachmentControlmodal"></div>
+
 <script>
     (function () {
         const sidebar = document.getElementById('modern-sidebar');
+      
         const bar = document.getElementById('floatBar');
         if (!sidebar || !bar) return;
         function syncMargin() {

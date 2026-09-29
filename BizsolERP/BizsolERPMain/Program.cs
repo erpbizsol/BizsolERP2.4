@@ -21,7 +21,19 @@ namespace BizsolERPMain
                     new ResponseCacheAttribute
                     {
                         NoStore = true
-                    }));
+                    }))
+                // Explicitly register Finance RCL assemblies so their controllers
+                // are always discovered even when the RCL was previously an empty stub.
+                .AddApplicationPart(
+                    typeof(Bizsol.ERP.UI.Finance.Transactions.Program).Assembly)
+                .AddApplicationPart(
+                    typeof(Bizsol.ERP.UI.Finance.Masters.Program).Assembly)
+                .AddApplicationPart(
+                    typeof(Bizsol.ERP.UI.MIS.Reports.Program).Assembly)
+                .AddApplicationPart(
+                    typeof(Bizsol.ERP.UI.Common.Reports.Program).Assembly)
+                .AddApplicationPart(
+                    typeof(Bizsol.ERP.UI.Marketing.Reports.Program).Assembly);
 
             var app = builder.Build();
 
@@ -84,8 +96,32 @@ namespace BizsolERPMain
                pattern: "{area:exists}/{controller=Reports}/{action=MaizeReport}/{id?}");
 
             app.MapControllerRoute(
+               name: "SalesReports",
+               pattern: "{area:exists}/{controller=Reports}/{action=BillWiseOutStandingReport}/{id?}");
+
+            app.MapControllerRoute(
                name: "PurchaseMasters",
                pattern: "{area:exists}/{controller=PurchaseOrder}/{action=POApprovalConfiguration}/{id?}");
+
+            app.MapAreaControllerRoute(
+               name: "MISReports",
+               areaName: "MISReports",
+               pattern: "MISReports/{controller=Report}/{action=DayWiseMISReport}/{id?}");
+
+            app.MapAreaControllerRoute(
+               name: "MarketingReports",
+               areaName: "MarketingReports",
+               pattern: "MarketingReports/{controller=OrderLoadReport}/{action=OrderLoadReport}/{id?}");
+
+            app.MapAreaControllerRoute(
+               name: "FinanceTransactions",
+               areaName: "FinanceTransactions",
+               pattern: "FinanceTransactions/{controller=BankStatement}/{action=BankStatementList}/{id?}");
+
+            app.MapAreaControllerRoute(
+               name: "FinanceMasters",
+               areaName: "FinanceMasters",
+               pattern: "FinanceMasters/{controller=BankMaster}/{action=BankMaster}/{id?}");
 
             app.Run();
         }

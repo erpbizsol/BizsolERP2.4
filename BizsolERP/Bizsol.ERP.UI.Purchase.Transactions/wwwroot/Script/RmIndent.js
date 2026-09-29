@@ -15,6 +15,12 @@ $(document).ready(function () {
         $("#ERPHeading").text("Raw Material Indent Management");
     }
     setCurrentDate();
+    fitRMIndentToScreen();
+    setTimeout(fitRMIndentToScreen, 300);
+    $(window).on('resize orientationchange', fitRMIndentToScreen);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', fitRMIndentToScreen);
+    }
     ListStatus_IndentMaster();
     FillIndentStatusType();
     $('#ddlVenderName').on('keydown', function (e) {
@@ -51,6 +57,60 @@ function setCurrentDate() {
     $('#txtFromDate').val(formatDate(firstOfMonth));  // first day of month in dd-mm-yyyy
     $('#txtToDate').val(formatDate(today));
 }
+function fitRMIndentToScreen() {
+    var el = document.getElementById('locateIndentMaster');
+    if (!el) {
+        return;
+    }
+    if (window.innerWidth > 768) {
+        el.style.removeProperty('--rmi-screen-h');
+        el.style.removeProperty('height');
+        el.style.removeProperty('max-height');
+        return;
+    }
+
+    var content = document.getElementById('modern-content');
+    var nav = document.querySelector('.mobile-bottom-nav');
+    var footer = document.querySelector('.modern-footer');
+    var usable = 0;
+
+    if (content) {
+        usable = content.clientHeight;
+        var contentBottom = content.getBoundingClientRect().bottom;
+        var coverTop = window.innerHeight;
+        if (nav) {
+            var navTop = nav.getBoundingClientRect().top;
+            if (navTop < coverTop) {
+                coverTop = navTop;
+            }
+        }
+        if (footer) {
+            var footerTop = footer.getBoundingClientRect().top;
+            if (footerTop < coverTop) {
+                coverTop = footerTop;
+            }
+        }
+        if (coverTop < contentBottom) {
+            usable -= (contentBottom - coverTop);
+        }
+    } else {
+        usable = (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : window.innerHeight;
+        usable -= 170;
+    }
+
+    usable = Math.max(220, Math.floor(usable - 12));
+    el.style.setProperty('--rmi-screen-h', usable + 'px');
+    el.style.height = usable + 'px';
+    el.style.maxHeight = usable + 'px';
+}
+function showRMIndentGrid() {
+    var $grid = $('#tblRMIndent');
+    if (window.matchMedia('(max-width: 768px)').matches) {
+        $grid.css('display', 'flex');
+    } else {
+        $grid.css('display', 'block');
+    }
+}
 function ListStatus_IndentMaster() {
     let Status=$('#ddlStatus').val() || 0;
     let DateType=$('#txtDateType').val();
@@ -76,7 +136,7 @@ function FillIndentStatusType() {
 function GetRMIndentListTable(Status, DateType, FromDate, ToDate) {
     RmIndentService.GetRmIndentList(Status, DateType, FromDate, ToDate).then(function (response) {
         if (response && response.length > 0) {
-            $('#tblRMIndent').show();
+            showRMIndentGrid();
             let stringFilterColumn = [];
             const numericFilterColumn = ["Indent No", "Qty MT"];
             const dateFilterColumn = ["Indent Date"];
@@ -113,6 +173,7 @@ function GetRMIndentListTable(Status, DateType, FromDate, ToDate) {
 				};
 			});
             BizsolCustomFilterGrid.CreateDataTable("table-header-RMIndent", "table-body-RMIndent", updatedResponse, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment);
+            fitRMIndentToScreen();
         } else {
             HideLoader();
             toastr.error('No Data Found');

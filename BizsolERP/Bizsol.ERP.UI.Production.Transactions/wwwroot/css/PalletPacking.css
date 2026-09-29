@@ -1,0 +1,1000 @@
+/* Pallet Packing — responsive list layout (matches ExpenseEntry / PurchaseOrderStore) */
+
+.pp-page {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding: 4px 0 32px;
+}
+
+/* ── List header ─────────────────────────────────────────────────────── */
+.pp-list-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 14px 14px 0 0;
+    padding: 16px 22px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 4px 24px rgba(102, 126, 234, 0.22);
+}
+
+.pp-list-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.pp-list-header-title-block {
+    flex: 1;
+    min-width: 0;
+}
+
+.pp-list-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.pp-list-header-title {
+    margin: 0;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+}
+
+.pp-list-header-title i {
+    opacity: 0.95;
+}
+
+.pp-list-header-sub {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.78rem;
+    display: block;
+    margin-top: 4px;
+}
+
+.pp-list-create-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    color: #667eea;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-weight: 800;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    line-height: 1;
+    font-size: 0.85rem;
+    height: auto !important;
+    min-height: 40px;
+}
+
+.pp-list-create-btn:hover {
+    background: #f0f4ff;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+/* Header action buttons — same white/blue style as Create New */
+.pp-list-header .pp-list-create-btn {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.pp-list-header input.pp-list-create-btn {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* ── Filter bar ──────────────────────────────────────────────────────── */
+.pp-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: 16px 24px;
+    width: 100%;
+}
+
+.pp-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 160px;
+    flex: 0 1 auto;
+}
+
+.pp-filter-field .form-control,
+.pp-filter-field .form-select {
+    min-width: 160px;
+    max-width: 220px;
+    height: 34px !important;
+    border-radius: 8px !important;
+}
+
+.pp-list-filter-bar {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-top: none;
+    border-radius: 0 0 14px 14px;
+    padding: 14px 18px 12px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.06);
+}
+
+.pp-list-filter-bar .form-label,
+.pp-list-filter-bar label {
+    font-size: 0.77rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 0.35rem;
+}
+
+.pp-list-filter-bar .form-control,
+.pp-list-filter-bar .form-select {
+    border: 1.5px solid #ddd6fe;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    background-color: #f5f3ff;
+    color: #1e1b4b;
+    height: 34px !important;
+}
+
+.pp-list-filter-bar .form-control:focus,
+.pp-list-filter-bar .form-select:focus {
+    border-color: #667eea;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.pp-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    padding: 4px 0 8px;
+    flex: 0 0 auto;
+}
+
+.pp-radio-group label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+}
+
+.pp-list-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.pp-list-filter-bar .pp-list-toolbar .btn {
+    height: auto !important;
+    min-height: 32px;
+    line-height: normal !important;
+    font-size: 0.82rem !important;
+    border-radius: 9px;
+    font-weight: 700;
+    padding: 7px 14px;
+    flex: 0 1 auto;
+}
+
+.pp-list-filter-bar .without-label-field {
+    margin-top: 0;
+}
+
+/* ── Grid / table ────────────────────────────────────────────────────── */
+.pp-list-grid-wrap {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+    overflow: visible;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.pp-list-grid-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 14px 14px 0 0;
+    z-index: 1;
+}
+
+.pp-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 360px);
+    overflow-y: auto;
+}
+
+.pp-table-wrapper .table {
+    margin-bottom: 0;
+    font-size: 13.5px;
+    min-width: 900px;
+}
+
+.pp-table-wrapper .table thead {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+}
+
+.pp-table-wrapper .table thead th {
+    color: #fff !important;
+    background: transparent !important;
+    font-weight: 700;
+    padding: 12px 14px;
+    white-space: nowrap;
+    border: none !important;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    position: relative;
+    overflow: visible;
+}
+
+/* Table column filters (BizsolCustomFilterGrid) */
+.pp-table-wrapper .table thead th .filter-table-heading,
+.pp-table-wrapper .table thead th .table-filter-arrow,
+.pp-table-wrapper .table thead th .fa-filter {
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.pp-table-wrapper .filter-dropdown,
+.pp-table-wrapper .filter-dropdown-double {
+    z-index: 30 !important;
+}
+
+.pp-table-wrapper .dropdown-content {
+    z-index: 25 !important;
+    background: #fff;
+}
+
+.pp-table-wrapper .dropdown-content .dropdown-item {
+    color: #334155;
+}
+
+.pp-table-wrapper .filter-dropdown .checkbox-container,
+.pp-table-wrapper .filter-dropdown-double .checkbox-container-double {
+    color: #0f0909;
+}
+
+.pp-table-wrapper .table tbody tr:nth-child(even) {
+    background: #f8fafc !important;
+}
+
+.pp-table-wrapper .table tbody tr:hover {
+    background: rgba(102, 126, 234, 0.07) !important;
+}
+
+.pp-table-wrapper .table td {
+    padding: 10px 14px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    background: transparent !important;
+}
+
+.pp-table-wrapper .table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.pp-list-grid-wrap .paginator {
+    padding: 10px 16px;
+    border-top: 1px solid #e2e8f0;
+    background: #fafbff;
+}
+
+/* ── Create / edit form (ExpenseEntry-style) ─────────────────────────── */
+.pp-form-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 14px 14px 0 0;
+    padding: 16px 22px 14px;
+    box-shadow: 0 4px 24px rgba(102, 126, 234, 0.22);
+    margin-bottom: 0;
+}
+
+.pp-form-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+}
+
+.pp-form-header + .pp-form-card {
+    border-radius: 0 0 14px 14px;
+    border-top: none;
+}
+
+.pp-form-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 14px 14px 0 0;
+}
+
+.pp-form-header + .pp-form-card::before {
+    display: none;
+}
+
+.pp-form-actions-card {
+    padding: 1rem 1.5rem;
+}
+
+.pp-form-actions-card::before {
+    height: 3px;
+}
+
+.pp-form-card label,
+.pp-form-card .form-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.pp-form-card .form-control,
+.pp-form-card .form-select,
+.pp-form-card .box_border {
+    padding: 9px 13px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+    font-size: 13.5px;
+    background: #fff;
+    color: #1e293b;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pp-form-card .form-control:focus,
+.pp-form-card .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    outline: none;
+}
+
+.pp-form-card .form-control[readonly],
+.pp-form-card .form-control:disabled {
+    background-color: #ede9fe;
+    border-color: #c4b5fd;
+    color: #5b21b6;
+    cursor: default;
+}
+
+.pp-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pp-form-actions .btn {
+    height: auto !important;
+    min-height: 34px;
+    line-height: normal !important;
+    font-size: 0.82rem !important;
+    border-radius: 12px;
+    font-weight: 700;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.pp-form-actions .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.35);
+}
+
+.pp-form-actions .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.45);
+    color: #fff;
+}
+
+.pp-form-actions .btn-info {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    border: none;
+    color: #fff;
+}
+
+.pp-form-actions .btn-info:hover {
+    transform: translateY(-2px);
+    color: #fff;
+}
+
+.pp-form-actions .btn-secondary {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    border: none;
+    color: #fff;
+}
+
+.pp-form-actions .btn-secondary:hover {
+    transform: translateY(-2px);
+    color: #fff;
+}
+
+/* Table action icon buttons (ExpenseEntry list style) */
+.pp-table-wrapper .btn.icon-height {
+    height: auto !important;
+    min-height: 28px;
+    min-width: 28px;
+    line-height: 1 !important;
+    font-size: 0.78rem !important;
+    border-radius: 8px;
+    padding: 4px 8px;
+    margin: 2px;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.pp-table-wrapper .btn.icon-height:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+.pp-table-wrapper .btn-primary.icon-height {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+}
+
+.pp-table-wrapper .btn-info.icon-height {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    color: #fff;
+}
+
+.pp-table-wrapper .btn-warning.icon-height {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+}
+
+.pp-table-wrapper .btn-secondary.icon-height {
+    background: linear-gradient(135deg, #64748b, #475569);
+    color: #fff;
+}
+
+/* ── Modals ──────────────────────────────────────────────────────────── */
+.pp-modal-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pp-modal-table-wrap .table {
+    min-width: 600px;
+    margin-bottom: 0;
+}
+
+/* View In ID button — distinct from View (eye) */
+.pp-table-wrapper .btn.pp-btn-view-id {
+    background: linear-gradient(135deg, #0891b2, #0e7499);
+    border: none;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(8, 145, 178, 0.35);
+}
+
+.pp-table-wrapper .btn.pp-btn-view-id:hover {
+    background: linear-gradient(135deg, #0e7499, #155e75);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.45);
+}
+
+/* View In ID modal (ExpenseEntry-style) */
+.pp-viewid-modal {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 14px 42px rgba(102, 126, 234, 0.28);
+}
+
+.pp-viewid-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    padding: 16px 22px;
+}
+
+.pp-viewid-modal-header .modal-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+}
+
+.pp-viewid-modal-header .btn-close-white {
+    filter: brightness(0) invert(1);
+    opacity: 0.9;
+}
+
+.pp-viewid-modal-body {
+    padding: 16px 18px;
+    max-height: 65vh;
+    overflow-y: auto;
+    background: linear-gradient(180deg, #fafbff 0%, #f5f3ff 100%);
+}
+
+.pp-viewid-modal-sub {
+    font-size: 0.78rem;
+    color: #5b21b6;
+    background: rgba(102, 126, 234, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.pp-viewid-table-wrap {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.08);
+    overflow: hidden;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.pp-viewid-table-wrap .table {
+    min-width: 0;
+    margin-bottom: 0;
+    font-size: 13px;
+}
+
+.pp-viewid-table-wrap .table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+}
+
+.pp-viewid-table-wrap .table thead th {
+    color: #fff !important;
+    background: transparent !important;
+    font-weight: 700;
+    padding: 12px 16px;
+    border: none !important;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-align: left;
+}
+
+.pp-viewid-table-wrap .table tbody tr:nth-child(even) {
+    background: #f8fafc !important;
+}
+
+.pp-viewid-table-wrap .table tbody tr:hover {
+    background: rgba(102, 126, 234, 0.07) !important;
+}
+
+.pp-viewid-table-wrap .table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    vertical-align: middle;
+}
+
+.pp-viewid-paginator {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+.pp-viewid-modal-footer {
+    padding: 12px 18px;
+    background: #fafbff;
+    border-top: 1px solid #e2e8f0;
+    justify-content: flex-end;
+}
+
+.pp-viewid-close-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: #fff;
+    border-radius: 9px;
+    padding: 9px 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(102, 126, 234, 0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    height: auto !important;
+    min-height: 36px;
+    line-height: normal !important;
+}
+
+.pp-viewid-close-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(102, 126, 234, 0.45);
+    color: #fff;
+}
+
+/* Available Stock Detail modal (ExpenseEntry-style) */
+.pp-stock-modal {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 14px 42px rgba(102, 126, 234, 0.28);
+}
+
+.pp-stock-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    padding: 16px 22px;
+}
+
+.pp-stock-modal-header .modal-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+}
+
+.pp-stock-modal-header .btn-close-white {
+    filter: brightness(0) invert(1);
+    opacity: 0.9;
+}
+
+.pp-stock-modal-body {
+    padding: 16px 18px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: linear-gradient(180deg, #fafbff 0%, #f5f3ff 100%);
+}
+
+.pp-stock-modal-sub {
+    font-size: 0.78rem;
+    color: #5b21b6;
+    background: rgba(102, 126, 234, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.pp-stock-table-wrap {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.08);
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 52vh;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pp-stock-table-wrap .table {
+    margin-bottom: 0;
+    font-size: 13px;
+    min-width: 640px;
+}
+
+.pp-stock-table-wrap .table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+}
+
+.pp-stock-table-wrap .table thead th {
+    color: #fff !important;
+    background: transparent !important;
+    font-weight: 700;
+    padding: 12px 14px;
+    border: none !important;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.pp-stock-table-wrap .table tbody tr:nth-child(even) {
+    background: #f8fafc !important;
+}
+
+.pp-stock-table-wrap .table tbody tr:hover {
+    background: rgba(102, 126, 234, 0.07) !important;
+}
+
+.pp-stock-table-wrap .table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    vertical-align: middle;
+    font-size: 12.5px;
+}
+
+.pp-stock-paginator {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+.pp-stock-modal-footer {
+    padding: 12px 18px;
+    background: #fafbff;
+    border-top: 1px solid #e2e8f0;
+    justify-content: flex-end;
+}
+
+.pp-stock-close-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: #fff;
+    border-radius: 9px;
+    padding: 9px 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(102, 126, 234, 0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    height: auto !important;
+    min-height: 36px;
+    line-height: normal !important;
+}
+
+.pp-stock-close-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(102, 126, 234, 0.45);
+    color: #fff;
+}
+
+#DetailsModal .modal-dialog {
+    max-width: 820px;
+}
+
+@media (max-width: 576px) {
+    #ViewInIDPallet .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+
+    #DetailsModal .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+
+    .pp-stock-modal-body {
+        padding: 12px;
+        max-height: 75vh;
+    }
+
+    .pp-stock-table-wrap {
+        max-height: 48vh;
+    }
+
+    .pp-stock-close-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .pp-viewid-modal-body {
+        padding: 12px;
+        max-height: 70vh;
+    }
+
+    .pp-viewid-table-wrap {
+        max-height: 45vh;
+    }
+
+    .pp-viewid-close-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Print column green checkboxes */
+.pp-table-wrapper #PalletPacking input[type="checkbox"],
+.pp-table-wrapper #PalletPacking th input[type="checkbox"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #86efac;
+    border-radius: 6px;
+    background: #fff;
+    position: relative !important;
+    top: 0 !important;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.pp-table-wrapper #PalletPacking input[type="checkbox"]:hover {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+.pp-table-wrapper #PalletPacking input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-color: #16a34a;
+}
+
+.pp-table-wrapper #PalletPacking th input[type="checkbox"] {
+    margin-left: 6px;
+}
+
+.pp-table-wrapper #PalletPacking input[type="checkbox"]:checked::after {
+    content: '✔';
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -52%);
+}
+
+.section-entry-animation {
+    animation: pp-fade-slide 0.35s ease both;
+}
+
+@keyframes pp-fade-slide {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 991px) {
+    .pp-table-wrapper {
+        max-height: calc(100vh - 320px);
+    }
+}
+
+@media (max-width: 768px) {
+    .pp-list-header {
+        padding: 14px 16px 12px;
+    }
+
+    .pp-list-header-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pp-list-header-actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-start;
+    }
+
+    .pp-list-header .pp-list-create-btn {
+        flex: 1 1 calc(50% - 5px);
+        min-width: 100px;
+    }
+
+    .pp-filter-row {
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .pp-filter-field {
+        min-width: 0;
+        flex: 1 1 180px;
+        max-width: 100%;
+    }
+
+    .pp-radio-group {
+        flex: 1 1 100%;
+        padding-bottom: 4px;
+    }
+
+    .pp-filter-field .form-control,
+    .pp-filter-field .form-select {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .pp-list-filter-bar {
+        padding: 12px 14px 10px;
+    }
+
+    .pp-list-filter-bar .without-label-field {
+        margin-top: 0.5rem;
+    }
+
+    .pp-list-toolbar .btn {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 120px;
+    }
+
+    .pp-form-card {
+        padding: 14px;
+    }
+
+    .pp-form-actions .btn {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 130px;
+    }
+
+    .pp-table-wrapper .table thead th,
+    .pp-table-wrapper .table td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    .pp-list-create-btn-label {
+        display: none;
+    }
+
+    .pp-list-create-btn {
+        padding: 8px 12px;
+        font-size: 1rem;
+        flex: 0 0 auto;
+    }
+
+    .pp-list-header .pp-list-create-btn {
+        flex: 1 1 calc(50% - 4px);
+    }
+
+    .pp-list-toolbar .btn {
+        width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .pp-form-actions .btn {
+        width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .pp-radio-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .pp-table-wrapper {
+        max-height: calc(100vh - 280px);
+        margin: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-dialog.modal-lg {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+}
