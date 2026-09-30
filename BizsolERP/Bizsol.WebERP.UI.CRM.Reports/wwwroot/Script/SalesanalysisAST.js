@@ -33,6 +33,54 @@ let G_PartySaleMap = {};
 let G_ClientRatingMaster = [];
 const HIGH_GP_SALE_TARGET_PCT = 60;
 
+// ── Tab Cache ──────────────────────────────────────────────────────────────────
+// G_FilterGeneration is incremented every time the user applies new filters.
+// Each tab stores the generation number it was last loaded for.
+// Revisiting a tab without changing filters → same generation → no API call.
+// Apply filters or Refresh button → generation bumps / cache cleared → API call.
+let G_FilterGeneration = 0;
+let G_TabCache = {};      // tabId → generation number when last loaded
+let G_TabData   = {};     // tabId → raw API data saved for cache re-renders
+
+function getActiveTabId() {
+    const activePane = document.querySelector('.tab-pane.show.active') ||
+                       document.querySelector('.tab-pane.active');
+    return activePane ? activePane.id : 'summaryReport';
+}
+
+function isTabCached(tabId) {
+    return G_TabCache[tabId] !== undefined && G_TabCache[tabId] === G_FilterGeneration;
+}
+
+function markTabCached(tabId) {
+    G_TabCache[tabId] = G_FilterGeneration;
+}
+
+function setTabData(tabId, data) {
+    G_TabData[tabId]  = data;
+    markTabCached(tabId);
+}
+
+function getTabData(tabId) {
+    return G_TabData[tabId];
+}
+
+function clearTabCache(tabId) {
+    delete G_TabCache[tabId];
+    delete G_TabData[tabId];
+}
+
+function clearAllTabCache() {
+    G_TabCache = {};
+    G_TabData  = {};
+}
+
+function bumpFilterGeneration() {
+    G_FilterGeneration++;
+    clearAllTabCache();
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 // Regional Analysis data and drill-down state
 let G_RegionalAnalysisData = [];
 let regionalAnalysisState = {
@@ -744,16 +792,24 @@ function getSummaryNbdCrrPartyRows() {
         if (!partyName || (!typeUpper.includes('NBD') && !typeUpper.includes('CRR'))) {
             return;
         }
+        const gpValue = (row['GP'] || row.Gp || row.gp || '').toString().trim();
         const key = partyName.toLowerCase() + '|' + typeUpper;
         if (!map.has(key)) {
             map.set(key, {
                 'Party Name': partyName,
+                'GP': gpValue,
                 'NBD/CRR Type': nbdCrrType
             });
         }
     });
+    const typeOrder = function (type) {
+        const t = (type || '').toString().toUpperCase();
+        if (t.includes('NBD')) return 0;
+        if (t.includes('CRR')) return 1;
+        return 2;
+    };
     return Array.from(map.values()).sort(function (a, b) {
-        const typeCompare = String(a['NBD/CRR Type']).localeCompare(String(b['NBD/CRR Type']));
+        const typeCompare = typeOrder(a['NBD/CRR Type']) - typeOrder(b['NBD/CRR Type']);
         if (typeCompare !== 0) return typeCompare;
         return String(a['Party Name']).localeCompare(String(b['Party Name']));
     });
@@ -767,7 +823,7 @@ function renderSummaryNbdCrrPartyTable() {
     const rows = getSummaryNbdCrrPartyRows();
     if (!rows.length) {
         header.innerHTML = '';
-        body.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No NBD / CRR party data available</td></tr>';
+        body.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No NBD / CRR party data available</td></tr>';
         const pager = document.getElementById('paginator-summaryNbdCrrPartyTable');
         if (pager) pager.innerHTML = '';
         return;
@@ -780,13 +836,14 @@ function renderSummaryNbdCrrPartyTable() {
             rows,
             false,
             [],
-            ['Party Name', 'NBD/CRR Type'],
+            ['Party Name', 'GP', 'NBD/CRR Type'],
             [],
             [],
             [],
             [],
             {
                 'Party Name': 'left',
+                'GP': 'center',
                 'NBD/CRR Type': 'center'
             },
             true
@@ -794,9 +851,9 @@ function renderSummaryNbdCrrPartyTable() {
         return;
     }
 
-    header.innerHTML = '<tr><th>Party Name</th><th>NBD/CRR Type</th></tr>';
+    header.innerHTML = '<tr><th>Party Name</th><th>GP</th><th>NBD/CRR Type</th></tr>';
     body.innerHTML = rows.map(function (row) {
-        return `<tr><td>${escapeHtml(row['Party Name'])}</td><td class="text-center">${escapeHtml(row['NBD/CRR Type'])}</td></tr>`;
+        return `<tr><td>${escapeHtml(row['Party Name'])}</td><td class="text-center">${escapeHtml(row['GP'])}</td><td class="text-center">${escapeHtml(row['NBD/CRR Type'])}</td></tr>`;
     }).join('');
 }
 
@@ -1267,10 +1324,19 @@ function updateReportDateRangeDisplay() {
 }
 
 // Tab rendering functions
-function renderSummaryReport() {
+function renderSummaryReport(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'summaryReport';
 
     if (filters.dealerCodes == '') {
+        return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID) && G_SummaryReportRows && G_SummaryReportRows.length) {
+        updateReportDateRangeDisplay();
+        const metrics = aggregateSummaryMetrics(G_SummaryReportRows, null);
+        renderSummaryDashboard(metrics);
+        renderGPWiseSummary({ manageLoader: false });
         return;
     }
 
@@ -1301,6 +1367,7 @@ function renderSummaryReport() {
         }
 
         G_SummaryReportRows = parsed.rows;
+        markTabCached(TAB_ID);
         const metrics = aggregateSummaryMetrics(parsed.rows, parsed.summaryRow);
         renderSummaryDashboard(metrics);
         renderGPWiseSummary({ manageLoader: false });
@@ -1927,7 +1994,7 @@ function renderPartyWiseScoreTable(parties) {
         'Score %': 'right',
         'Score Category': 'center'
     };
-    const numericFilterColumn = visibleRatings.map(getClientRatingColumnName).concat([totalScoreColumn]);
+    const numericFilterColumn = ['Total Sale (MT)'].concat(visibleRatings.map(getClientRatingColumnName)).concat([totalScoreColumn, 'Score %']);
     visibleRatings.forEach(function (rating) {
         alignment[getClientRatingColumnName(rating)] = 'right';
     });
@@ -1989,10 +2056,17 @@ function renderPartyScoringDashboard() {
     renderPartyWiseScoreTable(summary.parties);
 }
 
-function renderPartyScoring() {
+function renderPartyScoring(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'partyScoring';
 
     if (filters.dealerCodes == '') {
+        return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID) && G_PartyScoringRows && G_PartyScoringRows.length) {
+        updateReportDateRangeDisplay();
+        renderPartyScoringDashboard();
         return;
     }
 
@@ -2031,6 +2105,7 @@ function renderPartyScoring() {
             return;
         }
 
+        markTabCached('partyScoring');
         renderPartyScoringDashboard();
     }).catch(function (err) {
         HideLoader();
@@ -2143,11 +2218,21 @@ function syncGpFilterForTab(tabTarget) {
     applyAllGpFilter();
 }
 
-function renderGoldenCircleClient() {
+function renderGoldenCircleClient(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'goldenCircle';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            processGoldenCircleData(cached);
+            return;
+        }
     }
 
     updateReportDateRangeDisplay();
@@ -2163,6 +2248,7 @@ function renderGoldenCircleClient() {
             return;
         }
 
+        setTabData(TAB_ID, response);
         processGoldenCircleData(response);
     }).catch(function (err) {
         HideLoader();
@@ -2577,11 +2663,25 @@ function extractManifestWeekWeightData(response) {
     return [];
 }
 
-function renderManifestation() {
+function renderManifestation(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'manifestation';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            updateManifestProrataInfo(filters);
+            const weekWeightData = extractManifestWeekWeightData(cached.current);
+            const lastMonthWeekData = extractManifestWeekWeightData(cached.lastMonth);
+            renderWeekWeightTable(weekWeightData);
+            renderManifestWeekCompareTable(weekWeightData, lastMonthWeekData);
+            return;
+        }
     }
 
     updateReportDateRangeDisplay();
@@ -2603,6 +2703,7 @@ function renderManifestation() {
             return;
         }
 
+        setTabData(TAB_ID, { current: response, lastMonth: lastMonthResponse });
         const weekWeightData = extractManifestWeekWeightData(response);
         const lastMonthWeekData = extractManifestWeekWeightData(lastMonthResponse);
         renderWeekWeightTable(weekWeightData);
@@ -3109,11 +3210,26 @@ function renderActualVsManifestTable(data) {
     }
 }
 
-function renderNBDCRR() {
+function renderNBDCRR(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'nbdCrr';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    const renderFromData = function (baseWeekData, orderDetailsData) {
+        renderNBDCRRBaseWeekTable(baseWeekData);
+        renderNBDCRROrderDetailsTable(orderDetailsData);
+    };
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            renderFromData(cached.baseWeekData, cached.orderDetailsData);
+            return;
+        }
     }
 
     // Update date range display for this tab
@@ -3150,12 +3266,13 @@ function renderNBDCRR() {
                 orderDetailsData = response[1] || [];
             } else {
                 separateAndRenderNBDCRRData(response);
+                setTabData(TAB_ID, { baseWeekData: [], orderDetailsData: [] });
                 return;
             }
         }
 
-        renderNBDCRRBaseWeekTable(baseWeekData);
-        renderNBDCRROrderDetailsTable(orderDetailsData);
+        setTabData(TAB_ID, { baseWeekData, orderDetailsData });
+        renderFromData(baseWeekData, orderDetailsData);
 
     }).catch(function (err) {
         HideLoader();
@@ -3278,11 +3395,21 @@ function renderNBDCRROrderDetailsTable(data) {
     }
 }
 
-function renderSegmentWise() {
+function renderSegmentWise(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'segmentWise';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            renderSegmentWiseCollapsibleTable(cached.current, cached.lastMonth);
+            return;
+        }
     }
 
     // Update date range display for this tab
@@ -3300,6 +3427,7 @@ function renderSegmentWise() {
         HideLoader();
 
         if (response && response.length > 0) {
+            setTabData(TAB_ID, { current: response, lastMonth: lastMonthResponse || [] });
             renderSegmentWiseCollapsibleTable(response, lastMonthResponse || []);
         } else {
             const el = $('#segmentWiseTableBody')[0];
@@ -4090,10 +4218,18 @@ function clearRegionalAnalysisDashboard() {
     renderRegionalAnalysisBreadcrumb();
 }
 
-function renderRegionalAnalysis() {
+function renderRegionalAnalysis(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'regionalAnalysis';
 
     if (filters.dealerCodes == '') {
+        return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID) && G_RegionalAnalysisData && G_RegionalAnalysisData.length) {
+        updateReportDateRangeDisplay();
+        regionalAnalysisState = { level: 'state', selectedState: null, selectedCity: null };
+        renderRegionalAnalysisView();
         return;
     }
 
@@ -4111,6 +4247,7 @@ function renderRegionalAnalysis() {
 
         G_RegionalAnalysisData = response.map(normalizeRegionalAnalysisRow);
         regionalAnalysisState = { level: 'state', selectedState: null, selectedCity: null };
+        markTabCached(TAB_ID);
         renderRegionalAnalysisView();
     }).catch(function (err) {
         HideLoader();
@@ -4584,10 +4721,18 @@ function clearProductAnalysisDashboard() {
     renderProductAnalysisBreadcrumb();
 }
 
-function renderProductAnalysis() {
+function renderProductAnalysis(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'productAnalysis';
 
     if (filters.dealerCodes == '') {
+        return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID) && G_ProductAnalysisData && G_ProductAnalysisData.length) {
+        updateReportDateRangeDisplay();
+        productAnalysisState = { level: 'item', selectedItem: null, selectedSize: null };
+        renderProductAnalysisView();
         return;
     }
 
@@ -4605,6 +4750,7 @@ function renderProductAnalysis() {
 
         G_ProductAnalysisData = response.map(normalizeProductAnalysisRow);
         productAnalysisState = { level: 'item', selectedItem: null, selectedSize: null };
+        markTabCached(TAB_ID);
         renderProductAnalysisView();
     }).catch(function (err) {
         HideLoader();
@@ -4902,11 +5048,21 @@ function renderTargetVsGrowthDashboard(gpLostRows, summaryRow) {
     renderTargetVsGrowthPieChart(manifested, actual);
 }
 
-function renderTargetVsGrowth() {
+function renderTargetVsGrowth(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'targetVsGrowth';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            renderTargetVsGrowthDashboard(cached.gpLostRows, cached.summaryRow);
+            return;
+        }
     }
 
     updateReportDateRangeDisplay();
@@ -4933,6 +5089,7 @@ function renderTargetVsGrowth() {
             return;
         }
 
+        setTabData(TAB_ID, { gpLostRows: parsed.gpLostRows, summaryRow: parsed.summaryRow });
         renderTargetVsGrowthDashboard(parsed.gpLostRows, parsed.summaryRow);
     }).catch(function (err) {
         HideLoader();
@@ -5405,11 +5562,21 @@ function fetchClientAnalysisMode(mode, filters, fromDateValue, toDateValue) {
     );
 }
 
-function renderClientAnalysis() {
+function renderClientAnalysis(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'clientAnalysis';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            renderClientAnalysisDashboard(cached.salesRows, cached.outstandingRows, cached.lastSalesRows, cached.productRows);
+            return;
+        }
     }
 
     updateReportDateRangeDisplay();
@@ -5459,6 +5626,12 @@ function renderClientAnalysis() {
             return;
         }
 
+        setTabData('clientAnalysis', {
+            salesRows: salesRows,
+            outstandingRows: parsed.outstandingRows,
+            lastSalesRows: lastSalesRows,
+            productRows: hasProduct ? null : productRows
+        });
         renderClientAnalysisDashboard(salesRows, parsed.outstandingRows, lastSalesRows, hasProduct ? null : productRows);
     }).catch(function (err) {
         HideLoader();
@@ -5919,27 +6092,15 @@ function renderSalesComparison() {
     });
 }
 
-function renderHighGPLostClient() {
+function renderHighGPLostClient(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'highGPLostClient';
 
     if (filters.dealerCodes == '') {
         return;
     }
 
-    updateReportDateRangeDisplay();
-
-    Showloader();
-
-    SalesanalysisASTService.GetSalesAnalysisData('HIGH_GP_LOST_CLIENT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays).then(function (response) {
-        HideLoader();
-
-        if (!response || response.length === 0) {
-            console.warn('No High GP Lost Client data received');
-            document.getElementById('highGPLostClientTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
-            document.getElementById('highGPLostClientTableHeader').innerHTML = '';
-            return;
-        }
-
+    const renderHGPTable = function (response) {
         const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "GP", "Status"];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
@@ -5953,17 +6114,43 @@ function renderHighGPLostClient() {
             'Total Sales': 'right',
             'Growth (%)': 'right'
         };
-
         if (typeof BizsolCustomFilterGrid !== 'undefined') {
             BizsolCustomFilterGrid.CreateDataTable("highGPLostClientTableHeader", "highGPLostClientTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
         }
+    };
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            renderHGPTable(cached);
+            return;
+        }
+    }
+
+    updateReportDateRangeDisplay();
+    Showloader();
+
+    SalesanalysisASTService.GetSalesAnalysisData('HIGH_GP_LOST_CLIENT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays).then(function (response) {
+        HideLoader();
+
+        if (!response || response.length === 0) {
+            console.warn('No High GP Lost Client data received');
+            document.getElementById('highGPLostClientTableBody').innerHTML = '<tr><td colspan="100%" class="text-center">No data available</td></tr>';
+            document.getElementById('highGPLostClientTableHeader').innerHTML = '';
+            return;
+        }
+
+        setTabData(TAB_ID, response);
+        renderHGPTable(response);
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching High GP Lost Client data:', err);
     });
 }
 
-// Show report function
+// Show report function — called when filters are Applied.
+// Clears the entire tab cache so all tabs re-fetch fresh data for the new filters.
 function SalesanalysisAST_ShowReport() {
     const filters = GetAllFilters();
 
@@ -5973,39 +6160,42 @@ function SalesanalysisAST_ShowReport() {
         return;
     }
 
-    // Check which tab is active and render accordingly
+    // Bump the filter generation — this invalidates all tab caches atomically.
+    bumpFilterGeneration();
+
+    // Check which tab is active and render accordingly (forceRefresh=true because cache was just cleared)
     if (document.querySelector('#summaryReport')?.classList.contains('show') || document.querySelector('#summaryReport')?.classList.contains('active')) {
-        renderSummaryReport();
+        renderSummaryReport(true);
     }
     if (document.querySelector('#partyScoring')?.classList.contains('show') || document.querySelector('#partyScoring')?.classList.contains('active')) {
-        renderPartyScoring();
+        renderPartyScoring(true);
     }
     if (document.querySelector('#goldenCircle')?.classList.contains('show') || document.querySelector('#goldenCircle')?.classList.contains('active')) {
-        renderGoldenCircleClient();
+        renderGoldenCircleClient(true);
     }
     if (document.querySelector('#manifestation')?.classList.contains('show') || document.querySelector('#manifestation')?.classList.contains('active')) {
-        renderManifestation();
+        renderManifestation(true);
     }
     if (document.querySelector('#nbdCrr')?.classList.contains('show') || document.querySelector('#nbdCrr')?.classList.contains('active')) {
-        renderNBDCRR();
+        renderNBDCRR(true);
     }
     if (document.querySelector('#segmentWise')?.classList.contains('show') || document.querySelector('#segmentWise')?.classList.contains('active')) {
-        renderSegmentWise();
+        renderSegmentWise(true);
     }
     if (document.querySelector('#regionalAnalysis')?.classList.contains('show') || document.querySelector('#regionalAnalysis')?.classList.contains('active')) {
-        renderRegionalAnalysis();
+        renderRegionalAnalysis(true);
     }
     if (document.querySelector('#productAnalysis')?.classList.contains('show') || document.querySelector('#productAnalysis')?.classList.contains('active')) {
-        renderProductAnalysis();
+        renderProductAnalysis(true);
     }
     if (document.querySelector('#targetVsGrowth')?.classList.contains('show') || document.querySelector('#targetVsGrowth')?.classList.contains('active')) {
-        renderTargetVsGrowth();
+        renderTargetVsGrowth(true);
     }
     if (document.querySelector('#clientAnalysis')?.classList.contains('show') || document.querySelector('#clientAnalysis')?.classList.contains('active')) {
-        renderClientAnalysis();
+        renderClientAnalysis(true);
     }
     if (document.querySelector('#highGPLostClient')?.classList.contains('show') || document.querySelector('#highGPLostClient')?.classList.contains('active')) {
-        renderHighGPLostClient();
+        renderHighGPLostClient(true);
     }
 }
 
@@ -6135,6 +6325,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
     initRmRateModalControls();
     initSummaryNbdCrrPartyModal();
+
+    // Refresh button — reloads only the currently active tab from API, ignoring cache
+    const btnTabRefresh = document.getElementById('btnTabRefresh');
+    if (btnTabRefresh) {
+        btnTabRefresh.addEventListener('click', function () {
+            const activeTabId = getActiveTabId();
+            clearTabCache(activeTabId);
+
+            const tabRenderMap = {
+                summaryReport:    function () { renderSummaryReport(true); },
+                partyScoring:     function () { renderPartyScoring(true); },
+                goldenCircle:     function () { renderGoldenCircleClient(true); },
+                manifestation:    function () { renderManifestation(true); },
+                nbdCrr:           function () { renderNBDCRR(true); },
+                segmentWise:      function () { renderSegmentWise(true); },
+                regionalAnalysis: function () { renderRegionalAnalysis(true); },
+                productAnalysis:  function () { renderProductAnalysis(true); },
+                targetVsGrowth:   function () { renderTargetVsGrowth(true); },
+                clientAnalysis:   function () { renderClientAnalysis(true); },
+                highGPLostClient: function () { renderHighGPLostClient(true); }
+            };
+
+            const renderFn = tabRenderMap[activeTabId];
+            if (renderFn) {
+                renderFn();
+            }
+        });
+    }
 });
 
 let G_RmRateValues = {};
