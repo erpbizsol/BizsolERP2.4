@@ -124,6 +124,11 @@ namespace BizsolERPMain
                pattern: "FinanceMasters/{controller=BankMaster}/{action=BankMaster}/{id?}");
 
             app.MapAreaControllerRoute(
+               name: "StoreTransactions",
+               areaName: "StoreTransactions",
+               pattern: "StoreTransactions/{controller=StoreTransactions}/{action=StoreRequisitionSlip}/{id?}");
+
+            app.MapAreaControllerRoute(
                name: "MarketingMasters",
                areaName: "MarketingMasters",
                pattern: "MarketingMasters/{controller=DealerTargetMaster}/{action=DealerTargetMaster}/{id?}");
