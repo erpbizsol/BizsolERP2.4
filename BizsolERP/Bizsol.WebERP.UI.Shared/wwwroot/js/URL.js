@@ -28,6 +28,7 @@ let UrlService = {
     API_ENDPOINT_SPECIFICATION: `${environment.BASE_URL}/ItemSize`,
     API_ENDPOINT_PAYMENT_TERMS_MASTER: `${environment.BASE_URL}/PaymentTerms`,
     API_ENDPOINT_BANK_MASTER: `${environment.BASE_URL}/Bank`,
+    API_ENDPOINT_PAY_TYPE_MASTER: `${environment.BASE_URL}/PayTypeMaster`,
     API_ENDPOINT_DROPDOWN: `${environment.BASE_URL}/Dropdown`,
     API_ENDPOINT_WARE_HOUSE: `${environment.BASE_URL}/WarehouseMaster`,
     API_DOCUMENT_ATTECHMENT: `${environment.BASE_URL}/DocumentAttachment`,
