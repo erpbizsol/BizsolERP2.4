@@ -834,7 +834,13 @@ function saveData() {
         $('#txtInvoiceDate').focus();
         return;
     }
-    
+
+    if (!warehouseCode) {
+        toastr.error('Please select Warehouse');
+        $('#ddlWarehouse').focus();
+        return;
+    }
+
     // Get ReturnCrate and ReceivedPayments values (default to 0 if empty)
     const returnCrate = parseFloat($('#txtReturnCrate').val()) || 0;
     const receivedPayments = parseFloat($('#txtReceivedPayments').val()) || 0;

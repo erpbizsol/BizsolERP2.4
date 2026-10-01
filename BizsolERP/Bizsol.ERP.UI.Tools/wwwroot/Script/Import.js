@@ -136,21 +136,28 @@ function templateLabel(item) {
     return table !== 'ImportTemplate' ? table : (item.Desp || item.desp || table);
 }
 
+function sanitizeDownloadFileName(name) {
+    return trim(name || 'ImportTemplate').replace(/[\\/:*?"<>|]/g, '_');
+}
+
 function normalizeXltxFileName(fileName, fallbackBase) {
-    var fn = trim(fileName || '') || trim(fallbackBase || '') || 'ImportTemplate';
+    var fn = sanitizeDownloadFileName(fileName || fallbackBase || 'ImportTemplate');
     fn = fn.replace(/\.zip$/i, '.xltx');
     if (/\.xltx$/i.test(fn)) return fn;
-    if (/xltx$/i.test(fn)) return fn.replace(/xltx$/i, '.xltx');
+    if (/^xltx$/i.test(fn)) {
+        fn = sanitizeDownloadFileName(fallbackBase || 'ImportTemplate');
+    }
     if (fn.indexOf('.') < 0) return fn + '.xltx';
     return fn;
 }
 
 function templateFileName(item) {
-    var base = (getTableName(item) || 'ImportTemplate').replace(/[^\w\-]+/g, '_');
-    var display = trim(item.DisplayName || item.displayName || '').toLowerCase();
-    if (display.indexOf('vendor') >= 0) base += '_Vendor';
-    else if (display.indexOf('client') >= 0) base += '_Client';
-    return normalizeXltxFileName(item.TemplateFileName || item.templateFileName, base);
+    var label = templateLabel(item);
+    if (!label) {
+        var $opt = $('#ddlImportTemplate option:selected');
+        if ($opt.length) label = trim($opt.text());
+    }
+    return normalizeXltxFileName(label, 'ImportTemplate');
 }
 
 function getCurrentImportFileName() {
@@ -162,37 +169,71 @@ function hasImportFileSelected() {
     return !!getCurrentImportFileName();
 }
 
-function getTemplateMatchTokens(templateItem) {
-    var tokens = [];
-    var label = templateLabel(templateItem).toLowerCase();
-    var table = getTableName(templateItem).replace(/Import$/i, '').replace(/[_\s]+/g, ' ').toLowerCase();
-    if (table) tokens.push(table.replace(/\s+/g, ''));
-    label.split(/[\s_\-]+/).forEach(function (word) {
-        if (word.length >= 3 && word !== 'master' && word !== 'import') tokens.push(word);
-    });
-    ['client', 'vendor', 'employee', 'item', 'account'].forEach(function (word) {
-        if (label.indexOf(word) >= 0) tokens.push(word);
-    });
-    return tokens.filter(function (token, idx, arr) { return arr.indexOf(token) === idx; });
-}
-
-function doesImportFileMatchTemplate(fileName, templateItem) {
-    if (!fileName || !templateItem) return true;
-    var normalized = fileName.toLowerCase().replace(/\.(xlsx|xls|xltx)$/i, '');
-    var tokens = getTemplateMatchTokens(templateItem);
-    if (!tokens.length) return true;
-    return tokens.some(function (token) { return normalized.indexOf(token) >= 0; });
-}
-
-function clearImportFile(showMessage) {
+function clearImportFile(showMessage, message) {
     $('#fileImportUpload').val('');
     $('#lblImportFileName').text('No file chosen').addClass('is-empty');
     G_FileError = '';
     $('#impFileValidation').hide().text('');
     $('#impFileField').removeClass('imp-file-invalid');
     if (showMessage) {
-        toastr.info('Import file cleared because it does not match the selected import type.');
+        toastr.info(message || 'Import file cleared because its columns do not match the selected import type.');
     }
+}
+
+function extractExcelHeaderIndex(headerRow) {
+    var headerIndex = {};
+    (headerRow || []).forEach(function (cell, idx) {
+        var key = normalizeHeader(cell);
+        if (key && headerIndex[key] === undefined) headerIndex[key] = idx;
+    });
+    return headerIndex;
+}
+
+function getMissingTemplateColumns(columns, headerRow) {
+    var headerIndex = extractExcelHeaderIndex(headerRow);
+    var missing = [];
+    (columns || []).forEach(function (col) {
+        if (!isExcelImportColumn(col)) return;
+        if (headerIndex[normalizeHeader(col.ColumnName)] === undefined) {
+            missing.push(col.ColumnName);
+        }
+    });
+    return missing;
+}
+
+function loadTemplateColumns(templateCode) {
+    return ImportExportService.GetImportTemplateColumns(templateCode)
+        .then(function (response) { return mapColumns(response); });
+}
+
+function validateSelectedImportFileColumns(file, templateCode) {
+    if (!file || !templateCode) return Promise.resolve({ matches: true, missing: [] });
+    return loadTemplateColumns(templateCode)
+        .then(function (columns) {
+            return readExcel(file).then(function (sheetRows) {
+                var headerRow = sheetRows && sheetRows.length ? sheetRows[0] : [];
+                var missing = getMissingTemplateColumns(columns, headerRow);
+                return { matches: missing.length === 0, missing: missing };
+            });
+        });
+}
+
+function checkImportFileForSelectedType(showClearMessage) {
+    var sel = selectedTemplate();
+    var file = $('#fileImportUpload')[0].files && $('#fileImportUpload')[0].files[0];
+    if (!file || !sel) return Promise.resolve(true);
+
+    return validateSelectedImportFileColumns(file, sel.code)
+        .then(function (result) {
+            if (!result.matches) {
+                clearImportFile(showClearMessage !== false);
+                return false;
+            }
+            return true;
+        })
+        .catch(function () {
+            return true;
+        });
 }
 
 function isFlagYes(value) {
@@ -405,14 +446,22 @@ function onImportTypeChange() {
     hideResult();
     resetGrid();
 
-    if (hasImportFileSelected()) {
-        var sel = selectedTemplate();
-        if (!sel || !doesImportFileMatchTemplate(getCurrentImportFileName(), sel.item)) {
-            clearImportFile(!!sel);
-        }
+    if (!hasImportFileSelected()) {
+        refreshImportTransferContext().finally(updateButtons);
+        return;
     }
 
-    refreshImportTransferContext().finally(updateButtons);
+    var sel = selectedTemplate();
+    if (!sel) {
+        clearImportFile(false);
+        refreshImportTransferContext().finally(updateButtons);
+        return;
+    }
+
+    checkImportFileForSelectedType(true)
+        .finally(function () {
+            refreshImportTransferContext().finally(updateButtons);
+        });
 }
 
 function mapColumns(response) {
@@ -868,6 +917,82 @@ function buildGridSelectAllCheckboxHtml() {
         + (allChecked ? ' checked' : '') + ' title="Select all editable rows" aria-label="Select all editable rows" />';
 }
 
+function measureImportGridTextWidth(text, $ref) {
+    var $measure = $('#impGridMeasureSpan');
+    if (!$measure.length) {
+        $measure = $('<span id="impGridMeasureSpan"></span>').css({
+            position: 'absolute',
+            left: '-9999px',
+            visibility: 'hidden',
+            whiteSpace: 'nowrap'
+        }).appendTo('body');
+    }
+    $measure.css({
+        fontSize: ($ref && $ref.length) ? $ref.css('font-size') : '13px',
+        fontWeight: ($ref && $ref.length) ? $ref.css('font-weight') : '600',
+        fontFamily: ($ref && $ref.length) ? $ref.css('font-family') : 'inherit'
+    }).text(text || '');
+    return $measure.outerWidth() || 0;
+}
+
+function buildImportGridColumnAlignment(colNames) {
+    var alignment = {};
+    alignment[SELECT_COLUMN] = 'center';
+    alignment[SERIAL_COLUMN] = 'center';
+    colNames.forEach(function (col) {
+        var headerWidth = Math.ceil(measureImportGridTextWidth(col)) + 36;
+        if (isRemarksColumn(col)) {
+            alignment[col] = 'left;min-width:' + Math.max(88, headerWidth) + 'px;max-width:280px';
+            return;
+        }
+        var width = Math.max(48, Math.min(220, headerWidth));
+        alignment[col] = 'left;min-width:' + width + 'px;width:' + width + 'px';
+    });
+    return alignment;
+}
+
+function fitImportGridColumnWidths() {
+    var $table = $('#ImportData');
+    var $headerRow = $table.find('thead tr:first');
+    if (!$headerRow.length) return;
+
+    $headerRow.children('th:visible').each(function (colIndex) {
+        var $th = $(this);
+        if ($th.hasClass('imp-select-col-header') || colIndex === 1) return;
+
+        var headerText = trim($th.find('.filter-table-heading').text() || $th.text());
+        if (!headerText) return;
+
+        var width = Math.ceil(measureImportGridTextWidth(headerText, $th)) + 32;
+        if (isRemarksColumn(headerText)) {
+            width = Math.max(width, 96);
+            width = Math.min(width, 280);
+        } else {
+            $table.find('#table-body-ImportData tr:visible').slice(0, 25).each(function () {
+                var $td = $(this).children('td:visible').eq(colIndex);
+                if (!$td.length) return;
+                var $input = $td.find('.imp-cell-input');
+                var text = $input.length ? String($input.val() || '') : trim($td.text());
+                if (text) {
+                    width = Math.max(width, Math.ceil(measureImportGridTextWidth(text, $td)) + 24);
+                }
+            });
+            width = Math.max(48, Math.min(240, width));
+        }
+
+        var widthPx = Math.ceil(width) + 'px';
+        var maxWidth = isRemarksColumn(headerText) ? '280px' : widthPx;
+        $th.css({ minWidth: widthPx, width: widthPx, maxWidth: maxWidth });
+        $table.find('#table-body-ImportData tr').each(function () {
+            $(this).children('td:visible').eq(colIndex).css({
+                minWidth: widthPx,
+                width: widthPx,
+                maxWidth: maxWidth
+            });
+        });
+    });
+}
+
 function renderImportGrid() {
     var colNames = getDisplayColumnNames();
     var gridData = G_Rows.map(function (row) {
@@ -882,15 +1007,20 @@ function renderImportGrid() {
     });
     $('#impGridSection').show();
     $('#table-header-ImportData, #table-body-ImportData, #paginator-ImportData').empty();
+    var columnAlignment = buildImportGridColumnAlignment(colNames);
+    columnAlignment[SELECT_COLUMN] = 'center';
+    columnAlignment[SERIAL_COLUMN] = 'center';
+
     BizsolCustomFilterGrid.CreateDataTable(
         'table-header-ImportData', 'table-body-ImportData', gridData,
         false, [], colNames, [], [], [], ['RowNo'],
-        {}, false
+        columnAlignment, false
     );
     $('#table-header-ImportData th').first()
         .empty()
         .addClass('imp-select-col-header')
         .html(buildGridSelectAllCheckboxHtml());
+    fitImportGridColumnWidths();
     updateButtons();
 }
 
@@ -1039,19 +1169,8 @@ function parseExcelRows(sheetRows, columns) {
     if (!sheetRows || sheetRows.length <= 1) throw new Error('No data found in import file.');
 
     var headerRow = sheetRows[0] || [];
-    var headerIndex = {};
-    headerRow.forEach(function (cell, idx) {
-        var key = normalizeHeader(cell);
-        if (key && headerIndex[key] === undefined) headerIndex[key] = idx;
-    });
-
-    var missing = [];
-    columns.forEach(function (col) {
-        if (!isExcelImportColumn(col)) return;
-        if (headerIndex[normalizeHeader(col.ColumnName)] === undefined) {
-            missing.push(col.ColumnName);
-        }
-    });
+    var headerIndex = extractExcelHeaderIndex(headerRow);
+    var missing = getMissingTemplateColumns(columns, headerRow);
 
     if (missing.length) {
         var found = headerRow.map(trim).filter(Boolean);
@@ -1205,6 +1324,12 @@ $(document).ready(function () {
                 $('#impFileValidation').text(G_FileError).show();
                 $('#impFileField').addClass('imp-file-invalid');
                 toastr.warning(G_FileError);
+            } else {
+                var sel = selectedTemplate();
+                if (sel) {
+                    checkImportFileForSelectedType(true).finally(updateButtons);
+                    return;
+                }
             }
         }
         updateButtons();
