@@ -658,6 +658,158 @@ function vmBuildVendorMasterPrintHtml(payload) {
     return html;
 }
 
+/** iOS ignores window.close() on tabs from window.open(), so iPhone/iPad use an in-page overlay. */
+function vmIsMobilePrintDevice() {
+    var ua = navigator.userAgent || "";
+    return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function vmLoadScriptOnce(src) {
+    return new Promise(function (resolve, reject) {
+        var s = document.createElement("script");
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
+
+function vmEnsurePdfLibs() {
+    var p = Promise.resolve();
+    if (typeof window.html2canvas !== "function") {
+        p = p.then(function () {
+            return vmLoadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+        });
+    }
+    if (!(window.jspdf && window.jspdf.jsPDF)) {
+        p = p.then(function () {
+            return vmLoadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+        });
+    }
+    return p;
+}
+
+function vmPrintHtmlWithoutToolbar(html, extraCss) {
+    var css = "<style>.no-print{display:none!important;}" + (extraCss || "") + "</style>";
+    return html.indexOf("</head>") >= 0 ? html.replace("</head>", css + "</head>") : css + html;
+}
+
+function vmVendorPdfFileName(item, code) {
+    var base = ((item && item.AccountDesp) || (G_ModuleName === "Vendor Master" ? "Vendor" : "Client")) + "_" + code;
+    return base.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_") + ".pdf";
+}
+
+/** Renders the print HTML off-screen at A4 width and saves it as PDF (no window opened). */
+function vmDownloadHtmlAsPdf(html, fileName) {
+    return vmEnsurePdfLibs().then(function () {
+        return new Promise(function (resolve, reject) {
+            var ifr = document.createElement("iframe");
+            ifr.setAttribute("aria-hidden", "true");
+            ifr.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;";
+            document.body.appendChild(ifr);
+            var doc = ifr.contentDocument;
+            doc.open();
+            doc.write(vmPrintHtmlWithoutToolbar(html, "body{padding:8mm 10mm!important;}"));
+            doc.close();
+
+            var cleanup = function () {
+                if (ifr.parentNode) ifr.parentNode.removeChild(ifr);
+            };
+            var started = Date.now();
+            var waitImages = function () {
+                var pending = [].some.call(doc.images, function (im) {
+                    return !im.complete;
+                });
+                if (pending && Date.now() - started < 4000) {
+                    setTimeout(waitImages, 150);
+                    return;
+                }
+                ifr.style.height = Math.max(doc.documentElement.scrollHeight, 1123) + "px";
+                setTimeout(function () {
+                    window
+                        .html2canvas(doc.documentElement, { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: 794 })
+                        .then(function (canvas) {
+                            var pdf = new window.jspdf.jsPDF("p", "mm", "a4");
+                            var pw = 210,
+                                ph = 297;
+                            var imgH = (canvas.height * pw) / canvas.width;
+                            var img = canvas.toDataURL("image/jpeg", 0.95);
+                            var y = 0;
+                            pdf.addImage(img, "JPEG", 0, y, pw, imgH);
+                            for (var left = imgH - ph; left > 1; left -= ph) {
+                                y -= ph;
+                                pdf.addPage();
+                                pdf.addImage(img, "JPEG", 0, y, pw, imgH);
+                            }
+                            pdf.save(fileName);
+                            cleanup();
+                            resolve();
+                        })
+                        .catch(function (e) {
+                            cleanup();
+                            reject(e);
+                        });
+                }, 200);
+            };
+            setTimeout(waitImages, 100);
+        });
+    });
+}
+
+function vmClosePrintOverlay() {
+    var ov = document.getElementById("vmPrintOverlay");
+    if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+}
+
+function vmShowPrintOverlay(html, pdfName) {
+    vmClosePrintOverlay();
+    var btn = "color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;";
+    var ov = document.createElement("div");
+    ov.id = "vmPrintOverlay";
+    ov.style.cssText = "position:fixed;inset:0;z-index:100050;background:#fff;display:flex;flex-direction:column;";
+    ov.innerHTML =
+        '<div style="flex:none;display:flex;gap:8px;align-items:center;padding:8px 10px;padding-top:max(8px, env(safe-area-inset-top));background:#f3f4f6;border-bottom:1px solid #ddd;">' +
+        '<button type="button" id="vmPoPrint" style="background:#1a2a6c;' + btn + '">Print</button>' +
+        '<button type="button" id="vmPoPdf" style="background:#059669;' + btn + '">Download PDF</button>' +
+        '<button type="button" id="vmPoClose" style="background:#666;margin-left:auto;' + btn + '">Close</button>' +
+        "</div>" +
+        '<div style="flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;">' +
+        '<iframe id="vmPoFrame" title="Print preview" style="display:block;width:100%;height:100%;border:0;"></iframe></div>';
+    document.body.appendChild(ov);
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+
+    var frame = document.getElementById("vmPoFrame");
+    var fdoc = frame.contentDocument;
+    fdoc.open();
+    fdoc.write(vmPrintHtmlWithoutToolbar(html, "body{padding:6px;}"));
+    fdoc.close();
+
+    document.getElementById("vmPoClose").onclick = vmClosePrintOverlay;
+    document.getElementById("vmPoPrint").onclick = function () {
+        try {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+        } catch (e) {
+            toastr.warning("Print is not available on this device. Use Download PDF.");
+        }
+    };
+    document.getElementById("vmPoPdf").onclick = function () {
+        var b = this;
+        b.disabled = true;
+        vmDownloadHtmlAsPdf(html, pdfName)
+            .catch(function (err) {
+                toastr.error("Could not create PDF.");
+                console.error(err);
+            })
+            .then(function () {
+                b.disabled = false;
+            });
+    };
+}
+
 function PrintVendor(code, mode) {
     var c = parseInt(code, 10);
     if (!c) {
@@ -679,6 +831,19 @@ function PrintVendor(code, mode) {
                     attach: { data: payload.attach.data, fileName: payload.attach.fileName },
                     industryTypeLabel: industryLabel
                 });
+                if (vmIsMobilePrintDevice()) {
+                    var pdfName = vmVendorPdfFileName(payload.item, c);
+                    if (mode === "print") {
+                        toastr.info("Preparing PDF...");
+                        vmDownloadHtmlAsPdf(html, pdfName).catch(function (err) {
+                            toastr.error("Could not create PDF.");
+                            console.error(err);
+                        });
+                    } else {
+                        vmShowPrintOverlay(html, pdfName);
+                    }
+                    return;
+                }
                 var win = window.open("", "_blank", "width=920,height=760,scrollbars=yes,resizable=yes");
                 if (!win) {
                     toastr.warning("Please allow popups for this site to use print.");

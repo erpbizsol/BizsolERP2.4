@@ -12,13 +12,40 @@
 #TaskUpdationPage {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
-    padding: 8px 16px 0;
-    height: calc(100vh - 174px);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    padding: 0;
+    height: auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: visible;
     background: linear-gradient(145deg, #eef2ff 0%, #f5f3ff 50%, #ede9fe 100%);
+}
+
+/* Vertical scroll in layout; wide table scrolls inside .tu-grid-wrap */
+body:has(#TaskUpdationPage) #modern-content.modern-content {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+body:has(#TaskUpdationPage) #modern-content.modern-content > main {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: block !important;
+    flex: none !important;
+}
+
+#TaskUpdationPage {
+    max-height: none !important;
+}
+
+/* Card clips rounded corners — avoids page gradient / square white bleed at edges */
+#TaskUpdationPage .tu-card {
+    background: #fff;
+    overflow: hidden;
+    isolation: isolate;
 }
 
 /* ═══════════════════════════════════════════════
@@ -27,14 +54,17 @@
 .tu-card {
     display: flex;
     flex-direction: column;
-    flex: 1;
-    min-height: 0;
+    width: 100%;
+    height: auto;
     border-radius: 20px;
+    background: #fff;
+    background-clip: padding-box;
     box-shadow:
         0 20px 60px rgba(99,102,241,.18),
         0 4px 16px rgba(0,0,0,.08);
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,.6);
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    isolation: isolate;
 }
 
 /* ═══════════════════════════════════════════════
@@ -47,6 +77,7 @@
     padding: 16px 24px 0;
     position: relative;
     overflow: hidden;
+    border-radius: 20px 20px 0 0;
 }
 
 @@keyframes tu-grad-shift {
@@ -264,6 +295,8 @@
     background: #fff;
     border-bottom: 1px solid #e8edf5;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
 }
 .tu-legend-label {
     font-size: 10.5px;
@@ -294,25 +327,35 @@
 /* ═══════════════════════════════════════════════
    GRID WRAPPER
 ═══════════════════════════════════════════════ */
-.tu-grid-wrap {
+.tu-grid-shell {
     background: #fff;
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
 }
 
-/* scrollbar */
-.tu-grid-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
-.tu-grid-wrap::-webkit-scrollbar-track { background: #f8faff; }
-.tu-grid-wrap::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 50px; }
+.tu-grid-wrap {
+    background: #fff;
+    flex: none;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+}
+
+.tu-grid-wrap::-webkit-scrollbar { height: 6px; width: 6px; }
+.tu-grid-wrap::-webkit-scrollbar-track { background: #f8fafc; }
+.tu-grid-wrap::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 3px; }
 .tu-grid-wrap::-webkit-scrollbar-thumb:hover { background: #818cf8; }
+.tu-grid-wrap::-webkit-scrollbar-corner { background: #fff; }
 
 /* ═══════════════════════════════════════════════
    TABLE
 ═══════════════════════════════════════════════ */
 table.tu-table {
     border-collapse: collapse;
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     font-size: 12.5px;
 }
 
@@ -349,7 +392,7 @@ table.tu-table thead th.tu-col-freq {
 }
 table.tu-table thead th.tu-col-sno  { left: 0;     min-width: 46px;  width: 46px;  text-align: center; }
 table.tu-table thead th.tu-col-task { left: 46px;  min-width: 260px; text-align: left; padding-left: 14px; }
-table.tu-table thead th.tu-col-freq { left: 306px; min-width:323px; text-align: left; padding-left: 12px; }
+table.tu-table thead th.tu-col-freq { left: 306px; min-width: 88px; width: 88px; text-align: left; padding-left: 12px; }
 
 /* tbody */
 table.tu-table tbody tr {
@@ -547,6 +590,340 @@ table.tu-table thead th.tu-today-hdr {
     font-size: 13px;
 }
 .tu-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; color: #c7d2fe; }
+
+/* ═══════════════════════════════════════════════
+   MOBILE — labels intact; H-scroll inside card if needed
+═══════════════════════════════════════════════ */
+@@media (max-width: 767px) {
+    #TaskUpdationPage {
+        padding: 1px 2px calc(var(--erp-mobile-nav-height, 30px) + 20px);
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .tu-card {
+        border-radius: 18px;
+        background: #fff;
+        box-shadow:
+            0 12px 40px rgba(99,102,241,.14),
+            0 2px 10px rgba(0,0,0,.06);
+        overflow: hidden;
+        isolation: isolate;
+    }
+
+    .tu-header {
+        border-radius: 18px 18px 0 0;
+        padding: 20px 18px 6px;
+    }
+
+    .tu-grid-shell {
+        border-radius: 0 0 18px 18px;
+    }
+
+    .tu-grid-wrap {
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        background: #fff;
+    }
+
+    .tu-grid-wrap::-webkit-scrollbar-corner {
+        background: #fff;
+    }
+
+    .tu-header-top {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 18px;
+    }
+
+    .tu-hero-left {
+        gap: 14px;
+    }
+
+    .tu-hero-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+        border-radius: 14px;
+    }
+
+    .tu-hero-title {
+        font-size: 1.08rem;
+        line-height: 1.3;
+    }
+
+    .tu-hero-sub {
+        font-size: 0.78rem;
+        margin-top: 6px;
+        line-height: 1.4;
+    }
+
+    .tu-toolbar {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .tu-emp-name {
+        justify-content: center;
+        padding: 10px 16px;
+        font-size: 0.85rem;
+    }
+
+    .tu-user-select,
+    .tu-date-picker {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        padding: 11px 18px;
+        font-size: 0.88rem;
+    }
+
+    .tu-stats-strip {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+        padding: 16px 0 18px;
+    }
+
+    .tu-stats-strip > .tu-stat-card {
+        width: 100%;
+        justify-content: flex-start;
+        padding: 12px 16px 12px 12px;
+        border-radius: 14px;
+        gap: 12px;
+    }
+
+    .tu-stat-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+
+    .tu-stat-num {
+        font-size: 1.15rem;
+    }
+
+    .tu-stat-lbl {
+        font-size: 0.72rem;
+        margin-top: 2px;
+    }
+
+    .tu-progress-wrap {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+        padding: 4px 2px 0;
+    }
+
+    .tu-progress-track {
+        height: 9px;
+    }
+
+    .tu-progress-pct {
+        font-size: 0.75rem;
+        margin-top: 6px;
+        text-align: left;
+    }
+
+    .tu-legend {
+        padding: 16px 18px;
+        gap: 10px 8px;
+        row-gap: 10px;
+    }
+
+    .tu-legend-label {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 2px;
+        font-size: 11px;
+    }
+
+    .tu-leg-pill {
+        font-size: 11px;
+        padding: 7px 13px;
+        gap: 6px;
+    }
+
+    table.tu-table {
+        table-layout: auto;
+        width: max-content;
+        min-width: 100%;
+        font-size: 11px;
+    }
+
+    table.tu-table thead th {
+        position: static;
+        top: auto;
+        white-space: nowrap;
+    }
+
+    table.tu-table thead th.tu-col-sno,
+    table.tu-table thead th.tu-col-task,
+    table.tu-table thead th.tu-col-freq,
+    table.tu-table tbody td.tu-col-sno,
+    table.tu-table tbody td.tu-col-task,
+    table.tu-table tbody td.tu-col-freq {
+        position: static;
+        left: auto;
+        max-width: none;
+    }
+
+    table.tu-table thead th.tu-col-sno,
+    table.tu-table tbody td.tu-col-sno {
+        width: 42px;
+        min-width: 42px;
+        padding: 0 6px;
+    }
+
+    table.tu-table thead th.tu-col-task,
+    table.tu-table tbody td.tu-col-task {
+        width: auto;
+        min-width: 96px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    table.tu-table thead th.tu-col-freq,
+    table.tu-table tbody td.tu-col-freq {
+        width: auto;
+        min-width: 92px;
+        padding-left: 10px;
+        padding-right: 10px;
+        white-space: nowrap;
+        border-right: 1px solid rgba(255,255,255,.12);
+    }
+
+    table.tu-table tbody td.tu-col-freq {
+        border-right: 1px solid #e8edf5;
+    }
+
+    table.tu-table thead th.tu-day-cell,
+    table.tu-table tbody td.tu-day-cell {
+        width: auto;
+        min-width: 52px;
+        padding: 0 8px;
+        white-space: nowrap;
+    }
+
+    table.tu-table thead th {
+        padding: 12px 10px;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    table.tu-table thead th.tu-col-task,
+    table.tu-table thead th.tu-col-freq {
+        text-align: left;
+    }
+
+    table.tu-table thead tr:last-child th {
+        padding: 10px 6px;
+    }
+
+    table.tu-table tbody td {
+        height: auto;
+        min-height: 44px;
+        padding: 8px 4px;
+    }
+
+    .tu-sno-bubble {
+        width: 26px;
+        height: 26px;
+        font-size: 11px;
+        margin: 0 auto;
+    }
+
+    .tu-task-inner {
+        gap: 8px;
+        padding: 6px 6px 6px 8px;
+        min-width: 0;
+    }
+
+    .tu-task-bar {
+        height: 22px;
+    }
+
+    .tu-task-name {
+        display: block;
+        max-width: 42vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: normal;
+        font-size: 11.5px;
+        line-height: 1.35;
+    }
+
+    .tu-freq-badge {
+        font-size: 10px;
+        padding: 5px 10px;
+        gap: 4px;
+        max-width: none;
+        white-space: nowrap;
+        word-break: keep-all;
+        line-height: 1.2;
+        justify-content: flex-start;
+        text-align: left;
+    }
+
+    table.tu-table tbody td.tu-col-freq {
+        text-align: left;
+    }
+
+    .tu-chk {
+        width: 24px;
+        height: 24px;
+    }
+
+    .tu-chk:checked::after {
+        left: 7px;
+        top: 2px;
+        width: 6px;
+        height: 11px;
+    }
+
+    .tu-empty {
+        padding: 48px 24px 56px;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .tu-empty i {
+        margin-bottom: 16px;
+    }
+}
+
+/* Slightly wider phones: stats in a row with breathing room */
+@@media (max-width: 767px) and (min-width: 400px) {
+    .tu-stats-strip {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+    }
+
+    .tu-stats-strip > .tu-stat-card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 12px 8px;
+        gap: 8px;
+    }
+
+    .tu-stats-strip > .tu-stat-card > div:last-child {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .tu-progress-wrap {
+        grid-column: 1 / -1;
+    }
+}
 </style>
 
 <div id="TaskUpdationPage">
@@ -612,6 +989,7 @@ table.tu-table thead th.tu-today-hdr {
         </div>
 
         <!-- ════ GRID ════ -->
+        <div class="tu-grid-shell">
         <div class="tu-grid-wrap">
             <table class="tu-table" id="tuTable">
                 <thead id="tuTableHead"></thead>
@@ -624,6 +1002,7 @@ table.tu-table thead th.tu-today-hdr {
                     </tr>
                 </tbody>
             </table>
+        </div>
         </div>
 
     </div>
