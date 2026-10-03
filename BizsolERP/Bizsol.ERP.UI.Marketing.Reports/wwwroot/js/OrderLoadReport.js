@@ -2662,6 +2662,47 @@ function isShowTotalColumn(colName) {
     });
 }
 
+/* Template DecimalPoint (DataType = N) → normalized column keys for grid formatting */
+function buildTemplateDecimalPointMap(gridKeys) {
+    var map = {};
+    var keys = gridKeys || [];
+
+    (G_OL_TemplateTransactions || []).forEach(function (row) {
+        if (String(prop(row, ['DataType', 'dataType']) || '').trim().toUpperCase() !== 'N') return;
+
+        var dec = parseInt(prop(row, ['DecimalPoint', 'decimalPoint']), 10);
+        if (isNaN(dec) || dec < 0) dec = 0;
+        if (dec > 9) dec = 9;
+
+        var fieldName = prop(row, ['FieldName', 'fieldName']);
+        var fieldNameAs = prop(row, ['FieldNameAs', 'fieldNameAs']);
+        var gridKey = resolveGridColumnKey(keys, fieldName, fieldNameAs);
+
+        [fieldName, fieldNameAs, gridKey].forEach(function (alias) {
+            if (!alias) return;
+            var n = normalizeColumnKey(alias);
+            if (!n) return;
+            map[n] = dec;
+            map[n.replace(/\s+/g, '')] = dec;
+        });
+    });
+
+    return map;
+}
+
+function getTemplateDecimalPoint(colName, templateDecimalMap) {
+    if (!templateDecimalMap || !colName) return null;
+    var key = normalizeColumnKey(colName);
+    if (Object.prototype.hasOwnProperty.call(templateDecimalMap, key)) {
+        return templateDecimalMap[key];
+    }
+    var compact = key.replace(/\s+/g, '');
+    if (Object.prototype.hasOwnProperty.call(templateDecimalMap, compact)) {
+        return templateDecimalMap[compact];
+    }
+    return null;
+}
+
 function bindOrderLoadGrid(response) {
     var rows = formatGridRows(unwrapApiList(response));
 
@@ -3893,8 +3934,14 @@ function buildGridConfig(rows) {
 }
 
 function buildDecimalConfig(numericCols) {
+    var templateDecimals = buildTemplateDecimalPointMap(numericCols);
     var cfg = {};
     numericCols.forEach(function (col) {
+        var fromTemplate = getTemplateDecimalPoint(col, templateDecimals);
+        if (fromTemplate !== null) {
+            cfg[col] = fromTemplate;
+            return;
+        }
         if (/qty|weight|sqm|kg|mt|mtr|amount|rate|value/i.test(col)) {
             cfg[col] = /amount|rate|value/i.test(col) ? 2 : 3;
         } else {

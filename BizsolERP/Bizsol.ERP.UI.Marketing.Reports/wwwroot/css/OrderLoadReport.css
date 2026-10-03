@@ -859,6 +859,63 @@ body > .ol-cd-menu,
     color: #4338ca;
 }
 
+.ol-btn-history {
+    background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+    color: #fff;
+    border: none;
+}
+
+.ol-btn-history:hover:not(:disabled) {
+    filter: brightness(1.05);
+}
+
+.ol-btn-history:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ol-mt-history-subtitle {
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.92;
+    margin-top: 4px;
+}
+
+.ol-mt-history-body {
+    padding-top: 12px;
+}
+
+.ol-mt-history-table-wrap {
+    max-height: min(62vh, 520px);
+    overflow: auto;
+}
+
+#olMtAmendmentHistoryModal #table-body-OlMtAmendmentHistory tr.ol-mt-amend-row-new {
+    background-color: #ecfdf5 !important;
+}
+
+#olMtAmendmentHistoryModal #table-body-OlMtAmendmentHistory tr.ol-mt-amend-row-old {
+    background-color: #f8fafc !important;
+}
+
+#olMtAmendmentHistoryModal #table-body-OlMtAmendmentHistory td.ol-mt-amend-type-new {
+    color: #059669 !important;
+    font-weight: 700 !important;
+}
+
+#olMtAmendmentHistoryModal #table-body-OlMtAmendmentHistory td.ol-mt-amend-type-old {
+    color: #64748b !important;
+    font-weight: 600 !important;
+}
+
+#olMtAmendmentHistoryModal.modal.show {
+    z-index: 1065;
+}
+
+.modal-backdrop.ol-mt-history-backdrop {
+    z-index: 1060;
+}
+
 .ol-btn-ok {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff;
@@ -2184,6 +2241,38 @@ body.ol-print-preview-open {
     padding: 16px 18px;
 }
 
+.ol-mt-tran-history {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin-right: 6px;
+    padding: 0;
+    border: 1px solid #99f6e4;
+    border-radius: 6px;
+    background: #f0fdfa;
+    color: #0d9488;
+    cursor: pointer;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.ol-mt-tran-history:hover {
+    background: #ccfbf1;
+    color: #0f766e;
+}
+
+.ol-mt-name {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ol-mt-name-text {
+    min-width: 0;
+}
+
 .ol-mt-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -2271,8 +2360,11 @@ body.ol-print-preview-open {
     font-size: 12px;
 }
 
-.ol-mt-table input[type="number"] {
+.ol-mt-table input[type="number"],
+.ol-mt-table input.ol-mt-decimal {
     text-align: right;
+    width: 52px;
+    max-width: 100%;
 }
 
 .ol-mt-table input:disabled,
