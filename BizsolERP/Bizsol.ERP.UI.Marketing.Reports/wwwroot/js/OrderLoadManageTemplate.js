@@ -1,4 +1,5 @@
 import { OrderLoadReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderLoadReportService.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { getOrderLoadFormTypeFromQuery } from '../../Bizsol.WebERP.UI.Shared/js/OrderLoadFormTypeUtil.js';
 
@@ -25,8 +26,26 @@ var G_MT_Mode = 'ADD';                // 'ADD' | 'EDIT'
 var G_MT_Rows = [];                   // working copy of grid rows
 var G_MT_Loading = false;
 
+function CheckRight(optionName) {
+    var ModuleName = $('#ERPHeading').text().trim();
+    var optionName = 'ManageTemplate';
+    var FinYear = BizSolHelperFunction.getFinancialYear();
+    return MenuService.CheckModuleOptionRight(ModuleName, optionName, 'Y', FinYear);
+
+}
+
 $(document).ready(function () {
-    $('#btnManageTemplate').on('click', openManageTemplateModal);
+    $('#btnManageTemplate').on('click', function () {
+        CheckRight('ManageTemplate').then(function (respCheck) {
+            if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+                toastr.error(respCheck.Msg || 'You do not have rights for Manage Template.');
+                return;
+            }
+            openManageTemplateModal();
+        }).catch(function () {
+            toastr.error('Permission check failed.');
+        });
+    });
     $('#btnMtAdd').on('click', function () { setMode('ADD'); });
     $('#btnMtEdit').on('click', function () { setMode('EDIT'); });
     $('#btnMtDelete').on('click', deleteTemplate);

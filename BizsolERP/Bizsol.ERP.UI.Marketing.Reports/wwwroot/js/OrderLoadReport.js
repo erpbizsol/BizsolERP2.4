@@ -1,4 +1,5 @@
 ﻿import { OrderLoadReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderLoadReportService.js';
+import { LedgerService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/LedgerService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { getOrderLoadFormTypeFromQuery } from '../../Bizsol.WebERP.UI.Shared/js/OrderLoadFormTypeUtil.js';
 
@@ -156,7 +157,7 @@ function bindEvents() {
             toastr.warning('Please load the report first.');
             return;
         }
-        printOrderLoadReport();
+        onOrderLoadPrintClick();
     });
 
     $('#btnOlPreview').on('click', function () {
@@ -164,7 +165,7 @@ function bindEvents() {
             toastr.warning('Please load the report first.');
             return;
         }
-        openOrderLoadPrintPreview();
+        onOrderLoadPreviewClick();
     });
 }
 
@@ -741,6 +742,7 @@ function canExportOrderLoadGrid() {
 function resetFilters() {
     resetDropdownFilters();
     clearSizeParameterFilter();
+    $('#chkOlReportFormat2').prop('checked', false);
     $('.ol-cd-wrap').removeClass('ol-cd-has-selection');
     $('#olFilterModal .ol-filter-field, #olFieldTemplate')
         .removeClass('ol-filter-applied');
@@ -887,6 +889,8 @@ function collapseAutoFilterTemplateRows(rows) {
                 otherFilter3: prop(row, ['OtherFilter3', 'otherFilter3']),
                 freezeFromColumn: prop(row, ['FreezeFromColumn', 'freezeFromColumn']),
                 showSizeParameterFilter: prop(row, ['ShowSizeParameterFilter', 'showSizeParameterFilter']) || 'N',
+                reportFileName: String(prop(row, ['ReportFileName', 'reportFileName']) || '').trim(),
+                reportFileNameFormat2: String(prop(row, ['ReportFileNameFormat2', 'reportFileNameFormat2']) || '').trim(),
                 fromDate: extractDatesFromApiRow(row).fromDate,
                 toDate: extractDatesFromApiRow(row).toDate
             };
@@ -912,7 +916,9 @@ function mapTemplate(row) {
         otherFilter2: String(prop(row, ['OtherFilter2', 'otherFilter2']) || '').trim(),
         otherFilter3: String(prop(row, ['OtherFilter3', 'otherFilter3']) || '').trim(),
         freezeFromColumn: String(prop(row, ['FreezeFromColumn', 'freezeFromColumn']) || '').trim(),
-        showSizeParameterFilter: prop(row, ['ShowSizeParameterFilter', 'showSizeParameterFilter']) || 'N'
+        showSizeParameterFilter: prop(row, ['ShowSizeParameterFilter', 'showSizeParameterFilter']) || 'N',
+        reportFileName: String(prop(row, ['ReportFileName', 'reportFileName']) || '').trim(),
+        reportFileNameFormat2: String(prop(row, ['ReportFileNameFormat2', 'reportFileNameFormat2']) || '').trim()
     });
     var rowDates = extractDatesFromApiRow(row);
     tpl.fromDate = rowDates.fromDate || tpl.fromDate;
@@ -1209,6 +1215,7 @@ function applyTemplateFilters() {
         G_OL_CurrentLevel = null;
         bindLevelDropdown([]);
         applyLevelToFilters(getDefaultLevelTemplate());
+        updateReportFormat2Checkbox(getDefaultLevelTemplate());
         return;
     }
 
@@ -1248,6 +1255,8 @@ function getDefaultLevelTemplate() {
         showItemType: 'N',
         showItemName: 'N',
         showSizeParameterFilter: 'N',
+        reportFileName: '',
+        reportFileNameFormat2: '',
         freezeFromColumn: '',
         otherFilter1: '',
         otherFilter2: '',
@@ -1287,6 +1296,64 @@ function applyLevelToFilters(tpl) {
     syncTemplateGridMeta(tpl);
     applyFilterActiveColors();
     updateFilterButtonState();
+    updateReportFormat2Checkbox(tpl);
+}
+
+function trimReportFileName(value) {
+    return String(value || '').trim();
+}
+
+function formatReportFileLabel(fileName) {
+    var text = trimReportFileName(fileName);
+    if (!text) return 'Format 2';
+    return text.replace(/\.rpt$/i, '') || 'Format 2';
+}
+
+function usesOrderLoadCrystalReport(tpl) {
+    return !!trimReportFileName(tpl && tpl.reportFileName);
+}
+
+function getOrderLoadCrystalReportFileName(tpl) {
+    tpl = tpl || getSelectedTemplate();
+    var primary = trimReportFileName(tpl.reportFileName);
+    var format2 = trimReportFileName(tpl.reportFileNameFormat2);
+    if (!primary) return '';
+    if (format2 && $('#chkOlReportFormat2').prop('checked')) {
+        return format2;
+    }
+    return primary;
+}
+
+function updateReportFormat2Checkbox(tpl) {
+    tpl = tpl || getSelectedTemplate();
+    var $wrap = $('#olReportFormat2Wrap');
+    var format2 = trimReportFileName(tpl.reportFileNameFormat2);
+
+    if (format2 && usesOrderLoadCrystalReport(tpl)) {
+        $wrap.removeClass('is-hidden');
+        $('#lblOlReportFormat2').text(formatReportFileLabel(format2));
+    } else {
+        $wrap.addClass('is-hidden');
+        $('#chkOlReportFormat2').prop('checked', false);
+    }
+}
+
+function openOrderLoadCrystalReportUrl(response) {
+    var url = LedgerService.extractCrystalUrl(response);
+    if (!url) return false;
+
+    var win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win) {
+        var a = document.createElement('a');
+        a.style.display = 'none';
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    return true;
 }
 
 function hasOtherFilterValue(value) {
@@ -2384,30 +2451,34 @@ function assertValidOrderLoadReportResponse(response, tpl) {
     }
 }
 
-function loadReportData() {
-    if (G_OL_LoadingReport) return;
-
-    var tpl = getSelectedTemplate();
+function validateOrderLoadReportTemplate(tpl) {
     if (!tpl.code || !tpl.desp) {
-        toastr.warning('Please select Template.');
-        return;
+        return 'Please select Template.';
     }
 
     var fromIso = $('#txtFromDate').val();
     var toIso = $('#txtToDate').val();
     if (isFlagY(tpl.showFromDate) && normalizeFieldName(tpl.fieldForDate) && !fromIso) {
-        toastr.warning('Please select ' + fieldNameToLabel(tpl.fieldForDate, 'Order Date') + ' From.');
-        return;
+        return 'Please select ' + fieldNameToLabel(tpl.fieldForDate, 'Order Date') + ' From.';
     }
     if (isFlagY(tpl.showToDate) && normalizeFieldName(tpl.fieldForDate) && !toIso) {
-        toastr.warning('Please select ' + fieldNameToLabel(tpl.fieldForDate, 'Order Date') + ' To.');
-        return;
+        return 'Please select ' + fieldNameToLabel(tpl.fieldForDate, 'Order Date') + ' To.';
     }
-    if (isFlagY(tpl.showFromDate) && isFlagY(tpl.showToDate) && fromIso > toIso) {
-        toastr.warning('From Date must be less than or equal to To Date.');
-        return;
+    if (isFlagY(tpl.showFromDate) && isFlagY(tpl.showToDate) && fromIso && toIso && fromIso > toIso) {
+        return 'From Date must be less than or equal to To Date.';
     }
 
+    return '';
+}
+
+function buildOrderLoadReportRequestParams(tpl) {
+    var validationMsg = validateOrderLoadReportTemplate(tpl);
+    if (validationMsg) {
+        return { error: validationMsg };
+    }
+
+    var fromIso = $('#txtFromDate').val();
+    var toIso = $('#txtToDate').val();
     var auth = {};
     try {
         auth = JSON.parse(sessionStorage.getItem('authKey') || '{}');
@@ -2423,11 +2494,11 @@ function loadReportData() {
     }
 
     var sizeCodes = isOrderLoadSizeParameterFilterEnabled(tpl) ? String(G_OL_ItemSizeMaster_Codes || '').trim() : '';
-    var params = {
+
+    return {
         reportType: String(tpl.desp || '').trim(),
         templateCode: tpl.code,
         filterCondition: normalizeReportCondition(conditions.filterCondition),
-        // Size filter travels only via ItemSizeMaster_Codes; SP builds FilterCondition/QueryCondition.
         queryCondition: normalizeReportCondition(sizeCodes ? '' : conditions.queryCondition),
         fromDate: (isFlagY(tpl.showFromDate) && fromIso) ? isoToApiDate(fromIso) : '',
         toDate: (isFlagY(tpl.showToDate) && toIso) ? isoToApiDate(toIso) : '',
@@ -2441,6 +2512,78 @@ function loadReportData() {
         buyerPOMasterCode: filterCodes.buyerPOMasterCode,
         itemSizeMasterCodes: sizeCodes
     };
+}
+
+function resolveOrderLoadProcedureParamValue(paramName, tpl, requestParams, reportFileName) {
+    var key = String(paramName || '').trim().toUpperCase();
+    switch (key) {
+        case 'F_TEMPLETEMASTER_CODE':
+            return String(requestParams.templateCode || (tpl && tpl.code) || 0);
+        case 'USERMASTER_CODE':
+            return String(requestParams.userMasterCode || 0);
+        case 'FROMDATE':
+            return String(requestParams.fromDate || '');
+        case 'TODATE':
+            return String(requestParams.toDate || '');
+        case 'FILTERCONDITION':
+            return String(requestParams.filterCondition || '');
+        case 'QUERYCONDITION':
+            return String(requestParams.queryCondition || '');
+        case 'MARKETINGMANMASTER_CODE':
+            return String(requestParams.marketingManMasterCode || 0);
+        case 'GODOWNMASTER_CODE':
+            return String(requestParams.godownMasterCode || 0);
+        case 'ITEMGROUPMASTER_CODE':
+            return String(requestParams.itemGroupMasterCode || 0);
+        case 'PROCESSMASTER_CODE':
+            return String(requestParams.processMasterCode || 0);
+        case 'ITEMTYPEMASTER_CODE':
+            return String(requestParams.itemTypeMasterCode || 0);
+        case 'ITEMMASTER_CODE':
+            return String(requestParams.itemMasterCode || 0);
+        case 'BUYERPOMASTER_CODE':
+            return String(requestParams.buyerPOMasterCode || 0);
+        case 'ITEMSIZEMASTER_CODES':
+            return String(requestParams.itemSizeMasterCodes || '');
+        case 'REPORTFILENAME':
+            return String(reportFileName || '');
+        case 'DATABASELOCATION_CODE':
+        case 'SUBREPORTNAME':
+            return '';
+        case 'FILLDATAONLY':
+            return 'N';
+        default:
+            return '';
+    }
+}
+
+function quoteOrderLoadProcedureParamValue(value) {
+    return '\'' + String(value == null ? '' : value).replace(/'/g, "''") + '\'';
+}
+
+function buildOrderLoadPrintProcedureParameters(tpl, requestParams, reportFileName) {
+    var spec = String(tpl && tpl.procedureParameters || '').trim();
+    if (!spec) return '';
+
+    return spec.split('#')
+        .map(function (name) { return String(name || '').trim(); })
+        .filter(function (name) { return !!name; })
+        .map(function (name) {
+            var value = resolveOrderLoadProcedureParamValue(name, tpl, requestParams, reportFileName);
+            return name + '=' + quoteOrderLoadProcedureParamValue(value);
+        })
+        .join('#');
+}
+
+function loadReportData() {
+    if (G_OL_LoadingReport) return;
+
+    var tpl = getSelectedTemplate();
+    var params = buildOrderLoadReportRequestParams(tpl);
+    if (params.error) {
+        toastr.warning(params.error);
+        return;
+    }
 
     setShowButtonLoading(true);
     setGridLoader(true);
@@ -3313,6 +3456,67 @@ function openOrderLoadPrintPreview() {
             toastr.error('Could not open preview.');
         }
     });
+}
+
+function openOrderLoadCrystalReport(isPrint) {
+    var tpl = getSelectedTemplate();
+    if (!usesOrderLoadCrystalReport(tpl)) {
+        return Promise.resolve(false);
+    }
+
+    var params = buildOrderLoadReportRequestParams(tpl);
+    if (params.error) {
+        toastr.warning(params.error);
+        return Promise.resolve(false);
+    }
+
+    var reportFileName = getOrderLoadCrystalReportFileName(tpl);
+    if (!reportFileName) {
+        toastr.warning('Crystal report file is not configured for this template.');
+        return Promise.resolve(false);
+    }
+
+    if (typeof ShowLoader === 'function') ShowLoader();
+
+    return OrderLoadReportService.PrintTemplateReport({
+        isPrint: !!isPrint,
+        reportFileName: reportFileName,
+        procedureParametersAndValues: buildOrderLoadPrintProcedureParameters(tpl, params, reportFileName)
+    })
+        .then(function (response) {
+            if (!openOrderLoadCrystalReportUrl(response)) {
+                var msg = extractOrderLoadReportErrorMessage(response) || 'Crystal report could not be opened.';
+                toastr.error(formatOrderLoadReportErrorMessage(msg, tpl));
+                return false;
+            }
+            return true;
+        })
+        .catch(function (err) {
+            var rawMsg = extractOrderLoadReportErrorMessage(null, err) || 'Crystal report request failed.';
+            toastr.error(formatOrderLoadReportErrorMessage(rawMsg, tpl));
+            return false;
+        })
+        .finally(function () {
+            if (typeof HideLoader === 'function') HideLoader();
+        });
+}
+
+function onOrderLoadPreviewClick() {
+    var tpl = getSelectedTemplate();
+    if (usesOrderLoadCrystalReport(tpl)) {
+        openOrderLoadCrystalReport(false);
+        return;
+    }
+    openOrderLoadPrintPreview();
+}
+
+function onOrderLoadPrintClick() {
+    var tpl = getSelectedTemplate();
+    if (usesOrderLoadCrystalReport(tpl)) {
+        openOrderLoadCrystalReport(true);
+        return;
+    }
+    printOrderLoadReport();
 }
 
 function printOrderLoadReport() {

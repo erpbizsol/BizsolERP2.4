@@ -148,6 +148,20 @@ const OrderLoadReportService = {
 
     GetCompanylist: function GetCompanylist() {
         return promiseAjaxCallApi.CallAPI('GET', templeteReportApiBase() + '/GetCompanylist', '');
+    },
+
+    PrintTemplateReport: function PrintTemplateReport(params) {
+        var URL = `${UrlService.API_ENDPOINT_CRYSTAL}/PrintTemplateReport`;
+        var procedureParametersAndValues = params.ProcedureParametersAndValues
+            || params.procedureParametersAndValues
+            || params.ProcedureParameters
+            || params.procedureParameters
+            || '';
+        var payload = {
+            ReportFileName: String(params.reportFileName || '').trim(),
+            ProcedureParametersAndValues: procedureParametersAndValues,
+        };
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload), { suppressErrorToast: true });
     }
 };
 

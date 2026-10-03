@@ -68,6 +68,10 @@
                         <i class="fas fa-file-excel ol-download-icon-excel"></i> Download
                     </button>
                 </div>
+                <label class="ol-report-format2-wrap is-hidden" id="olReportFormat2Wrap" title="Use alternate Crystal report format">
+                    <input type="checkbox" id="chkOlReportFormat2" />
+                    <span id="lblOlReportFormat2">Format 2</span>
+                </label>
                 <button type="button" class="ol-btn ol-btn-preview" id="btnOlPreview" title="Preview Report" disabled>
                     <i class="fas fa-eye"></i> Preview
                 </button>
@@ -275,8 +279,7 @@
                         </thead>
                         <tbody id="olMtTableBody"></tbody>
                     </table>
-                    <!-- Mobile-only card list (avoids broken table→card CSS) -->
-                    <div id="olMtCards" class="ol-mt-cards" aria-hidden="true"></div>
+                    <div id="olMtCards" class="ol-mt-cards" aria-hidden="true" hidden></div>
                     <div class="ol-mt-empty" id="olMtEmpty">Select a template to load its fields.</div>
                 </div>
             </div>
