@@ -65,6 +65,44 @@
         min-height: 38px;
     }
 
+    .summary-kpi-header.has-action {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        position: relative;
+        padding-right: 36px;
+    }
+
+    .summary-kpi-nav-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        line-height: 1;
+        cursor: pointer;
+        font-size: 11px;
+    }
+
+    .summary-kpi-nav-btn:hover {
+        background: #fff;
+        color: #1e3a6e;
+    }
+
+    #summaryDreamClientTableBody tr.dream-client-closed-in-range td {
+        background-color: #d1fae5 !important;
+    }
+
     .summary-kpi-header small {
         display: block;
         font-size: 10px;
@@ -872,6 +910,16 @@
         font-size: 12px;
         margin-bottom: 0;
         table-layout: fixed;
+    }
+
+    .gc-table.gc-table-wide {
+        table-layout: auto;
+        min-width: 720px;
+    }
+
+    .gc-table .filter-table-heading,
+    .gc-table .table-filter-arrow i {
+        color: #fff !important;
     }
 
     .gc-table th {
@@ -2277,7 +2325,12 @@
                         </div>
                     </div>
                     <div class="summary-kpi-card">
-                        <div class="summary-kpi-header">Lost Client (Count)</div>
+                        <div class="summary-kpi-header has-action">
+                            Lost Client (Count)
+                            <button type="button" id="btnSummaryLostClientTab" class="summary-kpi-nav-btn" title="High GP Lost Client">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                        </div>
                         <div class="summary-kpi-body">
                             <div class="summary-kpi-icon icon-red"><i class="fas fa-user-times"></i></div>
                             <div class="summary-kpi-value-wrap">
@@ -2286,7 +2339,12 @@
                         </div>
                     </div>
                     <div class="summary-kpi-card">
-                        <div class="summary-kpi-header">Close Dream Client</div>
+                        <div class="summary-kpi-header has-action">
+                            Close Dream Client
+                            <button type="button" id="btnSummaryDreamClientDetails" class="summary-kpi-nav-btn" title="Dream Client Details">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
                         <div class="summary-kpi-body">
                             <div class="summary-kpi-icon icon-purple"><i class="fas fa-star"></i></div>
                             <div class="summary-kpi-value-wrap">
@@ -2609,17 +2667,32 @@
                             </div>
                         </div>
                         <div class="gc-scroll w-100">
-                            <table class="gc-table">
+                            <table class="gc-table gc-table-wide">
                                 <thead>
                                     <tr>
                                         <th>MARKETING PERSON</th>
+                                        <th class="text-end">SUPER HIGH</th>
+                                        <th class="text-end">HIGH</th>
+                                        <th class="text-end">MEDIUM</th>
+                                        <th class="text-end">LOW</th>
                                         <th class="text-end">SALE (MT)</th>
                                         <th class="text-end">SHARE %</th>
                                     </tr>
                                 </thead>
                                 <tbody id="gcMktShareBody">
-                                    <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
+                                    <tr><td colspan="7" class="text-center text-muted">Loading...</td></tr>
                                 </tbody>
+                                <tfoot id="gcMktShareFooter">
+                                    <tr class="gc-total">
+                                        <td>Total</td>
+                                        <td class="text-end">0.00</td>
+                                        <td class="text-end">0.00</td>
+                                        <td class="text-end">0.00</td>
+                                        <td class="text-end">0.00</td>
+                                        <td class="text-end">0.00</td>
+                                        <td class="text-end">0.00%</td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -2697,35 +2770,17 @@
         </div>
 
         <div class="gc-card">
-            <div class="gc-head gc-head-green">GP / Sales</div>
+            <div class="gc-head gc-head-green">Party Wise GP / Sales</div>
             <div class="gc-body">
-                <div class="gc-scroll" style="max-height: 360px;">
-                    <table class="gc-table">
-                        <thead>
-                            <tr>
-                                <th rowspan="2">PARTY_CODE</th>
-                                <th colspan="4">GP / Sales</th>
-                            </tr>
-                            <tr>
-                                <th>Super High</th>
-                                <th>High</th>
-                                <th>Medium</th>
-                                <th>Low</th>
-                            </tr>
+                <div class="gc-scroll" style="max-height: 420px;">
+                    <table id="gcGpSalesTable" class="gc-table gc-table-wide table table-sm mb-0">
+                        <thead id="gcGpSalesTableHeader">
                         </thead>
-                        <tbody id="gcGpSalesBody">
+                        <tbody id="gcGpSalesTableBody">
                             <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
                         </tbody>
-                        <tfoot id="gcGpSalesFooter">
-                            <tr class="gc-total">
-                                <td>Grand Total</td>
-                                <td>0.00</td>
-                                <td>0.00</td>
-                                <td>0.00</td>
-                                <td>0.00</td>
-                            </tr>
-                        </tfoot>
                     </table>
+                    <div class="paginator" id="paginator-gcGpSalesTable"></div>
                 </div>
             </div>
         </div>
@@ -3522,6 +3577,27 @@
                     </table>
                     <div class="paginator" id="paginator-highGPLostClientTable">
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="summaryDreamClientModal" tabindex="-1" aria-labelledby="summaryDreamClientModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="summaryDreamClientModalTitle">Dream Client Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="summaryDreamClientMatchInfo" class="mb-2 fw-semibold">Closed in filter range: 0 / 0</div>
+                <div class="table-responsive">
+                    <table id="summaryDreamClientTable" class="table table-sm table-striped table-bordered mb-0">
+                        <thead class="table-secondary" id="summaryDreamClientTableHeader"></thead>
+                        <tbody id="summaryDreamClientTableBody"></tbody>
+                    </table>
+                    <div class="paginator" id="paginator-summaryDreamClientTable"></div>
                 </div>
             </div>
         </div>
