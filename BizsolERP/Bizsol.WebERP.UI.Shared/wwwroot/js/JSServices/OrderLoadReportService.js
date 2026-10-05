@@ -146,6 +146,31 @@ const OrderLoadReportService = {
         return promiseAjaxCallApi.CallAPI('POST', URL, '');
     },
 
+    /**
+     * Amendment history (USP_GetCommonAmendmentDetails).
+     * Unused table names → ""; unused codes / AmendmentNo → 0.
+     */
+    GetTemplateAmendmentDetails: function GetTemplateAmendmentDetails(options) {
+        var opts = options || {};
+        function amendmentNameQuery(value) {
+            if (value === null || value === undefined) return '';
+            return String(value);
+        }
+        function amendmentCodeQuery(value) {
+            if (value === null || value === undefined || value === '') return 0;
+            var n = parseInt(value, 10);
+            return isNaN(n) ? 0 : n;
+        }
+        var URL = templeteReportApiBase()
+            + '/GetTemplateAmendmentDetails'
+            + '?MasterTableName=' + encodeURIComponent(amendmentNameQuery(opts.masterTableName))
+            + '&MasterTableCode=' + encodeURIComponent(amendmentCodeQuery(opts.masterTableCode))
+            + '&TransactionTableName=' + encodeURIComponent(amendmentNameQuery(opts.transactionTableName))
+            + '&TransactionTableCode=' + encodeURIComponent(amendmentCodeQuery(opts.transactionTableCode))
+            + '&AmendmentNo=' + encodeURIComponent(amendmentCodeQuery(opts.amendmentNo));
+        return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
+    },
+
     GetCompanylist: function GetCompanylist() {
         return promiseAjaxCallApi.CallAPI('GET', templeteReportApiBase() + '/GetCompanylist', '');
     },
