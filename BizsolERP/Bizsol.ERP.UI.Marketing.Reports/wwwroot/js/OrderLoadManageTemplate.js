@@ -1,4 +1,5 @@
 import { OrderLoadReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderLoadReportService.js';
+import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { getOrderLoadFormTypeFromQuery } from '../../Bizsol.WebERP.UI.Shared/js/OrderLoadFormTypeUtil.js';
 
@@ -8,7 +9,7 @@ import { getOrderLoadFormTypeFromQuery } from '../../Bizsol.WebERP.UI.Shared/js/
   ADD  -> Master Template dropdown (Y). Save requires Template Name; creates user template (N).
   EDIT -> Master + user templates. Master: Show/Hide editable. User template: full edit.
           All changes saved only on Save click. Dropdown colored green (Y) / orange (N).
-  Show Total disabled only for varchar/string DataType.
+  Show Total and Decimal Point enabled only when DataType = 'N' (numeric).
 */
 
 function getManageTemplateFormType() {
@@ -25,12 +26,33 @@ var G_MT_Mode = 'ADD';                // 'ADD' | 'EDIT'
 var G_MT_Rows = [];                   // working copy of grid rows
 var G_MT_Loading = false;
 
+function CheckRight(optionName) {
+    var ModuleName = $('#ERPHeading').text().trim();
+    var optionName = 'ManageTemplate';
+    var FinYear = BizSolHelperFunction.getFinancialYear();
+    return MenuService.CheckModuleOptionRight(ModuleName, optionName, 'Y', FinYear);
+
+}
+
 $(document).ready(function () {
-    $('#btnManageTemplate').on('click', openManageTemplateModal);
+    $('#btnManageTemplate').on('click', function () {
+        CheckRight('ManageTemplate').then(function (respCheck) {
+            if (respCheck && respCheck.CheckModuleOptionRight === 'N') {
+                toastr.error(respCheck.Msg || 'You do not have rights for Manage Template.');
+                return;
+            }
+            openManageTemplateModal();
+        }).catch(function () {
+            toastr.error('Permission check failed.');
+        });
+    });
     $('#btnMtAdd').on('click', function () { setMode('ADD'); });
     $('#btnMtEdit').on('click', function () { setMode('EDIT'); });
     $('#btnMtDelete').on('click', deleteTemplate);
     $('#btnMtSave').on('click', saveTemplate);
+    $('#btnMtHistory').on('click', function () {
+        openManageTemplateAmendmentHistory({ mode: 'master' });
+    });
     $('#ddlMtMaster').on('change', onMasterTemplateChange);
     $('#chkMtSelectAll').on('change', function () {
         var checked = $(this).is(':checked');
@@ -184,8 +206,21 @@ function loadTemplateTransaction(code) {
 
 /* ─────────────────────────── grid ─────────────────────────── */
 
+function getTemplateTransactionRowCode(row) {
+    if (!row) return 0;
+    var raw = prop(row, [
+        'Code', 'code',
+        'F_TempleteTransaction_Code', 'f_TempleteTransaction_Code',
+        'TempleteTransaction_Code', 'templeteTransaction_Code',
+        'TransactionCode', 'transactionCode',
+        'TranTableCode', 'tranTableCode'
+    ]);
+    return parseInt(raw, 10) || 0;
+}
+
 function mapRow(row) {
     return {
+        Code: getTemplateTransactionRowCode(row),
         FieldName: String(prop(row, ['FieldName', 'fieldName']) || ''),
         FieldNameAs: String(prop(row, ['FieldNameAs', 'fieldNameAs']) || ''),
         ShowTotal: flag(prop(row, ['ShowTotal', 'showTotal']), 'N'),
@@ -223,12 +258,19 @@ function renderGrid() {
     G_MT_Rows.forEach(function (row, i) {
         var selected = row.Selected === 'Y';
         var totalAttrs = buildShowTotalInputAttrs(row);
+        var decimalAttrs = buildDecimalPointInputAttrs(row);
         $body.append(
             '<tr data-idx="' + i + '" class="' + (selected ? 'ol-mt-selected' : '') + '">' +
                 '<td class="text-center"><input type="checkbox" class="ol-mt-row-select" ' + (selected ? 'checked' : '') + ' /></td>' +
-                '<td class="ol-mt-name">' + escapeHtml(row.FieldName) + '</td>' +
+                '<td class="ol-mt-name">' +
+                    '<button type="button" class="ol-mt-tran-history" title="Field amendment history" aria-label="Field history">' +
+                        '<i class="fas fa-clock-rotate-left"></i>' +
+                    '</button>' +
+                    '<span class="ol-mt-name-text">' + escapeHtml(row.FieldName) + '</span>' +
+                '</td>' +
                 '<td><input type="text" class="ol-mt-display" value="' + escapeHtml(row.FieldNameAs) + '" /></td>' +
                 '<td class="text-center"><input type="checkbox" class="ol-mt-total" ' + totalAttrs + ' /></td>' +
+                '<td class="text-center"><input type="text" inputmode="numeric" class="ol-mt-decimal" ' + decimalAttrs + ' /></td>' +
                 '<td class="text-center"><input type="checkbox" class="ol-mt-filter" ' + (row.ApplyFilter === 'Y' ? 'checked' : '') + ' /></td>' +
                 '<td class="text-center"><input type="number" step="0.01" class="ol-mt-sort" value="' + row.SortOrder + '" /></td>' +
                 '<td class="text-center"><input type="checkbox" class="ol-mt-print" ' + (row.ShowInPrint === 'Y' ? 'checked' : '') + ' /></td>' +
@@ -242,6 +284,9 @@ function renderGrid() {
                         '<input type="checkbox" class="ol-mt-row-select" ' + (selected ? 'checked' : '') + ' />' +
                         '<span class="ol-mt-card-title">' + escapeHtml(row.FieldName) + '</span>' +
                     '</label>' +
+                    '<button type="button" class="ol-mt-tran-history" title="Field amendment history" aria-label="Field history">' +
+                        '<i class="fas fa-clock-rotate-left"></i>' +
+                    '</button>' +
                 '</div>' +
                 '<div class="ol-mt-card-row">' +
                     '<span class="ol-mt-card-label">Display Name</span>' +
@@ -250,6 +295,10 @@ function renderGrid() {
                 '<div class="ol-mt-card-row">' +
                     '<span class="ol-mt-card-label">Sort Order</span>' +
                     '<input type="number" step="0.01" class="ol-mt-sort" value="' + row.SortOrder + '" />' +
+                '</div>' +
+                '<div class="ol-mt-card-row">' +
+                    '<span class="ol-mt-card-label">Decimal Point</span>' +
+                    '<input type="text" inputmode="numeric" class="ol-mt-decimal" ' + decimalAttrs + ' />' +
                 '</div>' +
                 '<div class="ol-mt-card-flags">' +
                     '<label><input type="checkbox" class="ol-mt-total" ' + totalAttrs + ' /> Show Total</label>' +
@@ -274,6 +323,14 @@ function bindRowEvents() {
         syncSelectAllState();
         rebuildFreezeColumnOptions();
     });
+    $wrap.on('click.mt', '.ol-mt-tran-history', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openManageTemplateAmendmentHistory({
+            mode: 'transaction',
+            rowIndex: rowIndex(this)
+        });
+    });
     $wrap.on('input.mt', '.ol-mt-display', function () {
         var idx = rowIndex(this);
         var val = this.value;
@@ -288,6 +345,27 @@ function bindRowEvents() {
         var on = this.checked;
         G_MT_Rows[idx].ShowTotal = on ? 'Y' : 'N';
         $('.ol-mt-grid-wrap [data-idx="' + idx + '"] .ol-mt-total').prop('checked', on);
+    });
+    $wrap.on('input.mt', '.ol-mt-decimal', function () {
+        if (this.disabled) return;
+        var raw = String(this.value || '').replace(/\D/g, '');
+        if (raw !== this.value) {
+            this.value = raw;
+        }
+        var idx = rowIndex(this);
+        $('.ol-mt-grid-wrap [data-idx="' + idx + '"] .ol-mt-decimal').val(raw);
+        if (raw === '') return;
+        var parsed = parseInt(raw, 10);
+        if (!isNaN(parsed)) {
+            G_MT_Rows[idx].DecimalPoint = parsed;
+        }
+    });
+    $wrap.on('change.mt blur.mt', '.ol-mt-decimal', function () {
+        if (this.disabled) return;
+        var idx = rowIndex(this);
+        var val = clampDecimalPoint(this.value);
+        G_MT_Rows[idx].DecimalPoint = val;
+        $('.ol-mt-grid-wrap [data-idx="' + idx + '"] .ol-mt-decimal').val(val);
     });
     $wrap.on('change.mt', '.ol-mt-filter', function () {
         var idx = rowIndex(this);
@@ -367,28 +445,50 @@ function isMasterTemplateEditMode() {
     return G_MT_Mode === 'EDIT' && isMasterManageTemplateSelected();
 }
 
-function isVarcharDataType(dataType) {
-    var dt = String(dataType || 'S').trim().toUpperCase();
-    return dt === 'S'
-        || dt === 'VARCHAR'
-        || dt === 'NVARCHAR'
-        || dt === 'CHAR'
-        || dt === 'NCHAR'
-        || dt === 'STRING'
-        || dt === 'TEXT';
+function isNumericDataType(dataType) {
+    return String(dataType || 'S').trim().toUpperCase() === 'N';
 }
 
-function canEnableShowTotal(row) {
-    return !isVarcharDataType(row.DataType);
+function canEnableNumericFieldOptions(row) {
+    return isNumericDataType(row.DataType);
+}
+
+function clampDecimalPoint(value) {
+    var text = String(value == null ? '' : value).trim();
+    if (text === '') return 0;
+    var n = parseInt(text, 10);
+    if (isNaN(n) || n < 0) return 0;
+    if (n > 9) return 9;
+    return n;
+}
+
+function syncDecimalPointsFromInputs() {
+    G_MT_Rows.forEach(function (row, i) {
+        var $input = $('.ol-mt-grid-wrap [data-idx="' + i + '"] .ol-mt-decimal').first();
+        if (!$input.length || $input.prop('disabled')) return;
+        var val = clampDecimalPoint($input.val());
+        row.DecimalPoint = val;
+        $('.ol-mt-grid-wrap [data-idx="' + i + '"] .ol-mt-decimal').val(val);
+    });
 }
 
 function buildShowTotalInputAttrs(row) {
-    var enabled = canEnableShowTotal(row);
+    var enabled = canEnableNumericFieldOptions(row);
     if (!enabled) {
         row.ShowTotal = 'N';
         return 'disabled';
     }
     return row.ShowTotal === 'Y' ? 'checked' : '';
+}
+
+function buildDecimalPointInputAttrs(row) {
+    var enabled = canEnableNumericFieldOptions(row);
+    var val = clampDecimalPoint(row.DecimalPoint);
+    row.DecimalPoint = val;
+    if (!enabled) {
+        return 'value="' + val + '" disabled';
+    }
+    return 'value="' + val + '"';
 }
 
 function applyHeaderFieldStates() {
@@ -398,6 +498,7 @@ function applyHeaderFieldStates() {
     $('#txtMtTemplateName').prop('readonly', false);
     $('#ddlMtFreezeColumn').prop('disabled', false);
     $('#btnMtDelete').prop('disabled', isMasterManageTemplateSelected() || !(parseInt($('#ddlMtMaster').val(), 10) || 0));
+    $('#btnMtHistory').prop('disabled', !(parseInt($('#ddlMtMaster').val(), 10) || 0));
 }
 
 function isMasterTemplateSave() {
@@ -417,15 +518,19 @@ function applyGridFieldStates() {
 
     G_MT_Rows.forEach(function (row, i) {
         var $hosts = $('.ol-mt-grid-wrap [data-idx="' + i + '"]');
-        var showTotalEnabled = canEnableShowTotal(row);
+        var numericEnabled = canEnableNumericFieldOptions(row);
 
-        if (!showTotalEnabled) {
+        if (!numericEnabled) {
             row.ShowTotal = 'N';
         }
 
         $hosts.find('.ol-mt-total')
-            .prop('disabled', !showTotalEnabled)
-            .prop('checked', showTotalEnabled && row.ShowTotal === 'Y');
+            .prop('disabled', !numericEnabled)
+            .prop('checked', numericEnabled && row.ShowTotal === 'Y');
+        row.DecimalPoint = clampDecimalPoint(row.DecimalPoint);
+        $hosts.find('.ol-mt-decimal')
+            .prop('disabled', !numericEnabled)
+            .val(row.DecimalPoint);
         $hosts.find('.ol-mt-display').prop('readonly', false);
         $hosts.find('.ol-mt-filter').prop('disabled', false);
         $hosts.find('.ol-mt-sort').prop('readonly', false);
@@ -460,7 +565,7 @@ function buildSavePayload(selectedCode, name, isMasterSave, visibilityOnly) {
                 SortOrder: r.SortOrder,
                 DataType: r.DataType,
                 Selected: r.Selected,
-                DecimalPoint: r.DecimalPoint,
+                DecimalPoint: clampDecimalPoint(r.DecimalPoint),
                 EditAllow: r.EditAllow,
                 AllowVisible: r.AllowVisible,
                 ShowInPrint: r.ShowInPrint,
@@ -503,6 +608,8 @@ function saveTemplate() {
         toastr.warning('Select at least one field.');
         return;
     }
+
+    syncDecimalPointsFromInputs();
 
     var visibilityOnly = isMasterSave;
     var payload = buildSavePayload(selectedCode, name, isMasterSave, visibilityOnly);
@@ -683,4 +790,324 @@ function prop(obj, names) {
         }
     }
     return '';
+}
+
+/* ─────────────────────────── amendment history ─────────────────────────── */
+
+var G_MT_AMENDMENT_TABLE_MASTER = 'F_TempleteMaster';
+var G_MT_AMENDMENT_TABLE_TRANSACTION = 'F_TempleteTransaction';
+
+/** Master: F_TempleteMaster + template Code; tran name blank, tran code 0. */
+function fetchTemplateAmendmentMasterHistory(templateCode) {
+    return OrderLoadReportService.GetTemplateAmendmentDetails({
+        masterTableName: G_MT_AMENDMENT_TABLE_MASTER,
+        masterTableCode: templateCode,
+        transactionTableName: '',
+        transactionTableCode: 0,
+        amendmentNo: 0
+    }).then(function (response) {
+        return normalizeAmendmentHistoryResponse(response);
+    });
+}
+
+/** Transaction row: only Tran table name + Tran row Code (master name/code blank/0). */
+function fetchTemplateAmendmentTransactionHistory(transactionRowCode) {
+    return OrderLoadReportService.GetTemplateAmendmentDetails({
+        masterTableName: '',
+        masterTableCode: 0,
+        transactionTableName: G_MT_AMENDMENT_TABLE_TRANSACTION,
+        transactionTableCode: transactionRowCode,
+        amendmentNo: 0
+    }).then(function (response) {
+        return normalizeAmendmentHistoryResponse(response);
+    });
+}
+
+function normalizeAmendmentHistoryResponse(resp) {
+    if (Array.isArray(resp)) return resp;
+    if (resp && Array.isArray(resp.data)) return resp.data;
+    if (resp && Array.isArray(resp.Data)) return resp.Data;
+    return [];
+}
+
+function amendmentCanonicalColumnName(key) {
+    if (key == null) return key;
+    var t = String(key).trim();
+    var compact = t.replace(/\s+/g, '').toLowerCase();
+    var aliases = {
+        trancode: 'TranCode',
+        type: 'Type',
+        amendmentno: 'Amendment No',
+        amendmentdate: 'Amendment Date',
+        amendmenttime: 'Amendment Time',
+        amendmentby: 'Amendment By'
+    };
+    return aliases[compact] || t;
+}
+
+function formatAmendmentHistoryDate(val) {
+    if (val == null || val === '') return '';
+    try {
+        var d = new Date(val);
+        if (isNaN(d.getTime())) return String(val);
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch (e) {
+        return String(val);
+    }
+}
+
+var G_MT_AMENDMENT_HIDDEN_COLS = ['TranCode', 'Table', '__bizsolRowClass'];
+
+function orderAmendmentHistoryColumns(allKeys, historyMode) {
+    /* Audit first, then Old/New, then changed columns (master vs field order). */
+    var head = ['Amendment No', 'Amendment Date', 'Amendment Time', 'Amendment By', 'Type'];
+    var masterPivot = ['Freeze Column', 'Template Name', 'Desp', 'Description'];
+    var tranPivot = [
+        'Display Name', 'Decimal Places', 'Decimal Point',
+        'Show Total', 'Sort Order', 'Show', 'Filter', 'Show In Print'
+    ];
+    var pivotPreferred = historyMode === 'transaction'
+        ? tranPivot.slice()
+        : masterPivot.concat(tranPivot);
+    var used = {};
+    var ordered = [];
+
+    head.forEach(function (k) {
+        if (allKeys.indexOf(k) >= 0 && !used[k]) {
+            ordered.push(k);
+            used[k] = true;
+        }
+    });
+
+    pivotPreferred.forEach(function (k) {
+        if (allKeys.indexOf(k) >= 0 && !used[k]) {
+            ordered.push(k);
+            used[k] = true;
+        }
+    });
+
+    allKeys.filter(function (k) {
+        return !used[k] && G_MT_AMENDMENT_HIDDEN_COLS.indexOf(k) < 0;
+    }).sort(function (a, b) {
+        return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+    }).forEach(function (k) {
+        ordered.push(k);
+    });
+
+    return ordered;
+}
+
+function prepareTemplateAmendmentHistoryRows(rawRows, historyMode) {
+    var list = Array.isArray(rawRows) ? rawRows : [];
+    var canonicalRows = list.map(function (row) {
+        var o = {};
+        Object.keys(row).forEach(function (k) {
+            o[amendmentCanonicalColumnName(k)] = row[k];
+        });
+        return o;
+    });
+
+    var keySet = new Set();
+    canonicalRows.forEach(function (r) {
+        Object.keys(r).forEach(function (k) { keySet.add(k); });
+    });
+    var orderedKeys = orderAmendmentHistoryColumns(Array.from(keySet), historyMode || 'master');
+    var numericPivotNames = ['Decimal Places', 'Decimal Point', 'Sort Order', 'Amendment No'];
+
+    return canonicalRows.map(function (r) {
+        var out = {};
+        orderedKeys.forEach(function (k) {
+            var v = r.hasOwnProperty(k) ? r[k] : '';
+            if (k === 'Amendment Date' && v !== '' && v != null) {
+                out[k] = formatAmendmentHistoryDate(v);
+                return;
+            }
+            if (v === null || v === undefined) v = '';
+            if (v === '' && numericPivotNames.indexOf(k) >= 0) {
+                out[k] = '—';
+            } else {
+                out[k] = v;
+            }
+        });
+        var typeRaw = String(r.Type || '').trim();
+        if (typeRaw === 'NewValue') {
+            out.__bizsolRowClass = 'ol-mt-amend-row-new';
+        } else if (typeRaw === 'OldValue') {
+            out.__bizsolRowClass = 'ol-mt-amend-row-old';
+        }
+        return out;
+    });
+}
+
+function paintAmendmentHistoryRowStyles(bodyId, columnKeys) {
+    var typeIdx = columnKeys.indexOf('Type');
+    if (typeIdx < 0) return;
+    $('#' + bodyId + ' tr').each(function () {
+        var $tr = $(this);
+        var $typeTd = $tr.children('td').eq(typeIdx);
+        var t = $typeTd.text().trim();
+        $typeTd.removeClass('ol-mt-amend-type-new ol-mt-amend-type-old');
+        if (t === 'NewValue') {
+            $typeTd.addClass('ol-mt-amend-type-new');
+        } else if (t === 'OldValue') {
+            $typeTd.addClass('ol-mt-amend-type-old');
+        }
+    });
+}
+
+function hookAmendmentHistoryGridRepaint(bodyId, columnKeys) {
+    var tableId = $('#' + bodyId).closest('table').attr('id') || 'tblOlMtAmendmentHistory';
+    var pagSel = '#paginator-' + tableId;
+    $(document).off('click.olMtAmendPaint', pagSel).on('click.olMtAmendPaint', pagSel + ' button', function () {
+        setTimeout(function () { paintAmendmentHistoryRowStyles(bodyId, columnKeys); }, 0);
+    });
+    $(document).off('change.olMtAmendPaint', pagSel).on('change.olMtAmendPaint', pagSel + ' select', function () {
+        setTimeout(function () { paintAmendmentHistoryRowStyles(bodyId, columnKeys); }, 0);
+    });
+}
+
+function sortAmendmentHistoryRows(rows) {
+    return rows.slice().sort(function (a, b) {
+        var noA = parseInt(a['Amendment No'], 10) || 0;
+        var noB = parseInt(b['Amendment No'], 10) || 0;
+        if (noA !== noB) return noB - noA;
+        var tcA = parseInt(a.TranCode, 10) || 0;
+        var tcB = parseInt(b.TranCode, 10) || 0;
+        if (tcA !== tcB) return tcA - tcB;
+        var timeA = String(a['Amendment Time'] || '');
+        var timeB = String(b['Amendment Time'] || '');
+        if (timeA !== timeB) return timeB.localeCompare(timeA);
+        var rank = { OldValue: 0, NewValue: 1 };
+        var ra = rank.hasOwnProperty(a.Type) ? rank[a.Type] : 9;
+        var rb = rank.hasOwnProperty(b.Type) ? rank[b.Type] : 9;
+        return ra - rb;
+    });
+}
+
+function showManageTemplateHistoryModal() {
+    var histEl = document.getElementById('olMtAmendmentHistoryModal');
+    if (!histEl) return;
+    if (window.bootstrap && bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(histEl).show();
+    } else {
+        $(histEl).modal('show');
+    }
+}
+
+function bindTemplateAmendmentHistoryGrid(raw, Grid, historyMode) {
+    historyMode = historyMode === 'transaction' ? 'transaction' : 'master';
+    $('#table-header-OlMtAmendmentHistory').empty();
+    $('#table-body-OlMtAmendmentHistory').empty();
+    $('#paginator-tblOlMtAmendmentHistory').empty();
+
+    if (!raw.length) {
+        $('#table-body-OlMtAmendmentHistory').html(
+            '<tr><td colspan="99" style="text-align:center;padding:24px;color:#64748b;">No amendment history found.</td></tr>'
+        );
+        return;
+    }
+
+    var rows = sortAmendmentHistoryRows(prepareTemplateAmendmentHistoryRows(raw, historyMode));
+    var keys = Object.keys(rows[0]);
+    var hiddenColumns = G_MT_AMENDMENT_HIDDEN_COLS.filter(function (k) {
+        return keys.indexOf(k) >= 0;
+    });
+    var DateFilterColumn = keys.indexOf('Amendment Date') >= 0 ? ['Amendment Date'] : [];
+    var NumericFilterColumn = keys.filter(function (k) {
+        return hiddenColumns.indexOf(k) < 0
+            && (k === 'Amendment No' || k === 'Decimal Places' || k === 'Decimal Point' || k === 'Sort Order');
+    });
+    var StringFilterColumn = keys.filter(function (k) {
+        return hiddenColumns.indexOf(k) < 0
+            && DateFilterColumn.indexOf(k) < 0
+            && NumericFilterColumn.indexOf(k) < 0;
+    });
+    var ColumnAlignment = {};
+    keys.forEach(function (k) {
+        if (NumericFilterColumn.indexOf(k) >= 0) {
+            ColumnAlignment[k] = 'right';
+        } else if (k === 'Type') {
+            ColumnAlignment[k] = 'center';
+        }
+    });
+
+    Grid.CreateDataTable(
+        'table-header-OlMtAmendmentHistory',
+        'table-body-OlMtAmendmentHistory',
+        rows,
+        false,
+        [],
+        StringFilterColumn,
+        NumericFilterColumn,
+        DateFilterColumn,
+        [],
+        hiddenColumns,
+        ColumnAlignment,
+        true
+    );
+
+    var bodyId = 'table-body-OlMtAmendmentHistory';
+    setTimeout(function () {
+        paintAmendmentHistoryRowStyles(bodyId, keys);
+        hookAmendmentHistoryGridRepaint(bodyId, keys);
+    }, 0);
+}
+
+function openManageTemplateAmendmentHistory(options) {
+    var opts = options || {};
+    var mode = opts.mode === 'transaction' ? 'transaction' : 'master';
+    var templateCode = parseInt($('#ddlMtMaster').val(), 10) || 0;
+    if (!templateCode) {
+        toastr.warning('Please select a template first.');
+        return;
+    }
+
+    var Grid = window.BizsolCustomFilterGrid;
+    if (!Grid || typeof Grid.CreateDataTable !== 'function') {
+        toastr.error('Grid component not loaded.');
+        return;
+    }
+
+    var templateName = getSelectedManageTemplateName()
+        || String($('#ddlMtMaster option:selected').text() || '').trim();
+    var loadPromise;
+    var titleText = 'Template Amendment History — Master';
+    var subtitle = templateName + ' · Master Code ' + templateCode + ' · ' + G_MT_FORM_TYPE;
+
+    if (mode === 'transaction') {
+        var rowIdx = parseInt(opts.rowIndex, 10);
+        var fieldRow = G_MT_Rows[rowIdx];
+        if (!fieldRow) {
+            toastr.warning('Field row not found.');
+            return;
+        }
+        var tranCode = getTemplateTransactionRowCode(fieldRow);
+        if (!tranCode) {
+            toastr.warning('Transaction code missing for this field. Check GetTemplateTransaction returns Code (F_TempleteTransaction PK).');
+            return;
+        }
+        var fieldLabel = String(fieldRow.FieldNameAs || fieldRow.FieldName || '').trim() || ('Row ' + (rowIdx + 1));
+        titleText = 'Field Amendment History';
+        subtitle = fieldLabel + ' · Template ' + templateName + ' (' + templateCode + ')';
+        loadPromise = fetchTemplateAmendmentTransactionHistory(tranCode);
+    } else {
+        loadPromise = fetchTemplateAmendmentMasterHistory(templateCode);
+    }
+
+    $('#olMtAmendmentHistoryLabel').html('<i class="fas fa-clock-rotate-left me-2"></i>' + escapeHtml(titleText));
+    $('#olMtAmendmentHistorySubtitle').text(subtitle);
+
+    showManageTemplateHistoryModal();
+    setGridLoader(true);
+
+    loadPromise
+        .then(function (raw) {
+            bindTemplateAmendmentHistoryGrid(raw, Grid, mode);
+        })
+        .catch(function (err) {
+            toastr.error(apiError(err, 'Could not load amendment history. Ensure GetTemplateAmendmentDetails API is deployed.'));
+        })
+        .finally(function () {
+            setGridLoader(false);
+        });
 }

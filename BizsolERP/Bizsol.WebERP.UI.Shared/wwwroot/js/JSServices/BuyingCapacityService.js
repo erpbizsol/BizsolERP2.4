@@ -54,6 +54,14 @@ const BuyingCapacityService = {
             }
         );
     },
+    GetClientRatingMaster: function GetClientRatingMaster() {
+        var URL = UrlService.API_ENDPOINT_BuyingCapacity + "/GetClientRatingMaster";
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 export { BuyingCapacityService }

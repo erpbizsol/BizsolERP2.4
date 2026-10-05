@@ -423,6 +423,8 @@ function EmptyInNew() {
     $('#DivEmptyInDriverLicenseExpiredDate').hide();
     $('#RowfrmEmptyInTokenNo').hide();
     $('#DivEmptyInDriverAadharNo').hide();
+    $('#DivfrmEmptyIn_CustomerName').hide();
+    $('#frmEmptyIn_txtCustomerNameIn').val('');
 
     GateEntryService.GetTransportersNameList().then(function (response) {
         //console.log(response);
@@ -465,6 +467,14 @@ function EmptyInNew() {
 
         $('#RowfrmEmptyInReportingDatetime').show();
         $('#RowfrmEmptyInTokenNo').show();
+    }
+
+    const customerNameConfig = ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'CustomerNameInEmptyIN');
+    if (customerNameConfig && customerNameConfig.PerameterValue === 'Y') {
+        $('#DivfrmEmptyIn_CustomerName').show();
+        GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
+            AutoSuggestionControl.SetUpAutoSuggestion($('#frmEmptyIn_txtCustomerNameIn'), $('#frmEmptyIn_txtCustomerNameIn_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+        });
     }
 
     $('#DivfrmEmptyIn_fileVehiclePhoto').show();
@@ -704,6 +714,14 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
     $('#frmEmptyIn_ddlTransporterName').val(gateEntryData[0].OtherTransporterName);
     $('#frmEmptyIn_txtRemarks').val(gateEntryData[0].Remarks);
     $('#frmEmptyIn_txtVehicleEmptyWeight').val(gateEntryData[0].EmptyWeight);
+    const updateEmptyInCustomerConfig = ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'CustomerNameInEmptyIN');
+    if (updateEmptyInCustomerConfig && updateEmptyInCustomerConfig.PerameterValue === 'Y') {
+        $('#frmEmptyIn_txtCustomerNameIn').val(gateEntryData[0].VendorName);
+        $('#frmEmptyIn_txtCustomerNameIn').attr('readonly', 'readonly');
+        $('#DivfrmEmptyIn_CustomerName').show();
+    } else {
+        $('#DivfrmEmptyIn_CustomerName').hide();
+    }
     $('#frmEmptyIn_txtWeightmentSlipNoEmpty').val(gateEntryData[0].WeightmentSlipNumberIn);
     $('#frmEmptyIn_txtReportingDatetime').val(gateEntryData[0].ReportingDatetime);
     //$('#frmLoadedOut_txtDateOut').val(gateEntryData[0].GateEntryOutDate == null ? new Date().toISOString().slice(0, 10) : new Date(gateEntryData[0].GateEntryDate).toISOString().slice(0, 10));
@@ -784,6 +802,10 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
 
     GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
         AutoSuggestionControl.SetUpAutoSuggestion($('#frmLoadedOut_txtCustomerName'), $('#frmLoadedOut_txtCustomerName_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+        const emptyInCustomerVal = $('#frmEmptyIn_txtCustomerNameIn').val();
+        if (emptyInCustomerVal && emptyInCustomerVal !== '') {
+            $('#frmLoadedOut_txtCustomerName').val(emptyInCustomerVal);
+        }
     });
     GateEntryService.GetGoodDespList().then(function (response) {
         const goodsList = response.map((item) => ({ Desp: item.GoodDesp, UOM: item.UOM }));
@@ -1989,6 +2011,11 @@ function GateEntry_SaveData(Mode) {
             toastr.error('Please Check! Transporter Name can not be blank');
             $('#frmEmptyIn_ddlTransporterName').focus();
             return;
+        }
+
+        const emptyInCustomerNameConfig = ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'CustomerNameInEmptyIN');
+        if (emptyInCustomerNameConfig && emptyInCustomerNameConfig.PerameterValue === 'Y') {
+            VendorName = $('#frmEmptyIn_txtCustomerNameIn').val();
         }
 
         if (!relaxHandCourierEmptyIn && ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightApplicable').PerameterValue === 'Y') {
@@ -3653,6 +3680,14 @@ function EditEmptyIn() {
     $('#frmEmptyIn_txtDriverLicenseNo').removeAttr('readonly');
     $('#frmEmptyIn_txtDriverLicenseExpiredDate').removeAttr('readonly');
     $('#frmEmptyIn_txtDriverAadharNo').removeAttr('readonly');
+
+    const editEmptyInCustomerConfig = ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'CustomerNameInEmptyIN');
+    if (editEmptyInCustomerConfig && editEmptyInCustomerConfig.PerameterValue === 'Y') {
+        $('#frmEmptyIn_txtCustomerNameIn').removeAttr('readonly');
+        GateEntryService.GetVendorOrClientNameListData('CLIENT').then(function (response) {
+            AutoSuggestionControl.SetUpAutoSuggestion($('#frmEmptyIn_txtCustomerNameIn'), $('#frmEmptyIn_txtCustomerNameIn_List'), response.map((item) => ({ Desp: item.AccountDesp })), 'StartWith');
+        });
+    }
 
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'TokenApplicable').PerameterValue === 'Y') {
         $('#frmEmptyIn_txtTokenNo').attr('readonly', 'readonly');

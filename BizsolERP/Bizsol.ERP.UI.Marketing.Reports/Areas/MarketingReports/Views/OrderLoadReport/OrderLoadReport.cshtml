@@ -68,6 +68,10 @@
                         <i class="fas fa-file-excel ol-download-icon-excel"></i> Download
                     </button>
                 </div>
+                <label class="ol-report-format2-wrap is-hidden" id="olReportFormat2Wrap" title="Use alternate Crystal report format">
+                    <input type="checkbox" id="chkOlReportFormat2" />
+                    <span id="lblOlReportFormat2">Format 2</span>
+                </label>
                 <button type="button" class="ol-btn ol-btn-preview" id="btnOlPreview" title="Preview Report" disabled>
                     <i class="fas fa-eye"></i> Preview
                 </button>
@@ -268,6 +272,7 @@
                                 <th>Name</th>
                                 <th>Display Name</th>
                                 <th style="width:80px;" class="text-center">Show Total</th>
+                                <th style="width:90px;" class="text-center">Decimal Point</th>
                                 <th style="width:70px;" class="text-center">Filter</th>
                                 <th style="width:100px;" class="text-center">Sort Order</th>
                                 <th style="width:90px;" class="text-center">Show In Print</th>
@@ -275,15 +280,48 @@
                         </thead>
                         <tbody id="olMtTableBody"></tbody>
                     </table>
-                    <!-- Mobile-only card list (avoids broken table→card CSS) -->
-                    <div id="olMtCards" class="ol-mt-cards" aria-hidden="true"></div>
+                    <div id="olMtCards" class="ol-mt-cards" aria-hidden="true" hidden></div>
                     <div class="ol-mt-empty" id="olMtEmpty">Select a template to load its fields.</div>
                 </div>
             </div>
             <div class="modal-footer ol-filter-modal-footer">
+                <button type="button" class="ol-btn ol-btn-history" id="btnMtHistory" disabled title="Master template amendment history (name, freeze column, etc.)">
+                    <i class="fas fa-clock-rotate-left"></i> History
+                </button>
                 <button type="button" class="ol-btn ol-btn-ok" id="btnMtSave">
                     <i class="fas fa-floppy-disk"></i> Save
                 </button>
+                <button type="button" class="ol-btn ol-btn-reset" data-bs-dismiss="modal">
+                    <i class="fas fa-xmark"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template amendment history (USP_GetCommonAmendmentDetails — F_TempleteMaster + transaction rows) -->
+<div class="modal fade" id="olMtAmendmentHistoryModal" tabindex="-1" aria-labelledby="olMtAmendmentHistoryLabel" aria-hidden="true" data-bs-focus="false">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable ol-mt-history-dialog">
+        <div class="modal-content ol-filter-modal-content">
+            <div class="modal-header ol-filter-modal-header">
+                <div>
+                    <h5 class="modal-title mb-0" id="olMtAmendmentHistoryLabel">
+                        <i class="fas fa-clock-rotate-left me-2"></i>Template Amendment History
+                    </h5>
+                    <div id="olMtAmendmentHistorySubtitle" class="ol-mt-history-subtitle"></div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body ol-mt-history-body">
+                <div class="ol-mt-history-table-wrap table-wrapper">
+                    <table id="tblOlMtAmendmentHistory" class="fixed-width-table table">
+                        <thead id="table-header-OlMtAmendmentHistory"></thead>
+                        <tbody id="table-body-OlMtAmendmentHistory"></tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-tblOlMtAmendmentHistory"></div>
+            </div>
+            <div class="modal-footer ol-filter-modal-footer">
                 <button type="button" class="ol-btn ol-btn-reset" data-bs-dismiss="modal">
                     <i class="fas fa-xmark"></i> Close
                 </button>

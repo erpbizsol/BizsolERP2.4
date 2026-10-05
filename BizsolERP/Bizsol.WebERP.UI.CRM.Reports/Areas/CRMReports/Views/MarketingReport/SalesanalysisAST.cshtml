@@ -65,6 +65,44 @@
         min-height: 38px;
     }
 
+    .summary-kpi-header.has-action {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        position: relative;
+        padding-right: 36px;
+    }
+
+    .summary-kpi-nav-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        line-height: 1;
+        cursor: pointer;
+        font-size: 11px;
+    }
+
+    .summary-kpi-nav-btn:hover {
+        background: #fff;
+        color: #1e3a6e;
+    }
+
+    #summaryDreamClientTableBody tr.dream-client-closed-in-range td {
+        background-color: #d1fae5 !important;
+    }
+
     .summary-kpi-header small {
         display: block;
         font-size: 10px;
@@ -176,6 +214,38 @@
         text-transform: uppercase;
         padding: 8px 12px;
         text-align: center;
+        position: relative;
+    }
+
+    .summary-chart-header.has-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .summary-chart-party-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 28px;
+        height: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .summary-chart-party-btn:hover {
+        background: #fff;
+        color: #1e3a6e;
     }
 
     .summary-chart-body {
@@ -840,6 +910,16 @@
         font-size: 12px;
         margin-bottom: 0;
         table-layout: fixed;
+    }
+
+    .gc-table.gc-table-wide {
+        table-layout: auto;
+        min-width: 720px;
+    }
+
+    .gc-table .filter-table-heading,
+    .gc-table .table-filter-arrow i {
+        color: #fff !important;
     }
 
     .gc-table th {
@@ -2015,64 +2095,209 @@
 <!-- FilterSidePanelControl Web Component -->
 <filter-side-panel-control id="filterPanel" show-button="true"></filter-side-panel-control>
 
-<!-- Tabs Navigation -->
-<ul class="nav nav-tabs" id="salesAnalysisTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="summaryReport-tab" data-bs-toggle="tab" data-bs-target="#summaryReport" type="button" role="tab" aria-controls="summaryReport" aria-selected="true">
-            <i class="fas fa-file-alt"></i>Summary Report
+<style>
+    /* ── Refresh bar above the scrollable tabs ─────────────────────────── */
+    .tabs-outer-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+    .tabs-refresh-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 4px;
+        /* Stays above the tab scroll area — never scrolls */
+        flex-shrink: 0;
+    }
+    #btnTabRefresh {
+        background: linear-gradient(135deg, #1e3a6e 0%, #365e9a 100%);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 5px 13px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: opacity 0.18s;
+    }
+    #btnTabRefresh:hover { opacity: 0.88; }
+    #btnTabRefresh i { font-size: 12px; }
+
+    .tabs-refresh-note-inline {
+        font-size: 11px;
+        color: #555;
+        line-height: 1.4;
+    }
+    .tabs-refresh-note-inline strong { color: #1e3a6e; }
+
+    /* scrollable tab strip */
+    .tabs-scroll-wrap {
+        overflow-x: auto;
+        overflow-y: visible;          /* tooltip must not be clipped */
+    }
+    .tabs-scroll-wrap #salesAnalysisTabs {
+        flex-wrap: nowrap;
+        min-width: max-content;
+    }
+
+    /* ── Floating tooltip rendered by JS, always fixed to viewport ──────── */
+    #refreshTooltip {
+        display: none;
+        position: fixed;              /* always visible regardless of scroll */
+        z-index: 99999;
+        background: #1e3a6e;
+        color: #fff;
+        font-size: 11.5px;
+        line-height: 1.55;
+        padding: 9px 12px;
+        border-radius: 7px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+        max-width: 280px;
+        pointer-events: none;
+    }
+    #refreshTooltip::before {
+        content: '';
+        position: absolute;
+        top: -6px;
+        left: 16px;
+        border-width: 0 6px 6px 6px;
+        border-style: solid;
+        border-color: transparent transparent #1e3a6e transparent;
+    }
+    #refreshTooltip em { font-style: italic; }
+</style>
+
+<!-- Floating tooltip element (appended to body by JS) -->
+<div id="refreshTooltip">
+    <strong>&#9432; Note:</strong> Tab data is cached after first load.
+    Switching tabs does <em>not</em> reload from the server.<br>
+    Click <strong>Refresh</strong> to force-reload the
+    <strong>currently open tab</strong> only.
+</div>
+
+<!-- ── Layout: Refresh row ABOVE the scrollable tab strip ───────────── -->
+<div class="tabs-outer-wrap">
+
+    <!-- Refresh button row — fixed, never scrolls -->
+    <div class="tabs-refresh-row">
+        <button id="btnTabRefresh" type="button">
+            <i class="fas fa-sync-alt"></i> Refresh
         </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="partyScoring-tab" data-bs-toggle="tab" data-bs-target="#partyScoring" type="button" role="tab" aria-controls="partyScoring" aria-selected="false">
-            <i class="fas fa-star"></i>Party Scoring
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="goldenCircle-tab" data-bs-toggle="tab" data-bs-target="#goldenCircle" type="button" role="tab" aria-controls="goldenCircle" aria-selected="false">
-            <i class="fas fa-crown"></i>Golden Circle Client
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="manifestation-tab" data-bs-toggle="tab" data-bs-target="#manifestation" type="button" role="tab" aria-controls="manifestation" aria-selected="false">
-            <i class="fas fa-clipboard-check"></i>Manifestation Vs Actual
-        </button>
-    </li>
-    <li class="nav-item d-none" role="presentation">
-        <button class="nav-link" id="nbdCrr-tab" data-bs-toggle="tab" data-bs-target="#nbdCrr" type="button" role="tab" aria-controls="nbdCrr" aria-selected="false">
-            <i class="fas fa-user-plus"></i>NBD CRR
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="segmentWise-tab" data-bs-toggle="tab" data-bs-target="#segmentWise" type="button" role="tab" aria-controls="segmentWise" aria-selected="false">
-            <i class="fas fa-chart-pie"></i>Segment Wise
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="regionalAnalysis-tab" data-bs-toggle="tab" data-bs-target="#regionalAnalysis" type="button" role="tab" aria-controls="regionalAnalysis" aria-selected="false">
-            <i class="fas fa-map-marked-alt"></i>Regional Analysis
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="productAnalysis-tab" data-bs-toggle="tab" data-bs-target="#productAnalysis" type="button" role="tab" aria-controls="productAnalysis" aria-selected="false">
-            <i class="fas fa-cubes"></i>Product Analysis
-        </button>
-    </li>
-    <li class="nav-item d-none" role="presentation">
-        <button class="nav-link" id="targetVsGrowth-tab" data-bs-toggle="tab" data-bs-target="#targetVsGrowth" type="button" role="tab" aria-controls="targetVsGrowth" aria-selected="false">
-            <i class="fas fa-bullseye"></i>Target and Growth
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="clientAnalysis-tab" data-bs-toggle="tab" data-bs-target="#clientAnalysis" type="button" role="tab" aria-controls="clientAnalysis" aria-selected="false">
-            <i class="fas fa-users"></i>CLIENT ANALYSIS
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="highGPLostClient-tab" data-bs-toggle="tab" data-bs-target="#highGPLostClient" type="button" role="tab" aria-controls="highGPLostClient" aria-selected="false">
-            <i class="fas fa-user-times"></i>High GP Lost Client
-        </button>
-    </li>
-</ul>
+        <span class="tabs-refresh-note-inline">
+            <strong>&#9432;</strong> Tab data is cached. Switch tabs freely — use <strong>Refresh</strong> to reload the current tab from server.
+        </span>
+    </div>
+
+    <!-- Scrollable tab strip -->
+    <div class="tabs-scroll-wrap">
+        <ul class="nav nav-tabs" id="salesAnalysisTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="summaryReport-tab" data-bs-toggle="tab" data-bs-target="#summaryReport" type="button" role="tab" aria-controls="summaryReport" aria-selected="true">
+                    <i class="fas fa-file-alt"></i>Summary Report
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="partyScoring-tab" data-bs-toggle="tab" data-bs-target="#partyScoring" type="button" role="tab" aria-controls="partyScoring" aria-selected="false">
+                    <i class="fas fa-star"></i>Party Scoring
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="goldenCircle-tab" data-bs-toggle="tab" data-bs-target="#goldenCircle" type="button" role="tab" aria-controls="goldenCircle" aria-selected="false">
+                    <i class="fas fa-crown"></i>Golden Circle Client
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="manifestation-tab" data-bs-toggle="tab" data-bs-target="#manifestation" type="button" role="tab" aria-controls="manifestation" aria-selected="false">
+                    <i class="fas fa-clipboard-check"></i>Manifestation Vs Actual
+                </button>
+            </li>
+            <li class="nav-item d-none" role="presentation">
+                <button class="nav-link" id="nbdCrr-tab" data-bs-toggle="tab" data-bs-target="#nbdCrr" type="button" role="tab" aria-controls="nbdCrr" aria-selected="false">
+                    <i class="fas fa-user-plus"></i>NBD CRR
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="segmentWise-tab" data-bs-toggle="tab" data-bs-target="#segmentWise" type="button" role="tab" aria-controls="segmentWise" aria-selected="false">
+                    <i class="fas fa-chart-pie"></i>Segment Wise
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="regionalAnalysis-tab" data-bs-toggle="tab" data-bs-target="#regionalAnalysis" type="button" role="tab" aria-controls="regionalAnalysis" aria-selected="false">
+                    <i class="fas fa-map-marked-alt"></i>Regional Analysis
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="productAnalysis-tab" data-bs-toggle="tab" data-bs-target="#productAnalysis" type="button" role="tab" aria-controls="productAnalysis" aria-selected="false">
+                    <i class="fas fa-cubes"></i>Product Analysis
+                </button>
+            </li>
+            <li class="nav-item d-none" role="presentation">
+                <button class="nav-link" id="targetVsGrowth-tab" data-bs-toggle="tab" data-bs-target="#targetVsGrowth" type="button" role="tab" aria-controls="targetVsGrowth" aria-selected="false">
+                    <i class="fas fa-bullseye"></i>Target and Growth
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="clientAnalysis-tab" data-bs-toggle="tab" data-bs-target="#clientAnalysis" type="button" role="tab" aria-controls="clientAnalysis" aria-selected="false">
+                    <i class="fas fa-users"></i>CLIENT ANALYSIS
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="highGPLostClient-tab" data-bs-toggle="tab" data-bs-target="#highGPLostClient" type="button" role="tab" aria-controls="highGPLostClient" aria-selected="false">
+                    <i class="fas fa-user-times"></i>High GP Lost Client
+                </button>
+            </li>
+        </ul>
+    </div><!-- /.tabs-scroll-wrap -->
+
+</div><!-- /.tabs-outer-wrap -->
+
+<script>
+(function () {
+    // Wire up Refresh button tooltip using fixed positioning so it is
+    // always visible regardless of horizontal tab scrolling.
+    document.addEventListener('DOMContentLoaded', function () {
+        var btn     = document.getElementById('btnTabRefresh');
+        var tooltip = document.getElementById('refreshTooltip');
+        if (!btn || !tooltip) return;
+
+        // Move tooltip to <body> so it is never clipped by any overflow container
+        document.body.appendChild(tooltip);
+
+        function showTooltip() {
+            var rect = btn.getBoundingClientRect();
+            tooltip.style.display = 'block';
+            // Position below the button, aligned to its left edge
+            var left = rect.left;
+            var top  = rect.bottom + 8;
+            // Keep inside viewport horizontally
+            var tipW = tooltip.offsetWidth || 280;
+            if (left + tipW > window.innerWidth - 8) {
+                left = window.innerWidth - tipW - 8;
+            }
+            tooltip.style.left = left + 'px';
+            tooltip.style.top  = top  + 'px';
+        }
+
+        function hideTooltip() {
+            tooltip.style.display = 'none';
+        }
+
+        btn.addEventListener('mouseenter', showTooltip);
+        btn.addEventListener('mouseleave', hideTooltip);
+        btn.addEventListener('focus',      showTooltip);
+        btn.addEventListener('blur',       hideTooltip);
+        // Hide on scroll / resize so it never gets stale position
+        window.addEventListener('scroll',  hideTooltip, true);
+        window.addEventListener('resize',  hideTooltip);
+    });
+})();
+</script>
 
 <!-- Report Date Range Display - MOVED HERE TO BE VISIBLE FOR ALL TABS -->
 <div class="row mt-2 mb-2">
@@ -2100,7 +2325,12 @@
                         </div>
                     </div>
                     <div class="summary-kpi-card">
-                        <div class="summary-kpi-header">Lost Client (Count)</div>
+                        <div class="summary-kpi-header has-action">
+                            Lost Client (Count)
+                            <button type="button" id="btnSummaryLostClientTab" class="summary-kpi-nav-btn" title="High GP Lost Client">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                        </div>
                         <div class="summary-kpi-body">
                             <div class="summary-kpi-icon icon-red"><i class="fas fa-user-times"></i></div>
                             <div class="summary-kpi-value-wrap">
@@ -2109,7 +2339,12 @@
                         </div>
                     </div>
                     <div class="summary-kpi-card">
-                        <div class="summary-kpi-header">Close Dream Client</div>
+                        <div class="summary-kpi-header has-action">
+                            Close Dream Client
+                            <button type="button" id="btnSummaryDreamClientDetails" class="summary-kpi-nav-btn" title="Dream Client Details">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
                         <div class="summary-kpi-body">
                             <div class="summary-kpi-icon icon-purple"><i class="fas fa-star"></i></div>
                             <div class="summary-kpi-value-wrap">
@@ -2228,7 +2463,12 @@
                     </div>
                     <div class="col-lg-4">
                         <div class="summary-chart-card">
-                            <div class="summary-chart-header">NBD / CRR Count Details</div>
+                            <div class="summary-chart-header has-action">
+                                NBD / CRR Count Details
+                                <button type="button" id="btnSummaryNbdCrrParties" class="summary-chart-party-btn" title="Show Parties">
+                                    <i class="fas fa-users"></i>
+                                </button>
+                            </div>
                             <div class="summary-chart-body">
                                 <div class="summary-chart-canvas">
                                     <canvas id="summaryNbdCrrDonutChart"></canvas>
@@ -2340,7 +2580,7 @@
                             <table class="ps-range-table mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Score Range (out of 40)</th>
+                                        <th id="psScoreRangeHeader">Score Range (out of 40)</th>
                                         <th class="text-end">Sale (MT)</th>
                                         <th class="text-end">Parties with Sale</th>
                                         <th class="text-end">Parties</th>
@@ -2367,25 +2607,25 @@
                 <div class="ps-kpi-row">
                     <div class="ps-kpi-box">
                         <div class="ps-kpi-label">Avg Score (All Parties)</div>
-                        <div class="ps-kpi-value"><span id="psAvgScore">0.00</span> <small>/ 40</small></div>
+                        <div class="ps-kpi-value"><span id="psAvgScore">0.00</span> <small>/ <span class="ps-score-max-label">40</span></small></div>
                     </div>
                     <div class="ps-kpi-box">
                         <div class="ps-kpi-label">Top Score</div>
-                        <div class="ps-kpi-value"><span id="psTopScore">0.00</span> <small>/ 40</small></div>
+                        <div class="ps-kpi-value"><span id="psTopScore">0.00</span> <small>/ <span class="ps-score-max-label">40</span></small></div>
                     </div>
                     <div class="ps-kpi-box">
                         <div class="ps-kpi-label">Lowest Score</div>
-                        <div class="ps-kpi-value"><span id="psLowScore">0.00</span> <small>/ 40</small></div>
+                        <div class="ps-kpi-value"><span id="psLowScore">0.00</span> <small>/ <span class="ps-score-max-label">40</span></small></div>
                     </div>
                 </div>
                 <div class="ps-split-row">
                     <div class="ps-split-box">
-                        <div class="ps-kpi-label">Score &gt;= 28 (Good &amp; Above)</div>
+                        <div class="ps-kpi-label" id="psGoodThresholdLabel">Score &gt;= 28 (Good &amp; Above)</div>
                         <div id="psGoodCount" class="ps-split-count ps-good">0</div>
                         <div id="psGoodPct" class="ps-split-pct ps-good">0.00%</div>
                     </div>
                     <div class="ps-split-box">
-                        <div class="ps-kpi-label">Score &lt; 28 (Needs Attention)</div>
+                        <div class="ps-kpi-label" id="psAttentionThresholdLabel">Score &lt; 28 (Needs Attention)</div>
                         <div id="psAttentionCount" class="ps-split-count ps-bad">0</div>
                         <div id="psAttentionPct" class="ps-split-pct ps-bad">0.00%</div>
                     </div>
@@ -2393,14 +2633,14 @@
             </div>
         </div>
 
-        <div class="ps-section-bar">Party Wise Average Score (Out of 40)</div>
+        <div class="ps-section-bar" id="psPartyWiseScoreBar">Party Wise Average Score (Out of 40)</div>
         <div class="ps-card">
             <div class="table-responsive ps-party-scroll">
                 <table id="partyScoreTable" class="table table-sm mb-0 ps-party-table">
                     <thead id="partyScoreTableHeader">
                     </thead>
                     <tbody id="partyScoreTableBody">
-                        <tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>
+                        <tr><td colspan="10" class="text-center text-muted">Loading...</td></tr>
                     </tbody>
                 </table>
                 <div class="paginator" id="paginator-partyScoreTable"></div>
@@ -2427,17 +2667,32 @@
                             </div>
                         </div>
                         <div class="gc-scroll w-100">
-                            <table class="gc-table">
+                            <table class="gc-table gc-table-wide">
                                 <thead>
                                     <tr>
                                         <th>MARKETING PERSON</th>
+                                        <th class="text-end">SUPER HIGH</th>
+                                        <th class="text-end">HIGH</th>
+                                        <th class="text-end">MEDIUM</th>
+                                        <th class="text-end">LOW</th>
                                         <th class="text-end">SALE (MT)</th>
                                         <th class="text-end">SHARE %</th>
                                     </tr>
                                 </thead>
                                 <tbody id="gcMktShareBody">
-                                    <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
+                                    <tr><td colspan="7" class="text-center text-muted">Loading...</td></tr>
                                 </tbody>
+                                <tfoot id="gcMktShareFooter">
+                                    <tr class="gc-total">
+                                        <td>Total</td>
+                                        <td class="text-end">0.00</td>
+                                        <td class="text-end">0.00</td>
+                                        <td class="text-end">0.00</td>
+                                        <td class="text-end">0.00</td>
+                                        <td class="text-end">0.00</td>
+                                        <td class="text-end">0.00%</td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -2515,35 +2770,17 @@
         </div>
 
         <div class="gc-card">
-            <div class="gc-head gc-head-green">GP / Sales</div>
+            <div class="gc-head gc-head-green">Party Wise GP / Sales</div>
             <div class="gc-body">
-                <div class="gc-scroll" style="max-height: 360px;">
-                    <table class="gc-table">
-                        <thead>
-                            <tr>
-                                <th rowspan="2">PARTY_CODE</th>
-                                <th colspan="4">GP / Sales</th>
-                            </tr>
-                            <tr>
-                                <th>Super High</th>
-                                <th>High</th>
-                                <th>Medium</th>
-                                <th>Low</th>
-                            </tr>
+                <div class="gc-scroll" style="max-height: 420px;">
+                    <table id="gcGpSalesTable" class="gc-table gc-table-wide table table-sm mb-0">
+                        <thead id="gcGpSalesTableHeader">
                         </thead>
-                        <tbody id="gcGpSalesBody">
+                        <tbody id="gcGpSalesTableBody">
                             <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
                         </tbody>
-                        <tfoot id="gcGpSalesFooter">
-                            <tr class="gc-total">
-                                <td>Grand Total</td>
-                                <td>0.00</td>
-                                <td>0.00</td>
-                                <td>0.00</td>
-                                <td>0.00</td>
-                            </tr>
-                        </tfoot>
                     </table>
+                    <div class="paginator" id="paginator-gcGpSalesTable"></div>
                 </div>
             </div>
         </div>
@@ -3340,6 +3577,47 @@
                     </table>
                     <div class="paginator" id="paginator-highGPLostClientTable">
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="summaryDreamClientModal" tabindex="-1" aria-labelledby="summaryDreamClientModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="summaryDreamClientModalTitle">Dream Client Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="summaryDreamClientMatchInfo" class="mb-2 fw-semibold">Closed in filter range: 0 / 0</div>
+                <div class="table-responsive">
+                    <table id="summaryDreamClientTable" class="table table-sm table-striped table-bordered mb-0">
+                        <thead class="table-secondary" id="summaryDreamClientTableHeader"></thead>
+                        <tbody id="summaryDreamClientTableBody"></tbody>
+                    </table>
+                    <div class="paginator" id="paginator-summaryDreamClientTable"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="summaryNbdCrrPartyModal" tabindex="-1" aria-labelledby="summaryNbdCrrPartyModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="summaryNbdCrrPartyModalTitle">NBD / CRR Parties</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table id="summaryNbdCrrPartyTable" class="table table-sm table-striped table-bordered mb-0">
+                        <thead class="table-secondary" id="summaryNbdCrrPartyTableHeader"></thead>
+                        <tbody id="summaryNbdCrrPartyTableBody"></tbody>
+                    </table>
+                    <div class="paginator" id="paginator-summaryNbdCrrPartyTable"></div>
                 </div>
             </div>
         </div>

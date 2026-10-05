@@ -1,7 +1,6 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <link href="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/css/TargetDashboardReport.css" rel="stylesheet" />
@@ -58,43 +57,6 @@
     </div>
 
     <div id="tdrDashboard" class="tdr-dashboard" style="display:none;">
-        <div class="tdr-score">
-            <div class="tdr-kpi tdr-kpi-sale">
-                <div class="tdr-kpi-icon"><i class="fas fa-rupee-sign"></i></div>
-                <div class="tdr-kpi-body">
-                    <div class="tdr-kpi-label">Total Sale</div>
-                    <div class="tdr-kpi-value" id="kpiSale">₹0</div>
-                    <div class="tdr-kpi-sub" id="kpiPeriod">Date range</div>
-                </div>
-            </div>
-            <div class="tdr-kpi tdr-kpi-target">
-                <div class="tdr-kpi-icon"><i class="fas fa-bullseye"></i></div>
-                <div class="tdr-kpi-body">
-                    <div class="tdr-kpi-label">Targeted Amount</div>
-                    <div class="tdr-kpi-value" id="kpiTarget">₹0</div>
-                    <div class="tdr-kpi-sub" id="kpiDealers">0 dealers</div>
-                </div>
-            </div>
-            <div class="tdr-kpi tdr-kpi-achieved">
-                <div class="tdr-kpi-icon"><i class="fas fa-chart-line"></i></div>
-                <div class="tdr-kpi-body">
-                    <div class="tdr-kpi-label">Achieved Amount</div>
-                    <div class="tdr-kpi-value" id="kpiAchieved">₹0</div>
-                    <div class="tdr-kpi-sub" id="kpiReturn">Return ₹0</div>
-                </div>
-            </div>
-            <div class="tdr-kpi tdr-kpi-pct" id="tdrKpiPct">
-                <div class="tdr-ring" id="tdrRing" style="--pct: 0;">
-                    <div class="tdr-ring-hole"><strong id="kpiPct">0%</strong></div>
-                </div>
-                <div class="tdr-kpi-body">
-                    <div class="tdr-kpi-label">Achievement</div>
-                    <div class="tdr-kpi-sub" id="kpiPctHint">Achieved vs target</div>
-                    <div class="tdr-kpi-bar"><span id="kpiPctBar"></span></div>
-                </div>
-            </div>
-        </div>
-
         <div class="tdr-reports">
             <div class="tdr-tile-grid" id="tdrTileGrid"></div>
         </div>

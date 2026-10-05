@@ -28,6 +28,7 @@ let UrlService = {
     API_ENDPOINT_SPECIFICATION: `${environment.BASE_URL}/ItemSize`,
     API_ENDPOINT_PAYMENT_TERMS_MASTER: `${environment.BASE_URL}/PaymentTerms`,
     API_ENDPOINT_BANK_MASTER: `${environment.BASE_URL}/Bank`,
+    API_ENDPOINT_PAY_TYPE_MASTER: `${environment.BASE_URL}/PayTypeMaster`,
     API_ENDPOINT_DROPDOWN: `${environment.BASE_URL}/Dropdown`,
     API_ENDPOINT_WARE_HOUSE: `${environment.BASE_URL}/WarehouseMaster`,
     API_DOCUMENT_ATTECHMENT: `${environment.BASE_URL}/DocumentAttachment`,
@@ -81,6 +82,7 @@ let UrlService = {
     API_ENDPOINT_DEALER_MASTER: `${environment.BASE_URL}/DealerMaster`,
     API_ENDPOINT_DEALER_TARGET_MASTER: `${environment.BASE_URL}/DealerTargetMaster`,
     API_ENDPOINT_TARGET_DASHBOARD_REPORT: `${environment.BASE_URL}/TargetDashboardReport`,
+    API_ENDPOINT_TODConfigurationMaster: `${environment.BASE_URL}/TODConfigurationMaster`,
     API_ENDPOINT_PackingListFG: `${environment.BASE_URL}/PackingListFG`,
     API_ENDPOINT_QTY_CONFIG: `${environment.BASE_URL}/FixedParameterQtyConfig`,
     API_ENDPOINT_CRM_ORDERENTRY_CONFIG: `${environment.BASE_URL}/ConfigCRMOrderEntry`,
@@ -188,6 +190,7 @@ let UrlService = {
     API_ENDPOINT_ProductionOrder: `${environment.BASE_URL}/ProductionOrder`,
     API_ENDPOINT_CRM_ORDER_IN_TRANSIT: `${environment.BASE_URL}/CRMOrderInTransit`,
     API_ENDPOINT_USER_DASHBOARD_MENU: `${environment.BASE_URL}/UserDashboardMenu`,
+    API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisitionMaster`,
 }
 
 export { UrlService }

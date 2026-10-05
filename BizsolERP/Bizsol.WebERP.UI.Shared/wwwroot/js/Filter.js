@@ -152,6 +152,30 @@ window.formatIndianNumber = function formatIndianNumber(value, decimals) {
     return sign + grouped + (decPart !== undefined ? '.' + decPart : '');
 };
 
+window.formatGridNumericDisplay = function formatGridNumericDisplay(value) {
+    if (value === null || value === undefined || value === '') {
+        return value;
+    }
+    var num = parseFloat(value);
+    if (!isFinite(num)) {
+        return value;
+    }
+    if (Math.abs(num - Math.round(num)) < 1e-9) {
+        return String(Math.round(num));
+    }
+    return String(num);
+};
+
+window.getForcedDecimalPlaces = function getForcedDecimalPlaces(key, fixedDecimalConfig) {
+    if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && Object.prototype.hasOwnProperty.call(fixedDecimalConfig, key)) {
+        return fixedDecimalConfig[key];
+    }
+    if (typeof fixedDecimalConfig === 'number') {
+        return fixedDecimalConfig;
+    }
+    return null;
+};
+
 /**
  * Parse a grid cell for totalColumns / grand totals: plain numbers work; HTML (e.g. &lt;input value="100"&gt;) reads value="...".
  */
@@ -934,10 +958,10 @@ columns.forEach(col => {
                                         </span>
                                           <div class="filter-division" id="filterDropdown-${uniqueId}" style="display:none;">
                                             <div class="dropdown-content">
-                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                 <i class="fa-solid fa-arrow-up-a-z sort-indicator sort-indicator-color"></i> Ascending
                                               </div>
-                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                 <i class="fa-solid fa-arrow-down-z-a sort-indicator sort-indicator-color"></i> Descending
                                               </div>
                                               <div class="dropdown-item fafilter" onclick="toggleFilter('${col}','${bodyId}')">
@@ -964,10 +988,10 @@ columns.forEach(col => {
                                                 </span>
                                                   <div class="filter-division" id="filterDropdown-${uniqueId}" style="display:none;">
                                                     <div class="dropdown-content">
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                       </div>
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                       </div>
                                                       <div class="dropdown-item fafilter" onclick="toggleFilterNumeric('filter-dropdown-numeric-${uniqueId}','${col}','${bodyId}');">
@@ -1001,10 +1025,10 @@ columns.forEach(col => {
                                                 </span>
                                                   <div class="filter-division" id="filterDropdown-${uniqueId}" style="display:none;">
                                                     <div class="dropdown-content">
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                       </div>
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                       </div>
                                                       <div class="dropdown-item fafilter" onclick="populateDateFilter('${col}','${bodyId}')">
@@ -1028,10 +1052,10 @@ columns.forEach(col => {
                                            </span>
                                              <div class="filter-division" onclick="stopPropagationdouble(event)" id="filterDropdown-${uniqueId}" style="display:none;">
                                                <div class="dropdown-content">
-                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                    <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                  </div>
-                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                    <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                  </div>
                                                  <div class="dropdown-item fafilter" onclick="toggleFilterDouble('${col}','${bodyId}')">
@@ -1071,12 +1095,24 @@ columns.forEach(col => {
 window.sortable = function sortable(element) {
     var column = $(element).data('column');
     var order = $(element).data('order');
-    var tbodyId = $(element).closest('table').find('tbody').attr('id');
+    // Use data-tbody-id stored on the button at render time, because the filter
+    // panel is moved to <body> by bizsolMoveFilterPanelToBody and is no longer
+    // a descendant of the table when the user clicks Ascending/Descending.
+    var tbodyId = $(element).data('tbody-id');
+    if (!tbodyId) {
+        // Fallback for older markup that may not have the attribute
+        tbodyId = $(element).closest('table').find('tbody').attr('id');
+    }
     sortTable(column, order, tbodyId);
 };
 window.sortTable = function sortTable(column, order, tbodyId) {
     const tableId = $('#' + tbodyId).closest('table').attr('id');
     var data = window[`filteredData_${tableId}`];
+
+    if (!Array.isArray(data)) {
+        console.warn('sortTable: no data found for tableId:', tableId, 'tbodyId:', tbodyId);
+        return;
+    }
 
     data.sort(function (a, b) {
         var keyA = a[column] !== undefined && a[column] !== null ? String(a[column]).trim() : '';
@@ -1150,27 +1186,21 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
 
             const isNumeric = cellValue !== null && cellValue !== undefined
                               && !isNaN(parseFloat(cellValue)) && isFinite(cellValue);
-            // Determine whether this column needs decimal / comma formatting
+            const forcedDecimalPlaces = window.getForcedDecimalPlaces(key, fixedDecimalConfig);
             const needsDecimalFormat = isNumeric && (
                 commaColumns.includes(key) ||
-                (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) ||
-                (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') ||
-                (typeof cellValue === 'number' ? String(cellValue).includes('.') : String(cellValue).includes('.'))
+                forcedDecimalPlaces !== null
             );
 
             if (needsDecimalFormat) {
-                let decimalPlaces = 3; // default
-                if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) {
-                    decimalPlaces = fixedDecimalConfig[key];
-                } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
-                    decimalPlaces = fixedDecimalConfig;
-                }
-                // Apply Indian comma formatting if this column is in CommaColumns
+                let decimalPlaces = forcedDecimalPlaces !== null ? forcedDecimalPlaces : 3;
                 if (commaColumns.includes(key)) {
                     cellValue = formatIndianNumber(parseFloat(item[key]), decimalPlaces);
                 } else {
                     cellValue = parseFloat(cellValue).toFixed(decimalPlaces);
                 }
+            } else if (isNumeric) {
+                cellValue = window.formatGridNumericDisplay(cellValue);
             }
 
             return `<td style="${style}">${cellValue}</td>`;
@@ -1229,17 +1259,17 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 // First visible column shows "Total" label
                 cellContent = '<strong>Total</strong>';
             } else if (totalColumns.includes(key)) {
-                // Show total for specified columns with appropriate decimal places
-                let decimalPlaces = 3; // default
-                if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) {
-                    decimalPlaces = fixedDecimalConfig[key];
-                } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
-                    decimalPlaces = fixedDecimalConfig;
-                }
                 const commaColumns = window[`commaColumns_${bodyId}`] || [];
-                const totalValue = commaColumns.includes(key)
-                    ? formatIndianNumber(columnTotals[key], decimalPlaces)
-                    : columnTotals[key].toFixed(decimalPlaces);
+                const forcedDecimalPlaces = window.getForcedDecimalPlaces(key, fixedDecimalConfig);
+                let totalValue;
+                if (commaColumns.includes(key) || forcedDecimalPlaces !== null) {
+                    const decimalPlaces = forcedDecimalPlaces !== null ? forcedDecimalPlaces : 3;
+                    totalValue = commaColumns.includes(key)
+                        ? formatIndianNumber(columnTotals[key], decimalPlaces)
+                        : columnTotals[key].toFixed(decimalPlaces);
+                } else {
+                    totalValue = window.formatGridNumericDisplay(columnTotals[key]);
+                }
                 cellContent = `<strong>${totalValue}</strong>`;
             }
 
@@ -1335,17 +1365,17 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
             // First visible column shows "Grand Total" label
             cellContent = '<strong>Grand Total</strong>';
         } else if (totalColumns.includes(key)) {
-            // Show grand total for specified columns with appropriate decimal places
-            let decimalPlaces = 2; // default for grand total
-            if (fixedDecimalConfig && typeof fixedDecimalConfig === 'object' && fixedDecimalConfig.hasOwnProperty(key)) {
-                decimalPlaces = fixedDecimalConfig[key];
-            } else if (fixedDecimalConfig && typeof fixedDecimalConfig === 'number') {
-                decimalPlaces = fixedDecimalConfig;
-            }
             const commaColumns = window[`commaColumns_${bodyId}`] || [];
-            const totalValue = commaColumns.includes(key)
-                ? formatIndianNumber(grandTotals[key], decimalPlaces)
-                : grandTotals[key].toFixed(decimalPlaces);
+            const forcedDecimalPlaces = window.getForcedDecimalPlaces(key, fixedDecimalConfig);
+            let totalValue;
+            if (commaColumns.includes(key) || forcedDecimalPlaces !== null) {
+                const decimalPlaces = forcedDecimalPlaces !== null ? forcedDecimalPlaces : 2;
+                totalValue = commaColumns.includes(key)
+                    ? formatIndianNumber(grandTotals[key], decimalPlaces)
+                    : grandTotals[key].toFixed(decimalPlaces);
+            } else {
+                totalValue = window.formatGridNumericDisplay(grandTotals[key]);
+            }
             cellContent = `<strong>${totalValue}</strong>`;
         }
 
