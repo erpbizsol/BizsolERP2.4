@@ -5,6 +5,33 @@ let G_ObjectListMultiSelect = false;
 let G_ObjectListDefaultColumnFilter = '';  // field name pre-selected in the column dropdown
 let G_ObjectListModalId = '';              // tracks the exact modal ID to close after Done
 let G_ObjectListNumericColumns = [];       // field names whose totals show on selection
+let G_ObjectListSelectedKey = 'Code';
+let G_ObjectListSelectedValues = [];
+
+function _objListSelectedValueSet() {
+    var set = {};
+    (G_ObjectListSelectedValues || []).forEach(function (value) {
+        var key = String(value == null ? '' : value).trim();
+        if (key !== '') set[key] = true;
+    });
+    return set;
+}
+
+function _objListRowIsSelected(row) {
+    if (!row) return false;
+    var selected = _objListSelectedValueSet();
+    if (!Object.keys(selected).length) return false;
+    var field = G_ObjectListSelectedKey || 'Code';
+    var values = [
+        row[field],
+        row.Code,
+        row.code
+    ];
+    return values.some(function (value) {
+        var key = String(value == null ? '' : value).trim();
+        return key !== '' && selected[key];
+    });
+}
 
 /**
  * Creates and injects the Object List Control modal into the DOM
@@ -63,6 +90,18 @@ function createObjectlistControlModal(id) {
         document.body.insertAdjacentHTML('beforeend', modalHTML);
     }
 
+    if (!document.getElementById('objListSelectedHighlightStyle')) {
+        var style = document.createElement('style');
+        style.id = 'objListSelectedHighlightStyle';
+        style.textContent =
+            '#objListTableBody .objlist-row.table-primary {' +
+            'background-color:#dbeafe !important;' +
+            'box-shadow:inset 4px 0 0 #2563eb;' +
+            '}' +
+            '#objListTableBody .objlist-row.table-primary td { background-color:#dbeafe !important; }';
+        document.head.appendChild(style);
+    }
+
     return modalId;
 }
 
@@ -91,7 +130,8 @@ function renderObjectListRows(data, columns) {
 
     let bodyHTML = '';
     data.forEach(function (row, index) {
-        bodyHTML += `<tr class="objlist-row" style="cursor:pointer;" data-index="${index}">`;
+        var selectedCls = _objListRowIsSelected(row) ? ' table-primary' : '';
+        bodyHTML += `<tr class="objlist-row${selectedCls}" style="cursor:pointer;" data-index="${index}">`;
         columns.forEach(function (col) {
             // Render all columns, but apply display:none if not visible
             let cellValue = row[col.field] !== undefined && row[col.field] !== null ? row[col.field] : '';
@@ -127,6 +167,7 @@ function renderObjectListRows(data, columns) {
 
     // Reset totals bar when rows re-render (filter change)
     $('#objListTotalsBar').hide().html('');
+    updateObjectListTotals();
 }
 
 /**
@@ -380,6 +421,8 @@ function onObjectList_Done() {
  *                                                 e.g. ['Qty', 'Weight', 'Amount']
  * @param {number}  options.NoOfHideColumn        - hide last N columns automatically
  *                                                 e.g. 10 → last 10 columns are hidden
+ * @param {string}  options.SelectedKey           - field used to match already-selected rows
+ * @param {Array}   options.SelectedValues        - already-selected codes/values to highlight
  */
 function initializeObjectlistControl(options) {
     options = options || {};
@@ -388,6 +431,10 @@ function initializeObjectlistControl(options) {
     G_ObjectListDefaultColumnFilter = (options.DefaultColumnfilter || '').toString().trim();
     G_ObjectListNumericColumns      = Array.isArray(options.NumericColumns) ? options.NumericColumns : [];
     G_ObjectListModalId             = (options.ModalId || 'ObjectListControlModal');
+    G_ObjectListSelectedKey         = (options.SelectedKey || options.SelectedField || 'Code').toString().trim() || 'Code';
+    G_ObjectListSelectedValues      = (options.SelectedValues || options.SelectedCodes || []).map(function (value) {
+        return String(value == null ? '' : value).trim();
+    }).filter(Boolean);
 
     const modalId = createObjectlistControlModal(options.ModalId || 'ObjectListControlModal');
 

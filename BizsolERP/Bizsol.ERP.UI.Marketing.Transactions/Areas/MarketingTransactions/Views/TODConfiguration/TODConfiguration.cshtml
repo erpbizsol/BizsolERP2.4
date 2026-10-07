@@ -95,6 +95,14 @@
         justify-content: flex-end;
         width: 100%;
     }
+    #TODConfigurationTable thead th.tod-paytol-col,
+    #TODConfigurationTable tbody td.tod-paytol-col {
+        text-align: right !important;
+    }
+    #TODConfigurationTable thead th.tod-paytol-col .filter-table-heading-div {
+        justify-content: flex-end;
+        width: 100%;
+    }
     #TODConfigurationTable thead th.tod-action-col,
     #TODConfigurationTable tbody td.tod-action-col { width: auto !important; min-width: 88px; text-align: left !important; }
     #TODConfigurationTable tbody td.tod-action-col .btn { margin-right: 4px; margin-bottom: 0 !important; }
@@ -186,6 +194,16 @@
     .slab-table .col-uom    { width: 80px; }
     .slab-table .col-action { width: 38px; }
     .slab-table .col-item   { width: auto; }
+    .slab-table .col-size-parameter { width: auto; }
+    .slab-table.tod-size-parameter-table .col-size-parameter { width: 26%; }
+    .slab-table.tod-size-parameter-table .col-size-values { width: 28%; }
+    .slab-table.tod-size-parameter-table .col-from,
+    .slab-table.tod-size-parameter-table .col-to { width: 14%; }
+    .slab-table.tod-size-parameter-table .col-from input,
+    .slab-table.tod-size-parameter-table .col-to input,
+    .slab-table.tod-size-parameter-table .tod-size-range {
+        text-align: right;
+    }
     .slab-table .col-spec   { width: 19%; }
     .slab-table.tod-rate-table .col-from,
     .slab-table.tod-rate-table .col-to,
@@ -373,12 +391,15 @@
         #divTODForm .form-select-sm,
         #todModalMobileSlabEntry .form-control,
         #todModalMobileSlabEntry .form-select,
+        #todModalMobileSizeEntry .form-control,
+        #todModalMobileSizeEntry .form-select,
         #todModalMobileRateEntry .form-control,
         #todModalPartyFilter .form-control,
         #todModalPartyFilter .form-select { font-size: 16px; }
         #divTODForm .form-control-sm,
         #divTODForm .form-select-sm { height: 38px; padding: 6px 10px; }
         #todModalMobileSlabEntry .form-control-sm,
+        #todModalMobileSizeEntry .form-control-sm,
         #todModalMobileRateEntry .form-control-sm,
         #todModalPartyFilter .form-control-sm,
         #todModalPartyFilter .form-select-sm { height: 38px; padding: 6px 10px; }
@@ -516,6 +537,13 @@
                             <option value="Payment">As Per Payment</option>
                         </select>
                     </div>
+                    <div class="col-6 col-md-2">
+                        <label class="tod-field-lbl" for="frmPaymentTolerance">Payment Tolerance (%) <span class="req">*</span></label>
+                        <input type="text" id="frmPaymentTolerance" class="form-control form-control-sm"
+                               inputmode="decimal" placeholder="0-100" autocomplete="off"
+                               style="text-align:right;"
+                               oninput="OnTODPaymentToleranceInput(this)" />
+                    </div>
                 </div>
 
                 <div class="tod-scope-sep">
@@ -589,10 +617,44 @@
             </div>
         </div>
 
-        <!-- 3 : TOD Rate slabs -->
+        <!-- 3 : Size Parameters -->
+        <div class="tod-step-card" style="--step-clr:#f59e0b;">
+            <div class="tod-step-header">
+                <div class="tod-step-num" style="background:#f59e0b;">3</div>
+                <span class="tod-step-title">Size Parameters</span>
+                <button type="button" class="add-slab-btn ms-auto" onclick="AddTODSizeParameterRow()">
+                    <i class="fa fa-plus me-1"></i>Add Size Parameter
+                </button>
+            </div>
+            <div class="tod-step-body" style="padding-top:10px;">
+                <div class="tod-hint">
+                    <i class="fa fa-lightbulb me-1"></i>
+                    Select a size parameter. <strong>Numeric</strong> parameters use From / To (float).
+                    <strong>Text</strong> parameters use the value list (multi-select, codes saved comma-separated).
+                </div>
+                <div class="slab-desktop-wrap">
+                    <table class="slab-table tod-size-parameter-table" id="tblTODSizeParameters">
+                        <thead>
+                            <tr>
+                                <th class="col-sno">S.No</th>
+                                <th class="col-size-parameter">Size Parameter Name <span style="color:#fde68a;">*</span></th>
+                                <th class="col-from">From Value</th>
+                                <th class="col-to">To Value</th>
+                                <th class="col-size-values">Parameter Values</th>
+                                <th class="col-action"></th>
+                            </tr>   
+                        </thead>
+                        <tbody id="tblTODSizeParametersBody"></tbody>   
+                    </table>
+                </div>
+                    <div id="todMobileSizeParameterCards" class="slab-mobile-wrap"></div>
+            </div>
+        </div>
+        
+        <!-- 4 : TOD Rate slabs -->
         <div class="tod-step-card" style="--step-clr:#0ea5e9;">
             <div class="tod-step-header">
-                <div class="tod-step-num" style="background:#0ea5e9;">3</div>
+                <div class="tod-step-num" style="background:#0ea5e9;">4</div>
                 <span class="tod-step-title">TOD Rate</span>
                 <button type="button" class="add-slab-btn ms-auto" onclick="AddTODRateRow()">
                     <i class="fa fa-plus me-1"></i>Add Rate
@@ -710,6 +772,48 @@
                 <button type="button" onclick="TODMobileSlabModalConfirm()"
                         style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;border-radius:8px;padding:9px 22px;font-size:0.85rem;font-weight:700;box-shadow:0 3px 10px rgba(124,58,237,0.3);">
                     <i class="fa fa-check me-1"></i><span id="todMobileSlabModalBtnTxt">Add Item</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile size parameter entry -->
+<div class="modal fade" id="todModalMobileSizeEntry" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:500px;margin:auto 12px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;padding:14px 18px;">
+                <h5 class="modal-title" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-ruler me-2"></i><span id="todMobileSizeModalTitle">Add Size Parameter</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:16px 18px;">
+                <div class="mb-3">
+                    <label class="tod-field-lbl">Size Parameter Name <span class="req">*</span></label>
+                    <select id="todMobileDdlSize" class="form-control form-control-sm" onchange="OnTODMobileSizeParameterChange()"></select>
+                </div>
+                <div class="row g-2" id="todMobileSizeRangeWrap" style="display:none;">
+                    <div class="col-6">
+                        <label class="tod-field-lbl">From Value</label>
+                        <input type="text" id="todMobileTxtSizeFrom" class="form-control form-control-sm tod-size-range" inputmode="decimal" autocomplete="off" />
+                    </div>
+                    <div class="col-6">
+                        <label class="tod-field-lbl">To Value</label>
+                        <input type="text" id="todMobileTxtSizeTo" class="form-control form-control-sm tod-size-range" inputmode="decimal" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="mb-3 mt-3" id="todMobileSizeValuesWrap" style="display:none;">
+                    <label class="tod-field-lbl">Parameter Values</label>
+                    <select id="todMobileDdlSizeValues" class="form-control form-control-sm" multiple></select>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:12px 16px;background:#f8fafc;gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" onclick="TODMobileSizeModalConfirm()"
+                        style="background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:#fff;border-radius:8px;padding:9px 22px;font-size:0.85rem;font-weight:700;">
+                    <i class="fa fa-check me-1"></i><span id="todMobileSizeModalBtnTxt">Add Size Parameter</span>
                 </button>
             </div>
         </div>

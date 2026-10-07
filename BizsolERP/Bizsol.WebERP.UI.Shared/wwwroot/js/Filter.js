@@ -1512,7 +1512,9 @@ window.createPaginator = function createPaginator(tableId, bodyId) {
         </button>
     `;
 
-    $('#paginator-' + tableId).append(filterHtml);
+    var $pag = $('#paginator-' + tableId);
+    $pag.append(filterHtml);
+    $pag.css('display', 'flex').show();
 }
 window.OpenFilter = function OpenFilter(columnName, event) {
     // Prevent event from bubbling to document click handler
