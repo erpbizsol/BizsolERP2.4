@@ -995,20 +995,31 @@ function getDreamClientMatchSummary(rows) {
     return { matched: matched, total: list.length };
 }
 
+function isDreamClientNullDate(value) {
+    return value === null || value === undefined || String(value).trim() === '' || String(value).trim().toLowerCase() === 'null';
+}
+
 function getDreamClientDisplayRows() {
     return (G_DreamClientRows || []).map(function (row) {
-        const closedRaw = getDreamClientClosedDateRaw(row);
-        const closedDate = parseDreamClientClosedDate(closedRaw);
+        const closedDate = parseDreamClientClosedDate(getDreamClientClosedDateRaw(row));
         const inRange = isDreamClientClosedInFilterRange(closedDate);
-        return {
-            'Company Name': row.CompanyName || row['Company Name'] || row.PartyName || row['Party Name'] || '',
-            'Segment': row.Segment || row.Sagment || '',
-            'City': row.CityName || row.City || row['City Name'] || '',
-            'State': row.StateName || row.State || row['State Name'] || '',
-            'Closed By': row['Closed By'] || row.ClosedBy || '',
-            'Closed Date': formatDreamClientDate(closedRaw),
+        const displayRow = Object.assign({}, row, {
             __bizsolRowClass: inRange ? 'dream-client-closed-in-range' : ''
-        };
+        });
+        Object.keys(displayRow).forEach(function (key) {
+            const compact = String(key).replace(/\s+/g, '').toLowerCase();
+            if ((compact === 'closeddate' || compact === 'closedbydate' || compact === 'closedate') && isDreamClientNullDate(displayRow[key])) {
+                displayRow[key] = '';
+            }
+        });
+        return displayRow;
+    });
+}
+
+function getDreamClientGridColumns(rows) {
+    const first = (rows && rows[0]) ? rows[0] : {};
+    return Object.keys(first).filter(function (key) {
+        return key !== '__bizsolRowClass';
     });
 }
 
@@ -1023,13 +1034,24 @@ function renderSummaryDreamClientTable() {
     if (!header || !body) return;
 
     const rows = getDreamClientDisplayRows();
+    const columns = getDreamClientGridColumns(rows);
     const pager = document.getElementById('paginator-summaryDreamClientTable');
     if (!rows.length) {
         header.innerHTML = '';
-        body.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No dream client data available</td></tr>';
+        body.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No dream client data available</td></tr>';
         if (pager) pager.innerHTML = '';
         return;
     }
+
+    const stringFilterColumn = columns.filter(function (col) {
+        const compact = String(col).replace(/\s+/g, '').toLowerCase();
+        return compact !== 'closeddate';
+    });
+    const alignment = {};
+    columns.forEach(function (col) {
+        const compact = String(col).replace(/\s+/g, '').toLowerCase();
+        alignment[col] = compact === 'closeddate' ? 'center' : 'left';
+    });
 
     if (typeof BizsolCustomFilterGrid !== 'undefined') {
         BizsolCustomFilterGrid.CreateDataTable(
@@ -1038,35 +1060,25 @@ function renderSummaryDreamClientTable() {
             rows,
             false,
             [],
-            ['Company Name', 'Segment', 'City', 'State', 'Closed By', 'Closed Date'],
+            stringFilterColumn,
             [],
             [],
             [],
             ['__bizsolRowClass'],
-            {
-                'Company Name': 'left',
-                'Segment': 'left',
-                'City': 'left',
-                'State': 'left',
-                'Closed By': 'left',
-                'Closed Date': 'center'
-            },
+            alignment,
             true
         );
         return;
     }
 
-    header.innerHTML = '<tr><th>Company Name</th><th>Segment</th><th>City</th><th>State</th><th>Closed By</th><th>Closed Date</th></tr>';
+    header.innerHTML = `<tr>${columns.map(function (col) { return `<th>${escapeHtml(col)}</th>`; }).join('')}</tr>`;
     body.innerHTML = rows.map(function (row) {
         const rowClass = row.__bizsolRowClass ? ` class="${row.__bizsolRowClass}"` : '';
-        return `<tr${rowClass}>
-            <td>${escapeHtml(row['Company Name'])}</td>
-            <td>${escapeHtml(row['Segment'])}</td>
-            <td>${escapeHtml(row['City'])}</td>
-            <td>${escapeHtml(row['State'])}</td>
-            <td>${escapeHtml(row['Closed By'])}</td>
-            <td class="text-center">${escapeHtml(row['Closed Date'])}</td>
-        </tr>`;
+        const cells = columns.map(function (col) {
+            const value = row[col] === null || row[col] === undefined ? '' : String(row[col]);
+            return `<td>${escapeHtml(value)}</td>`;
+        }).join('');
+        return `<tr${rowClass}>${cells}</tr>`;
     }).join('');
 }
 
@@ -6431,7 +6443,7 @@ function renderHighGPLostClient(forceRefresh) {
     }
 
     const renderHGPTable = function (response) {
-        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "GP", "Status"];
+        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "GP", "GP Category", "GPCategory", "Status"];
         const NumericFilterColumn = [];
         const DateFilterColumn = [];
         const Button = false;
