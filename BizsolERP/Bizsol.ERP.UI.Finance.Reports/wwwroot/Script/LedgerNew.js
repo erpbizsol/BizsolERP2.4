@@ -1300,6 +1300,72 @@ function printLedgerPreviewModal() {
     frame.contentWindow.print();
 }
 
+function ledgerPreviewIsIOSClient() {
+    const ua = String(navigator.userAgent || navigator.vendor || '');
+    if (/iPhone|iPad|iPod/i.test(ua)) return true;
+    if (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1) return true;
+    return /Macintosh/i.test(ua) && 'ontouchend' in document;
+}
+
+function ledgerPreviewIsMobileClient() {
+    const ua = String(navigator.userAgent || navigator.vendor || '');
+    if (/Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return true;
+    return ledgerPreviewIsIOSClient();
+}
+
+function ledgerPreviewSafeFileName(name) {
+    return String(name || 'Ledger.html').replace(/[\\/:*?"<>|]/g, '_').trim() || 'Ledger.html';
+}
+
+function ledgerPreviewTriggerAnchorDownload(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = fileName;
+    a.setAttribute('download', fileName);
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+        try { a.remove(); } catch (e) { }
+        try { URL.revokeObjectURL(url); } catch (e) { }
+    }, 4000);
+}
+
+/** Mobile Safari opens text/html blob URLs; save via octet-stream / Share instead of previewing. */
+function ledgerPreviewDownloadBlob(blob, fileName) {
+    fileName = ledgerPreviewSafeFileName(fileName);
+
+    if (ledgerPreviewIsIOSClient() && typeof File === 'function' && typeof navigator.share === 'function') {
+        const shareTypes = ['application/octet-stream', 'text/html', ''];
+        let chain = Promise.reject(new Error('ledger-share-start'));
+        shareTypes.forEach(function (mime) {
+            chain = chain.catch(function (err) {
+                if (err && err.name === 'AbortError') throw err;
+                const file = new File([blob], fileName, {
+                    type: mime || 'application/octet-stream',
+                    lastModified: Date.now()
+                });
+                return navigator.share({ files: [file], title: fileName, text: fileName });
+            });
+        });
+        chain.catch(function (err) {
+            if (err && err.name === 'AbortError') return;
+            ledgerPreviewTriggerAnchorDownload(
+                new Blob([blob], { type: 'application/octet-stream' }),
+                fileName
+            );
+        });
+        return;
+    }
+
+    const downloadBlob = ledgerPreviewIsMobileClient()
+        ? new Blob([blob], { type: 'application/octet-stream' })
+        : blob;
+    ledgerPreviewTriggerAnchorDownload(downloadBlob, fileName);
+}
+
 function downloadLedgerPreviewModal() {
     if (!G_LedgerPreviewHtml) {
         if (typeof toastr !== 'undefined') toastr.warning('Nothing to download.');
@@ -1311,15 +1377,7 @@ function downloadLedgerPreviewModal() {
     const to = (filters.toDate || 'to').replace(/[^\d\-]/g, '');
     const fileName = `Ledger_${party}_${from}_${to}.html`;
     const blob = new Blob([G_LedgerPreviewHtml], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    ledgerPreviewDownloadBlob(blob, fileName);
 }
 
 function initLedgerPreviewModal() {
