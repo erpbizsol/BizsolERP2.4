@@ -1,6 +1,15 @@
 import { UrlService }        from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
+function authUserCode() {
+    try {
+        const authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        return authKeyData.UserMaster_Code || 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
 /**
  * TODConfigurationMasterService
  * All API calls for TOD (Turn Over Discount) Configuration.
@@ -20,7 +29,8 @@ const TODConfigurationMasterService = {
 
         let url = UrlService.API_ENDPOINT_TODConfigurationMaster
                 + `/Getddl?Mode=${encodeURIComponent(Mode)}`
-                + `&Code=${encodeURIComponent(Code)}`;
+                + `&Code=${encodeURIComponent(Code)}`
+                + `&UserMaster_Code=${encodeURIComponent(authUserCode())}`;
 
         if (FromDate)       url += `&FromDate=${encodeURIComponent(FromDate)}`;
         if (ToDate)         url += `&ToDate=${encodeURIComponent(ToDate)}`;
@@ -65,6 +75,17 @@ const TODConfigurationMasterService = {
         return TODConfigurationMasterService.Getddl('GETITEMLIST', code);
     },
 
+    /** ItemParameterMaster dropdown: Code, Desp, DataType */
+    GetSizeParameterList: function GetSizeParameterList() {
+        return TODConfigurationMasterService.Getddl('GETSIZEPARAMETERLIST');
+    },
+
+    /** ItemParameterValueMaster list for a parameter. @Code = ItemParameterMaster_Code */
+    GetSizeParameterValueList: function GetSizeParameterValueList(itemParameterMasterCode) {
+        var code = parseInt(itemParameterMasterCode, 10);
+        return TODConfigurationMasterService.Getddl('GETSIZEPARAMETERVALUELIST', isNaN(code) ? 0 : code);
+    },
+
     GetTODConfigurationById: function GetTODConfigurationById(code) {
         return TODConfigurationMasterService.Getddl('SHOWDATA', code);
     },
@@ -79,7 +100,7 @@ const TODConfigurationMasterService = {
      */
     SaveTODConfigurationMaster: function SaveTODConfigurationMaster(payload) {
         let url = UrlService.API_ENDPOINT_TODConfigurationMaster
-                + `/SaveTODConfigurationMaster`;
+                + `/SaveTODConfigurationMaster?UserMaster_Code=${encodeURIComponent(authUserCode())}`;
         return promiseAjaxCallApi.CallAPI('POST', url, payload).then(value => value);
     },
 };

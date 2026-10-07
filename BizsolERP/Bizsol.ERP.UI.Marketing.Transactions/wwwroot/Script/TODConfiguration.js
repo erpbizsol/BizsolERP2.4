@@ -12,6 +12,8 @@ import { initializeObjectlistControl } from '../../Bizsol.WebERP.UI.Shared/js/Pa
 var G_TODList          = [];
 var G_TODChipFilter    = '';
 var G_ItemList         = [];
+var G_SizeParameterList = [];
+var G_SizeValueCache   = {};
 var G_PartyList        = [];
 var G_PartyRows        = [];     /* selected parties — one saved record each */
 var G_MarketingManList = [];
@@ -20,10 +22,13 @@ var G_ScopeRefreshing  = false;
 var G_PeriodicityList  = [];
 /* var G_MonthList        = []; */
 var G_SlabRowCount     = 0;
+var G_SizeRowCount     = 0;
 var G_RateRowCount     = 0;
 var G_FormReady        = false;
 var G_CurrentItemRowId = 0;
+var G_CurrentSizeRowId = 0;
 var G_MobileEditRowId  = null;
+var G_MobileSizeEditRowId = null;
 var G_MobileRateEditRowId = null;
 var G_MobileItemCode   = 0;
 var G_PartyFilterSnapshot = null;
@@ -48,10 +53,57 @@ $(document).ready(function () {
     }
 
     _bindSlabGridKeys();
+    _bindSizeGridKeys();
     _bindRateGridKeys();
     _bindPartyLookupKeys();
+    $(document).off('blur.todPayTol', '#frmPaymentTolerance')
+        .on('blur.todPayTol', '#frmPaymentTolerance', function () {
+            _validatePaymentTolerance($(this).val(), true);
+        });
+    $(document).off('input.todMobileSizeRange', '#todMobileTxtSizeFrom, #todMobileTxtSizeTo')
+        .on('input.todMobileSizeRange', '#todMobileTxtSizeFrom, #todMobileTxtSizeTo', function () {
+            $(this).val(_normalizeSizeRange($(this).val()));
+        });
     LoadTODList();
 });
+
+function _sanitizePaymentTolerance(raw) {
+    var text = String(raw == null ? '' : raw).replace(/[^\d.]/g, '');
+    var firstDot = text.indexOf('.');
+    if (firstDot >= 0) {
+        text = text.substring(0, firstDot + 1) + text.substring(firstDot + 1).replace(/\./g, '');
+    }
+    if (text.indexOf('.') === 0) text = '0' + text;
+    if (text !== '' && text !== '.') {
+        var n = parseFloat(text);
+        if (!isNaN(n) && n > 100) text = '100';
+    }
+    return text;
+}
+
+function _validatePaymentTolerance(raw, showToast) {
+    var text = String(raw == null ? '' : raw).trim();
+    if (text === '') {
+        if (showToast) toastr.warning('Please enter Payment Tolerance (%).');
+        return { ok: false, value: 0 };
+    }
+    if (!/^\d+(\.\d+)?$/.test(text)) {
+        if (showToast) toastr.warning('Payment Tolerance (%) must be a number between 0 and 100.');
+        return { ok: false, value: 0 };
+    }
+    var value = parseFloat(text);
+    if (isNaN(value) || value < 0 || value > 100) {
+        if (showToast) toastr.warning('Payment Tolerance (%) must be between 0 and 100.');
+        return { ok: false, value: 0 };
+    }
+    return { ok: true, value: value };
+}
+
+window.OnTODPaymentToleranceInput = function (el) {
+    if (!el) return;
+    var cleaned = _sanitizePaymentTolerance(el.value);
+    if (el.value !== cleaned) el.value = cleaned;
+};
 
 function _isoDate(d) {
     if (!d) return '';
@@ -243,7 +295,7 @@ function _renderTable(data) {
     var stringCols    = [];
     var numericCols   = [];
     var dateCols      = [];
-    var colAlignment  = { 'S.No': 'right', Action: 'center' };
+    var colAlignment  = { 'S.No': 'right', Action: 'center', 'Payment Tolerance': 'right', PaymentTolerance: 'right' };
 
     Object.keys(augmented[0]).forEach(function (key) {
         if (key === 'S.No' || key === '__bizsolRowClass' || hiddenColumns.indexOf(key) !== -1 || key === 'Action') return;
@@ -251,7 +303,7 @@ function _renderTable(data) {
         if (lk.indexOf('date') >= 0 && lk.indexOf('create') < 0) {
             dateCols.push(key);
             colAlignment[key] = 'center';
-        } else if (['value', 'percentage', 'days', 'slabs', 'rate', 'amount'].some(function (kw) { return lk.indexOf(kw) >= 0; })) {
+        } else if (['value', 'percentage', 'days', 'slabs', 'rate', 'amount', 'tolerance'].some(function (kw) { return lk.indexOf(kw) >= 0; })) {
             numericCols.push(key);
             colAlignment[key] = 'right';
         } else {
@@ -292,20 +344,25 @@ function _fitTODListColumns() {
 
     var actionIndex = -1;
     var snoIndex = -1;
+    var payTolIndex = -1;
     $tbl.find('thead th').each(function (i) {
         var label = _todHeaderLabel($(this));
         var isAction = label === 'Action';
         var isSno = label === 'S.No' || label === 'S.No.';
+        var isPayTol = label === 'Payment Tolerance' || label === 'PaymentTolerance';
         $(this).toggleClass('tod-action-col', isAction);
         $(this).toggleClass('tod-sno-col', isSno);
+        $(this).toggleClass('tod-paytol-col', isPayTol);
         if (isAction) actionIndex = i;
         if (isSno) snoIndex = i;
+        if (isPayTol) payTolIndex = i;
     });
 
     $tbl.find('tbody tr').each(function () {
         $(this).children('td').each(function (i) {
             $(this).toggleClass('tod-action-col', i === actionIndex);
             $(this).toggleClass('tod-sno-col', i === snoIndex);
+            $(this).toggleClass('tod-paytol-col', i === payTolIndex);
         });
     });
 
@@ -327,13 +384,15 @@ function _ensureFormLookups() {
         /* TODConfigurationMasterService.GetMonthList().catch(function () { return []; }), */
         TODConfigurationMasterService.GetPartyList().catch(function () { return []; }),
         TODConfigurationMasterService.GetItemList(0).catch(function () { return []; }),
+        TODConfigurationMasterService.GetSizeParameterList().catch(function () { return []; }),
         DealerTargetMasterService.GetNestedMarketingManList().catch(function () { return []; })
     ]).then(function (results) {
         G_PeriodicityList  = _toList(results[0]);
         /* G_MonthList        = _toList(results[1]); */
         G_PartyList        = _toList(results[1]);
         G_ItemList         = _toList(results[2]);
-        G_MarketingManList = _toList(results[3]).map(function (person) {
+        G_SizeParameterList = _toList(results[3]);
+        G_MarketingManList = _toList(results[4]).map(function (person) {
             return {
                 Code: person.Code ?? person.MarketingManMaster_Code ?? '',
                 Desp: String(person.PersonName ?? person.Desp ?? person.MarketingManName ?? '').trim()
@@ -343,7 +402,7 @@ function _ensureFormLookups() {
         });
 
         if (!G_PeriodicityList.length) {
-            G_PeriodicityList = ['Month', 'Quarter', 'Half Yearly', 'Yearly', 'Custom']
+            G_PeriodicityList = ['Month', 'Quarter', 'Custom']
                 .map(function (p) { return { Code: p, Desp: p }; });
         }
 
@@ -625,11 +684,11 @@ function _partyObjListData() {
     return _partiesInScope().map(function (party) {
         var manName = String(party.MarketingMan ?? party['Marketing Man'] ?? _selectedMarketingManName()).trim();
         return {
-            'Marketing Man': manName,
-            Zone:  _scopeText(party, 'Zone'),
-            State: _scopeText(party, 'State'),
-            City:  _scopeText(party, 'City'),
             'Party Name': _partyLabel(party),
+            City:  _scopeText(party, 'City'),
+            State: _scopeText(party, 'State'),
+            Zone:  _scopeText(party, 'Zone'),
+            'Marketing Man': manName,
             Code:  party.Code ?? party.code,
             Desp:  _partyLabel(party),
             MarketingMan: manName,
@@ -660,12 +719,14 @@ window.ShowTODPartyObjectList = function (value) {
         CallBackFunctionName_btnDone: 'onTODPartySelected',
         DefaultColumnfilter: 'Party Name',
         ModalTitle: 'Select Party',
+        SelectedKey: 'Code',
+        SelectedValues: (G_PartyRows || []).map(function (party) { return party.Code; }),
         Columns: [
             { field: 'Party Name', header: 'Party Name', visible: true },
-            { field: 'Marketing Man', header: 'Marketing Man', visible: true },
-            { field: 'Zone', header: 'Zone', visible: true },
-            { field: 'State', header: 'State', visible: true },
             { field: 'City', header: 'City', visible: true },
+            { field: 'State', header: 'State', visible: true },
+            { field: 'Zone', header: 'Zone', visible: true },
+            { field: 'Marketing Man', header: 'Marketing Man', visible: true },
             { field: 'Code', visible: false },
             { field: 'Desp', visible: false },
             { field: 'MarketingMan', visible: false },
@@ -829,6 +890,8 @@ window.ShowTODItemObjectList = function (rowId, value) {
         CallBackFunctionName_btnDone: 'onTODItemSelected',
         DefaultColumnfilter: 'Item Name',
         ModalTitle: 'Select Item',
+        SelectedKey: 'Code',
+        SelectedValues: _allGridItemCodes(),
         Columns: [
             { field: 'Item Name', header: 'Item Name', visible: true },
             { field: 'Item Code', header: 'Item Code', visible: true },
@@ -882,6 +945,17 @@ function _isLastSlabRow(rowId) {
         if (id > maxId) maxId = id;
     });
     return parseInt(rowId, 10) === maxId;
+}
+
+function _allGridItemCodes() {
+    var codes = [];
+    $('#tblTODSlabsBody tr').each(function () {
+        var rowId = String($(this).attr('id') || '').replace('todSlabRow_', '');
+        var code = _itemCodeFromRow(rowId);
+        if (code === null) return;
+        codes.push(code);
+    });
+    return codes;
 }
 
 /** Item codes currently in the grid, excluding the row being edited. */
@@ -1123,6 +1197,744 @@ function _bindSlabGridKeys() {
         _onSlabGridKey(e, _slabRowIdFromEl(this), field);
     });
 }
+
+/* ══════════════════════════════════════════════════
+   SIZE PARAMETER GRID
+══════════════════════════════════════════════════ */
+
+function _findSizeParameter(code) {
+    var key = String(code == null ? '' : code);
+    if (key === '') return null;
+    if (key === '0') return { Code: 0, Desp: TOD_ALL_ITEM_NAME, DataType: '' };
+    return (G_SizeParameterList || []).filter(function (row) {
+        return String(row.Code ?? row.code ?? row.ItemParameterMaster_Code) === key;
+    })[0] || null;
+}
+
+function _sizeDisplayName(row) {
+    if (!row) return '';
+    return row.Desp ?? row.desp ?? row['Size Parameter Name'] ?? row.ParameterDesp ?? row.ParameterName ?? '';
+}
+
+function _sizeDataType(code) {
+    var row = _findSizeParameter(code);
+    return String(row && (row.DataType ?? row.Datatype ?? row.dataType) || '').trim().toLowerCase();
+}
+
+function _isSizeNumeric(code) {
+    var type = _sizeDataType(code);
+    return type === 'numeric' || type === 'number' || type === 'float' || type === 'decimal';
+}
+
+function _isSizeText(code) {
+    var type = _sizeDataType(code);
+    return type === 'text' || type === 'textual' || type === 'string' || type === 'alphanumeric';
+}
+
+function _sizeParameterOptionsHtml(selectedCode) {
+    var selected = selectedCode === null || selectedCode === undefined || selectedCode === '' ? '' : String(selectedCode);
+    var html = '<option value="">-- Select --</option>';
+    html += '<option value="0"' + (selected === '0' ? ' selected' : '') + '>' + TOD_ALL_ITEM_NAME + '</option>';
+    (G_SizeParameterList || []).forEach(function (row) {
+        var code = String(row.Code ?? row.code ?? '');
+        if (!code) return;
+        html += '<option value="' + _esc(code) + '"' + (selected === code ? ' selected' : '') + '>' +
+            _esc(_sizeDisplayName(row)) + '</option>';
+    });
+    return html;
+}
+
+function _sizeValueDisplayName(row) {
+    if (!row) return '';
+    return row.Desp ?? row['Parameter Value'] ?? row.ParameterValue ?? row.ValueDesp ?? '';
+}
+
+function _sizeCodeFromRow(rowId) {
+    var raw = $('#frmDdlSize_' + rowId).val();
+    if (raw === '' || raw == null) raw = $('#frmHfSize_' + rowId).val();
+    if (raw === '' || raw == null) return null;
+    var n = parseInt(raw, 10);
+    return isNaN(n) ? null : n;
+}
+
+function _sizeValueCodesFromRow(rowId) {
+    return String($('#frmHfSizeValues_' + rowId).val() || '')
+        .split(',')
+        .map(function (v) { return String(v || '').trim(); })
+        .filter(function (v) { return v !== ''; });
+}
+
+function _normalizeSizeRange(raw) {
+    var text = String(raw == null ? '' : raw).replace(/[^\d.]/g, '');
+    var firstDot = text.indexOf('.');
+    if (firstDot >= 0) {
+        text = text.substring(0, firstDot + 1) + text.substring(firstDot + 1).replace(/\./g, '');
+    }
+    if (text.indexOf('.') === 0) text = '0' + text;
+    return text;
+}
+
+function _sizeRangeFromRow(rowId, which) {
+    return _num($('#frmTxtSize' + which + '_' + rowId).val());
+}
+
+function _ensureSizeValues(paramCode) {
+    var key = String(parseInt(paramCode, 10) || 0);
+    if (G_SizeValueCache[key]) return Promise.resolve(G_SizeValueCache[key]);
+    if (!key || key === '0') {
+        G_SizeValueCache[key] = [];
+        return Promise.resolve([]);
+    }
+    return TODConfigurationMasterService.GetSizeParameterValueList(key).then(function (res) {
+        G_SizeValueCache[key] = _toList(res);
+        return G_SizeValueCache[key];
+    }).catch(function () {
+        G_SizeValueCache[key] = [];
+        return [];
+    });
+}
+
+function _sizeValueNames(paramCode, codesCsv) {
+    var list = G_SizeValueCache[String(parseInt(paramCode, 10) || 0)] || [];
+    return String(codesCsv || '').split(',').map(function (code) {
+        var key = String(code || '').trim();
+        if (!key) return '';
+        var found = list.filter(function (row) {
+            return String(row.Code ?? row.code) === key;
+        })[0];
+        return found ? _sizeValueDisplayName(found) : key;
+    }).filter(Boolean).join(', ');
+}
+
+function _fillSizeValueLookup(rowId, paramCode, codesCsv) {
+    var codes = String(codesCsv || '');
+    $('#frmHfSizeValues_' + rowId).val(codes);
+    if (!paramCode || paramCode === 0 || !codes) {
+        $('#frmTxtSizeValues_' + rowId).val(paramCode === 0 ? '' : (codes ? codes : ''));
+        return;
+    }
+    _ensureSizeValues(paramCode).then(function () {
+        $('#frmTxtSizeValues_' + rowId).val(_sizeValueNames(paramCode, codes));
+    });
+}
+
+function _restoreSizeLookup(rowId) {
+    if (rowId === 'mobile') return;
+    var $ddl = $('#frmDdlSize_' + rowId);
+    if ($ddl.length) return;
+    var code = _sizeCodeFromRow(rowId);
+    if (code === null) {
+        $('#frmTxtSize_' + rowId).val('');
+        return;
+    }
+    var row = _findSizeParameter(code);
+    $('#frmTxtSize_' + rowId).val(row ? _sizeDisplayName(row) : (code === 0 ? TOD_ALL_ITEM_NAME : ''));
+}
+
+function _restoreSizeValueLookup(rowId) {
+    if (rowId === 'mobile') return;
+    _fillSizeValueLookup(rowId, _sizeCodeFromRow(rowId), $('#frmHfSizeValues_' + rowId).val());
+}
+
+function _applySizeDataTypeUI(rowId, keepValues) {
+    var code = _sizeCodeFromRow(rowId);
+    var $valuesWrap = $('#frmTxtSizeValues_' + rowId).closest('.tod-item-lookup-wrap');
+    var $from = $('#frmTxtSizeFrom_' + rowId);
+    var $to = $('#frmTxtSizeTo_' + rowId);
+    var $values = $('#frmTxtSizeValues_' + rowId);
+    var isNumeric = _isSizeNumeric(code);
+    var isText = _isSizeText(code) && code !== 0;
+    var hasParam = code !== null && code !== 0;
+
+    $valuesWrap.toggle(!!isText);
+    $from.toggle(!!isNumeric);
+    $to.toggle(!!isNumeric);
+    $values.prop('disabled', !isText);
+    $from.add($to).prop('disabled', !isNumeric);
+
+    if (!keepValues) {
+        if (!isText) {
+            $('#frmHfSizeValues_' + rowId).val('');
+            $values.val('');
+        }
+        if (!isNumeric) {
+            $from.val('');
+            $to.val('');
+        }
+        if (!hasParam) {
+            $('#frmHfSizeValues_' + rowId).val('');
+            $values.val('');
+            $from.val('');
+            $to.val('');
+        }
+    }
+}
+
+function _isLastSizeRow(rowId) {
+    if (rowId === 'mobile') return false;
+    var maxId = 0;
+    $('#tblTODSizeParametersBody tr').each(function () {
+        var id = parseInt(String($(this).attr('id') || '').replace('todSizeRow_', ''), 10) || 0;
+        if (id > maxId) maxId = id;
+    });
+    return parseInt(rowId, 10) === maxId;
+}
+
+function _otherRowSizeCodes(exceptRowId) {
+    var codes = [];
+    $('#tblTODSizeParametersBody tr').each(function () {
+        var rowId = String($(this).attr('id') || '').replace('todSizeRow_', '');
+        if (String(rowId) === String(exceptRowId)) return;
+        var code = _sizeCodeFromRow(rowId);
+        if (code === null) return;
+        codes.push(code);
+    });
+    return codes;
+}
+
+function _canUseSize(rowId, code) {
+    var others = _otherRowSizeCodes(rowId);
+    if (code === 0 && others.some(function (c) { return c > 0; })) {
+        toastr.warning('Size "All" cannot be used while specific size parameters are in the grid.');
+        return false;
+    }
+    if (code > 0 && others.indexOf(0) >= 0) {
+        toastr.warning('The grid already uses size "All" — remove it before adding a specific size.');
+        return false;
+    }
+    if (code > 0 && others.indexOf(code) >= 0) {
+        toastr.warning('This size parameter is already in the list.');
+        return false;
+    }
+    return true;
+}
+
+function _sizeObjListData() {
+    var rows = [{
+        'Size Parameter Name': TOD_ALL_ITEM_NAME,
+        Code: 0,
+        ItemParameterMaster_Code: 0,
+        Desp: TOD_ALL_ITEM_NAME
+    }];
+    (G_SizeParameterList || []).forEach(function (row) {
+        var name = _sizeDisplayName(row);
+        var code = row.Code ?? row.code ?? row.ItemParameterMaster_Code;
+        rows.push({
+            'Size Parameter Name': name,
+            Code: code,
+            ItemParameterMaster_Code: code,
+            Desp: name
+        });
+    });
+    return rows;
+}
+
+window.ShowTODSizeObjectList = function (rowId, value) {
+    var list = _sizeObjListData();
+    if (list.length <= 1) {
+        toastr.warning('No size parameter data available.');
+        return;
+    }
+    if (!String(value || '').trim()) {
+        toastr.warning('Type .. and press Enter to open the size parameter list.');
+        return;
+    }
+
+    var open = _parseObjListOpen(value);
+    G_CurrentSizeRowId = rowId;
+
+    initializeObjectlistControl({
+        ModalId: TOD_OBJ_MODAL,
+        searchvalue: open.searchValue,
+        MatchType: open.matchType,
+        MultiSelect: _isLastSizeRow(rowId),
+        ClientOrderProjectData: list,
+        CallBackFunctionName_btnDone: 'onTODSizeSelected',
+        DefaultColumnfilter: 'Size Parameter Name',
+        ModalTitle: 'Select Size Parameter',
+        SelectedKey: 'Code',
+        SelectedValues: _otherRowSizeCodes(rowId).concat(_sizeCodeFromRow(rowId) === null ? [] : [_sizeCodeFromRow(rowId)]),
+        Columns: [
+            { field: 'Size Parameter Name', header: 'Size Parameter Name', visible: true },
+            { field: 'Code', visible: false },
+            { field: 'ItemParameterMaster_Code', visible: false },
+            { field: 'Desp', visible: false }
+        ]
+    });
+
+    var $modal = $('#' + TOD_OBJ_MODAL);
+    $modal.find('.modal-dialog').removeClass('modal-lg').addClass('modal-xl')
+        .css({ 'max-width': '860px', width: '94vw' });
+    _raiseObjListZIndex();
+
+    $modal.off('hidden.bs.modal.todSize').on('hidden.bs.modal.todSize', function () {
+        if (!G_CurrentSizeRowId) return;
+        var restoreId = G_CurrentSizeRowId;
+        G_CurrentSizeRowId = 0;
+        _restoreSizeLookup(restoreId);
+    });
+};
+
+window.onTODSizeSelected = function (response) {
+    if (!response || !response.length || !G_CurrentSizeRowId) return;
+    var startId = G_CurrentSizeRowId;
+    G_CurrentSizeRowId = 0;
+
+    var codes = response.map(function (row) {
+        return parseInt(row.ItemParameterMaster_Code ?? row.Code ?? row.code ?? 0, 10) || 0;
+    });
+    if (codes.length > 1 && codes.indexOf(0) >= 0) {
+        toastr.warning('Size "All" cannot be selected together with specific size parameters.');
+        return;
+    }
+    if (!_canUseSize(startId, codes[0])) return;
+
+    if (startId === 'mobile') {
+        $('#todMobileDdlSize').val(String(codes[0])).trigger('change');
+        return;
+    }
+
+    response.forEach(function (row, index) {
+        var rowId = startId;
+        if (index > 0) {
+            _appendSizeRow({});
+            rowId = G_SizeRowCount;
+        }
+        _applySizeToRow(rowId, {
+            ItemParameterMaster_Code: codes[index],
+            Desp: _sizeDisplayName(row)
+        });
+    });
+
+    if (_isTODMobile()) RenderTODMobileSizeCards();
+    var focusId = startId;
+    if (_isSizeNumeric(_sizeCodeFromRow(focusId))) {
+        _todFocus('#frmTxtSizeFrom_' + focusId);
+    } else if (_isSizeText(_sizeCodeFromRow(focusId))) {
+        _todFocus('#frmTxtSizeValues_' + focusId);
+    } else {
+        _todFocus('#frmDdlSize_' + focusId);
+    }
+};
+
+window.ShowTODSizeValueObjectList = function (rowId, value) {
+    var paramCode = _sizeCodeFromRow(rowId);
+    if (paramCode === null) {
+        toastr.warning('Select a size parameter first.');
+        return;
+    }
+    if (paramCode === 0) {
+        toastr.warning('Values are not required when Size Parameter is All.');
+        return;
+    }
+    if (!String(value || '').trim()) {
+        toastr.warning('Type .. and press Enter to open the parameter value list.');
+        return;
+    }
+
+    _ensureSizeValues(paramCode).then(function (list) {
+        var rows = (list || []).map(function (row) {
+            var name = _sizeValueDisplayName(row);
+            return {
+                'Parameter Value': name,
+                Code: row.Code ?? row.code,
+                Desp: name
+            };
+        });
+        if (!rows.length) {
+            toastr.warning('No parameter values found for this size parameter.');
+            return;
+        }
+
+        var open = _parseObjListOpen(value);
+        G_CurrentSizeRowId = rowId;
+        initializeObjectlistControl({
+            ModalId: TOD_OBJ_MODAL,
+            searchvalue: open.searchValue,
+            MatchType: open.matchType,
+            MultiSelect: true,
+            ClientOrderProjectData: rows,
+            CallBackFunctionName_btnDone: 'onTODSizeValueSelected',
+            DefaultColumnfilter: 'Parameter Value',
+            ModalTitle: 'Select Parameter Values',
+            SelectedKey: 'Code',
+            SelectedValues: _sizeValueCodesFromRow(rowId),
+            Columns: [
+                { field: 'Parameter Value', header: 'Parameter Value', visible: true },
+                { field: 'Code', visible: false },
+                { field: 'Desp', visible: false }
+            ]
+        });
+
+        var $modal = $('#' + TOD_OBJ_MODAL);
+        $modal.find('.modal-dialog').removeClass('modal-lg').addClass('modal-xl')
+            .css({ 'max-width': '860px', width: '94vw' });
+        _raiseObjListZIndex();
+
+        $modal.off('hidden.bs.modal.todSizeVal').on('hidden.bs.modal.todSizeVal', function () {
+            if (!G_CurrentSizeRowId) return;
+            var restoreId = G_CurrentSizeRowId;
+            G_CurrentSizeRowId = 0;
+            _restoreSizeValueLookup(restoreId);
+        });
+    });
+};
+
+window.onTODSizeValueSelected = function (response) {
+    if (!response || !response.length || !G_CurrentSizeRowId) return;
+    var rowId = G_CurrentSizeRowId;
+    G_CurrentSizeRowId = 0;
+    var codes = response.map(function (row) {
+        return String(row.Code ?? row.code ?? '').trim();
+    }).filter(Boolean);
+    var names = response.map(function (row) { return _sizeValueDisplayName(row); }).filter(Boolean);
+    $('#frmHfSizeValues_' + rowId).val(codes.join(','));
+    $('#frmTxtSizeValues_' + rowId).val(names.join(', '));
+    if (_isTODMobile()) RenderTODMobileSizeCards();
+    if (_isLastSizeRow(rowId)) {
+        _appendSizeRow({});
+        _todFocus('#frmDdlSize_' + G_SizeRowCount);
+    }
+};
+
+function _applySizeToRow(rowId, row) {
+    if (!row) return;
+    var code = parseInt(
+        row.ItemParameterMaster_Code ?? row.itemParameterMaster_code ?? row.Code ?? row.code ?? 0,
+        10
+    ) || 0;
+    var fromVal = row.FromValue ?? row.fromValue ?? '';
+    var toVal = row.ToValue ?? row.Tovalue ?? row.toValue ?? '';
+    var valueCodes = row.ItemParameterValueMaster_Codes ?? row.itemParameterValueMaster_Codes ?? '';
+    $('#frmDdlSize_' + rowId).val(String(code));
+    $('#frmHfSize_' + rowId).val(code);
+    $('#frmTxtSizeFrom_' + rowId).val(fromVal === 0 || fromVal === '0' ? '' : fromVal);
+    $('#frmTxtSizeTo_' + rowId).val(toVal === 0 || toVal === '0' ? '' : toVal);
+    _applySizeDataTypeUI(rowId, true);
+    if (code > 0 && _isSizeText(code)) _fillSizeValueLookup(rowId, code, valueCodes);
+}
+
+window.OnTODSizeParameterChange = function (rowId) {
+    var code = _sizeCodeFromRow(rowId);
+    if (code !== null && !_canUseSize(rowId, code)) {
+        $('#frmDdlSize_' + rowId).val('');
+        $('#frmHfSize_' + rowId).val('');
+        _applySizeDataTypeUI(rowId);
+        return;
+    }
+    $('#frmHfSize_' + rowId).val(code === null ? '' : code);
+    _applySizeDataTypeUI(rowId);
+    if (_isSizeNumeric(code)) {
+        _todFocus('#frmTxtSizeFrom_' + rowId);
+    } else if (_isSizeText(code)) {
+        _todFocus('#frmTxtSizeValues_' + rowId);
+    }
+};
+
+window.AddTODSizeParameterRow = function (preset, silent) {
+    if (_isTODMobile() && !preset && !silent) {
+        OpenTODMobileSizeModal(null);
+        return;
+    }
+    _appendSizeRow(preset || {});
+};
+
+function _appendSizeRow(preset) {
+    G_SizeRowCount++;
+    var rowId = G_SizeRowCount;
+    preset = preset || {};
+
+    var rawCode = preset.ItemParameterMaster_Code != null
+        ? preset.ItemParameterMaster_Code
+        : preset.itemParameterMaster_code;
+    var hasCode = rawCode !== undefined && rawCode !== null && String(rawCode) !== '';
+    var sizeCode = hasCode ? (parseInt(rawCode, 10) || 0) : '';
+    var fromVal = preset.FromValue ?? preset.fromValue ?? '';
+    var toVal = preset.ToValue ?? preset.Tovalue ?? preset.toValue ?? '';
+    var valueCodes = preset.ItemParameterValueMaster_Codes ?? preset.itemParameterValueMaster_Codes ?? '';
+    if (fromVal === 0 || fromVal === '0') fromVal = '';
+    if (toVal === 0 || toVal === '0') toVal = '';
+    var row = `<tr id="todSizeRow_${rowId}">
+        <td class="col-sno text-center fw-bold">${rowId}</td>
+        <td class="col-size-parameter">
+            <select id="frmDdlSize_${rowId}" class="form-control form-control-sm tod-size-ddl"
+                    onchange="OnTODSizeParameterChange(${rowId})">${_sizeParameterOptionsHtml(hasCode ? sizeCode : '')}</select>
+            <input type="hidden" id="frmHfSize_${rowId}" value="${hasCode ? _esc(sizeCode) : ''}" />
+        </td>
+        <td class="col-from">
+            <input type="text" id="frmTxtSizeFrom_${rowId}" class="form-control form-control-sm tod-size-range"
+                   value="${_esc(fromVal)}" placeholder="From" inputmode="decimal" autocomplete="off" />
+        </td>
+        <td class="col-to">
+            <input type="text" id="frmTxtSizeTo_${rowId}" class="form-control form-control-sm tod-size-range"
+                   value="${_esc(toVal)}" placeholder="To" inputmode="decimal" autocomplete="off" />
+        </td>
+        <td class="col-size-values">
+            <div class="tod-item-lookup-wrap">
+                <input type="text" id="frmTxtSizeValues_${rowId}" class="form-control form-control-sm tod-size-value-lookup"
+                       value="" placeholder="Type .. for values" autocomplete="off" />
+                <input type="hidden" id="frmHfSizeValues_${rowId}" value="${_esc(valueCodes)}" />
+            </div>
+        </td>
+        <td class="col-action text-center">
+            <button type="button" class="del-row-btn" title="Remove" onclick="DeleteTODSizeRow(${rowId})"><i class="fa fa-times-circle"></i></button>
+        </td>
+    </tr>`;
+
+    $('#tblTODSizeParametersBody').append(row);
+    _applySizeDataTypeUI(rowId, true);
+    if (hasCode && sizeCode > 0 && valueCodes && _isSizeText(sizeCode)) {
+        _fillSizeValueLookup(rowId, sizeCode, valueCodes);
+    }
+    _renumberSizeRows();
+}
+
+window.DeleteTODSizeRow = function (rowId) {
+    if ($('#tblTODSizeParametersBody tr').length <= 1 && !_isTODMobile()) {
+        toastr.warning('At least one size parameter row is required.');
+        return;
+    }
+    $('#todSizeRow_' + rowId).remove();
+    _renumberSizeRows();
+    if (_isTODMobile()) RenderTODMobileSizeCards();
+};
+
+function _renumberSizeRows() {
+    $('#tblTODSizeParametersBody tr').each(function (index) {
+        $(this).find('td:first').text(index + 1);
+    });
+}
+
+function _sizeRowIdFromEl(el) {
+    return String($(el).closest('tr').attr('id') || '').replace('todSizeRow_', '');
+}
+
+function _bindSizeGridKeys() {
+    var $body = $('#tblTODSizeParametersBody');
+    $body.off('keydown.todSizeNav').on('keydown.todSizeNav', 'input, select', function (e) {
+        var $input = $(this);
+        var rowId = _sizeRowIdFromEl(this);
+        var isValues = $input.hasClass('tod-size-value-lookup');
+        var isFrom = this.id === 'frmTxtSizeFrom_' + rowId;
+        var isTo = this.id === 'frmTxtSizeTo_' + rowId;
+        var isParam = $input.hasClass('tod-size-ddl');
+
+        if (e.key === 'Tab' || e.keyCode === 9) {
+            e.preventDefault();
+            e.stopPropagation();
+            _focusSaveButton();
+            return;
+        }
+        if (e.key !== 'Enter' && e.keyCode !== 13) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (isParam) {
+            var paramCode = _sizeCodeFromRow(rowId);
+            if (paramCode === null) return;
+            if (_isSizeNumeric(paramCode)) _todFocus('#frmTxtSizeFrom_' + rowId);
+            else if (_isSizeText(paramCode)) _todFocus('#frmTxtSizeValues_' + rowId);
+            return;
+        }
+
+        if (isValues) {
+            var valueTyped = $input.val();
+            var valueCodes = $('#frmHfSizeValues_' + rowId).val();
+            if (!String(valueTyped || '').trim() && !String(valueCodes || '').trim()) {
+                ShowTODSizeValueObjectList(rowId, '..');
+                return;
+            }
+            if (_shouldOpenObjList(valueTyped, valueCodes, $('#frmTxtSizeValues_' + rowId).val())) {
+                ShowTODSizeValueObjectList(rowId, valueTyped);
+                return;
+            }
+            if (_isLastSizeRow(rowId)) {
+                _appendSizeRow({});
+                _todFocus('#frmDdlSize_' + G_SizeRowCount);
+            }
+            return;
+        }
+
+        if (isFrom) {
+            _todFocus('#frmTxtSizeTo_' + rowId);
+            return;
+        }
+
+        if (isTo && _isLastSizeRow(rowId)) {
+            _appendSizeRow({});
+            _todFocus('#frmDdlSize_' + G_SizeRowCount);
+        }
+    });
+
+    $body.off('input.todSizeRange').on('input.todSizeRange', '.tod-size-range', function () {
+        $(this).val(_normalizeSizeRange($(this).val()));
+    });
+}
+
+function _fillMobileSizeDropdown() {
+    var $ddl = $('#todMobileDdlSize');
+    $ddl.empty().append($('<option>').val('').text('-- Select --'));
+    $ddl.append($('<option>').val('0').text(TOD_ALL_ITEM_NAME));
+    (G_SizeParameterList || []).forEach(function (row) {
+        $ddl.append($('<option>').val(row.Code ?? row.code ?? row.ItemParameterMaster_Code).text(_sizeDisplayName(row)));
+    });
+}
+
+function _fillMobileSizeValueDropdown(paramCode, selectedCodes) {
+    var $ddl = $('#todMobileDdlSizeValues');
+    $ddl.empty();
+    if (!paramCode || paramCode === 0) {
+        if ($.fn.select2 && $ddl.hasClass('select2-hidden-accessible')) $ddl.trigger('change');
+        return Promise.resolve();
+    }
+    return _ensureSizeValues(paramCode).then(function (list) {
+        (list || []).forEach(function (row) {
+            $ddl.append($('<option>').val(row.Code ?? row.code).text(_sizeValueDisplayName(row)));
+        });
+        var selected = (selectedCodes || []).map(String);
+        $ddl.val(selected);
+        if ($.fn.select2 && $ddl.hasClass('select2-hidden-accessible')) $ddl.trigger('change');
+    });
+}
+
+function _toggleMobileSizeDataType(paramCode, keepValues) {
+    var isNumeric = _isSizeNumeric(paramCode);
+    var isText = _isSizeText(paramCode) && paramCode !== 0 && paramCode !== null;
+    $('#todMobileSizeValuesWrap').toggle(!!isText);
+    $('#todMobileSizeRangeWrap').toggle(!!isNumeric);
+    $('#todMobileDdlSizeValues').prop('disabled', !isText);
+    $('#todMobileTxtSizeFrom, #todMobileTxtSizeTo').prop('disabled', !isNumeric);
+    if (!keepValues) {
+        if (!isText) {
+            $('#todMobileDdlSizeValues').val(null);
+            if ($.fn.select2 && $('#todMobileDdlSizeValues').hasClass('select2-hidden-accessible')) {
+                $('#todMobileDdlSizeValues').val(null).trigger('change');
+            }
+        }
+        if (!isNumeric) $('#todMobileTxtSizeFrom, #todMobileTxtSizeTo').val('');
+    }
+}
+
+window.OnTODMobileSizeParameterChange = function () {
+    var raw = $('#todMobileDdlSize').val();
+    var paramCode = raw === '' || raw == null ? null : (parseInt(raw, 10) || 0);
+    _toggleMobileSizeDataType(paramCode);
+    if (_isSizeText(paramCode)) _fillMobileSizeValueDropdown(paramCode, []);
+};
+
+window.OpenTODMobileSizeModal = function (rowId) {
+    G_MobileSizeEditRowId = rowId;
+    _fillMobileSizeDropdown();
+    $('#todMobileTxtSizeFrom, #todMobileTxtSizeTo').val('');
+    $('#todMobileDdlSizeValues').empty();
+    if (rowId == null) {
+        $('#todMobileSizeModalTitle').text('Add Size Parameter');
+        $('#todMobileSizeModalBtnTxt').text('Add Size Parameter');
+        $('#todMobileDdlSize').val('');
+        _toggleMobileSizeDataType(null);
+    } else {
+        $('#todMobileSizeModalTitle').text('Edit Size Parameter');
+        $('#todMobileSizeModalBtnTxt').text('Update Size Parameter');
+        var editCode = _sizeCodeFromRow(rowId);
+        $('#todMobileDdlSize').val(editCode === null ? '' : String(editCode));
+        $('#todMobileTxtSizeFrom').val($('#frmTxtSizeFrom_' + rowId).val() || '');
+        $('#todMobileTxtSizeTo').val($('#frmTxtSizeTo_' + rowId).val() || '');
+        _toggleMobileSizeDataType(editCode, true);
+        if (_isSizeText(editCode)) _fillMobileSizeValueDropdown(editCode, _sizeValueCodesFromRow(rowId));
+    }
+    $('#todModalMobileSizeEntry').off('shown.bs.modal.todSize').on('shown.bs.modal.todSize', function () {
+        _initSelect2($('#todMobileDdlSize'), $('#todModalMobileSizeEntry'));
+        if ($.fn.select2) {
+            var $values = $('#todMobileDdlSizeValues');
+            if ($values.hasClass('select2-hidden-accessible')) $values.select2('destroy');
+            $values.select2({
+                width: '100%',
+                dropdownParent: $('#todModalMobileSizeEntry'),
+                placeholder: 'Select values',
+                allowClear: true
+            });
+        }
+    });
+    $('#todModalMobileSizeEntry').modal('show');
+};
+
+window.TODMobileSizeModalConfirm = function () {
+    var raw = $('#todMobileDdlSize').val();
+    if (raw === '' || raw == null) {
+        toastr.warning('Please select a size parameter.');
+        return;
+    }
+    var sizeCode = parseInt(raw, 10) || 0;
+    if (!_canUseSize(G_MobileSizeEditRowId, sizeCode)) return;
+
+    var isNumeric = _isSizeNumeric(sizeCode);
+    var fromVal = isNumeric ? _normalizeSizeRange($('#todMobileTxtSizeFrom').val()) : '';
+    var toVal = isNumeric ? _normalizeSizeRange($('#todMobileTxtSizeTo').val()) : '';
+    if (isNumeric && _num(toVal) > 0 && _num(toVal) < _num(fromVal)) {
+        toastr.warning('To Value cannot be less than From Value.');
+        return;
+    }
+    var selectedValues = [];
+    if (_isSizeText(sizeCode)) {
+        selectedValues = $('#todMobileDdlSizeValues').val() || [];
+        if (!Array.isArray(selectedValues)) selectedValues = selectedValues ? [selectedValues] : [];
+    }
+
+    var preset = {
+        ItemParameterMaster_Code: sizeCode,
+        Desp: _sizeDisplayName(_findSizeParameter(sizeCode)) || (sizeCode === 0 ? TOD_ALL_ITEM_NAME : ''),
+        FromValue: fromVal,
+        ToValue: toVal,
+        ItemParameterValueMaster_Codes: selectedValues.join(',')
+    };
+
+    if (G_MobileSizeEditRowId == null) {
+        _appendSizeRow(preset);
+    } else {
+        _applySizeToRow(G_MobileSizeEditRowId, preset);
+    }
+    RenderTODMobileSizeCards();
+    $('#todModalMobileSizeEntry').modal('hide');
+};
+
+function RenderTODMobileSizeCards() {
+    var container = $('#todMobileSizeParameterCards');
+    if (!container.length) return;
+    container.empty();
+
+    var rows = $('#tblTODSizeParametersBody tr');
+    if (rows.length === 0) {
+        container.html('<div class="mobile-slab-empty"><i class="fa fa-ruler fa-2x d-block mb-2"></i>No size parameter added yet.<br>Tap "+ Add Size Parameter" to start.</div>');
+        return;
+    }
+
+    rows.each(function (index) {
+        var rowId = String($(this).attr('id') || '').replace('todSizeRow_', '');
+        var sizeCode = _sizeCodeFromRow(rowId);
+        var name = $('#frmDdlSize_' + rowId + ' option:selected').text() || TOD_ALL_ITEM_NAME;
+        var detailsHtml = '';
+        if (_isSizeText(sizeCode)) {
+            detailsHtml = '<span class="slab-card-detail"><b>Values</b> ' + _esc($('#frmTxtSizeValues_' + rowId).val() || '-') + '</span>';
+        } else if (_isSizeNumeric(sizeCode)) {
+            detailsHtml =
+                '<span class="slab-card-detail"><b>From</b> ' + _esc($('#frmTxtSizeFrom_' + rowId).val() || '0') + '</span>' +
+                '<span class="slab-card-detail"><b>To</b> ' + _esc($('#frmTxtSizeTo_' + rowId).val() || '0') + '</span>';
+        }
+        container.append(
+            '<div class="mobile-slab-card">' +
+            '<div class="slab-card-header">' +
+            '<span class="slab-card-num">' + (index + 1) + '</span>' +
+            '<span class="slab-card-name">' + _esc(name) + '</span>' +
+            '<div class="slab-card-actions">' +
+            '<button type="button" class="slab-card-edit-btn" onclick="OpenTODMobileSizeModal(' + rowId + ')" title="Edit"><i class="fa fa-pencil-alt"></i></button>' +
+            '<button type="button" class="slab-card-del-btn" onclick="DeleteTODSizeRow(' + rowId + ')" title="Delete"><i class="fa fa-trash"></i></button>' +
+            '</div></div>' +
+            '<div class="slab-card-details">' + detailsHtml +
+            '</div></div>'
+        );
+    });
+}
+window.RenderTODMobileSizeCards = RenderTODMobileSizeCards;
 
 /* ══════════════════════════════════════════════════
    RATE GRID (TODConfigurationRateDetail)
@@ -1558,6 +2370,7 @@ function _resetForm() {
     $('#frmDdlConsiderASPer').val('');
     $('#frmDdlTurnoverASPer').val('');
     $('#frmDdlTurnoverDiscountASPer').val('');
+    $('#frmPaymentTolerance').val('');
     /* $('#frmDdlMonth').val(''); */
     $('#frmDdlMarketingMan').val('0');
     $('#frmDdlZone').val('');
@@ -1572,8 +2385,10 @@ function _resetForm() {
     $('#frmTxtEndDate').val('');
     $('#frmTxtFinYear').val(BizSolHelperFunction.getFinancialYear());
     $('#tblTODSlabsBody').html('');
+    $('#tblTODSizeParametersBody').html('');
     $('#tblTODRatesBody').html('');
     G_SlabRowCount = 0;
+    G_SizeRowCount = 0;
     G_RateRowCount = 0;
 
     if ($.fn.select2) {
@@ -1615,9 +2430,11 @@ window.OpenTODForm = function (mode, code) {
                 $('#frmTxtFinYear').val(FinYear);
                 if (_isTODMobile()) {
                     RenderTODMobileSlabCards();
+                    RenderTODMobileSizeCards();
                     RenderTODMobileRateCards();
                 } else {
                     _appendSlabRow({});
+                    _appendSizeRow({});
                     _appendRateRow({});
                 }
             }
@@ -1647,7 +2464,8 @@ function _unwrapShowData(res) {
     var details = [];
     var parties = [];
     var rates = [];
-    if (!res) return { header: header, details: details, parties: parties, rates: rates };
+    var sizes = [];
+    if (!res) return { header: header, details: details, parties: parties, rates: rates, sizes: sizes };
 
     var isItemRow = function (r) {
         if (!r) return false;
@@ -1663,16 +2481,19 @@ function _unwrapShowData(res) {
         details = res[1] || [];
         parties = res[2] || [];
         rates   = res[3] || [];
+        sizes   = res[4] || [];
     } else if (res.Table) {
         header  = (res.Table[0] || null);
         details = res.Table1 || [];
         parties = res.Table2 || [];
         rates   = res.Table3 || [];
+        sizes   = res.Table4 || [];
     } else if (res.TODConfigurationMaster) {
         header  = (res.TODConfigurationMaster || [])[0] || null;
         details = res.TODConfigurationTransaction || [];
         parties = res.TODConfigurationAccountDetail || [];
         rates   = res.TODConfigurationRateDetail || [];
+        sizes   = res.TODConfigurationSizeParameterDetail || [];
     } else {
         var rows = _toList(res);
         header = rows[0] || null;
@@ -1687,7 +2508,7 @@ function _unwrapShowData(res) {
             return { SaleForm: d.SaleForm, SaleTo: d.SaleTo, Discount: d.Discount };
         });
     }
-    return { header: header, details: details, parties: parties, rates: rates };
+    return { header: header, details: details, parties: parties, rates: rates, sizes: sizes };
 }
 
 /**
@@ -1728,6 +2549,7 @@ function _loadTODForEdit(code) {
         var header = unpacked.header;
         var details = unpacked.details || [];
         var rates = unpacked.rates || [];
+        var sizes = unpacked.sizes || [];
 
         if (!header) {
             toastr.error('TOD Configuration not found.');
@@ -1741,6 +2563,7 @@ function _loadTODForEdit(code) {
         $('#frmDdlConsiderASPer').val(header.ConsiderASPer || '').trigger('change.select2');
         $('#frmDdlTurnoverASPer').val(header.TurnoverASPer || '').trigger('change.select2');
         $('#frmDdlTurnoverDiscountASPer').val(header.TurnoverDiscountASPer || '').trigger('change.select2');
+        $('#frmPaymentTolerance').val(header.PaymentTolerance != null ? header.PaymentTolerance : '');
         /* $('#frmDdlMonth').val(header.MonthDesp || '').trigger('change.select2'); */
         $('#frmTxtStartDate').val(header.StartDate ? String(header.StartDate).substring(0, 10) : '');
         $('#frmTxtEndDate').val(header.EndDate ? String(header.EndDate).substring(0, 10) : '');
@@ -1749,13 +2572,20 @@ function _loadTODForEdit(code) {
         $('#floatTODName').text(header.TODConfigurationDesp || ('#' + code));
 
         $('#tblTODSlabsBody').html('');
+        $('#tblTODSizeParametersBody').html('');
         $('#tblTODRatesBody').html('');
         G_SlabRowCount = 0;
+        G_SizeRowCount = 0;
         G_RateRowCount = 0;
         if (!details.length) {
             if (!_isTODMobile()) _appendSlabRow({});
         } else {
             details.forEach(function (d) { _appendSlabRow(d); });
+        }
+        if (!sizes.length) {
+            if (!_isTODMobile()) _appendSizeRow({});
+        } else {
+            sizes.forEach(function (s) { _appendSizeRow(s); });
         }
         if (!rates.length) {
             if (!_isTODMobile()) _appendRateRow({});
@@ -1765,6 +2595,7 @@ function _loadTODForEdit(code) {
         _syncRateFromQty();
         if (_isTODMobile()) {
             RenderTODMobileSlabCards();
+            RenderTODMobileSizeCards();
             RenderTODMobileRateCards();
         }
     }).catch(function (err) {
@@ -1811,6 +2642,12 @@ window.SaveTODConfiguration = function () {
         toastr.warning('Please select Turnover Discount AS Per.');
         return;
     }
+    var toleranceCheck = _validatePaymentTolerance($('#frmPaymentTolerance').val(), true);
+    if (!toleranceCheck.ok) {
+        $('#frmPaymentTolerance').trigger('focus');
+        return;
+    }
+    var paymentTolerance = toleranceCheck.value;
     var startDate = $('#frmTxtStartDate').val();
     var endDate   = $('#frmTxtEndDate').val();
     if (!startDate || !endDate) {
@@ -1823,8 +2660,36 @@ window.SaveTODConfiguration = function () {
     }
 
     var details = [];
+    var sizes = [];
     var rates = [];
     var valid = true;
+
+    function _mergeSizeSaveRows(rows) {
+        var map = {};
+        (rows || []).forEach(function (row) {
+            var key = String(row.ItemParameterMaster_Code);
+            if (!map[key]) {
+                map[key] = {
+                    ItemParameterMaster_Code: row.ItemParameterMaster_Code,
+                    FromValue: row.FromValue,
+                    ToValue: row.ToValue,
+                    ItemParameterValueMaster_Codes: row.ItemParameterValueMaster_Codes || ''
+                };
+                return;
+            }
+            var current = map[key];
+            var codes = String(current.ItemParameterValueMaster_Codes || '').split(',')
+                .concat(String(row.ItemParameterValueMaster_Codes || '').split(','))
+                .map(function (v) { return String(v || '').trim(); })
+                .filter(Boolean);
+            current.ItemParameterValueMaster_Codes = _dedup(codes).join(',');
+            if (!current.FromValue && !current.ToValue) {
+                current.FromValue = row.FromValue;
+                current.ToValue = row.ToValue;
+            }
+        });
+        return Object.keys(map).map(function (key) { return map[key]; });
+    }
     $('#tblTODSlabsBody tr').each(function () {
         var rowId = String($(this).attr('id') || '').replace('todSlabRow_', '');
         var itemCode = _itemCodeFromRow(rowId);
@@ -1834,6 +2699,26 @@ window.SaveTODConfiguration = function () {
             RateOfInterest: 0
         });
     });
+    $('#tblTODSizeParametersBody tr').each(function () {
+        var rowId = String($(this).attr('id') || '').replace('todSizeRow_', '');
+        var sizeCode = _sizeCodeFromRow(rowId);
+        if (sizeCode === null) return;
+        var isNumeric = _isSizeNumeric(sizeCode);
+        var fromVal = isNumeric ? _sizeRangeFromRow(rowId, 'From') : 0;
+        var toVal = isNumeric ? _sizeRangeFromRow(rowId, 'To') : 0;
+        if (isNumeric && toVal > 0 && toVal < fromVal) {
+            toastr.warning('To Value cannot be less than From Value in size parameter row ' + (sizes.length + 1) + '.');
+            valid = false;
+            return false;
+        }
+        sizes.push({
+            ItemParameterMaster_Code: sizeCode,
+            FromValue: fromVal,
+            ToValue: toVal,
+            ItemParameterValueMaster_Codes: _isSizeText(sizeCode) ? _sizeValueCodesFromRow(rowId).join(',') : ''
+        });
+    });
+    if (valid) sizes = _mergeSizeSaveRows(sizes);
     $('#tblTODRatesBody tr').each(function () {
         var rowId = String($(this).attr('id') || '').replace('todRateRow_', '');
         var from  = _num($('#frmTxtRateFrom_' + rowId).val());
@@ -1861,6 +2746,15 @@ window.SaveTODConfiguration = function () {
         toastr.warning('Please add at least one item.');
         return;
     }
+    if (!sizes.length) {
+        toastr.warning('Please add at least one size parameter.');
+        return;
+    }
+    if (sizes.some(function (s) { return s.ItemParameterMaster_Code === 0; }) &&
+        sizes.some(function (s) { return s.ItemParameterMaster_Code > 0; })) {
+        toastr.warning('Size "All" cannot be combined with specific size parameters.');
+        return;
+    }
     if (!rates.length) {
         toastr.warning('Please add at least one TOD rate.');
         return;
@@ -1879,6 +2773,7 @@ window.SaveTODConfiguration = function () {
         _xmlTag('ConsiderASPer', considerAsPer) +
         _xmlTag('TurnoverASPer', turnoverAsPer) +
         _xmlTag('TurnoverDiscountASPer', turnoverDiscountAsPer) +
+        _xmlTag('PaymentTolerance', paymentTolerance) +
         _xmlTag('StartDate', startDate) +
         _xmlTag('EndDate', endDate) +
         '<Parties>' + G_PartyRows.map(function (party) {
@@ -1900,6 +2795,16 @@ window.SaveTODConfiguration = function () {
                 '</Row>';
         }).join('') +
         '</Details>' +
+        '<SizeParameters>' +
+        sizes.map(function (s) {
+            return '<Row>' +
+                _xmlTag('ItemParameterMaster_Code', s.ItemParameterMaster_Code) +
+                _xmlTag('FromValue', s.FromValue) +
+                _xmlTag('ToValue', s.ToValue) +
+                _xmlTag('ItemParameterValueMaster_Codes', s.ItemParameterValueMaster_Codes) +
+                '</Row>';
+        }).join('') +
+        '</SizeParameters>' +
         '<Rates>' +
         rates.map(function (r) {
             return '<Row>' +
