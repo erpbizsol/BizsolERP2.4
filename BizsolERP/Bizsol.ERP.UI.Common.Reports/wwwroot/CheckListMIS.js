@@ -21,8 +21,9 @@ var G_CM_FromDate = '';
 var G_CM_ToDate = '';
 var G_CM_Rows = [];
 var G_CM_Filtered = [];
-var G_CM_Page = 1;
-var G_CM_PageSize = 10;
+var CM_GRID_TABLE_ID = 'CheckListMISReport';
+var CM_GRID_HEADER_ID = 'table-header-CheckListMISReport';
+var CM_GRID_BODY_ID = 'table-body-CheckListMISReport';
 var G_CM_UserMap = {};
 var G_CM_UserList = [];
 var G_CM_ReportMode = 'GETMIS';
@@ -980,15 +981,40 @@ function destroyCmSelect2($el) {
     }
 }
 
+function getCmSelect2DropdownParent() {
+    /* Inside #modern-content (z-index 1) the mobile sheet renders under the backdrop, bottom nav and footer. */
+    return $(document.body);
+}
+
+function releaseCmPageScrollLock() {
+    /* Select2 pins ancestor scrollTop while open and only unbinds from ancestors that still
+       overflow on close; the report reload shrinks the page first, leaving #modern-content frozen. */
+    $('#CheckListMISPage').parents().addBack().off('scroll.select2');
+    document.body.classList.remove('s2-mobile-open');
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    try {
+        $('.select2-backdrop').remove();
+    } catch (e) { /* ignore */ }
+    if (typeof closeAllFilters === 'function') {
+        closeAllFilters();
+    }
+    if (typeof closeAllFiltersDouble === 'function') {
+        closeAllFiltersDouble();
+    }
+}
+
 function initCmSelect2(selector, placeholder) {
     var $el = $(selector);
     if (!$el.length || typeof $.fn.select2 === 'undefined') return;
     destroyCmSelect2($el);
     $el.select2({
         width: 'style',
-        placeholder: placeholder || 'Select�',
+        placeholder: placeholder || 'Select',
         minimumResultsForSearch: 0,
-        dropdownParent: $('#CheckListMISPage'),
+        dropdownParent: getCmSelect2DropdownParent(),
+        containerCssClass: 'cm-toolbar-s2',
+        selectionCssClass: 'cm-toolbar-s2-selection',
     });
 }
 
@@ -1013,6 +1039,9 @@ function bindReportTypeDropdown() {
     G_CM_ReportMode = $rt.val() || (types[0] && types[0].code) || 'GETMIS';
     destroyCmSelect2($rt);
     initCmSelect2('#cmReportType', 'Report Type');
+    $('#cmReportType').off('select2:close.cmScroll').on('select2:close.cmScroll', function () {
+        setTimeout(releaseCmPageScrollLock, 0);
+    });
     $rt.val(G_CM_ReportMode);
     if ($rt.data('select2')) {
         $rt.trigger('change.select2');
@@ -1091,6 +1120,9 @@ function bindUserDropdown() {
     }
     destroyCmSelect2($uf);
     initCmSelect2('#cmUserFilter', 'All Users');
+    $('#cmUserFilter').off('select2:close.cmScroll').on('select2:close.cmScroll', function () {
+        setTimeout(releaseCmPageScrollLock, 0);
+    });
     $uf.val(selected ? String(selected) : '0');
     if ($uf.data('select2')) {
         $uf.trigger('change.select2');
@@ -1129,46 +1161,83 @@ function updateLayoutForReportType() {
     }
 }
 
-function renderTableHead() {
-    var html;
+function pctPlain(v) {
+    if (v == null || v === '') return 'N/A';
+    var n = Number(v);
+    if (isNaN(n)) return 'N/A';
+    return n.toFixed(2).replace(/\.00$/, '') + '%';
+}
+
+function ynPlain(val) {
+    return String(val || 'N').toUpperCase() === 'Y' ? 'Y' : 'N';
+}
+
+function mapRowToFilterGrid(r, index) {
     if (isCheckReportMode()) {
-        html =
-            '<tr>' +
-            '<th class="cm-th-num">Sr. No.</th>' +
-            '<th>User Name</th>' +
-            '<th>Task Name</th>' +
-            '<th>Assigned Date</th>' +
-            '<th>Completion Date</th>' +
-            '<th>Frequency</th>' +
-            '<th>Status</th>' +
-            '<th class="cm-th-num">Delay Days</th>' +
-            '<th>Remarks</th>' +
-            '</tr>';
-    } else if (isSummaryMode()) {
-        html =
-            '<tr>' +
-            '<th class="cm-th-num">#</th>' +
-            '<th>MIS Period</th>' +
-            '<th>Doer Name</th>' +
-            '<th class="cm-th-num">Work to be<br />accomplished</th>' +
-            '<th class="cm-th-num">Accomplished</th>' +
-            '<th class="cm-th-num">This week Work<br />Not Done%</th>' +
-            '<th class="cm-th-num">This week work not<br />done on time %</th>' +
-            '</tr>';
-    } else {
-        html =
-            '<tr>' +
-            '<th class="cm-th-num">#</th>' +
-            '<th>MIS Period</th>' +
-            '<th>Doer Name</th>' +
-            '<th>Task</th>' +
-            '<th>Due Date</th>' +
-            '<th>Frequency</th>' +
-            '<th class="cm-th-num">Done</th>' +
-            '<th class="cm-th-num">On Time</th>' +
-            '</tr>';
+        return {
+            'Sr. No.': index + 1,
+            'User Name': String(r.UserName || resolveDoerName(r) || ''),
+            'Task Name': String(r.TaskName || ''),
+            'Assigned Date': String(r.AssignedDate || ''),
+            'Completion Date': String(r.CompletionDate || ''),
+            Frequency: String(r.Frequency || ''),
+            Status: String(r.Status || '').trim() || '-',
+            'Delay Days': num(r.DelayDays),
+            Remarks: String(r.Remarks || ''),
+        };
     }
-    $('#cmTableHead').html(html);
+    if (isSummaryMode()) {
+        return {
+            '#': index + 1,
+            'MIS Period': String(r.MISPeriod || ''),
+            'Doer Name': String(resolveDoerName(r) || ''),
+            'Work to be accomplished': r.WorkToBeAccomplished,
+            Accomplished: r.Accomplished,
+            'This week Work Not Done%': pctPlain(r.NotDonePctRaw),
+            'This week work not done on time %': pctPlain(r.NotDoneOnTimePctRaw),
+        };
+    }
+    return {
+        '#': index + 1,
+        'MIS Period': String(r.MISPeriod || ''),
+        'Doer Name': String(resolveDoerName(r) || ''),
+        Task: String(r.Task || ''),
+        'Due Date': String(r.DueDate || ''),
+        Frequency: String(r.Frequency || ''),
+        Done: ynPlain(r.IsDone),
+        'On Time': ynPlain(r.OnTime),
+    };
+}
+
+function getCmGridFilterConfig(sampleRow) {
+    var keys = Object.keys(sampleRow || {});
+    var numeric = [];
+    var date = [];
+    var align = {};
+
+    if (isCheckReportMode()) {
+        numeric = ['Sr. No.', 'Delay Days'];
+        date = ['Assigned Date', 'Completion Date'];
+    } else if (isSummaryMode()) {
+        numeric = ['#', 'Work to be accomplished', 'Accomplished'];
+    } else {
+        numeric = ['#'];
+        date = ['Due Date'];
+    }
+
+    keys.forEach(function (k) {
+        if (k === 'Sr. No.' || k === '#' || k === 'Delay Days' || k === 'Done' || k === 'On Time') {
+            align[k] = 'center';
+        } else if (k.indexOf('%') >= 0 || k === 'Work to be accomplished' || k === 'Accomplished') {
+            align[k] = 'center';
+        }
+    });
+
+    var stringCols = keys.filter(function (k) {
+        return numeric.indexOf(k) < 0 && date.indexOf(k) < 0;
+    });
+
+    return { stringCols: stringCols, numericCols: numeric, dateCols: date, align: align };
 }
 
 /* ------------------------- donut chart ------------------------- */
@@ -1230,76 +1299,54 @@ function renderDonut() {
     );
 }
 
-/* ------------------------- grid ------------------------- */
+/* ------------------------- grid (Filter.js / BizsolCustomFilterGrid) ------------------------- */
 function renderGrid() {
-    renderTableHead();
-    var $body = $('#cmTableBody');
     var cols = colCount();
+    var emptyMsg = isCheckReportMode()
+        ? 'No task-wise pending / done records for this date range.'
+        : 'No records for this week.';
 
     if (!G_CM_Filtered.length) {
-        $body.html(
-            '<tr><td class="cm-empty" colspan="' + cols + '"><i class="fas fa-inbox"></i> ' +
-            (isCheckReportMode()
-                ? 'No task-wise pending / done records for this date range.'
-                : 'No records for this week.') +
-            '</td></tr>'
+        $('#' + CM_GRID_HEADER_ID).empty();
+        $('#' + CM_GRID_BODY_ID).html(
+            '<tr><td class="cm-empty" colspan="' + cols + '"><i class="fas fa-inbox"></i> ' + emptyMsg + '</td></tr>'
         );
-        $('#cmPager').html('');
+        $('#paginator-' + CM_GRID_TABLE_ID).empty();
         return;
     }
 
-    var totalPages = Math.max(1, Math.ceil(G_CM_Filtered.length / G_CM_PageSize));
-    if (G_CM_Page > totalPages) G_CM_Page = totalPages;
-    var startIdx = (G_CM_Page - 1) * G_CM_PageSize;
-    var pageRows = G_CM_Filtered.slice(startIdx, startIdx + G_CM_PageSize);
-
-    var html = '';
-    pageRows.forEach(function (r, i) {
-        if (isCheckReportMode()) {
-            var delay = num(r.DelayDays);
-            html += '<tr>' +
-                '<td class="cm-sno">' + (startIdx + i + 1) + '</td>' +
-                '<td class="cm-doer">' + escapeHtml(r.UserName || resolveDoerName(r)) + '</td>' +
-                '<td>' + escapeHtml(r.TaskName) + '</td>' +
-                '<td class="cm-period">' + escapeHtml(r.AssignedDate) + '</td>' +
-                '<td class="cm-period">' + escapeHtml(r.CompletionDate) + '</td>' +
-                '<td>' + escapeHtml(r.Frequency) + '</td>' +
-                '<td>' + statusBadge(r.Status) + '</td>' +
-                '<td class="cm-numcell' + (delay > 0 ? ' cm-delay-late' : '') + '">' + delay + '</td>' +
-                '<td>' + escapeHtml(r.Remarks) + '</td>' +
-                '</tr>';
-        } else if (isSummaryMode()) {
-            html += '<tr>' +
-                '<td class="cm-sno">' + (startIdx + i + 1) + '</td>' +
-                '<td class="cm-period">' + escapeHtml(r.MISPeriod) + '</td>' +
-                '<td class="cm-doer">' + escapeHtml(resolveDoerName(r)) + '</td>' +
-                '<td class="cm-numcell">' + r.WorkToBeAccomplished + '</td>' +
-                '<td class="cm-numcell">' + r.Accomplished + '</td>' +
-                '<td class="cm-numcell">' + pct(r.NotDonePctRaw) + '</td>' +
-                '<td class="cm-numcell">' + pct(r.NotDoneOnTimePctRaw) + '</td>' +
-                '</tr>';
-        } else {
-            html += '<tr>' +
-                '<td class="cm-sno">' + (startIdx + i + 1) + '</td>' +
-                '<td class="cm-period">' + escapeHtml(r.MISPeriod) + '</td>' +
-                '<td class="cm-doer">' + escapeHtml(resolveDoerName(r)) + '</td>' +
-                '<td>' + escapeHtml(r.Task) + '</td>' +
-                '<td class="cm-period">' + escapeHtml(r.DueDate) + '</td>' +
-                '<td>' + escapeHtml(r.Frequency) + '</td>' +
-                '<td class="cm-numcell">' + ynBadge(r.IsDone) + '</td>' +
-                '<td class="cm-numcell">' + ynBadge(r.OnTime) + '</td>' +
-                '</tr>';
-        }
+    var mapped = G_CM_Filtered.map(function (r, i) {
+        return mapRowToFilterGrid(r, i);
     });
-    $body.html(html);
+    var cfg = getCmGridFilterConfig(mapped[0]);
+    var grid = window.BizsolCustomFilterGrid;
 
-    var from = startIdx + 1;
-    var to = Math.min(startIdx + G_CM_PageSize, G_CM_Filtered.length);
-    $('#cmPager').html(
-        '<span class="cm-pager-info">' + from + ' - ' + to + ' / ' + G_CM_Filtered.length + '</span>' +
-        '<button class="cm-pager-btn" id="cmPrev" ' + (G_CM_Page <= 1 ? 'disabled' : '') + '><i class="fas fa-chevron-left"></i></button>' +
-        '<button class="cm-pager-btn" id="cmNext" ' + (G_CM_Page >= totalPages ? 'disabled' : '') + '><i class="fas fa-chevron-right"></i></button>'
+    if (!grid || typeof grid.CreateDataTable !== 'function') {
+        if (typeof toastr !== 'undefined') toastr.error('Grid filter module failed to load.');
+        return;
+    }
+
+    if (typeof window.columnFilters === 'object' && window.columnFilters !== null) {
+        window.columnFilters = {};
+    }
+
+    grid.CreateDataTable(
+        CM_GRID_HEADER_ID,
+        CM_GRID_BODY_ID,
+        mapped,
+        false,
+        [],
+        cfg.stringCols,
+        cfg.numericCols,
+        cfg.dateCols,
+        [],
+        [],
+        cfg.align,
+        true,
+        null,
+        null
     );
+    releaseCmPageScrollLock();
 }
 
 function rowMatchesUserFilter(row, userCode) {
@@ -1324,7 +1371,6 @@ function applyFilter() {
     }).map(function (r) {
         return isCheckReportMode() ? applyPeriodToCheckRow(r, range.fromDate, range.toDate) : r;
     });
-    G_CM_Page = 1;
     renderCheckStats();
     renderGrid();
     renderDonut();
@@ -1444,13 +1490,6 @@ function loadMIS(refreshUsers) {
 /* ------------------------- PDF export ------------------------- */
 function getPdfMake() {
     return window.pdfMake || window.pdfmake || null;
-}
-
-function pctPlain(v) {
-    if (v == null || v === '') return 'N/A';
-    var n = Number(v);
-    if (isNaN(n)) return 'N/A';
-    return n.toFixed(2).replace(/\.00$/, '') + '%';
 }
 
 function buildPdfTableBody(rows) {
@@ -1852,6 +1891,7 @@ $(document).ready(function () {
     $('#cmReportType').on('change', function () {
         if (G_CM_IgnoreFilterChange) return;
         G_CM_ReportMode = $(this).val() || 'GETMIS';
+        releaseCmPageScrollLock();
         loadMIS();
     });
 
@@ -1902,11 +1942,4 @@ $(document).ready(function () {
         sendWhatsApp();
     });
 
-    $(document).on('click', '#cmPrev', function () {
-        if (G_CM_Page > 1) { G_CM_Page--; renderGrid(); }
-    });
-    $(document).on('click', '#cmNext', function () {
-        var totalPages = Math.max(1, Math.ceil(G_CM_Filtered.length / G_CM_PageSize));
-        if (G_CM_Page < totalPages) { G_CM_Page++; renderGrid(); }
-    });
 });

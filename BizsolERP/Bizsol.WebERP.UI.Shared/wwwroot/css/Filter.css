@@ -223,11 +223,38 @@ i:hover {
     z-index: 1;
 }*/
 
-.paginator {
+/* Filter grid shells (div#tblVendorMaster, div#tblItemMaster, …) — not <table id="tbl*"> */
+div[id^="tbl"] {
     display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+div[id^="tbl"] .bizsol-global-search-wrap {
+    flex-shrink: 0;
+}
+
+div[id^="tbl"] > .table-wrapper,
+div[id^="tbl"] > [class*="-table-wrapper"] {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+.paginator {
+    display: flex !important;
+    flex-wrap: wrap;
     align-items: center;
-    margin-top: 10px;
+    flex-shrink: 0 !important;
+    margin-top: auto;
+    padding: 8px 4px 4px;
     font-size: 8pt;
+    background: #fff;
+    border-top: 1px solid #e8ecf1;
+    position: relative;
+    z-index: 2;
 }
 
 .paginator button {

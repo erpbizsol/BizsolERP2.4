@@ -6,6 +6,28 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/OptimizeImage.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Production.Transactions/Script/StockTransferWarehouse.js"></script>
 <style>
+    @@media (max-width: 767.98px) {
+        #home .input-group:has(#fileInput) {
+            flex-wrap: nowrap;
+            align-items: stretch;
+        }
+        #home .input-group:has(#fileInput) > .input-group-text {
+            height: auto !important;
+            min-width: 44px;
+            justify-content: center;
+            margin: 0;
+            background: #f4f7fb;
+            color: #275481;
+            border: 1px solid #275481;
+            border-right: 0;
+            border-radius: 0.25rem 0 0 0.25rem;
+        }
+        #home .input-group:has(#fileInput) > #fileInput {
+            margin-bottom: 0 !important;
+            border-radius: 0 0.25rem 0.25rem 0 !important;
+        }
+    }
+
     input[switch] + label {
         font-size: 1em;
         line-height: 1;

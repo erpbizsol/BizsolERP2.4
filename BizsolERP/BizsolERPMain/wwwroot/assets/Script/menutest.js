@@ -10,6 +10,7 @@ var _FAV_COLLAPSE_KEY = 'sidebarFavouritesCollapsed';
 
 $(document).ready(function () {
         bindMenu();
+        bindUserProfileImageModalPreview();
 });
 
 
@@ -997,4 +998,39 @@ function bindUserProfileImage() {
             applyUserProfileImageSrc(extractUserImageSrc(data));
         })
         .catch(function () { });
+}
+
+function openUserProfileImageModal() {
+    var avatar = document.getElementById('ERPUserProfileImage');
+    if (!avatar || !avatar.src) return;
+
+    var modalImg = document.getElementById('erpUserProfileImageModalImg');
+    var modalTitle = document.getElementById('erpUserProfileImageModalLabel');
+    var modalEl = document.getElementById('erpUserProfileImageModal');
+    if (!modalImg || !modalEl) return;
+
+    modalImg.src = avatar.src;
+    modalImg.alt = avatar.alt || 'User profile photo';
+
+    if (modalTitle) {
+        var nameEl = document.getElementById('ERPProfileUserName');
+        var nameText = nameEl ? (nameEl.textContent || '').trim() : '';
+        modalTitle.textContent = nameText || 'Profile';
+    }
+
+    if (window.bootstrap && bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
+
+function bindUserProfileImageModalPreview() {
+    var btn = document.querySelector('.header-profile-btn');
+    if (!btn || btn.dataset.profileDblBound === '1') return;
+    btn.dataset.profileDblBound = '1';
+
+    btn.addEventListener('dblclick', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openUserProfileImageModal();
+    });
 }
