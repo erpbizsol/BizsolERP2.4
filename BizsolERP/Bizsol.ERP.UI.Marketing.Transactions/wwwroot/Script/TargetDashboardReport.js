@@ -136,8 +136,11 @@ function buildFinYear(fromDate) {
 }
 
 function isAmountColumn(name) {
-    const key = String(name || '').toLowerCase().replace(/\s+/g, '');
-    return key.indexOf('amount') >= 0 || key.indexOf('target') >= 0 || key.indexOf('archive') >= 0 || key.indexOf('sale') >= 0;
+    const key = String(name || '').toLowerCase();
+    const compact = key.replace(/\s+/g, '');
+    if (/sales\s*person|salesperson/.test(key)) return false;
+    return compact.indexOf('amount') >= 0 || compact.indexOf('target') >= 0 ||
+        compact.indexOf('archive') >= 0 || compact.indexOf('achieved') >= 0;
 }
 
 function isQtyColumn(name) {
@@ -147,7 +150,9 @@ function isQtyColumn(name) {
 
 function isNameColumn(name) {
     const key = String(name || '').toLowerCase();
-    return key.indexOf('name') >= 0 || key.indexOf('location') >= 0 || key.indexOf('item') >= 0 || key.indexOf('dealer') >= 0 || key.indexOf('warehouse') >= 0 || key.indexOf('type') >= 0;
+    return key.indexOf('name') >= 0 || key.indexOf('person') >= 0 || key.indexOf('mkt') >= 0 ||
+        key.indexOf('location') >= 0 || key.indexOf('item') >= 0 || key.indexOf('dealer') >= 0 ||
+        key.indexOf('warehouse') >= 0 || key.indexOf('type') >= 0;
 }
 
 function columnClass(columnName, isFirst) {
@@ -216,10 +221,18 @@ function monthArchiveColumns(rows) {
     const labels = ['M5', 'M4', 'M3', 'M2', 'M1', 'M0'].map(function (key) {
         return pick(row, [key + ' Label'], key);
     });
-    const columns = [{ key: pickKey(row, ['MKT Name', 'MKTName']), title: 'MKT Name' }];
+    const nameKey = pickKey(row, ['MKT Name', 'MKTName', 'Sales Person', 'SalesPerson']);
+    const nameTitle = nameKey && /sales\s*person|salesperson/i.test(nameKey.replace(/\s+/g, ''))
+        ? 'Sales Person'
+        : 'MKT Name';
+    const columns = nameKey ? [{ key: nameKey, title: nameTitle }] : [];
     ['M5', 'M4', 'M3', 'M2', 'M1', 'M0'].forEach(function (key, index) {
+        const metricKey = pickKey(row, [key + ' Archive', key + ' Achieved']);
+        const metricSuffix = metricKey && /achieved/i.test(metricKey) ? ' Achieved' : ' Archive';
         columns.push({ key: pickKey(row, [key + ' Target']), title: labels[index] + ' Target' });
-        columns.push({ key: pickKey(row, [key + ' Archive']), title: labels[index] + ' Archive' });
+        if (metricKey) {
+            columns.push({ key: metricKey, title: labels[index] + metricSuffix });
+        }
     });
     return columns.filter(function (col) { return !!col.key; });
 }
@@ -335,7 +348,7 @@ function renderTable(rows, tile) {
         const cells = columns.map(function (col, index) {
             const max = amountMax[col.key] || 0;
             const barPct = max > 0 ? (toNumber(row[col.key]) / max) * 100 : 0;
-            const asPerson = index === 0 && /location|mkt|dealer|warehouse/i.test(col.title);
+            const asPerson = index === 0 && /location|mkt|dealer|warehouse|sales\s*person|person/i.test(col.title);
             const raw = row[col.key];
             const rawText = raw === null || raw === undefined ? '' : String(raw);
             const numeric = isAmountColumn(col.title) || isQtyColumn(col.title) || typeof raw === 'number';
@@ -421,7 +434,7 @@ function looksLikeMonthArchive(rows) {
     const row = rows && rows[0];
     if (!row) return false;
     return Object.keys(row).some(function (key) {
-        return /m[0-5]\s*(target|archive|label)/i.test(key);
+        return /m[0-5]\s*(target|archive|achieved|label)/i.test(key);
     });
 }
 
