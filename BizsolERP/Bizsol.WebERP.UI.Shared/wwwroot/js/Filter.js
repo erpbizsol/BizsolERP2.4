@@ -958,10 +958,10 @@ columns.forEach(col => {
                                         </span>
                                           <div class="filter-division" id="filterDropdown-${uniqueId}" style="display:none;">
                                             <div class="dropdown-content">
-                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                 <i class="fa-solid fa-arrow-up-a-z sort-indicator sort-indicator-color"></i> Ascending
                                               </div>
-                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                 <i class="fa-solid fa-arrow-down-z-a sort-indicator sort-indicator-color"></i> Descending
                                               </div>
                                               <div class="dropdown-item fafilter" onclick="toggleFilter('${col}','${bodyId}')">
@@ -988,10 +988,10 @@ columns.forEach(col => {
                                                 </span>
                                                   <div class="filter-division" id="filterDropdown-${uniqueId}" style="display:none;">
                                                     <div class="dropdown-content">
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                       </div>
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                       </div>
                                                       <div class="dropdown-item fafilter" onclick="toggleFilterNumeric('filter-dropdown-numeric-${uniqueId}','${col}','${bodyId}');">
@@ -1025,10 +1025,10 @@ columns.forEach(col => {
                                                 </span>
                                                   <div class="filter-division" id="filterDropdown-${uniqueId}" style="display:none;">
                                                     <div class="dropdown-content">
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                       </div>
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                       </div>
                                                       <div class="dropdown-item fafilter" onclick="populateDateFilter('${col}','${bodyId}')">
@@ -1052,10 +1052,10 @@ columns.forEach(col => {
                                            </span>
                                              <div class="filter-division" onclick="stopPropagationdouble(event)" id="filterDropdown-${uniqueId}" style="display:none;">
                                                <div class="dropdown-content">
-                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                    <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                  </div>
-                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                    <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                  </div>
                                                  <div class="dropdown-item fafilter" onclick="toggleFilterDouble('${col}','${bodyId}')">
@@ -1095,12 +1095,24 @@ columns.forEach(col => {
 window.sortable = function sortable(element) {
     var column = $(element).data('column');
     var order = $(element).data('order');
-    var tbodyId = $(element).closest('table').find('tbody').attr('id');
+    // Use data-tbody-id stored on the button at render time, because the filter
+    // panel is moved to <body> by bizsolMoveFilterPanelToBody and is no longer
+    // a descendant of the table when the user clicks Ascending/Descending.
+    var tbodyId = $(element).data('tbody-id');
+    if (!tbodyId) {
+        // Fallback for older markup that may not have the attribute
+        tbodyId = $(element).closest('table').find('tbody').attr('id');
+    }
     sortTable(column, order, tbodyId);
 };
 window.sortTable = function sortTable(column, order, tbodyId) {
     const tableId = $('#' + tbodyId).closest('table').attr('id');
     var data = window[`filteredData_${tableId}`];
+
+    if (!Array.isArray(data)) {
+        console.warn('sortTable: no data found for tableId:', tableId, 'tbodyId:', tbodyId);
+        return;
+    }
 
     data.sort(function (a, b) {
         var keyA = a[column] !== undefined && a[column] !== null ? String(a[column]).trim() : '';
@@ -1292,6 +1304,9 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
     }
     if (tableId === "OrderList" && typeof window.applyOrderListTransferredRowColors === "function") {
         window.applyOrderListTransferredRowColors();
+    }
+    if (tableId === "RMReport" && typeof window.applyRMReportRemarkColors === "function") {
+        window.applyRMReportRemarkColors();
     }
 }
 window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
@@ -1500,7 +1515,9 @@ window.createPaginator = function createPaginator(tableId, bodyId) {
         </button>
     `;
 
-    $('#paginator-' + tableId).append(filterHtml);
+    var $pag = $('#paginator-' + tableId);
+    $pag.append(filterHtml);
+    $pag.css('display', 'flex').show();
 }
 window.OpenFilter = function OpenFilter(columnName, event) {
     // Prevent event from bubbling to document click handler

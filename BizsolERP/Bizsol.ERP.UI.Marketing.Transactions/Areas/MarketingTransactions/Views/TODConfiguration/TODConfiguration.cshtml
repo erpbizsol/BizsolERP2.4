@@ -1,0 +1,884 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/TODConfiguration.js"></script>
+
+<style>
+    .tod-list-header {
+        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+        border-radius: 14px;
+        margin-bottom: 14px;
+        padding: 16px 22px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        overflow: visible;
+    }
+    .tod-list-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .tod-list-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; }
+    .tod-header-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .tod-create-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #4f46e5;
+        border-radius: 10px; padding: 8px 16px; font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.2); white-space: nowrap;
+        cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+        line-height: 1; text-decoration: none; font-size: 0.85rem;
+        -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .tod-create-btn:hover { background: #f1eeff; border-color: #4f46e5; color: #4f46e5; }
+    .tod-stats-strip {
+        display: flex; gap: 8px; align-items: center;
+        overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+        flex-wrap: nowrap; padding-bottom: 2px;
+        width: 100%; min-width: 0;
+        -webkit-overflow-scrolling: touch;
+    }
+    .tod-stats-strip::-webkit-scrollbar { display: none; }
+    .tod-stat-chip {
+        background: rgba(255,255,255,0.18); border-radius: 10px;
+        padding: 5px 14px; text-align: center; min-width: 84px;
+        border: 1px solid rgba(255,255,255,0.2);
+        flex-shrink: 0; cursor: pointer;
+        transition: transform 0.18s ease, background 0.18s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .tod-stat-chip .val { font-size: 1.15rem; font-weight: 800; color: #fff; line-height: 1; }
+    .tod-stat-chip .lbl { font-size: 0.65rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+    .tod-stat-chip:hover { background: rgba(255,255,255,0.32); transform: scale(1.06); }
+    .tod-stat-chip.is-active { background: rgba(255,255,255,0.4); box-shadow: 0 0 0 2px rgba(255,255,255,0.85); }
+
+    .tod-grid-wrap {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #dfdbf5;
+        box-shadow: 0 2px 10px rgba(124,58,237,0.07);
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .table-wrapper.tod-table-scroll { max-height: 420px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+    #TODConfigurationTable thead {
+        position: sticky; top: 0; z-index: 10;
+        background: linear-gradient(135deg, #7c3aed, #4f46e5) !important;
+    }
+    #TODConfigurationTable thead th {
+        background: transparent !important;
+        color: #fff !important;
+        position: sticky; top: 0; z-index: 11;
+        border-bottom: 2px solid var(--border-color);
+        padding: 0.4rem 0.35rem !important;
+        font-weight: 600; font-size: 0.75rem; letter-spacing: 0.01em;
+        white-space: nowrap; line-height: 1.25; vertical-align: middle;
+    }
+    #TODConfigurationTable { width: 100% !important; table-layout: auto !important; }
+    #TODConfigurationTable thead th,
+    #TODConfigurationTable tbody td { white-space: nowrap; vertical-align: middle; }
+    #TODConfigurationTable thead th.tod-sno-col,
+    #TODConfigurationTable tbody td.tod-sno-col,
+    #TODConfigurationTable th:nth-child(1),
+    #TODConfigurationTable td:nth-child(1) {
+        width: 52px !important;
+        min-width: 52px !important;
+        max-width: 52px !important;
+        text-align: right !important;
+        padding-left: 6px !important;
+        padding-right: 10px !important;
+        box-sizing: border-box;
+    }
+    #TODConfigurationTable thead th.tod-sno-col .filter-table-heading-div,
+    #TODConfigurationTable th:nth-child(1) .filter-table-heading-div {
+        justify-content: flex-end;
+        width: 100%;
+    }
+    #TODConfigurationTable thead th.tod-paytol-col,
+    #TODConfigurationTable tbody td.tod-paytol-col {
+        text-align: right !important;
+    }
+    #TODConfigurationTable thead th.tod-paytol-col .filter-table-heading-div {
+        justify-content: flex-end;
+        width: 100%;
+    }
+    #TODConfigurationTable thead th.tod-action-col,
+    #TODConfigurationTable tbody td.tod-action-col { width: auto !important; min-width: 88px; text-align: left !important; }
+    #TODConfigurationTable tbody td.tod-action-col .btn { margin-right: 4px; margin-bottom: 0 !important; }
+    #TODConfigurationTable thead th .filter-table-heading,
+    #TODConfigurationTable thead th .table-filter-arrow,
+    #TODConfigurationTable thead th .fa-angle-down { color: #fff !important; }
+
+    .tod-step-card {
+        background: #fff; border-radius: 14px; border: 1px solid #dfdbf5;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 14px; overflow: hidden;
+    }
+    .tod-step-header {
+        display: flex; align-items: center; gap: 12px;
+        padding: 11px 18px; background: #faf8ff;
+        border-bottom: 1px solid #efecfa;
+        border-left: 4px solid var(--step-clr, #7c3aed);
+    }
+    .tod-step-num {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: var(--step-clr, #7c3aed); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.72rem; flex-shrink: 0;
+    }
+    .tod-step-title {
+        font-weight: 700; font-size: 0.84rem; color: #1e293b;
+        letter-spacing: 0.04em; text-transform: uppercase; flex: 1;
+    }
+    .tod-step-icon { color: var(--step-clr, #7c3aed); font-size: 1rem; }
+    .tod-step-body { padding: 16px 18px; }
+
+    .tod-field-lbl { display: block; font-size: 0.79rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .tod-scope-sep {
+        display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px;
+        margin: 14px 0 8px; padding-top: 10px; border-top: 1px dashed #ddd6fe;
+        font-size: 0.75rem; font-weight: 700; color: #6d28d9;
+        text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .tod-scope-note { font-size: 0.72rem; font-weight: 500; color: #94a3b8; text-transform: none; letter-spacing: 0; }
+    .tod-filter-btn {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg,#7c3aed,#4f46e5);
+        border: none; color: #fff; border-radius: 8px; font-size: 0.78rem; font-weight: 700;
+        padding: 6px 14px; box-shadow: 0 3px 10px rgba(124,58,237,0.35);
+        text-transform: none; letter-spacing: 0; cursor: pointer;
+        -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .tod-filter-btn:hover { color: #fff; }
+    #todModalPartyFilter.modal.show {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        padding: 0 !important;
+    }
+    #todModalPartyFilter .modal-dialog {
+        margin: 1.75rem auto;
+        max-width: 920px;
+        width: calc(100% - 24px);
+    }
+    #todModalPartyFilter .select2-container { width: 100% !important; }
+    #todModalPartyFilter .select2-container .select2-selection--single {
+        height: 34px; border: 1.5px solid #ddd6fe; border-radius: 8px;
+    }
+    #todModalPartyFilter .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 32px; font-size: 0.85rem;
+    }
+    #todModalPartyFilter .select2-container--default .select2-selection--single .select2-selection__arrow { height: 32px; }
+    .tod-party-count { font-size: 0.7rem; color: #64748b; margin-top: 3px; }
+    .tod-audit-text { font-size: 0.78rem; color: #334155; font-weight: 600; }
+
+    #divTODForm .form-control, #divTODForm .form-select {
+        border: 1.5px solid #ddd6fe; border-radius: 8px;
+        font-size: 0.8rem; background-color: #faf8ff; color: #1e1b4b;
+        -webkit-appearance: none; appearance: none;
+    }
+    #divTODForm .form-control:focus, #divTODForm .form-select:focus {
+        border-color: #7c3aed; background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+    }
+    #divTODForm .form-control[readonly] {
+        background-color: #ede9fe; border-color: #c4b5fd; color: #4f46e5; cursor: default;
+    }
+    #divTODForm .form-control-sm, #divTODForm .form-select-sm { height: 30px; padding: 3px 7px; font-size: 0.8rem; }
+    #divTODForm textarea.form-control-sm { height: auto; }
+    #divTODForm input[type="date"] { min-height: 30px; line-height: 1.2; }
+
+    /* Fixed layout keeps every column inside the card, so the grid never scrolls sideways. */
+    .slab-table { width: 100% !important; max-width: 100%; table-layout: fixed; border-collapse: collapse; }
+    .slab-table .col-sno    { width: 36px; }
+    .slab-table .col-uom    { width: 80px; }
+    .slab-table .col-action { width: 38px; }
+    .slab-table .col-item   { width: auto; }
+    .slab-table .col-size-parameter { width: auto; }
+    .slab-table.tod-size-parameter-table .col-size-parameter { width: 26%; }
+    .slab-table.tod-size-parameter-table .col-size-values { width: 28%; }
+    .slab-table.tod-size-parameter-table .col-from,
+    .slab-table.tod-size-parameter-table .col-to { width: 14%; }
+    .slab-table.tod-size-parameter-table .col-from input,
+    .slab-table.tod-size-parameter-table .col-to input,
+    .slab-table.tod-size-parameter-table .tod-size-range {
+        text-align: right;
+    }
+    .slab-table .col-spec   { width: 19%; }
+    .slab-table.tod-rate-table .col-from,
+    .slab-table.tod-rate-table .col-to,
+    .slab-table.tod-rate-table .col-rate { width: 30%; }
+    .slab-table thead tr th {
+        background: linear-gradient(135deg, #7c3aed, #4f46e5);
+        color: #fff; font-size: 0.73rem; font-weight: 600;
+        text-align: center; vertical-align: middle; padding: 8px 6px; white-space: nowrap; border: none;
+        position: sticky; top: 0; z-index: 2;
+        overflow: hidden; text-overflow: ellipsis;
+    }
+    .slab-table thead tr th:first-child { border-radius: 8px 0 0 0; }
+    .slab-table thead tr th:last-child  { border-radius: 0 8px 0 0; }
+    .slab-table tbody tr:hover { background: #faf8ff; }
+    .slab-table tbody tr td {
+        padding: 4px 5px; vertical-align: middle; border: 1px solid #e6e1f7; font-size: 0.79rem;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .slab-table .form-control, .slab-table select { width: 100%; box-sizing: border-box; min-width: 0; }
+    .slab-table .tod-item-lookup-wrap { display: block; }
+    .slab-table input[type="number"] { text-align: right; }
+
+    .tod-party-grid-wrap {
+        display: block; width: 100%; box-sizing: border-box;
+        margin-top: 10px; overflow-x: hidden; overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #e6e1f7; border-radius: 8px; background: #fff; max-height: 240px;
+    }
+    .slab-table.tod-party-table {
+        width: 100% !important; max-width: 100%; table-layout: fixed;
+    }
+    .slab-table.tod-party-table .col-sno          { width: 56px; }
+    .slab-table.tod-party-table .col-party        { width: 28%; }
+    .slab-table.tod-party-table .col-marketingman { width: 18%; }
+    .slab-table.tod-party-table .col-zone,
+    .slab-table.tod-party-table .col-state,
+    .slab-table.tod-party-table .col-city         { width: 13%; }
+    .slab-table.tod-party-table .col-action       { width: 42px; }
+    .tod-party-table tbody td { font-size: 0.78rem; padding: 5px 8px; }
+    .tod-party-mobile-wrap { display: none; margin-top: 10px; }
+    .tod-party-card .slab-card-name {
+        white-space: normal; overflow: visible; text-overflow: unset; word-break: break-word;
+    }
+    .tod-party-card .slab-card-details { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .tod-party-card .slab-card-detail {
+        white-space: normal; word-break: break-word; width: 100%; box-sizing: border-box;
+    }
+    .tod-party-card .slab-card-detail b { color: #334155; font-weight: 700; margin-right: 4px; }
+    .del-row-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 26px; height: 26px; background: #fee2e2; border: 1.5px solid #fca5a5;
+        cursor: pointer; color: #dc2626; font-size: 0.85rem; padding: 0; border-radius: 6px;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .del-row-btn:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .add-slab-btn {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: linear-gradient(135deg,#7c3aed,#4f46e5);
+        border: none; color: #fff; border-radius: 8px; font-size: 0.79rem; font-weight: 700;
+        padding: 6px 16px; box-shadow: 0 3px 10px rgba(124,58,237,0.35);
+        -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .add-slab-btn:hover { color: #fff; }
+    .tod-hint {
+        font-size: 0.72rem; color: #7c3aed; background: #f5f3ff;
+        border: 1px dashed #c4b5fd; border-radius: 8px; padding: 5px 10px; margin-bottom: 8px;
+    }
+
+    .slab-desktop-wrap {
+        display: block; overflow-x: hidden; overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        min-height: 200px; max-height: min(620px, calc(100vh - 240px));
+        border: 1px solid #e6e1f7; border-radius: 8px; background: #fff;
+    }
+    .slab-mobile-wrap { display: none; }
+    .mobile-slab-card {
+        background: #fff; border: 1.5px solid #e6e1f7; border-radius: 12px;
+        padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 6px rgba(124,58,237,0.08);
+    }
+    .slab-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+    .slab-card-num {
+        width: 22px; height: 22px; border-radius: 50%;
+        background: linear-gradient(135deg,#7c3aed,#4f46e5); color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.7rem; font-weight: 800; flex-shrink: 0;
+    }
+    .slab-card-name {
+        flex: 1; font-size: 0.82rem; font-weight: 700; color: #1e293b;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .slab-card-actions { display: flex; gap: 5px; flex-shrink: 0; }
+    .slab-card-edit-btn, .slab-card-del-btn {
+        width: 30px; height: 30px; border-radius: 7px; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem;
+        -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .slab-card-edit-btn { background: #f5f3ff; border: 1px solid #ddd6fe; color: #6d28d9; }
+    .slab-card-del-btn { background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; }
+    .slab-card-details { display: flex; flex-wrap: wrap; gap: 5px 8px; }
+    .slab-card-detail {
+        font-size: 0.73rem; color: #64748b; background: #f8fafc;
+        border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px 7px;
+    }
+    .slab-card-rate { background: #f0fdf4; border-color: #bbf7d0; color: #059669; font-weight: 700; }
+    .mobile-slab-empty { text-align: center; padding: 22px 12px; color: #94a3b8; font-size: 0.82rem; }
+
+    #todModalMobileSlabEntry .select2-container { width: 100% !important; }
+    #todModalMobileSlabEntry .select2-container .select2-selection--single {
+        height: 34px; border: 1.5px solid #ddd6fe; border-radius: 8px;
+    }
+    #todModalMobileSlabEntry .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 32px; font-size: 0.85rem;
+    }
+    #todModalMobileSlabEntry .select2-container--default .select2-selection--single .select2-selection__arrow { height: 32px; }
+
+    .tod-float-bar {
+        position: fixed; bottom: 44px; left: 0; right: 0; margin-left: 280px;
+        z-index: 1050; display: none;
+        background: rgba(255,255,255,0.97);
+        border-top: 3px solid #7c3aed; border-bottom: 1px solid #dfdbf5;
+        box-shadow: 0 -3px 18px rgba(124,58,237,0.18);
+        padding: 10px 24px; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .tod-float-bar-left { display: flex; align-items: center; gap: 12px; }
+    .tod-float-bar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .tod-name-pill {
+        background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.2);
+        border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; font-weight: 700; color: #4f46e5;
+        display: flex; align-items: center; gap: 6px; max-width: 320px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tod-mode-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.05em; }
+    .btn-tod-save {
+        background: linear-gradient(135deg,#7c3aed,#4f46e5);
+        border: none; color: #fff; border-radius: 10px; padding: 10px 28px;
+        font-size: 0.9rem; font-weight: 700; cursor: pointer;
+        box-shadow: 0 4px 14px rgba(124,58,237,0.4);
+        -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .btn-tod-save:hover { color: #fff; }
+    .btn-tod-cancel {
+        background: linear-gradient(135deg,#f59e0b,#d97706);
+        border: none; color: #fff; border-radius: 10px; padding: 10px 24px;
+        font-size: 0.9rem; font-weight: 700; cursor: pointer;
+        -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .btn-tod-cancel:hover { color: #fff; }
+
+    #divTODForm { display: none; }
+    .req { color: #ef4444; }
+    .tod-form-wrap { padding-bottom: 110px; }
+    .btn-height { height: 28px; }
+    .icon-height { height: 28px; }
+
+    tr.row-running  { background-color: #d4edda !important; }
+    tr.row-upcoming { background-color: #cce5ff !important; }
+    tr.row-expired  { background-color: #f8d7da !important; }
+
+    /* ── Mobile / iOS (iPhone & iPad) ───────────────────────────── */
+    @@media (max-width: 768px) {
+        #divTODList .tod-stats-strip {
+            display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+            overflow-x: visible; gap: 6px;
+        }
+        #divTODList .tod-stat-chip { min-width: 0; padding: 4px 6px; }
+        #divTODList .tod-stat-chip .val { font-size: 0.95rem; }
+        #divTODList .tod-stat-chip .lbl { font-size: 0.55rem; letter-spacing: 0.03em; }
+
+        .slab-desktop-wrap { display: none !important; }
+        .slab-mobile-wrap  { display: block !important; }
+
+        .tod-field-lbl { font-size: 0.74rem; }
+        .tod-create-btn-label { display: none; }
+        .tod-float-bar {
+            margin-left: 0; bottom: 95px; padding: 9px 14px;
+            padding-bottom: calc(9px + env(safe-area-inset-bottom));
+        }
+        .tod-float-bar-left { display: none; }
+        .tod-float-bar-right { width: 100%; justify-content: flex-end; }
+
+        /* iOS zooms the page when a focused field is under 16px. */
+        #divTODForm .form-control,
+        #divTODForm .form-select,
+        #divTODForm .form-control-sm,
+        #divTODForm .form-select-sm,
+        #todModalMobileSlabEntry .form-control,
+        #todModalMobileSlabEntry .form-select,
+        #todModalMobileSizeEntry .form-control,
+        #todModalMobileSizeEntry .form-select,
+        #todModalMobileRateEntry .form-control,
+        #todModalPartyFilter .form-control,
+        #todModalPartyFilter .form-select { font-size: 16px; }
+        #divTODForm .form-control-sm,
+        #divTODForm .form-select-sm { height: 38px; padding: 6px 10px; }
+        #todModalMobileSlabEntry .form-control-sm,
+        #todModalMobileSizeEntry .form-control-sm,
+        #todModalMobileRateEntry .form-control-sm,
+        #todModalPartyFilter .form-control-sm,
+        #todModalPartyFilter .form-select-sm { height: 38px; padding: 6px 10px; }
+
+        /* iOS renders bare date inputs with no height and right-aligned text. */
+        #divTODForm input[type="date"] {
+            min-height: 38px; text-align: left;
+            -webkit-appearance: none; appearance: none;
+        }
+
+        .tod-party-desktop-wrap { display: none !important; }
+        .tod-party-mobile-wrap { display: block !important; }
+        .tod-party-grid-wrap { max-height: none; overflow: visible; }
+
+        .tod-step-body { padding: 12px 12px; }
+        .tod-step-header { padding: 10px 12px; }
+        .tod-form-wrap { padding-bottom: 150px; }
+    }
+</style>
+
+<!-- ══════════════════════════════════════════════════
+     LIST SECTION
+═══════════════════════════════════════════════════ -->
+<div id="divTODList">
+    <div class="tod-list-header">
+        <div class="tod-header-top">
+            <div>
+                <h5><i class="fa fa-percent me-2"></i>TOD Configuration</h5>
+                <small>Turn over discount slabs, periodicity and CD terms</small>
+            </div>
+            <a onclick="OpenTODForm('New', null)" class="tod-create-btn">
+                <i class="fa fa-plus-circle"></i>
+                <span class="tod-create-btn-label ms-1">Create New</span>
+            </a>
+        </div>
+        <div class="tod-stats-strip">
+            <div class="tod-stat-chip" id="todChipTotal" onclick="FilterTODChip('total')" title="Show all configurations">
+                <div class="val" id="statTotalTOD">—</div>
+                <div class="lbl">Total</div>
+            </div>
+            <div class="tod-stat-chip" id="todChipRunning" style="border:1.5px solid rgba(16,185,129,0.55);"
+                 onclick="FilterTODChip('running')" title="Show running configurations">
+                <div class="val" id="statRunningTOD" style="color:#6ee7b7;">—</div>
+                <div class="lbl">Running</div>
+            </div>
+            <div class="tod-stat-chip" id="todChipUpcoming" style="border:1.5px solid rgba(96,165,250,0.55);"
+                 onclick="FilterTODChip('upcoming')" title="Show upcoming configurations">
+                <div class="val" id="statUpcomingTOD" style="color:#bfdbfe;">—</div>
+                <div class="lbl">Upcoming</div>
+            </div>
+            <div class="tod-stat-chip" id="todChipExpired" style="border:1.5px solid rgba(248,113,113,0.55);"
+                 onclick="FilterTODChip('expired')" title="Show expired configurations">
+                <div class="val" id="statExpiredTOD" style="color:#fecaca;">—</div>
+                <div class="lbl">Expired</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="divTODGrid" class="tod-grid-wrap" style="display:none;">
+        <div class="table-wrapper tod-table-scroll">
+            <table id="TODConfigurationTable" class="table table-bordered table-hover mb-0">
+                <thead id="tblTODHeader"></thead>
+                <tbody id="tblTODBody"></tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-TODConfigurationTable"></div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     CREATE / EDIT FORM
+═══════════════════════════════════════════════════ -->
+<div id="divTODForm">
+    <div class="tod-form-wrap">
+
+        <!-- 1 : Configuration Information -->
+        <div class="tod-step-card" style="--step-clr:#7c3aed;">
+            <div class="tod-step-header">
+                <div class="tod-step-num">1</div>
+                <span class="tod-step-title">Configuration Information</span>
+                <i class="fa fa-sliders-h tod-step-icon ms-auto"></i>
+            </div>
+            <div class="tod-step-body">
+                <div class="row g-2">
+                    <div class="col-12 col-md-3">
+                        <label class="tod-field-lbl" for="frmTxtName">Name <span class="req">*</span></label>
+                        <input type="text" id="frmTxtName" class="form-control form-control-sm"
+                               maxlength="500" placeholder="TOD scheme name" autocomplete="off" />
+                        <input type="hidden" id="frmHfCode" value="0" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="tod-field-lbl" for="frmDdlPeriodicity">Periodicity <span class="req">*</span></label>
+                        <select id="frmDdlPeriodicity" class="form-control form-control-sm" onchange="OnTODPeriodicityChange()">
+                            <option value="">-- Select --</option>
+                        </select>
+                    </div>
+                    <!-- <div class="col-6 col-md-2">
+                        <label class="tod-field-lbl" for="frmDdlMonth">Month / Period</label>
+                        <select id="frmDdlMonth" class="form-control form-control-sm" onchange="OnTODMonthChange()">
+                            <option value="">-- Select --</option>
+                        </select>
+                    </div> -->
+                    <div class="col-6 col-md-2">
+                        <label class="tod-field-lbl" for="frmTxtStartDate">Start Date <span class="req">*</span></label>
+                        <input type="date" id="frmTxtStartDate" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="tod-field-lbl" for="frmTxtEndDate">End Date <span class="req">*</span></label>
+                        <input type="date" id="frmTxtEndDate" class="form-control form-control-sm" />
+                    </div>
+                    <input type="hidden" id="frmTxtFinYear" value="" />
+                    <div class="col-6 col-md-2">
+                        <label class="tod-field-lbl" for="frmDdlConsiderASPer">Consider AS Per <span class="req">*</span></label>
+                        <select id="frmDdlConsiderASPer" class="form-control form-control-sm">
+                            <option value="">-- Select --</option>
+                            <option value="Weight">Weight</option>
+                            <option value="BillValue">Bill Value</option>
+                            <option value="TaxableValue">Taxable value</option>
+                            <option value="GoodsValue">Goods Value</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="tod-field-lbl" for="frmDdlTurnoverASPer">Turnover AS Per <span class="req">*</span></label>
+                        <select id="frmDdlTurnoverASPer" class="form-control form-control-sm">
+                            <option value="">-- Select --</option>
+                            <option value="Sales">As Per Sales</option>
+                            <option value="Payment">As Per Payment</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="tod-field-lbl" for="frmDdlTurnoverDiscountASPer">Turnover Discount AS Per <span class="req">*</span></label>
+                        <select id="frmDdlTurnoverDiscountASPer" class="form-control form-control-sm">
+                            <option value="">-- Select --</option>
+                            <option value="Sales">As Per Sales</option>
+                            <option value="Payment">As Per Payment</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="tod-field-lbl" for="frmPaymentTolerance">Payment Tolerance (%) <span class="req">*</span></label>
+                        <input type="text" id="frmPaymentTolerance" class="form-control form-control-sm"
+                               inputmode="decimal" placeholder="0-100" autocomplete="off"
+                               style="text-align:right;"
+                               oninput="OnTODPaymentToleranceInput(this)" />
+                    </div>
+                </div>
+
+                <div class="tod-scope-sep">
+                    <i class="fa fa-users me-1"></i>Party
+                    <span class="tod-scope-note" id="frmTxtPartyCountBar"></span>
+                    <button type="button" class="tod-filter-btn ms-auto" onclick="OpenTODPartyFilterModal()">
+                        <i class="fa fa-filter me-1"></i>Party Filter
+                    </button>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-12 col-md-6">
+                        <!-- <label class="tod-field-lbl" for="frmTxtPartyLookup">Party</label> -->
+                        <input type="text" id="frmTxtPartyLookup" class="form-control form-control-sm"
+                               placeholder="Type .. and press Enter" autocomplete="off" />
+                        <div class="tod-party-count" id="frmTxtPartyCount"></div>
+                    </div>
+                </div>
+
+                <!-- Shown only once a party is picked; empty means All Parties. -->
+                <div id="divTODPartyGrid" style="display:none;">
+                    <div class="tod-party-grid-wrap tod-party-desktop-wrap">
+                        <table class="slab-table tod-party-table" id="tblTODParties">
+                            <thead>
+                                <tr>
+                                    <th class="col-sno">S.No</th>
+                                    <th class="col-party">Party Name</th>
+                                    <th class="col-marketingman">Marketing Man</th>
+                                    <th class="col-zone">Zone</th>
+                                    <th class="col-state">State</th>
+                                    <th class="col-city">City</th>
+                                    <th class="col-action"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblTODPartiesBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="todMobilePartyCards" class="tod-party-mobile-wrap"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2 : Items -->
+        <div class="tod-step-card" style="--step-clr:#10b981;">
+            <div class="tod-step-header">
+                <div class="tod-step-num" style="background:#10b981;">2</div>
+                <span class="tod-step-title">Item</span>
+                <button type="button" class="add-slab-btn ms-auto" onclick="AddTODSlabRow()">
+                    <i class="fa fa-plus me-1"></i>Add Item
+                </button>
+            </div>
+            <div class="tod-step-body" style="padding-top:10px;">
+                <div class="tod-hint">
+                    <i class="fa fa-lightbulb me-1"></i>
+                    Type <strong>..</strong> and press <strong>Enter</strong> in the Item box to open the item list
+                    (multi-select on the last row). <strong>All</strong> applies to every item and cannot be mixed with specific items.
+                </div>
+                <div class="slab-desktop-wrap">
+                    <table class="slab-table tod-item-table" id="tblTODSlabs">
+                        <thead>
+                            <tr>
+                                <th class="col-sno">S.No</th>
+                                <th class="col-item">Item Name <span style="color:#fde68a;">*</span></th>
+                                <!-- <th class="col-uom">UOM</th> -->
+                                <th class="col-action"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblTODSlabsBody"></tbody>
+                    </table>
+                </div>
+                <div id="todMobileSlabCards" class="slab-mobile-wrap"></div>
+            </div>
+        </div>
+
+        <!-- 3 : Size Parameters -->
+        <div class="tod-step-card" style="--step-clr:#f59e0b;">
+            <div class="tod-step-header">
+                <div class="tod-step-num" style="background:#f59e0b;">3</div>
+                <span class="tod-step-title">Size Parameters</span>
+                <button type="button" class="add-slab-btn ms-auto" onclick="AddTODSizeParameterRow()">
+                    <i class="fa fa-plus me-1"></i>Add Size Parameter
+                </button>
+            </div>
+            <div class="tod-step-body" style="padding-top:10px;">
+                <div class="tod-hint">
+                    <i class="fa fa-lightbulb me-1"></i>
+                    Select a size parameter. <strong>Numeric</strong> parameters use From / To (float).
+                    <strong>Text</strong> parameters use the value list (multi-select, codes saved comma-separated).
+                </div>
+                <div class="slab-desktop-wrap">
+                    <table class="slab-table tod-size-parameter-table" id="tblTODSizeParameters">
+                        <thead>
+                            <tr>
+                                <th class="col-sno">S.No</th>
+                                <th class="col-size-parameter">Size Parameter Name <span style="color:#fde68a;">*</span></th>
+                                <th class="col-from">From Value</th>
+                                <th class="col-to">To Value</th>
+                                <th class="col-size-values">Parameter Values</th>
+                                <th class="col-action"></th>
+                            </tr>   
+                        </thead>
+                        <tbody id="tblTODSizeParametersBody"></tbody>   
+                    </table>
+                </div>
+                    <div id="todMobileSizeParameterCards" class="slab-mobile-wrap"></div>
+            </div>
+        </div>
+        
+        <!-- 4 : TOD Rate slabs -->
+        <div class="tod-step-card" style="--step-clr:#0ea5e9;">
+            <div class="tod-step-header">
+                <div class="tod-step-num" style="background:#0ea5e9;">4</div>
+                <span class="tod-step-title">TOD Rate</span>
+                <button type="button" class="add-slab-btn ms-auto" onclick="AddTODRateRow()">
+                    <i class="fa fa-plus me-1"></i>Add Rate
+                </button>
+            </div>
+            <div class="tod-step-body" style="padding-top:10px;">
+                <div class="tod-hint">
+                    <i class="fa fa-lightbulb me-1"></i>
+                    A new row continues from the previous <strong>To Qty + 0.01</strong>.
+                    To Qty 0 means open-ended.
+                </div>
+                <div class="slab-desktop-wrap">
+                    <table class="slab-table tod-rate-table" id="tblTODRates">
+                        <thead>
+                            <tr>
+                                <th class="col-sno">S.No</th>
+                                <th class="col-from">Sale From<span style="color:#fde68a;">*</span></th>
+                                <th class="col-to">Sale To</th>
+                                <th class="col-rate">TOD Rate</th>
+                                <th class="col-action"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblTODRatesBody"></tbody>
+                    </table>
+                </div>
+                <div id="todMobileRateCards" class="slab-mobile-wrap"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Party filter -->
+<div class="modal fade" id="todModalPartyFilter" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;padding:14px 18px;">
+                <h5 class="modal-title" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-filter me-2"></i>Party Filter
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:16px 18px;">
+                <div class="tod-scope-note mb-3" style="margin:0;">
+                    Select Marketing Man, Zone, State and City, then press OK. The Party list outside this window will bind to that filter.
+                </div>
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <label class="tod-field-lbl" for="frmDdlMarketingMan">Marketing Man</label>
+                        <select id="frmDdlMarketingMan" class="form-control form-control-sm" onchange="OnTODMarketingManChange()">
+                            <option value="0">-- All --</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-6">
+                        <label class="tod-field-lbl" for="frmDdlZone">Zone</label>
+                        <select id="frmDdlZone" class="form-control form-control-sm" onchange="OnTODScopeChange('zone')">
+                            <option value="">-- All --</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-6">
+                        <label class="tod-field-lbl" for="frmDdlState">State</label>
+                        <select id="frmDdlState" class="form-control form-control-sm" onchange="OnTODScopeChange('state')">
+                            <option value="">-- All --</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-6">
+                        <label class="tod-field-lbl" for="frmDdlCity">City</label>
+                        <select id="frmDdlCity" class="form-control form-control-sm" onchange="OnTODScopeChange('city')">
+                            <option value="">-- All --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:12px 16px;background:#f8fafc;gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" class="btn btn-sm" onclick="ApplyTODPartyFilter()"
+                        style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;border-radius:8px;padding:7px 22px;font-weight:700;">
+                    <i class="fa fa-check me-1"></i>OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile slab entry -->
+<div class="modal fade" id="todModalMobileSlabEntry" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:500px;margin:auto 12px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;padding:14px 18px;">
+                <h5 class="modal-title" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-box me-2"></i><span id="todMobileSlabModalTitle">Add Item</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:16px 18px;">
+                <div class="mb-3">
+                    <label class="tod-field-lbl">Item Name <span class="req">*</span></label>
+                    <select id="todMobileDdlItem" class="form-control form-control-sm"></select>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="tod-field-lbl">UOM</label>
+                        <input type="text" id="todMobileTxtUom" class="form-control form-control-sm" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="tod-field-lbl">Specification</label>
+                        <input type="text" id="todMobileTxtSpec" class="form-control form-control-sm" readonly />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:12px 16px;background:#f8fafc;gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" onclick="TODMobileSlabModalConfirm()"
+                        style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;border-radius:8px;padding:9px 22px;font-size:0.85rem;font-weight:700;box-shadow:0 3px 10px rgba(124,58,237,0.3);">
+                    <i class="fa fa-check me-1"></i><span id="todMobileSlabModalBtnTxt">Add Item</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile size parameter entry -->
+<div class="modal fade" id="todModalMobileSizeEntry" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:500px;margin:auto 12px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;padding:14px 18px;">
+                <h5 class="modal-title" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-ruler me-2"></i><span id="todMobileSizeModalTitle">Add Size Parameter</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:16px 18px;">
+                <div class="mb-3">
+                    <label class="tod-field-lbl">Size Parameter Name <span class="req">*</span></label>
+                    <select id="todMobileDdlSize" class="form-control form-control-sm" onchange="OnTODMobileSizeParameterChange()"></select>
+                </div>
+                <div class="row g-2" id="todMobileSizeRangeWrap" style="display:none;">
+                    <div class="col-6">
+                        <label class="tod-field-lbl">From Value</label>
+                        <input type="text" id="todMobileTxtSizeFrom" class="form-control form-control-sm tod-size-range" inputmode="decimal" autocomplete="off" />
+                    </div>
+                    <div class="col-6">
+                        <label class="tod-field-lbl">To Value</label>
+                        <input type="text" id="todMobileTxtSizeTo" class="form-control form-control-sm tod-size-range" inputmode="decimal" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="mb-3 mt-3" id="todMobileSizeValuesWrap" style="display:none;">
+                    <label class="tod-field-lbl">Parameter Values</label>
+                    <select id="todMobileDdlSizeValues" class="form-control form-control-sm" multiple></select>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:12px 16px;background:#f8fafc;gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" onclick="TODMobileSizeModalConfirm()"
+                        style="background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:#fff;border-radius:8px;padding:9px 22px;font-size:0.85rem;font-weight:700;">
+                    <i class="fa fa-check me-1"></i><span id="todMobileSizeModalBtnTxt">Add Size Parameter</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile TOD rate entry -->
+<div class="modal fade" id="todModalMobileRateEntry" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:500px;margin:auto 12px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;padding:14px 18px;">
+                <h5 class="modal-title" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-percent me-2"></i><span id="todMobileRateModalTitle">Add Rate</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:16px 18px;">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="tod-field-lbl">Sale From<span class="req">*</span></label>
+                        <input type="number" id="todMobileTxtFromQty" class="form-control form-control-sm"
+                               value="0" min="0" step="0.01" inputmode="decimal" oninput="TODMobileRatePreview()" />
+                    </div>
+                    <div class="col-6">
+                        <label class="tod-field-lbl">Sale To</label>
+                        <input type="number" id="todMobileTxtToQty" class="form-control form-control-sm"
+                               value="0" min="0" step="0.01" inputmode="decimal" oninput="TODMobileRatePreview()" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="tod-field-lbl">TOD Rate</label>
+                    <input type="number" id="todMobileTxtRate" class="form-control form-control-sm"
+                           value="0" min="0" step="0.01" inputmode="decimal" />
+                </div>
+                <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:8px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:0.79rem;font-weight:600;color:#0369a1;"><i class="fa fa-arrows-left-right me-1"></i>Range</span>
+                    <span id="todMobileRatePreview" style="font-size:0.9rem;font-weight:800;color:#0369a1;">0 – 0</span>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:12px 16px;background:#f8fafc;gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
+                <button type="button" onclick="TODMobileRateModalConfirm()"
+                        style="background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;color:#fff;border-radius:8px;padding:9px 22px;font-size:0.85rem;font-weight:700;">
+                    <i class="fa fa-check me-1"></i><span id="todMobileRateModalBtnTxt">Add Rate</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="tod-float-bar" id="todFloatBar">
+    <div class="tod-float-bar-left">
+        <div class="tod-name-pill">
+            <i class="fa fa-percent" style="font-size:0.7rem;"></i>
+            <span id="floatTODName">New TOD Configuration</span>
+        </div>
+        <span id="floatTODModeBadge" class="tod-mode-badge badge bg-success">NEW</span>
+    </div>
+    <div class="tod-float-bar-right">
+        <a class="btn-tod-cancel" onclick="CloseTODForm()">
+            <i class="fa fa-arrow-left me-1"></i>Back
+        </a>
+        <a class="btn-tod-save" href="javascript:void(0)" tabindex="0" onclick="SaveTODConfiguration()">
+            <i class="fa fa-save me-2"></i>Save
+        </a>
+    </div>
+</div>

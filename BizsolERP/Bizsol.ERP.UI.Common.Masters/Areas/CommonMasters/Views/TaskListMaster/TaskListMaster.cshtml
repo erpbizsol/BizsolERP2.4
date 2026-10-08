@@ -11,149 +11,245 @@
 <style>
     #TaskListMasterPage {
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        max-width: 100%;
         width: 100%;
+        max-width: 100%;
         box-sizing: border-box;
-        padding: 4px 12px 0;
-        height: calc(100vh - 174px);
-        overflow: hidden;
+        padding: 0;
+        height: auto;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: visible;
+        background: linear-gradient(145deg, #eef2ff 0%, #f5f3ff 50%, #ede9fe 100%);
+    }
+
+    body:has(#TaskListMasterPage) #modern-content.modern-content {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    body:has(#TaskListMasterPage) #modern-content.modern-content > main {
+        overflow: visible !important;
+        height: auto !important;
+        min-height: 0 !important;
+        display: block !important;
+        flex: none !important;
+    }
+
+    /* filter.css .table-wrapper scrolls internally — use layout scroll instead */
+    #TaskListMasterPage .table-wrapper,
+    #TaskListMasterPage .pm-table-wrap {
+        overflow: visible !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        height: auto !important;
+        flex: none !important;
+    }
+
+    /* filter.css sets min-height:400px on .table-wrapper.filtered */
+    #TaskListMasterPage .table-wrapper.filtered {
+        min-height: 0 !important;
+    }
+
+    #TaskListMasterPage .tlm-grid-wrap {
+        display: block;
+    }
+
+    #TaskListMasterPage .paginator,
+    #TaskListMasterPage #paginator-TaskListMaster {
+        margin-top: 0 !important;
+    }
+
+    #TaskListMasterPage,
+    #TaskListMasterPage #tlmListPanel,
+    #TaskListMasterPage #tlmDetailPanel,
+    #TaskListMasterPage .tlm-list-body {
+        overflow: visible !important;
+        max-height: none !important;
+    }
+
+    .tlm-card {
         display: flex;
         flex-direction: column;
+        width: 100%;
+        height: auto;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow:
+            0 20px 60px rgba(99,102,241,.18),
+            0 4px 16px rgba(0,0,0,.08);
+        overflow: hidden;
+        background-clip: padding-box;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        margin-bottom: 16px;
+        isolation: isolate;
     }
 
-    .tlm-po-list-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 14px 14px 0 0;
-        padding: 16px 22px 14px;
-        margin-bottom: 0;
+    .tlm-grid-shell {
+        background: #fff;
+        border-radius: 0 0 20px 20px;
+        overflow: hidden;
     }
 
-    .tlm-po-header-top {
+    .tlm-header {
+        background: linear-gradient(120deg, #312e81 0%, #4f46e5 30%, #7c3aed 65%, #9333ea 100%);
+        background-size: 300% 300%;
+        animation: tlm-grad-shift 8s ease infinite;
+        padding: 16px 24px 18px;
+        position: relative;
+        overflow: hidden;
+        border-radius: 20px 20px 0 0;
+    }
+
+    @@keyframes tlm-grad-shift {
+        0%   { background-position: 0% 50%;   }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%;   }
+    }
+
+    .tlm-header::before {
+        content: '';
+        position: absolute;
+        width: 260px; height: 260px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,255,255,.1) 0%, transparent 70%);
+        top: -120px; right: -60px;
+        pointer-events: none;
+    }
+
+    .tlm-header-top {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
+        gap: 14px;
         flex-wrap: wrap;
+        position: relative;
+        z-index: 2;
     }
 
-    .tlm-po-list-header .tlm-hero-left {
+    .tlm-hero-left {
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 16px;
         min-width: 0;
     }
 
-    .tlm-po-list-header .tlm-hero-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.2);
-        border: 2px solid rgba(255, 255, 255, 0.35);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .tlm-hero-icon {
+        width: 52px; height: 52px;
+        border-radius: 16px;
+        background: rgba(255,255,255,.15);
+        border: 2px solid rgba(255,255,255,.3);
+        display: flex; align-items: center; justify-content: center;
         color: #fff;
         font-size: 22px;
         flex-shrink: 0;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 6px 20px rgba(0,0,0,.2);
     }
 
-    .tlm-po-list-header .tlm-hero-title {
-        font-size: 1.05rem;
+    .tlm-hero-title {
+        font-size: 1.15rem;
         font-weight: 800;
         color: #fff;
-        letter-spacing: -0.02em;
-        line-height: 1.2;
         margin: 0;
+        letter-spacing: .3px;
+        text-shadow: 0 1px 4px rgba(0,0,0,.2);
+        line-height: 1.2;
     }
 
-    .tlm-po-list-header .tlm-hero-sub {
-        font-size: 0.78rem;
-        color: rgba(255, 255, 255, 0.78);
+    .tlm-hero-sub {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,.72);
         margin-top: 4px;
         font-weight: 500;
+    }
+
+    .tlm-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 2;
     }
 
     .tlm-po-create-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        background: #fff;
-        border: 2px solid rgba(255, 255, 255, 0.6);
-        color: #667eea;
-        border-radius: 10px;
-        padding: 8px 16px;
+        gap: 8px;
+        background: rgba(255,255,255,.92);
+        border: 1.5px solid rgba(255,255,255,.35);
+        color: #4f46e5;
+        border-radius: 50px;
+        padding: 9px 18px;
         font-weight: 800;
-        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 3px 10px rgba(0,0,0,.12);
         white-space: nowrap;
         cursor: pointer;
         flex-shrink: 0;
-        transition: all 0.2s;
+        transition: box-shadow .2s, transform .15s;
         line-height: 1;
-        font-size: 0.85rem;
+        font-size: 0.82rem;
     }
 
     .tlm-po-create-btn:hover {
-        background: #f0f4ff;
-        border-color: #667eea;
-        color: #667eea;
+        box-shadow: 0 0 0 3px rgba(255,255,255,.45);
+        transform: translateY(-1px);
     }
 
     .tlm-po-create-btn .pm-plus {
         width: 22px;
         height: 22px;
-        border-radius: 6px;
-        background: rgba(102, 126, 234, 0.15);
+        border-radius: 50%;
+        background: rgba(79,70,229,.12);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 700;
         line-height: 1;
     }
 
-    #tlmListPanel {
-        flex: 1;
-        min-height: 0;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
+    #tlmListPanel,
+    #tlmDetailPanel {
+        width: 100%;
     }
 
-    .tlm-list-grid-wrap {
+    .tlm-list-body {
         background: #fff;
-        border: 1px solid #e2e8f0;
-        border-top: none;
-        border-radius: 0 0 14px 14px;
-        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
-        overflow: hidden;
-        margin-bottom: 0;
-        flex: 1;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
     }
 
-    .tlm-list-grid-wrap .pm-card-toolbar {
-        flex-shrink: 0;
+    .tlm-list-body .pm-card-toolbar {
         display: flex;
         align-items: flex-end;
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 12px;
-        padding: 18px 22px 16px;
-        border-bottom: 1px solid var(--border-light);
+        padding: 16px 20px 14px;
+        border-bottom: 1px solid #e8edf5;
+        background: #fff;
     }
 
-    .tlm-list-grid-wrap .pm-table-wrap {
-        flex: 1;
-        min-height: 0;
+    .tlm-grid-wrap {
+        background: #fff;
+        max-width: 100%;
         overflow-x: auto;
-        overflow-y: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
     }
 
-    .tlm-list-grid-wrap .paginator {
-        flex-shrink: 0;
+    .tlm-grid-wrap::-webkit-scrollbar { height: 6px; width: 6px; }
+    .tlm-grid-wrap::-webkit-scrollbar-track { background: #f8fafc; }
+    .tlm-grid-wrap::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 3px; }
+    .tlm-grid-wrap::-webkit-scrollbar-corner { background: #fff; }
+
+    .tlm-list-body .pm-table-wrap {
+        overflow: visible;
+    }
+
+    .tlm-list-body .paginator {
         padding: 10px 16px 14px;
         border-top: 1px solid #eef2ff;
         background: #fafbff;
@@ -194,30 +290,26 @@
     }
 
     .pm-table {
-        width: 100%;
+        width: max-content;
+        min-width: 100%;
         border-collapse: collapse;
-        font-size: 13.5px;
-        min-width: 600px;
-    }
-
-    .pm-table thead {
-        position: sticky;
-        top: 0;
-        z-index: 4;
-        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+        font-size: 13px;
     }
 
     .pm-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%) !important;
         color: #fff !important;
-        background: transparent !important;
         font-weight: 700;
-        padding: 13px 16px;
+        padding: 12px 14px;
         text-align: left;
         white-space: nowrap;
-        border: none !important;
+        border-right: 1px solid rgba(255,255,255,.12) !important;
+        border-bottom: none !important;
         font-size: 12px;
-        letter-spacing: .04em;
-        text-transform: uppercase;
+        letter-spacing: .3px;
     }
 
     .pm-table tbody tr:nth-child(even) { background: var(--light-bg) !important; }
@@ -268,37 +360,21 @@
     .pm-icon-btn.del { background: rgba(239, 68, 68, .1); color: #ef4444; border: 1px solid rgba(239, 68, 68, .2); }
 
     #tlmDetailPanel {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-    }
-
-    #tlmDetailPanel .tlm-ci-po-list-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 14px 14px 0 0;
-        padding: 16px 22px 14px;
+        overflow: visible;
     }
 
     #tlmDetailPanel .tlm-ci-entry-title {
         margin: 0;
         color: #fff;
-        font-weight: 700;
-        font-size: 1rem;
+        font-weight: 800;
+        font-size: 1.08rem;
     }
 
     #tlmDetailPanel .tlm-ci-entry-sub {
         color: rgba(255, 255, 255, 0.75);
-        font-size: 0.78rem;
+        font-size: 0.75rem;
         display: block;
         margin-top: 4px;
-    }
-
-    #tlmDetailPanel .tlm-ci-po-header-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        flex-wrap: wrap;
     }
 
     #tlmDetailPanel .tlm-ci-po-footer-right {
@@ -308,58 +384,56 @@
         flex-wrap: wrap;
     }
 
-    .tlm-ci-po-back-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: #fff;
-        border: 2px solid rgba(255, 255, 255, 0.6);
-        color: #667eea;
-        border-radius: 10px;
-        padding: 8px 16px;
-        font-weight: 800;
-        cursor: pointer;
-        font-size: 0.85rem;
-    }
-
-    .tlm-ci-po-back-btn:hover { background: #f0f4ff; }
-
+    .tlm-ci-po-back-btn,
     .btn-tlm-copy {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: rgba(255, 255, 255, 0.95);
-        border: 2px solid rgba(255, 255, 255, 0.6);
-        color: #7c3aed;
-        border-radius: 10px;
+        background: rgba(255,255,255,.92);
+        border: 1.5px solid rgba(255,255,255,.35);
+        color: #4f46e5;
+        border-radius: 50px;
         padding: 8px 16px;
         font-weight: 800;
         cursor: pointer;
-        font-size: 0.85rem;
+        font-size: 0.82rem;
+        box-shadow: 0 3px 10px rgba(0,0,0,.12);
+        white-space: nowrap;
     }
+
+    .tlm-ci-po-back-btn:hover,
+    .btn-tlm-copy:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 0 0 3px rgba(255,255,255,.45);
+    }
+
+    .btn-tlm-copy { color: #7c3aed; }
 
     .btn-tlm-save {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+        background: linear-gradient(135deg, #059669, #10b981);
         border: none;
         color: #fff;
-        border-radius: 10px;
-        padding: 10px 28px;
-        font-size: 0.9rem;
-        font-weight: 700;
+        border-radius: 50px;
+        padding: 9px 22px;
+        font-size: 0.85rem;
+        font-weight: 800;
         cursor: pointer;
+        box-shadow: 0 3px 12px rgba(5,150,105,.35);
+        white-space: nowrap;
     }
 
     #tlmDetailPanel .tlm-ci-po-step-card {
         background: #fff;
-        border: 1px solid #e2e8f0;
-        border-top: none;
-        border-radius: 0 0 14px 14px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        border-top: 1px solid #e8edf5;
         overflow: hidden;
-        margin-bottom: 14px;
+        margin-bottom: 0;
+    }
+
+    #tlmDetailPanel .tlm-header {
+        border-radius: 20px 20px 0 0;
     }
 
     #tlmDetailPanel .tlm-ci-po-step-header {
@@ -395,7 +469,7 @@
     }
 
     #tlmDetailPanel .tlm-ci-po-step-body {
-        padding: 20px 22px 24px;
+        padding: 20px 5px 21px;
     }
 
     .tlm-fg {
@@ -463,7 +537,10 @@
     }
 
     .tlm-task-grid-wrap {
+        max-width: 100%;
         overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
     }
@@ -612,61 +689,154 @@
         background: linear-gradient(135deg, #dc2626, #ef4444);
         color: #fff;
     }
+
+    @@media (max-width: 767px) {
+        #TaskListMasterPage {
+            padding: 1px 2px calc(var(--erp-mobile-nav-height, 30px) + 20px);
+        }
+
+        .tlm-card {
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .tlm-header {
+            padding: 20px 18px 18px;
+            border-radius: 18px 18px 0 0;
+        }
+
+        .tlm-grid-shell {
+            border-radius: 0 0 18px 18px;
+        }
+
+        .tlm-grid-wrap::-webkit-scrollbar-corner {
+            background: #fff;
+        }
+
+        .tlm-header-top {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 16px;
+        }
+
+        .tlm-toolbar,
+        #tlmDetailPanel .tlm-ci-po-footer-right {
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .tlm-po-create-btn,
+        .tlm-ci-po-back-btn,
+        .btn-tlm-copy,
+        .btn-tlm-save {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .tlm-list-body .pm-card-toolbar {
+            padding: 14px 14px 12px;
+        }
+
+        .pm-search-wrap {
+            max-width: none;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .pm-table thead th {
+            position: static;
+            top: auto;
+            padding: 12px 10px;
+            font-size: 11px;
+        }
+
+        .pm-table td {
+            padding: 10px 10px;
+        }
+
+        .tlm-task-grid-wrap {
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #tblTaskEntry {
+            width: max-content;
+            min-width: 100%;
+        }
+
+        #tblTaskEntry thead th {
+            white-space: nowrap;
+        }
+    }
 </style>
 
 <div id="TaskListMasterPage">
 
     <div id="tlmListPanel">
-        <div class="tlm-po-list-header">
-            <div class="tlm-po-header-top">
-                <div class="tlm-hero-left">
-                    <div class="tlm-hero-icon"><i class="fas fa-list-check"></i></div>
-                    <div>
-                        <div class="tlm-hero-title">Task List Master</div>
-                        <div class="tlm-hero-sub">Employee task schedules by financial year</div>
+        <div class="tlm-card">
+            <div class="tlm-header">
+                <div class="tlm-header-top">
+                    <div class="tlm-hero-left">
+                        <div class="tlm-hero-icon"><i class="fas fa-list-check"></i></div>
+                        <div>
+                            <div class="tlm-hero-title">Task List Master</div>
+                            <div class="tlm-hero-sub">Employee task schedules by financial year</div>
+                        </div>
+                    </div>
+                    <div class="tlm-toolbar">
+                        <button type="button" class="tlm-po-create-btn" id="btnCreateTaskList">
+                            <span class="pm-plus">+</span>
+                            <span>Create New</span>
+                        </button>
                     </div>
                 </div>
-                <button type="button" class="tlm-po-create-btn" id="btnCreateTaskList">
-                    <span class="pm-plus">+</span>
-                    <span>Create New</span>
-                </button>
             </div>
-        </div>
 
-        <div class="tlm-list-grid-wrap">
-            <div class="pm-card-toolbar">
-                <div class="pm-search-wrap">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="tlmSearch" placeholder="Search by employee, fin year or task…" autocomplete="off" />
+            <div class="tlm-list-body">
+                <div class="pm-card-toolbar">
+                    <div class="pm-search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="tlmSearch" placeholder="Search by employee, fin year or task…" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="tlm-grid-shell">
+                    <div class="tlm-grid-wrap">
+                        <div class="pm-table-wrap table-wrapper">
+                            <table class="pm-table" id="TaskListMaster">
+                                <thead id="table-header-TaskListMaster"></thead>
+                                <tbody id="table-body-TaskListMaster"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="paginator" id="paginator-TaskListMaster"></div>
                 </div>
             </div>
-            <div class="pm-table-wrap table-wrapper">
-                <table class="pm-table" id="TaskListMaster">
-                    <thead id="table-header-TaskListMaster"></thead>
-                    <tbody id="table-body-TaskListMaster"></tbody>
-                </table>
-            </div>
-            <div class="paginator" id="paginator-TaskListMaster"></div>
         </div>
     </div>
 
     <div id="tlmDetailPanel" style="display:none;">
         <input type="hidden" id="hfTaskListMaster_Code" value="0" />
 
-        <div class="tlm-ci-po-list-header">
-            <div class="tlm-ci-po-header-top">
-                <div>
-                    <h5 class="tlm-ci-entry-title">Task List Master</h5>
-                    <small class="tlm-ci-entry-sub">Assign tasks with frequency and active status</small>
-                </div>
-                <div class="tlm-ci-po-footer-right">
-                    <button type="button" class="tlm-ci-po-back-btn" id="btnBackToTaskList"><i class="fas fa-arrow-left"></i> Back</button>
-                    <button type="button" class="btn-tlm-copy" id="btnCopyFromFinYear"><i class="fas fa-copy"></i> Copy From Fin Year</button>
-                    <button type="button" class="tlm-ci-po-back-btn" id="btnClearTaskList"><i class="fas fa-eraser"></i> Clear</button>
-                    <button type="button" class="btn-tlm-save" id="btnSaveTaskList"><i class="fas fa-check"></i> Save</button>
+        <div class="tlm-card">
+            <div class="tlm-header">
+                <div class="tlm-header-top">
+                    <div class="tlm-hero-left">
+                        <div class="tlm-hero-icon"><i class="fas fa-pen-to-square"></i></div>
+                        <div>
+                            <h5 class="tlm-ci-entry-title">Task List Master</h5>
+                            <small class="tlm-ci-entry-sub">Assign tasks with frequency and active status</small>
+                        </div>
+                    </div>
+                    <div class="tlm-toolbar tlm-ci-po-footer-right">
+                        <button type="button" class="tlm-ci-po-back-btn" id="btnBackToTaskList"><i class="fas fa-arrow-left"></i> Back</button>
+                        <button type="button" class="btn-tlm-copy" id="btnCopyFromFinYear"><i class="fas fa-copy"></i> Copy From Fin Year</button>
+                        <button type="button" class="tlm-ci-po-back-btn" id="btnClearTaskList"><i class="fas fa-eraser"></i> Clear</button>
+                        <button type="button" class="btn-tlm-save" id="btnSaveTaskList"><i class="fas fa-check"></i> Save</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
         <div class="tlm-ci-po-step-card">
             <div class="tlm-ci-po-step-header">
@@ -718,6 +888,7 @@
                     </table>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 </div>

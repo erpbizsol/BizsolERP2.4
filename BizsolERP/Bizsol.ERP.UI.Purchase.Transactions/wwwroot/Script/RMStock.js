@@ -2344,6 +2344,7 @@ function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, Status) {
             const showButtons = [];
             let hiddenColumns = []
             const columnAlignment = {
+                'Entry No': "right",
                 'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Entry Date': "center", "Party Name": "left;min-width:262px", "Warehouse":";min-width:110px",
                 'Weight': "right;min-width:20px", 'ACT WT': "right;min-width:20px", 'Output WT': "right", "Scrap": "right", "Yield %": "right", "Width Loss %": "right"
             };
@@ -2831,8 +2832,47 @@ function getActiveTabFooterContext() {
 document.addEventListener("DOMContentLoaded", function () {
     setInterval(ChangecolorTr, 1000); 
     setInterval(ChangecolorTrYeald, 1000); 
-    setInterval(ChangecolorTrYeildSlitted, 1000); 
+    setInterval(ChangecolorTrYeildSlitted, 1000);
+    setInterval(applyRMReportRemarkColors, 1000);
 });
+function getRMReportRemarkClass(text) {
+    const value = String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!value) return '';
+    if (value.indexOf('job') !== -1) return 'rms-remark-jobwork';
+    if (value.indexOf('dispatch') !== -1 || value.indexOf('slit') !== -1) return 'rms-remark-grey';
+    if (value.indexOf('stock') !== -1) return 'rms-remark-stock';
+    return '';
+}
+function applyRMReportRemarkColors() {
+    const tbody = document.getElementById('table-body-RMReport');
+    if (!tbody) return;
+
+    const headerCells = document.querySelectorAll('#table-header-RMReport th');
+    let remarkIndex = -1;
+    headerCells.forEach(function (th, index) {
+        const headingEl = th.querySelector('.filter-table-heading');
+        const heading = (headingEl ? headingEl.textContent : th.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (heading === 'remark') {
+            remarkIndex = index;
+        }
+    });
+    if (remarkIndex < 0) return;
+
+    tbody.querySelectorAll('tr').forEach(function (row) {
+        if (row.classList.contains('total-row') || row.classList.contains('grand-total-row')) return;
+        const td = row.querySelectorAll('td')[remarkIndex];
+        if (!td || td.querySelector('.rms-remark-pill')) return;
+        const text = td.textContent.replace(/\s+/g, ' ').trim();
+        const cls = getRMReportRemarkClass(text);
+        if (!cls) return;
+        const pill = document.createElement('span');
+        pill.className = 'rms-remark-pill ' + cls;
+        pill.textContent = text;
+        td.textContent = '';
+        td.appendChild(pill);
+    });
+}
+window.applyRMReportRemarkColors = applyRMReportRemarkColors;
 function ChangecolorTr() {
     const tbody = document.getElementById("table-body-UnApproved_Planned");
     if (!tbody) return;

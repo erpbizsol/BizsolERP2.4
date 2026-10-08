@@ -24,9 +24,22 @@ function _AP_getReopenPref(formName, formType) {
 }
 
 // ── Modal HTML ───────────────────────────────────────────────────────────────
+function _AP_applyStyles() {
+    let apStyleEl = document.getElementById('AP_Styles');
+    if (!apStyleEl) {
+        apStyleEl = document.createElement('style');
+        apStyleEl.id = 'AP_Styles';
+        document.head.appendChild(apStyleEl);
+    }
+    apStyleEl.textContent = _AP_styles();
+}
+
 function createAgeingParameterModal(id) {
     const modalId = id || 'AgeingParameterModal';
-    if (document.getElementById(modalId)) return modalId;
+    if (document.getElementById(modalId)) {
+        _AP_applyStyles();
+        return modalId;
+    }
 
     const html = `
     <div class="modal fade" id="${modalId}" tabindex="-1" role="dialog" aria-hidden="true"
@@ -121,13 +134,7 @@ function createAgeingParameterModal(id) {
     </div>`;
 
     document.body.insertAdjacentHTML('beforeend', html);
-
-    if (!document.getElementById('AP_Styles')) {
-        const s = document.createElement('style');
-        s.id = 'AP_Styles';
-        s.textContent = _AP_styles();
-        document.head.appendChild(s);
-    }
+    _AP_applyStyles();
     return modalId;
 }
 
@@ -165,6 +172,11 @@ function _AP_styles() {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+    }
+    @media (min-width: 992px) {
+        #AgeingParameterModal #AP_btnGroup {
+            margin-top: -60px !important;
+        }
     }
     `;
 }

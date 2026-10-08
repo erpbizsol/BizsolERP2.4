@@ -15,7 +15,7 @@
                         &nbsp;
                         <a class="btn btn-secondary btn-height" id="ScanQRCodeByCameraControl_btnReset">Reset</a>
                         &nbsp;
-                        <a class="btn btn-danger btn-height" id="ScanQRCodeByCameraControl_btnClose" aria-label="Close">Close</a>
+                        <a class="btn btn-danger btn-height" id="ScanQRCodeByCameraControl_btnClose" href="javascript:void(0)" data-bs-dismiss="modal" aria-label="Close">Close</a>
                     </div>
 
                     <div class="col-12">
@@ -47,102 +47,223 @@
     function QRCode() {
 
        let selectedDeviceId;
+       let codeReader = null;
+       var scanModalEl = document.getElementById('ScanQRCodeByCameraControlModal');
+       document.querySelectorAll('#ScanQRCodeByCameraControlModal').forEach(function (el) {
+           if (el !== scanModalEl) {
+               el.remove();
+           }
+       });
+
+       function closeScanQrModal() {
+           try {
+               var video = document.getElementById('video');
+               if (video && video.srcObject) {
+                   video.srcObject.getTracks().forEach(function (track) { track.stop(); });
+                   video.srcObject = null;
+               }
+           } catch (err) {
+               console.log(err);
+           }
+           try {
+               if (codeReader) {
+                   codeReader.reset();
+               }
+           } catch (err) {
+               console.log(err);
+           }
+           try {
+               if (window.bootstrap && bootstrap.Modal && scanModalEl) {
+                   var instance = bootstrap.Modal.getInstance(scanModalEl) || bootstrap.Modal.getOrCreateInstance(scanModalEl);
+                   instance.hide();
+               }
+           } catch (err) {
+               console.log(err);
+           }
+           try {
+               $(scanModalEl).modal('hide');
+           } catch (err) {
+               console.log(err);
+           }
+           if (scanModalEl) {
+               scanModalEl.classList.remove('show');
+               scanModalEl.style.display = 'none';
+               scanModalEl.setAttribute('aria-hidden', 'true');
+           }
+           document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+               backdrop.remove();
+           });
+           document.body.classList.remove('modal-open');
+           document.body.style.removeProperty('overflow');
+           document.body.style.removeProperty('padding-right');
+           if (scanModalEl) {
+               scanModalEl.remove();
+           }
+       }
+
+       if (scanModalEl && scanModalEl.parentElement !== document.body) {
+           document.body.appendChild(scanModalEl);
+       }
+       document.getElementById('ScanQRCodeByCameraControl_btnClose').addEventListener('click', function (e) {
+           e.preventDefault();
+           e.stopPropagation();
+           closeScanQrModal();
+       });
+
         $("#ScanQRCodeByCameraControlModal").modal({
                 backdrop: 'static',
             });
         $('#ScanQRCodeByCameraControlModal').modal('show');
-       const codeReader = new ZXing.BrowserMultiFormatReader()
-       console.log('ZXing code reader initialized')
-       codeReader.listVideoInputDevices()
-           .then((videoInputDevices) => {
-               const ScanQRCodeByCameraControl_SourceSelect = document.getElementById('ScanQRCodeByCameraControl_SourceSelect')
-               selectedDeviceId = videoInputDevices[0].deviceId
-               if (videoInputDevices.length >= 1) {
-                   videoInputDevices.forEach((element) => {
-                       const sourceOption = document.createElement('option')
-                       sourceOption.text = element.label
-                       sourceOption.value = element.deviceId
-                       ScanQRCodeByCameraControl_SourceSelect.appendChild(sourceOption);
-                       $('#ScanQRCodeByCameraControl_SourceSelect').select2({
-                            width: '-webkit-fill-available'
-                      });
-                   })
+       try {
+           codeReader = new ZXing.BrowserMultiFormatReader();
+           console.log('ZXing code reader initialized');
+       } catch (err) {
+           console.log(err);
+           toastr.error('QR scanner failed to start.');
+       }
 
-                   ScanQRCodeByCameraControl_SourceSelect.onchange = () => {
-                       selectedDeviceId = ScanQRCodeByCameraControl_SourceSelect.value;
+       function requireVideoSource() {
+           if (selectedDeviceId) {
+               return true;
+           }
+           toastr.error('Video source is required. Please select a camera.');
+           return false;
+       }
 
-                        $('#ScanQRCodeByCameraControl_SourceSelect').select2({
-                            width: '-webkit-fill-available'
-                        });
-                   };
+       function initVideoSourceSelect() {
+           var $select = $('#ScanQRCodeByCameraControl_SourceSelect');
+           if (!$select.length || !$.fn.select2) {
+               return;
+           }
+           if ($select.hasClass('select2-hidden-accessible')) {
+               $select.select2('destroy');
+           }
+           $select.select2({
+               width: '-webkit-fill-available',
+               dropdownParent: $('#ScanQRCodeByCameraControlModal')
+           });
+       }
 
-                   const ScanQRCodeByCameraControl_SourceSelectPanel = document.getElementById('ScanQRCodeByCameraControl_SourceSelectPanel')
-                   ScanQRCodeByCameraControl_SourceSelectPanel.style.display = 'block'
-               }
+       document.getElementById('ScanQRCodeByCameraControl_btnSingle').addEventListener('click', () => {
+           if (!requireVideoSource()) {
+               return;
+           }
 
-               document.getElementById('ScanQRCodeByCameraControl_btnSingle').addEventListener('click', () => {
+           codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
 
-                   codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+               if (result) {
+                   let outputTextID=$('#hfOutputQRTextElementID').val();
+                   console.log(result)
+                   // this.alert('Read text Is: ' + result.text);
 
-                       if (result) {
-                           let outputTextID=$('#hfOutputQRTextElementID').val();
-                           console.log(result)
-                           // this.alert('Read text Is: ' + result.text);
-
-                            $('#'+outputTextID).val(result.text);
-                            
-                             toastr.success('Read text Is: ' + result.text);
-                           codeReader.reset();
-                           $("#ScanQRCodeByCameraControlModal").modal('hide')
-                           window[$('#hfCallBackFunctionName').val()]();
-                       }
-                       if (err && !(err instanceof ZXing.NotFoundException)) {
-                          //console.error(err)
-                          toastr.error(err);
-                       }
-                   })
-
-                   console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
-               })
-
-               document.getElementById('ScanQRCodeByCameraControl_btnMultiple').addEventListener('click', () => {
-
-                   codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
-
-                       if (result) {
-                           let outputTextID=$('#hfOutputQRTextElementID').val();
-                           console.log(result)
-                           // this.alert('Read text Is: ' + result.text);
-
-                            $('#'+outputTextID).val(result.text);
-
-                             toastr.success('Read text Is: ' + result.text);
-                           
-                           window[$('#hfCallBackFunctionName').val()]();
-                       }
-                       if (err && !(err instanceof ZXing.NotFoundException)) {
-                          //console.error(err)
-                          toastr.error(err);
-                       }
-                   })
-
-                   console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
-               })
-
-               document.getElementById('ScanQRCodeByCameraControl_btnReset').addEventListener('click', () => {
-                   codeReader.reset()
-                   console.log('Reset.')
-               })
-               document.getElementById('ScanQRCodeByCameraControl_btnClose').addEventListener('click', () => {
-                   codeReader.reset()
+                    $('#'+outputTextID).val(result.text);
+                    
+                     toastr.success('Read text Is: ' + result.text);
+                   codeReader.reset();
                    $("#ScanQRCodeByCameraControlModal").modal('hide')
-               })
+                   window[$('#hfCallBackFunctionName').val()]();
+               }
+               if (err && !(err instanceof ZXing.NotFoundException)) {
+                  //console.error(err)
+                  toastr.error(err);
+               }
+           })
 
+           console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
+       })
+
+       document.getElementById('ScanQRCodeByCameraControl_btnMultiple').addEventListener('click', () => {
+           if (!requireVideoSource()) {
+               return;
+           }
+
+           codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+
+               if (result) {
+                   let outputTextID=$('#hfOutputQRTextElementID').val();
+                   console.log(result)
+                   // this.alert('Read text Is: ' + result.text);
+
+                    $('#'+outputTextID).val(result.text);
+
+                     toastr.success('Read text Is: ' + result.text);
+                   
+                   window[$('#hfCallBackFunctionName').val()]();
+               }
+               if (err && !(err instanceof ZXing.NotFoundException)) {
+                  //console.error(err)
+                  toastr.error(err);
+               }
+           })
+
+           console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
+       })
+
+       document.getElementById('ScanQRCodeByCameraControl_btnReset').addEventListener('click', () => {
+           codeReader.reset()
+           console.log('Reset.')
+       })
+
+       function bindVideoSources(videoInputDevices) {
+           const ScanQRCodeByCameraControl_SourceSelect = document.getElementById('ScanQRCodeByCameraControl_SourceSelect')
+           var devices = (videoInputDevices || []).filter(function (element) {
+               return element && element.deviceId;
+           });
+
+           ScanQRCodeByCameraControl_SourceSelect.innerHTML = '';
+           if (devices.length < 1) {
+               selectedDeviceId = '';
+               var emptyOption = document.createElement('option');
+               emptyOption.value = '';
+               emptyOption.text = 'Select video source';
+               ScanQRCodeByCameraControl_SourceSelect.appendChild(emptyOption);
+               initVideoSourceSelect();
+               toastr.error('Video source is required. Allow camera permission, then open Scan QR Code again.');
+               return;
+           }
+
+           selectedDeviceId = devices[0].deviceId
+           devices.forEach((element) => {
+               const sourceOption = document.createElement('option')
+               sourceOption.text = element.label
+               sourceOption.value = element.deviceId
+               ScanQRCodeByCameraControl_SourceSelect.appendChild(sourceOption);
+           })
+           ScanQRCodeByCameraControl_SourceSelect.value = selectedDeviceId;
+           initVideoSourceSelect();
+
+           ScanQRCodeByCameraControl_SourceSelect.onchange = () => {
+               selectedDeviceId = ScanQRCodeByCameraControl_SourceSelect.value;
+               initVideoSourceSelect();
+           };
+
+           const ScanQRCodeByCameraControl_SourceSelectPanel = document.getElementById('ScanQRCodeByCameraControl_SourceSelectPanel')
+           ScanQRCodeByCameraControl_SourceSelectPanel.style.display = 'block'
+       }
+
+       var cameraPermission = Promise.resolve();
+       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+           cameraPermission = navigator.mediaDevices.getUserMedia({ video: true })
+               .then(function (stream) {
+                   stream.getTracks().forEach(function (track) { track.stop(); });
+               })
+               .catch(function (err) {
+                   console.log(err);
+                   toastr.error('Allow camera permission to load the video source list.');
+               });
+       }
+
+       cameraPermission
+           .then(function () {
+               return codeReader.listVideoInputDevices();
+           })
+           .then((videoInputDevices) => {
+               bindVideoSources(videoInputDevices);
            })
            .catch((err) => {
                console.log(err);
                toastr.error(err);
-               //console.error(err)
+               bindVideoSources([]);
            })
     }
     //  window.addEventListener('load', function () {

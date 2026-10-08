@@ -1,45 +1,357 @@
 ﻿
-<div class="modal fade bs-example-modal-center" id="SelectMachineToGetWeightControlModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content" style="max-width:45%">
-            <div class="modal-header">
-                <h5 class="modal-title">Weighment:</h5>
+<style>
+    #SelectMachineToGetWeightControlModal.modal {
+        --bs-modal-width: 440px;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-dialog {
+        max-width: 440px !important;
+        width: calc(100% - 28px) !important;
+        margin: 1.25rem auto !important;
+        min-height: calc(100% - 2.5rem);
+        display: flex;
+        align-items: center;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-modal {
+        width: 100% !important;
+        max-width: none !important;
+        border: none !important;
+        border-radius: 14px !important;
+        overflow: hidden;
+        box-shadow: 0 18px 48px rgba(76, 29, 149, 0.28);
+        background: #fff;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: #fff;
+        border: none;
+        border-top-left-radius: 14px !important;
+        border-top-right-radius: 14px !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+        padding: 8px 14px !important;
+        min-height: 0 !important;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-header .modal-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        text-align: left;
+        color: #fff;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.15;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-header-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-header-copy small {
+        font-size: 0.68rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.82);
+        letter-spacing: 0;
+        line-height: 1.2;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-header-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.18);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 26px;
+        font-size: 0.8rem;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-close {
+        width: 24px !important;
+        height: 24px !important;
+        min-height: 24px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none;
+        border-radius: 8px !important;
+        background: rgba(255, 255, 255, 0.16) !important;
+        color: #fff !important;
+        font-size: 18px !important;
+        line-height: 1 !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex: 0 0 24px;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-close:hover {
+        background: rgba(255, 255, 255, 0.28) !important;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-body {
+        padding: 18px 18px 8px;
+        background: linear-gradient(180deg, #fafbff 0%, #f7f5ff 100%);
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-field {
+        margin-bottom: 14px;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-field > label {
+        display: block;
+        margin-bottom: 6px !important;
+        font-size: 0.75rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #5b21b6;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-field .form-control,
+    #SelectMachineToGetWeightControlModal .wm-field .select2-container {
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-field .form-control,
+    #SelectMachineToGetWeightControlModal .select2-container--default .select2-selection--single {
+        height: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
+        border: 1.5px solid #ddd6fe !important;
+        border-radius: 8px !important;
+        background: #fff !important;
+        box-shadow: none !important;
+        font-size: 0.82rem !important;
+        color: #1e293b !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    #SelectMachineToGetWeightControlModal .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 30px !important;
+        padding-left: 10px !important;
+        color: #1e293b !important;
+        font-size: 0.82rem !important;
+    }
+
+    #SelectMachineToGetWeightControlModal .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 30px !important;
+        right: 4px !important;
+    }
+
+    #SelectMachineToGetWeightControlModal .select2-container--default.select2-container--focus .select2-selection--single,
+    #SelectMachineToGetWeightControlModal .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18) !important;
+    }
+
+    #SelectMachineToGetWeightControlModal .select2-dropdown {
+        border: 1.5px solid #ddd6fe !important;
+        border-radius: 10px !important;
+        overflow: hidden;
+        box-shadow: 0 10px 28px rgba(76, 29, 149, 0.16);
+        z-index: 1060;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-option {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin: 0 0 14px !important;
+        padding: 8px 12px;
+        border: 1.5px solid #e9e5ff;
+        border-radius: 12px;
+        background: #fff;
+        cursor: pointer;
+        font-weight: 500 !important;
+        font-size: 0.88rem !important;
+        line-height: 1.35 !important;
+        transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-option:has(input:checked) {
+        border-color: #667eea;
+        background: #f5f3ff;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-option input {
+        width: 18px;
+        height: 18px;
+        margin: 2px 0 0 !important;
+        flex: 0 0 18px;
+        accent-color: #667eea;
+        cursor: pointer;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-option-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-option-title {
+        font-size: 0.88rem !important;
+        font-weight: 700 !important;
+        color: #1e293b;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-option-hint {
+        font-size: 0.75rem !important;
+        font-weight: 500 !important;
+        color: #64748b;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-result {
+        margin-bottom: 12px;
+    }
+
+    #SelectMachineToGetWeightControlModal #alertWeightScaleResult {
+        border: none;
+        border-radius: 10px;
+        background: #eef2ff;
+        color: #312e81;
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-images {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-images img {
+        max-height: 120px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 8px 18px 16px;
+        border: none;
+        border-radius: 0 0 16px 16px;
+        background: linear-gradient(180deg, #f7f5ff 0%, #fafbff 100%);
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-btn {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px;
+        height: 30px !important;
+        min-height: 30px !important;
+        max-height: 30px !important;
+        padding: 0 14px !important;
+        margin: 0 !important;
+        border-radius: 8px !important;
+        font-size: 0.8rem !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-btn-ghost {
+        background: #fff !important;
+        color: #475569 !important;
+        border: 1.5px solid #e2e8f0 !important;
+        box-shadow: none !important;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-btn-ghost:hover {
+        background: #f8fafc !important;
+        color: #1e293b !important;
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-btn-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        color: #fff !important;
+        border: none !important;
+        box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
+    }
+
+    #SelectMachineToGetWeightControlModal .wm-btn-primary:hover {
+        color: #fff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(102, 126, 234, 0.45);
+    }
+
+    @@media (max-width: 480px) {
+        #SelectMachineToGetWeightControlModal .wm-dialog {
+            width: calc(100% - 20px) !important;
+            margin: 0.75rem auto !important;
+            align-items: center;
+        }
+
+        #SelectMachineToGetWeightControlModal .wm-footer {
+            flex-direction: column-reverse;
+        }
+
+        #SelectMachineToGetWeightControlModal .wm-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="modal fade" id="SelectMachineToGetWeightControlModal" tabindex="-1" role="dialog" aria-labelledby="wmModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered wm-dialog">
+        <div class="modal-content wm-modal">
+            <div class="modal-header wm-header">
+                <h5 class="modal-title" id="wmModalTitle">
+                    <span class="wm-header-icon" aria-hidden="true"><i class="fa fa-scale-balanced"></i></span>
+                    <span class="wm-header-copy">
+                        Weighment
+                        <small>Choose a machine and read the scale</small>
+                    </span>
+                </h5>
+                <button type="button" class="wm-close" data-bs-dismiss="modal" aria-label="Close">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="row mb-2">
-                    <div class="col-md-12">
-                        <label for="ddlMachines" class="col-form-label-sm fw-bold">Machine:</label>
-                        <select id="ddlMachines" class="form-control form-control-sm box_border"></select>
-                    </div>
+            <div class="modal-body wm-body">
+                <div class="wm-field">
+                    <label for="ddlMachines">Machine</label>
+                    <select id="ddlMachines" class="form-control form-control-sm"></select>
                 </div>
-                <div class="row mb-2">
-                    <div class="col-md-12">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="chkClientSideWeight" checked />
-                            <label class="form-check-label fw-bold" for="chkClientSideWeight">
-                                Get Weight &mdash; Client Side
-                                <small class="text-muted fw-normal">(uses machine local API)</small>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div id="DivWeightScaleAPIResponse" class="row mb-2 d-none">
-                    <div class="col-md-12">
-                        <div class="alert alert-info py-1 mb-1" id="alertWeightScaleResult"></div>
-                        <div id="DivWeightScaleVehicleImages" class="d-flex gap-2 flex-wrap"></div>
-                    </div>
-                </div>
-                <div class="text-end mt-1">
-                    <a class="btn btn-primary btn-height" onclick="SelectMachineToGetWeightControl_onGetWeight();">
-                        Get Weight
-                    </a>
-                    &nbsp;
-                    <a class="btn btn-danger btn-height" data-bs-dismiss="modal" aria-label="Close">Close</a>
-                    <input type="hidden" value="@ViewBag.OutputTextElementID" id="hfOutputTextElementID" />
+                <label class="wm-option" for="chkClientSideWeight">
+                    <input type="checkbox" id="chkClientSideWeight" checked />
+                    <span class="wm-option-text">
+                        <span class="wm-option-title">Get weight on this device</span>
+                        <span class="wm-option-hint">Reads the scale through the machine's local API</span>
+                    </span>
+                </label>
+                <div id="DivWeightScaleAPIResponse" class="wm-result d-none">
+                    <div id="alertWeightScaleResult"></div>
+                    <div id="DivWeightScaleVehicleImages" class="wm-images"></div>
                 </div>
             </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
+            <div class="modal-footer wm-footer">
+                <button type="button" class="wm-btn wm-btn-ghost" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="wm-btn wm-btn-primary" onclick="SelectMachineToGetWeightControl_onGetWeight();">
+                    <i class="fa fa-scale-balanced" aria-hidden="true"></i> Get Weight
+                </button>
+                <input type="hidden" value="@ViewBag.OutputTextElementID" id="hfOutputTextElementID" />
+            </div>
+        </div>
+    </div>
 </div>
 
 <script type="module">
@@ -61,7 +373,7 @@
 
                 $('#ddlMachines').select2({
                     dropdownParent: $('#SelectMachineToGetWeightControlModal'),
-                    width: '-webkit-fill-available'
+                    width: '100%'
                 });
 
                 $(document).ready(function () {

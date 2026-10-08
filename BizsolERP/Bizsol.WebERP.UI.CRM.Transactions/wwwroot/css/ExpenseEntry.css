@@ -1257,3 +1257,44 @@ input[type="number"] {
     font-size: 0.82rem;
     padding: 2px 4px;
 }
+
+/* Approval Configuration header: keep Levels / Add Level / Back inside the card on phones */
+@media (max-width: 768px) {
+    .ee-page { max-width: 100%; overflow-x: hidden; }
+    .ee-page .pac-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px;
+        gap: 10px;
+    }
+    .ee-page .pac-header h5 { font-size: 0.92rem; }
+    .ee-page .pac-header > .d-flex,
+    .ee-page .pac-header-actions {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        flex-shrink: 1 !important;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+    }
+    .ee-page .pac-header #statLevelChip {
+        min-width: 64px !important;
+        padding: 4px 10px !important;
+    }
+    .ee-page .pac-header .btn-add-level {
+        flex: 1 1 110px;
+        height: auto !important;
+        padding: 7px 10px;
+        font-size: 0.75rem;
+        white-space: normal;
+    }
+    .ee-page .pac-header .mb-1 { margin: 0 !important; flex: 1 1 100%; }
+    .ee-page .pac-header .btn-ee-back-nav {
+        width: 100%;
+        height: auto !important;
+        white-space: normal;
+        padding: 7px 10px;
+        text-align: center;
+    }
+}
