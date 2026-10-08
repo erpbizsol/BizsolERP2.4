@@ -280,7 +280,7 @@ function personHtml(value) {
     return '<div class="tdr-person"><span class="tdr-avatar">' + escapeHtml(initials(value)) + '</span><span>' + escapeHtml(value) + '</span></div>';
 }
 
-function cellHtml(value, columnName, barPct, asPerson) {
+function cellHtml(value, columnName, asPerson) {
     if (asPerson) {
         return personHtml(value);
     }
@@ -291,11 +291,7 @@ function cellHtml(value, columnName, barPct, asPerson) {
         return '<span class="tdr-na">—</span>';
     }
     if (isAmountColumn(columnName)) {
-        const width = Math.max(0, Math.min(barPct || 0, 100));
-        const bar = width > 0
-            ? '<span class="tdr-amt-bar"><i style="width:' + width + '%"></i></span>'
-            : '';
-        return '<div class="tdr-amt-cell"><span class="tdr-amt">' + formatAmount(value) + '</span>' + bar + '</div>';
+        return '<span class="tdr-amt">' + formatAmount(value) + '</span>';
     }
     if (isQtyColumn(columnName) || typeof value === 'number') {
         return formatNumber(value);
@@ -324,14 +320,14 @@ function renderTable(rows, tile) {
         return '<div class="tdr-tile-empty"><i class="fas fa-inbox"></i><span>No data for this period</span></div>';
     }
 
-    const amountMax = {};
+    const columnSums = {};
     columns.forEach(function (col) {
-        if (!isAmountColumn(col.title)) return;
-        let max = 0;
+        if (!isAmountColumn(col.title) && !isQtyColumn(col.title)) return;
+        let sum = 0;
         workingRows.forEach(function (row) {
-            max = Math.max(max, toNumber(row[col.key]));
+            sum += toNumber(row[col.key]);
         });
-        amountMax[col.key] = max;
+        columnSums[col.key] = sum;
     });
 
     const head = columns.map(function (col, index) {
@@ -346,21 +342,37 @@ function renderTable(rows, tile) {
 
     const body = workingRows.map(function (row) {
         const cells = columns.map(function (col, index) {
-            const max = amountMax[col.key] || 0;
-            const barPct = max > 0 ? (toNumber(row[col.key]) / max) * 100 : 0;
             const asPerson = index === 0 && /location|mkt|dealer|warehouse|sales\s*person|person/i.test(col.title);
             const raw = row[col.key];
             const rawText = raw === null || raw === undefined ? '' : String(raw);
             const numeric = isAmountColumn(col.title) || isQtyColumn(col.title) || typeof raw === 'number';
             return '<td' + columnClass(col.title, index === 0) + ' data-raw="' + escapeHtml(rawText) + '"' +
                 (numeric ? ' data-num="' + toNumber(raw) + '"' : '') + '>' +
-                cellHtml(raw, col.title, barPct, asPerson) + '</td>';
+                cellHtml(raw, col.title, asPerson) + '</td>';
         }).join('');
         return '<tr>' + cells + '</tr>';
     }).join('');
 
+    const hasTotals = Object.keys(columnSums).length > 0;
+    const foot = hasTotals
+        ? '<tfoot><tr class="tdr-total-row">' + columns.map(function (col, index) {
+            if (index === 0) {
+                return '<td' + columnClass(col.title, true) + '><strong class="tdr-total-label">Total</strong></td>';
+            }
+            if (columnSums[col.key] === undefined) {
+                return '<td' + columnClass(col.title, false) + '><span class="tdr-na">—</span></td>';
+            }
+            const sum = columnSums[col.key];
+            const sumKind = isAmountColumn(col.title) ? 'amount' : 'qty';
+            const content = sumKind === 'amount'
+                ? '<span class="tdr-amt">' + formatAmount(sum) + '</span>'
+                : formatNumber(sum);
+            return '<td' + columnClass(col.title, false) + ' data-tdr-sum="1" data-tdr-sum-kind="' + sumKind + '" data-num="' + sum + '">' + content + '</td>';
+        }).join('') + '</tr></tfoot>'
+        : '';
+
     return '<div class="tdr-table-wrap"><table class="table table-striped table-hover tdr-table"><thead><tr>' +
-        head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+        head + '</tr></thead><tbody>' + body + '</tbody>' + foot + '</table></div>';
 }
 
 function freezeTableHeaders() {
@@ -407,27 +419,28 @@ function freezeTableHeaders() {
             });
         }
         lockCells(headTable.querySelector('tr'));
-        Array.prototype.forEach.call(table.querySelectorAll('tbody tr'), lockCells);
+        Array.prototype.forEach.call(table.querySelectorAll('tbody tr, tfoot tr'), lockCells);
 
         scroll.addEventListener('scroll', function () {
             headWrap.scrollLeft = scroll.scrollLeft;
             closeColumnFilter();
         });
         headWrap.style.paddingRight = (scroll.offsetWidth - scroll.clientWidth) + 'px';
+        shrinkFreezeBody(scroll);
     });
+}
+
+function shrinkFreezeBody(scrollEl) {
+    if (!scrollEl) return;
+    const cap = scrollEl.closest('.tdr-tile-wide') ? 250 : 210;
+    const contentHeight = scrollEl.scrollHeight;
+    scrollEl.style.maxHeight = Math.min(cap, contentHeight) + 'px';
+    scrollEl.style.overflowY = contentHeight > cap ? 'auto' : 'hidden';
 }
 
 function tileMeta(tile, rows) {
     const count = (rows || []).length;
-    const countText = count + (count === 1 ? ' record' : ' records');
-    if (tile.special === 'monthArchive') {
-        return countText;
-    }
-    const amount = sumByKeys(rows, tile.amountKeys || []);
-    if ((tile.amountKeys || []).length) {
-        return countText + '  ·  ' + formatAmount(amount);
-    }
-    return countText;
+    return count + (count === 1 ? ' record' : ' records');
 }
 
 function looksLikeMonthArchive(rows) {
@@ -598,6 +611,35 @@ function rowMatchesFilter(row, index, rule) {
     return (rule.values || []).indexOf(raw) >= 0;
 }
 
+function updateTileTotals(tile) {
+    const totalRow = tile.find('tfoot tr.tdr-total-row');
+    if (!totalRow.length) return;
+
+    totalRow.children('[data-tdr-sum="1"]').each(function () {
+        const footCell = $(this);
+        const colIndex = footCell.index();
+        let sum = 0;
+        tile.find('tbody tr:visible').each(function () {
+            sum += toNumber($(this).children().eq(colIndex).attr('data-num'));
+        });
+        const kind = footCell.attr('data-tdr-sum-kind') || 'qty';
+        footCell.attr('data-num', sum);
+        if (kind === 'amount') {
+            footCell.html('<span class="tdr-amt">' + formatAmount(sum) + '</span>');
+        } else {
+            footCell.text(formatNumber(sum));
+        }
+    });
+
+    const visible = tile.find('tbody tr:visible').length;
+    const total = tile.find('tbody tr').length;
+    let meta = visible + (visible === 1 ? ' record' : ' records');
+    if (visible !== total) {
+        meta += ' (filtered from ' + total + ')';
+    }
+    tile.find('.tdr-tile-title span').text(meta);
+}
+
 function applyTileView(tile) {
     const query = String(tile.find('.tdr-tile-search').val() || '').toLowerCase();
     const filters = tile.data('colFilters') || {};
@@ -614,6 +656,9 @@ function applyTileView(tile) {
         const idx = String($(this).attr('data-col-index'));
         $(this).toggleClass('is-on', !!filters[idx]);
     });
+    updateTileTotals(tile);
+    const scroll = tile.find('.tdr-freeze-body')[0];
+    if (scroll) shrinkFreezeBody(scroll);
 }
 
 function sortTileColumn(tile, index, order, kind) {
