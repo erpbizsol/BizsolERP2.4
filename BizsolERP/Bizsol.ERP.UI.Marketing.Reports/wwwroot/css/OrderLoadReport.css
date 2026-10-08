@@ -107,6 +107,25 @@ body:has(#OrderLoadReportPage) #modern-content.modern-content > main {
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
 }
 
+.ol-header-date-fields {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex: 0 1 auto;
+}
+
+.ol-header-date-field {
+    min-width: 132px;
+    flex: 0 1 150px;
+    max-width: 170px;
+}
+
+.ol-header-date-field input[type="date"] {
+    min-width: 0;
+    width: 100%;
+}
+
 /* Report Template — master (Y) = black, user copy (N) = orange */
 #ddlTemplate.ol-tpl-selected-y {
     color: #111827;
@@ -981,6 +1000,10 @@ body > .ol-cd-menu,
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px 18px;
+}
+
+#olDynamicFilterHost {
+    display: contents;
 }
 
 .ol-filter-modal-grid .ol-filter-field,
@@ -2365,6 +2388,19 @@ body.ol-print-preview-open {
     text-align: right;
     width: 52px;
     max-width: 100%;
+}
+
+.ol-mt-table input.ol-mt-decimal--editable,
+.ol-mt-card-row input.ol-mt-decimal--editable {
+    background: #fff;
+    cursor: text;
+}
+
+.ol-mt-table input.ol-mt-decimal--locked,
+.ol-mt-card-row input.ol-mt-decimal--locked {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: #f8fafc;
 }
 
 .ol-mt-table input:disabled,
