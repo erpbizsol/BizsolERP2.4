@@ -43,6 +43,17 @@ const OrderLoadReportService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
     },
 
+    // GetResolvedFilterTokens: function GetResolvedFilterTokens() {
+    //     var URL = templeteReportApiBase() + '/GetResolvedFilterTokens';
+    //     return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
+    // },
+
+    // GetTemplateFilterConfiguration: function GetTemplateFilterConfiguration(templeteMasterCode) {
+    //     var URL = templeteReportApiBase()
+    //         + '/GetTemplateFilterConfiguration?TempleteMasterCode=' + encodeURIComponent(templeteMasterCode || 0);
+    //     return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
+    // },
+
     GetOrderLoadReport: function GetOrderLoadReport(params) {
         var userMasterCode = params.userMasterCode || getAuthUserCode();
         var itemSizeMasterCodes = String(params.itemSizeMasterCodes || '').trim();

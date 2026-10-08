@@ -219,7 +219,7 @@ body:has(#DealerTargetMasterPage) #modern-content.modern-content > main {
 
 .dtm-kpi-row {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
     flex-shrink: 0;
     min-width: 0;
@@ -633,6 +633,17 @@ body:has(#DealerTargetMasterPage) #modern-content.modern-content > main {
 .dtm-amount-wrap.is-filled {
     background: #ecfdf5;
     border-color: #6ee7b7;
+}
+
+.dtm-amount-wrap.dtm-amount-invalid {
+    background: #fff1f2;
+    border-color: #f43f5e;
+    box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.18);
+}
+
+.dtm-amount-wrap.dtm-amount-invalid .dtm-amount-prefix {
+    background: #ffe4e6;
+    color: #be123c;
 }
 
 .dtm-amount-prefix {

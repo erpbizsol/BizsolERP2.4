@@ -40,6 +40,16 @@
                         <option value="">Loading...</option>
                     </select>
                 </div>
+                <div class="ol-header-date-fields ol-hidden" id="olHeaderDateBar">
+                    <div class="ol-filter-field ol-header-template ol-header-date-field ol-hidden" id="olFieldFromDate">
+                        <label for="txtFromDate" class="form-label"><span id="lblFromDateText">From Date</span> <span class="text-danger">*</span></label>
+                        <input type="date" id="txtFromDate" class="form-control form-control-sm box_border" />
+                    </div>
+                    <div class="ol-filter-field ol-header-template ol-header-date-field ol-hidden" id="olFieldToDate">
+                        <label for="txtToDate" class="form-label"><span id="lblToDateText">To Date</span> <span class="text-danger">*</span></label>
+                        <input type="date" id="txtToDate" class="form-control form-control-sm box_border" />
+                    </div>
+                </div>
                 <div class="ol-filter-actions ol-header-filter-actions">
                     <button type="button" class="ol-btn ol-btn-filter" id="btnFilter">
                         <i class="fas fa-filter"></i> Filter
@@ -95,7 +105,7 @@
             <div data-ol-empty-mode="default">
                 <i class="fas fa-table fa-2x" style="color:#cbd5e1;"></i>
                 <h4>No report loaded</h4>
-                <p>Select template, set dates in <strong>Filter</strong>, then click <strong>Load Report</strong>.</p>
+                <p>Select template, set dates above, then click <strong>Load Report</strong>.</p>
             </div>
             <div data-ol-empty-mode="size-filter" class="ol-empty-size-filter is-hidden">
                 <i class="fas fa-ruler-combined fa-2x" style="color:#fdba74;"></i>
@@ -143,16 +153,8 @@
             </div>
             <div class="modal-body ol-filter-modal-body">
                 <div class="ol-filter-modal-grid">
-                    <div class="ol-filter-field ol-hidden" id="olFieldFromDate">
-                        <label for="txtFromDate" class="form-label"><span id="lblFromDateText">Order Date</span> <span class="text-danger">*</span></label>
-                        <input type="date" id="txtFromDate" class="form-control form-control-sm box_border" />
-                    </div>
-                    <div class="ol-filter-field ol-hidden" id="olFieldToDate">
-                        <label for="txtToDate" class="form-label"><span id="lblToDateText">To Date</span> <span class="text-danger">*</span></label>
-                        <input type="date" id="txtToDate" class="form-control form-control-sm box_border" />
-                    </div>
                     <div class="ol-filter-field ol-hidden" id="olFieldLevel">
-                        <label for="ddlLevel" class="form-label"><span>Level</span></label>
+                        <label for="ddlLevel" class="form-label"><span>Date Field</span></label>
                         <select id="ddlLevel" class="form-control form-control-sm box_border"></select>
                     </div>
                     <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldWareHouse">
@@ -195,6 +197,7 @@
                         <label for="ddlOtherFilter3" class="form-label"><span id="lblOtherFilter3">Other Filter 3</span></label>
                         <select id="ddlOtherFilter3" class="form-control form-control-sm box_border ol-multi-select" multiple><option value="0">All</option></select>
                     </div>
+                    <div id="olDynamicFilterHost"></div>
                 </div>
                 <div class="ol-filter-modal-empty ol-hidden" id="olFilterModalEmpty">
                     No extra filters for this template.
