@@ -5,6 +5,7 @@ body:has(#OrderLoadReportPage) #modern-content.modern-content {
     min-width: 0 !important;
 }
 
+
 body:has(#OrderLoadReportPage) #modern-content.modern-content > main {
     height: 100%;
     max-height: 100%;
@@ -1004,6 +1005,57 @@ body > .ol-cd-menu,
 
 #olDynamicFilterHost {
     display: contents;
+}
+
+/* Date Field: a normal column (same size as other inputs); when ticked it spans the row: [combo] [From] [To] */
+.ol-filter-modal-grid #olFieldLevel.ol-level-range-on {
+    grid-column: 1 / -1;
+}
+
+.ol-level-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.ol-level-label .ol-level-check {
+    flex: 0 0 auto;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+.ol-level-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.ol-filter-modal-grid .ol-level-row > select {
+    flex: 1 1 100%;
+    width: 100%;
+}
+
+.ol-filter-modal-grid #olFieldLevel.ol-level-range-on .ol-level-row > select {
+    flex: 0 0 calc(50% - 9px);
+    width: calc(50% - 9px);
+}
+
+.ol-level-row .ol-level-dates {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.ol-filter-modal-grid .ol-level-row .ol-level-dates input[type="date"] {
+    flex: 1 1 0;
+    width: auto;
 }
 
 .ol-filter-modal-grid .ol-filter-field,
