@@ -6,7 +6,7 @@
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
 <script src="~/assets/libs/jszip/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Tools/script/Import.js?v=import-api-v103"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Tools/script/Import.js?v=import-api-v109"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/bizsolpbcontrols.js"></script>
 
@@ -338,23 +338,41 @@
         margin-top: 2px;
     }
 
+    /* Override global app.min.css (tr/td height: 16px !important) so saved/locked rows don't overlap */
     #ImportPage #ImportData.fixed-width-table {
         width: max-content;
         min-width: 100%;
         table-layout: auto;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    #ImportPage #ImportData tr,
+    #ImportPage #ImportData th,
+    #ImportPage #ImportData td {
+        height: auto !important;
+        min-height: 32px;
+        line-height: 1.35;
+        vertical-align: middle;
+        padding: 6px 8px !important;
+        overflow: visible;
+        box-sizing: border-box;
     }
 
     #ImportPage #ImportData th,
     #ImportPage #ImportData td {
         white-space: nowrap;
-        vertical-align: middle;
-        padding: 4px 8px;
+    }
+
+    #ImportPage #ImportData td:has(.imp-validation-remark) {
+        white-space: normal;
     }
 
     #ImportPage .imp-cell-input {
         width: 100%;
         min-width: 0;
         max-width: 100%;
+        min-height: 28px;
         box-sizing: border-box;
     }
 
@@ -367,8 +385,19 @@
         word-break: break-word;
     }
 
-    #ImportPage #tblImportData .table-wrapper {
-        max-height: 420px;
+    #ImportPage #tblImportData .imp-grid-scroll {
+        width: 100%;
+        max-height: min(520px, 55vh);
+        min-height: 200px;
+        overflow: auto;
+        display: block;
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    #ImportPage #tblImportData .imp-grid-scroll > table {
+        margin-bottom: 0;
     }
 
     #ImportPage .imp-grid-toolbar-actions {
@@ -402,7 +431,7 @@
     }
 
     #ImportPage #paginator-ImportData {
-        display: none;
+        margin-top: 10px;
     }
 
     #ImportPage #tblImportData th:nth-child(2),
@@ -428,11 +457,24 @@
     }
 
     #ImportPage .imp-cell-locked {
-        display: inline-block;
+        display: block;
+        width: 100%;
         min-width: 0;
+        max-width: 100%;
         font-size: 13px;
         color: #495057;
-        padding: 4px 0;
+        padding: 2px 0;
+        line-height: 1.35;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #ImportPage #ImportData tbody tr:nth-child(even) {
+        background-color: #fafbfc;
+    }
+
+    #ImportPage #ImportData tbody tr:hover {
+        background-color: #f1f5f9;
     }
 
     #ImportPage .imp-branch-section {
@@ -580,14 +622,14 @@
                 <div class="imp-grid-toolbar">
                     <div>
                         <div class="imp-grid-title">Imported Data</div>
-                        <div class="imp-grid-sub">Select rows to save. Fix validation errors and save only corrected rows.</div>
+                        <div class="imp-grid-sub">Select rows to save. Fix validation errors and save corrected rows.</div>
                     </div>
                     <button type="button" id="btnSaveImportGrid" class="imp-btn imp-btn-primary btn-height" disabled title="Save selected import rows">
                         <i class="fa fa-save"></i> Save Import
                     </button>
                 </div>
                 <div id="tblImportData">
-                    <div class="table-wrapper fixed-height-table">
+                    <div class="table-wrapper imp-grid-scroll">
                         <table id="ImportData" class="fixed-width-table table">
                             <thead id="table-header-ImportData"></thead>
                             <tbody id="table-body-ImportData"></tbody>

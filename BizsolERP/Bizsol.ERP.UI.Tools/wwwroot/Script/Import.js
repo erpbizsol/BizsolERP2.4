@@ -1014,7 +1014,7 @@ function renderImportGrid() {
     BizsolCustomFilterGrid.CreateDataTable(
         'table-header-ImportData', 'table-body-ImportData', gridData,
         false, [], colNames, [], [], [], ['RowNo'],
-        columnAlignment, false
+        columnAlignment, true
     );
     $('#table-header-ImportData th').first()
         .empty()
