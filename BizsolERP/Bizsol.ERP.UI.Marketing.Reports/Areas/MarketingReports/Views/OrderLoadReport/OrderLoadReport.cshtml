@@ -154,8 +154,17 @@
             <div class="modal-body ol-filter-modal-body">
                 <div class="ol-filter-modal-grid">
                     <div class="ol-filter-field ol-hidden" id="olFieldLevel">
-                        <label for="ddlLevel" class="form-label"><span>Date Field</span></label>
-                        <select id="ddlLevel" class="form-control form-control-sm box_border"></select>
+                        <label class="form-label ol-level-label">
+                            <input type="checkbox" id="chkLevelDateRange" class="ol-level-check ol-hidden" />
+                            <span>Date Field</span>
+                        </label>
+                        <div class="ol-level-row">
+                            <select id="ddlLevel" class="form-control form-control-sm box_border"></select>
+                            <div class="ol-level-dates ol-hidden" id="olLevelDates">
+                                <input type="date" id="txtFromDateModal" class="form-control form-control-sm box_border" />
+                                <input type="date" id="txtToDateModal" class="form-control form-control-sm box_border" />
+                            </div>
+                        </div>
                     </div>
                     <div class="ol-filter-field ol-filter-multiselect ol-hidden" id="olFieldWareHouse">
                         <label for="ddlWareHouse" class="form-label"><span>Warehouse</span></label>
