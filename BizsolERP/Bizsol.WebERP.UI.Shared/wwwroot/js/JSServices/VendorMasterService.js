@@ -69,6 +69,14 @@ const VendorMasterService = {
         var URL = UrlService.API_ENDPOINT_FixedParameter + `/GetFixedParameterDetails`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
+    GetCompanyList: function GetCompanyList() {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetCompanyList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
+    HideActionbuttonForWebERP: function HideActionbuttonForWebERP() {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/HideActionbuttonForWebERP`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
     GetIndustryType: function GetIndustryType() {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetIndustryType`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });

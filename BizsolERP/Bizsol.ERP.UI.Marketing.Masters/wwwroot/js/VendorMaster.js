@@ -27,15 +27,61 @@ let G_GSTINValidatedNo = "";
 /** DocumentMaster — same table key as other Account / party attachments (e.g. Lead). */
 var VM_ATTACHMENT_MASTER_TABLE = "AccountMaster";
 
-/** Letterhead for vendor/client register print preview (replaces session “Solar” branding). */
-function vmGetPrintPreviewHeaderInfo() {
+/** Company info loaded from GetCompanyList API (cached after first successful load). */
+var G_VendorPrintCompanyInfo = null;
+
+function vmPickRowField(row, keys) {
+    if (!row) return "";
+    for (var i = 0; i < keys.length; i++) {
+        var v = row[keys[i]];
+        if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+    }
+    return "";
+}
+
+function vmMapCompanyApiToHeaderInfo(res) {
+    var row = null;
+    if (Array.isArray(res) && res.length > 0) row = res[0];
+    else if (res && Array.isArray(res.data) && res.data.length > 0) row = res.data[0];
+    else if (res && Array.isArray(res.Data) && res.Data.length > 0) row = res.Data[0];
+    else if (res && typeof res === "object" && !Array.isArray(res)) row = res;
+    if (!row || typeof row !== "object") return null;
     return {
-        companyName: "PURSHOTAM PROFILES PVT.LTD.",
-        tagline: "OPTIMISING STRUCTURAL SOLUTIONS",
-        companyPhone: "011-47049127",
-        companyEmail: "info@purshotamgroup.com",
-        companyWeb: "www.purshotamgroup.com",
-        footerAddress: "City Tower, 2nd Floor, Netaji Subhash Place, Pitampura, Delhi-110034",
+        companyName: vmPickRowField(row, ["CompanyName", "companyName"]),
+        tagline: vmPickRowField(row, ["TagLine", "tagLine", "CompanyTagLine", "Tagline"]),
+        companyPhone: vmPickRowField(row, ["OfficePhones1", "officePhones1"]),
+        companyEmail: vmPickRowField(row, ["EMail", "eMail", "Email", "email"]),
+        companyWeb: vmPickRowField(row, ["WebSite", "webSite", "Website", "website"]),
+        companyGST: vmPickRowField(row, ["GSTNo", "gstNo", "GSTIN"]),
+        footerAddress: vmPickRowField(row, ["OfficeAddress1", "officeAddress1", "CompanyAddress", "Address"]),
+    };
+}
+
+/** Loads company letterhead details once; never rejects (falls back to session info). */
+function vmLoadPrintCompanyInfo() {
+    if (G_VendorPrintCompanyInfo) return Promise.resolve(G_VendorPrintCompanyInfo);
+    return VendorMasterService.GetCompanyList()
+        .then(function (res) {
+            G_VendorPrintCompanyInfo = vmMapCompanyApiToHeaderInfo(res);
+            return G_VendorPrintCompanyInfo;
+        })
+        .catch(function () {
+            return null;
+        });
+}
+
+/** Letterhead for vendor/client register print preview — API first, session as fallback. */
+function vmGetPrintPreviewHeaderInfo() {
+    var api = G_VendorPrintCompanyInfo || {};
+    var s = vmGetSessionCompanyInfo();
+    return {
+        companyName: api.companyName || s.companyName || "",
+        tagline: api.tagline || "",
+        companyPhone: api.companyPhone || s.companyPhone || "",
+        companyEmail: api.companyEmail || s.companyEmail || "",
+        companyWeb: api.companyWeb || s.companyWeb || "",
+        companyGST: api.companyGST || s.companyGST || "",
+        footerAddress: api.footerAddress || s.companyAddr || "",
     };
 }
 
@@ -462,7 +508,7 @@ function vmBuildVendorMasterPrintHtml(payload) {
     if (pp.companyPhone) hdrContact += "&#9990;&nbsp;" + vmEscapeHtml(pp.companyPhone) + "<br>";
     if (pp.companyEmail) hdrContact += "&#9993;&nbsp;" + vmEscapeHtml(pp.companyEmail) + "<br>";
     if (pp.companyWeb) hdrContact += "&#127760;&nbsp;" + vmEscapeHtml(pp.companyWeb) + "<br>";
-    if (co.companyGST) hdrContact += "GSTIN:&nbsp;" + vmEscapeHtml(co.companyGST);
+    if (pp.companyGST) hdrContact += "GSTIN:&nbsp;" + vmEscapeHtml(pp.companyGST);
 
     var logoUrl =
         (sessionStorage.getItem("AppBaseURL") || (window.location.origin + "/")).replace(/\/?$/, "/") +
@@ -816,7 +862,10 @@ function PrintVendor(code, mode) {
         toastr.warning("Invalid vendor.");
         return;
     }
-    VendorMasterService.GetSolarVendorMasterByCode(c)
+    vmLoadPrintCompanyInfo()
+        .then(function () {
+            return VendorMasterService.GetSolarVendorMasterByCode(c);
+        })
         .then(function (res) {
             var payload = vmParseVendorPrintPayload(res);
             if (!payload || !payload.item) {
@@ -906,6 +955,52 @@ function applyVendorMasterPartyVerificationUi() {
     }
 }
 
+/**
+ * Parses config like "VENDOR=EDIT#DELETE*CLINT=EDIT#DELETE" (modules split by '*', buttons split by '#')
+ * and returns the list of action buttons to hide for the current module (Vendor / Client).
+ */
+function parseHiddenActionButtons(res, isClientOrVendor) {
+    var raw = null;
+    var row = null;
+    if (typeof res === "string") raw = res;
+    else if (Array.isArray(res) && res.length > 0) row = res[0];
+    else if (res && Array.isArray(res.data) && res.data.length > 0) row = res.data[0];
+    else if (res && Array.isArray(res.Data) && res.Data.length > 0) row = res.Data[0];
+    else if (res && typeof res === "object") row = res;
+
+    if (raw === null && row) {
+        if (typeof row === "string") raw = row;
+        else {
+            var k = Object.keys(row).filter(function (x) { return x.toLowerCase() === "hideactionbuttonforweberp"; })[0];
+            raw = k ? row[k] : null;
+        }
+    }
+    if (!raw) return [];
+
+    var moduleKeys = isClientOrVendor === "C" ? ["CLINT", "CLIENT"] : ["VENDOR"];
+    var hidden = [];
+    String(raw).split("*").forEach(function (part) {
+        var idx = part.indexOf("=");
+        if (idx < 0) return;
+        var key = part.substring(0, idx).trim().toUpperCase();
+        if (moduleKeys.indexOf(key) < 0) return;
+        part.substring(idx + 1).split("#").forEach(function (b) {
+            var name = b.trim().toUpperCase();
+            if (name) hidden.push(name);
+        });
+    });
+    return hidden;
+}
+
+function isVendorActionButtonHidden(name) {
+    var list = window.G_HiddenActionButtons || [];
+    return list.indexOf(String(name).toUpperCase()) >= 0;
+}
+
+function applyVendorHiddenActionButtonsToViewModal() {
+    $(".vm-btn-view-edit").toggle(!isVendorActionButtonHidden("EDIT"));
+}
+
 function shouldShowVendorPartyVerifyColumn() {
     return !!(window.G_PartyVerificationBeforeOrderY && window.G_VendorHasVerifyRight);
 }
@@ -943,9 +1038,20 @@ $(document).ready(function () {
         })
         .finally(function () {
             applyVendorMasterPartyVerificationUi();
-            resolveVendorVerifyRight().then(function () {
-                GetVendorMasterList();
-            });
+            window.G_HiddenActionButtons = [];
+            VendorMasterService.HideActionbuttonForWebERP()
+                .then(function (res) {
+                    window.G_HiddenActionButtons = parseHiddenActionButtons(res, G_IsClientOrVendor);
+                })
+                .catch(function () {
+                    window.G_HiddenActionButtons = [];
+                })
+                .finally(function () {
+                    applyVendorHiddenActionButtonsToViewModal();
+                    resolveVendorVerifyRight().then(function () {
+                        GetVendorMasterList();
+                    });
+                });
         });
 
     GetNationList();
@@ -1396,34 +1502,46 @@ function mapVendorRowsToGrid(rows) {
         var attachBtnClass = attYesBtn ? "vm-btn-attach vm-btn-attach--yes" : "vm-btn-attach";
         var btns =
             '<span class="vm-action-btns">' +
-            '<button class="vm-btn-view" title="View" onclick="ViewVendor(' + item.Code + ')">' +
-            '<i class="fas fa-eye"></i>' +
-            "</button>" +
-            '<button class="vm-btn-view" title="Print Preview" onclick="PrintVendor(' +
-            item.Code +
-            ',\'preview\')">' +
-            '<i class="fas fa-search-plus"></i>' +
-            "</button>" +
-            '<button class="vm-btn-view" title="Print" onclick="PrintVendor(' +
-            item.Code +
-            ',\'print\')">' +
-            '<i class="fas fa-print"></i>' +
-            "</button>" +
-            '<button type="button" class="' +
-            attachBtnClass +
-            '" title="Attachment" onclick="openVendorMasterListAttachmentControl(' +
-            item.Code +
-            "," +
-            item.Code +
-            ",\'\')\">" +
-            '<i class="fas fa-paperclip"></i>' +
-            "</button>" +
-            '<button class="vm-btn-edit" title="Edit" onclick="EditVendor(' + item.Code + ')">' +
-            '<i class="fas fa-pen"></i>' +
-            "</button>" +
-            '<button class="vm-btn-delete" title="Delete" onclick="ConfirmVendorDelete(' + item.Code + ')">' +
-            '<i class="fas fa-trash-can"></i>' +
-            "</button>" +
+            (isVendorActionButtonHidden("VIEW")
+                ? ""
+                : '<button class="vm-btn-view" title="View" onclick="ViewVendor(' + item.Code + ')">' +
+                  '<i class="fas fa-eye"></i>' +
+                  "</button>") +
+            (isVendorActionButtonHidden("PRINTPREVIEW") || isVendorActionButtonHidden("PREVIEW")
+                ? ""
+                : '<button class="vm-btn-view" title="Print Preview" onclick="PrintVendor(' +
+                  item.Code +
+                  ',\'preview\')">' +
+                  '<i class="fas fa-search-plus"></i>' +
+                  "</button>") +
+            (isVendorActionButtonHidden("PRINT")
+                ? ""
+                : '<button class="vm-btn-view" title="Print" onclick="PrintVendor(' +
+                  item.Code +
+                  ',\'print\')">' +
+                  '<i class="fas fa-print"></i>' +
+                  "</button>") +
+            (isVendorActionButtonHidden("ATTACHMENT")
+                ? ""
+                : '<button type="button" class="' +
+                  attachBtnClass +
+                  '" title="Attachment" onclick="openVendorMasterListAttachmentControl(' +
+                  item.Code +
+                  "," +
+                  item.Code +
+                  ",\'\')\">" +
+                  '<i class="fas fa-paperclip"></i>' +
+                  "</button>") +
+            (isVendorActionButtonHidden("EDIT")
+                ? ""
+                : '<button class="vm-btn-edit" title="Edit" onclick="EditVendor(' + item.Code + ')">' +
+                  '<i class="fas fa-pen"></i>' +
+                  "</button>") +
+            (isVendorActionButtonHidden("DELETE")
+                ? ""
+                : '<button class="vm-btn-delete" title="Delete" onclick="ConfirmVendorDelete(' + item.Code + ')">' +
+                  '<i class="fas fa-trash-can"></i>' +
+                  "</button>") +
             "</span>";
         var patch = {};
         if (shouldShowVendorPartyVerifyColumn()) {
