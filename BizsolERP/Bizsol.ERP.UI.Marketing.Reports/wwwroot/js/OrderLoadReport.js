@@ -111,6 +111,28 @@ function bindEvents() {
         updateFilterButtonState();
         updateFilterSummary();
     });
+    $('#chkLevelDateRange').on('change', function () {
+        if ($(this).prop('checked')) {
+            // on tick: 1st of current month .. today
+            $('#txtFromDate').val(getDefaultFromDate());
+            $('#txtToDate').val(getDefaultToDate());
+        }
+        applyStaticDateFieldsFromTemplate(G_OL_CurrentLevel || getSelectedTemplate());
+        ensureLevelDateRangeDefaults();
+        applyFilterActiveColors();
+        updateFilterButtonState();
+        updateFilterSummary();
+    });
+    // modal From/To -> header From/To (no auto report refresh while the modal is open)
+    $('#txtFromDateModal, #txtToDateModal').on('change input', function () {
+        $('#txtFromDate').val($('#txtFromDateModal').val());
+        $('#txtToDate').val($('#txtToDateModal').val());
+        applyFilterActiveColors();
+        updateFilterButtonState();
+        updateFilterSummary();
+    });
+    // header From/To -> modal From/To
+    $('#txtFromDate, #txtToDate').on('change input', syncModalDatesFromHeader);
     $('#ddlLevel').on('change', function () {
         applySelectedLevel();
         loadTemplateDefaultDatesFromApi(G_OL_CurrentLevel);
@@ -138,6 +160,7 @@ function bindEvents() {
         $('.ol-cd-menu').each(function () {
             ensureCheckboxDropdownMenuContainer($(this));
         });
+        syncLevelDateRangeUi();
         applyFilterActiveColors();
         updateModalEmptyState();
     });
@@ -500,6 +523,16 @@ function clearModalFilters() {
         loadVisibleDropdowns(tpl);
         applyDynamicDateDefaults(tpl);
     }
+    if (isLevelDateRangeAvailable()) {
+        // default: unchecked => From/To hidden (inside + outside) until the user ticks it
+        $('#chkLevelDateRange').prop('checked', false);
+        applyStaticDateFieldsFromTemplate(tpl || G_OL_CurrentLevel || getSelectedTemplate());
+        if (isLevelDateRangeGated()) {
+            $('#txtFromDate').val('');
+            $('#txtToDate').val('');
+        }
+        syncLevelDateRangeUi();
+    }
     applyFilterActiveColors();
     updateFilterButtonState();
     updateModalEmptyState();
@@ -686,6 +719,7 @@ function loadTemplateDefaultDatesFromApi(tpl) {
     var hasDynamicTo = (G_OL_DynamicFilters || []).some(function (row) { return row.procedureParameter === 'TODATE'; });
     if (hasDynamicFrom || hasDynamicTo) {
         applyDynamicDateDefaults(tpl);
+        ensureLevelDateRangeDefaults();
         return Promise.resolve();
     }
 
@@ -693,6 +727,7 @@ function loadTemplateDefaultDatesFromApi(tpl) {
         fromDate: fromIso || mergedDates.fromDate || tpl.fromDate || '',
         toDate: toIso || mergedDates.toDate || tpl.toDate || ''
     }));
+    ensureLevelDateRangeDefaults();
 
     return Promise.resolve();
 }
@@ -1158,6 +1193,7 @@ function bindLevelDropdown(rows) {
 
     if (!dateOptions.length) {
         $field.addClass('ol-hidden');
+        syncLevelDateRangeUi();
         return resolveLevelIndex(rows || [], null);
     }
 
@@ -1168,6 +1204,7 @@ function bindLevelDropdown(rows) {
 
     var defaultValue = dateOptions[dateOptions.length - 1].value;
     $ddl.val(defaultValue);
+    syncLevelDateRangeUi();
     return resolveLevelIndexByDateField(rows, defaultValue);
 }
 
@@ -1290,8 +1327,59 @@ function syncHeaderDateBarVisibility() {
     $('#olHeaderDateBar').toggleClass('ol-hidden', !showBar);
 }
 
+/**
+ * Date Field (Combo "Date Field": Receive Date, Order Date ...) => checkbox + From/To range.
+ * Unchecked (default) = no date filter. Not used when the filter configuration has real Text date rows
+ * (ProcedureParameter FromDate / ToDate): those dates are always shown outside.
+ */
+function isLevelDateRangeAvailable() {
+    return !$('#olFieldLevel').hasClass('ol-hidden');
+}
+
+/** Checkbox unticked and the config has no Text date rows => no date filter at all (hidden inside + outside). */
+function isLevelDateRangeGated() {
+    return isLevelDateRangeAvailable()
+        && !$('#chkLevelDateRange').prop('checked')
+        && !dynamicConfigHasDateFilter('from')
+        && !dynamicConfigHasDateFilter('to');
+}
+
+function isLevelDateRangeEnabled() {
+    return isLevelDateRangeAvailable() && $('#chkLevelDateRange').prop('checked');
+}
+
+function syncModalDatesFromHeader() {
+    $('#txtFromDateModal').val($('#txtFromDate').val() || '');
+    $('#txtToDateModal').val($('#txtToDate').val() || '');
+}
+
+function syncLevelDateRangeUi() {
+    var available = isLevelDateRangeAvailable();
+    var enabled = available && $('#chkLevelDateRange').prop('checked');
+    $('#chkLevelDateRange').toggleClass('ol-hidden', !available);
+    // unchecked => From/To hidden both inside the modal and outside in the header
+    $('#olLevelDates').toggleClass('ol-hidden', !enabled);
+    $('#olFieldLevel').toggleClass('ol-level-range-on', enabled);
+    $('#txtFromDateModal, #txtToDateModal').prop('disabled', !enabled);
+    syncModalDatesFromHeader();
+}
+
+/** Default range: 1st of current month .. today (only fills blanks). */
+function ensureLevelDateRangeDefaults() {
+    if (isLevelDateRangeEnabled()) {
+        if (!$('#txtFromDate').val()) $('#txtFromDate').val(getDefaultFromDate());
+        if (!$('#txtToDate').val()) $('#txtToDate').val(getDefaultToDate());
+    } else if (isLevelDateRangeGated()) {
+        // unchecked => no date filter, keep the inputs empty
+        $('#txtFromDate').val('');
+        $('#txtToDate').val('');
+    }
+    syncLevelDateRangeUi();
+}
+
 function applyTemplateFilters() {
     updateTemplateSelectStyle();
+    $('#chkLevelDateRange').prop('checked', false);
 
     var code = parseInt($('#ddlTemplate').val(), 10) || 0;
 
@@ -1361,7 +1449,19 @@ function getDefaultLevelTemplate() {
 }
 
 function applyStaticDateFieldsFromTemplate(tpl) {
+    applyStaticDateFieldsCore(tpl);
+    ensureLevelDateRangeDefaults();
+}
+
+function applyStaticDateFieldsCore(tpl) {
     tpl = ensureStaticLevelDefaults(tpl || getDefaultLevelTemplate());
+
+    // Date Field combo present but checkbox not ticked => no From/To (inside or outside)
+    if (isLevelDateRangeGated()) {
+        toggleFilterField('olFieldFromDate', false);
+        toggleFilterField('olFieldToDate', false);
+        return;
+    }
 
     if (hasActiveTemplateFilterConfiguration()) {
         applyFilterLabels(tpl);
@@ -1372,8 +1472,9 @@ function applyStaticDateFieldsFromTemplate(tpl) {
             $('#lblToDateText').text('As On');
             $('label[for="txtToDate"]').html('As On <span class="text-danger">*</span>');
         } else {
-            toggleFilterField('olFieldFromDate', dynamicConfigHasDateFilter('from'));
-            toggleFilterField('olFieldToDate', dynamicConfigHasDateFilter('to'));
+            var levelRange = isLevelDateRangeEnabled();
+            toggleFilterField('olFieldFromDate', dynamicConfigHasDateFilter('from') || levelRange);
+            toggleFilterField('olFieldToDate', dynamicConfigHasDateFilter('to') || levelRange);
         }
         return;
     }
@@ -1382,6 +1483,11 @@ function applyStaticDateFieldsFromTemplate(tpl) {
     var showFromFlag = !tpl.code || isFlagY(tpl.showFromDate);
     var showToFlag = !tpl.code || isFlagY(tpl.showToDate);
     var asOn = hasDateField && isAsOnDateMode(tpl);
+    if (hasDateField && !asOn && isLevelDateRangeEnabled()) {
+        // checkbox ticked => always show From/To for the selected Date Field
+        showFromFlag = true;
+        showToFlag = true;
+    }
     var hideDates = !hasDateField || (!showFromFlag && !showToFlag);
 
     if (hideDates) {
@@ -2371,21 +2477,23 @@ function dynamicConfigHasDateFilter(kind) {
 
 /** When dynamic filter config exists, only show static date inputs if config has FROMDATE/TODATE rows. */
 function shouldShowStaticFromDate(tpl) {
+    if (isLevelDateRangeGated()) return false;
     if (isAsOnDateMode(tpl)) return false;
     if (hasActiveTemplateFilterConfiguration()) {
-        return dynamicConfigHasDateFilter('from');
+        return dynamicConfigHasDateFilter('from') || isLevelDateRangeEnabled();
     }
-    return (!tpl || !tpl.code || isFlagY(tpl.showFromDate)) && !!normalizeFieldName(tpl && tpl.fieldForDate);
+    return (isLevelDateRangeEnabled() || !tpl || !tpl.code || isFlagY(tpl.showFromDate)) && !!normalizeFieldName(tpl && tpl.fieldForDate);
 }
 
 function shouldShowStaticToDate(tpl) {
+    if (isLevelDateRangeGated()) return false;
     if (isAsOnDateMode(tpl)) {
         return !!normalizeFieldName(tpl && tpl.fieldForDate);
     }
     if (hasActiveTemplateFilterConfiguration()) {
-        return dynamicConfigHasDateFilter('to');
+        return dynamicConfigHasDateFilter('to') || isLevelDateRangeEnabled();
     }
-    return (!tpl || !tpl.code || isFlagY(tpl.showToDate)) && !!normalizeFieldName(tpl && tpl.fieldForDate);
+    return (isLevelDateRangeEnabled() || !tpl || !tpl.code || isFlagY(tpl.showToDate)) && !!normalizeFieldName(tpl && tpl.fieldForDate);
 }
 
 function syncFilterFieldsFromTemplateFilterConfiguration(tpl) {
@@ -2504,7 +2612,7 @@ function applyDynamicDateDefaults(tpl) {
         if (fromIso) {
             $('#txtFromDate').val(fromIso);
         }
-        $('#olFieldFromDate').attr('title', (fromRow.defaultValue || '') + (fromIso ? ' → ' + fromIso : ''));
+        $('#olFieldFromDate').removeAttr('title');
     }
 
     if (toRow) {
@@ -2516,7 +2624,7 @@ function applyDynamicDateDefaults(tpl) {
         if (toIso) {
             $('#txtToDate').val(toIso);
         }
-        $('#olFieldToDate').attr('title', (toRow.defaultValue || '') + (toIso ? ' → ' + toIso : ''));
+        $('#olFieldToDate').removeAttr('title');
     }
 }
 
@@ -2825,9 +2933,7 @@ function loadDynamicComboOptions(row) {
                 buildCheckboxDropdown($waitSel, 'Select ' + row.displayName + '...');
             }
         }
-        $('#olDynField_' + row.code).attr('title', sql.indexOf('{{') >= 0
-            ? ('Select parent filter first (pending: ' + sql + ')')
-            : ('Select parent filter first: ' + sql));
+        $('#olDynField_' + row.code).removeAttr('title');
         return;
     }
 
@@ -2853,7 +2959,7 @@ function loadDynamicComboOptions(row) {
                 });
             }
             if ($field.length) {
-                $field.attr('title', 'SQL: ' + sql);
+                $field.removeAttr('title');
             }
             applyDynamicComboDefault(row);
             applyFilterActiveColors();
@@ -2861,7 +2967,7 @@ function loadDynamicComboOptions(row) {
         })
         .catch(function () {
             if ($field.length) {
-                $field.attr('title', 'SQL failed: ' + sql);
+                $field.removeAttr('title');
             }
             toastr.error('Could not load ' + (row.displayName || 'filter') + '.');
         });
@@ -2948,6 +3054,7 @@ function loadDynamicTemplateFilters(tpl) {
             OrderLoadReportService.GetDefaultReportDates(code, '')
                 .then(function (res) {
                     if (seq !== G_OL_FilterLoadSeq) return;
+                    if (isLevelDateRangeGated()) return;
                     unwrapApiList(res).forEach(function (item) {
                         var param = String(prop(item, ['ProcedureParameter', 'procedureParameter']) || '').toUpperCase();
                         var iso = apiDateToIso(prop(item, ['ResolvedDefaultValue', 'resolvedDefaultValue']));
@@ -3414,13 +3521,22 @@ function buildOrderLoadReportRequestParams(tpl) {
 
     var sizeCodes = isOrderLoadSizeParameterFilterEnabled(tpl) ? String(G_OL_ItemSizeMaster_Codes || '').trim() : '';
 
+    var fromParam = resolveProcDateParamForRequest(tpl, fromIso, 'from');
+    var toParam = resolveProcDateParamForRequest(tpl, toIso, 'to');
+    // Only one date visible on the frontend (From) => ToDate goes as the current date
+    if (!toParam && fromParam
+        && !$('#olFieldFromDate').hasClass('ol-hidden')
+        && $('#olFieldToDate').hasClass('ol-hidden')) {
+        toParam = isoToProcDateParam(getDefaultToDate());
+    }
+
     return {
         reportType: String(tpl.desp || '').trim(),
         templateCode: tpl.code,
         filterCondition: finalizeReportSqlDateConditions(conditions.filterCondition, tpl),
         queryCondition: finalizeReportSqlDateConditions(sizeCodes ? '' : conditions.queryCondition, tpl),
-        fromDate: resolveProcDateParamForRequest(tpl, fromIso, 'from'),
-        toDate: resolveProcDateParamForRequest(tpl, toIso, 'to'),
+        fromDate: fromParam,
+        toDate: toParam,
         userMasterCode: auth.UserMaster_Code || 0,
         marketingManMasterCode: marketingManCode,
         godownMasterCode: filterCodes.godownMasterCode,
