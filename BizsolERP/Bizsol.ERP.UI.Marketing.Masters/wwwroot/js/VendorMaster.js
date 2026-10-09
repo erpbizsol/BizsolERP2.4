@@ -39,6 +39,7 @@ function vmPickRowField(row, keys) {
     return "";
 }
 
+
 function vmMapCompanyApiToHeaderInfo(res) {
     var row = null;
     if (Array.isArray(res) && res.length > 0) row = res[0];
