@@ -13,7 +13,10 @@ let G_MonthReady = false;
 let G_AutoShown = false;
 let G_SuppressSalesPersonChange = false;
 let G_RowFilter = 'all';
+let G_PartyListCache = Object.create(null);
 const DEALER_TARGET_STATE_KEY = 'DealerTargetMasterState';
+const DEALER_TARGET_GRID_BODY = 'DealerTargetList-body';
+let dealerTargetGridFilterPatched = false;
 
 function firstPayloadArray(payload) {
     if (!payload) return [];
@@ -151,7 +154,48 @@ function isInactiveStatus(status) {
 }
 
 function hasTargetAmount(value) {
-    return value !== null && value !== undefined && String(value).trim() !== '';
+    if (value === null || value === undefined || String(value).trim() === '') return false;
+    const n = toNumber(value);
+    return !isNaN(n) && n > 0;
+}
+
+function parseTargetAmountInput(raw) {
+    const value = sanitizeAmountInput(raw);
+    if (value === '') return { value: '', amount: null };
+    const n = toNumber(value);
+    if (isNaN(n) || n <= 0) return { value: '', amount: null };
+    return { value: value, amount: n };
+}
+
+function dealerTransactionCode(dealer) {
+    return toInt(pick(dealer || {}, [
+        'DealerTargetTransaction_Code', 'DealerTargetTransactionCode', 'TransactionCode'
+    ], 0));
+}
+
+/** Master header id may be on any dealer row from GetDealerLocate, not only dealers[0]. */
+function resolveDealerTargetMasterCode(dealers, fallback) {
+    let code = toInt(fallback);
+    if (code > 0) return code;
+    if (!dealers || !dealers.length) return 0;
+    for (let i = 0; i < dealers.length; i++) {
+        const rowCode = toInt(pick(dealers[i], ['DealerTargetMaster_Code'], 0));
+        if (rowCode > 0) return rowCode;
+    }
+    return 0;
+}
+
+function rowHadSavedTarget(dealer, amountRaw) {
+    return hasTargetAmount(amountRaw) || dealerTransactionCode(dealer) > 0;
+}
+
+function shouldIncludeDealerTargetSave(row, raw) {
+    if (hasTargetAmount(row.TargetedAmountValue)) return true;
+    return !!(row._hadSavedTarget || dealerTransactionCode(raw) > 0);
+}
+
+function targetedAmountForSave(row) {
+    return hasTargetAmount(row.TargetedAmountValue) ? toNumber(row.TargetedAmountValue) : 0;
 }
 
 function sanitizeAmountInput(raw) {
@@ -191,7 +235,7 @@ function initSearchableSelect($el) {
         dropdownParent: $(document.body),
         placeholder: $el.data('placeholder') || 'Select',
         allowClear: false,
-        minimumResultsForSearch: 0,
+        minimumResultsForSearch: 8,
         matcher: function (params, data) {
             if ($.trim(params.term) === '') return data;
             if (!data.id) return null;
@@ -223,6 +267,32 @@ function bindSearchableSelect($el, html, value) {
     } catch (e) { }
 }
 
+function bindSearchableSelectOptions($el, options, value) {
+    if (!$el || !$el.length) return;
+    const placeholder = $el.data('placeholder') || 'Select';
+    const selected = value === undefined || value === null ? '' : String(value);
+    destroySearchableSelect($el);
+    $el.empty();
+    $el.append(new Option(placeholder, '', false, selected === ''));
+    (options || []).forEach(function (opt) {
+        const id = String(opt.id);
+        $el.append(new Option(opt.text, id, false, id === selected));
+    });
+    initSearchableSelect($el);
+    $el.val(selected);
+    try {
+        $el.trigger('change.select2');
+    } catch (e) { }
+}
+
+function setSelectLoading($el, loadingText) {
+    if (!$el || !$el.length) return;
+    bindSearchableSelectOptions($el, [], '');
+    $el.prop('disabled', true);
+    const $first = $el.find('option').first();
+    if ($first.length) $first.text(loadingText || 'Loading...');
+}
+
 function getSelectedPartyName() {
     const code = ($('#txtPartyName').val() || '').trim();
     if (!code) return '';
@@ -249,8 +319,10 @@ function getSelectedTargetedDate() {
 
 function bindMonthDropdown() {
     G_MonthList = [];
+    G_MonthReady = false;
+    setSelectLoading($('#txtMonthName'), 'Loading months...');
 
-    DealerTargetMasterService.GetMonth().then(function (response) {
+    return DealerTargetMasterService.GetMonth().then(function (response) {
         const rows = firstPayloadArray(response);
         if (!rows.length) {
             toastr.warning('No Month data found');
@@ -261,7 +333,7 @@ function bindMonthDropdown() {
         const currentMonth = now.getMonth() + 1;
         const currentYear = now.getFullYear();
         let defaultValue = '';
-        let option = '';
+        const monthOptions = [];
 
         G_MonthList = rows.map(function (row) {
             const monthNameWithYear = String(pick(row, ['MonthNameWithYear'], '')).trim();
@@ -286,23 +358,22 @@ function bindMonthDropdown() {
             if (row.MonthNumber === currentMonth && (row.MonthYear === currentYear || !row.MonthYear)) {
                 defaultValue = row.MonthNameWithYear;
             }
-            option += '<option value="' + escapeAttr(row.MonthNameWithYear) +
-                '" data-month-number="' + escapeAttr(row.MonthNumber) +
-                '" data-month-name="' + escapeAttr(row.MonthName) +
-                '" data-month-year="' + escapeAttr(row.MonthYear) +
-                '">' + escapeAttr(row.MonthNameWithYear) + '</option>';
+            monthOptions.push({ id: row.MonthNameWithYear, text: row.MonthNameWithYear });
         }
 
         if (!defaultValue && G_MonthList.length) {
             defaultValue = G_MonthList[0].MonthNameWithYear;
         }
 
-        bindSearchableSelect($('#txtMonthName'), '<option value="">Select month</option>' + option, defaultValue);
+        bindSearchableSelectOptions($('#txtMonthName'), monthOptions, defaultValue);
+        $('#txtMonthName').prop('disabled', false);
         syncMonthSelection();
         G_MonthReady = true;
         tryAutoShowDealerTargets();
     }).catch(function (error) {
+        $('#txtMonthName').prop('disabled', false);
         toastr.error((error && (error.Msg || error.message)) || 'Failed to load month list.');
+        throw error;
     });
 }
 
@@ -324,8 +395,8 @@ function syncPartyCode() {
 }
 
 function clearDistributorDropdown(placeholder) {
-    const label = placeholder || 'Select';
-    bindSearchableSelect($('#txtPartyName'), '<option value="">' + escapeAttr(label) + '</option>', '');
+    bindSearchableSelectOptions($('#txtPartyName'), [], '');
+    $('#txtPartyName').prop('disabled', false);
     syncPartyCode();
     G_PartyReady = false;
 }
@@ -356,14 +427,13 @@ function syncMonthSelection() {
     $('#hdnMonthName').val(monthName || '');
 }
 
-function GetNestedMarketingManList() {
+function loadMarketingManDropdown() {
     G_SalesPersonReady = false;
     G_MarketingManList = [];
-    $('#ddlMarketingMan').prop('disabled', true);
+    setSelectLoading($('#ddlMarketingMan'), 'Loading sales persons...');
 
-    DealerTargetMasterService.GetNestedMarketingManList().then(function (response) {
+    return DealerTargetMasterService.GetNestedMarketingManList().then(function (response) {
         const rows = firstPayloadArray(response);
-        let option = '<option value="">Select</option>';
 
         G_MarketingManList = rows.map(function (person) {
             const code = pick(person, ['Code', 'MarketingManMaster_Code'], '');
@@ -378,13 +448,12 @@ function GetNestedMarketingManList() {
             return person.PersonName && person.Code !== undefined && person.Code !== null && String(person.Code) !== '';
         });
 
-        for (let i = 0; i < G_MarketingManList.length; i++) {
-            const person = G_MarketingManList[i];
-            option += '<option value="' + escapeAttr(person.Code) + '">' + escapeAttr(person.PersonName) + '</option>';
-        }
+        const options = G_MarketingManList.map(function (person) {
+            return { id: String(person.Code), text: person.PersonName };
+        });
 
         G_SuppressSalesPersonChange = true;
-        bindSearchableSelect($('#ddlMarketingMan'), option, '');
+        bindSearchableSelectOptions($('#ddlMarketingMan'), options, '');
         syncMarketingManCode();
         G_SuppressSalesPersonChange = false;
         G_SalesPersonReady = true;
@@ -397,10 +466,35 @@ function GetNestedMarketingManList() {
         clearDistributorDropdown();
     }).catch(function (error) {
         G_SalesPersonReady = false;
+        bindSearchableSelectOptions($('#ddlMarketingMan'), [], '');
         $('#ddlMarketingMan').prop('disabled', false);
         toastr.error((error && (error.Msg || error.message)) || 'Failed to load sales person list.');
         clearDistributorDropdown();
+        throw error;
     });
+}
+
+function GetNestedMarketingManList() {
+    return loadMarketingManDropdown();
+}
+
+function applyPartyDropdown(rows) {
+    const options = [];
+    for (let i = 0; i < rows.length; i++) {
+        const name = String(rows[i].AccountDesp || rows[i].Desp || '').trim();
+        const code = rows[i].Code;
+        if (!name || code === undefined || code === null || code === '') continue;
+        options.push({ id: String(code), text: name });
+    }
+    bindSearchableSelectOptions($('#txtPartyName'), options, '');
+    syncPartyCode();
+    $('#txtPartyName').prop('disabled', false);
+    if (!options.length) {
+        G_PartyReady = false;
+        toastr.warning('No distributor found for the selected sales person.');
+        return;
+    }
+    G_PartyReady = true;
 }
 
 function GetPartyList() {
@@ -408,36 +502,25 @@ function GetPartyList() {
     const marketingManCode = syncMarketingManCode();
     if (!marketingManCode) {
         clearDistributorDropdown();
-        return;
+        return Promise.resolve();
     }
 
-    $('#txtPartyName').prop('disabled', true);
-    DealerTargetMasterService.GetNestedDealerList(marketingManCode, 'Y').then(function (response) {
+    const cacheKey = String(marketingManCode);
+    if (G_PartyListCache[cacheKey]) {
+        applyPartyDropdown(G_PartyListCache[cacheKey]);
+        return Promise.resolve();
+    }
+
+    setSelectLoading($('#txtPartyName'), 'Loading distributors...');
+    return DealerTargetMasterService.GetNestedDealerList(marketingManCode, 'Y').then(function (response) {
         const rows = firstPayloadArray(response);
-        let hasDistributor = false;
-        let option = '<option value="">Select</option>';
-        for (let i = 0; i < rows.length; i++) {
-            const name = rows[i].AccountDesp || rows[i].Desp || '';
-            const code = rows[i].Code;
-            if (!name || code === undefined || code === null || code === '') continue;
-            hasDistributor = true;
-            option += '<option value="' + escapeAttr(code) + '">' + escapeAttr(name) + '</option>';
-        }
-
-        bindSearchableSelect($('#txtPartyName'), option, '');
-        syncPartyCode();
-        $('#txtPartyName').prop('disabled', false);
-
-        if (!hasDistributor) {
-            toastr.warning('No distributor found for the selected sales person.');
-            return;
-        }
-
-        G_PartyReady = true;
+        G_PartyListCache[cacheKey] = rows;
+        applyPartyDropdown(rows);
     }).catch(function (error) {
         $('#txtPartyName').prop('disabled', false);
         clearDistributorDropdown();
         toastr.error((error && (error.Msg || error.message)) || 'Failed to load distributor list.');
+        throw error;
     });
 }
 
@@ -464,8 +547,169 @@ function buildAmountInput(code, value) {
         '<span class="dtm-amount-prefix js-amount-prefix">' + amountPrefix() + '</span>' +
         '<input type="text" inputmode="decimal" class="form-control form-control-sm text-end box_border js-targeted-amount" data-code="' +
         escapeAttr(code) + '" value="' + escapeAttr(display) +
-        '" maxlength="12" autocomplete="off" placeholder="0.00" oninput="OnTargetedAmountChange(this)" />' +
+        '" maxlength="12" autocomplete="off" placeholder="0.00" aria-required="true" title="Targeted Amount is required (greater than 0)" oninput="OnTargetedAmountChange(this)" />' +
         '</div>';
+}
+
+function syncTargetAmountsFromInputs() {
+    $('.js-targeted-amount').each(function () {
+        const code = $(this).attr('data-code');
+        const row = findGridRow(code);
+        if (!row) return;
+        const parsed = parseTargetAmountInput(this.value);
+        row.TargetedAmountValue = parsed.amount;
+    });
+}
+
+function clearTargetAmountValidationMarks() {
+    $('#DealerTargetList-body .dtm-amount-wrap').removeClass('dtm-amount-invalid');
+}
+
+function markTargetAmountInvalid(codes) {
+    (codes || []).forEach(function (code) {
+        $('.js-targeted-amount[data-code="' + code + '"]').closest('.dtm-amount-wrap').addClass('dtm-amount-invalid');
+    });
+}
+
+function validateTargetAmountsBeforeSave() {
+    syncTargetAmountsFromInputs();
+    clearTargetAmountValidationMarks();
+
+    const invalidCodes = [];
+    const missingCodes = [];
+    let enteredCount = 0;
+
+    G_DealerTargetList.forEach(function (row) {
+        if (row._inactive) return;
+        const code = String(row.Code);
+        const $input = $('.js-targeted-amount[data-code="' + code + '"]');
+        const rawText = ($input.val() || '').trim();
+
+        if (hasTargetAmount(row.TargetedAmountValue)) {
+            enteredCount += 1;
+            return;
+        }
+        if (rawText !== '') {
+            invalidCodes.push(code);
+            return;
+        }
+        missingCodes.push(code);
+    });
+
+    if (invalidCodes.length) {
+        markTargetAmountInvalid(invalidCodes);
+        const badRow = findGridRow(invalidCodes[0]);
+        const name = badRow ? (badRow['Dealer Name'] || 'Dealer') : 'Dealer';
+        toastr.error('Targeted Amount must be greater than 0 for ' + name + '.');
+        focusTargetAmountInput(invalidCodes[0]);
+        return false;
+    }
+
+    if (!enteredCount) {
+        markTargetAmountInvalid(missingCodes.slice(0, 12));
+        toastr.warning('Please enter Targeted Amount (greater than 0) for at least one dealer.');
+        if (missingCodes.length) focusTargetAmountInput(missingCodes[0]);
+        return false;
+    }
+
+    return true;
+}
+
+function focusTargetAmountInput(code) {
+    const $input = $('.js-targeted-amount[data-code="' + code + '"]');
+    if (!$input.length) return;
+    const el = $input.get(0);
+    if (el && el.scrollIntoView) {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    setTimeout(function () {
+        $input.trigger('focus');
+        if (el && typeof el.select === 'function') el.select();
+    }, 200);
+}
+
+function dealerTargetAmountForFilter(item) {
+    if (!item || item.TargetedAmountValue === null || item.TargetedAmountValue === undefined || item.TargetedAmountValue === '') {
+        return NaN;
+    }
+    return parseFloat(item.TargetedAmountValue);
+}
+
+function applyDealerTargetAmountNumericFilter(bodyId) {
+    const tableId = $('#' + bodyId).closest('table').attr('id');
+    const colId = 'Targeted Amount'.replace(/\s+/g, '');
+    const uniqueId = tableId + '-' + colId;
+    const escapedId = typeof window.escapeId === 'function' ? window.escapeId(uniqueId) : uniqueId;
+    const selectedOption = $('#numeric-filter-select-' + escapedId).val();
+    const filterValue = parseFloat($('#filter-value-' + escapedId).val());
+    const minValue = parseFloat($('#min-value-' + escapedId).val());
+    const maxValue = parseFloat($('#max-value-' + escapedId).val());
+
+    if (isNaN(filterValue) && (isNaN(minValue) || isNaN(maxValue))) {
+        if (typeof window.closeAllFilters === 'function') window.closeAllFilters();
+        return;
+    }
+
+    const filteredArray = (window['filteredData_' + tableId] || []).filter(function (item) {
+        const cellValue = dealerTargetAmountForFilter(item);
+        if (isNaN(cellValue)) return false;
+
+        switch (selectedOption) {
+            case 'equals':
+                return !isNaN(filterValue) && cellValue === filterValue;
+            case 'greater':
+                return !isNaN(filterValue) && cellValue > filterValue;
+            case 'less':
+                return !isNaN(filterValue) && cellValue < filterValue;
+            case 'between':
+                return !isNaN(minValue) && !isNaN(maxValue) && cellValue >= minValue && cellValue <= maxValue;
+            default:
+                return true;
+        }
+    });
+
+    window['filteredData_' + tableId] = filteredArray;
+    if (typeof window.renderTable === 'function') window.renderTable(filteredArray, bodyId);
+    if (window['Paginator_' + tableId]) {
+        if (typeof window.createPaginator === 'function') window.createPaginator(tableId, bodyId);
+        if (typeof window.renderTableWithPagination === 'function') window.renderTableWithPagination(tableId, bodyId);
+    }
+
+    const th = $('#filterDropdown-' + escapedId).closest('th');
+    const span = th.find('span.filter-table-heading');
+    span.find('.fa-filter').remove();
+    span.append('<i class="fa-solid fa-filter" style="color: white; margin-left: 5px;"></i>');
+
+    if (typeof window.closeAllFilters === 'function') window.closeAllFilters();
+    highlightDeactiveRows();
+    syncAmountInputs();
+}
+
+function ensureDealerTargetGridFilterPatch() {
+    if (dealerTargetGridFilterPatched) return;
+    dealerTargetGridFilterPatched = true;
+
+    const origNumeric = window.applyNumericFilter;
+    if (typeof origNumeric === 'function') {
+        window.applyNumericFilter = function (columnName, bodyId) {
+            if (bodyId === DEALER_TARGET_GRID_BODY && columnName === 'Targeted Amount') {
+                applyDealerTargetAmountNumericFilter(bodyId);
+                return;
+            }
+            return origNumeric.apply(this, arguments);
+        };
+    }
+
+    const origSort = window.sortTable;
+    if (typeof origSort === 'function') {
+        window.sortTable = function (column, order, tbodyId) {
+            let sortColumn = column;
+            if (tbodyId === DEALER_TARGET_GRID_BODY && column === 'Targeted Amount') {
+                sortColumn = 'TargetedAmountValue';
+            }
+            return origSort.call(this, sortColumn, order, tbodyId);
+        };
+    }
 }
 
 function buildStatusBadge(status) {
@@ -504,10 +748,8 @@ function UpdateSummary() {
         }
     });
 
-    const coverage = total > 0 ? (entered / total) * 100 : 0;
     const pending = Math.max(total - entered, 0);
     const partyName = getSelectedPartyName();
-    const monthName = ($('#txtMonthName').val() || '').trim();
 
     $('#kpiDealers').text(formatNumber(total));
     $('#kpiDealerSub').text(partyName || 'Select a distributor');
@@ -515,15 +757,6 @@ function UpdateSummary() {
     $('#kpiPending').text(pending + (pending === 1 ? ' pending' : ' pending'));
     $('#kpiTotalAmount').text(formatNumber(amount));
     $('#kpiAvgAmount').text('Avg ' + formatNumber(entered ? (amount / entered) : 0));
-    $('#kpiCoverage').text(formatNumber(coverage) + '%');
-    $('#kpiCoverageBar').css('width', Math.max(0, Math.min(coverage, 100)) + '%');
-    $('#dtmKpiCoverage').removeClass('is-good is-low');
-    if (total && coverage >= 80) {
-        $('#dtmKpiCoverage').addClass('is-good');
-    } else if (total && coverage < 40) {
-        $('#dtmKpiCoverage').addClass('is-low');
-    }
-    $('#dtmPeriodLabel').text((partyName || 'Distributor') + (monthName ? '  ·  ' + monthName : ''));
     refreshAmountPrefixes();
 }
 
@@ -761,7 +994,7 @@ function mergeSavedTargetData(dealers, savedPayload, snapshot) {
     targetRows.forEach(function (saved) {
         const dealerCode = pick(saved, ['DealerMaster_Code', 'DealerCode'], '');
         let idx = dealerIndexByCode(result, dealerCode);
-        if (idx < 0 && pick(saved, ['DealerName'], '')) {
+        if (idx < 0 && pick(saved, ['Dealer Name', 'DealerName'], '')) {
             idx = dealerIndexByCode(result, pick(saved, ['Code'], ''));
         }
         if (idx >= 0) {
@@ -778,7 +1011,7 @@ function mergeSavedTargetData(dealers, savedPayload, snapshot) {
 
 function applyDealerList(dealers, party, silent) {
     G_DealerRawList = dealers || [];
-    G_HeaderCode = toInt(pick(G_DealerRawList[0], ['DealerTargetMaster_Code'], 0)) || G_HeaderCode;
+    G_HeaderCode = resolveDealerTargetMasterCode(G_DealerRawList, G_HeaderCode);
 
     const rows = G_DealerRawList.map(function (dealer) {
         return mapDealerRow(dealer, party);
@@ -821,7 +1054,7 @@ function fillAmountOnDealer(dealerCode, amount, transactionCode) {
     const row = findGridRow(code);
     if (row) {
         row.TargetedAmountValue = hasTargetAmount(amount) ? toNumber(amount) : null;
-        row.TargetedAmount = buildAmountInput(row.Code, hasTargetAmount(amount) ? amount : '');
+        row['Targeted Amount'] = buildAmountInput(row.Code, hasTargetAmount(amount) ? amount : '');
     }
 
     const raw = (G_DealerRawList || []).find(function (item) {
@@ -889,26 +1122,27 @@ function buildDealerTargetSavePayload() {
     const targetedDate = getSelectedTargetedDate();
     const finYear = getSelectedFinYear();
     const targetFor = getSelectedTargetFor();
-    const headerCode = G_HeaderCode || toInt(pick(G_DealerRawList[0], ['DealerTargetMaster_Code'], 0));
+    const headerCode = resolveDealerTargetMasterCode(G_DealerRawList, G_HeaderCode);
     const today = todayDate();
 
     const transactions = [];
     G_DealerTargetList.forEach(function (row, index) {
-        const amount = row.TargetedAmountValue;
-        if (!hasTargetAmount(amount)) return;
-
         const raw = G_DealerRawList.find(function (item) {
             return String(pick(item, ['Code', 'DealerMaster_Code'], 0)) === String(row.Code);
         }) || {};
 
+        if (!shouldIncludeDealerTargetSave(row, raw)) return;
+
+        const lineHeaderCode = resolveDealerTargetMasterCode([raw], headerCode);
+
         transactions.push({
-            Code: toInt(pick(raw, ['DealerTargetTransaction_Code', 'TransactionCode'], 0)),
-            DealerTargetMaster_Code: headerCode,
+            Code: dealerTransactionCode(raw),
+            DealerTargetMaster_Code: lineHeaderCode,
             DealerMaster_Code: toInt(row.Code),
             ItemMaster_Code: toInt(pick(raw, ['ItemMaster_Code'], 0)),
             GroupMaster_Code: toInt(pick(raw, ['GroupMaster_Code'], 0)),
             TargetedDate: targetedDate,
-            TargetedAmount: toNumber(amount),
+            TargetedAmount: targetedAmountForSave(row),
             SortOrder: index + 1
         });
     });
@@ -945,12 +1179,13 @@ function mapDealerRow(dealer, party) {
     return {
         Code: code,
         AccountMaster_Code: pick(dealer, ['AccountMaster_Code'], party.Code),
-        DealerName: pick(dealer, ['DealerName'], ''),
-        CityName: pick(dealer, ['CityName', 'Location', 'City'], ''),
-        StateName: pick(dealer, ['StateName', 'State'], ''),
+        'Dealer Name': pick(dealer, ['Dealer Name', 'DealerName'], ''),
+        City: pick(dealer, ['City', 'CityName', 'Location'], ''),
+        State: pick(dealer, ['State', 'StateName'], ''),
         'Sales Person': pick(dealer, ['Sales Person', 'SalesPerson', 'PersonName', 'MarketingManName'], ''),
-        Status: buildStatusBadge(status),
-        TargetedAmount: buildAmountInput(code, amountValue),
+        Status: status,
+        StatusBadge: buildStatusBadge(status),
+        'Targeted Amount': buildAmountInput(code, amountValue),
         Address: pick(dealer, ['Address'], ''),
         MobileNo: pick(dealer, ['MobileNo', 'Mobile'], ''),
         EmailId: pick(dealer, ['EmailId', 'Email'], ''),
@@ -960,14 +1195,15 @@ function mapDealerRow(dealer, party) {
         CreatedDate: pickAny(dealer, ['CreatedDate'], ''),
         UpdatedBy: pickAny(dealer, ['UpdatedBy'], ''),
         UpdatedDate: pickAny(dealer, ['UpdatedDate'], ''),
-        TargetedAmountValue: amountValue === '' ? null : toNumber(amountValue),
+        TargetedAmountValue: hasTargetAmount(amountRaw) ? toNumber(amountRaw) : null,
         TargetedDateValue: getSelectedTargetedDate(),
+        _hadSavedTarget: rowHadSavedTarget(dealer, amountRaw),
         ColorRow: inactive ? '<span class="LightRed"></span>' : '',
         _inactive: inactive,
         _search: [
-            pick(dealer, ['DealerName'], ''),
-            pick(dealer, ['CityName', 'Location', 'City'], ''),
-            pick(dealer, ['StateName', 'State'], ''),
+            pick(dealer, ['Dealer Name', 'DealerName'], ''),
+            pick(dealer, ['City', 'CityName', 'Location'], ''),
+            pick(dealer, ['State', 'StateName'], ''),
             pick(dealer, ['Sales Person', 'SalesPerson', 'PersonName', 'MarketingManName'], ''),
             pick(dealer, ['MobileNo', 'Mobile'], ''),
             pick(dealer, ['Address'], '')
@@ -1009,8 +1245,8 @@ function BindDealerTargetGrid(list, silent) {
         $('#dtmRecordCount').text(list.length + (list.length === 1 ? ' dealer' : ' dealers'));
     }
 
-    const StringFilterColumn = ['DealerName', 'CityName', 'StateName', 'Sales Person'];
-    const NumericFilterColumn = [];
+    const StringFilterColumn = ['Dealer Name', 'City', 'State', 'Sales Person'];
+    const NumericFilterColumn = ['Targeted Amount'];
     const DateFilterColumn = [];
     const Button = false;
     const showButtons = [];
@@ -1019,17 +1255,24 @@ function BindDealerTargetGrid(list, silent) {
         'Code', 'AccountMaster_Code', 'CityMaster_Code', 'StateMaster_Code',
         'CreatedBy', 'CreatedDate', 'UpdatedBy', 'UpdatedDate',
         'TargetedAmountValue', 'TargetedDateValue', 'ColorRow',
-        'Address', 'MobileNo', 'EmailId', '_search', '_inactive'
+        'Address', 'MobileNo', 'EmailId', '_search', '_inactive', 'StatusBadge', '_hadSavedTarget'
     ];
     const ColumnAlignment = {
-        TargetedAmount: 'right',
-        Status: 'center'
+        'Targeted Amount': 'right',
+        Status: 'center',
+        StatusBadge: 'center'
     };
+
+    ensureDealerTargetGridFilterPatch();
+
+    const gridRows = visible.map(function (row) {
+        return Object.assign({}, row, { Status: row.StatusBadge || row.Status });
+    });
 
     BizsolCustomFilterGrid.CreateDataTable(
         'DealerTargetList-header',
         'DealerTargetList-body',
-        visible,
+        gridRows,
         Button,
         showButtons,
         StringFilterColumn,
@@ -1095,8 +1338,7 @@ function GetDealerTargetList(preferredHeaderCode, silent) {
         });
     }).then(function (result) {
         const dealers = (result && result.dealers) || [];
-        const headerCode = toInt(preferredHeaderCode) ||
-            toInt(pick(dealers[0], ['DealerTargetMaster_Code'], 0));
+        const headerCode = resolveDealerTargetMasterCode(dealers, preferredHeaderCode || G_HeaderCode);
         G_HeaderCode = headerCode;
         setShowLoading(false);
         return loadSavedTargetData(headerCode, dealers, party, {}, silent);
@@ -1120,18 +1362,36 @@ function findGridRow(code) {
 }
 
 function OnTargetedAmountChange(el) {
-    const value = sanitizeAmountInput(el.value);
-    if (value !== el.value) el.value = value;
+    const parsed = parseTargetAmountInput(el.value);
+    if (el.value !== parsed.value) el.value = parsed.value;
 
     const code = $(el).attr('data-code');
     const row = findGridRow(code);
     if (!row) return;
 
-    row.TargetedAmountValue = value === '' ? null : toNumber(value);
-    row.TargetedAmount = buildAmountInput(code, value);
-    $(el).closest('.dtm-amount-wrap').toggleClass('is-filled', value !== '');
+    row.TargetedAmountValue = parsed.amount;
+    row['Targeted Amount'] = buildAmountInput(code, parsed.value);
+    const $wrap = $(el).closest('.dtm-amount-wrap');
+    $wrap.toggleClass('is-filled', parsed.value !== '');
+    $wrap.removeClass('dtm-amount-invalid');
+
+    const raw = (G_DealerRawList || []).find(function (item) {
+        return String(pick(item, ['Code', 'DealerMaster_Code'], '')) === String(code);
+    });
+    if (raw) {
+        raw.TargetedAmount = parsed.amount;
+        if (parsed.amount === null && (row._hadSavedTarget || dealerTransactionCode(raw) > 0)) {
+            row._hadSavedTarget = true;
+        }
+    }
+
     persistCurrentAmounts();
     UpdateSummary();
+
+    if (G_RowFilter === 'entered' || G_RowFilter === 'pending') {
+        BindDealerTargetGrid(G_DealerTargetList, true);
+        syncAmountInputs();
+    }
 }
 
 function focusNextAmount(current) {
@@ -1183,6 +1443,10 @@ function SaveDealerTarget() {
         return;
     }
 
+    if (!validateTargetAmountsBeforeSave()) {
+        return;
+    }
+
     const payload = buildDealerTargetSavePayload();
     if (!payload.DealerTargetTransaction || !payload.DealerTargetTransaction.length) {
         toastr.warning('Please enter Targeted Amount.');
@@ -1215,11 +1479,13 @@ function selectOnFocus(el) {
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
     $('#ERPHeading').text($('#ERPHeading').text() || 'Dealer Target Master');
-    initSearchableSelect($('#ddlMarketingMan'));
-    initSearchableSelect($('#txtPartyName'));
-    initSearchableSelect($('#txtMonthName'));
-    bindMonthDropdown();
-    GetNestedMarketingManList();
+    setSelectLoading($('#ddlMarketingMan'), 'Loading sales persons...');
+    setSelectLoading($('#txtPartyName'), 'Select sales person first');
+    setSelectLoading($('#txtMonthName'), 'Loading months...');
+    Promise.all([
+        bindMonthDropdown(),
+        loadMarketingManDropdown()
+    ]).catch(function () { });
     $('#btnSave').hide();
     ShowEmptyState();
     refreshAmountPrefixes();
