@@ -2,12 +2,10 @@ import { UrlService } from '../URL.js';
 import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const VendorMasterService = {
-
     GetSolarVendorMasterList: function GetSolarVendorMasterList(IsClientOrVendor) {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetSolarVendorMasterList?IsClientOrVendor=${IsClientOrVendor}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
-
     GetSolarVendorMasterByCode: function GetSolarVendorMasterByCode(code) {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetSolarVendorMasterByCode?Code=${code}`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
@@ -67,6 +65,14 @@ const VendorMasterService = {
     },
     GetFixedParameterDetails: function GetFixedParameterDetails() {
         var URL = UrlService.API_ENDPOINT_FixedParameter + `/GetFixedParameterDetails`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
+    GetCompanyList: function GetCompanyList() {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetCompanyList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
+    HideActionbuttonForWebERP: function HideActionbuttonForWebERP() {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/HideActionbuttonForWebERP`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
     GetIndustryType: function GetIndustryType() {

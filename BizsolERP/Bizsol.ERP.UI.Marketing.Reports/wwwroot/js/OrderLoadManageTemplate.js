@@ -226,7 +226,7 @@ function mapRow(row) {
         ShowTotal: flag(prop(row, ['ShowTotal', 'showTotal']), 'N'),
         ApplyFilter: flag(prop(row, ['ApplyFilter', 'applyFilter']), 'N'),
         SortOrder: parseFloat(prop(row, ['SortOrder', 'sortOrder'])) || 0,
-        DataType: String(prop(row, ['DataType', 'dataType']) || 'S'),
+        DataType: normalizeTemplateRowDataType(prop(row, ['DataType', 'dataType'])),
         Selected: flag(prop(row, ['Selected', 'selected']), 'N'),
         DecimalPoint: parseInt(prop(row, ['DecimalPoint', 'decimalPoint']), 10) || 0,
         EditAllow: flag(prop(row, ['EditAllow', 'editAllow']), 'N'),
@@ -445,12 +445,43 @@ function isMasterTemplateEditMode() {
     return G_MT_Mode === 'EDIT' && isMasterManageTemplateSelected();
 }
 
+function normalizeTemplateRowDataType(value) {
+    var t = String(value == null ? '' : value).trim().toUpperCase();
+    if (t === 'N' || t === 'NUMERIC' || t === 'NUMBER' || t === 'D' || t === 'DECIMAL' || t === 'M') {
+        return 'N';
+    }
+    if (t === 'S' || t === 'STRING' || t === 'V' || t === 'VARCHAR' || t === 'C') {
+        return 'S';
+    }
+    return t ? t : 'S';
+}
+
 function isNumericDataType(dataType) {
-    return String(dataType || 'S').trim().toUpperCase() === 'N';
+    return normalizeTemplateRowDataType(dataType) === 'N';
+}
+
+/** Explicit varchar labels from template — never treat as numeric even if name looks like a number. */
+function isKnownStringTemplateField(fieldName) {
+    var name = String(fieldName || '').replace(/^\[|\]$/g, '').trim().toLowerCase();
+    if (!name) return true;
+    return /^(particular|rmgrade|materialtype|rateunit|sizeparameters|partyname|itemname|orderno|marketingman|godown|process|remarks|description|desp|status|category|unit|uom|type|name|code|date|orderdate|client|customer|buyer|supplier|address|city|state|country|email|phone|mobile|gst|pan|hsn|specification|spec|color|colour|grade|brand|model|serial|batch|lot|shift|shiftname|shiftcode)$/i.test(name)
+        || /parameters$/i.test(name)
+        || /^fieldfor/i.test(name);
+}
+
+function inferNumericTemplateField(row) {
+    if (isNumericDataType(row.DataType)) return true;
+    if (normalizeTemplateRowDataType(row.DataType) === 'S') {
+        if (isKnownStringTemplateField(row.FieldName)) return false;
+        var name = String(row.FieldName || '').replace(/^\[|\]$/g, '').trim().toLowerCase();
+        if (!name) return false;
+        return /(?:^|[a-z0-9])(qty|quantity|rate|cost|amount|price|value|charge|weight|spread|bal|book|cancel|dispatch|disp|net|pending|total|mt|mtrs|pc|pcs|kg|mm|mr|percent|pct|rs|inr)(?:$|[a-z0-9])/i.test(name);
+    }
+    return false;
 }
 
 function canEnableNumericFieldOptions(row) {
-    return isNumericDataType(row.DataType);
+    return inferNumericTemplateField(row);
 }
 
 function clampDecimalPoint(value) {
@@ -530,6 +561,9 @@ function applyGridFieldStates() {
         row.DecimalPoint = clampDecimalPoint(row.DecimalPoint);
         $hosts.find('.ol-mt-decimal')
             .prop('disabled', !numericEnabled)
+            .prop('readonly', !numericEnabled)
+            .toggleClass('ol-mt-decimal--locked', !numericEnabled)
+            .toggleClass('ol-mt-decimal--editable', numericEnabled)
             .val(row.DecimalPoint);
         $hosts.find('.ol-mt-display').prop('readonly', false);
         $hosts.find('.ol-mt-filter').prop('disabled', false);

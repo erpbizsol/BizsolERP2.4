@@ -1,0 +1,109 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<link href="~/_content/Bizsol.WebERP.UI.Marketing.Reports/css/TODReport.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Reports/js/TODReport.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<div id="TODReportPage" class="todr-page">
+    <div class="todr-header">
+        <div class="todr-header-title">
+            <h3><i class="fas fa-percent"></i> TOD Report</h3>
+            <span>Turnover discount report by party, scheme, item and size parameter</span>
+        </div>
+        <div class="todr-actions">
+            <button type="button" id="btnShow" class="todr-btn todr-btn-show">
+                <i class="fas fa-play"></i>
+                <span id="btnShowText">Show</span>
+            </button>
+            <button type="button" id="btnDownload" class="todr-btn todr-btn-download" disabled>
+                <i class="fas fa-file-excel"></i> Download
+            </button>
+            <button type="button" id="btnReset" class="todr-btn todr-btn-reset">
+                <i class="fas fa-rotate-left"></i> Reset
+            </button>
+        </div>
+    </div>
+
+    <div class="todr-filter-card">
+        <div class="row g-2 todr-filter-grid">
+            <div class="col-12 col-md-3">
+                <div class="todr-field">
+                    <label for="ddlScheme">Scheme</label>
+                    <select id="ddlScheme" class="form-control form-control-sm box_border" multiple="multiple"></select>
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <div class="todr-field">
+                    <label for="ddlCreditLimitAsPer">Credit Limit As Per</label>
+                    <select id="ddlCreditLimitAsPer" class="form-control form-control-sm box_border">
+                        <option value="">All</option>
+                        <option value="M">Master</option>
+                        <option value="I">Invoice</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <div class="todr-field">
+                    <label for="ddlAccountType">Account Type</label>
+                    <select id="ddlAccountType" class="form-control form-control-sm box_border">
+                        <option value="">All</option>
+                        <option value="A">Account</option>
+                        <option value="I">Indentor</option>
+                        <option value="C">Consignee</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <div class="todr-field">
+                    <label for="ddlParty">Party</label>
+                    <select id="ddlParty" class="form-control form-control-sm box_border" multiple="multiple"></select>
+                </div>
+            </div>
+            @*
+            <div class="col-12 col-md-3">
+                <div class="todr-field">
+                    <label for="ddlItem">Item</label>
+                    <select id="ddlItem" class="form-control form-control-sm box_border" multiple="multiple"></select>
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <div class="todr-field">
+                    <label for="ddlSizeParameter">Size Parameter</label>
+                    <select id="ddlSizeParameter" class="form-control form-control-sm box_border" multiple="multiple"></select>
+                </div>
+            </div>
+            *@
+        </div>
+    </div>
+
+    <div id="todrEmptyState" class="todr-empty">
+        <div class="todr-empty-icon"><i class="fas fa-file-invoice"></i></div>
+        <h4>No report loaded</h4>
+        <p>Select filters if needed, then click <strong>Show</strong> to load the TOD Report.</p>
+    </div>
+
+    <div id="tblTODReport" class="todr-result">
+        <div class="todr-grid-toolbar">
+            <div class="todr-grid-title">
+                <i class="fas fa-table-list"></i>
+                <span>TOD Report Details</span>
+            </div>
+            <div class="todr-grid-meta">
+                <input type="text" id="txtTODReportSearch" class="todr-search" placeholder="Search..." autocomplete="off" />
+                <span class="todr-record-badge" id="todrRecordCount">0 records</span>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <div class="table-wrapper" id="todrTableWrap">
+                <table id="TODReport" class="fixed-width-table table">
+                    <thead id="TODReport-header"></thead>
+                    <tbody id="TODReport-body"></tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-TODReport"></div>
+        </div>
+    </div>
+</div>

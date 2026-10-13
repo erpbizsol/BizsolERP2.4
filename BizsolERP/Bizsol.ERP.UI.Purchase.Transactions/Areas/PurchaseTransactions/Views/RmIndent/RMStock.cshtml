@@ -162,6 +162,33 @@
         vertical-align: middle;
     }
 
+    /* RM Report Remark: Stock green, Dispatch/Slit grey, Job Work yellow */
+    #RMReport tbody td .rms-remark-pill {
+        display: inline-block;
+        min-width: 72px;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.4;
+        text-align: center;
+    }
+
+    #RMReport tbody td .rms-remark-stock {
+        color: #166534 !important;
+        background: #dcfce7;
+    }
+
+    #RMReport tbody td .rms-remark-grey {
+        color: #374151 !important;
+        background: #e5e7eb;
+    }
+
+    #RMReport tbody td .rms-remark-jobwork {
+        color: #713f12 !important;
+        background: #fde047;
+    }
+
     #RMStockCurrent tfoot th,
     #RMStockCurrent tfoot td,
     #UnApproved_Planned tfoot th,

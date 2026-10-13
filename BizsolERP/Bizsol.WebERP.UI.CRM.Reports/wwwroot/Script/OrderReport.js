@@ -40,6 +40,7 @@ $(document).ready(function () {
 
 });
 
+
 function GetCRMFixedParameterConfig() {
 
     CRMReportsServices.GetCRMOrderEntryConfig().then(function (response) {

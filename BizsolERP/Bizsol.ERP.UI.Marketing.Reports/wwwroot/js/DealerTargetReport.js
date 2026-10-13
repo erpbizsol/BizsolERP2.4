@@ -167,7 +167,6 @@ function UpdateSummary(rows) {
         if (party) parties[party] = true;
     });
 
-    const achievement = monthlyTarget > 0 ? (totalSale / monthlyTarget) * 100 : 0;
     const partyCount = Object.keys(parties).length;
 
     $('#kpiDealers').text(formatNumber(dealerCount));
@@ -176,13 +175,6 @@ function UpdateSummary(rows) {
     $('#kpiPerDayTarget').text('Per day ' + formatNumber(perDayTarget));
     $('#kpiTotalSale').text(formatNumber(totalSale));
     $('#kpiPerDaySale').text('Per day ' + formatNumber(perDaySale));
-    $('#kpiAchievement').text(formatNumber(achievement) + '%');
-    $('#dtrKpiAchv').removeClass('is-good is-low');
-    if (achievement >= 80) {
-        $('#dtrKpiAchv').addClass('is-good');
-    } else if (achievement < 40) {
-        $('#dtrKpiAchv').addClass('is-low');
-    }
     $('#dtrRecordCount').text(dealerCount + (dealerCount === 1 ? ' record' : ' records'));
 }
 

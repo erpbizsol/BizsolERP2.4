@@ -86,15 +86,6 @@
                 <div class="dtm-kpi-sub" id="kpiAvgAmount">Avg 0</div>
             </div>
         </div>
-        <div class="dtm-kpi dtm-kpi-coverage" id="dtmKpiCoverage">
-            <div class="dtm-kpi-icon"><i class="fas fa-chart-pie"></i></div>
-            <div class="dtm-kpi-body">
-                <div class="dtm-kpi-label">Coverage</div>
-                <div class="dtm-kpi-value" id="kpiCoverage">0%</div>
-                <div class="dtm-kpi-bar"><span id="kpiCoverageBar"></span></div>
-                <div class="dtm-kpi-sub">Dealers with a target amount</div>
-            </div>
-        </div>
     </div>
 
     <div id="dtmEmptyState" class="dtm-empty">
@@ -110,8 +101,13 @@
                 <span>Dealer Target Details</span>
             </div>
             <div class="dtm-grid-meta">
+                <div class="dtm-chips" id="dtmFilterChips">
+                    <button type="button" class="dtm-chip is-active" data-filter="all">All</button>
+                    <button type="button" class="dtm-chip" data-filter="entered">With Target</button>
+                    <button type="button" class="dtm-chip" data-filter="pending">Pending</button>
+                    <button type="button" class="dtm-chip" data-filter="inactive">Inactive</button>
+                </div>
                 <input type="text" id="txtDealerTargetSearch" class="dtm-search" placeholder="Search dealer, city..." autocomplete="off" />
-                <span class="dtm-period" id="dtmPeriodLabel">Select distributor and month</span>
                 <span class="dtm-record-badge" id="dtmRecordCount">0 dealers</span>
             </div>
         </div>

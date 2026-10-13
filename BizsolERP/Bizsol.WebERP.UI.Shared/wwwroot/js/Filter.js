@@ -1305,6 +1305,9 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
     if (tableId === "OrderList" && typeof window.applyOrderListTransferredRowColors === "function") {
         window.applyOrderListTransferredRowColors();
     }
+    if (tableId === "RMReport" && typeof window.applyRMReportRemarkColors === "function") {
+        window.applyRMReportRemarkColors();
+    }
 }
 window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
     const totalColumns = window[`totalColumns_${bodyId}`];
