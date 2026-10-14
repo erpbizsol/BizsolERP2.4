@@ -73,7 +73,7 @@ function createAgeingParameterModal(id) {
                                    onchange="AP_onNoOfColumnsChange();"
                                    readonly />
                         </div>
-                        <div class="d-flex flex-column flex-shrink-0">
+                        <div class="d-flex flex-column flex-shrink-0 ap-btn-row">
                             <label class="ap-lbl mb-1 ap-lbl-spacer" aria-hidden="true">&nbsp;</label>
                             <div id="AP_btnGroup" class="d-flex gap-1 align-items-center">
                             <button id="AP_btnUse"
@@ -154,29 +154,11 @@ function _AP_styles() {
     #AgeingParameterModal .ap-inp[readonly] { cursor:default; color:#555; }
     #AgeingParameterModal .ap-days-last     { background:#c5d8e8 !important; cursor:not-allowed; }
     #AgeingParameterModal .ap-lbl-spacer    { visibility:hidden; }
-    #AgeingParameterModal #AP_rowSavedFormat .form-control-sm {
-        height: calc(1.5em + 0.5rem + 2px);
-        min-height: calc(1.5em + 0.5rem + 2px);
-        box-sizing: border-box;
+    #AgeingParameterModal #AP_rowSavedFormat .ap-btn-row {
+        flex-basis: 100%;
     }
-    #AgeingParameterModal #AP_rowSavedFormat .ap-btn {
-        height: calc(1.5em + 0.5rem + 2px);
-        min-height: calc(1.5em + 0.5rem + 2px);
-        max-height: calc(1.5em + 0.5rem + 2px);
-        line-height: 1;
-        font-size: 12px;
-        font-weight: 700;
-        padding: 0 10px;
-        min-width: 44px;
-        box-sizing: border-box;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-    @media (min-width: 992px) {
-        #AgeingParameterModal #AP_btnGroup {
-            margin-top: -60px !important;
-        }
+    #AgeingParameterModal #AP_rowSavedFormat .ap-btn-row .ap-lbl-spacer {
+        display: none;
     }
     `;
 }
