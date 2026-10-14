@@ -488,17 +488,6 @@ function getAgeingTableDateMode() {
 }
 
 /**
- * Selected group type description for Ageing Report side label (e.g. DEBTORS).
- * @returns {string}
- */
-function getSelectedGroupTypeLabel() {
-    const code = debtorCreditorFilterForApi();
-    const item = groupTypeMasterList.find((x) => String(x.Code) === String(code));
-    const desp = item && item.GroupTypeDesp ? String(item.GroupTypeDesp).trim() : '';
-    return (desp || 'DEBTORS').toUpperCase();
-}
-
-/**
  * Party display name from a bill-wise row.
  * @param {object} row
  * @returns {string}
@@ -512,16 +501,12 @@ function getRowPartyName(row) {
 }
 
 /**
- * Credit limit in lacs for Ageing Report column.
- * If value looks like absolute rupees (>= 1000), convert to lacs.
+ * Credit limit from report row (API / grid column "Credit Limit").
  * @param {object} row
  * @returns {number}
  */
-function getRowCreditLimitInLacs(row) {
-    const raw = rowNumberFromAliases(row, BWO_CREDIT_LIMIT_ALIASES);
-    if (!raw) return 0;
-    if (Math.abs(raw) >= 1000) return raw / 100000;
-    return raw;
+function getRowCreditLimit(row) {
+    return rowNumberFromAliases(row, BWO_CREDIT_LIMIT_ALIASES);
 }
 
 /**
@@ -551,7 +536,7 @@ function buildPartyAgeingRows(rows, dateMode) {
                 partyName: party,
                 gstin: gstin,
                 creditDays: getRowCreditDays(row),
-                creditLimitLacs: getRowCreditLimitInLacs(row),
+                creditLimit: getRowCreditLimit(row),
                 buckets: buckets,
                 total: 0,
             };
@@ -560,8 +545,8 @@ function buildPartyAgeingRows(rows, dateMode) {
             if (!agg.gstin && gstin) agg.gstin = gstin;
             const cd = getRowCreditDays(row);
             if (cd > agg.creditDays) agg.creditDays = cd;
-            const cl = getRowCreditLimitInLacs(row);
-            if (cl > agg.creditLimitLacs) agg.creditLimitLacs = cl;
+            const cl = getRowCreditLimit(row);
+            if (cl > agg.creditLimit) agg.creditLimit = cl;
         }
 
         const net = rowNetOutstanding(row);
@@ -611,7 +596,6 @@ function renderAgeingReportGrid(billRows) {
 
     const partyRows = buildPartyAgeingRows(billRows || []);
     const bucketOrder = getDelayBucketOrder();
-    const groupLabel = getSelectedGroupTypeLabel();
     const tbl = document.getElementById('tblReport');
     const thead = document.getElementById('table-header');
     const tbody = document.getElementById('table-body');
@@ -631,11 +615,9 @@ function renderAgeingReportGrid(billRows) {
     }
 
     let headHtml = '<tr>';
-    headHtml += '<th></th>';
     headHtml += '<th>Company Name</th>';
-    headHtml += '<th>GSTN No</th>';
     headHtml += '<th>Credit Days</th>';
-    headHtml += '<th>Cr. Limit (In Lacs)</th>';
+    headHtml += '<th>Cr. Limit</th>';
     for (let b = 0; b < bucketOrder.length; b++) {
         headHtml += '<th>' + escapeHtml(bucketOrder[b]) + '</th>';
     }
@@ -652,20 +634,11 @@ function renderAgeingReportGrid(billRows) {
     for (let i = 0; i < partyRows.length; i++) {
         const p = partyRows[i];
         bodyHtml += '<tr>';
-        if (i === 0) {
-            bodyHtml +=
-                '<td class="bwo-ageing-group" rowspan="' +
-                partyRows.length +
-                '">' +
-                escapeHtml(groupLabel) +
-                '</td>';
-        }
         bodyHtml += '<td class="bwo-ageing-party">' + escapeHtml(p.partyName) + '</td>';
-        bodyHtml += '<td class="bwo-ageing-center">' + escapeHtml(p.gstin || '') + '</td>';
         bodyHtml += '<td class="bwo-ageing-center">' + escapeHtml(String(p.creditDays || 0)) + '</td>';
         bodyHtml +=
             '<td class="bwo-ageing-num">' +
-            formatAgeingAmount(p.creditLimitLacs, false) +
+            formatAgeingAmount(p.creditLimit, false) +
             '</td>';
         for (let b = 0; b < bucketOrder.length; b++) {
             const label = bucketOrder[b];
@@ -686,8 +659,7 @@ function renderAgeingReportGrid(billRows) {
     if (tbody) tbody.innerHTML = bodyHtml;
 
     let footHtml = '<tr>';
-    footHtml += '<td></td>';
-    footHtml += '<td colspan="3" class="bwo-ageing-party">Total</td>';
+    footHtml += '<td colspan="2" class="bwo-ageing-party">Total</td>';
     footHtml += '<td></td>';
     for (let b = 0; b < bucketOrder.length; b++) {
         footHtml +=
@@ -2763,7 +2735,7 @@ function renderReportGrid(rows, monthWiseData) {
     ];
     const DateFilterColumn = ['Entry Date', 'Bill Date'];
     const StringdoubleFilterColumn = [];
-    // Dashboard: hide GSTN No (Ageing Report shows it via renderAgeingReportGrid)
+    // Dashboard + Ageing Report: hide GSTN No on bill grid; ageing matrix has no GSTN column
     const HiddenColumns = ['Code'].concat(gstnHiddenColumnNames(firstRow));
     const ColumnAlignment = {
         'Amount': 'right',
@@ -2773,6 +2745,7 @@ function renderReportGrid(rows, monthWiseData) {
         'Amount Adjusted': 'right',
         'Balance': 'right',
         'Outstanding': 'right',
+        'Credit Limit': 'right',
     };
     const Button = false;
     const showButtons = [];
@@ -2796,7 +2769,8 @@ function renderReportGrid(rows, monthWiseData) {
         HiddenColumns,
         ColumnAlignment,
         true,
-        Total
+        Total,
+        2
     );
     $('#tblReport th').css('font-weight', 'bold');
     setDownloadButtonVisible(true);
