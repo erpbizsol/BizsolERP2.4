@@ -10,8 +10,8 @@ const RollingPlanSheetService = {
             }
         );
     },
-    GetDateAndMillWiseReportList: function GetDateAndMillWiseReportList(ToDate) {
-        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + `/GetDateAndMillWiseReportList?Date= ${ToDate}`;
+    GetDateAndMillWiseReportList: function GetDateAndMillWiseReportList(FromDate, ToDate) {
+        var URL = UrlService.API_DOCUMENT_RollingPlanSheet + "/GetDateAndMillWiseReportList?FromDate=" + FromDate + "&ToDate=" + ToDate;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
