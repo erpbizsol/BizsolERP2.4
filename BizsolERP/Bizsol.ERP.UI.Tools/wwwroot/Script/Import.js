@@ -1144,6 +1144,52 @@ function onDownloadTemplate() {
         .finally(HideLoader);
 }
 
+/** 11+ digit whole numbers only (all columns); dates and smaller numbers unchanged. */
+function normalizeLargeNumber(cellValue) {
+    if (cellValue == null || cellValue === '') return '';
+    if (cellValue instanceof Date) return cellValue;
+    if (typeof cellValue === 'number' && isFinite(cellValue)) {
+        var rounded = Math.round(cellValue);
+        if (Math.abs(cellValue - rounded) < 1e-9) {
+            if (String(Math.abs(rounded)).length >= 11) return String(rounded);
+        }
+        return cellValue;
+    }
+    var text = trim(String(cellValue));
+    if (!text) return '';
+    if (/^[+-]?\d+(\.\d+)?[eE][+-]?\d+$/.test(text)) {
+        var parsed = parseFloat(text);
+        if (isFinite(parsed) && Math.abs(parsed - Math.round(parsed)) < 1e-9) {
+            var whole = Math.round(parsed);
+            if (String(Math.abs(whole)).length >= 11) return String(whole);
+        }
+    }
+    return text;
+}
+
+function readImportSheetCell(cell) {
+    if (!cell || cell.v == null || cell.v === '') return '';
+    if (cell.t === 'd' || cell.v instanceof Date) return trim(XLSX.utils.format_cell(cell));
+    var normalized = normalizeLargeNumber(cell.v);
+    if (normalized instanceof Date) return trim(XLSX.utils.format_cell(cell));
+    if (typeof normalized === 'number' && isFinite(normalized)) return trim(String(normalized));
+    return trim(String(normalized));
+}
+
+function sheetToImportMatrix(sheet) {
+    if (!sheet || !sheet['!ref']) return [];
+    var range = XLSX.utils.decode_range(sheet['!ref']);
+    var rows = [];
+    for (var r = range.s.r; r <= range.e.r; r++) {
+        var row = [];
+        for (var c = range.s.c; c <= range.e.c; c++) {
+            row.push(readImportSheetCell(sheet[XLSX.utils.encode_cell({ r: r, c: c })]));
+        }
+        rows.push(row);
+    }
+    return rows;
+}
+
 function readExcel(file) {
     return new Promise(function (resolve, reject) {
         if (!file) return reject(new Error('Import file is required.'));
@@ -1151,11 +1197,9 @@ function readExcel(file) {
         var reader = new FileReader();
         reader.onload = function (e) {
             try {
-                var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
                 var sheet = wb.Sheets[wb.SheetNames.indexOf('Import') >= 0 ? 'Import' : wb.SheetNames[0]];
-                resolve(XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false }).map(function (row) {
-                    return (row || []).map(function (cell) { return trim(cell); });
-                }));
+                resolve(sheetToImportMatrix(sheet));
             } catch (err) {
                 reject(err);
             }
