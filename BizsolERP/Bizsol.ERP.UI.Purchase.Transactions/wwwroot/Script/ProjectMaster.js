@@ -5,7 +5,7 @@ import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServ
 
 let G_ProjectList         = [];
 let G_SubProjectsCache    = []; 
-let G_ActiveStatusFilter  = 'all'; 
+let G_ActiveStatusFilter  = 'all'; // 'all' | 'closed' | 'pending' 
 let G_CompanyInfoList = [];
 
 function refreshSubProjectsCache() {
@@ -242,8 +242,38 @@ function getCompanyInfoDisplayForRow(row) {
     return '—';
 }
 
+function ensureClosedUi() {
+    if (!$('#pmClosedRowStyle').length) {
+        $('head').append(
+            '<style id="pmClosedRowStyle">' +
+            '.pm-table tbody tr.pm-row-closed,.pm-table tbody tr.pm-row-closed:nth-child(even),.pm-table tbody tr.pm-row-closed:nth-child(odd){background:#e2e8f0 !important;}' +
+            '.pm-table tbody tr.pm-row-closed:hover{background:#cbd5e1 !important;}' +
+            '.pm-table tbody tr.pm-row-closed td{color:#334155 !important;}' +
+            '.pm-close-chk{width:16px;height:16px;cursor:pointer;accent-color:#475569;vertical-align:middle;}' +
+            '</style>'
+        );
+    }
+    const $running = $('#statChipRunning');
+    if ($running.length && !$('#statChipClosed').length) {
+        $running.attr({ id: 'statChipClosed', 'data-filter': 'closed' });
+        $running.find('.pm-stat-val').first().attr('id', 'statClosed');
+        $running.find('.pm-stat-lbl').first().text('Closed');
+        $running.find('.pm-stat-icon i').attr('class', 'fas fa-lock');
+    }
+    const $ths = $('#tblProject thead th');
+    const hasCloseCol = $ths.filter(function () { return $(this).text().trim().toLowerCase() === 'close'; }).length > 0;
+    if (!hasCloseCol && $ths.length) {
+        $ths.last().before('<th class="center" style="width:80px;">Close</th>');
+        const $foot = $('#tblProject tfoot tr');
+        if ($foot.children('td').length === 5) {
+            $foot.append('<td></td>');
+        }
+    }
+}
+
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+    ensureClosedUi();
 
     refreshSubProjectsCache();
     loadCompanyInfoDropdown();
@@ -737,13 +767,30 @@ function loadProjects() {
         });
 }
 
+function isProjectClosed(item) {
+    if (!item) return false;
+    const v = item.Closed ?? item.IsClosed ?? item.Close ?? item.ClosedFlag
+        ?? item.closed ?? item.isClosed ?? item.close;
+    const s = String(v ?? '').trim().toUpperCase();
+    return s === 'Y' || s === '1' || s === 'TRUE' || s === 'CLOSED';
+}
+
+function setProjectClosedFlag(item, closed) {
+    if (!item) return;
+    const flag = closed ? 'Y' : 'N';
+    item.Closed = flag;
+    if (item.IsClosed !== undefined) item.IsClosed = flag;
+    if (item.closed !== undefined) item.closed = flag;
+    if (item.isClosed !== undefined) item.isClosed = flag;
+}
+
 function updateStats(list) {
     const total = list.length;
-    const runningTotal = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'Y'; }).length;
-    const pendingTotal = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'N'; }).length;
+    const closedTotal = list.filter(isProjectClosed).length;
+    const pendingTotal = list.filter(function (x) { return !isProjectClosed(x); }).length;
 
     $('#statTotal').text(total);
-    $('#statBudget').text(runningTotal);
+    $('#statClosed').text(closedTotal);
     $('#statAvgDays').text(pendingTotal);
 }
 
@@ -791,7 +838,7 @@ function bindProjectGrid(list) {
     if (!list || list.length === 0) {
         $tbody.append(`
             <tr>
-                <td colspan="8">
+                <td colspan="9">
                     <div class="pm-empty">
                         <div class="pm-empty-icon"><i class="fas fa-folder-open"></i></div>
                         <div class="pm-empty-title">No Projects Found</div>
@@ -829,8 +876,10 @@ function bindProjectGrid(list) {
             }
         }
 
+        const closed = isProjectClosed(item);
+
         $tbody.append(`
-            <tr>
+            <tr class="${closed ? 'pm-row-closed' : ''}">
                 <td class="center"><span class="pm-sno">${index + 1}</span></td>
                 <td><span class="pm-code-badge">${escHtml(projectCode)}</span></td>
                 <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis;">${escHtml(projectName)}</td>
@@ -840,6 +889,10 @@ function bindProjectGrid(list) {
                 <td class="center">${startDateText}</td>
                 <td class="center">${estDateText}</td>
                 <td class="center"><span class="pm-days-chip">${estimatedDays} days</span></td>
+                <td class="center">
+                    <input type="checkbox" class="pm-close-chk" title="${closed ? 'Unmark as Closed' : 'Mark as Closed'}"
+                        ${closed ? 'checked' : ''} onchange="toggleProjectClosed(${code}, this)" />
+                </td>
                 <td class="center">
                     <div class="pm-actions">
                         <button type="button" class="pm-icon-btn view"  title="View"   onclick="viewProject(${code})"><i class="fas fa-eye"></i></button>
@@ -859,10 +912,10 @@ function applyProjectFilters() {
     let list   = G_ProjectList;
 
     // Status filter (from card click)
-    if (G_ActiveStatusFilter === 'running') {
-        list = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'Y'; });
+    if (G_ActiveStatusFilter === 'closed') {
+        list = list.filter(isProjectClosed);
     } else if (G_ActiveStatusFilter === 'pending') {
-        list = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'N'; });
+        list = list.filter(function (x) { return !isProjectClosed(x); });
     }
 
     // Search filter
@@ -985,7 +1038,43 @@ function hideModal(id) {
     }
 }
 
+/* ── Mark / Unmark as Closed ─────────────────────────────── */
+function toggleProjectClosed(code, checkbox) {
+    if (!code || !checkbox) return;
+
+    const markClosed = !!checkbox.checked;
+    checkbox.disabled = true;
+    Showloader && Showloader();
+
+    const apiCall = markClosed
+        ? ProjectMasterService.MarkAsClosed(code)
+        : ProjectMasterService.UnMarkAsClosed(code);
+
+    apiCall
+        .then(function (response) {
+            HideLoader && HideLoader();
+            checkbox.disabled = false;
+            if (response && response.Status === 'Y') {
+                const row = (G_ProjectList || []).find(function (x) { return String(x.Code) === String(code); });
+                setProjectClosedFlag(row, markClosed);
+                toastr.success(response.Msg || response.Message || (markClosed ? 'Project marked as closed.' : 'Project unmarked as closed.'));
+                updateStats(G_ProjectList);
+                applyProjectFilters();
+            } else {
+                checkbox.checked = !markClosed;
+                toastr.warning((response && (response.Msg || response.Message)) || 'Unable to update closed status.');
+            }
+        })
+        .catch(function (error) {
+            HideLoader && HideLoader();
+            checkbox.disabled = false;
+            checkbox.checked = !markClosed;
+            toastr.error((error && (error.Msg || error.Message)) || 'Unable to update closed status.');
+        });
+}
+
 /* ── Expose globals ──────────────────────────────────────── */
 window.viewProject            = viewProject;
 window.ProjectMaster_EditData = ProjectMaster_EditData;
 window.DeleteProject          = DeleteProject;
+window.toggleProjectClosed    = toggleProjectClosed;

@@ -45,6 +45,18 @@ const SubProjectMasterService = {
             return value;
         });
     },
+    MarkAsClosed: function MarkAsClosed(code) {
+        const URL = UrlService.API_ENDPOINT_SubProjectMaster + "/MarkAsClosed?Code=" + encodeURIComponent(code || 0);
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(function (value) {
+            return value;
+        });
+    },
+    UnMarkAsClosed: function UnMarkAsClosed(code) {
+        const URL = UrlService.API_ENDPOINT_SubProjectMaster + "/UnMarkAsClosed?Code=" + encodeURIComponent(code || 0);
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(function (value) {
+            return value;
+        });
+    },
 };
 
 export { SubProjectMasterService }
