@@ -1301,7 +1301,7 @@ async function gpaSyncFooterAttachmentFromApis(master, masterCode) {
         gpaItemHasAttachmentYes(master || {}) || gpaResolveHasAttachmentYesFromList(c);
     if (c > 0) {
         try {
-            const resp = await AttachmentControlService.GetAttachmentUploadFiles('GRNPaymentMaster', c, '', 0);
+            const resp = await AttachmentControlService.GetAttachmentUploadFiles('GRNPaymentMaster', c, '', 0, { suppressErrorToast: true });
             const rows = gpaNormalizeAttachmentApiRows(resp);
             if (rows.length > 0) gpaFormHasAttachmentYes = true;
         } catch (err) {
@@ -1494,6 +1494,7 @@ function mapGpaListRow(item) {
     const employee = empRaw !== undefined && empRaw !== null ? String(empRaw).trim() : '';
     const workType = item['Work Type'] ?? item.WorkType ?? item.workType
         ?? item.WorkTypeName ?? item.workTypeName ?? item.WorkTypeDesp ?? item.workTypeDesp ?? '';
+    const description = String(item.Description ?? item.description ?? item.ItemDescription ?? item.itemDescription ?? '').trim();
     const rawAmt = item.Amount ?? item.amount ?? item.HeaderAmount ?? item.headerAmount
         ?? item['Total Amount'] ?? item.TotalAmount ?? item.totalAmount ?? item.amount ?? item.amount;
     const amt = rawAmt !== undefined && rawAmt !== null && rawAmt !== '' ? Number(rawAmt) : '';
@@ -1523,6 +1524,7 @@ function mapGpaListRow(item) {
         'Bank Name': bankName,
         Employee: employee,
         'Work Type': workType,
+        Description: description,
         'Amount': amt,
         'Ref No': ref,
         Action: btns,
@@ -1742,6 +1744,7 @@ function gpaListEmptyTabPlaceholderRow() {
         'Bank Name':'',
          Employee: '',
         'Work Type': '',
+        Description: '',
         'Amount': '',
         'Ref No': '',
         Action: '',
@@ -1751,7 +1754,7 @@ function gpaListEmptyTabPlaceholderRow() {
 }
 
 function renderGpaListGrid() {
-    const StringFilterColumn = ['Party Name', 'Employee',"Bank Name", 'Work Type', 'Ref No'];
+    const StringFilterColumn = ['Party Name', 'Employee',"Bank Name", 'Work Type', 'Description', 'Ref No'];
     const NumericFilterColumn = ['Entry No', 'Amount'];
     const DateFilterColumn = ['Entry Date'];
     const Button = false;
@@ -1790,7 +1793,7 @@ function renderGpaListGrid() {
         totalColumns,
         null,
         commaColumns,
-        'Search by Entry No, Party, Bank, Employee, Work Type...'
+        'Search by Entry No, Party, Bank, Employee, Work Type, Description...'
     );
 }
 
@@ -2094,6 +2097,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadGpaProjectListForGrid(),
         loadGpaProjectCategoryLists(),
         loadGpaWorkTypeList(),
+        loadGpaItemDescriptionList(),
     ]);
     syncGpaPartyEmployeeUI();
     setTodayDates();
@@ -3135,6 +3139,28 @@ function gpaResolveWorkTypeForPrint(master, listRow, listRows) {
     return name;
 }
 
+function gpaResolveDescriptionForPrint(master, listRow, listRows) {
+    const sources = [];
+    if (master && typeof master === 'object') sources.push(master);
+    if (listRow && typeof listRow === 'object') sources.push(listRow);
+    if (Array.isArray(listRows)) {
+        for (let i = 0; i < listRows.length; i++) sources.push(listRows[i]);
+    }
+    for (let j = 0; j < sources.length; j++) {
+        const d = String(
+            sources[j].Description ?? sources[j].description
+            ?? sources[j].ItemDescription ?? sources[j].itemDescription ?? ''
+        ).trim();
+        if (d) return d;
+    }
+    const el = document.getElementById('txtItemDescription');
+    if (el) {
+        const live = String(el.value || '').trim();
+        if (live) return live;
+    }
+    return '';
+}
+
 function gpaDdlCodeFromCacheItem(item, codeKeys, textKeys) {
     if (!item || typeof item !== 'object') return '';
     for (let i = 0; i < codeKeys.length; i++) {
@@ -3306,7 +3332,7 @@ function gpaFillCategorySelectOptions(sel, selectedCategoryName, selectedCategor
         ? String(selectedCategoryName).trim() : '';
     const savedCode = selectedCategoryCode !== undefined && selectedCategoryCode !== null
         ? String(selectedCategoryCode).trim() : '';
-    sel.innerHTML = '<option value="">-- Category --</option>';
+    sel.innerHTML = '<option value="">-- Budget Category --</option>';
     (gpaProjectCategoryCache || []).forEach(cat => {
         const opt = document.createElement('option');
         const code = gpaCategoryCodeFromRecord(cat) || gpaDdlCodeFromCacheItem(cat, GPA_CAT_CODE_KEYS, GPA_CAT_TEXT_KEYS);
@@ -3365,6 +3391,141 @@ function gpaPaymentForForSave() {
     const el = document.getElementById('txtPaymentFor');
     if (!el) return '';
     return String(el.value ?? '').trim().substring(0, 200);
+}
+
+// ── Item Description: Select2 combo (search + clear + type-to-add), same control as PO "Bill To" ──
+// Values come from GetDescription; a typed new value is added to the dropdown and saved with the entry.
+let gpaItemDescriptionCache = [];
+let gpaItemDescLoading = false;
+
+function gpaDescriptionTextFromRow(r) {
+    if (r == null) return '';
+    if (typeof r === 'string') return r.trim();
+    const v = r.Description ?? r.description ?? r.Desp ?? r.desp ?? r.Name ?? r.name ?? '';
+    return String(v ?? '').trim();
+}
+
+function gpaItemDescNorm(v) {
+    return String(v ?? '').replace(/\s+/g, ' ').trim().substring(0, 200);
+}
+
+function gpaItemDescIsSelect2(el) {
+    return !!(el && window.jQuery && window.jQuery.fn && window.jQuery.fn.select2 && window.jQuery(el).data('select2'));
+}
+
+/** Server values (+ optional extra) — unique (case-insensitive) and sorted. */
+function gpaGetItemDescriptionItems(extra) {
+    const seen = new Set();
+    const items = [];
+    (gpaItemDescriptionCache || []).concat(extra ? [extra] : []).forEach(t => {
+        const s = gpaItemDescNorm(t);
+        if (!s) return;
+        const k = s.toLowerCase();
+        if (seen.has(k)) return;
+        seen.add(k);
+        items.push(s);
+    });
+    items.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    return items;
+}
+
+/** Rebuild <option>s = server list + the value currently chosen (unsaved typed values drop out once replaced). */
+function gpaRefreshItemDescriptionOptions(selectedValue) {
+    const el = document.getElementById('txtItemDescription');
+    if (!el) return;
+    const cur = gpaItemDescNorm(selectedValue !== undefined ? selectedValue : el.value);
+    const items = gpaGetItemDescriptionItems(cur);
+    el.innerHTML = '';
+    el.appendChild(new Option('', ''));
+    items.forEach(s => el.appendChild(new Option(s, s)));
+    el.value = cur;
+    if (gpaItemDescIsSelect2(el)) window.jQuery(el).trigger('change.select2');
+}
+
+/** Select a value (adds it to the dropdown if it is new). Empty string clears. */
+function gpaSetItemDescriptionValue(text) {
+    const el = document.getElementById('txtItemDescription');
+    if (!el) return;
+    const s = gpaItemDescNorm(text);
+    const existing = gpaGetItemDescriptionItems().find(x => x.toLowerCase() === s.toLowerCase());
+    gpaRefreshItemDescriptionOptions(existing || s);
+}
+
+function gpaInitItemDescriptionCombo() {
+    const el = document.getElementById('txtItemDescription');
+    if (!el || gpaItemDescIsSelect2(el)) return;
+    const $ = window.jQuery;
+    if (!$ || !$.fn || !$.fn.select2) return; /* plain <select> still works with the "+" button */
+    $(el).select2({
+        placeholder: 'Type or select item description',
+        allowClear: true,
+        width: '100%',
+        tags: true,
+        selectOnClose: true,
+        dropdownParent: $('body'),
+        createTag: function (params) {
+            const t = gpaItemDescNorm(params.term);
+            if (!t) return null;
+            const exists = gpaGetItemDescriptionItems().some(x => x.toLowerCase() === t.toLowerCase());
+            return exists ? null : { id: t, text: t, newTag: true };
+        },
+        templateResult: function (d) {
+            if (d && d.newTag) return $('<span></span>').text('Add "' + d.text + '"');
+            return d.text;
+        }
+    });
+    /* After a pick / clear: keep only server values + the current one in the list */
+    $(el).on('select2:select select2:clear', function () {
+        setTimeout(function () { gpaRefreshItemDescriptionOptions(); }, 0);
+    });
+    /* List still empty (first load failed / pending) — fetch when the user opens it */
+    $(el).on('select2:opening', function () {
+        if (!(gpaItemDescriptionCache || []).length && !gpaItemDescLoading) {
+            loadGpaItemDescriptionList();
+        }
+    });
+}
+
+async function loadGpaItemDescriptionList() {
+    if (!document.getElementById('txtItemDescription')) return;
+    gpaInitItemDescriptionCombo();
+    gpaItemDescLoading = true;
+    try {
+        /* Direct call is the fallback when a cached older service file has no GetDescription yet. */
+        const result = typeof GRNPaymentApprovalService.GetDescription === 'function'
+            ? await GRNPaymentApprovalService.GetDescription()
+            : await promiseAjaxCallApi.CallAPI('GET', UrlService.API_ENDPOINT_GRNPaymentEntry + '/GetDescription', null);
+        gpaItemDescriptionCache = normalizeApiRows(result).map(gpaDescriptionTextFromRow).filter(Boolean);
+    } catch (e) {
+        console.error('loadGpaItemDescriptionList', e);
+    } finally {
+        gpaItemDescLoading = false;
+    }
+    gpaRefreshItemDescriptionOptions();
+}
+
+/** Remember a (saved) value in the dropdown list. */
+function gpaAddItemDescriptionToCache(text) {
+    const s = gpaItemDescNorm(text);
+    if (!s) return;
+    if (!(gpaItemDescriptionCache || []).some(x => String(x).toLowerCase() === s.toLowerCase())) {
+        gpaItemDescriptionCache.push(s);
+    }
+}
+
+function gpaItemDescriptionForSave() {
+    const el = document.getElementById('txtItemDescription');
+    if (!el) return '';
+    return gpaItemDescNorm(el.value);
+}
+
+function gpaBindItemDescriptionOnMaster(master) {
+    const el = document.getElementById('txtItemDescription');
+    if (!el) return;
+    const v = master?.Description ?? master?.description ?? master?.ItemDescription ?? master?.itemDescription ?? '';
+    const s = gpaItemDescNorm(v);
+    gpaAddItemDescriptionToCache(s);
+    gpaSetItemDescriptionValue(s);
 }
 
 /** PONo text from selected option — no cross-call to gpaPoCodeFromSelect (avoids stack overflow). */
@@ -3726,7 +3887,7 @@ function billRowTemplate() {
         <select class="form-control form-control-sm inp-bill-ddl" style="min-width:100px;"><option value="">-- Bill No --</option></select>
     </td>
     <td><select class="form-control form-control-sm inp-po-ddl" style="min-width:100px;"><option value="">-- PO No --</option></select></td>
-    <td><select class="form-control form-control-sm inp-category-ddl" style="min-width:100px;"><option value="">-- Category --</option></select></td>
+    <td><select class="form-control form-control-sm inp-category-ddl" style="min-width:100px;"><option value="">-- Budget Category --</option></select></td>
     <td><select class="form-control form-control-sm inp-project-ddl" style="min-width:140px;"><option value="">-- Project --</option></select></td>
     <td><select class="form-control form-control-sm inp-subproject-ddl" style="min-width:140px;"><option value="">-- Sub project --</option></select></td>
     <td><input type="date" class="form-control form-control-sm inp-bill-date" autocomplete="off"></td>
@@ -5029,6 +5190,12 @@ function saveGpaAddBillModalToGrid() {
         return;
     }
 
+    if (!String(modalCatName || '').trim()) {
+        showToast('Please select Budget Category.', 'warning');
+        modalCatSel?.focus();
+        return;
+    }
+
     const hasBill = mrn > 0 || billNo.length > 0;
     const hasProjSub = Boolean(modalProj && modalSub);
     const partialProj = Boolean(modalProj || modalSub) && !hasProjSub;
@@ -5340,6 +5507,7 @@ function collectPayload() {
         Narration: document.getElementById('txtNarration')?.value?.trim() ?? '',
         MarketingManMaster_Code: gpaNumOrZero(gpaTyGrnPaymentMasterMarketingManMasterCode()),
         PaymentFor: gpaPaymentForForSave(),
+        Description: gpaItemDescriptionForSave(),
         WorkTypeMaster_Code: gpaNumOrZero(gpaDdlIntCode(document.getElementById('ddlWorkType'))),
     }];
 
@@ -5548,6 +5716,7 @@ async function loadGRNPaymentApprovalByCode(Code) {
         const nar = document.getElementById('txtNarration');
         if (nar) nar.value = master?.Narration ?? master?.narration ?? '';
         gpaBindPaymentForOnMaster(master);
+        gpaBindItemDescriptionOnMaster(master);
         gpaBindWorkTypeOnMaster(master);
 
         hideGpaAddBillModalAndReset();
@@ -5732,6 +5901,20 @@ function validateGRNPaymentApproval() {
             return false;
         }
     }
+    /* Budget Category is mandatory on every bill allocation row that is being saved. */
+    let missingBudgetCategory = null;
+    document.querySelectorAll('#billTbody tr.bill-row').forEach(tr => {
+        if (missingBudgetCategory) return;
+        const mrn = parseInt(tr.querySelector('.inp-mrn-code')?.value ?? '0', 10) || 0;
+        if (!(mrn > 0) && !(gpaLineEffectivePayment(tr) > 0)) return;
+        const catSel = tr.querySelector('.inp-category-ddl');
+        if (!catSel || !String(gpaCategoryNameFromSelect(catSel) || '').trim()) missingBudgetCategory = catSel || tr;
+    });
+    if (missingBudgetCategory) {
+        showToast('Please select Budget Category on each bill allocation row.', 'warning');
+        if (missingBudgetCategory.focus) missingBudgetCategory.focus();
+        return false;
+    }
     const dupIssue = findDuplicateBillAllocationIssue();
     if (dupIssue) {
         showGpaDuplicateBillToast(dupIssue);
@@ -5811,6 +5994,8 @@ function saveGRNPaymentApproval() {
                 (parseInt(data.Code ?? data.code ?? 0, 10) || 0) > 0
             );
             if (ok) {
+                gpaAddItemDescriptionToCache(payload?.GRNPaymentMaster?.[0]?.Description);
+                loadGpaItemDescriptionList();
                 applyEntryNoFromResponse(data);
                 const newMasterCode = parseInt(data.Code ?? data.code ?? 0, 10) || 0;
                 const entryDate = document.getElementById('dtPaymentDate')?.value ?? '';
@@ -5906,6 +6091,7 @@ function resetGRNPaymentApprovalForm() {
     if (nar) nar.value = '';
     const txtPf = document.getElementById('txtPaymentFor');
     if (txtPf) txtPf.value = '';
+    gpaSetItemDescriptionValue('');
     const ddlWorkType = document.getElementById('ddlWorkType');
     if (ddlWorkType) ddlWorkType.value = '';
     syncGpaProjectRequiredUI();
@@ -6481,9 +6667,9 @@ function gpaBuildPrintDetailLineHtml(row, idx, listRows, siteFallback) {
     const catDesc = String(mergedRow.CategoryDesc ?? mergedRow.categoryDesc ?? '').trim();
 
     let catPart = '';
-    if (catLine) catPart += ' &mdash; Category: ' + gpaEscapeHtml(String(catLine));
-    if (catDesc && catDesc !== catLine) catPart += ' &mdash; Category Desc: ' + gpaEscapeHtml(catDesc);
-    else if (!catLine && catDesc) catPart += ' &mdash; Category Desc: ' + gpaEscapeHtml(catDesc);
+    if (catLine) catPart += ' &mdash; Budget Category: ' + gpaEscapeHtml(String(catLine));
+    if (catDesc && catDesc !== catLine) catPart += ' &mdash; Budget Category Desc: ' + gpaEscapeHtml(catDesc);
+    else if (!catLine && catDesc) catPart += ' &mdash; Budget Category Desc: ' + gpaEscapeHtml(catDesc);
 
     let poPart = '';
     if (hasPo) {
@@ -6834,6 +7020,7 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
         }
         const paymentForDisp = gpaResolvePaymentForFromMaster(master);
         const workTypeDisp = gpaResolveWorkTypeForPrint(master, listRow, listRows);
+        const itemDescDisp = gpaResolveDescriptionForPrint(master, listRow, listRows);
 
         const isComplete = gpaIsPrintVoucherComplete(master, listRow, listRows);
         const poPair = gpaPickPoFromMergedRows(mergedDetails, master, listRow);
@@ -6862,6 +7049,17 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
         const printParty = gpaResolvePrintCreditAndVendorType(master, listRow, site0, listRows);
         const creditTo = printParty.creditTo;
         if (printParty.vendorType) site0.vendorType = printParty.vendorType;
+
+        /* Budget Category (header row, below Site Type) — unique values across all detail lines. */
+        const budgetCatSeen = {};
+        const budgetCatList = [];
+        mergedDetails.concat(listRow ? [listRow] : [], master ? [master] : []).forEach(function (src) {
+            const c = String(gpaResolveCategoryNameFromRow(src) || '').trim();
+            if (!c || gpaIsBlankPrintValue(c) || budgetCatSeen[c.toLowerCase()]) return;
+            budgetCatSeen[c.toLowerCase()] = true;
+            budgetCatList.push(c);
+        });
+        const budgetCategoryDisp = budgetCatList.join(', ');
 
         let detailsLines = '';
         printDetails.forEach(function (row, idx) {
@@ -6940,10 +7138,11 @@ function PrintGRNPaymentVoucher(code, mode, approvalListRow) {
             + '<tr><td class="lbl">Project Name</td><td colspan="3">' + gpaEscapeHtml(String(site0.project || '')) + '</td></tr>'
             + '<tr><td class="lbl">Site Name</td><td colspan="3">' + gpaEscapeHtml(String(site0.site || '')) + '</td></tr>'
             + '<tr><td class="lbl">Site Type</td><td colspan="3">' + gpaEscapeHtml(String(site0.siteType || '')) + '</td></tr>'
-            + '<tr><td class="lbl">Industry Type</td><td colspan="3">' + gpaEscapeHtml(String(site0.vendorType || 'Party')) + '</td></tr>'
+            + '<tr><td class="lbl">Budget Category</td><td colspan="3">' + gpaEscapeHtml(budgetCategoryDisp) + '</td></tr>'
             + '<tr><td class="lbl">Contact No</td><td colspan="3">' + gpaEscapeHtml(String(site0.contact || '')) + '</td></tr>'
             + '<tr><td class="lbl">Payment for</td><td colspan="3">' + gpaEscapeHtml(paymentForDisp || '—') + '</td></tr>'
             + '<tr><td class="lbl">Work Type</td><td colspan="3">' + gpaEscapeHtml(workTypeDisp || '—') + '</td></tr>'
+            + '<tr><td class="lbl">Description</td><td colspan="3">' + gpaEscapeHtml(itemDescDisp || '—') + '</td></tr>'
             + '</table>'
             + '<div style="border:1px solid #000;border-top:none;padding:4px 8px;font-weight:700;font-size:9.5pt;">Details</div>'
             + '<div class="pv-details">' + detailsBlock + '</div>'

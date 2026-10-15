@@ -49,6 +49,11 @@ $(document).ready(function () {
         });
     });
 
+    // Active toggle — keep label text in sync
+    $("#IsActive").on("change", function () {
+        imSetActiveToggle(this.checked);
+    });
+
     // HSN — numbers only, max 8 digits
     $("#HSN").on("keypress", function (e) {
         if (!/\d/.test(String.fromCharCode(e.which))) e.preventDefault();
@@ -182,6 +187,7 @@ function EditItem(code) {
                     $("#ItemType").val((otherDetail && otherDetail.ItemNature) ? otherDetail.ItemNature : "");
                     $("#HSN").val((otherDetail && otherDetail.HSNCode != null) ? otherDetail.HSNCode : "");
                     $("#ItemSpecification").val(item.ItemSpecification || "");
+                    imSetActiveToggle(imIsActiveFlag(item, otherDetail));
                     $("#itemDialogBackdrop").addClass("show");
                 } else {
                     toastr.error("Failed to load item data.");
@@ -191,6 +197,22 @@ function EditItem(code) {
             });
         }
     });
+}
+
+/** Normalises IsActive from API (Y/N, true/false, 1/0). Missing value => Active. */
+function imIsActiveFlag(item, otherDetail) {
+    var v = null;
+    if (item && item.IsActive != null) v = item.IsActive;
+    else if (otherDetail && otherDetail.IsActive != null) v = otherDetail.IsActive;
+    if (v == null || String(v).trim() === "") return true;
+    var s = String(v).trim().toUpperCase();
+    return !(s === "N" || s === "NO" || s === "FALSE" || s === "0" || s === "INACTIVE");
+}
+
+/** Sets the Active toggle in the form and updates its label text. */
+function imSetActiveToggle(isActive) {
+    $("#IsActive").prop("checked", !!isActive);
+    $("#IsActiveText").text(isActive ? "Active" : "Inactive");
 }
 
 /** GST value for display — no trailing % (label already says GST (%)). */
@@ -270,6 +292,16 @@ function ViewItem(code) {
                 $("#vf_ItemType").text(typeText || "—");
                 $("#vf_HSN").text((otherDetail && otherDetail.HSNCode != null && otherDetail.HSNCode !== "") ? otherDetail.HSNCode : "—");
                 $("#vf_ItemSpecification").text(specText || "—");
+
+                // Status (Active / Inactive)
+                var isActiveView = imIsActiveFlag(item, otherDetail);
+                var statusText = isActiveView ? "Active" : "Inactive";
+                $("#vf_IsActive").text(statusText).css("color", isActiveView ? "#059669" : "#dc2626");
+                $("#viewStatusBadge")
+                    .removeClass("im-status-active im-status-inactive")
+                    .addClass(isActiveView ? "im-status-active" : "im-status-inactive")
+                    .html('<i class="fas ' + (isActiveView ? "fa-circle-check" : "fa-circle-xmark") + '" style="margin-right:5px;font-size:10px;"></i>' + statusText)
+                    .show();
 
                 // Open view modal
                 $("#viewItemBackdrop").addClass("show");
@@ -401,7 +433,7 @@ function BuildPayload() {
                 SubGroupName: "",
                 DivisionName: "",
                 ItemClassificationName: "",
-                IsActive: "Y",
+                IsActive: $("#IsActive").is(":checked") ? "Y" : "N",
                 AutoCalculateQty: "N",
                 AverageMonthlyConsumption: parseFloat(0),
                 ByProduct: "N",
@@ -540,6 +572,7 @@ function ClearForm() {
     });
     $("#err_ItemGroup").hide();
     $("#ItemType").val("").prop("disabled", false);
+    imSetActiveToggle(true); // new item defaults to Active
     $(".im-dup-warning").hide();
     // Restore Save button and Cancel label to default
     $("#btnSaveItem").show();
