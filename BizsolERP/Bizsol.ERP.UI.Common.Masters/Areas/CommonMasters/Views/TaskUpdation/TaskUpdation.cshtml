@@ -184,6 +184,8 @@ body:has(#TaskUpdationPage) #modern-content.modern-content > main {
     box-shadow: 0 3px 10px rgba(0,0,0,.12);
     transition: box-shadow .2s, transform .15s;
     backdrop-filter: blur(4px);
+    box-sizing: border-box;
+    max-width: 100%;
 }
 .tu-date-picker:disabled {
     opacity: 0.85;
@@ -608,10 +610,13 @@ table.tu-table thead th.tu-today-hdr {
         border-radius: 18px;
         background: #fff;
         box-shadow:
-            0 12px 40px rgba(99,102,241,.14),
+            0 12px 40px rgba(11, 12, 112, 0.14),
             0 2px 10px rgba(0,0,0,.06);
         overflow: hidden;
         isolation: isolate;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
     }
 
     .tu-header {
@@ -639,6 +644,8 @@ table.tu-table thead th.tu-today-hdr {
         flex-direction: column;
         align-items: stretch;
         gap: 18px;
+        min-width: 0;
+        max-width: 100%;
     }
 
     .tu-hero-left {
@@ -665,9 +672,12 @@ table.tu-table thead th.tu-today-hdr {
 
     .tu-toolbar {
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
         flex-direction: column;
         align-items: stretch;
         gap: 12px;
+        box-sizing: border-box;
     }
 
     .tu-emp-name {
@@ -678,11 +688,32 @@ table.tu-table thead th.tu-today-hdr {
 
     .tu-user-select,
     .tu-date-picker {
+        display: block;
         width: 100%;
         min-width: 0;
+        max-width: 100%;
         box-sizing: border-box;
         padding: 11px 18px;
         font-size: 0.88rem;
+    }
+
+    .tu-date-picker {
+        -webkit-appearance: none;
+        appearance: none;
+        -webkit-min-logical-width: 0;
+    }
+
+    html.ios-device #TaskUpdationPage .tu-toolbar .tu-user-select,
+    html.ios-device #TaskUpdationPage .tu-toolbar .tu-date-picker {
+        width: 100%;
+        min-width: 0 !important;
+        max-width: 100%;
+    }
+
+    .tu-header {
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .tu-stats-strip {
