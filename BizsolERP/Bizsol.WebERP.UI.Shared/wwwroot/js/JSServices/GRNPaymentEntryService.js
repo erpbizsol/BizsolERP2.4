@@ -179,6 +179,14 @@ const GRNPaymentApprovalService = {
                 return value;
             });
     },
+    /** Distinct item descriptions already used in GRNPaymentMaster (DDL_DESCRIPTION). */
+    GetDescription: function GetDescription() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetDescription`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
     GetWorkType: function GetWorkType() {
         let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetWorkType`;
         return promiseAjaxCallApi.CallAPI('GET', url, null)
