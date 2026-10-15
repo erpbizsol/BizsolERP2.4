@@ -160,6 +160,7 @@ let UrlService = {
 
     //Finance Transactions API Service EndPoints
     API_ENDPOINT_BANK_STATEMENT: `${environment.BASE_URL}/BankStatement`,
+    API_ENDPOINT_BANK_BOOK_REPORT: `${environment.BASE_URL}/BankBookReport`,
     API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL: `${environment.BASE_URL}/ExpenseEntryLevelsApproval`,
     API_ENDPOINT_AgeingParameter: `${environment.BASE_URL}/AgeingParameter`,
     API_ENDPOINT_GROUPMASTER: `${environment.BASE_URL}/Group`,
@@ -172,6 +173,7 @@ let UrlService = {
     API_ENDPOINT_CHECKLIST_MIS: `${environment.BASE_URL}/CheckListMIS`,
     API_ENDPOINT_SendMail: `${environment.BASE_URL}/SendMail`,
     API_ENDPOINT_ExpensesLedgerReport: `${environment.BASE_URL}/ExpensesLedgerReport`,
+    API_ENDPOINT_PROJECT_EXPENSE_REPORT: `${environment.BASE_URL}/ProjectExpenseReport`,
     API_ENDPOINT_AREA_ExpensesLedgerReport: `${environment.BASE_URL}/ExpensesLedgerReport`,
     API_ENDPOINT_ProjectManagementReport: `${environment.BASE_URL}/ProjectManagementReport`,
     API_ENDPOINT_AREA_ProjectManagementReport: `${environment.BASE_URL}/ProjectManagementReport`,

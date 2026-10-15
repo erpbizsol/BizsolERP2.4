@@ -7,6 +7,39 @@ let G_SubProjectList = [];
 /** Full ledger rows after last successful fetch (for paging + stats). */
 let G_LedgerData = [];
 let G_LedgerCurrentPage = 1;
+let G_AllProjects = [];
+let G_FiltersReady = false;
+const PROJECT_EXPENSE_REPORT = 'project expense report';
+const PROJECT_LEVELS = [
+    { id: 'PROJECTWISE', label: 'Project Wise' },
+    { id: 'SUBPROJECTWISE', label: 'Sub Project Wise' },
+    { id: 'GROUPWISE', label: 'Expense Category Wise' },
+    { id: 'HEADWISE', label: 'Expense Head Wise' },
+    { id: 'EMPLOYEEWISE', label: 'Employee Wise' },
+    { id: 'DETAIL', label: 'Entry Wise' },
+];
+let projectDrill = emptyProjectDrill();
+let projectRows = [];
+
+function emptyProjectDrill() {
+    return {
+        level: 'PROJECTWISE',
+        projectCode: 0,
+        projectName: '',
+        subCode: 0,
+        subName: '',
+        groupCode: 0,
+        groupName: '',
+        headCode: 0,
+        headName: '',
+        employeeCode: 0,
+        employeeName: '',
+    };
+}
+
+function isProjectExpenseReport() {
+    return String($('#ddlReportType').val() || '').trim().toLowerCase() === PROJECT_EXPENSE_REPORT;
+}
 
 function pad2(n) {
     return String(n).padStart(2, '0');
@@ -239,8 +272,44 @@ function simplifySubProjectsForDdL(rows) {
     });
 }
 
-function refreshSubProjectOptions() {
+function selectedEmployeeCode() {
+    const raw = String($('#ddlEmployee').val() || '').trim();
+    const n = parseInt(raw, 10);
+    if (!raw || raw === 'All' || Number.isNaN(n) || n <= 0) return 0;
+    return n;
+}
+
+function rebindFilterSelect($el, rows, firstItem, keepValue) {
+    bindSelectList($el[0], rows, firstItem);
+    if ($el.data('select2')) $el.select2('destroy');
+    initSelect2($el);
+    const keep = keepValue == null ? '' : String(keepValue);
+    if (keep && $el.find('option[value="' + keep + '"]').length) $el.val(keep);
+    else $el.val(firstItem === 'All' ? '0' : '');
+}
+
+function reloadLedgerProjectFilters() {
+    if (isProjectExpenseReport()) return Promise.resolve();
+    const emp = selectedEmployeeCode();
+    const keepProject = $('#ddlProject').val();
+    const keepSub = $('#ddlSubProject').val();
+    const pProj = ExpensesLedgerReportService.GetProjectMasterList(emp).then(function (response) {
+        G_AllProjects = mapDdLProjects(asDdLArray(response));
+        rebindFilterSelect($('#ddlProject'), G_AllProjects, 'All', keepProject);
+    });
+    const pSub = ExpensesLedgerReportService.GetSubProjectMasterList(emp).then(function (response) {
+        G_SubProjectList = asDdLArray(response);
+    });
+    return Promise.all([pProj, pSub]).then(function () {
+        refreshSubProjectOptions(keepSub);
+    }).catch(function () {
+        toastr.error('Could not load projects for the selected employee.');
+    });
+}
+
+function refreshSubProjectOptions(keepValue) {
     const pid = parseInt($('#ddlProject').val() || '0', 10) || 0;
+    const keep = keepValue != null ? keepValue : $('#ddlSubProject').val();
     const items = pid === 0
         ? G_SubProjectList
         : G_SubProjectList.filter((sp) => Number(subProjectParentCode(sp)) === pid);
@@ -255,6 +324,10 @@ function refreshSubProjectOptions() {
             return null;
         },
     });
+    const keepCode = keep == null ? '' : String(keep);
+    if (keepCode && $('#ddlSubProject option[value="' + keepCode + '"]').length) {
+        $('#ddlSubProject').val(keepCode).trigger('change.select2');
+    }
 }
 
 function initSelect2(el) {
@@ -292,8 +365,8 @@ function loadDropdowns() {
     });
 
     const pProj = ExpensesLedgerReportService.GetProjectMasterList().then(function (response) {
-        const rows = mapDdLProjects(asDdLArray(response));
-        bindSelectList($('#ddlProject')[0], rows, 'All');
+        G_AllProjects = mapDdLProjects(asDdLArray(response));
+        bindSelectList($('#ddlProject')[0], G_AllProjects, 'All');
         initSelect2('#ddlProject');
     });
 
@@ -302,7 +375,10 @@ function loadDropdowns() {
         refreshSubProjectOptions();
     });
 
-    return Promise.all([pTypes, pEmp, pProj, pSub]).catch(function () {
+    return Promise.all([pTypes, pEmp, pProj, pSub]).then(function () {
+        G_FiltersReady = true;
+        applyReportTypeLayout();
+    }).catch(function () {
         toastr.error('Could not load filters.');
     });
 }
@@ -545,7 +621,298 @@ function renderLedger(rows) {
 }
 
 
+function projectLevelIndex(id) {
+    for (let i = 0; i < PROJECT_LEVELS.length; i++) {
+        if (PROJECT_LEVELS[i].id === id) return i;
+    }
+    return 0;
+}
+
+function selectedProjectFilterCode() {
+    const v = $('#ddlProject').val();
+    if (!v || v === '0' || v === 'All') return 0;
+    return parseInt(v, 10) || 0;
+}
+
+function selectedSubProjectFilterCode() {
+    const v = $('#ddlSubProject').val();
+    if (!v || v === '0' || v === 'All') return 0;
+    return parseInt(v, 10) || 0;
+}
+
+function escHtml(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function showProjectPlaceholder(message) {
+    projectRows = [];
+    $('#tblProjectExpenseBody').html('<tr><td colspan="2" class="elr-drill-empty">' + escHtml(message) + '</td></tr>');
+    $('#tblProjectExpenseFoot').empty();
+}
+
+function renderProjectCrumb() {
+    const idx = projectLevelIndex(projectDrill.level);
+    let html = '';
+    for (let i = 0; i <= idx; i++) {
+        if (i > 0) html += '<span class="elr-crumb-sep">→</span>';
+        const current = i === idx ? ' is-current' : '';
+        html += '<button type="button" class="elr-crumb-btn' + current + '" data-level="'
+            + PROJECT_LEVELS[i].id + '">' + escHtml(PROJECT_LEVELS[i].label) + '</button>';
+    }
+    $('#elrCrumb').html(html);
+    const parts = [];
+    if (idx >= 1 && projectDrill.projectName) parts.push(projectDrill.projectName);
+    if (idx >= 2 && projectDrill.subName) parts.push(projectDrill.subName);
+    if (idx >= 3 && projectDrill.groupName) parts.push(projectDrill.groupName);
+    if (idx >= 4 && projectDrill.headName) parts.push(projectDrill.headName);
+    if (idx >= 5 && projectDrill.employeeName) parts.push(projectDrill.employeeName);
+    if (!parts.length) {
+        $('#elrLevelSub').empty();
+        return;
+    }
+    let pills = '';
+    for (let i = 0; i < parts.length; i++) {
+        if (i > 0) pills += '<span class="elr-crumb-sep">→</span>';
+        const current = i === parts.length - 1 ? ' is-current' : '';
+        pills += '<span class="elr-crumb-btn' + current + '">' + escHtml(parts[i]) + '</span>';
+    }
+    $('#elrLevelSub').html(pills);
+}
+
+function goToProjectLevel(levelId) {
+    const idx = projectLevelIndex(levelId);
+    if (idx < 1) {
+        projectDrill.projectCode = 0;
+        projectDrill.projectName = '';
+    }
+    if (idx < 2) {
+        projectDrill.subCode = 0;
+        projectDrill.subName = '';
+    }
+    if (idx < 3) {
+        projectDrill.groupCode = 0;
+        projectDrill.groupName = '';
+    }
+    if (idx < 4) {
+        projectDrill.headCode = 0;
+        projectDrill.headName = '';
+    }
+    if (idx < 5) {
+        projectDrill.employeeCode = 0;
+        projectDrill.employeeName = '';
+    }
+    projectDrill.level = PROJECT_LEVELS[idx].id;
+    renderProjectCrumb();
+    loadProjectExpenseReport();
+}
+
+function openNextProjectLevel(row) {
+    if (!row || projectDrill.level === 'DETAIL') return;
+    const key = row.RowKey == null ? '' : String(row.RowKey);
+    const name = row.Particular == null ? '' : String(row.Particular);
+    const code = parseInt(key, 10) || 0;
+    if (projectDrill.level === 'PROJECTWISE') {
+        projectDrill.projectCode = code;
+        projectDrill.projectName = name;
+        goToProjectLevel('SUBPROJECTWISE');
+        return;
+    }
+    if (projectDrill.level === 'SUBPROJECTWISE') {
+        projectDrill.subCode = code;
+        projectDrill.subName = name;
+        goToProjectLevel('GROUPWISE');
+        return;
+    }
+    if (projectDrill.level === 'GROUPWISE') {
+        projectDrill.groupCode = code;
+        projectDrill.groupName = name;
+        goToProjectLevel('HEADWISE');
+        return;
+    }
+    if (projectDrill.level === 'HEADWISE') {
+        projectDrill.headCode = code;
+        projectDrill.headName = name;
+        goToProjectLevel('EMPLOYEEWISE');
+        return;
+    }
+    if (projectDrill.level === 'EMPLOYEEWISE') {
+        projectDrill.employeeCode = code;
+        projectDrill.employeeName = name;
+        goToProjectLevel('DETAIL');
+    }
+}
+
+function normalizeProjectRows(data) {
+    const list = Array.isArray(data) ? data
+        : (Array.isArray(data && data.data) ? data.data
+        : (Array.isArray(data && data.Data) ? data.Data : []));
+    return list.map(function (r) {
+        return {
+            RowKey: firstNonEmpty(r, ['RowKey', 'rowKey']),
+            Particular: firstNonEmpty(r, ['Particular', 'particular']),
+            ExpenseAmount: parseAmountForSum(firstNonEmpty(r, ['ExpenseAmount', 'expenseAmount'])),
+            ParentName: firstNonEmpty(r, ['ParentName', 'parentName']),
+            Error: firstNonEmpty(r, ['Error', 'error']),
+        };
+    });
+}
+
+function renderProjectRows(rows) {
+    projectRows = rows || [];
+    if (!projectRows.length) {
+        $('#tblProjectExpenseBody').html('<tr><td colspan="2" class="elr-drill-empty">No records for this level.</td></tr>');
+        $('#tblProjectExpenseFoot').html('<tr><td>Total</td><td class="num">0.00</td></tr>');
+        return;
+    }
+    let total = 0;
+    const canDrill = projectDrill.level !== 'DETAIL';
+    let html = '';
+    projectRows.forEach(function (row) {
+        total += row.ExpenseAmount;
+        const cls = canDrill ? ' class="elr-row-link"' : '';
+        html += '<tr' + cls + '><td class="elr-drill-particular">' + escHtml(row.Particular) + '</td>'
+            + '<td class="num">' + formatAmount(row.ExpenseAmount) + '</td></tr>';
+    });
+    $('#tblProjectExpenseBody').html(html);
+    $('#tblProjectExpenseBody tr.elr-row-link').each(function (i) {
+        $(this).data('row', projectRows[i]);
+    });
+    $('#tblProjectExpenseFoot').html(
+        '<tr><td>Total</td><td class="num">' + formatAmount(total) + '</td></tr>'
+    );
+}
+
+function loadProjectExpenseReport() {
+    const payload = {
+        Mode: projectDrill.level,
+        ReportStatus: $('#ddlElrStatus').val() || 'Pending',
+        FilterProjectMaster_Code: selectedProjectFilterCode(),
+        FilterSubProjectMaster_Code: selectedSubProjectFilterCode(),
+        ProjectMaster_Code: projectDrill.projectCode || 0,
+        SubProjectMaster_Code: projectDrill.subCode || 0,
+        ExpenseGroupMaster_Code: projectDrill.groupCode || 0,
+        ExpenseHeadMaster_Code: projectDrill.headCode || 0,
+        MarketingManMaster_Code: projectDrill.employeeCode || 0,
+        ProjectName: projectDrill.projectName || '',
+        SubProjectName: projectDrill.subName || '',
+        GroupName: projectDrill.groupName || '',
+        HeadName: projectDrill.headName || '',
+        EmployeeName: projectDrill.employeeName || '',
+    };
+    $('#tblProjectExpenseBody').html('<tr><td colspan="2" class="elr-drill-empty">Loading…</td></tr>');
+    $('#tblProjectExpenseFoot').empty();
+    if (typeof Showloader === 'function') Showloader();
+    ExpensesLedgerReportService.GetProjectExpenseReport(payload).then(function (data) {
+        const rows = normalizeProjectRows(data);
+        const err = rows.length && rows[0].Error ? rows[0].Error : '';
+        if (err) {
+            showProjectPlaceholder(err);
+            toastr.error(err);
+            return;
+        }
+        renderProjectRows(rows);
+    }).catch(function () {
+        showProjectPlaceholder('Could not load the project expense report.');
+        toastr.error('Could not load the project expense report.');
+    }).then(function () {
+        if (typeof HideLoader === 'function') HideLoader();
+    });
+}
+
+function loadProjectExpenseProjects() {
+    ExpensesLedgerReportService.GetProjectExpenseReport({
+        Mode: 'GETPROJECTS',
+        ReportStatus: $('#ddlElrStatus').val() || 'Pending',
+    }).then(function (data) {
+        if (!isProjectExpenseReport()) return;
+        const rows = normalizeProjectRows(data).map(function (p) {
+            return { Code: String(p.RowKey || '').trim(), Desp: String(p.Particular || '').trim() };
+        }).filter(function (p) { return p.Code && p.Code !== '0' && p.Desp; });
+        const current = $('#ddlProject').val();
+        bindSelectList($('#ddlProject')[0], rows, 'All');
+        if ($('#ddlProject').data('select2')) $('#ddlProject').select2('destroy');
+        initSelect2('#ddlProject');
+        if (current && $('#ddlProject option[value="' + current + '"]').length) $('#ddlProject').val(current).trigger('change.select2');
+        else $('#ddlProject').val('0').trigger('change.select2');
+        refreshSubProjectOptions();
+    }).catch(function () { });
+}
+
+function restoreLedgerProjects() {
+    bindSelectList($('#ddlProject')[0], G_AllProjects, 'All');
+    if ($('#ddlProject').data('select2')) $('#ddlProject').select2('destroy');
+    initSelect2('#ddlProject');
+    refreshSubProjectOptions();
+}
+
+function applyReportTypeLayout() {
+    const projectMode = isProjectExpenseReport();
+    $('.elr-page').toggleClass('is-project-expense', projectMode);
+    if (projectMode) {
+        clearLedgerView();
+        projectDrill = emptyProjectDrill();
+        renderProjectCrumb();
+        showProjectPlaceholder('Click Show to load the report.');
+        loadProjectExpenseProjects();
+        return;
+    }
+    projectRows = [];
+    restoreLedgerProjects();
+}
+
+function exportProjectExcel() {
+    if (!projectRows.length) {
+        toastr.warning('Load the report first.');
+        return;
+    }
+    const $h = $('#tblLedgerExport thead tr');
+    const $b = $('#tblLedgerExport tbody');
+    $h.empty();
+    $b.empty();
+    $h.append($('<th/>').text('Particular'));
+    $h.append($('<th/>').text('Expense amount'));
+    let total = 0;
+    projectRows.forEach(function (row) {
+        total += row.ExpenseAmount;
+        const tr = $('<tr/>');
+        tr.append($('<td/>').text(row.Particular));
+        tr.append($('<td/>').text(formatAmount(row.ExpenseAmount)));
+        $b.append(tr);
+    });
+    const foot = $('<tr/>');
+    foot.append($('<td/>').text('Total'));
+    foot.append($('<td/>').text(formatAmount(total)));
+    $b.append(foot);
+    const currentDate = new Date();
+    const dateString =
+        currentDate.getFullYear() + '-' +
+        (currentDate.getMonth() + 1).toString().padStart(2, '0') + '-' +
+        currentDate.getDate().toString().padStart(2, '0') + '_' +
+        currentDate.getHours().toString().padStart(2, '0') + '-' +
+        currentDate.getMinutes().toString().padStart(2, '0');
+    const level = (PROJECT_LEVELS[projectLevelIndex(projectDrill.level)].label || 'Project').replace(/\s+/g, '');
+    $('#tblLedgerExport').table2excel({
+        filename: 'ProjectExpenseReport_' + level + '_' + dateString,
+        fileext: '.xlsx',
+    });
+}
+
 function fetchReport() {
+    if (isProjectExpenseReport()) {
+        const selected = selectedProjectFilterCode();
+        if (selected > 0 && projectDrill.projectCode > 0 && projectDrill.projectCode !== selected) {
+            goToProjectLevel('PROJECTWISE');
+            return;
+        }
+        if (!projectDrill.level) projectDrill.level = 'PROJECTWISE';
+        renderProjectCrumb();
+        loadProjectExpenseReport();
+        return;
+    }
     const reportType = ($('#ddlReportType option:selected').val() || '').trim();
     if (!reportType) {
         toastr.warning('Select report type.');
@@ -617,6 +984,10 @@ function populateExportTable(data) {
 }
 
 function exportExcel() {
+    if (isProjectExpenseReport()) {
+        exportProjectExcel();
+        return;
+    }
     const currentDate = new Date();
     const dateString =
         currentDate.getFullYear() +
@@ -638,16 +1009,43 @@ function exportExcel() {
 $(document).ready(function () {
     $('#ERPHeading').text('Employee Expenses Ledger');
     initDefaultDates();
+    initSelect2('#ddlElrStatus');
     loadDropdowns();
 
     $('#ddlProject').on('change', function () {
         refreshSubProjectOptions();
+    });
+    $('#ddlEmployee').on('change', function () {
+        if (!G_FiltersReady || isProjectExpenseReport()) return;
+        reloadLedgerProjectFilters();
+    });
+    $('#ddlReportType').on('change', function () {
+        if (!G_FiltersReady) return;
+        applyReportTypeLayout();
+    });
+    $('#ddlElrStatus').on('change', function () {
+        if (!isProjectExpenseReport()) return;
+        projectDrill = emptyProjectDrill();
+        renderProjectCrumb();
+        showProjectPlaceholder('Click Show to load the report.');
+        loadProjectExpenseProjects();
+    });
+    $('#elrCrumb').on('click', '.elr-crumb-btn', function () {
+        goToProjectLevel($(this).attr('data-level'));
+    });
+    $('#tblProjectExpenseBody').on('click', 'tr.elr-row-link', function () {
+        openNextProjectLevel($(this).data('row'));
     });
 
     $('#fetchReportButton').on('click', fetchReport);
     $('#btnDownload').on('click', exportExcel);
     $('#btnLedgerClosing').on('click', scrollLedgerToClosing);
     $('#btnLedgerClose').on('click', function () {
+        if (isProjectExpenseReport()) {
+            $('#ddlProject').val('0').trigger('change');
+            $('#ddlElrStatus').val('Pending').trigger('change');
+            return;
+        }
         clearLedgerView();
     });
 
@@ -673,7 +1071,7 @@ $(document).ready(function () {
     });
 
     window.addEventListener('beforeprint', function () {
-        if (!G_LedgerData.length) return;
+        if (isProjectExpenseReport() || !G_LedgerData.length) return;
         printLedgerRestore = {
             page: G_LedgerCurrentPage,
             size: ledgerPageSize(),
