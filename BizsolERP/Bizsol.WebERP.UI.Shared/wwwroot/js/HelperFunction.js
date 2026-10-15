@@ -1,4 +1,54 @@
 import { UserDashboardMenuService } from './JSServices/UserDashboardMenuService.js';
+import { UrlService } from './URL.js';
+import { promiseAjaxCallApi } from './PromiseAjaxCallApi.js';
+
+var _webUserPerPageConfigPromise = null;
+
+var _webUserPerPageDefaults = {
+    options: [10, 20, 30, 50, 100, 200],
+    value: 10
+};
+
+function extractWebUserConfigRow(response) {
+    if (!response) {
+        return null;
+    }
+    var list = firstArray(response);
+    if (list.length) {
+        return list[0];
+    }
+    if (typeof response === 'object' && !Array.isArray(response)) {
+        return response;
+    }
+    return null;
+}
+
+function parsePerPageOptions(perPageOption) {
+    if (perPageOption == null || perPageOption === '') {
+        return null;
+    }
+    var parts = String(perPageOption).split(',')
+        .map(function (s) { return parseInt(String(s).trim(), 10); })
+        .filter(function (n) { return !isNaN(n) && n > 0; });
+    return parts.length ? parts : null;
+}
+
+function buildPerPageConfigFromResponse(response) {
+    var defaults = _webUserPerPageDefaults;
+    var row = extractWebUserConfigRow(response);
+    var perPageOption = row && (row.PerPageOption != null ? row.PerPageOption : row.perPageOption);
+    var perPageValue = row && (row.PerPageValue != null ? row.PerPageValue : row.perPageValue);
+    var options = parsePerPageOptions(perPageOption) || defaults.options.slice();
+    var value = parseInt(perPageValue, 10);
+    if (isNaN(value) || value <= 0) {
+        value = defaults.value;
+    }
+    if (options.indexOf(value) === -1) {
+        options.push(value);
+    }
+    options.sort(function (a, b) { return a - b; });
+    return { options: options, value: value };
+}
 
 function firstArray(payload) {
     if (!payload) return [];
@@ -310,6 +360,56 @@ const BizSolHelperFunction = {
      * Blocks non-alphanumeric keypresses and auto-uppercases on input/paste.
      * @param {string|HTMLElement|jQuery} selector - CSS selector, DOM element, or jQuery object.
      */
+    GetWebUserConfiguration: function GetWebUserConfiguration() {
+        var auth = {};
+        try {
+            auth = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        } catch (e) {
+            auth = {};
+        }
+        var url = UrlService.API_UserMODULE + '/GetWebUserConfiguration';
+        return promiseAjaxCallApi.CallAPI('GET', url, '', { suppressErrorToast: true });
+    },
+    getWebUserPerPageDefaults: function getWebUserPerPageDefaults() {
+        return {
+            options: _webUserPerPageDefaults.options.slice(),
+            value: _webUserPerPageDefaults.value
+        };
+    },
+    getWebUserPerPageConfig: function getWebUserPerPageConfig() {
+        if (typeof window !== 'undefined' && window.bizsolPerPageConfig) {
+            return window.bizsolPerPageConfig;
+        }
+        return this.getWebUserPerPageDefaults();
+    },
+    ensureWebUserPerPageConfiguration: function ensureWebUserPerPageConfiguration(onApplied) {
+        if (_webUserPerPageConfigPromise) {
+            return _webUserPerPageConfigPromise;
+        }
+        var self = this;
+        if (typeof window !== 'undefined' && !window.bizsolPerPageConfig) {
+            window.bizsolPerPageConfig = self.getWebUserPerPageDefaults();
+        }
+        _webUserPerPageConfigPromise = self.GetWebUserConfiguration()
+            .then(function (response) {
+                var cfg = buildPerPageConfigFromResponse(response);
+                if (typeof window !== 'undefined') {
+                    window.bizsolPerPageConfig = cfg;
+                }
+                if (typeof onApplied === 'function') {
+                    onApplied(cfg);
+                }
+                return cfg;
+            })
+            .catch(function () {
+                var cfg = self.getWebUserPerPageDefaults();
+                if (typeof window !== 'undefined') {
+                    window.bizsolPerPageConfig = cfg;
+                }
+                return cfg;
+            });
+        return _webUserPerPageConfigPromise;
+    },
     applyAlphaNumUppercase: function applyAlphaNumUppercase(selector) {
         var elements;
         if (typeof selector === 'string') {
@@ -333,6 +433,10 @@ const BizSolHelperFunction = {
             });
         });
     }
+}
+
+if (typeof window !== 'undefined') {
+    window.BizSolHelperFunction = BizSolHelperFunction;
 }
 
 export { BizSolHelperFunction }

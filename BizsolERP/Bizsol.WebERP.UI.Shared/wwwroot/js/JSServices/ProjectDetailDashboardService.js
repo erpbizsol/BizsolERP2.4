@@ -76,6 +76,40 @@ const ProjectDetailDashboardService = {
         const url = `${BASE()}/GetExpenseSummary?ProjectMaster_Code=${projectCode}&SubProjectMaster_Code=${subProjectCode}&FromDate=${fromDate}&ToDate=${toDate}`;
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
+
+    // ── Sub-project wise pending approvals (SP modes PENDING_*_BY_SUBPROJECT) ──
+    // GET api/ProjectDetailDashboard/GetPendingPOBySubProject
+    GetPendingPOBySubProject: function GetPendingPOBySubProject(projectCode, subProjectCode) {
+        return pendingBySubProject('GetPendingPOBySubProject', projectCode, subProjectCode);
+    },
+
+    // GET api/ProjectDetailDashboard/GetPendingPaymentBySubProject
+    GetPendingPaymentBySubProject: function GetPendingPaymentBySubProject(projectCode, subProjectCode) {
+        return pendingBySubProject('GetPendingPaymentBySubProject', projectCode, subProjectCode);
+    },
+
+    // GET api/ProjectDetailDashboard/GetPendingExpenseBySubProject
+    GetPendingExpenseBySubProject: function GetPendingExpenseBySubProject(projectCode, subProjectCode) {
+        return pendingBySubProject('GetPendingExpenseBySubProject', projectCode, subProjectCode);
+    },
+
+    // GET api/ProjectDetailDashboard/GetPendingGRNBySubProject
+    GetPendingGRNBySubProject: function GetPendingGRNBySubProject(projectCode, subProjectCode) {
+        return pendingBySubProject('GetPendingGRNBySubProject', projectCode, subProjectCode);
+    },
+
+    // GET api/ProjectDetailDashboard/GetProjectFinancialSummary (SP mode PROJECT_FINANCIAL_SUMMARY)
+    GetProjectFinancialSummary: function GetProjectFinancialSummary(projectCode, subProjectCode, fromDate, toDate) {
+        const url = `${BASE()}/GetProjectFinancialSummary?ProjectMaster_Code=${projectCode}&SubProjectMaster_Code=${subProjectCode}&FromDate=${fromDate}&ToDate=${toDate}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
 };
+
+function pendingBySubProject(action, projectCode, subProjectCode) {
+    const { userCode, groupCode } = getSessionUserAndGroup();
+    const url = `${BASE()}/${action}?ProjectMaster_Code=${projectCode}&SubProjectMaster_Code=${subProjectCode}` +
+        `&UserMaster_Code=${encodeURIComponent(userCode)}&GroupMaster_Code=${encodeURIComponent(groupCode)}`;
+    return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+}
 
 export { ProjectDetailDashboardService };

@@ -1047,6 +1047,8 @@ $(document).ready(function () {
                     window.G_HiddenActionButtons = [];
                 })
                 .finally(function () {
+                    window.G_HiddenActionButtonsLoaded = true;
+                    applyVendorMasterClientModeUi();
                     applyVendorHiddenActionButtonsToViewModal();
                     resolveVendorVerifyRight().then(function () {
                         GetVendorMasterList();
@@ -1554,7 +1556,9 @@ function mapVendorRowsToGrid(rows) {
 function applyVendorMasterClientModeUi() {
     var $btn = $("#vmBtnNewVendor");
     if (!$btn.length) return;
-    if (G_IsClientOrVendor === "C") {
+    // Client me button hamesha hide.
+    // Vendor me: config load hone tak hide (flicker avoid); config me NEW aaye to hide, nahi aaye to show.
+    if (G_IsClientOrVendor === "C" || !window.G_HiddenActionButtonsLoaded || isVendorActionButtonHidden("NEW")) {
         $btn.hide();
     } else {
         $btn.show();

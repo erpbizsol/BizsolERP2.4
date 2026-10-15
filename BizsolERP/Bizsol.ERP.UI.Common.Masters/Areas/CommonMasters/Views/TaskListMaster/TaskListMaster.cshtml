@@ -470,6 +470,9 @@
 
     #tlmDetailPanel .tlm-ci-po-step-body {
         padding: 20px 5px 21px;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .tlm-fg {
@@ -537,10 +540,14 @@
     }
 
     .tlm-task-grid-wrap {
+        width: 100%;
         max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
         overflow-x: auto;
         overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
     }
@@ -549,7 +556,8 @@
         width: 100%;
         border-collapse: collapse;
         font-size: 13px;
-        min-width: 720px;
+        min-width: 860px;
+        table-layout: fixed;
     }
 
     #tblTaskEntry thead th {
@@ -562,10 +570,18 @@
         white-space: nowrap;
     }
 
+    #tblTaskEntry th.tlm-col-task,
+    #tblTaskEntry td.tlm-col-task {
+        width: 280px;
+        min-width: 280px;
+    }
+
     #tblTaskEntry tbody td {
         padding: 8px 10px;
         border-bottom: 1px solid #eef2f7;
         vertical-align: middle;
+        overflow: hidden;
+        max-width: 0;
     }
 
     #tblTaskEntry tbody tr:last-child td { border-bottom: none; }
@@ -573,7 +589,10 @@
     #tblTaskEntry input[type="text"],
     #tblTaskEntry input[type="date"],
     #tblTaskEntry select {
+        display: block;
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
         padding: 8px 10px;
         border-radius: 8px;
         border: 1.5px solid #e2e8f0;
@@ -755,19 +774,74 @@
             padding: 10px 10px;
         }
 
+        #tlmDetailPanel .tlm-ci-po-step-card {
+            overflow: visible;
+        }
+
+        #tlmDetailPanel .tlm-ci-po-step-body {
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+
         .tlm-task-grid-wrap {
+            width: 100%;
             max-width: 100%;
+            min-width: 0;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
 
         #tblTaskEntry {
             width: max-content;
-            min-width: 100%;
+            /* Keep total width > sum of fixed cols so Task column is not crushed on narrow screens */
+            min-width: 920px;
+        }
+
+        #tblTaskEntry th.tlm-col-freq,
+        #tblTaskEntry td.tlm-col-freq,
+        #tblTaskEntry th:nth-child(3),
+        #tblTaskEntry td:nth-child(3) {
+            width: 118px;
+            min-width: 118px;
+        }
+
+        #tblTaskEntry th.tlm-col-status,
+        #tblTaskEntry td.tlm-col-status,
+        #tblTaskEntry th:nth-child(4),
+        #tblTaskEntry td:nth-child(4) {
+            width: 108px;
+            min-width: 108px;
+        }
+
+        #tblTaskEntry th.tlm-col-task,
+        #tblTaskEntry td.tlm-col-task {
+            width: 300px;
+            min-width: 300px;
         }
 
         #tblTaskEntry thead th {
             white-space: nowrap;
+        }
+
+        #tblTaskEntry tbody td {
+            overflow: hidden;
+        }
+
+        #tblTaskEntry .tlm-period-date-wrap {
+            max-width: 100%;
+        }
+
+        #tblTaskEntry .tlm-period-date-wrap .tlm-period-slot,
+        #tblTaskEntry .tlm-period-date-wrap .tlm-period-picker {
+            min-width: 0;
+            max-width: 100%;
+            flex: 1 1 100%;
+        }
+
+        html.ios-device #TaskListMasterPage #tblTaskEntry input,
+        html.ios-device #TaskListMasterPage #tblTaskEntry select {
+            max-width: 100%;
+            min-width: 0;
         }
     }
 </style>
@@ -874,14 +948,22 @@
                 </div>
                 <div class="tlm-task-grid-wrap">
                     <table id="tblTaskEntry">
+                        <colgroup>
+                            <col class="tlm-col-sno" style="width:48px;" />
+                            <col class="tlm-col-task" />
+                            <col class="tlm-col-freq" style="width:140px;" />
+                            <col class="tlm-col-status" style="width:140px;" />
+                            <col class="tlm-col-date" style="width:170px;" />
+                            <col class="tlm-col-del" style="width:52px;" />
+                        </colgroup>
                         <thead>
                             <tr>
-                                <th style="width:48px;">S.No.</th>
-                                <th>Task <span class="text-danger">*</span></th>
-                                <th style="width:140px;">Freq <span class="text-danger">*</span></th>
-                                <th style="width:140px;">Active / Inactive</th>
-                                <th style="width:170px;" id="thTaskDate">Date</th>
-                                <th style="width:52px;"></th>
+                                <th class="tlm-col-sno" style="width:48px;">S.No.</th>
+                                <th class="tlm-col-task">Task <span class="text-danger">*</span></th>
+                                <th class="tlm-col-freq" style="width:140px;">Freq <span class="text-danger">*</span></th>
+                                <th class="tlm-col-status" style="width:140px;">Active / Inactive</th>
+                                <th class="tlm-col-date" style="width:170px;" id="thTaskDate">Date</th>
+                                <th class="tlm-col-del" style="width:52px;"></th>
                             </tr>
                         </thead>
                         <tbody id="tbodyTaskEntry"></tbody>
