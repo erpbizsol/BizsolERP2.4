@@ -37,6 +37,18 @@ const ProjectMasterService = {
             return value;
         });
     },
+    MarkAsClosed: function MarkAsClosed(code) {
+        const URL = UrlService.API_ENDPOINT_ProjectMaster + "/MarkAsClosed?Code=" + encodeURIComponent(code || 0);
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(function (value) {
+            return value;
+        });
+    },
+    UnMarkAsClosed: function UnMarkAsClosed(code) {
+        const URL = UrlService.API_ENDPOINT_ProjectMaster + "/UnMarkAsClosed?Code=" + encodeURIComponent(code || 0);
+        return promiseAjaxCallApi.CallAPI('POST', URL, "").then(function (value) {
+            return value;
+        });
+    },
 };
 
 export { ProjectMasterService }
