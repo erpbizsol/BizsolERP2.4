@@ -223,6 +223,26 @@ let G_ProjectList = [];
 let G_TreeCache = {};
 let G_CategoryGroupCache = {};
 let G_TreeExpandId = 0;
+let G_BudgetRawRows = [];
+let G_BudgetDrill = resetBudgetDrill();
+
+const BUDGET_PAGE_SUBTITLE = 'Project, sub-project and category / expense-head budget vs payment. Click a project to open sub-projects, then category.';
+const WISE_PAGE_SUBTITLE = 'BOM, PO, GRN and payment summary with balance columns for the selected project filters.';
+
+const BUDGET_DRILL_LEVELS = [
+    { key: 'project', title: 'Project wise', firstCol: 'Project<br>name', next: 'subproject' },
+    { key: 'subproject', title: 'Sub project wise', firstCol: 'Sub project', next: 'category' },
+    { key: 'category', title: 'Category / expense head wise', firstCol: 'Category /<br>Expense head', next: null },
+];
+
+function resetBudgetDrill() {
+    return { level: 'project', projectCode: 0, projectName: '', subProjectCode: 0, subProjectName: '' };
+}
+
+function isProjectBudgetMode() {
+    const v = String($('#ddlReportKind').val() || '').toLowerCase().replace(/\s+/g, '');
+    return v === 'projectbudget';
+}
 
 function asArray(response) {
     if (response == null) return [];
@@ -444,7 +464,37 @@ function findReportTypeOption(matchKey) {
     return found;
 }
 
+function applyBudgetUi() {
+    $('.pmr-page').addClass('pmr-budget-mode');
+    $('#pmrProjectOptionField').hide();
+    $('#pmrSubProjectField').hide();
+    $('#ddlSubProject').val('0').trigger('change.select2');
+    $('#tblPMR thead th.pmr-wise-col').hide();
+    $('#tblPMR thead th.pmr-budget-col').show();
+    $('#thSubProject, #thVendor, #thCategory, #thItem').hide();
+    const level = getBudgetLevel(G_BudgetDrill.level);
+    $('#thProject').show().html(level.firstCol);
+    $('#pmrPageSubtitle').text(BUDGET_PAGE_SUBTITLE);
+}
+
+function applyModeUi() {
+    if (isProjectBudgetMode()) {
+        applyBudgetUi();
+        return;
+    }
+    $('.pmr-page').removeClass('pmr-budget-mode');
+    $('#pmrProjectOptionField').show();
+    $('#tblPMR thead th.pmr-budget-col').hide();
+    $('#tblPMR thead th.pmr-wise-col').show();
+    $('#pmrPageSubtitle').text(WISE_PAGE_SUBTITLE);
+    applyReportTypeUi();
+}
+
 function applyReportTypeUi() {
+    if (isProjectBudgetMode()) {
+        applyBudgetUi();
+        return;
+    }
     const reportType = ($('#ddlReportType').val() || '').trim();
     G_CurrentLayout = getReportLayout(reportType);
     const profile = getTreeProfile();
@@ -1169,15 +1219,23 @@ function clearReport() {
     G_ReportData = [];
     G_TreeCache = {};
     G_CategoryGroupCache = {};
+    G_BudgetRawRows = [];
+    G_BudgetDrill = resetBudgetDrill();
     $('#tblPMRBody').empty();
+    $('#pmrDrillBreadcrumb').hide();
     updateSummaryChips([]);
     populateExportTable([]);
+    if (isProjectBudgetMode()) applyBudgetUi();
 }
 
 function fetchReport() {
+    if (isProjectBudgetMode()) {
+        fetchBudgetReport();
+        return;
+    }
     const reportType = ($('#ddlReportType option:selected').val() || '').trim();
     if (!reportType) {
-        toastr.warning('Select report type.');
+        toastr.warning('Select project option.');
         return;
     }
     applyReportTypeUi();
@@ -1242,6 +1300,10 @@ function populateExportTable(data) {
 }
 
 function exportExcel() {
+    if (isProjectBudgetMode()) {
+        exportBudgetExcel();
+        return;
+    }
     if (!G_ReportData.length) {
         toastr.warning('Load the report first.');
         return;
@@ -1324,7 +1386,292 @@ function loadTreeChildPanel($panel) {
         });
 }
 
+function getBudgetLevel(key) {
+    return BUDGET_DRILL_LEVELS.find(function (l) { return l.key === key; }) || BUDGET_DRILL_LEVELS[0];
+}
+
+function budgetField(row, keys, emptyLabel) {
+    const v = String(rowValue(row, keys) || '').trim();
+    return v || (emptyLabel || '');
+}
+
+function filterBudgetRows() {
+    let rows = G_BudgetRawRows.slice();
+    const filterCode = getFilterProjectCode();
+    if (filterCode > 0) {
+        rows = rows.filter(function (r) {
+            return rowCode(r, ['ProjectMaster_Code', 'projectMaster_Code']) === filterCode;
+        });
+    }
+    if (G_BudgetDrill.level !== 'project' && G_BudgetDrill.projectCode > 0) {
+        rows = rows.filter(function (r) {
+            return rowCode(r, ['ProjectMaster_Code', 'projectMaster_Code']) === G_BudgetDrill.projectCode;
+        });
+    } else if (G_BudgetDrill.level !== 'project' && G_BudgetDrill.projectName) {
+        const want = G_BudgetDrill.projectName.toLowerCase();
+        rows = rows.filter(function (r) {
+            return budgetField(r, ['ProjectName', 'projectName']).toLowerCase() === want;
+        });
+    }
+    if (G_BudgetDrill.level === 'category') {
+        if (G_BudgetDrill.subProjectCode > 0) {
+            rows = rows.filter(function (r) {
+                return rowCode(r, ['SubProjectMaster_Code', 'subProjectMaster_Code']) === G_BudgetDrill.subProjectCode;
+            });
+        } else {
+            const want = String(G_BudgetDrill.subProjectName || '').trim().toLowerCase();
+            rows = rows.filter(function (r) {
+                const name = budgetField(r, ['SubProjectDesp', 'subProjectDesp', 'ProjectLocation', 'SubProjectName'], '(No Sub Project)').toLowerCase();
+                return name === (want || '(no sub project)');
+            });
+        }
+    }
+    return rows;
+}
+
+function sumBudgetLines(lines) {
+    let budget = 0;
+    let gst = 0;
+    let pay = 0;
+    lines.forEach(function (r) {
+        budget += parseNum(rowValue(r, ['BudgetAmount', 'budgetAmount']));
+        gst += parseNum(rowValue(r, ['BudgetGSTAmount', 'budgetGSTAmount']));
+        pay += parseNum(rowValue(r, ['PaymentAmount', 'paymentAmount']));
+    });
+    return {
+        BudgetAmount: budget,
+        BudgetGSTAmount: gst,
+        PaymentAmount: pay,
+        BalanceAmount: budget + gst - pay,
+    };
+}
+
+function budgetGroupRows(rows, level) {
+    const map = new Map();
+    rows.forEach(function (r) {
+        let key = '';
+        let label = '';
+        let projectCode = rowCode(r, ['ProjectMaster_Code', 'projectMaster_Code']);
+        let subCode = rowCode(r, ['SubProjectMaster_Code', 'subProjectMaster_Code']);
+        if (level === 'project') {
+            label = budgetField(r, ['ProjectName', 'projectName'], '(No Project)');
+            key = String(projectCode || 0) + '|' + label.toLowerCase();
+        } else if (level === 'subproject') {
+            label = budgetField(r, ['SubProjectDesp', 'subProjectDesp', 'ProjectLocation', 'SubProjectName'], '(No Sub Project)');
+            key = String(subCode || 0) + '|' + label.toLowerCase();
+        } else {
+            label = budgetField(r, ['CategoryOrExpenseHead', 'categoryOrExpenseHead'], '—');
+            const lineType = budgetField(r, ['LineType', 'lineType']);
+            const lineCode = rowCode(r, ['LineMaster_Code', 'lineMaster_Code']);
+            key = String(lineCode || 0) + '|' + lineType + '|' + label.toLowerCase();
+        }
+        if (!map.has(key)) {
+            map.set(key, {
+                key: key,
+                label: label,
+                projectCode: projectCode,
+                projectName: budgetField(r, ['ProjectName', 'projectName']),
+                subProjectCode: subCode,
+                subProjectName: budgetField(r, ['SubProjectDesp', 'subProjectDesp', 'ProjectLocation', 'SubProjectName'], '(No Sub Project)'),
+                lineType: budgetField(r, ['LineType', 'lineType']),
+                lineGroupOrder: parseNum(rowValue(r, ['LineGroupOrder', 'lineGroupOrder'])),
+                sortOrder: parseNum(rowValue(r, ['SortOrder', 'sortOrder'])),
+                lines: [],
+            });
+        }
+        map.get(key).lines.push(r);
+    });
+    const list = Array.from(map.values()).map(function (g) {
+        return Object.assign(g, sumBudgetLines(g.lines));
+    });
+    list.sort(function (a, b) {
+        if (level === 'category') {
+            if (a.lineGroupOrder !== b.lineGroupOrder) return a.lineGroupOrder - b.lineGroupOrder;
+            if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        }
+        return String(a.label || '').localeCompare(String(b.label || ''), undefined, { sensitivity: 'base' });
+    });
+    return list;
+}
+
+function budgetMetricCells(agg) {
+    return (
+        '<td class="num">' + formatAmount(agg.BudgetAmount) + '</td>' +
+        '<td class="num">' + formatAmount(agg.BudgetGSTAmount) + '</td>' +
+        '<td class="num">' + formatAmount(agg.PaymentAmount) + '</td>' +
+        '<td class="num">' + formatAmount(agg.BalanceAmount) + '</td>'
+    );
+}
+
+function updateBudgetBreadcrumb() {
+    const level = G_BudgetDrill.level;
+    if (level === 'project') {
+        $('#pmrDrillBreadcrumb').hide();
+        return;
+    }
+    const cfg = getBudgetLevel(level);
+    $('#pmrDrillTitle').text(cfg.title);
+    const crumbs = [
+        { level: 'project', label: 'Project wise' },
+    ];
+    if (G_BudgetDrill.projectName) crumbs.push({ level: 'subproject', label: G_BudgetDrill.projectName });
+    if (level === 'category' && G_BudgetDrill.subProjectName) {
+        crumbs.push({ level: 'category', label: G_BudgetDrill.subProjectName });
+    }
+    const html = crumbs.map(function (c, i) {
+        const last = i === crumbs.length - 1;
+        if (last) return '<span class="pmr-crumb-current">' + escapeHtmlText(c.label) + '</span>';
+        return '<a href="#" class="pmr-crumb-link" data-level="' + c.level + '">' + escapeHtmlText(c.label) + '</a><span class="pmr-crumb-sep"> › </span>';
+    }).join('');
+    $('#pmrDrillPath').html(html);
+    $('#pmrDrillBackText').text(level === 'category' ? 'Back to Sub project' : 'Back to Project wise');
+    $('#pmrDrillBreadcrumb').show();
+}
+
+function renderBudgetLevel() {
+    applyBudgetUi();
+    const levelCfg = getBudgetLevel(G_BudgetDrill.level);
+    const rows = filterBudgetRows();
+    const groups = budgetGroupRows(rows, G_BudgetDrill.level);
+    const $body = $('#tblPMRBody');
+    $body.empty();
+    updateBudgetBreadcrumb();
+
+    if (!groups.length) {
+        $body.append('<tr><td colspan="6" class="text-muted text-center py-3">No records found.</td></tr>');
+        return;
+    }
+
+    const canDrill = !!levelCfg.next;
+    groups.forEach(function (g, idx) {
+        const labelHtml = canDrill
+            ? '<a href="#" class="pmr-budget-drill-link">' + escapeHtmlText(g.label) + '</a>'
+            : '<span class="pmr-particulars-text">' + escapeHtmlText(g.label) + '</span>';
+        const $tr = $('<tr/>')
+            .addClass(canDrill ? 'pmr-budget-drill' : '')
+            .attr('data-budget-level', G_BudgetDrill.level)
+            .attr('data-project-code', g.projectCode || 0)
+            .attr('data-project-name', g.projectName || '')
+            .attr('data-sub-code', g.subProjectCode || 0)
+            .attr('data-sub-name', g.subProjectName || '')
+            .attr('data-label', g.label || '');
+        $tr.html(
+            '<td class="text-center">' + (idx + 1) + '</td>' +
+            '<td class="pmr-th-dim pmr-particulars-cell">' + labelHtml + '</td>' +
+            budgetMetricCells(g)
+        );
+        $body.append($tr);
+    });
+
+    const total = sumBudgetLines(rows);
+    $body.append(
+        '<tr class="row-total"><td></td><td><strong>Total</strong></td>' +
+        budgetMetricCells(total) +
+        '</tr>'
+    );
+}
+
+function budgetDrillInto($tr) {
+    const current = getBudgetLevel(G_BudgetDrill.level);
+    if (!current.next) return;
+    if (current.key === 'project') {
+        G_BudgetDrill.projectCode = parseInt($tr.attr('data-project-code') || '0', 10) || 0;
+        G_BudgetDrill.projectName = String($tr.attr('data-project-name') || $tr.attr('data-label') || '').trim();
+    } else if (current.key === 'subproject') {
+        G_BudgetDrill.subProjectCode = parseInt($tr.attr('data-sub-code') || '0', 10) || 0;
+        G_BudgetDrill.subProjectName = String($tr.attr('data-sub-name') || $tr.attr('data-label') || '').trim();
+    }
+    G_BudgetDrill.level = current.next;
+    renderBudgetLevel();
+}
+
+function budgetGoToLevel(levelKey) {
+    if (levelKey === 'project') {
+        G_BudgetDrill = resetBudgetDrill();
+    } else if (levelKey === 'subproject') {
+        G_BudgetDrill.level = 'subproject';
+        G_BudgetDrill.subProjectCode = 0;
+        G_BudgetDrill.subProjectName = '';
+    } else {
+        G_BudgetDrill.level = 'category';
+    }
+    renderBudgetLevel();
+}
+
+function budgetDrillBack() {
+    if (G_BudgetDrill.level === 'category') budgetGoToLevel('subproject');
+    else if (G_BudgetDrill.level === 'subproject') budgetGoToLevel('project');
+}
+
+function fetchBudgetReport() {
+    applyBudgetUi();
+    G_BudgetDrill = resetBudgetDrill();
+    if (typeof Showloader === 'function') Showloader();
+    ProjectManagementReportService.GetProjectBudgetReport()
+        .then(function (response) {
+            if (typeof HideLoader === 'function') HideLoader();
+            const rows = asArray(response);
+            if (!rows.length) {
+                G_BudgetRawRows = [];
+                $('#tblPMRBody').empty();
+                $('#pmrDrillBreadcrumb').hide();
+                toastr.error('Record not found.');
+                return;
+            }
+            const err0 = rows[0].Error || rows[0].error || rows[0].Msg || rows[0].msg;
+            if (err0 != null && err0 !== '') {
+                G_BudgetRawRows = [];
+                $('#tblPMRBody').empty();
+                toastr.error(String(err0));
+                return;
+            }
+            G_BudgetRawRows = rows.filter(function (r) { return !r.Error && !r.error; });
+            G_ReportData = G_BudgetRawRows.slice();
+            renderBudgetLevel();
+        })
+        .catch(function (err) {
+            if (typeof HideLoader === 'function') HideLoader();
+            console.error('GetProjectBudgetReport error:', err);
+            G_BudgetRawRows = [];
+            $('#tblPMRBody').empty();
+            toastr.error((err && (err.Msg || err.message)) || 'Error loading project budget report.');
+        });
+}
+
+function exportBudgetExcel() {
+    if (!G_BudgetRawRows.length) {
+        toastr.warning('Load the report first.');
+        return;
+    }
+    const rows = filterBudgetRows();
+    const $h = $('#tblPMRExport thead tr');
+    const $b = $('#tblPMRExport tbody');
+    $h.empty();
+    $b.empty();
+    const headers = [
+        'Project Name', 'Sub Project', 'Line Type', 'Category / Expense Head',
+        'Budget Amount', 'Budget GST Amount', 'Payment', 'Balance',
+    ];
+    headers.forEach(function (h) { $h.append($('<th/>').text(h)); });
+    rows.forEach(function (item) {
+        const tr = $('<tr/>');
+        tr.append($('<td/>').text(budgetField(item, ['ProjectName'])));
+        tr.append($('<td/>').text(budgetField(item, ['SubProjectDesp', 'ProjectLocation', 'SubProjectName'])));
+        tr.append($('<td/>').text(budgetField(item, ['LineType'])));
+        tr.append($('<td/>').text(budgetField(item, ['CategoryOrExpenseHead'])));
+        tr.append($('<td/>').text(formatAmount(rowValue(item, ['BudgetAmount']))));
+        tr.append($('<td/>').text(formatAmount(rowValue(item, ['BudgetGSTAmount']))));
+        tr.append($('<td/>').text(formatAmount(rowValue(item, ['PaymentAmount']))));
+        tr.append($('<td/>').text(formatAmount(rowValue(item, ['BalanceAmount']))));
+        $b.append(tr);
+    });
+    const now = new Date();
+    const dateString = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + '_' + String(now.getHours()).padStart(2, '0') + '-' + String(now.getMinutes()).padStart(2, '0');
+    $('#tblPMRExport').table2excel({ filename: 'ProjectBudgetReport_' + dateString, fileext: '.xlsx' });
+}
+
 function handleTreeRowClick($row) {
+    if (isProjectBudgetMode()) return;
     const rowId = $row.attr('data-tree-id');
     if (!rowId) return;
 
@@ -1343,18 +1690,46 @@ function handleTreeRowClick($row) {
 $(document).ready(function () {
     applyPageHeadingFromModuleDesp();
     loadDropdowns();
+    $('#ddlReportKind').select2({ width: '100%', minimumResultsForSearch: Infinity });
+    applyModeUi();
 
+    $('#ddlReportKind').on('change', function () {
+        applyModeUi();
+        clearReport();
+    });
     $('#ddlReportType').on('change', function () {
         applyReportTypeUi();
         clearReport();
     });
     $('#ddlProject').on('change', function () {
         loadSubProjectDropdown(parseInt($(this).val() || '0', 10) || 0);
+        if (isProjectBudgetMode() && G_BudgetRawRows.length) {
+            G_BudgetDrill = resetBudgetDrill();
+            renderBudgetLevel();
+        }
     });
 
     $(document).on('click', '#tblPMRBody .pmr-tree-parent, .pmr-nested-table .pmr-tree-parent', function (e) {
+        if (isProjectBudgetMode()) return;
         e.stopPropagation();
         handleTreeRowClick($(this));
+    });
+    $(document).on('click', '#tblPMRBody a.pmr-budget-drill-link', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        budgetDrillInto($(this).closest('tr'));
+    });
+    $(document).on('click', '#tblPMRBody tr.pmr-budget-drill', function (e) {
+        if ($(e.target).closest('a').length) return;
+        budgetDrillInto($(this));
+    });
+    $('#btnDrillBack').on('click', function (e) {
+        e.preventDefault();
+        budgetDrillBack();
+    });
+    $(document).on('click', '#pmrDrillPath .pmr-crumb-link', function (e) {
+        e.preventDefault();
+        budgetGoToLevel($(this).data('level'));
     });
 
     $('#fetchReportButton').on('click', fetchReport);

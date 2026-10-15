@@ -27,15 +27,8 @@ $(document).ready(function () {
         $('#from-date-to-date-filter-bar').hide();
         $('#from-date-to-date-filter-bar-Ageing').hide();
         $('#divReportType').hide();
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        const iso = `${yyyy}-${mm}-${dd}`;
-        if (!$('#rpToDate').val()) {
-            $('#rpToDate').val(iso);
-        }
-        GetDateAndMillWiseReportList($('#rpToDate').val());
+        ensureDateMillDefaults();
+        GetDateAndMillWiseReportList($('#rpFromDate').val(), $('#rpToDate').val());
     });
     $(document).on('click', '#current-stock-tab', function () {
         clearTable();
@@ -107,12 +100,17 @@ $(document).ready(function () {
     });
   
     $(document).on('click', '#btnShowDateMillReport', function () {
-        const d = $('#rpToDate').val();
-        if (!d) {
-            toastr.warning('Please select a date');
+        const fromDate = $('#rpFromDate').val();
+        const toDate = $('#rpToDate').val();
+        if (!fromDate || !toDate) {
+            toastr.warning('Please select From Date and To Date');
             return;
         }
-        GetDateAndMillWiseReportList(d);
+        if (fromDate > toDate) {
+            toastr.warning('From Date cannot be greater than To Date');
+            return;
+        }
+        GetDateAndMillWiseReportList(fromDate, toDate);
     });
     $(document).on('click', '#btnShowDatePendingPlansReport', function () {
         G_FromDate = $('#fromDate').val();
@@ -121,10 +119,11 @@ $(document).ready(function () {
         var ItemMaster_Code = $("#ddlItemName").val();
         GetPendingPlansReportList(G_FromDate, G_ToDate, Status, ItemMaster_Code);
     });
-    $(document).on('change', '#rpToDate', function () {
-        const d = $(this).val();
-        if (d) {
-            GetDateAndMillWiseReportList(d);
+    $(document).on('change', '#rpFromDate,#rpToDate', function () {
+        const fromDate = $('#rpFromDate').val();
+        const toDate = $('#rpToDate').val();
+        if (fromDate && toDate && fromDate <= toDate) {
+            GetDateAndMillWiseReportList(fromDate, toDate);
         }
     });
 
@@ -246,17 +245,32 @@ function GetRollingPlanSheetList() {
         toastr.error(error.Msg || 'Error During Get Rolling Plan Sheet');
     });
 }
-function GetDateAndMillWiseReportList(ToDate) {
+function ensureDateMillDefaults() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const iso = `${yyyy}-${mm}-${dd}`;
+    if (!$('#rpFromDate').val()) {
+        $('#rpFromDate').val(iso);
+    }
+    if (!$('#rpToDate').val()) {
+        $('#rpToDate').val(iso);
+    }
+}
+function GetDateAndMillWiseReportList(fromDate, toDate) {
     Showloader();
-    RollingPlanSheetService.GetDateAndMillWiseReportList(ToDate).then(function (response) {
+    clearTable();
+    RollingPlanSheetService.GetDateAndMillWiseReportList(fromDate, toDate).then(function (response) {
         if (response && response.length > 0) {
             HideLoader();
-            renderDateAndMillWiseReportTable(response, ToDate);
+            renderDateAndMillWiseReportTable(response, fromDate, toDate);
         } else {
             HideLoader();
             toastr.error('No Data Found');
         }
     }).catch(function (error) {
+        HideLoader();
         toastr.error(error.Msg || 'Error During Get Rolling Plan Sheet');
     });
 }
@@ -268,7 +282,7 @@ function clearTable() {
     // Also clear any existing totals row
     $('.totals-row').remove();
 }
-function renderDateAndMillWiseReportTable(response, reportDate) {
+function renderDateAndMillWiseReportTable(response, fromDate, toDate) {
     const mills = [...new Set(response.map(r => r.MachineNo))];
     const rowsByMill = {};
     const totalsByMill = {};
@@ -282,6 +296,9 @@ function renderDateAndMillWiseReportTable(response, reportDate) {
     const maxRows = Math.max(...mills.map(m => rowsByMill[m].length));
 
     let headHtml = '';
+    const reportDate = (fromDate && toDate && fromDate !== toDate)
+        ? `${fromDate} TO ${toDate}`
+        : (toDate || fromDate || '');
     if (reportDate) {
         const colspan = mills.length * 5;
         headHtml += `<tr><th colspan="${colspan}" style="text-align:center;background:white;color:black;">DATE: ${reportDate}</th></tr>`;

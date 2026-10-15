@@ -1,13 +1,7 @@
-// Helper function to escape special characters in IDs for jQuery selectors
 window.escapeId = function escapeId(id) {
     return id.replace(/([\/.:\[\]#@$%^&*()+=,!~`{}'"<>?|\\])/g, '\\$1');
 }
 
-/**
- * Keep column filter panels visible when the grid scrolls or the page is zoomed.
- * Uses fixed positioning relative to the header cell so panels are not clipped
- * by overflow on .table-wrapper / .sa-table-wrapper.
- */
 window.bizsolGetFilterAnchor = function bizsolGetFilterAnchor($panel) {
     if (!$panel || !$panel.length) {
         return $();
@@ -128,6 +122,95 @@ window.bizsolBindFilterFloatListeners = function bizsolBindFilterFloatListeners(
 };
 
 bizsolBindFilterFloatListeners();
+
+window.getBizsolHelperForFilter = function getBizsolHelperForFilter() {
+    return window.BizSolHelperFunction || null;
+};
+
+window.getBizsolPerPageConfig = function getBizsolPerPageConfig() {
+    var helper = window.getBizsolHelperForFilter();
+    if (helper && typeof helper.getWebUserPerPageConfig === 'function') {
+        return helper.getWebUserPerPageConfig();
+    }
+    return { options: [10, 20, 30, 50, 100, 200], value: 10 };
+};
+
+window.buildPageSizeOptionsHtml = function buildPageSizeOptionsHtml(options, selectedValue) {
+    var list = (options || []).slice();
+    var selected = parseInt(selectedValue, 10);
+    if (isNaN(selected) || selected <= 0) {
+        selected = list[0] || window.getBizsolPerPageConfig().value;
+    }
+    if (list.indexOf(selected) === -1) {
+        list.push(selected);
+    }
+    list.sort(function (a, b) { return a - b; });
+    return list.map(function (n) {
+        var sel = n === selected ? ' selected' : '';
+        return '<option value="' + n + '"' + sel + '>' + n + '</option>';
+    }).join('');
+};
+
+window.applyBizsolPerPageConfigToGrids = function applyBizsolPerPageConfigToGrids() {
+    var cfg = window.getBizsolPerPageConfig();
+    $('select.pageSize[id^="pageSize-"]').each(function () {
+        var $sel = $(this);
+        var tableId = ($sel.attr('id') || '').replace(/^pageSize-/, '');
+        if (!tableId) {
+            return;
+        }
+        var prev = parseInt($sel.val(), 10);
+        $sel.html(window.buildPageSizeOptionsHtml(cfg.options, cfg.value));
+        if (!isNaN(prev) && cfg.options.indexOf(prev) !== -1) {
+            $sel.val(String(prev));
+        } else {
+            $sel.val(String(cfg.value));
+        }
+        window['itemsPerPage_' + tableId] = parseInt($sel.val(), 10) || cfg.value;
+        window['currentPage_' + tableId] = 1;
+        var bodyId = $('#' + tableId).find('tbody').attr('id');
+        if (bodyId && window['Paginator_' + tableId]) {
+            renderTableWithPagination(tableId, bodyId);
+        }
+    });
+};
+
+window.ensureBizsolWebUserConfiguration = function ensureBizsolWebUserConfiguration() {
+    if (window._bizsolWebUserConfigPromise) {
+        return window._bizsolWebUserConfigPromise;
+    }
+    window._bizsolWebUserConfigPromise = new Promise(function (resolve) {
+        function runWithHelper(helper) {
+            if (helper && typeof helper.ensureWebUserPerPageConfiguration === 'function') {
+                helper.ensureWebUserPerPageConfiguration(window.applyBizsolPerPageConfigToGrids)
+                    .then(resolve)
+                    .catch(function () { resolve(window.getBizsolPerPageConfig()); });
+                return;
+            }
+            resolve(window.getBizsolPerPageConfig());
+        }
+        var helper = window.getBizsolHelperForFilter();
+        if (helper) {
+            runWithHelper(helper);
+            return;
+        }
+        import('/_content/Bizsol.WebERP.UI.Shared/js/HelperFunction.js')
+            .then(function (module) {
+                if (module && module.BizSolHelperFunction) {
+                    window.BizSolHelperFunction = module.BizSolHelperFunction;
+                }
+                runWithHelper(window.getBizsolHelperForFilter());
+            })
+            .catch(function () {
+                resolve(window.getBizsolPerPageConfig());
+            });
+    });
+    return window._bizsolWebUserConfigPromise;
+};
+
+$(function () {
+    window.ensureBizsolWebUserConfiguration();
+});
 
 /**
  * Format a number with Indian comma grouping  e.g. 2,00,000.00
@@ -284,7 +367,7 @@ const BizsolCustomFilterGrid = {
         window[`filteredDataTemp_${tableId}`] = data;
         bodyId = bodyId;
         window[`currentPage_${tableId}`] = 1;
-        window[`itemsPerPage_${tableId}`] = 10;
+        window[`itemsPerPage_${tableId}`] = window.getBizsolPerPageConfig().value;
         window[`Paginator_${tableId}`] = Paginator;
         window[`globalSearch_${tableId}`] = !!GlobalSearch;
 
@@ -310,6 +393,7 @@ const BizsolCustomFilterGrid = {
         }
 
         if (Paginator) {
+            window.ensureBizsolWebUserConfiguration();
             createPaginator(tableId, bodyId);
             renderTableWithPagination(tableId, bodyId);
         }
@@ -1480,16 +1564,13 @@ window.pageSize = function pageSize(tableId, bodyId) {
 };
 window.createPaginator = function createPaginator(tableId, bodyId) {
     $('#paginator-' + tableId).empty();
+    var perPageCfg = window.getBizsolPerPageConfig();
+    var pageSizeOptionsHtml = window.buildPageSizeOptionsHtml(perPageCfg.options, perPageCfg.value);
     var filterHtml = `
         <div class="page-size-select">
             <label for="pageSize-${tableId}">Lines Per Page:</label>
             <select onchange="pageSize('${tableId}','${bodyId}')" class="pageSize" id="pageSize-${tableId}">
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="30">30</option>
-                <option value="50">50</option>   
-                <option value="100">100</option>   
-                <option value="200">200</option>   
+                ${pageSizeOptionsHtml}
             </select>
         </div>
         <button id="firstBtn-${tableId}" onclick="firstBtn('${tableId}','${bodyId}')" class="btn btn-primary paginator-btn icon-height">
