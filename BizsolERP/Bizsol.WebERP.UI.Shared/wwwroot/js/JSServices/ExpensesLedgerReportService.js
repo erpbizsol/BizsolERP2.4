@@ -101,21 +101,34 @@ const ExpensesLedgerReportService = {
         );
     },
 
-    GetProjectMasterList: function GetProjectMasterList() {
-        const url = ddlUrlWithMode('GetProjectMasterList', EXPENSE_LEDGER_DDL_MODE.PROJECT);
+    GetProjectMasterList: function GetProjectMasterList(employeeMaster_Code) {
+        let url = ddlUrlWithMode('GetProjectMasterList', EXPENSE_LEDGER_DDL_MODE.PROJECT);
+        const emp = parseInt(employeeMaster_Code, 10) || 0;
+        if (emp > 0) url += `&EmployeeMaster_Code=${encodeURIComponent(emp)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
             return value;
         });
     },
 
-    GetSubProjectMasterList: function GetSubProjectMasterList() {
-        const url = ddlUrlWithMode('GetSubProjectMasterList', EXPENSE_LEDGER_DDL_MODE.SUB_PROJECT);
+    GetSubProjectMasterList: function GetSubProjectMasterList(employeeMaster_Code, projectMaster_Code) {
+        let url = ddlUrlWithMode('GetSubProjectMasterList', EXPENSE_LEDGER_DDL_MODE.SUB_PROJECT);
+        const emp = parseInt(employeeMaster_Code, 10) || 0;
+        const proj = parseInt(projectMaster_Code, 10) || 0;
+        if (emp > 0) url += `&EmployeeMaster_Code=${encodeURIComponent(emp)}`;
+        if (proj > 0) url += `&ProjectMaster_Code=${encodeURIComponent(proj)}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
             return value;
         });
     },
 
     /** Closing balance for Expense Entry (Mode=CLOSING_BALANCE) — Entry Date + Marketing Man only. */
+    GetProjectExpenseReport: function GetProjectExpenseReport(payload) {
+        const url = UrlService.API_ENDPOINT_PROJECT_EXPENSE_REPORT + '/GetProjectExpenseReport';
+        return promiseAjaxCallApi.CallAPI('POST', url, JSON.stringify(payload || {})).then(function (value) {
+            return value;
+        });
+    },
+
     GetClosingBalance: function GetClosingBalance(entryDate, employeeMaster_Code) {
         let qs =
             `?FromDate=${encodeURIComponent(entryDate || '')}` +
