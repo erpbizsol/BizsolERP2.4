@@ -1,4 +1,4 @@
-@{
+﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
@@ -693,6 +693,21 @@
     }
     .gpa-party-add-btn:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(16,185,129,0.5); }
 
+    /* ── Item Description Select2 (same look as PO "Bill To") ── */
+    #divGPAForm .select2-container { width: 100% !important; }
+    #divGPAForm .select2-container--default .select2-selection--single {
+        height: 31px; border: 1.5px solid #ddd6fe;
+        border-radius: 8px; background-color: #f5f3ff;
+    }
+    #divGPAForm .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 29px; padding-left: 8px; font-size: 0.8rem; color: #1e1b4b;
+    }
+    #divGPAForm .select2-container--default .select2-selection--single .select2-selection__arrow { height: 29px; }
+    #divGPAForm .select2-container--default.select2-container--focus .select2-selection--single,
+    #divGPAForm .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); outline: none;
+    }
+    #divGPAForm .select2-container--default .select2-selection--single .select2-selection__placeholder { color: #94a3b8; }
     .gpa-pay-card-right {
         flex-shrink: 0;
         text-align: right;
@@ -1214,7 +1229,17 @@
             </div>
             
             <div class="row g-2 mt-1">
-                <div class="col-12">
+                <div class="col-md-4">
+                    <label class="po-field-lbl d-block mb-1">Item Description</label>
+                    <div class="d-flex align-items-center gap-1">
+                        <div style="flex:1;min-width:0;">
+                            <select id="txtItemDescription" class="form-control form-control-sm" style="width:100%;" autocomplete="off">
+                                <option value=""></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
                     <label class="po-field-lbl d-block mb-1">Narration</label>
                     <textarea id="txtNarration" class="form-control form-control-sm" rows="2" maxlength="1000" autocomplete="off" placeholder="Enter narration (optional)"></textarea>
                 </div>
@@ -1244,7 +1269,7 @@
                         <tr>
                             <th>Bill no</th>
                             <th>PO no</th>
-                            <th>Category</th>
+                            <th>Budget Category <span class="req" aria-hidden="true">*</span></th>
                             <th>Project <span id="gpaProjectReqMark" class="req" style="display: none;" aria-hidden="true">*</span></th>
                             <th>Sub project</th>
                             <th>Bill date</th>
@@ -1310,9 +1335,9 @@
                             </select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label mb-1 po-field-lbl">Category</label>
+                            <label class="form-label mb-1 po-field-lbl">Budget Category <span class="req">*</span></label>
                             <select id="gpaAddBillModalCategory" class="form-control form-control-sm">
-                                <option value="">-- Category --</option>
+                                <option value="">-- Budget Category --</option>
                             </select>
                         </div>
                     </div>
@@ -1553,7 +1578,7 @@
                                     <th style="width:40px;">#</th>
                                     <th>Bill no</th>
                                     <th>PO no</th>
-                                    <th>Category</th>
+                                    <th>Budget Category</th>
                                     <th>Project</th>
                                     <th>Sub project</th>
                                     <th>Bill date</th>

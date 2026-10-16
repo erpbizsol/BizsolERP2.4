@@ -1,5 +1,6 @@
 import { BankStatementService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BankStatementService.js';
 import { GRNPaymentApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GRNPaymentEntryService.js';
+import { BOMService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BOMService.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 
 /** Pending reconciliation toggle after user confirms modal */
@@ -17,8 +18,18 @@ var pendingBsGrnEmbedCtx = null;
 var BS_BACKDROP_IDS = [
     'bsImportBackdrop', 'bsGrnPaymentEmbedBackdrop', 'bsReconcileChoiceBackdrop',
     'bsReconConfirmBackdrop', 'bsGrnAutoMatchConfirmBackdrop', 'bsGrnUnreconcileDeleteBackdrop',
+    'bsReceiptReportBackdrop',
     'bsResultBackdrop', 'bsDeleteBackdrop', 'bsHistoryDetailBackdrop'
 ];
+/** Latest list rows by BankStatement.Code — used by the receipt modal. */
+var statementRowsByCode = {};
+var receiptMastersLoaded = false;
+var receiptProjectRows = [];
+var receiptCategoryRows = [];
+var receiptItemRows = [];
+var receiptVendorRows = [];
+var receiptModalCode = 0;
+var applicableSaveInFlight = {};
 
 function mountBankStatementModalsToBody() {
     BS_BACKDROP_IDS.forEach(function (id) {
@@ -169,6 +180,48 @@ function isRowReconciled(row) {
     return u === 'Y' || u === 'C';
 }
 
+function isApplicableReportY(row) {
+    var v = row && (row.ApplicableReport != null ? row.ApplicableReport : row.applicableReport);
+    if (v === true || v === 1) return true;
+    if (v == null || v === '') return false;
+    return String(v).trim().toUpperCase() === 'Y';
+}
+
+/**
+ * Row colour (deposit green is the base for receipts; payment base is white):
+ * Applicable Report Y + Reconciled Y = green
+ * Applicable Report Y + Reconciled N = yellow
+ * Reconciled Y + Applicable Report N = red
+ * Deposit and none of the above = green; payment and none of the above = white
+ */
+function statementRowToneClass(depositAmt, reconY, appY) {
+    if (appY && reconY) return 'bs-row-tone-green';
+    if (appY && !reconY) return 'bs-row-tone-yellow';
+    if (reconY && !appY) return 'bs-row-tone-red';
+    if (depositAmt > 0) return 'bs-row-tone-green';
+    return 'bs-row-tone-white';
+}
+
+function positiveCode(v) {
+    var n = parseInt(String(v == null ? '' : v), 10);
+    return n > 0 ? String(n) : '';
+}
+
+function rowField(row, names) {
+    if (!row) return '';
+    for (var i = 0; i < names.length; i++) {
+        if (row[names[i]] != null && row[names[i]] !== '') return row[names[i]];
+    }
+    return '';
+}
+
+function normalizeMasterRows(data) {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data && data.data)) return data.data;
+    if (Array.isArray(data && data.Data)) return data.Data;
+    return [];
+}
+
 /** IsManualReconciled = Y from API (manual reconcile via No -> existing / new payment on this screen). */
 function isManualReconciledRow(row) {
     var mr = row && (row.IsManualReconciled != null ? row.IsManualReconciled : row.isManualReconciled);
@@ -181,14 +234,14 @@ function isManualReconciledImportRow(row) {
     return isManualReconciledRow(row);
 }
 
-/** When focused reconciliation filters are selected: hide deposit & closing summaries. */
+/** Un reconciled / Reconciled / Reconciled (Manual): hide closing balance column; keep Deposit (Cr) visible. */
 function syncBankStatementColumnVisibility() {
     var mode = String($('#ddlFilterStatement').val() || 'All').trim();
     var hideFin = mode === 'Unreconciled' || mode === 'BankStatement' || mode === 'ImportReconciled';
     $('#cardList').toggleClass('bs-stmt-hide-fin-summary', !!hideFin);
 }
 
-/** Statement filter: All | Unreconciled | BankStatement | ImportReconciled (IsManualReconciled = Y). */
+/** Statement filter: All | Unreconciled | BankStatement | ImportReconciled | ApplicableReport | NotApplicableReport. */
 function applyStatementFilter(list) {
     var mode = String($('#ddlFilterStatement').val() || 'All').trim();
     if (!list || !list.length) return list || [];
@@ -200,6 +253,12 @@ function applyStatementFilter(list) {
     }
     if (mode === 'ImportReconciled') {
         return list.filter(function (row) { return isManualReconciledImportRow(row); });
+    }
+    if (mode === 'ApplicableReport') {
+        return list.filter(function (row) { return isApplicableReportY(row); });
+    }
+    if (mode === 'NotApplicableReport') {
+        return list.filter(function (row) { return !isApplicableReportY(row); });
     }
     return list;
 }
@@ -380,6 +439,55 @@ function BindEvents() {
             pendingBsGrnChoiceCode = code;
             openBankStmtReconcileChoiceModal();
         }
+    });
+
+    $('#tblStatementsBody').off('click.bsReceiptOpen').on('click.bsReceiptOpen', '.bs-receipt-report-open', function (e) {
+        e.preventDefault();
+        var code = parseInt($(this).attr('data-code') || '0', 10);
+        if (!code) return;
+        openReceiptReportModal(code);
+    });
+
+    $('#tblStatementsBody').off('change.bsApplicable').on('change.bsApplicable', '.bs-applicable-report-chk', function () {
+        var $chk = $(this);
+        var code = parseInt($chk.attr('data-code') || '0', 10);
+        var wantY = $chk.is(':checked');
+        if (!code || applicableSaveInFlight[code]) {
+            $chk.prop('checked', !wantY);
+            return;
+        }
+        var row = statementRowsByCode[code];
+        applicableSaveInFlight[code] = true;
+        if (row) row.ApplicableReport = wantY ? 'Y' : 'N';
+        paintStatementRow(code);
+        BankStatementService.SetApplicableReport(code, wantY)
+            .then(function (r) {
+                if (isApiResultOk(r)) return;
+                if (row) row.ApplicableReport = wantY ? 'N' : 'Y';
+                paintStatementRow(code);
+                toastr && toastr.error((r && (r.Msg || r.msg || r.message)) || 'Could not update Applicable Report.');
+            })
+            .catch(function () {
+                if (row) row.ApplicableReport = wantY ? 'N' : 'Y';
+                paintStatementRow(code);
+            })
+            .then(function () {
+                delete applicableSaveInFlight[code];
+                paintStatementRow(code);
+            });
+    });
+
+    $('#btnReceiptReportCancel').off('click.bsReceipt').on('click.bsReceipt', function () {
+        closeReceiptReportModal();
+    });
+    $('#btnReceiptReportSave').off('click.bsReceipt').on('click.bsReceipt', function () {
+        saveReceiptReportModal();
+    });
+    $('#bsReceiptReportBackdrop').off('click.bsReceipt').on('click.bsReceipt', function (e) {
+        if (e.target === this) closeReceiptReportModal();
+    });
+    $('#ddlReceiptProject').off('change.bsReceipt').on('change.bsReceipt', function () {
+        fillReceiptSites($(this).val(), '');
     });
 
     if (!window.__bizsolBsGrnEmbedMsgBound) {
@@ -1251,6 +1359,254 @@ function saveReconciliationState(code, toYes) {
         });
 }
 
+function buildReconCellHtml(row) {
+    var reconY = isRowReconciled(row);
+    var wAmt = row && row._wAmt != null ? row._wAmt : 0;
+    var dAmt = row && row._dAmt != null ? row._dAmt : 0;
+    var grnMaster = row && row._grnMaster != null ? row._grnMaster : 0;
+    var stmtBankCode = row && row._stmtBankCode != null ? row._stmtBankCode : 0;
+    var stmtBankName = row && row._stmtBankName != null ? row._stmtBankName : '';
+    var appY = isApplicableReportY(row);
+    if (!row || row.Code == null || row.Code === '') {
+        return reconY
+            ? '<span class="bs-badge bs-badge--recon-yes">Yes</span>'
+            : '<span class="bs-badge bs-badge--recon-no">No</span>';
+    }
+    if (reconY && dAmt > 0 && appY) {
+        return '<button type="button" class="bs-receipt-report-open bs-badge bs-badge--recon-yes" data-code="'
+            + String(row.Code) + '" title="Enter receipt details for the report">Yes</button>';
+    }
+    if (reconY) {
+        return dAmt > 0
+            ? '<span class="bs-badge bs-badge--recon-yes bs-recon-yes--locked" title="Deposit lines cannot be unreconciled from here.">Yes</span>'
+            : '<button type="button" class="bs-recon-toggle bs-badge bs-badge--recon-yes" data-code="'
+                + String(row.Code) + '" data-recon="C" data-grn-master="' + String(grnMaster) + '" title="Unreconcile — clear reconciled for this line">Yes</button>';
+    }
+    return '<button type="button" class="bs-recon-toggle bs-badge bs-badge--recon-no" data-code="'
+        + String(row.Code) + '" data-recon="N" data-bs-withdraw="'
+        + (Number.isFinite(wAmt) ? String(wAmt) : '0') + '" data-bs-narr-enc="'
+        + encodeURIComponent(String(row.Narration == null ? '' : row.Narration)) + '" data-bs-ref-enc="'
+        + encodeURIComponent(String(row.ChequeRefNo == null ? '' : row.ChequeRefNo)) + '" data-bs-txn-enc="'
+        + encodeURIComponent(String(row.TxnDate == null ? '' : row.TxnDate)) + '" data-bs-bank-master="'
+        + String(stmtBankCode) + '" data-bs-bank-name-enc="'
+        + encodeURIComponent(String(stmtBankName == null ? '' : stmtBankName)) + '" data-bs-acct-enc="'
+        + encodeURIComponent(String(row.AccountNo == null ? '' : row.AccountNo)) + '" title="Open payment entry to reconcile this line">No</button>';
+}
+
+function buildApplicableCellHtml(row) {
+    if (!row || row.Code == null || row.Code === '') return '—';
+    var checked = isApplicableReportY(row) ? ' checked' : '';
+    var disabled = applicableSaveInFlight[row.Code] ? ' disabled' : '';
+    return '<input type="checkbox" class="bs-applicable-report-chk" data-code="'
+        + String(row.Code) + '"' + checked + disabled + ' title="Include this line in the report" />';
+}
+
+function paintStatementRow(code) {
+    var row = statementRowsByCode[code];
+    if (!row) return;
+    var $tr = $('#tblStatementsBody tr[data-code="' + String(code) + '"]');
+    if (!$tr.length) return;
+    var dAmt = row._dAmt != null ? row._dAmt : 0;
+    var tone = statementRowToneClass(dAmt, isRowReconciled(row), isApplicableReportY(row));
+    $tr.removeClass('bs-row-tone-green bs-row-tone-yellow bs-row-tone-red bs-row-tone-white bs-row-recon-yes bs-row-recon-no')
+        .addClass(tone);
+    $tr.find('.bs-recon-cell').html(buildReconCellHtml(row));
+    $tr.find('.bs-applicable-cell').html(buildApplicableCellHtml(row));
+}
+
+function fillSelectOptions($sel, rows, selected, placeholder) {
+    var html = '<option value="">' + escHtml(placeholder || '-- Select --') + '</option>';
+    var seen = {};
+    (rows || []).forEach(function (opt) {
+        var val = opt && opt.value != null ? String(opt.value) : '';
+        if (!val || seen[val]) return;
+        seen[val] = true;
+        var sel = String(selected || '') === val ? ' selected' : '';
+        html += '<option value="' + escHtml(val) + '"' + sel + '>' + escHtml(opt.text || val) + '</option>';
+    });
+    if (selected && !seen[String(selected)]) {
+        html += '<option value="' + escHtml(String(selected)) + '" selected>' + escHtml(String(selected)) + '</option>';
+    }
+    $sel.html(html);
+}
+
+function projectOptionFromRow(p) {
+    var code = p.ProjectMaster_Code != null ? p.ProjectMaster_Code
+        : (p.projectMaster_Code != null ? p.projectMaster_Code
+        : (p.Code != null ? p.Code : p.code));
+    var text = p.ProjectName || p.projectName || p.ProjectDesp || p.projectDesp || p.Name || p.name || '';
+    return { value: code != null ? String(code) : '', text: String(text || code || '') };
+}
+
+function siteOptionFromRow(s) {
+    var code = s.SubProjectMaster_Code != null ? s.SubProjectMaster_Code
+        : (s.subProjectMaster_Code != null ? s.subProjectMaster_Code
+        : (s.Code != null ? s.Code : s.code));
+    var text = s.SubProjectName || s.subProjectName || s.SubProjectDesp || s.subProjectDesp || s.Name || s.name || '';
+    return { value: code != null ? String(code) : '', text: String(text || code || '') };
+}
+
+function categoryOptionFromRow(r) {
+    var code = r.Code != null ? r.Code
+        : (r.code != null ? r.code
+        : (r.CategoryMaster_Code != null ? r.CategoryMaster_Code
+        : r.ProjectCategory_Code));
+    var name = String(r.CategoryDesp || r.categoryDesp || r.CategoryName || r.categoryName || r.Category || r.Desp || '').trim();
+    if (!name && code) name = 'Category ' + code;
+    return { value: code != null ? String(code) : '', text: name };
+}
+
+function itemOptionFromRow(r) {
+    var text = String(r.Description || r.description || r.ItemDescription || r.itemDescription || '').trim();
+    return { text: text };
+}
+
+function vendorOptionFromRow(v) {
+    var text = String(v.VendorName || v.vendorName || v.Name || v.name || v.AccountDesp || v.accountDesp || '').trim();
+    return { text: text };
+}
+
+function destroyTypeableSelect($sel) {
+    if (!$sel || !$sel.length) return;
+    if (typeof $.fn.select2 !== 'undefined' && $sel.hasClass('select2-hidden-accessible')) {
+        $sel.select2('destroy');
+    }
+}
+
+function bindTypeableSelect($sel, options, selectedText, placeholder) {
+    destroyTypeableSelect($sel);
+    var html = '<option value=""></option>';
+    var seen = {};
+    var selected = String(selectedText || '').trim();
+    (options || []).forEach(function (opt) {
+        var text = String(opt && opt.text || '').trim();
+        if (!text) return;
+        var key = text.toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
+        var sel = selected && selected.toLowerCase() === key ? ' selected' : '';
+        html += '<option value="' + escHtml(text) + '"' + sel + '>' + escHtml(text) + '</option>';
+    });
+    if (selected && !seen[selected.toLowerCase()]) {
+        html += '<option value="' + escHtml(selected) + '" selected>' + escHtml(selected) + '</option>';
+    }
+    $sel.html(html);
+    if (typeof $.fn.select2 === 'undefined') {
+        if (selected) $sel.val(selected);
+        return;
+    }
+    $sel.select2({
+        width: '100%',
+        tags: true,
+        placeholder: placeholder || '-- Select --',
+        allowClear: true,
+        dropdownParent: $('#bsReceiptReportBackdrop .bs-receipt-report-modal')
+    });
+}
+
+function typeableSelectValue($sel) {
+    var v = $sel.val();
+    if (v == null) return '';
+    return String(v).trim().substring(0, 500);
+}
+
+function fillReceiptSites(projectCode, selectedSite) {
+    var $site = $('#ddlReceiptSite');
+    var pc = projectCode != null ? String(projectCode).trim() : '';
+    if (!pc) {
+        fillSelectOptions($site, [], '', '-- Select --');
+        return Promise.resolve();
+    }
+    return GRNPaymentApprovalService.GetSubProjectMasterList(pc)
+        .then(function (data) {
+            var opts = normalizeMasterRows(data).map(siteOptionFromRow);
+            fillSelectOptions($site, opts, selectedSite, '-- Select --');
+        })
+        .catch(function () {
+            fillSelectOptions($site, [], selectedSite, '-- Select --');
+        });
+}
+
+function ensureReceiptMasters() {
+    if (receiptMastersLoaded) return Promise.resolve();
+    return Promise.all([
+        GRNPaymentApprovalService.GetProjectMasterList().catch(function () { return []; }),
+        BOMService.GetCategoryList().catch(function () { return []; }),
+        BankStatementService.GetGRNPaymentItemList().catch(function () { return []; }),
+        GRNPaymentApprovalService.GetVendor().catch(function () { return []; })
+    ]).then(function (parts) {
+        receiptProjectRows = normalizeMasterRows(parts[0]);
+        receiptCategoryRows = normalizeMasterRows(parts[1]);
+        receiptItemRows = normalizeMasterRows(parts[2]);
+        receiptVendorRows = normalizeMasterRows(parts[3]);
+        receiptMastersLoaded = true;
+    });
+}
+
+function openReceiptReportModal(code) {
+    var row = statementRowsByCode[code];
+    if (!row) return;
+    receiptModalCode = code;
+    var projectCode = positiveCode(rowField(row, ['ProjectMaster_Code', 'projectMaster_Code']));
+    var siteCode = positiveCode(rowField(row, ['SubProjectMaster_Code', 'subProjectMaster_Code']));
+    var categoryCode = positiveCode(rowField(row, ['CategoryMaster_Code', 'categoryMaster_Code']));
+    var itemText = String(rowField(row, ['ItemDescription', 'itemDescription']) || '');
+    var customer = String(rowField(row, ['CustomerName', 'customerName']) || '');
+    $('#btnReceiptReportSave').prop('disabled', true);
+    showBsBackdrop($('#bsReceiptReportBackdrop'));
+    ensureReceiptMasters().then(function () {
+        fillSelectOptions($('#ddlReceiptProject'), receiptProjectRows.map(projectOptionFromRow), projectCode, '-- Select --');
+        fillSelectOptions($('#ddlReceiptCategory'), receiptCategoryRows.map(categoryOptionFromRow), categoryCode, '-- Select --');
+        bindTypeableSelect($('#ddlReceiptItem'), receiptItemRows.map(itemOptionFromRow), itemText, '-- Select or type --');
+        bindTypeableSelect($('#ddlReceiptCustomer'), receiptVendorRows.map(vendorOptionFromRow), customer, '-- Select or type --');
+        return fillReceiptSites(projectCode, siteCode);
+    }).then(function () {
+        $('#btnReceiptReportSave').prop('disabled', false);
+    });
+}
+
+function closeReceiptReportModal() {
+    receiptModalCode = 0;
+    destroyTypeableSelect($('#ddlReceiptItem'));
+    destroyTypeableSelect($('#ddlReceiptCustomer'));
+    hideBsBackdrop($('#bsReceiptReportBackdrop'));
+}
+
+function saveReceiptReportModal() {
+    var code = receiptModalCode;
+    if (!code) return;
+    var payload = {
+        Code: code,
+        ProjectMaster_Code: parseInt($('#ddlReceiptProject').val() || '0', 10) || 0,
+        SubProjectMaster_Code: parseInt($('#ddlReceiptSite').val() || '0', 10) || 0,
+        CategoryMaster_Code: parseInt($('#ddlReceiptCategory').val() || '0', 10) || 0,
+        ItemDescription: typeableSelectValue($('#ddlReceiptItem')),
+        CustomerName: typeableSelectValue($('#ddlReceiptCustomer'))
+    };
+    $('#btnReceiptReportSave').prop('disabled', true);
+    BankStatementService.SaveReceiptReport(payload)
+        .then(function (r) {
+            if (!isApiResultOk(r)) {
+                toastr && toastr.error((r && (r.Msg || r.msg || r.message)) || 'Could not save receipt details.');
+                return;
+            }
+            var row = statementRowsByCode[code];
+            if (row) {
+                row.ProjectMaster_Code = payload.ProjectMaster_Code;
+                row.SubProjectMaster_Code = payload.SubProjectMaster_Code;
+                row.CategoryMaster_Code = payload.CategoryMaster_Code;
+                row.ItemDescription = payload.ItemDescription;
+                row.CustomerName = payload.CustomerName;
+            }
+            toastr && toastr.success((r && (r.Msg || r.msg)) || 'Receipt details saved.');
+            closeReceiptReportModal();
+        })
+        .catch(function () { })
+        .then(function () {
+            $('#btnReceiptReportSave').prop('disabled', false);
+        });
+}
+
 function loadStatementListForFilter(codes, fromDate, toDate, batchNo) {
     if (!codes || !codes.length) {
         return BankStatementService.GetBankStatementList(0, '', fromDate, toDate, batchNo)
@@ -1277,7 +1633,7 @@ function LoadStatements() {
     var toDate    = isoToApiDate($('#txtFilterToDate').val().trim());
 
     var $body = $('#tblStatementsBody');
-    $body.html('<tr><td colspan="11" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</td></tr>');
+    $body.html('<tr><td colspan="12" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</td></tr>');
     $('#lblRecordCount').text('');
     syncBankStatementColumnVisibility();
     $('.js-bs-list-opening').text('—');
@@ -1306,7 +1662,7 @@ function LoadStatements() {
             list = applyStatementFilter(list);
 
             if (!list || !list.length) {
-                $body.html('<tr><td colspan="11" class="text-center py-3 text-muted">No records found.</td></tr>');
+                $body.html('<tr><td colspan="12" class="text-center py-3 text-muted">No records found.</td></tr>');
                 $('#lblRecordCount').text('(0 records)');
                 $('.js-bs-list-opening').text('—');
                 $('#tdTotalWithdrawal').text('—');
@@ -1316,6 +1672,7 @@ function LoadStatements() {
                 return;
             }
 
+            statementRowsByCode = {};
             var sorted = sortStatementRows(list);
             var computed = computeBalances(sorted, seedMap);
             $('.js-bs-list-opening').text(FormatAmount(computed[0] && computed[0].opening));
@@ -1352,36 +1709,22 @@ function LoadStatements() {
                 ), 10) || 0;
                 var stmtBankName = row.BankName != null ? row.BankName : (row.bankName != null ? row.bankName : '');
 
-                var reconCell;
-                var depositBlocksUnreconcile = dAmt > 0;
-                if (row.Code == null || row.Code === '') {
-                    reconCell = reconY
-                        ? '<span class="bs-badge bs-badge--recon-yes">Yes</span>'
-                        : '<span class="bs-badge bs-badge--recon-no">No</span>';
-                } else {
-                    reconCell = reconY
-                        ? (depositBlocksUnreconcile
-                            ? '<span class="bs-badge bs-badge--recon-yes bs-recon-yes--locked" title="Deposit lines cannot be unreconciled from here.">Yes</span>'
-                            : '<button type="button" class="bs-recon-toggle bs-badge bs-badge--recon-yes" data-code="'
-                                + String(row.Code) + '" data-recon="C" data-grn-master="' + String(grnMaster) + '" title="Unreconcile — clear reconciled for this line">Yes</button>')
-                        : '<button type="button" class="bs-recon-toggle bs-badge bs-badge--recon-no" data-code="'
-                            + String(row.Code) + '" data-recon="N" data-bs-withdraw="'
-                            + (Number.isFinite(wAmt) ? String(wAmt) : '0') + '" data-bs-narr-enc="'
-                            + encodeURIComponent(String(row.Narration == null ? '' : row.Narration)) + '" data-bs-ref-enc="'
-                            + encodeURIComponent(String(row.ChequeRefNo == null ? '' : row.ChequeRefNo)) + '" data-bs-txn-enc="'
-                            + encodeURIComponent(String(row.TxnDate == null ? '' : row.TxnDate)) + '" data-bs-bank-master="'
-                            + String(stmtBankCode) + '" data-bs-bank-name-enc="'
-                            + encodeURIComponent(String(stmtBankName == null ? '' : stmtBankName)) + '" data-bs-acct-enc="'
-                            + encodeURIComponent(String(row.AccountNo == null ? '' : row.AccountNo)) + '" title="Open payment entry to reconcile this line">No</button>';
-                }
+                row._wAmt = wAmt;
+                row._dAmt = dAmt;
+                row._grnMaster = grnMaster;
+                row._stmtBankCode = stmtBankCode;
+                row._stmtBankName = stmtBankName;
+                if (row.Code != null && row.Code !== '') statementRowsByCode[row.Code] = row;
+
+                var reconCell = buildReconCellHtml(row);
+                var applicableCell = buildApplicableCellHtml(row);
+                var toneClass = statementRowToneClass(dAmt, reconY, isApplicableReportY(row));
                 totalWithPaisa += moneyToPaisa(wAmt);
                 totalDepPaisa += moneyToPaisa(dAmt);
                 lastDisplayCloseNum = displayClose;
 
-                var rowReconClass = reconY ? 'bs-row-recon-yes' : 'bs-row-recon-no';
-
                 $body.append(`
-                    <tr class="${rowReconClass}">
+                    <tr class="${toneClass}" data-code="${row.Code != null ? escHtml(String(row.Code)) : ''}">
                         <td>${i + 1}</td>
                         <td>${escHtml(row.TxnDate)}</td>
                         <td>${escHtml(row.AccountNo)}</td>
@@ -1393,6 +1736,7 @@ function LoadStatements() {
                         <td class="bs-col-hidden bs-col-drcr">${escHtml(row.BalanceType || '—')}</td>
                         <td class="bs-col-hidden bs-col-batch"><span class="fw-semibold text-primary small">${escHtml(row.ImportBatchNo)}</span></td>
                         <td class="text-center bs-recon-cell">${reconCell}</td>
+                        <td class="text-center bs-applicable-cell">${applicableCell}</td>
                     </tr>`);
             });
 
@@ -1420,7 +1764,7 @@ function LoadStatements() {
         })
         .catch(function () {
             HideLoader && HideLoader();
-            $body.html('<tr><td colspan="11" class="text-center py-3 text-danger">Failed to load records.</td></tr>');
+            $body.html('<tr><td colspan="12" class="text-center py-3 text-danger">Failed to load records.</td></tr>');
             $('.js-bs-list-opening').text('—');
             $('#tdTotalWithdrawal').text('—');
             $('#tdTotalDeposit').text('—');

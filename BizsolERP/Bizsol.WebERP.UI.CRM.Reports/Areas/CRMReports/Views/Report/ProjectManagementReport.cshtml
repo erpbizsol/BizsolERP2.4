@@ -10,9 +10,41 @@
 <style>
     .pmr-page .pmr-filter-row {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
         gap: 0.75rem 2rem;
         align-items: end;
+    }
+    #tblPMR thead th.pmr-budget-col {
+        display: none;
+    }
+    @@media (min-width: 992px) {
+        .pmr-page.pmr-budget-mode .pmr-filter-row {
+            grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+        }
+    }
+    .pmr-page.pmr-budget-mode #tblPMR {
+        table-layout: auto;
+    }
+    #tblPMRBody a.pmr-budget-drill-link {
+        color: #4338ca;
+        font-weight: 600;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    #tblPMRBody a.pmr-budget-drill-link:hover {
+        color: #312e81;
+    }
+    #tblPMRBody tr.pmr-budget-drill {
+        cursor: pointer;
+    }
+    #tblPMRBody tr.pmr-budget-drill:hover {
+        background: #eef2ff;
+    }
+    .pmr-drill-crumb #pmrDrillPath {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.35rem 0.4rem;
     }
     .pmr-page .pmr-filter-field {
         min-width: 0;
@@ -119,19 +151,88 @@
     }
     .pmr-drill-crumb {
         display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+        padding: 0.75rem 0.95rem;
+        margin: 0 0 0.65rem;
+        background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+        border: 1px solid #c7d2fe;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(67, 56, 202, 0.1);
+    }
+    .pmr-drill-crumb-top {
+        display: flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.35rem 0.75rem;
-        margin-bottom: 0.35rem;
-        background: rgba(102, 126, 234, 0.08);
-        border-radius: 8px;
-        font-size: 0.82rem;
+        flex-wrap: wrap;
+        gap: 0.65rem 0.85rem;
     }
     .pmr-drill-crumb #btnDrillBack {
+        height: 38px !important;
+        min-height: 38px !important;
+        min-width: 118px;
+        padding: 0 16px !important;
+        border: none !important;
+        border-radius: 999px !important;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+        color: #fff !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        box-shadow: 0 3px 10px rgba(79, 70, 229, 0.3);
+        cursor: pointer;
+        text-decoration: none !important;
+    }
+    .pmr-drill-crumb #btnDrillBack:hover {
+        background: linear-gradient(135deg, #4338ca, #5b4fd4) !important;
+        color: #fff !important;
+    }
+    .pmr-drill-crumb #btnDrillBack i {
+        font-size: 13px !important;
+    }
+    .pmr-drill-current-title {
+        font-size: 0.98rem;
+        font-weight: 800;
+        color: #312e81;
+    }
+    .pmr-drill-crumb .pmr-crumb-link {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #c7d2fe;
+        background: #fff;
+        padding: 0.28rem 0.75rem;
+        border-radius: 999px;
         color: #4338ca;
         font-weight: 700;
         text-decoration: none;
-        padding: 0;
+        cursor: pointer;
+        min-height: 30px;
+        font-size: 12.5px;
+    }
+    .pmr-drill-crumb .pmr-crumb-link:hover {
+        background: #e0e7ff;
+        color: #312e81;
+        text-decoration: none;
+    }
+    .pmr-drill-crumb .pmr-crumb-current {
+        display: inline-flex;
+        align-items: center;
+        background: #4f46e5;
+        color: #fff;
+        padding: 0.28rem 0.75rem;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 12.5px;
+        min-height: 30px;
+    }
+    .pmr-drill-crumb .pmr-crumb-sep {
+        color: #4f46e5;
+        font-weight: 800;
+        padding: 0 0.15rem;
+        font-size: 1rem;
     }
     .pmr-project-drill {
         border: none;
@@ -359,12 +460,19 @@
     }
 
     @@media (max-width: 991px) {
-        .pmr-page .pmr-filter-row { grid-template-columns: 1fr; }
-        .pmr-page .pmr-filter-actions {
-            width: 100%;
+        .pmr-page .pmr-filter-row,
+        .pmr-page.pmr-budget-mode .pmr-filter-row {
+            grid-template-columns: 1fr;
         }
-        .pmr-page .pmr-filter-actions .pmr-btn-show {
+        .pmr-page .pmr-filter-actions,
+        .pmr-page.pmr-budget-mode .pmr-filter-actions {
             width: 100%;
+            display: block;
+        }
+        .pmr-page .pmr-filter-actions .pmr-btn-show,
+        .pmr-page.pmr-budget-mode .pmr-filter-actions .pmr-btn-show {
+            width: 100%;
+            min-height: 38px;
         }
     }
 
@@ -527,8 +635,15 @@
         }
 
         .pmr-drill-crumb {
-            flex-wrap: wrap;
-            font-size: 0.75rem;
+            padding: 0.7rem 0.8rem;
+        }
+        .pmr-drill-crumb #btnDrillBack {
+            width: 100%;
+            min-width: 0;
+        }
+        .pmr-drill-current-title {
+            font-size: 0.88rem;
+            width: 100%;
         }
     }
 
@@ -543,7 +658,7 @@
         <div class="ee-list-header-top">
             <div class="ee-list-header-title-block">
                 <h2 class="ee-list-header-title"><i class="fa fa-chart-bar me-2" aria-hidden="true"></i><span id="pmrPageTitleText">Management Report</span></h2>
-                <small class="ee-list-header-sub">BOM, PO, GRN and payment summary with balance columns for the selected project filters.</small>
+                <small class="ee-list-header-sub" id="pmrPageSubtitle">BOM, PO, GRN and payment summary with balance columns for the selected project filters.</small>
             </div>
             <div class="ee-list-header-actions no-print pmr-header-toolbar">
                 <button type="button" id="btnDownload" class="pmr-header-icon-btn pmr-header-icon-btn--excel" title="Export to Excel" aria-label="Export to Excel">
@@ -580,10 +695,17 @@
     <div class="ee-list-filter-bar no-print">
         <div class="pmr-filter-row">
             <div class="pmr-filter-field">
-                <label for="ddlReportType" class="form-label">Report type <span class="text-danger">*</span></label>
+                <label for="ddlReportKind" class="form-label">Report type <span class="text-danger">*</span></label>
+                <select id="ddlReportKind" class="form-control form-control-sm box_border w-100">
+                    <option value="projectWise">Project Wise</option>
+                    <option value="projectBudget">Project Budget</option>
+                </select>
+            </div>
+            <div class="pmr-filter-field" id="pmrProjectOptionField">
+                <label for="ddlReportType" class="form-label">Project Option</label>
                 <select id="ddlReportType" class="form-control form-control-sm box_border w-100"></select>
             </div>
-            <div class="pmr-filter-field">
+            <div class="pmr-filter-field" id="pmrProjectField">
                 <label for="ddlProject" class="form-label">Project</label>
                 <select id="ddlProject" class="form-control form-control-sm box_border w-100"></select>
             </div>
@@ -600,9 +722,15 @@
     </div>
 
     <div id="pmrDrillBreadcrumb" class="pmr-drill-crumb no-print" style="display:none" aria-live="polite">
-        <button type="button" id="btnDrillBack" class="btn btn-link btn-sm p-0">← Back to Project wise</button>
-        <span class="text-muted">|</span>
-        <span id="pmrDrillLabel"></span>
+        <div class="pmr-drill-crumb-top">
+            <button type="button" id="btnDrillBack" title="Back to previous report">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                <span id="pmrDrillBackText">Back</span>
+            </button>
+            <span class="pmr-drill-current-title" id="pmrDrillTitle"></span>
+        </div>
+        <div id="pmrDrillPath"></div>
+        <span id="pmrDrillLabel" style="display:none"></span>
     </div>
 
     <div class="expense-entry-card expense-entry-card-table ee-list-grid-wrap">
@@ -620,18 +748,22 @@
                         <th id="thVendor" class="pmr-th-dim" style="display:none">Vendor</th>
                         <th id="thCategory" class="pmr-th-dim" style="display:none">Category</th>
                         <th id="thItem" class="pmr-th-dim" style="display:none">Item<br>name</th>
-                        <th class="num" data-metric="bomQty">BOM<br>QTY</th>
-                        <th class="num" data-metric="bomValue">BOM<br>Value</th>
-                        <th class="num" data-metric="poQty">PO<br>QTY</th>
-                        <th class="num" data-metric="poValue">PO<br>Value</th>
-                        <th class="num" data-metric="grnQty">GRN<br>QTY</th>
-                        <th class="num" data-metric="grnValue">GRN<br>Value</th>
-                        <th class="num" data-metric="payment">Pay-<br>ment</th>
-                        <th class="num" data-metric="bomPoQtyBal">BOM to<br>PO qty Bal</th>
-                        <th class="num" data-metric="bomPoValBal">BOM to<br>PO Val Bal</th>
-                        <th class="num" data-metric="poGrnQtyBal">PO to<br>GRN Qty Bal</th>
-                        <th class="num" data-metric="poGrnValBal">PO to<br>GRN Val Bal</th>
-                        <th class="num" data-metric="grnPayBal">GRN to<br>Pay Bal</th>
+                        <th class="num pmr-wise-col" data-metric="bomQty">BOM<br>QTY</th>
+                        <th class="num pmr-wise-col" data-metric="bomValue">BOM<br>Value</th>
+                        <th class="num pmr-wise-col" data-metric="poQty">PO<br>QTY</th>
+                        <th class="num pmr-wise-col" data-metric="poValue">PO<br>Value</th>
+                        <th class="num pmr-wise-col" data-metric="grnQty">GRN<br>QTY</th>
+                        <th class="num pmr-wise-col" data-metric="grnValue">GRN<br>Value</th>
+                        <th class="num pmr-wise-col" data-metric="payment">Pay-<br>ment</th>
+                        <th class="num pmr-wise-col" data-metric="bomPoQtyBal">BOM to<br>PO qty Bal</th>
+                        <th class="num pmr-wise-col" data-metric="bomPoValBal">BOM to<br>PO Val Bal</th>
+                        <th class="num pmr-wise-col" data-metric="poGrnQtyBal">PO to<br>GRN Qty Bal</th>
+                        <th class="num pmr-wise-col" data-metric="poGrnValBal">PO to<br>GRN Val Bal</th>
+                        <th class="num pmr-wise-col" data-metric="grnPayBal">GRN to<br>Pay Bal</th>
+                        <th class="num pmr-budget-col">Budget<br>amount</th>
+                        <th class="num pmr-budget-col">Budget GST<br>amount</th>
+                        <th class="num pmr-budget-col">Payment</th>
+                        <th class="num pmr-budget-col">Balance</th>
                     </tr>
                 </thead>
                 <tbody id="tblPMRBody"></tbody>

@@ -2210,6 +2210,20 @@ function PrintGPAVoucher(code, mode) {
                 ?? master.ProjectCategory ?? master.projectCategory ?? ''
             );
             const workType = getWorkTypeDisplay(master);
+            const itemDescription = String(
+                master.Description ?? master.description ?? master.ItemDescription ?? master.itemDescription
+                ?? base?.Description ?? base?.description ?? printBase?.Description ?? printBase?.description ?? ''
+            ).trim();
+
+            const budgetCatSeen = {};
+            const budgetCatList = [];
+            (details || []).forEach(function (row) {
+                const c = String(gpaCategoryNameFromRecord(row) || '').trim();
+                if (!c || budgetCatSeen[c.toLowerCase()]) return;
+                budgetCatSeen[c.toLowerCase()] = true;
+                budgetCatList.push(c);
+            });
+            const budgetCategoryPrint = budgetCatList.join(', ');
 
             let detailsLines = '';
             (details || []).forEach(function (row, idx) {
@@ -2231,7 +2245,7 @@ function PrintGPAVoucher(code, mode) {
                 detailsLines += '<div class="pv-detail-line">'
                     + '<b>Line ' + (idx + 1) + '</b>'
                     + poPart
-                    + (category ? ' &mdash; Category: ' + gpaEscH(String(category)) : '')
+                    + (category ? ' &mdash; Budget Category: ' + gpaEscH(String(category)) : '')
                     + (proj ? ' &mdash; Project: ' + gpaEscH(String(proj)) : '')
                     + (site ? ' &mdash; Sub Project: ' + gpaEscH(String(site)) : '')
                     + '</div>';
@@ -2282,9 +2296,10 @@ function PrintGPAVoucher(code, mode) {
                 + '<tr><td class="lbl">Reference No</td><td colspan="3">' + gpaEscH(refNo) + '</td></tr>'
                 + (bankName ? '<tr><td class="lbl">Bank Name</td><td colspan="3">' + gpaEscH(bankName) + '</td></tr>' : '')
                 + '<tr><td class="lbl">Credit to</td><td colspan="3">' + gpaEscH(creditTo) + '</td></tr>'
-                + '<tr><td class="lbl">Industry Type</td><td colspan="3">' + gpaEscH(vendorTypePrint || 'Party') + '</td></tr>'
+                + '<tr><td class="lbl">Budget Category</td><td colspan="3">' + gpaEscH(budgetCategoryPrint) + '</td></tr>'
                 + '<tr><td class="lbl">Payment for</td><td colspan="3">' + gpaEscH(paymentFor || '—') + '</td></tr>'
                 + '<tr><td class="lbl">Work Type</td><td colspan="3">' + gpaEscH(workType || '—') + '</td></tr>'
+                + '<tr><td class="lbl">Description</td><td colspan="3">' + gpaEscH(itemDescription || '—') + '</td></tr>'
                 + '</table>'
                 + '<div style="border:1px solid #000;border-top:none;padding:4px 8px;font-weight:700;font-size:9.5pt;">Details</div>'
                 + '<div class="pv-details">' + detailsBlock + '</div>'

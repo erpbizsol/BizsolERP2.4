@@ -303,8 +303,16 @@
     height: 24px;
 }
 
-/* Keep date pickers the same 40px box (override .bs-input { height: auto !important } on this page) */
+/* Keep filter row controls 40px (override .bs-input { height: auto !important } on this page) */
 #cardFilters input[type="date"].bs-input {
+    min-height: 40px;
+    height: 40px !important;
+    line-height: 1.2;
+    padding: 0 2.2rem 0 13px !important;
+    box-sizing: border-box;
+}
+
+#cardFilters select.bs-input:not([multiple]):not([size]) {
     min-height: 40px;
     height: 40px !important;
     line-height: 1.2;
@@ -957,11 +965,9 @@
     font-weight: 600;
 }
 
-/* Statement = Un reconciled | Reconciled: hide deposit & closing columns + header opening; hide deposit/closing footer cells */
+/* Statement = Un reconciled | Reconciled | Reconciled (Manual): hide closing + opening footer label; Deposit (Cr) stays visible */
 #cardList.bs-stmt-hide-fin-summary .bs-stmt-opening-hdr,
-#cardList.bs-stmt-hide-fin-summary .bs-stmt-col-deposit,
 #cardList.bs-stmt-hide-fin-summary .bs-stmt-col-closing,
-#cardList.bs-stmt-hide-fin-summary .bs-stmt-foot-deposit,
 #cardList.bs-stmt-hide-fin-summary .bs-stmt-foot-closing {
     display: none !important;
 }
@@ -1006,22 +1012,99 @@
     user-select: none;
 }
 
-/* Statement list: row tint by IsReconciled (overrides .bs-preview-table zebra on #cardList) */
-#cardList .bs-stmt-list-table tbody tr.bs-row-recon-yes td {
-    background: rgba(34, 197, 94, 0.16) !important;
+/* Statement list row tint: Applicable Report + Reconciled + deposit/payment */
+#cardList .bs-stmt-list-table tbody tr.bs-row-tone-green td {
+    background: rgba(34, 197, 94, 0.22) !important;
 }
-#cardList .bs-stmt-list-table tbody tr.bs-row-recon-yes:hover td {
-    background: rgba(34, 197, 94, 0.26) !important;
+#cardList .bs-stmt-list-table tbody tr.bs-row-tone-green:hover td {
+    background: rgba(34, 197, 94, 0.32) !important;
 }
-#cardList .bs-stmt-list-table tbody tr.bs-row-recon-no td {
-    background: rgba(248, 113, 113, 0.14) !important;
+#cardList .bs-stmt-list-table tbody tr.bs-row-tone-yellow td {
+    background: #fde68a !important;
 }
-#cardList .bs-stmt-list-table tbody tr.bs-row-recon-no:hover td {
-    background: rgba(248, 113, 113, 0.22) !important;
+#cardList .bs-stmt-list-table tbody tr.bs-row-tone-yellow:hover td {
+    background: #fcd34d !important;
+}
+#cardList .bs-stmt-list-table tbody tr.bs-row-tone-red td {
+    background: #fecaca !important;
+}
+#cardList .bs-stmt-list-table tbody tr.bs-row-tone-red:hover td {
+    background: #fca5a5 !important;
+}
+#cardList .bs-stmt-list-table tbody tr.bs-row-tone-white td {
+    background: #ffffff !important;
+}
+#cardList .bs-stmt-list-table tbody tr.bs-row-tone-white:hover td {
+    background: #f8fafc !important;
+}
+
+#cardList .bs-applicable-report-chk {
+    width: 1.05rem;
+    height: 1.05rem;
+    cursor: pointer;
+    accent-color: #4f46e5;
+}
+
+.bs-receipt-report-modal {
+    background: var(--white-bg);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .22);
+    width: min(760px, 94vw);
+    padding: 22px 22px 18px;
+    text-align: left;
+    position: relative;
+    animation: bsModalIn .2s ease;
+}
+
+.bs-receipt-report-modal .bs-confirm-title {
+    text-align: left;
+    margin-bottom: 4px;
+}
+
+.bs-receipt-report-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 14px;
+    margin: 14px 0 18px;
+}
+
+.bs-receipt-report-grid .bs-receipt-span-2 {
+    grid-column: 1 / -1;
+}
+
+#bsReceiptReportBackdrop .select2-container {
+    width: 100% !important;
+}
+
+#bsReceiptReportBackdrop .select2-container--default .select2-selection--single {
+    height: 31px;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+}
+
+#bsReceiptReportBackdrop .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 29px;
+    font-size: 0.875rem;
+    padding-left: 8px;
+}
+
+#bsReceiptReportBackdrop .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 29px;
+}
+
+#bsReceiptReportBackdrop .select2-dropdown {
+    z-index: 10120;
+}
+
+@media (max-width: 640px) {
+    .bs-receipt-report-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Reconciliation: badge-styled control (avoids <button> look drift) */
-#cardList button.bs-recon-toggle {
+#cardList button.bs-recon-toggle,
+#cardList button.bs-receipt-report-open {
     font: inherit;
     line-height: inherit;
     border: none;
@@ -1031,11 +1114,13 @@
     appearance: none;
 }
 
-#cardList button.bs-recon-toggle:hover {
+#cardList button.bs-recon-toggle:hover,
+#cardList button.bs-receipt-report-open:hover {
     filter: brightness(0.95);
 }
 
-#cardList button.bs-recon-toggle:focus-visible {
+#cardList button.bs-recon-toggle:focus-visible,
+#cardList button.bs-receipt-report-open:focus-visible {
     outline: 2px solid #4f46e5;
     outline-offset: 2px;
 }
@@ -1239,7 +1324,8 @@ body > #bsDeleteBackdrop {
 body > #bsReconcileChoiceBackdrop,
 body > #bsReconConfirmBackdrop,
 body > #bsGrnAutoMatchConfirmBackdrop,
-body > #bsGrnUnreconcileDeleteBackdrop {
+body > #bsGrnUnreconcileDeleteBackdrop,
+body > #bsReceiptReportBackdrop {
     z-index: 10070 !important;
 }
 

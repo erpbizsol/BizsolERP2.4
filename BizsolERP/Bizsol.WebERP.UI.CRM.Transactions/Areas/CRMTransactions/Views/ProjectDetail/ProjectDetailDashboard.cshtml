@@ -429,7 +429,7 @@
     /* ── KPI CARDS ──────────────────────────────────────────────── */
     .pdd-kpi-grid {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(7, 1fr);
         gap: 16px;
         margin-bottom: 20px;
         overflow-x: auto;
@@ -835,6 +835,112 @@
         letter-spacing: 0.05em;
     }
 
+    /* ── NEW KPI COLOUR ─────────────────────────────────────────── */
+    .pdd-kpi-card.kpi-violet {
+        background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+        box-shadow: 0 8px 24px rgba(124,58,237,0.3);
+    }
+
+    /* ── SUB PROJECT TABLES + FINANCIAL SUMMARY ─────────────────── */
+    .pdd-table-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+    .pdd-fin-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+    @@media (max-width: 1300px) { .pdd-table-row { grid-template-columns: repeat(2, 1fr); } }
+    @@media (max-width: 900px)  { .pdd-fin-row   { grid-template-columns: 1fr; } }
+    @@media (max-width: 650px)  { .pdd-table-row { grid-template-columns: 1fr; } }
+
+    .pdd-tbl-scroll { overflow-x: auto; }
+
+    /* Vertical scroll for large data (sticky header + sticky total row) */
+    .pdd-tbl-scroll-y {
+        overflow: auto;
+        max-height: 260px;
+        border: 1px solid #e0e7ff;
+        border-radius: 10px;
+    }
+    .pdd-tbl-scroll-y.pdd-tbl-scroll-lg { max-height: 330px; }
+    .pdd-tbl-scroll-y .pdd-tbl {
+        border: none;
+        border-radius: 0;
+        overflow: visible;   /* overflow:hidden on the table breaks position:sticky */
+    }
+    .pdd-tbl-scroll-y .pdd-tbl thead th {
+        position: sticky; top: 0; z-index: 2;
+    }
+    .pdd-tbl-scroll-y .pdd-tbl tfoot td {
+        position: sticky; bottom: 0; z-index: 2;
+    }
+    .pdd-tbl-scroll-y::-webkit-scrollbar { width: 8px; height: 8px; }
+    .pdd-tbl-scroll-y::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 8px; }
+    .pdd-tbl-scroll-y::-webkit-scrollbar-track { background: #f1f5f9; }
+
+    /* Horizontal scroll for the Payment Received vs Made chart */
+    .pdd-chart-area.pdd-chart-area-scrollx { height: 360px; overflow: hidden; }
+    .pdd-chart-scrollx {
+        width: 100%; height: 100%;
+        overflow-x: auto; overflow-y: hidden;
+    }
+    .pdd-chart-scrollx-inner { position: relative; height: calc(100% - 4px); min-width: 100%; }
+    .pdd-chart-scrollx::-webkit-scrollbar { height: 8px; }
+    .pdd-chart-scrollx::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 8px; }
+    .pdd-chart-scrollx::-webkit-scrollbar-track { background: #f1f5f9; }
+
+    .pdd-tbl {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.78rem;
+        color: #334155;
+        border: 1px solid #e0e7ff;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .pdd-tbl thead th {
+        background: #eef2ff;
+        color: #1e293b;
+        font-weight: 800;
+        font-size: 0.72rem;
+        padding: 10px 12px;
+        border-bottom: 1px solid #e0e7ff;
+        white-space: nowrap;
+    }
+    .pdd-tbl tbody td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #eef2ff;
+        font-weight: 600;
+    }
+    .pdd-tbl tbody tr:last-child td { border-bottom: none; }
+    .pdd-tbl tbody tr:hover td { background: #f8faff; }
+    .pdd-tbl tfoot td {
+        background: #eef2ff;
+        color: #1e293b;
+        font-weight: 900;
+        padding: 10px 12px;
+        border-top: 1px solid #e0e7ff;
+    }
+    .pdd-tbl .pdd-c { text-align: center; }
+    .pdd-tbl .pdd-r { text-align: right; white-space: nowrap; }
+    .pdd-tbl .pdd-empty { text-align: center; color: #94a3b8; font-weight: 500; }
+    .pdd-tbl thead th.pdd-th-green { background: #dcfce7; color: #15803d; }
+    .pdd-tbl thead th.pdd-th-blue  { background: #dbeafe; color: #1d4ed8; }
+    .pdd-tbl-fin tbody td:first-child { font-weight: 700; }
+
+    .pdd-chart-legend-inline {
+        display: flex; gap: 14px; flex-wrap: wrap;
+        font-size: 0.68rem; font-weight: 600; color: #475569;
+    }
+    .pdd-chart-legend-inline span { display: inline-flex; align-items: center; gap: 5px; }
+    .pdd-chart-legend-inline .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
     .pdd-tile-hidden {
         display: none !important;
     }
@@ -903,7 +1009,7 @@
                 <div class="pdd-kpi-card kpi-amber pdd-kpi-click" id="kpiCardPayment" data-tile-desp="Pending Payment Approvals" title="Open GRN Payment Approval" role="button" tabindex="0">
                     <div class="pdd-kpi-top">
                         <div class="pdd-kpi-icon"><i class="fa-solid fa-credit-card"></i></div>
-                        <span class="pdd-kpi-badge"><i class="fa-solid fa-bell fa-xs"></i> Attention</span>
+                        <span class="pdd-kpi-badge"><i class="fa-solid fa-indian-rupee-sign fa-xs"></i> Medium</span>
                     </div>
                     <div class="pdd-kpi-body">
                         <div class="pdd-kpi-value" id="kpiPaymentAmt">—</div>
@@ -950,162 +1056,137 @@
                         <div class="pdd-kpi-label">Un Reconciled</div>
                     </div>
                 </div>
-            </div>
-
-            <!-- ── ROW 2: PO STATUS + PAYMENT TREND ────────────────── -->
-            <div class="pdd-chart-row">
-                <!-- PO Status Donut -->
-                <div class="pdd-chart-card accent-emerald" data-tile-desp="PO Status">
-                    <div class="pdd-chart-header">
-                        <div class="pdd-chart-title-wrap">
-                            <div class="pdd-chart-title-icon ti-emerald"><i class="fa-solid fa-circle-dot"></i></div>
-                            <div class="pdd-chart-title">PO Status <span>This Period</span></div>
-                        </div>
+                <div class="pdd-kpi-card kpi-violet" data-tile-desp="Total Sub Projects">
+                    <div class="pdd-kpi-top">
+                        <div class="pdd-kpi-icon"><i class="fa-solid fa-diagram-project"></i></div>
+                        <span class="pdd-kpi-badge">Total Sub Projects</span>
                     </div>
-                    <div class="pdd-chart-area pdd-chart-area-donut">
-                        <canvas id="chartPOStatus"></canvas>
-                    </div>
-                    <div class="pdd-legend" id="legendPOStatus">
-                        <div class="pdd-legend-row">
-                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#22c55e"></span><span class="lbl">Approved</span></div>
-                            <span class="val" id="legPOApproved">—</span>
-                        </div>
-                        <div class="pdd-legend-row">
-                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#f59e0b"></span><span class="lbl">Pending</span></div>
-                            <span class="val" id="legPOPending">—</span>
-                        </div>
-                        <div class="pdd-legend-row">
-                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#ef4444"></span><span class="lbl">Rejected</span></div>
-                            <span class="val" id="legPORejected">—</span>
-                        </div>
-                        <div class="pdd-legend-divider"></div>
-                        <div class="pdd-legend-row pdd-legend-total">
-                            <span>Total PO</span>
-                            <span id="legPOTotal">—</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Payment Trend Bar -->
-                <div class="pdd-chart-card accent-indigo" data-tile-desp="Payment Trend">
-                    <div class="pdd-chart-header">
-                        <div class="pdd-chart-title-wrap">
-                            <div class="pdd-chart-title-icon ti-indigo"><i class="fa-solid fa-chart-bar"></i></div>
-                            <div class="pdd-chart-title">Payment Trend <span>Monthly This Year</span></div>
-                        </div>
-                        <span class="pdd-chart-action" id="trendYear">—</span>
-                    </div>
-                    <div class="pdd-chart-area pdd-chart-area-bar">
-                        <canvas id="chartPaymentTrend"></canvas>
+                    <div class="pdd-kpi-body">
+                        <div class="pdd-kpi-value" id="kpiTotalSubProjects">—</div>
+                        <div class="pdd-kpi-label">Total Sub Projects</div>
                     </div>
                 </div>
             </div>
 
-            <!-- ── ROW 3: PROJECT SUMMARY + BUDGET VS ACTUAL + EXPENSE SUMMARY ── -->
-            <div class="pdd-chart-row-3">
-                <!-- Project Summary -->
-                <div class="pdd-chart-card accent-violet" data-tile-desp="Project Summary">
+            <!-- ── ROW 2: PENDING APPROVALS (SUB PROJECT WISE) ─────── -->
+            <div class="pdd-table-row">
+                <div class="pdd-chart-card accent-rose" data-tile-desp="Pending PO Approvals">
                     <div class="pdd-chart-header">
                         <div class="pdd-chart-title-wrap">
-                            <div class="pdd-chart-title-icon ti-violet"><i class="fa-solid fa-layer-group"></i></div>
-                            <div class="pdd-chart-title">Project Summary</div>
-                        </div>
-                        <a class="pdd-chart-action">View All</a>
-                    </div>
-                    <div class="pdd-chart-area pdd-chart-area-pie">
-                        <canvas id="chartProjectSummary"></canvas>
-                        <div style="position:absolute;text-align:center;pointer-events:none;">
-                            <div class="pdd-pie-center-val" id="projSummaryTotal">—</div>
-                            <div class="pdd-pie-center-lbl">Total<br>Projects</div>
+                            <div class="pdd-chart-title-icon ti-rose"><i class="fa-solid fa-cart-shopping"></i></div>
+                            <div class="pdd-chart-title">Pending PO Approvals</div>
                         </div>
                     </div>
-                    <div class="pdd-legend" id="legendProjectSummary">
-                        <div class="pdd-legend-row">
-                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#6366f1"></span><span class="lbl">Active</span></div>
-                            <span class="val" id="legProjActive">—</span>
-                        </div>
-                        <div class="pdd-legend-row">
-                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#f59e0b"></span><span class="lbl">Pending</span></div>
-                            <span class="val" id="legProjPending">—</span>
-                        </div>
-                        <div class="pdd-legend-row">
-                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#22c55e"></span><span class="lbl">Completed</span></div>
-                            <span class="val" id="legProjCompleted">—</span>
-                        </div>
-                        <div class="pdd-legend-row">
-                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#94a3b8"></span><span class="lbl">On Hold</span></div>
-                            <span class="val" id="legProjOnHold">—</span>
-                        </div>
+                    <div class="pdd-tbl-scroll-y">
+                        <table class="pdd-tbl">
+                            <thead><tr><th>Sub Project Name</th><th class="pdd-c">Pending Count</th></tr></thead>
+                            <tbody id="tblPOBody"><tr><td colspan="2" class="pdd-empty">—</td></tr></tbody>
+                            <tfoot><tr><td>Total</td><td class="pdd-c" id="tblPOTotal">0</td></tr></tfoot>
+                        </table>
                     </div>
                 </div>
 
-                <!-- Budget vs Actual -->
-                <div class="pdd-chart-card accent-indigo" data-tile-desp="Project Budget vs Actual">
+                <div class="pdd-chart-card accent-amber" data-tile-desp="Pending Payment Approvals">
                     <div class="pdd-chart-header">
                         <div class="pdd-chart-title-wrap">
-                            <div class="pdd-chart-title-icon ti-indigo"><i class="fa-solid fa-scale-balanced"></i></div>
-                            <div class="pdd-chart-title">Project Budget vs Actual</div>
+                            <div class="pdd-chart-title-icon ti-amber"><i class="fa-solid fa-credit-card"></i></div>
+                            <div class="pdd-chart-title">Pending Payment Approvals</div>
                         </div>
                     </div>
-                    <div class="pdd-bva-stats-row">
-                        <div class="pdd-bva-stat">
-                            <div class="bva-lbl"><i class="fa-solid fa-wallet me-1"></i>Total Budget</div>
-                            <div class="bva-val" id="bvaBudget">—</div>
-                        </div>
-                        <div class="pdd-bva-stat">
-                            <div class="bva-lbl"><i class="fa-solid fa-receipt me-1"></i>Total Spent</div>
-                            <div class="bva-val" id="bvaSpent">—</div>
-                        </div>
-                        <div class="pdd-bva-stat">
-                            <div class="bva-lbl"><i class="fa-solid fa-piggy-bank me-1"></i>Total Balance</div>
-                            <div class="bva-val" id="bvaBalance">—</div>
-                        </div>
-                    </div>
-                    <div class="pdd-utilization-wrap">
-                        <div class="pdd-utilization-label">
-                            <span>Utilization</span>
-                            <span id="bvaPct" style="font-size:0.82rem;font-weight:900;color:#6366f1;">0%</span>
-                        </div>
-                        <div class="pdd-progress-outer">
-                            <div class="pdd-progress-inner" id="bvaProgressBar" style="width:0%"></div>
-                        </div>
-                    </div>
-                    <div style="margin-top:8px; flex:1 1 auto; min-height:0; display:flex; flex-direction:column;">
-                        <div class="pdd-section-label" style="flex-shrink:0;">Monthly Spend Breakdown</div>
-                        <div class="pdd-chart-area pdd-chart-area-line">
-                            <canvas id="chartBudgetLine"></canvas>
-                        </div>
+                    <div class="pdd-tbl-scroll-y">
+                        <table class="pdd-tbl">
+                            <thead><tr><th>Sub Project Name</th><th class="pdd-c">Pending Count</th></tr></thead>
+                            <tbody id="tblPaymentBody"><tr><td colspan="2" class="pdd-empty">—</td></tr></tbody>
+                            <tfoot><tr><td>Total</td><td class="pdd-c" id="tblPaymentTotal">0</td></tr></tfoot>
+                        </table>
                     </div>
                 </div>
 
-                <!-- Expense Summary -->
-                <div class="pdd-chart-card accent-rose" data-tile-desp="Expense Summary">
+                <div class="pdd-chart-card accent-violet" data-tile-desp="Pending Expense Approvals">
                     <div class="pdd-chart-header">
                         <div class="pdd-chart-title-wrap">
-                            <div class="pdd-chart-title-icon ti-rose"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-                            <div class="pdd-chart-title">Expense Summary <span>This Period</span></div>
+                            <div class="pdd-chart-title-icon ti-violet"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                            <div class="pdd-chart-title">Pending Expense Approvals</div>
                         </div>
-                        <a class="pdd-chart-action">View All</a>
                     </div>
-                    <div class="pdd-chart-area pdd-chart-area-exp">
-                        <canvas id="chartExpenseSummary"></canvas>
+                    <div class="pdd-tbl-scroll-y">
+                        <table class="pdd-tbl">
+                            <thead><tr><th>Sub Project Name</th><th class="pdd-c">Pending Count</th></tr></thead>
+                            <tbody id="tblExpenseBody"><tr><td colspan="2" class="pdd-empty">—</td></tr></tbody>
+                            <tfoot><tr><td>Total</td><td class="pdd-c" id="tblExpenseTotal">0</td></tr></tfoot>
+                        </table>
                     </div>
-                    <div class="pdd-exp-total-box">
-                        <div class="pdd-exp-total-label"><i class="fa-solid fa-sigma me-1"></i>Total Expenses</div>
-                        <div class="pdd-exp-total-val" id="expTotalAmount">—</div>
-                    </div>
-                    <div class="pdd-legend">
-                        <div class="pdd-legend-row">
-                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#22c55e"></span><span class="lbl">Approved</span></div>
-                            <span class="val" id="legExpApproved">—</span>
+                </div>
+
+                <div class="pdd-chart-card accent-emerald" data-tile-desp="Pending GRN Approval">
+                    <div class="pdd-chart-header">
+                        <div class="pdd-chart-title-wrap">
+                            <div class="pdd-chart-title-icon ti-emerald"><i class="fa-solid fa-file-circle-check"></i></div>
+                            <div class="pdd-chart-title">Pending GRN Approvals</div>
                         </div>
-                        <div class="pdd-legend-row">
-                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#f59e0b"></span><span class="lbl">Pending Approval</span></div>
-                            <span class="val" id="legExpPending">—</span>
+                    </div>
+                    <div class="pdd-tbl-scroll-y">
+                        <table class="pdd-tbl">
+                            <thead><tr><th>Sub Project Name</th><th class="pdd-c">Pending Count</th></tr></thead>
+                            <tbody id="tblGRNBody"><tr><td colspan="2" class="pdd-empty">—</td></tr></tbody>
+                            <tfoot><tr><td>Total</td><td class="pdd-c" id="tblGRNTotal">0</td></tr></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── ROW 3: FINANCIAL SUMMARY + PAYMENT RECEIVED VS MADE ── -->
+            <div class="pdd-fin-row">
+                <div class="pdd-chart-card accent-indigo" data-tile-desp="Project Financial Summary">
+                    <div class="pdd-chart-header">
+                        <div class="pdd-chart-title-wrap">
+                            <div class="pdd-chart-title-icon ti-indigo"><i class="fa-solid fa-chart-column"></i></div>
+                            <div class="pdd-chart-title">Project Financial Summary</div>
                         </div>
-                        <div class="pdd-legend-row">
-                            <div class="pdd-legend-dot-wrap"><span class="dot" style="background:#ef4444"></span><span class="lbl">Rejected</span></div>
-                            <span class="val" id="legExpRejected">—</span>
+                    </div>
+                    <div class="pdd-tbl-scroll pdd-tbl-scroll-y pdd-tbl-scroll-lg">
+                        <table class="pdd-tbl pdd-tbl-fin">
+                            <thead>
+                                <tr>
+                                    <th>Project Name</th>
+                                    <th class="pdd-r">Budget Amount</th>
+                                    <th class="pdd-r">Budget GST Amount</th>
+                                    <th class="pdd-r pdd-th-green">Payment Received</th>
+                                    <th class="pdd-r pdd-th-blue">Payment Made</th>
+                                    <th class="pdd-r">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblFinBody"><tr><td colspan="6" class="pdd-empty">—</td></tr></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td>Total</td>
+                                    <td class="pdd-r" id="finTotBudget">₹ 0</td>
+                                    <td class="pdd-r" id="finTotGST">₹ 0</td>
+                                    <td class="pdd-r" id="finTotReceived">₹ 0</td>
+                                    <td class="pdd-r" id="finTotMade">₹ 0</td>
+                                    <td class="pdd-r" id="finTotBalance">₹ 0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="pdd-chart-card accent-indigo" data-tile-desp="Project-wise Payment Received vs Payment Made">
+                    <div class="pdd-chart-header">
+                        <div class="pdd-chart-title-wrap">
+                            <div class="pdd-chart-title-icon ti-indigo"><i class="fa-solid fa-chart-simple"></i></div>
+                            <div class="pdd-chart-title">Project-wise Payment Received vs Payment Made</div>
+                        </div>
+                        <div class="pdd-chart-legend-inline">
+                            <span><i class="dot" style="background:#10b981"></i>Payment Received</span>
+                            <span><i class="dot" style="background:#3b82f6"></i>Payment Made</span>
+                        </div>
+                    </div>
+                    <div class="pdd-chart-area pdd-chart-area-scrollx">
+                        <div class="pdd-chart-scrollx">
+                            <div class="pdd-chart-scrollx-inner" id="chartPaymentVsReceivedInner">
+                                <canvas id="chartPaymentVsReceived"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>

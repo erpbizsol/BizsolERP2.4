@@ -17,7 +17,7 @@ let G_ApprovalLevelListsLoadPromise = null;
 /** Level details waiting to bind after approval level API lists finish loading. */
 let G_PendingApprovalLevelDetails = [];
 let G_SiteRepList       = [];
-let G_ActiveStatusFilter = 'all'; // 'all' | 'running' | 'pending'
+let G_ActiveStatusFilter = 'all'; // 'all' | 'closed' | 'pending'
 /** GRN Check codes to apply after modal is visible (Select2 multi in hidden modal often keeps only one if set earlier). */
 let G_SubProjectModalGRNPendingCodes = null;
 
@@ -66,8 +66,38 @@ const APPROVAL_LEVEL_TAB_CONFIG = {
     }
 };
 
+function ensureClosedUi() {
+    if (!$('#pmClosedRowStyle').length) {
+        $('head').append(
+            '<style id="pmClosedRowStyle">' +
+            '.pm-table tbody tr.pm-row-closed,.pm-table tbody tr.pm-row-closed:nth-child(even),.pm-table tbody tr.pm-row-closed:nth-child(odd){background:#e2e8f0 !important;}' +
+            '.pm-table tbody tr.pm-row-closed:hover{background:#cbd5e1 !important;}' +
+            '.pm-table tbody tr.pm-row-closed td{color:#334155 !important;}' +
+            '.pm-close-chk{width:16px;height:16px;cursor:pointer;accent-color:#475569;vertical-align:middle;}' +
+            '</style>'
+        );
+    }
+    const $running = $('#statChipRunning');
+    if ($running.length && !$('#statChipClosed').length) {
+        $running.attr({ id: 'statChipClosed', 'data-filter': 'closed' });
+        $running.find('.pm-stat-val').first().attr('id', 'statClosed');
+        $running.find('.pm-stat-lbl').first().text('Closed');
+        $running.find('.pm-stat-icon i').attr('class', 'fas fa-lock');
+    }
+    const $ths = $('#tblSubProject thead th');
+    const hasCloseCol = $ths.filter(function () { return $(this).text().trim().toLowerCase() === 'close'; }).length > 0;
+    if (!hasCloseCol && $ths.length) {
+        $ths.last().before('<th class="center" style="width:80px;">Close</th>');
+        const $foot = $('#tblSubProject tfoot tr');
+        if ($foot.children('td').length === 5) {
+            $foot.append('<td></td>');
+        }
+    }
+}
+
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam("#ERPHeading", "ModuleDesp");
+    ensureClosedUi();
 
     loadUserDropdown();
     loadAllApprovalLevelLists();
@@ -1649,13 +1679,30 @@ function loadSubProjects() {
         });
 }
 
+function isSubProjectClosed(item) {
+    if (!item) return false;
+    const v = item.Closed ?? item.IsClosed ?? item.Close ?? item.ClosedFlag
+        ?? item.closed ?? item.isClosed ?? item.close;
+    const s = String(v ?? '').trim().toUpperCase();
+    return s === 'Y' || s === '1' || s === 'TRUE' || s === 'CLOSED';
+}
+
+function setSubProjectClosedFlag(item, closed) {
+    if (!item) return;
+    const flag = closed ? 'Y' : 'N';
+    item.Closed = flag;
+    if (item.IsClosed !== undefined) item.IsClosed = flag;
+    if (item.closed !== undefined) item.closed = flag;
+    if (item.isClosed !== undefined) item.isClosed = flag;
+}
+
 function updateStats(list) {
     const total = list.length;
-    const runningTotal = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'Y'; }).length;
-    const pendingTotal = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'N'; }).length;
+    const closedTotal = list.filter(isSubProjectClosed).length;
+    const pendingTotal = list.filter(function (x) { return !isSubProjectClosed(x); }).length;
 
     $('#statTotal').text(total);
-    $('#statBudget').text(runningTotal);
+    $('#statClosed').text(closedTotal);
     $('#statAvgDays').text(pendingTotal);
 }
 
@@ -1701,7 +1748,7 @@ function bindSubProjectGrid(list) {
     if (!list || list.length === 0) {
         $tbody.append(`
             <tr>
-                <td colspan="8">
+                <td colspan="9">
                     <div class="pm-empty">
                         <div class="pm-empty-icon"><i class="fas fa-folder-open"></i></div>
                         <div class="pm-empty-title">No Sub Projects Found</div>
@@ -1745,8 +1792,10 @@ function bindSubProjectGrid(list) {
             }
         }
 
+        const closed = isSubProjectClosed(item);
+
         $tbody.append(`
-            <tr>
+            <tr class="${closed ? 'pm-row-closed' : ''}">
                 <td class="center"><span class="pm-sno">${index + 1}</span></td>
                 <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis;">${escHtml(masterName)}</td>
                 <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis;">${escHtml(subProjectName)}</td>
@@ -1756,6 +1805,10 @@ function bindSubProjectGrid(list) {
                 <td class="center">${startDateText}</td>
                 <td class="center">${estDateText}</td>
                 <td class="center"><span class="pm-days-chip">${estimatedDays} days</span></td>
+                <td class="center">
+                    <input type="checkbox" class="pm-close-chk" title="${closed ? 'Unmark as Closed' : 'Mark as Closed'}"
+                        ${closed ? 'checked' : ''} onchange="toggleSubProjectClosed(${code}, this)" />
+                </td>
                 <td class="center">
                     <div class="pm-actions">
                         <button type="button" class="pm-icon-btn view"  title="View"   onclick="viewSubProject(${code})"><i class="fas fa-eye"></i></button>
@@ -1775,10 +1828,10 @@ function applySubProjectFilters() {
     let list   = G_SubProjectList;
 
     // Status filter (from card click)
-    if (G_ActiveStatusFilter === 'running') {
-        list = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'Y'; });
+    if (G_ActiveStatusFilter === 'closed') {
+        list = list.filter(isSubProjectClosed);
     } else if (G_ActiveStatusFilter === 'pending') {
-        list = list.filter(function (x) { return String(x.Verify || '').toUpperCase() === 'N'; });
+        list = list.filter(function (x) { return !isSubProjectClosed(x); });
     }
 
     // Search filter
@@ -1905,7 +1958,43 @@ function hideModal(id) {
     }
 }
 
+/* ── Mark / Unmark as Closed ─────────────────────────────── */
+function toggleSubProjectClosed(code, checkbox) {
+    if (!code || !checkbox) return;
+
+    const markClosed = !!checkbox.checked;
+    checkbox.disabled = true;
+    Showloader && Showloader();
+
+    const apiCall = markClosed
+        ? SubProjectMasterService.MarkAsClosed(code)
+        : SubProjectMasterService.UnMarkAsClosed(code);
+
+    apiCall
+        .then(function (response) {
+            HideLoader && HideLoader();
+            checkbox.disabled = false;
+            if (response && response.Status === 'Y') {
+                const row = (G_SubProjectList || []).find(function (x) { return String(x.Code) === String(code); });
+                setSubProjectClosedFlag(row, markClosed);
+                toastr.success(response.Msg || response.Message || (markClosed ? 'Sub project marked as closed.' : 'Sub project unmarked as closed.'));
+                updateStats(G_SubProjectList);
+                applySubProjectFilters();
+            } else {
+                checkbox.checked = !markClosed;
+                toastr.warning((response && (response.Msg || response.Message)) || 'Unable to update closed status.');
+            }
+        })
+        .catch(function (error) {
+            HideLoader && HideLoader();
+            checkbox.disabled = false;
+            checkbox.checked = !markClosed;
+            toastr.error((error && (error.Msg || error.Message)) || 'Unable to update closed status.');
+        });
+}
+
 /* ── Expose globals ──────────────────────────────────────── */
 window.viewSubProject            = viewSubProject;
 window.SubProjectMaster_EditData = SubProjectMaster_EditData;
 window.DeleteSubProject          = DeleteSubProject;
+window.toggleSubProjectClosed    = toggleSubProjectClosed;
