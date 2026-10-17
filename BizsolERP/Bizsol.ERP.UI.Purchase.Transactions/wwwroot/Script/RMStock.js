@@ -1841,17 +1841,40 @@ function GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlitte
                 if (item["Qty MT"] !== undefined && item["Qty MT"] !== null && !isNaN(item["Qty MT"])) {
                     item["Qty MT"] = parseFloat(item["Qty MT"]).toFixed(3);
                 }
+                const widthKey = Object.keys(item).find(function (k) { return k.toUpperCase() === 'WIDTH'; });
+                if (widthKey && item["Numeric Value"] !== undefined && item["Numeric Value"] !== null && item["Numeric Value"] !== '') {
+                    const widthNum = parseFloat(item["Numeric Value"]);
+                    if (!isNaN(widthNum)) {
+                        item[widthKey] = widthNum;
+                    }
+                }
                 return item;
             });
             $('#tblSlitted_Coil_Stock').show();
-            const stringFilterColumn = ["Item Name", "IdentificationNo", "Qty PC", "Qty MT"];
-            const numericFilterColumn = [];
+            const sampleRow = response[0] || {};
+            const rowKeys = Object.keys(sampleRow);
+            const pivotFilterTypes = ['GRADE', 'THICKNESS', 'MAKE', 'SIZE'];
+            const stringFilterColumn = ["Item Name", "IdentificationNo"];
+            pivotFilterTypes.forEach(function (paramType) {
+                const key = rowKeys.find(function (k) { return k.toUpperCase() === paramType; });
+                if (key) {
+                    stringFilterColumn.push(key);
+                }
+            });
+            const widthLabelKey = rowKeys.find(function (k) { return k.toUpperCase() === 'WIDTH'; });
+            const numericFilterColumn = ["Qty PC", "Qty MT"];
+            if (widthLabelKey) {
+                numericFilterColumn.unshift(widthLabelKey);
+            }
             const dateFilterColumn = ["Create Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            let hiddenColumns = ["Code","Qty MTRS"];
-            const columnAlignment = { "Qty PC": 'right', "Qty MT": 'right', "Qty MTRS": 'right',"Create Date":'center'};
+            let hiddenColumns = ["Code", "Qty MTRS", "Numeric Value"];
+            const columnAlignment = { "Qty PC": 'right', "Qty MT": 'right', "Qty MTRS": 'right', "Create Date": 'center' };
+            if (widthLabelKey) {
+                columnAlignment[widthLabelKey] = 'right';
+            }
             calculateTotalFooterSlitted_Coil_Stock(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted_Coil_Stock", "table-body-Slitted_Coil_Stock", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, null, null, null, 'Search by Item Name, Identification No, Size...');
             PopulateTableForPrint(response);
