@@ -3,11 +3,7 @@ import { UserDashboardTileRights } from '../../Bizsol.WebERP.UI.Shared/js/UserDa
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
 // ── Chart instances (destroyed & recreated on each load) ─────────────────────
-let chartPOStatus        = null;
-let chartPaymentTrend    = null;
-let chartProjectSummary  = null;
-let chartBudgetLine      = null;
-let chartExpenseSummary  = null;
+let chartPaymentVsReceived = null;
 
 let pddFilterPanel       = null;
 
@@ -261,35 +257,29 @@ function LoadDashboardAfterRights() {
     }
 
     SetLoading(true);
-    const year = new Date(fromDate).getFullYear();
-    const skipBudget = UserDashboardTileRights.IsTileHidden('Project Budget vs Actual');
-    const skipExpense = UserDashboardTileRights.IsTileHidden('Expense Summary');
+
+    const skip = function (tile) { return UserDashboardTileRights.IsTileHidden(tile); };
+    const none = Promise.resolve(null);
+    const S    = ProjectDetailDashboardService;
 
     Promise.all([
-        ProjectDetailDashboardService.GetDashboardSummary(projectCode, subProjectCode, fromDate, toDate),
-        UserDashboardTileRights.IsTileHidden('PO Status')
-            ? Promise.resolve(null)
-            : ProjectDetailDashboardService.GetPOStatus(projectCode, subProjectCode, fromDate, toDate),
-        UserDashboardTileRights.IsTileHidden('Payment Trend')
-            ? Promise.resolve(null)
-            : ProjectDetailDashboardService.GetPaymentTrend(projectCode, subProjectCode, year),
-        UserDashboardTileRights.IsTileHidden('Project Summary')
-            ? Promise.resolve(null)
-            : ProjectDetailDashboardService.GetProjectSummary(projectCode),
-        skipBudget
-            ? Promise.resolve(null)
-            : ProjectDetailDashboardService.GetBudgetVsActual(projectCode, subProjectCode, fromDate, toDate),
-        skipExpense
-            ? Promise.resolve(null)
-            : ProjectDetailDashboardService.GetExpenseSummary(projectCode, subProjectCode, fromDate, toDate),
+        S.GetDashboardSummary(projectCode, subProjectCode, fromDate, toDate),
+        skip('Pending PO Approvals')      ? none : S.GetPendingPOBySubProject(projectCode, subProjectCode),
+        skip('Pending Payment Approvals') ? none : S.GetPendingPaymentBySubProject(projectCode, subProjectCode),
+        skip('Pending Expense Approvals') ? none : S.GetPendingExpenseBySubProject(projectCode, subProjectCode),
+        skip('Pending GRN Approval')      ? none : S.GetPendingGRNBySubProject(projectCode, subProjectCode),
+        skip('Project Financial Summary') ? none : S.GetProjectFinancialSummary(projectCode, subProjectCode, fromDate, toDate),
     ])
-    .then(function ([summary, poStatus, paymentTrend, projectSummary, bva, expenseSummary]) {
+    .then(function ([summary, poRows, paymentRows, expenseRows, grnRows, finRows]) {
         RenderKPI(summary);
-        if (poStatus) RenderPOStatus(poStatus);
-        if (paymentTrend) RenderPaymentTrend(paymentTrend, year);
-        if (projectSummary) RenderProjectSummary(projectSummary);
-        if (bva) RenderBudgetVsActual(bva);
-        if (expenseSummary) RenderExpenseSummary(expenseSummary);
+        if (poRows)      RenderPendingTable('tblPOBody',      'tblPOTotal',      poRows);
+        if (paymentRows) RenderPendingTable('tblPaymentBody', 'tblPaymentTotal', paymentRows);
+        if (expenseRows) RenderPendingTable('tblExpenseBody', 'tblExpenseTotal', expenseRows);
+        if (grnRows)     RenderPendingTable('tblGRNBody',     'tblGRNTotal',     grnRows);
+        if (finRows) {
+            RenderFinancialSummary(finRows);
+            RenderPaymentVsReceived(finRows);
+        }
         document.getElementById('pddDataNote').textContent = NowNote();
     })
     .catch(function (err) {
@@ -311,332 +301,165 @@ function ResetDashboard() {
     });
 }
 
+// ── Generic helpers for the new widgets ──────────────────────────────────────
+function Pick(row, ...keys) {
+    for (const k of keys) {
+        if (row[k] !== undefined && row[k] !== null) return row[k];
+    }
+    return undefined;
+}
+
+function EscHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+/** Indian-grouped rupee value, e.g. ₹ 12,50,00,000 */
+function FmtInr(val) {
+    const n = parseFloat(val);
+    return '₹ ' + (isNaN(n) ? 0 : n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+}
+
+function FmtCr(val) {
+    const n = parseFloat(val);
+    return ((isNaN(n) ? 0 : n) / 1e7).toFixed(2) + ' Cr';
+}
+
 function ClearAllWidgets() {
     ['kpiPOCount','kpiPaymentAmt','kpiExpenseAmt','kpiGRNCount','kpiTotalProjects','kpiIsReconciled',
-     'legPOApproved','legPOPending','legPORejected','legPOTotal',
-     'projSummaryTotal','legProjActive','legProjPending','legProjCompleted','legProjOnHold',
-     'bvaBudget','bvaSpent','bvaBalance','bvaPct',
-     'expTotalAmount','legExpApproved','legExpPending','legExpRejected',
-     'pddDataNote','trendYear'
+     'kpiTotalSubProjects','pddDataNote'
     ].forEach(function (id) {
         const el = document.getElementById(id);
         if (el) el.textContent = '—';
     });
-    const bar = document.getElementById('bvaProgressBar');
-    if (bar) bar.style.width = '0%';
-
-    chartPOStatus       = DestroyChart(chartPOStatus);
-    chartPaymentTrend   = DestroyChart(chartPaymentTrend);
-    chartProjectSummary = DestroyChart(chartProjectSummary);
-    chartBudgetLine     = DestroyChart(chartBudgetLine);
-    chartExpenseSummary = DestroyChart(chartExpenseSummary);
+    chartPaymentVsReceived = DestroyChart(chartPaymentVsReceived);
 }
 
 // ── Render KPI cards ─────────────────────────────────────────────────────────
 function RenderKPI(data) {
     const d = FirstRow(data);
     if (!d) return;
-    SetKpiText('kpiPOCount',       d.PendingPOCount      ?? '0');
-    SetKpiText('kpiPaymentAmt',    FmtLakh(d.PendingPaymentAmount  ?? 0));
-    SetKpiText('kpiExpenseAmt',    FmtLakh(d.PendingExpenseAmount  ?? 0));
-    SetKpiText('kpiGRNCount',      d.PendingGRNService   ?? '0');
-    SetKpiText('kpiTotalProjects', d.TotalProjects       ?? '0');
-    SetKpiText('kpiIsReconciled',  FormatUnReconciled(d.IsReconciled ?? d.isReconciled ?? 0));
+    SetKpiText('kpiPOCount',         d.PendingPOCount      ?? '0');
+    SetKpiText('kpiPaymentAmt',      FmtLakh(d.PendingPaymentAmount  ?? 0));
+    SetKpiText('kpiExpenseAmt',      FmtLakh(d.PendingExpenseAmount  ?? 0));
+    SetKpiText('kpiGRNCount',        d.PendingGRNService   ?? '0');
+    SetKpiText('kpiTotalProjects',   d.TotalProjects       ?? '0');
+    SetKpiText('kpiTotalSubProjects', d.TotalSubProjects   ?? '0');
+    SetKpiText('kpiIsReconciled',    FormatUnReconciled(d.IsReconciled ?? d.isReconciled ?? 0));
 }
 
-// ── Render PO Status donut ────────────────────────────────────────────────────
-function RenderPOStatus(data) {
-    if (!data || !data.length) return;
-    const d        = data[0];
-    const approved = parseInt(d.Approved ?? 0, 10);
-    const pending  = parseInt(d.Pending  ?? 0, 10);
-    const rejected = parseInt(d.Rejected ?? 0, 10);
-    const total    = approved + pending + rejected;
+// ── Pending approvals tables (Sub Project wise) ──────────────────────────────
+function RenderPendingTable(bodyId, totalId, data) {
+    const rows  = AsArray(data);
+    const body  = document.getElementById(bodyId);
+    const total = document.getElementById(totalId);
+    if (!body || !total) return;
 
-    document.getElementById('legPOApproved').textContent = `${approved} (${total ? Math.round(approved/total*100) : 0}%)`;
-    document.getElementById('legPOPending').textContent  = `${pending} (${total  ? Math.round(pending /total*100) : 0}%)`;
-    document.getElementById('legPORejected').textContent = `${rejected} (${total ? Math.round(rejected/total*100) : 0}%)`;
-    document.getElementById('legPOTotal').textContent    = total;
+    let sum = 0;
+    const html = rows.map(function (r) {
+        const name  = Pick(r, 'SubProjectName', 'subProjectName', 'SubProjectDesp') ?? '';
+        const count = parseInt(Pick(r, 'PendingCount', 'pendingCount', 'Count') ?? 0, 10) || 0;
+        sum += count;
+        return '<tr><td>' + EscHtml(name) + '</td><td class="pdd-c">' + count + '</td></tr>';
+    }).join('');
 
-    chartPOStatus = DestroyChart(chartPOStatus);
-    chartPOStatus = new Chart(document.getElementById('chartPOStatus'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Approved', 'Pending', 'Rejected'],
-            datasets: [{
-                data: [approved, pending, rejected],
-                backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
-                borderWidth: 3,
-                borderColor: '#fff',
-                hoverOffset: 8,
-                hoverBorderWidth: 0,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '72%',
-            animation: { animateRotate: true, duration: 900 },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(15,23,42,0.85)',
-                    padding: 10,
-                    cornerRadius: 10,
-                    titleFont: { weight: '700' },
-                    callbacks: {
-                        label: function (ctx) {
-                            return ` ${ctx.label}: ${ctx.parsed} (${total ? Math.round(ctx.parsed/total*100) : 0}%)`;
-                        }
-                    }
-                }
-            }
-        }
-    });
+    body.innerHTML = html || '<tr><td colspan="2" class="pdd-empty">No pending records</td></tr>';
+    total.textContent = sum;
 }
 
-// ── Render Payment Trend bar ─────────────────────────────────────────────────
-function RenderPaymentTrend(data, year) {
-    document.getElementById('trendYear').textContent = year || '—';
+// ── Project Financial Summary table ──────────────────────────────────────────
+function RenderFinancialSummary(data) {
+    const rows = AsArray(data);
+    const body = document.getElementById('tblFinBody');
+    if (!body) return;
 
-    const allMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const amountMap = {};
-    (data || []).forEach(function (r) {
-        const mn = parseInt(r.Month ?? r.MonthNo ?? 0, 10);
-        if (mn >= 1 && mn <= 12) amountMap[mn] = parseFloat(r.TotalAmount ?? r.Amount ?? 0);
-    });
-    const amounts = allMonths.map(function (_, i) { return amountMap[i+1] || 0; });
-    const maxAmt  = Math.max(...amounts);
+    const tot = { budget: 0, gst: 0, received: 0, made: 0, balance: 0 };
+    const html = rows.map(function (r) {
+        const budget   = parseFloat(Pick(r, 'BudgetAmount', 'budgetAmount') ?? 0) || 0;
+        const gst      = parseFloat(Pick(r, 'BudgetGSTAmount', 'budgetGSTAmount') ?? 0) || 0;
+        const received = parseFloat(Pick(r, 'PaymentReceived', 'paymentReceived') ?? 0) || 0;
+        const made     = parseFloat(Pick(r, 'PaymentMade', 'paymentMade') ?? 0) || 0;
+        const balance  = parseFloat(Pick(r, 'Balance', 'balance') ?? (budget + gst - made)) || 0;
+        tot.budget += budget; tot.gst += gst; tot.received += received; tot.made += made; tot.balance += balance;
+        return '<tr>' +
+            '<td>' + EscHtml(Pick(r, 'ProjectName', 'projectName', 'ProjectDesp') ?? '') + '</td>' +
+            '<td class="pdd-r">' + FmtInr(budget)   + '</td>' +
+            '<td class="pdd-r">' + FmtInr(gst)      + '</td>' +
+            '<td class="pdd-r">' + FmtInr(received) + '</td>' +
+            '<td class="pdd-r">' + FmtInr(made)     + '</td>' +
+            '<td class="pdd-r">' + FmtInr(balance)  + '</td>' +
+            '</tr>';
+    }).join('');
 
-    chartPaymentTrend = DestroyChart(chartPaymentTrend);
-    chartPaymentTrend = new Chart(document.getElementById('chartPaymentTrend'), {
+    body.innerHTML = html || '<tr><td colspan="6" class="pdd-empty">No data</td></tr>';
+    SetKpiText('finTotBudget',   FmtInr(tot.budget));
+    SetKpiText('finTotGST',      FmtInr(tot.gst));
+    SetKpiText('finTotReceived', FmtInr(tot.received));
+    SetKpiText('finTotMade',     FmtInr(tot.made));
+    SetKpiText('finTotBalance',  FmtInr(tot.balance));
+}
+
+// ── Project-wise Payment Received vs Payment Made (grouped bar) ──────────────
+const valueLabelPlugin = {
+    id: 'pddValueLabels',
+    afterDatasetsDraw: function (chart) {
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.font = '700 10px sans-serif';
+        ctx.fillStyle = '#334155';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        chart.data.datasets.forEach(function (ds, i) {
+            chart.getDatasetMeta(i).data.forEach(function (bar, idx) {
+                ctx.fillText(FmtCr(ds.data[idx]), bar.x, bar.y - 3);
+            });
+        });
+        ctx.restore();
+    },
+};
+
+function RenderPaymentVsReceived(data) {
+    const rows     = AsArray(data);
+    const labels   = rows.map(function (r) { return Pick(r, 'ProjectName', 'projectName', 'ProjectDesp') ?? ''; });
+    const received = rows.map(function (r) { return parseFloat(Pick(r, 'PaymentReceived', 'paymentReceived') ?? 0) || 0; });
+    const made     = rows.map(function (r) { return parseFloat(Pick(r, 'PaymentMade', 'paymentMade') ?? 0) || 0; });
+
+    chartPaymentVsReceived = DestroyChart(chartPaymentVsReceived);
+    chartPaymentVsReceived = new Chart(document.getElementById('chartPaymentVsReceived'), {
         type: 'bar',
         data: {
-            labels: allMonths,
-            datasets: [{
-                label: 'Payment Amount',
-                data: amounts,
-                backgroundColor: amounts.map(function (v) {
-                    return v === maxAmt && maxAmt > 0 ? '#6366f1' : 'rgba(99,102,241,0.18)';
-                }),
-                hoverBackgroundColor: amounts.map(function (v) {
-                    return v === maxAmt && maxAmt > 0 ? '#4f46e5' : 'rgba(99,102,241,0.45)';
-                }),
-                borderRadius: 8,
-                borderSkipped: false,
-                borderWidth: 0,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 900 },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(15,23,42,0.85)',
-                    padding: 10,
-                    cornerRadius: 10,
-                    callbacks: {
-                        label: function (ctx) { return '  ' + FmtLakh(ctx.parsed.y); }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    border: { display: false },
-                    ticks: { font: { size: 11, weight: '600' }, color: '#94a3b8' }
-                },
-                y: {
-                    grid: { color: '#f1f5f9', lineWidth: 1 },
-                    border: { display: false, dash: [4,4] },
-                    ticks: {
-                        font: { size: 10 },
-                        color: '#94a3b8',
-                        callback: function (v) { return FmtLakh(v); }
-                    }
-                }
-            }
-        }
-    });
-}
-
-// ── Render Project Summary donut ─────────────────────────────────────────────
-function RenderProjectSummary(data) {
-    if (!data || !data.length) return;
-    const d         = data[0];
-    const active    = parseInt(d.Active    ?? 0, 10);
-    const pending   = parseInt(d.Pending   ?? 0, 10);
-    const completed = parseInt(d.Completed ?? 0, 10);
-    const onHold    = parseInt(d.OnHold    ?? d.On_Hold ?? 0, 10);
-    const total     = active + pending + completed + onHold;
-
-    document.getElementById('projSummaryTotal').textContent = total;
-    document.getElementById('legProjActive').textContent    = `${active}    (${total ? Math.round(active/total*100) : 0}%)`;
-    document.getElementById('legProjPending').textContent   = `${pending}   (${total ? Math.round(pending/total*100) : 0}%)`;
-    document.getElementById('legProjCompleted').textContent = `${completed} (${total ? Math.round(completed/total*100) : 0}%)`;
-    document.getElementById('legProjOnHold').textContent    = `${onHold}    (${total ? Math.round(onHold/total*100) : 0}%)`;
-
-    chartProjectSummary = DestroyChart(chartProjectSummary);
-    chartProjectSummary = new Chart(document.getElementById('chartProjectSummary'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Active', 'Pending', 'Completed', 'On Hold'],
-            datasets: [{
-                data: [active, pending, completed, onHold],
-                backgroundColor: ['#6366f1', '#f59e0b', '#22c55e', '#cbd5e1'],
-                borderWidth: 3,
-                borderColor: '#fff',
-                hoverOffset: 8,
-                hoverBorderWidth: 0,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '66%',
-            animation: { animateRotate: true, duration: 900 },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(15,23,42,0.85)',
-                    padding: 10,
-                    cornerRadius: 10,
-                }
-            }
-        }
-    });
-}
-
-// ── Render Budget vs Actual ───────────────────────────────────────────────────
-function RenderBudgetVsActual(data) {
-    const rows = AsArray(data);
-    if (!rows.length) return;
-
-    // RowType=0 → summary header; RowType=1 → monthly detail rows
-    const summary = rows.find(function (r) { return RowTypeVal(r) === 0; }) || rows[0];
-    const details = rows.filter(function (r) { return RowTypeVal(r) === 1; });
-
-    const budget  = parseFloat(summary.TotalBudget ?? 0);
-    const spent   = parseFloat(summary.TotalSpent  ?? 0);
-    const balance = parseFloat(summary.TotalBalance ?? (budget - spent));
-    const pct     = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-
-    document.getElementById('bvaBudget').textContent  = FmtLakh(budget);
-    document.getElementById('bvaSpent').textContent   = FmtLakh(spent);
-    document.getElementById('bvaBalance').textContent = FmtLakh(balance);
-    document.getElementById('bvaPct').textContent    = pct.toFixed(2) + '%';
-    document.getElementById('bvaProgressBar').style.width = pct.toFixed(2) + '%';
-
-    // Monthly spend line (detail rows only)
-    const months     = details.map(function (r) { return r.MonthName ?? ''; });
-    const spentData  = details.map(function (r) { return parseFloat(r.MonthlySpent  ?? 0); });
-    const budgetData = details.map(function (r) { return parseFloat(r.MonthlyBudget ?? 0); });
-
-    chartBudgetLine = DestroyChart(chartBudgetLine);
-    chartBudgetLine = new Chart(document.getElementById('chartBudgetLine'), {
-        type: 'line',
-        data: {
-            labels: months.length ? months : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+            labels: labels,
             datasets: [
-                {
-                    label: 'Budget',
-                    data: budgetData.length ? budgetData : Array(12).fill(0),
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99,102,241,0.10)',
-                    borderWidth: 2.5,
-                    pointRadius: 3,
-                    pointBackgroundColor: '#6366f1',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    tension: 0.45,
-                    fill: true,
-                },
-                {
-                    label: 'Spent',
-                    data: spentData.length ? spentData : Array(12).fill(0),
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245,158,11,0.08)',
-                    borderWidth: 2.5,
-                    pointRadius: 3,
-                    pointBackgroundColor: '#f59e0b',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    tension: 0.45,
-                    fill: true,
-                }
-            ]
+                { label: 'Payment Received', data: received, backgroundColor: '#10b981', borderRadius: 4, borderSkipped: false },
+                { label: 'Payment Made',     data: made,     backgroundColor: '#3b82f6', borderRadius: 4, borderSkipped: false },
+            ],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             animation: { duration: 900 },
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: { font: { size: 10, weight: '600' }, boxWidth: 10, boxHeight: 10, borderRadius: 3, usePointStyle: true }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(15,23,42,0.85)',
-                    padding: 10,
-                    cornerRadius: 10,
-                    callbacks: { label: function (ctx) { return '  ' + FmtLakh(ctx.parsed.y); } }
-                }
-            },
-            scales: {
-                x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 9 }, color: '#94a3b8' } },
-                y: { grid: { color: '#f1f5f9' }, border: { display: false }, ticks: { font: { size: 9 }, color: '#94a3b8', callback: function (v) { return FmtLakh(v); } } }
-            }
-        }
-    });
-}
-
-// ── Render Expense Summary donut ─────────────────────────────────────────────
-function RenderExpenseSummary(data) {
-    if (!data || !data.length) return;
-    const d              = data[0];
-    const approved       = parseFloat(d.Approved       ?? 0);
-    const pendingApproval= parseFloat(d.PendingApproval ?? d.Pending ?? 0);
-    const rejected       = parseFloat(d.Rejected       ?? 0);
-    const total          = parseFloat(d.TotalExpenses  ?? (approved + pendingApproval + rejected));
-
-    document.getElementById('expTotalAmount').textContent  = FmtLakh(total);
-    document.getElementById('legExpApproved').textContent  = FmtLakh(approved);
-    document.getElementById('legExpPending').textContent   = FmtLakh(pendingApproval);
-    document.getElementById('legExpRejected').textContent  = FmtLakh(rejected);
-
-    chartExpenseSummary = DestroyChart(chartExpenseSummary);
-    chartExpenseSummary = new Chart(document.getElementById('chartExpenseSummary'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Approved', 'Pending Approval', 'Rejected'],
-            datasets: [{
-                data: [approved, pendingApproval, rejected],
-                backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
-                borderWidth: 3,
-                borderColor: '#fff',
-                hoverOffset: 8,
-                hoverBorderWidth: 0,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '65%',
-            animation: { animateRotate: true, duration: 900 },
+            layout: { padding: { top: 18 } },
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     backgroundColor: 'rgba(15,23,42,0.85)',
                     padding: 10,
                     cornerRadius: 10,
-                    callbacks: {
-                        label: function (ctx) { return '  ' + ctx.label + ': ' + FmtLakh(ctx.parsed); }
-                    }
-                }
-            }
-        }
+                    callbacks: { label: function (ctx) { return '  ' + ctx.dataset.label + ': ' + FmtInr(ctx.parsed.y); } },
+                },
+            },
+            scales: {
+                x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#64748b' } },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f1f5f9' },
+                    border: { display: false },
+                    ticks: { font: { size: 10 }, color: '#94a3b8', callback: function (v) { return (v / 1e7) + ' Cr'; } },
+                },
+            },
+        },
+        plugins: [valueLabelPlugin],
     });
 }
 
