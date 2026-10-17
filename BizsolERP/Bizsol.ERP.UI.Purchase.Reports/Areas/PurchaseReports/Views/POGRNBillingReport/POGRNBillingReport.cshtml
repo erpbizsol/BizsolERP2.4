@@ -55,6 +55,14 @@
         table-layout: auto;
         width: 100%;
         min-width: 1680px;
+        border-collapse: collapse;
+        border: 1px solid #94a3b8;
+    }
+    .pmr-page .expense-entry-table-wrapper #tblPOGRNBilling > thead th,
+    .pmr-page .expense-entry-table-wrapper #tblPOGRNBilling > tbody td,
+    #tblPOGRNBilling th,
+    #tblPOGRNBilling td {
+        border: 1px solid #94a3b8 !important;
     }
     #tblPOGRNBilling thead th {
         white-space: nowrap;
@@ -312,6 +320,14 @@
         text-decoration: underline;
         cursor: pointer;
     }
+    #tblPOGRNBilling td.pogr-po-once {
+        vertical-align: middle;
+        font-weight: 700;
+        background: #eff6ff !important;
+    }
+    #tblPOGRNBilling tr.pogr-grn-row td.col-grn {
+        background: #f0fdfa;
+    }
     #tblPOGRNBilling a.pogr-drill-link:hover { color: #312e81; }
 
     @@media (max-width: 991px) {
@@ -376,7 +392,7 @@
 
     <div class="expense-entry-card expense-entry-card-table ee-list-grid-wrap">
         <div class="expense-entry-table-wrapper pmr-table-wrap">
-            <table id="tblPOGRNBilling" class="table table-sm mb-0">
+            <table id="tblPOGRNBilling" class="table table-sm table-bordered mb-0">
                 <thead id="pogrTableHead"></thead>
                 <tbody id="pogrTableBody"></tbody>
             </table>
