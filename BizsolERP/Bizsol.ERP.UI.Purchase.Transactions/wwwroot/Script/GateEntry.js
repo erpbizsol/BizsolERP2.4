@@ -35,6 +35,8 @@ let G_GateEntryLinkedERPDocuments = [];
 let baseUrl = sessionStorage.getItem('AppBaseURL');
 let G_TableName = '';
 let G_TableCode = 0;
+let G_LoadedOutDocNoLockToList = false;
+let G_LoadedOutDocNoOptions = [];
 function GateEntryGirdByDates() {
 
     let UserDetailsobj = JSON.parse(sessionStorage.getItem('UserDetails'));
@@ -2218,6 +2220,12 @@ function GateEntry_SaveData(Mode) {
                 $('#frmLoadedOut_txtDocumentNo').focus();
                 return;
             }
+            if (RejectEntry == 'N' && G_LoadedOutDocNoLockToList && !GateEntry_IsLoadedOutDocNoInList(InvoiceNo)) {
+                valid = false;
+                toastr.error('Please select Document No. from the list');
+                $('#frmLoadedOut_txtDocumentNo').focus();
+                return;
+            }
             if (RejectEntry == 'N' && (typeof InvoiceDate === 'undefined' || InvoiceDate === '' || InvoiceDate === null)) {
                 valid = false;
                 toastr.error('Please Check! Document Date can not be blank');
@@ -3230,6 +3238,8 @@ function ClearAllFrm() {
     $('#frmLoadedOut_txtCustomerName').removeAttr('readonly');
     $('#frmLoadedOut_ddlDocumentType').removeAttr('disabled');
     $('#frmLoadedOut_txtDocumentNo').removeAttr('readonly');
+    $('#frmLoadedOut_txtDocumentNo').data('docNoKeep', false);
+    GateEntry_ApplyLoadedOutDocumentNoLock([]);
     $('#frmLoadedOut_txtDocumentDate').removeAttr('readonly');
     $('#frmLoadedOut_txtManualDocNo').removeAttr('readonly');
     $('#frmLoadedOut_txtGRNo').removeAttr('readonly');
@@ -3586,12 +3596,14 @@ function EditGateEntry(gateEntryData, EntryType) {
             });
             frmLoadedOut_ddlDocumentType('view');
             GateEntry_changeDocumentType();
+            $('#frmLoadedOut_txtDocumentNo').data('docNoKeep', true);
         });
 
 
         $('#frmLoadedOut_txtCustomerName').val(gateEntryData[0].VendorName);
 
         $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
+        $('#frmLoadedOut_txtDocumentNo').data('docNoKeep', true);
         $('#frmLoadedOut_txtDocumentDate').val(geFormatGateEntryInputDate(gateEntryData[0].InvoiceDate));
 
         $('#frmLoadedOut_txtManualDocNo').val(gateEntryData[0].ManualDocNo);
@@ -4176,12 +4188,148 @@ function CopyWeightmentSlip(transactionType) {
 
     
 }
+function GateEntry_LoadedOutDocNoParts(value) {
+    return (value || '').split(',').map(function (part) { return part.trim(); }).filter(Boolean);
+}
+
+function GateEntry_IsLoadedOutDocNoInList(value) {
+    const parts = GateEntry_LoadedOutDocNoParts(value);
+    if (parts.length === 0) return false;
+    return parts.every(function (part) {
+        return G_LoadedOutDocNoOptions.some(function (option) {
+            return option.toLowerCase() === part.toLowerCase();
+        });
+    });
+}
+
+function GateEntry_ShowLoadedOutDocumentNoList() {
+    const $list = $('#frmLoadedOut_txtDocumentNo_List');
+    $list.children().show();
+    $list.show();
+}
+
+function GateEntry_ApplyLoadedOutDocumentNoLock(docList) {
+    const $input = $('#frmLoadedOut_txtDocumentNo');
+    const keepExisting = $input.data('docNoKeep') === true;
+    const existingValue = ($input.val() || '').trim();
+    const listOptions = (docList || [])
+        .map(function (item) { return (item.Desp || '').toString().trim(); })
+        .filter(Boolean);
+
+    G_LoadedOutDocNoOptions = listOptions.slice();
+    G_LoadedOutDocNoLockToList = listOptions.length > 0;
+    $input.off('.docNoLock');
+
+    if (!G_LoadedOutDocNoLockToList) {
+        $('#frmLoadedOut_txtDocumentNo_List').off('mousedown.docNoLock');
+        $input.removeAttr('placeholder').removeAttr('title');
+        return;
+    }
+
+    if (keepExisting && existingValue) {
+        GateEntry_LoadedOutDocNoParts(existingValue).forEach(function (part) {
+            const alreadyListed = G_LoadedOutDocNoOptions.some(function (option) {
+                return option.toLowerCase() === part.toLowerCase();
+            });
+            if (!alreadyListed) {
+                G_LoadedOutDocNoOptions.push(part);
+            }
+        });
+        $input.data('docNoCommitted', existingValue);
+    } else if (!$input.prop('readonly')) {
+        $input.val('');
+        $input.data('docNoCommitted', '');
+    }
+
+    $input.attr('placeholder', 'Search and select');
+    $input.attr('title', 'Type to search, then select Document No. from the list');
+
+    $input.on('focus.docNoLock click.docNoLock', function () {
+        if ($(this).prop('readonly') || !G_LoadedOutDocNoLockToList) return;
+        const el = this;
+        setTimeout(function () {
+            if ($(el).prop('readonly') || document.activeElement !== el) return;
+            GateEntry_ShowLoadedOutDocumentNoList();
+        }, 0);
+    });
+
+    $input.on('input.docNoLock', function () {
+        if ($(this).prop('readonly')) return;
+        const raw = $(this).val() || '';
+        const segments = raw.split(',');
+        const term = (segments[segments.length - 1] || '').trim().toLowerCase();
+        const $list = $('#frmLoadedOut_txtDocumentNo_List');
+        const $items = $list.children();
+        if (!term) {
+            $items.show();
+            $list.show();
+            return;
+        }
+        let anyMatch = false;
+        $items.each(function () {
+            const match = $(this).text().toLowerCase().indexOf(term) !== -1;
+            $(this).toggle(match);
+            if (match) anyMatch = true;
+        });
+        if (anyMatch) {
+            $list.show();
+        }
+    });
+
+    let selectingFromList = false;
+    $('#frmLoadedOut_txtDocumentNo_List').off('mousedown.docNoLock').on('mousedown.docNoLock', function () {
+        selectingFromList = true;
+    });
+
+    $input.on('blur.docNoLock', function () {
+        if (!G_LoadedOutDocNoLockToList || $(this).prop('readonly')) return;
+        const el = this;
+        setTimeout(function () {
+            if (selectingFromList) {
+                selectingFromList = false;
+                $(el).data('docNoCommitted', ($(el).val() || '').trim());
+                return;
+            }
+
+            const val = ($(el).val() || '').trim();
+            if (!val) {
+                $(el).data('docNoCommitted', '');
+                return;
+            }
+
+            if (GateEntry_IsLoadedOutDocNoInList(val)) {
+                const committed = (($(el).data('docNoCommitted') || '') + '').trim();
+                $(el).data('docNoCommitted', val);
+                if (val.replace(/,\s*$/, '').toLowerCase() !== committed.replace(/,\s*$/, '').toLowerCase()) {
+                    const lastPart = GateEntry_LoadedOutDocNoParts(val).pop();
+                    const $item = $('#frmLoadedOut_txtDocumentNo_List li').filter(function () {
+                        return $(this).text().trim().toLowerCase() === (lastPart || '').toLowerCase();
+                    }).first();
+                    if ($item.length) {
+                        $item.trigger('click');
+                    }
+                }
+                return;
+            }
+
+            const committed = ($(el).data('docNoCommitted') || '') + '';
+            $(el).val(committed);
+            $('#frmLoadedOut_txtDocumentNo_List').children().show();
+            toastr.error('Please select Document No. from the list');
+            if (document.activeElement === el) {
+                GateEntry_ShowLoadedOutDocumentNoList();
+            }
+        }, 200);
+    });
+}
+
 function GateEntry_changeDocumentType() {
     G_TableName = '';
     G_TableCode = 0;
     $('#frmLoadedOut_txtCustomerName').removeAttr('readonly');
     $('#frmLoadedOut_txtGoodsDescription').removeAttr('readonly');
     $('#frmLoadedOut_txtQty').removeAttr('readonly');
+    $('#frmLoadedOut_txtDocumentNo').data('docNoKeep', false);
     let F_GateEntryType_Desp = $('#frmLoadedOut_ddlDocumentType').val();
     let IsMultipleDocument = false;
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'MultipleDocument').PerameterValue === 'Y') {
@@ -4256,6 +4404,7 @@ function GateEntry_changeDocumentType() {
                 ,IsMultipleDocument
             );
 
+            GateEntry_ApplyLoadedOutDocumentNoLock(DocList);
 
             //MultiAutoSuggestionControl.SetUpMultiAutoSuggestion(
             //    $('#frmLoadedOut_txtDocumentNo'),
@@ -4298,7 +4447,9 @@ function GateEntry_changeDocumentType() {
             //    }
             //);
         });
-    } 
+    } else {
+        GateEntry_ApplyLoadedOutDocumentNoLock([]);
+    }
 }
 function GateEntry_GetNetWeight() {
     let EmptyWeight = 0;

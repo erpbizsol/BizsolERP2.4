@@ -12,6 +12,20 @@
         --accent: #1f4e8c;
     }
 
+    /* Mobile: scroll past fixed bottom nav + copyright footer (page-only; layout unchanged) */
+    @@media (max-width: 768px) {
+        .mis-wrap {
+            padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+            box-sizing: border-box;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .mis-wrap {
+            padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+        }
+    }
+
     /* ---------- Toolbar ---------- */
     .mis-toolbar {
         background: #fff;
@@ -50,6 +64,44 @@
     }
 
     .mis-field input[type="date"]:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(31, 78, 140, 0.12);
+    }
+
+    .mis-select-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .mis-select-wrap > i {
+        position: absolute;
+        left: 10px;
+        color: var(--accent);
+        font-size: 0.82rem;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .mis-field select.mis-select {
+        height: 36px;
+        min-width: 200px;
+        border: 1px solid #d4d9e3;
+        border-radius: 6px;
+        padding: 4px 28px 4px 32px;
+        font-size: 0.83rem;
+        color: #333;
+        background: #fff;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231f4e8c' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
+    }
+
+    .mis-field select.mis-select:focus {
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 2px rgba(31, 78, 140, 0.12);
@@ -250,6 +302,437 @@
         width: 100%;
         height: calc(100% - 16px);
     }
+
+    /* ---------- Summary report layout (reference MIS dashboard palette) ---------- */
+    #divSummaryReportSections {
+        --sum-blue-dark: #005495;
+        --sum-blue-med: #1d70b8;
+        --sum-blue-light: #b8d4ef;
+        --sum-blue-row: #eef6fc;
+        --sum-blue-text: #005495;
+        --sum-green: #28a745;
+        --sum-green-dark: #1e7e34;
+        --sum-green-light: #c3e6cb;
+        --sum-green-row: #edf7ef;
+        --sum-green-text: #155724;
+        --sum-purple: #5b4099;
+        --sum-purple-dark: #4b3082;
+        --sum-purple-light: #d4c8e8;
+        --sum-purple-row: #f3eef9;
+        --sum-purple-text: #4b3082;
+        --sum-orange: #e67e22;
+        --sum-orange-dark: #c55a11;
+        background: linear-gradient(180deg, #dceaf5 0%, #eef5fb 45%, #e2edf7 100%);
+        border-radius: 10px;
+        padding: 14px 12px 16px;
+        margin-top: 12px;
+    }
+
+    .mis-sum-banner {
+        background: var(--sum-blue-dark);
+        color: #fff;
+        border-radius: 8px;
+        padding: 12px 18px;
+        margin-top: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        box-shadow: 0 2px 8px rgba(0, 84, 149, 0.25);
+    }
+
+    .mis-sum-banner h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .mis-sum-banner h2 i {
+        color: #fff;
+        font-size: 1.45rem;
+        line-height: 1;
+    }
+
+    .mis-sum-banner .mis-sum-date {
+        font-size: 0.85rem;
+        color: #fff;
+        opacity: 0.95;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mis-sum-banner .mis-sum-date i {
+        font-size: 1rem;
+        color: #fff;
+    }
+
+    .mis-sum-kpi-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0;
+        margin-top: 12px;
+        background: #fff;
+        border: 1px solid #c5d9ed;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0, 84, 149, 0.08);
+    }
+
+    .mis-sum-kpi {
+        background: #fff;
+        border: 0;
+        border-right: 1px solid #d8e6f2;
+        border-radius: 0;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .mis-sum-kpi:last-child {
+        border-right: none;
+    }
+
+    .mis-sum-kpi i {
+        font-size: 1.75rem;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .mis-sum-kpi .mis-sum-kpi-label {
+        font-size: 0.72rem;
+        color: var(--sum-blue-med);
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .mis-sum-kpi .mis-sum-kpi-value {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--sum-blue-dark);
+        margin-top: 2px;
+    }
+
+    .mis-sum-section {
+        background: #fff;
+        border: 1px solid #c5d9ed;
+        border-radius: 8px;
+        margin-top: 14px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0, 84, 149, 0.06);
+    }
+
+    .mis-sum-section-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .mis-sum-section-head i {
+        font-size: 1.35rem;
+        line-height: 1;
+        color: #fff;
+    }
+
+    .mis-sum-section-head.theme-receive { background: var(--sum-blue-med); }
+    .mis-sum-section-head.theme-dispatch { background: var(--sum-green); }
+    .mis-sum-section-head.theme-production { background: var(--sum-purple); }
+    .mis-sum-section-head.theme-yield { background: var(--sum-blue-med); }
+    .mis-sum-section-head.theme-slitting { background: var(--sum-blue-med); }
+    .mis-sum-section-head.theme-rejection { background: var(--sum-orange); }
+
+    .mis-sum-panel { padding: 8px 10px 10px; }
+
+    .mis-sum-table {
+        width: 100%;
+        font-size: 0.78rem;
+        margin-bottom: 0;
+        border-collapse: collapse;
+    }
+
+    .mis-sum-table thead th {
+        padding: 7px 10px;
+        font-weight: 700;
+        white-space: nowrap;
+        text-align: center;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .mis-sum-table tbody td {
+        padding: 6px 10px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .mis-sum-table tfoot td {
+        padding: 7px 10px;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .mis-sum-table.theme-receive thead th {
+        background: var(--sum-blue-light);
+        color: var(--sum-blue-text);
+    }
+
+    .mis-sum-table.theme-receive tbody td {
+        color: var(--sum-blue-text);
+        text-align: center;
+    }
+
+    .mis-sum-table.theme-receive tbody td:first-child,
+    .mis-sum-table.theme-receive thead th:first-child {
+        text-align: left;
+    }
+
+    .mis-sum-table.theme-receive tbody tr:nth-child(even) td {
+        background: var(--sum-blue-row);
+    }
+
+    .mis-sum-table.theme-dispatch thead th {
+        background: var(--sum-green-light);
+        color: var(--sum-green-text);
+    }
+
+    .mis-sum-table.theme-dispatch tbody td {
+        color: var(--sum-green-text);
+        text-align: center;
+    }
+
+    .mis-sum-table.theme-dispatch tbody td:first-child,
+    .mis-sum-table.theme-dispatch thead th:first-child {
+        text-align: left;
+    }
+
+    .mis-sum-table.theme-dispatch tbody tr:nth-child(even) td {
+        background: var(--sum-green-row);
+    }
+
+    .mis-sum-table.theme-production thead th {
+        background: var(--sum-purple-light);
+        color: var(--sum-purple-text);
+    }
+
+    .mis-sum-table.theme-production tbody td {
+        color: var(--sum-purple-text);
+        text-align: center;
+    }
+
+    .mis-sum-table.theme-production tbody td:first-child,
+    .mis-sum-table.theme-production thead th:first-child {
+        text-align: left;
+    }
+
+    .mis-sum-table.theme-production tbody tr:nth-child(even) td {
+        background: var(--sum-purple-row);
+    }
+
+    .mis-sum-table.theme-rejection thead th {
+        background: #f8dcc8;
+        color: #8a4b12;
+    }
+
+    .mis-sum-table.theme-rejection tbody td {
+        color: #8a4b12;
+        text-align: center;
+    }
+
+    .mis-sum-table.theme-rejection tbody tr:nth-child(even) td {
+        background: #fdf3eb;
+    }
+
+    .mis-sum-tfoot-receive { background: var(--sum-blue-dark); }
+    .mis-sum-tfoot-dispatch { background: var(--sum-green-dark); }
+    .mis-sum-tfoot-production { background: var(--sum-purple); }
+    .mis-sum-tfoot-rejection { background: var(--sum-orange-dark); }
+    .mis-sum-tfoot-default { background: var(--sum-blue-dark); }
+
+    .mis-sum-subhead {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--sum-purple-text);
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        text-align: center;
+        background: var(--sum-purple-row);
+        border-radius: 4px;
+    }
+
+    .mis-sum-table.mis-sum-yield thead th {
+        background: var(--sum-blue-light);
+        color: var(--sum-blue-text);
+    }
+
+    .mis-sum-table.mis-sum-yield tbody td {
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .mis-sum-table.mis-sum-yield tbody tr.row-avg td:first-child {
+        font-weight: 700;
+        color: var(--sum-blue-text);
+        background: transparent;
+    }
+
+    .mis-sum-table.mis-sum-yield tbody td:first-child,
+    .mis-sum-table.mis-sum-yield thead th:first-child {
+        text-align: left;
+    }
+
+    .mis-top-feature-row {
+        margin-top: 14px;
+    }
+
+    .mis-top-feature-row > [class*="col-"] {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mis-top-feature-row .mis-sum-section {
+        flex: 1;
+        margin-top: 0;
+    }
+
+    /* Pipe cutting ribbon (beside rejection) */
+    .mis-pipe-cutting-card {
+        display: flex;
+        align-items: stretch;
+        min-height: 100%;
+        border: 1px solid #c5d9ed;
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+        box-sizing: border-box;
+        box-shadow: 0 1px 4px rgba(0, 84, 149, 0.06);
+    }
+
+    .mis-pc-icon {
+        flex: 0 0 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 8px;
+        color: var(--sum-blue-dark);
+        font-size: 2rem;
+        border-right: 1px solid #d8e6f2;
+    }
+
+    .mis-pc-body {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 10px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .mis-pc-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--sum-blue-dark);
+        line-height: 1.35;
+    }
+
+    .mis-pc-cols {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        flex: 1;
+        gap: 0;
+    }
+
+    .mis-pc-col {
+        flex: 1 1 72px;
+        min-width: 64px;
+        text-align: center;
+        padding: 4px 10px;
+        border-right: 1px solid #c5d9ed;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+    }
+
+    .mis-pc-col:last-child {
+        border-right: none;
+    }
+
+    .mis-pc-col-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--sum-blue-dark);
+    }
+
+    .mis-pc-col-mt {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--sum-blue-dark);
+        line-height: 1.2;
+    }
+
+    .mis-pc-col-pc {
+        font-size: 0.68rem;
+        color: var(--sum-blue-med);
+        opacity: 0.95;
+    }
+
+    .mis-pc-total {
+        flex: 0 0 96px;
+        background: #004085;
+        color: #fff;
+        text-align: center;
+        padding: 10px 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+    }
+
+    .mis-pc-total-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .mis-pc-total-mt {
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .mis-pc-total-pc {
+        font-size: 0.68rem;
+        opacity: 0.95;
+    }
+
+    @@media (max-width: 991px) {
+        .mis-pipe-cutting-card {
+            flex-direction: column;
+        }
+
+        .mis-pc-icon {
+            border-right: none;
+            border-bottom: 1px solid #c5d9ed;
+            padding: 10px;
+        }
+
+        .mis-pc-total {
+            flex: none;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px 16px;
+            padding: 10px 12px;
+        }
+    }
 </style>
 
 <div class="mis-wrap">
@@ -259,6 +742,16 @@
         <div class="mis-field">
             <label for="txtDate">Date <span class="text-danger">*</span></label>
             <input id="txtDate" type="date" name="txtDate" required>
+        </div>
+        <div class="mis-field">
+            <label for="selReportType">Report type</label>
+            <div class="mis-select-wrap">
+                <i class="fa-solid fa-chart-column"></i>
+                <select id="selReportType" class="mis-select" aria-label="Report type">
+                    <option value="detail" selected>Detail Report</option>
+                    <option value="summary">Summary Report</option>
+                </select>
+            </div>
         </div>
         <button type="button" id="btnShow" class="mis-btn mis-btn-primary">
              Show
@@ -355,6 +848,163 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Summary report (group-wise MIS) -->
+    <div id="divSummaryReportSections" style="display:none;">
+
+        <div class="mis-sum-banner">
+            <h2><i class="fa-solid fa-clipboard-list"></i> Summary of MIS Report</h2>
+            <span class="mis-sum-date"><i class="fa-regular fa-calendar"></i> <span id="lblSummaryDate"></span></span>
+        </div>
+
+        <div class="mis-sum-kpi-row">
+            <div class="mis-sum-kpi">
+                <i class="fa-solid fa-weight-hanging" style="color:#28a745;"></i>
+                <div>
+                    <div class="mis-sum-kpi-label">Total Receiving (MT)</div>
+                    <div class="mis-sum-kpi-value" id="kpiReceiveMt">—</div>
+                </div>
+            </div>
+            <div class="mis-sum-kpi">
+                <i class="fa-solid fa-truck-fast" style="color:#1d70b8;"></i>
+                <div>
+                    <div class="mis-sum-kpi-label">Total Dispatch (MT)</div>
+                    <div class="mis-sum-kpi-value" id="kpiDispatchMt">—</div>
+                </div>
+            </div>
+            <div class="mis-sum-kpi">
+                <i class="fa-solid fa-industry" style="color:#5b4099;"></i>
+                <div>
+                    <div class="mis-sum-kpi-label">Total Pipe Production (MT)</div>
+                    <div class="mis-sum-kpi-value" id="kpiProductionMt">—</div>
+                </div>
+            </div>
+            <div class="mis-sum-kpi">
+                <i class="fa-solid fa-ban" style="color:#e67e22;"></i>
+                <div>
+                    <div class="mis-sum-kpi-label">Total Rejection (MT)</div>
+                    <div class="mis-sum-kpi-value" id="kpiRejectionMt">—</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mis-top-feature-row">
+            <div class="col-lg-6" id="colSumRejection">
+                <div class="mis-sum-section" id="secSumRejection">
+                    <div class="mis-sum-section-head theme-rejection"><i class="fa-solid fa-circle-xmark"></i> Rejection</div>
+                    <div class="mis-sum-panel">
+                        <table id="tblSumRejection" class="table mis-sum-table theme-rejection">
+                            <thead><tr id="tblSumRejection-header"></tr></thead>
+                            <tbody id="tblSumRejection-body"></tbody>
+                            <tfoot id="tblSumRejection-foot"></tfoot>
+                        </table>
+                        <div id="noSumRejection" class="mis-empty" style="display:none;">
+                            <i class="fa-regular fa-folder-open"></i> No rejection data for this date.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6" id="colSumPipeCutting">
+                <div id="secSumPipeCutting" class="mis-pipe-cutting-card">
+                    <div class="mis-pc-icon" aria-hidden="true">
+                        <i class="fa-solid fa-industry"></i>
+                    </div>
+                    <div class="mis-pc-body">
+                        <div class="mis-pc-title" id="pipeCuttingTitle">Cutting Production</div>
+                        <div class="mis-pc-cols" id="pipeCuttingCols"></div>
+                    </div>
+                    <div class="mis-pc-total">
+                        <div class="mis-pc-total-label">Total</div>
+                        <div class="mis-pc-total-mt" id="pipeCuttingTotalMt">—</div>
+                        <div class="mis-pc-total-pc" id="pipeCuttingTotalPc"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mis-split-row">
+            <div class="col-md-6">
+                <div class="mis-sum-section">
+                    <div class="mis-sum-section-head theme-receive"><i class="fa-solid fa-truck-ramp-box"></i> Receiving</div>
+                    <div class="mis-sum-panel">
+                        <table id="tblSumReceive" class="table mis-sum-table theme-receive">
+                            <thead><tr id="tblSumReceive-header"></tr></thead>
+                            <tbody id="tblSumReceive-body"></tbody>
+                            <tfoot id="tblSumReceive-foot"></tfoot>
+                        </table>
+                        <div id="noSumReceive" class="mis-empty" style="display:none;"><i class="fa-regular fa-folder-open"></i> No data available.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mis-sum-section">
+                    <div class="mis-sum-section-head theme-dispatch"><i class="fa-solid fa-truck-fast"></i> Dispatch</div>
+                    <div class="mis-sum-panel">
+                        <table id="tblSumDispatch" class="table mis-sum-table theme-dispatch">
+                            <thead><tr id="tblSumDispatch-header"></tr></thead>
+                            <tbody id="tblSumDispatch-body"></tbody>
+                            <tfoot id="tblSumDispatch-foot"></tfoot>
+                        </table>
+                        <div id="noSumDispatch" class="mis-empty" style="display:none;"><i class="fa-regular fa-folder-open"></i> No data available.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mis-sum-section">
+            <div class="mis-sum-section-head theme-production"><i class="fa-solid fa-industry"></i> Production</div>
+            <div class="mis-sum-panel">
+                <div class="row">
+                    <div class="col-md-7">
+                        <div class="mis-sum-subhead">Pipe Production</div>
+                        <table id="tblSumPipeProduction" class="table mis-sum-table theme-production">
+                            <thead><tr id="tblSumPipeProduction-header"></tr></thead>
+                            <tbody id="tblSumPipeProduction-body"></tbody>
+                            <tfoot id="tblSumPipeProduction-foot"></tfoot>
+                        </table>
+                        <div id="noSumPipeProduction" class="mis-empty" style="display:none;"><i class="fa-regular fa-folder-open"></i> No data available.</div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="mis-sum-subhead">Slitting Production</div>
+                        <table id="tblSumSlittingShift" class="table mis-sum-table theme-production">
+                            <thead><tr id="tblSumSlittingShift-header"></tr></thead>
+                            <tbody id="tblSumSlittingShift-body"></tbody>
+                            <tfoot id="tblSumSlittingShift-foot"></tfoot>
+                        </table>
+                        <div id="noSumSlittingShift" class="mis-empty" style="display:none;"><i class="fa-regular fa-folder-open"></i> No data available.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mis-split-row">
+            <div class="col-md-6">
+                <div class="mis-sum-section">
+                    <div class="mis-sum-section-head theme-yield"><i class="fa-solid fa-chart-simple"></i> Yield %</div>
+                    <div class="mis-sum-panel">
+                        <table id="tblSumYield" class="table mis-sum-table mis-sum-yield">
+                            <thead><tr id="tblSumYield-header"></tr></thead>
+                            <tbody id="tblSumYield-body"></tbody>
+                        </table>
+                        <div id="noSumYield" class="mis-empty" style="display:none;"><i class="fa-regular fa-folder-open"></i> No data available.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mis-sum-section">
+                    <div class="mis-sum-section-head theme-slitting"><i class="fa-solid fa-gears"></i> Item Wise Summary — Slitting</div>
+                    <div class="mis-sum-panel">
+                        <table id="tblSumSlittingItem" class="table mis-sum-table theme-receive">
+                            <thead><tr id="tblSumSlittingItem-header"></tr></thead>
+                            <tbody id="tblSumSlittingItem-body"></tbody>
+                            <tfoot id="tblSumSlittingItem-foot"></tfoot>
+                        </table>
+                        <div id="noSumSlittingItem" class="mis-empty" style="display:none;"><i class="fa-regular fa-folder-open"></i> No data available.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
