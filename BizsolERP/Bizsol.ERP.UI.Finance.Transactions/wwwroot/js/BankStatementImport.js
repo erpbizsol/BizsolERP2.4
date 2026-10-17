@@ -1305,7 +1305,7 @@ function DoImport() {
             Remarks:         String(idx + 1).padStart(8, '0'),
             GRNPaymentMaster_Code: 0,
             ServiceTaxNo:    formatMoneyFixed2(lineOp),
-            IsReconciled:    dep > 0 ? 'Y' : 'N'
+            IsReconciled:    'N'
         });
     }
 
