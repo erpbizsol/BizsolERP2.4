@@ -12,6 +12,16 @@ const MISReportsServices = {
         );
     },
 
+    GetGroupWiseDayWiseMISReports: function GetGroupWiseDayWiseMISReports(Date) {
+        var URL = UrlService.API_ENDPOINT_MillWiseProductionReport +
+            `/GetGroupWiseDayWiseMISReports?Date=` + encodeURIComponent(Date);
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
+
 };
 
 export { MISReportsServices };
