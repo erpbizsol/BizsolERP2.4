@@ -318,6 +318,61 @@ function renderBreadcrumb() {
     $('#pogrDrillBreadcrumb').show();
 }
 
+function detailColClass(col) {
+    let cls = sectionClass(col);
+    if (col.qty) cls += ' col-qty num';
+    else if (!col.text) cls += ' col-val num';
+    else cls += ' num';
+    return cls;
+}
+
+function renderPoGroupedDetail($body, rows) {
+    const byPo = groupBy(rows, function (r) {
+        return String(rowVal(r, FIELD.poNo) || '').trim() || '(No PO)';
+    });
+    const poKeys = Array.from(byPo.keys()).sort(function (a, b) {
+        return a.localeCompare(b, undefined, { sensitivity: 'base' });
+    });
+
+    poKeys.forEach(function (poKey) {
+        const poRows = byPo.get(poKey);
+        const span = poRows.length || 1;
+        poRows.forEach(function (row, idx) {
+            const isFirst = idx === 0;
+            let cells = '';
+            if (isFirst) {
+                cells += '<td class="label-cell pogr-po-once" rowspan="' + span + '">' + escapeHtml(poKey) + '</td>';
+            }
+            DETAIL_EXTRA_COLS.forEach(function (col) {
+                const cls = detailColClass(col);
+                if (col.section === 'po') {
+                    if (isFirst) {
+                        cells += '<td class="' + cls + ' pogr-po-once" rowspan="' + span + '">' +
+                            formatCellValue(row, col, !!col.qty) + '</td>';
+                    }
+                    return;
+                }
+                cells += '<td class="' + cls + '">' + formatCellValue(row, col, !!col.qty) + '</td>';
+            });
+            $body.append(
+                '<tr class="pogr-level-detail ' + (isFirst ? 'pogr-po-row' : 'pogr-grn-row') + '">' + cells + '</tr>'
+            );
+        });
+    });
+
+    const total = aggregateMetrics(rows);
+    let totalCells = '<td class="label-cell"><strong>Total</strong></td>';
+    DETAIL_EXTRA_COLS.forEach(function (col) {
+        if (col.text) {
+            totalCells += '<td class="' + sectionClass(col) + '"></td>';
+        } else {
+            totalCells += '<td class="num ' + sectionClass(col) + '">' +
+                formatNum(total[col.id], col.qty ? 3 : 2) + '</td>';
+        }
+    });
+    $body.append('<tr class="pogr-row-total">' + totalCells + '</tr>');
+}
+
 function renderCurrentLevel() {
     const levelCfg = getLevel(G_Drill.level);
     const rows = filterRowsForDrill();
@@ -333,31 +388,7 @@ function renderCurrentLevel() {
     }
 
     if (levelCfg.isDetail) {
-        rows.forEach(function (row) {
-            const po = String(rowVal(row, FIELD.poNo) || '').trim();
-            const grn = String(rowVal(row, FIELD.grnNo) || '').trim();
-            let label = po || '—';
-            if (grn) label += ' / ' + grn;
-            let cells = '<td class="label-cell">' + escapeHtml(label) + '</td>';
-            DETAIL_EXTRA_COLS.forEach(function (col) {
-                let cls = sectionClass(col);
-                if (col.qty) cls += ' col-qty num';
-                else if (!col.text) cls += ' col-val num';
-                else cls += ' num';
-                cells += `<td class="${cls}">${formatCellValue(row, col, !!col.qty)}</td>`;
-            });
-            $body.append('<tr class="pogr-level-detail">' + cells + '</tr>');
-        });
-        const total = aggregateMetrics(rows);
-        let totalCells = '<td class="label-cell"><strong>Total</strong></td>';
-        DETAIL_EXTRA_COLS.forEach(function (col) {
-            if (col.text) {
-                totalCells += `<td class="${sectionClass(col)}"></td>`;
-            } else {
-                totalCells += `<td class="num ${sectionClass(col)}">${formatNum(total[col.id], col.qty ? 3 : 2)}</td>`;
-            }
-        });
-        $body.append('<tr class="pogr-row-total">' + totalCells + '</tr>');
+        renderPoGroupedDetail($body, rows);
         applyQtyValueVisibility();
         return;
     }
