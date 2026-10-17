@@ -22,7 +22,7 @@
             minmax(0, 1fr)
             auto;
         gap: 0.75rem 1rem;
-        align-items: start;
+        align-items: end;
     }
     .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
 
@@ -42,7 +42,9 @@
     }
 
     #tblLedger td.num,
-    #tblLedger th.num {
+    #tblLedger th.num,
+    .elr-drill-table td.num,
+    .elr-drill-table th.num {
         text-align: right;
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
@@ -315,6 +317,15 @@
         min-width: 0 !important;
         box-sizing: border-box;
     }
+    /* Select2 dropdowns — nudge to align with date inputs in the filter row */
+    .elr-page .elr-filter-field.elr-filter-select-mb select.form-control.form-control-sm,
+    .elr-page .elr-filter-field.elr-filter-select-mb .select2-container {
+        margin-bottom: 7px;
+    }
+    .elr-page .elr-filter-field.elr-filter-mb-6 select.form-control.form-control-sm,
+    .elr-page .elr-filter-field.elr-filter-mb-6 .select2-container {
+        margin-bottom: 6px;
+    }
     .elr-page .elr-filter-field .select2-container--default .select2-selection--single {
         height: 38px !important;
         min-height: 38px !important;
@@ -346,16 +357,16 @@
         display: flex;
         flex-wrap: wrap;
         align-items: flex-end;
-        align-self: start;
+        align-self: end;
         gap: 0.5rem;
         justify-content: flex-end;
         padding-bottom: 0;
-        /* Same offset as label + label margin — lines Show up with inputs */
-        margin-top: calc(0.77rem * 1.25 + 0.35rem);
+        margin-top: 0;
     }
     .elr-page .elr-filter-actions .elr-btn-show-led {
         height: 38px;
         min-height: 38px;
+        margin-bottom: 6px;
         padding-left: 1.2rem;
         padding-right: 1.2rem;
         display: inline-flex;
@@ -748,34 +759,34 @@
 
     <div class="ee-list-filter-bar no-print">
         <div class="elr-filter-row">
-            <div class="elr-filter-field">
+            <div class="elr-filter-field elr-filter-select-mb">
                 <label for="ddlReportType" class="form-label">Report type <span class="text-danger">*</span></label>
                 <select id="ddlReportType" class="form-control form-control-sm box_border w-100"></select>
             </div>
-            <div class="elr-filter-field elr-project-only" id="elrStatusField">
+            <div class="elr-filter-field elr-project-only elr-filter-mb-6" id="elrStatusField">
                 <label for="ddlElrStatus" class="form-label">Status</label>
                 <select id="ddlElrStatus" class="form-control form-control-sm box_border w-100">
                     <option value="Pending" selected>Pending</option>
                     <option value="Closed">Closed</option>
                 </select>
             </div>
-            <div class="elr-filter-field elr-ledger-only" style="Margin:-10px">
+            <div class="elr-filter-field elr-ledger-only">
                 <label for="txtdateFrom" class="form-label">From date <span class="text-danger">*</span></label>
                 <input id="txtdateFrom" type="text" autocomplete="off" class="form-control form-control-sm box_border w-100" required />
             </div>
-            <div class="elr-filter-field elr-ledger-only" style="Margin:-10px">
+            <div class="elr-filter-field elr-ledger-only">
                 <label for="txtdateTo" class="form-label">To date <span class="text-danger">*</span></label>
                 <input id="txtdateTo" type="text" autocomplete="off" class="form-control form-control-sm box_border w-100" required />
             </div>
-            <div class="elr-filter-field elr-ledger-only">
+            <div class="elr-filter-field elr-ledger-only elr-filter-select-mb">
                 <label for="ddlEmployee" class="form-label">Employee <span class="text-danger">*</span></label>
                 <select id="ddlEmployee" class="form-control form-control-sm box_border w-100" required></select>
             </div>
-            <div class="elr-filter-field">
+            <div class="elr-filter-field elr-filter-select-mb">
                 <label for="ddlProject" class="form-label">Project</label>
                 <select id="ddlProject" class="form-control form-control-sm box_border w-100"></select>
             </div>
-            <div class="elr-filter-field">
+            <div class="elr-filter-field elr-filter-select-mb">
                 <label for="ddlSubProject" class="form-label">Sub project</label>
                 <select id="ddlSubProject" class="form-control form-control-sm box_border w-100"></select>
             </div>
