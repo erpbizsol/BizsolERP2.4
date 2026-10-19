@@ -153,6 +153,14 @@ const GateEntryService = {
             }
         );
     },
+    CheckInvoicePackingListValidated: function CheckInvoicePackingListValidated(InvoiceMaster_Code) {
+        let url = UrlService.API_ENDPOINT_GateEntryMaster + `/CheckInvoicePackingListValidated?InvoiceMaster_Code=${encodeURIComponent(InvoiceMaster_Code)}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
     GetUOMMasterList: function GetUOMMasterList() {
         let url = UrlService.API_ENDPOINT_UOM + `/GetUOMMasterList`
         return promiseAjaxCallApi.CallAPI('GET', url, "").then(
