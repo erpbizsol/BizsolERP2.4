@@ -200,6 +200,53 @@ const BankStatementService = {
         return promiseAjaxCallApi.CallAPI('POST', URL, body).then(function (value) {
             return value;
         });
+    },
+
+    /**
+     * Sets BankStatement.ApplicableReport to Y/N for one line.
+     * Web API POST …/SetApplicableReport should call USP_WebAPI_BankStatement
+     * @Mode = SETAPPLICABLEREPORT with @Code and @ApplicableReport ('Y' or 'N').
+     */
+    SetApplicableReport: function SetApplicableReport(code, applicableY) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var flag = applicableY ? 'Y' : 'N';
+        var URL = UrlService.API_ENDPOINT_BANK_STATEMENT
+            + '/SetApplicableReport?Code=' + encodeURIComponent(code)
+            + '&ApplicableReport=' + encodeURIComponent(flag)
+            + '&UserMaster_Code=' + encodeURIComponent(userMasterCode);
+        return promiseAjaxCallApi.CallAPI('POST', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
+    /**
+     * Item-wise list: USP_WebAPI_BankStatement @Mode = GETGRNPAYMENTITEMS
+     * (Code, Description from GRNPaymentMaster).
+     */
+    GetGRNPaymentItemList: function GetGRNPaymentItemList() {
+        var URL = UrlService.API_ENDPOINT_BANK_STATEMENT + '/GetGRNPaymentItemList';
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
+    /**
+     * Saves receipt-report fields for a deposit line.
+     * Web API POST …/SaveReceiptReport body maps onto USP_WebAPI_BankStatement @Mode = SAVERECEIPTREPORT:
+     * Code, ProjectMaster_Code, SubProjectMaster_Code, CategoryMaster_Code,
+     * ItemDescription, CustomerName, UserMaster_Code.
+     * ReportEntryDate is set to GETDATE() inside the procedure.
+     */
+    SaveReceiptReport: function SaveReceiptReport(payload) {
+        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
+        var userMasterCode = authKeyData.UserMaster_Code;
+        var body = payload && typeof payload === 'object' ? payload : {};
+        if (body.UserMaster_Code == null) body.UserMaster_Code = userMasterCode;
+        var URL = UrlService.API_ENDPOINT_BANK_STATEMENT + '/SaveReceiptReport';
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(body)).then(function (value) {
+            return value;
+        });
     }
 };
 
