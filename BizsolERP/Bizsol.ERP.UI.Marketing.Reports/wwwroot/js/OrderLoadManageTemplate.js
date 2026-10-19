@@ -576,13 +576,9 @@ function applyGridFieldStates() {
 }
 
 function buildSavePayload(selectedCode, name, isMasterSave, visibilityOnly) {
-    var saveMode = 'SAVETEMPLATE';
-    if (isMasterSave) {
-        saveMode = visibilityOnly ? 'SAVEMASTERVISIBILITY' : 'SAVEMASTERTEMPLATE';
-    }
-
+    // USP_WebAPI_ManageTemplate only handles Mode = 'SAVE' (create when F_TempleteMaster_Code = 0, update otherwise).
     return {
-        Mode: saveMode,
+        Mode: 'SAVE',
         FormType: G_MT_FORM_TYPE,
         MasterTemplete: isMasterSave ? 'Y' : 'N',
         F_TempleteMaster_Code: (G_MT_Mode === 'EDIT' || isMasterSave) ? selectedCode : 0,
@@ -591,6 +587,7 @@ function buildSavePayload(selectedCode, name, isMasterSave, visibilityOnly) {
         FreezeFromColumn: $('#ddlMtFreezeColumn').val() || '',
         Rows: G_MT_Rows.map(function (r, i) {
             return {
+                Code: parseInt(r.Code, 10) || 0,
                 RowNo: i,
                 FieldName: r.FieldName,
                 FieldNameAs: r.FieldNameAs || r.FieldName,
