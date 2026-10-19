@@ -415,6 +415,8 @@ function _ensureFormLookups() {
         _initSelect2($('#frmDdlConsiderASPer'));
         _initSelect2($('#frmDdlTurnoverASPer'));
         _initSelect2($('#frmDdlTurnoverDiscountASPer'));
+        $('#frmDdlTurnoverASPer').off('change.todTurnover').on('change.todTurnover', _refreshTurnoverDiscountOptions);
+        _refreshTurnoverDiscountOptions();
         /* _initSelect2($('#frmDdlMonth')); */
         _renderPartyRows();
 
@@ -2307,6 +2309,25 @@ function _monthWindow(year, monthIndex, monthSpan) {
     return { start: start, end: end };
 }
 
+function _applyTODEndDateRules(periodicity) {
+    var isCustom = String(periodicity || '').toLowerCase() === 'custom';
+    $('#frmEndDateReq').toggle(isCustom);
+}
+
+function _refreshTurnoverDiscountOptions() {
+    var turnover = String($('#frmDdlTurnoverASPer').val() || '');
+    var blockSales = turnover === 'Payment';
+    var $disc = $('#frmDdlTurnoverDiscountASPer');
+    $disc.find('option[value="Sales"]').prop('disabled', blockSales);
+    if (blockSales && $disc.val() === 'Sales') {
+        $disc.val('').trigger('change');
+    }
+}
+
+window.OnTODTurnoverASPerChange = function () {
+    _refreshTurnoverDiscountOptions();
+};
+
 window.OnTODPeriodicityChange = function () {
     var periodicity = String($('#frmDdlPeriodicity').val() || '');
     var today = new Date();
@@ -2326,8 +2347,13 @@ window.OnTODPeriodicityChange = function () {
 
     if (win) {
         $('#frmTxtStartDate').val(_isoDate(win.start));
-        $('#frmTxtEndDate').val(_isoDate(win.end));
+        /* Month / Quarter: End Date is optional and must not be auto-filled. */
+        $('#frmTxtEndDate').val('');
+    } else if (periodicity === 'Custom') {
+        $('#frmTxtEndDate').val('');
     }
+
+    _applyTODEndDateRules(periodicity);
 };
 
 /* Month / Period dropdown is commented in TODConfiguration.cshtml.
@@ -2399,6 +2425,8 @@ function _resetForm() {
         /* $('#frmDdlMonth').val(null).trigger('change'); */
         $('#frmDdlMarketingMan').val('0').trigger('change.select2');
     }
+    _applyTODEndDateRules('');
+    _refreshTurnoverDiscountOptions();
 }
 
 function _showForm(mode) {
@@ -2469,7 +2497,9 @@ function _unwrapShowData(res) {
 
     var isItemRow = function (r) {
         if (!r) return false;
-        return r.ItemMaster_Code != null || r.TODConfigurationTransaction_Code != null;
+        return r.ItemMaster_Code != null
+            || r.TODConfigurationItemDetail_Code != null
+            || r.TODConfigurationTransaction_Code != null;
     };
     var isRateRow = function (r) {
         if (!r) return false;
@@ -2563,10 +2593,12 @@ function _loadTODForEdit(code) {
         $('#frmDdlConsiderASPer').val(header.ConsiderASPer || '').trigger('change.select2');
         $('#frmDdlTurnoverASPer').val(header.TurnoverASPer || '').trigger('change.select2');
         $('#frmDdlTurnoverDiscountASPer').val(header.TurnoverDiscountASPer || '').trigger('change.select2');
+        _refreshTurnoverDiscountOptions();
         $('#frmPaymentTolerance').val(header.PaymentTolerance != null ? header.PaymentTolerance : '');
         /* $('#frmDdlMonth').val(header.MonthDesp || '').trigger('change.select2'); */
         $('#frmTxtStartDate').val(header.StartDate ? String(header.StartDate).substring(0, 10) : '');
         $('#frmTxtEndDate').val(header.EndDate ? String(header.EndDate).substring(0, 10) : '');
+        _applyTODEndDateRules(header.Periodicity || '');
         _selectSavedParties(unpacked.parties, header.PartyMaster_Code || 0, header.PartyName || '');
         $('#frmTxtFinYear').val(header.FinYear || BizSolHelperFunction.getFinancialYear());
         $('#floatTODName').text(header.TODConfigurationDesp || ('#' + code));
@@ -2642,6 +2674,11 @@ window.SaveTODConfiguration = function () {
         toastr.warning('Please select Turnover Discount AS Per.');
         return;
     }
+    if (turnoverAsPer === 'Payment' && turnoverDiscountAsPer === 'Sales') {
+        toastr.warning('When Turnover AS Per is As Per Payment, Turnover Discount AS Per cannot be As Per Sales.');
+        $('#frmDdlTurnoverDiscountASPer').trigger('focus');
+        return;
+    }
     var toleranceCheck = _validatePaymentTolerance($('#frmPaymentTolerance').val(), true);
     if (!toleranceCheck.ok) {
         $('#frmPaymentTolerance').trigger('focus');
@@ -2650,11 +2687,17 @@ window.SaveTODConfiguration = function () {
     var paymentTolerance = toleranceCheck.value;
     var startDate = $('#frmTxtStartDate').val();
     var endDate   = $('#frmTxtEndDate').val();
-    if (!startDate || !endDate) {
-        toastr.warning('Please select Start Date and End Date.');
+    if (!startDate) {
+        toastr.warning('Please select Start Date.');
+        $('#frmTxtStartDate').trigger('focus');
         return;
     }
-    if (new Date(startDate) > new Date(endDate)) {
+    if (periodicity === 'Custom' && !endDate) {
+        toastr.warning('Please select End Date.');
+        $('#frmTxtEndDate').trigger('focus');
+        return;
+    }
+    if (endDate && new Date(startDate) > new Date(endDate)) {
         toastr.warning('End Date cannot be earlier than Start Date.');
         return;
     }
@@ -2731,9 +2774,7 @@ window.SaveTODConfiguration = function () {
             return false;
         }
         if (from <= 0 && to <= 0 && rate <= 0) {
-            toastr.warning('Please fill From Qty / To Qty / TOD Rate.');
-            valid = false;
-            return false;
+            return;
         }
         rates.push({
             SaleForm: from,
@@ -2743,12 +2784,15 @@ window.SaveTODConfiguration = function () {
     });
     if (!valid) return;
     if (!details.length) {
-        toastr.warning('Please add at least one item.');
-        return;
+        details.push({ ItemMaster_Code: 0, RateOfInterest: 0 });
     }
     if (!sizes.length) {
-        toastr.warning('Please add at least one size parameter.');
-        return;
+        sizes.push({
+            ItemParameterMaster_Code: 0,
+            FromValue: 0,
+            ToValue: 0,
+            ItemParameterValueMaster_Codes: ''
+        });
     }
     if (sizes.some(function (s) { return s.ItemParameterMaster_Code === 0; }) &&
         sizes.some(function (s) { return s.ItemParameterMaster_Code > 0; })) {

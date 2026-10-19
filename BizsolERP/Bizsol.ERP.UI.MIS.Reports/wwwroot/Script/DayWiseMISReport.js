@@ -7,6 +7,7 @@ import {
 } from '../../Bizsol.WebERP.UI.Shared/js/YieldConfigurationHelper.js';
 
 let lastReportData = null;
+let lastReportMode = 'detail';
 let _pdfExportCompact = false;
 
 const PDF_LAYOUT = {
@@ -33,6 +34,13 @@ $(document).ready(function () {
     $('#txtDate').on('change', function () {
         $('#btnShow').trigger('click');
     });
+
+    $('#selReportType').on('change', function () {
+        updateReportHeading();
+        $('#btnShow').trigger('click');
+    });
+
+    updateReportHeading();
 
     $('#btnShow').click(function () {
         $(this).prop('hidden', true);
@@ -75,6 +83,581 @@ function convertDateFormat(dateString) {
     return `${day}-${monthNames[parseInt(month) - 1]}-${year}`;
 }
 
+function isSummaryReport() {
+    return $('#selReportType').val() === 'summary';
+}
+
+function updateReportHeading() {
+    $("#ERPHeading").text(isSummaryReport() ? "Summary MIS Report" : "MIS Report");
+    updateDownloadMenuLabels();
+}
+
+function getActiveReportMode() {
+    if (isSummaryReport() && $('#divSummaryReportSections').is(':visible')) {
+        return 'summary';
+    }
+    return 'detail';
+}
+
+function updateDownloadMenuLabels() {
+    const kind = isSummaryReport() ? 'Summary' : 'Detail';
+    $('#btnDownloadExcel').html(
+        '<i class="fa-solid fa-file-excel" style="color:#1d6f42;"></i> Excel (' + kind + ')'
+    );
+    $('#btnDownloadPdf').html(
+        '<i class="fa-solid fa-file-pdf" style="color:#c0392b;"></i> PDF (' + kind + ')'
+    );
+}
+
+function pickArray(response, keys) {
+    if (!response) return [];
+    for (let i = 0; i < keys.length; i++) {
+        const val = response[keys[i]];
+        if (Array.isArray(val)) return val;
+    }
+    return [];
+}
+
+// Web API GetGroupWiseDayWiseMISReports payload:
+// ReceivingData, DispatchData, PipeProductionData, SlittingProductionData,
+// ItemWiseSummaryData (yield % shift × mill), YieldData (item-wise slitting)
+function normalizeGroupWiseResponse(response) {
+    return {
+        MRNReceive: pickArray(response, [
+            'ReceivingData', 'MRNReceive', 'mrnReceive', 'Receiving'
+        ]),
+        DispatchSales: pickArray(response, [
+            'DispatchData', 'DispatchSales', 'dispatchSales', 'Dispatch'
+        ]),
+        ProductionData: pickArray(response, [
+            'PipeProductionData', 'ProductionData', 'productionData', 'PipeProduction', 'Production'
+        ]),
+        SlittingShiftSummary: pickArray(response, [
+            'SlittingProductionData', 'SlittingShiftSummary', 'slittingShiftSummary',
+            'SlittingByShift', 'SlittingShiftData', 'SlittingSummaryByShift'
+        ]),
+        SlittingItemSummary: pickArray(response, [
+            'YieldData', 'SlittingItemSummary', 'slittingItemSummary', 'SlittingByItem',
+            'SlittingItemData', 'ItemWiseSlitting', 'SlittingSummaryByItem'
+        ]),
+        YieldPercentData: pickArray(response, [
+            'ItemWiseSummaryData', 'YieldPercentData', 'yieldPercentData',
+            'BatchYield', 'YieldHeatMap', 'PVCBatchYield'
+        ]),
+        RejectionItemData: pickArray(response, [
+            'RejectionItemData', 'rejectionItemData', 'RejectionData', 'RejectionItems'
+        ]),
+        PipeCuttingData: pickArray(response, [
+            'PipeCuttingData', 'pipeCuttingData', 'PipeCutting', 'CuttingProduction'
+        ])
+    };
+}
+
+function formatSummaryPcsDisplay(value) {
+    return formatIntegerQuantity(value, '0');
+}
+
+function formatIntegerQuantity(value, emptyFallback) {
+    if (value === null || value === undefined || value === '') {
+        return emptyFallback === undefined ? '' : emptyFallback;
+    }
+    const num = parseFloat(value);
+    if (isNaN(num)) return String(value);
+    return String(Math.round(num));
+}
+
+function shortMachineLabel(machineNo) {
+    const s = String(machineNo || '').trim();
+    if (!s) return '—';
+    const pipeCut = s.match(/pipe\s*cutter\s*[-]?\s*(\d+)/i);
+    if (pipeCut) return 'CTL' + pipeCut[1];
+    return s.length > 14 ? s.replace(/\s+/g, ' ') : s;
+}
+
+function renderPipeCuttingRibbon(rows) {
+    const data = rows || [];
+    const $section = $('#secSumPipeCutting');
+    const $col = $('#colSumPipeCutting');
+    const $cols = $('#pipeCuttingCols');
+
+    $cols.empty();
+
+    if (!data.length) {
+        $section.hide();
+        $col.hide();
+        adjustTopFeatureRowLayout();
+        return;
+    }
+
+    $section.show();
+    $col.show();
+
+    const order = data.map(function (r) { return r.MachineNo; });
+    const sortedNames = sortMillNames(order.filter(function (v, i, a) { return a.indexOf(v) === i; }));
+    const byMachine = {};
+    data.forEach(function (r) {
+        const key = r.MachineNo;
+        if (!byMachine[key]) {
+            byMachine[key] = { MachineNo: key, QtyMT: 0, QtyPC: 0 };
+        }
+        byMachine[key].QtyMT += parseFloat(r.QtyMT) || 0;
+        byMachine[key].QtyPC += parseFloat(r.QtyPC) || 0;
+    });
+
+    let totalMt = 0;
+    let totalPc = 0;
+
+    sortedNames.forEach(function (machine) {
+        const row = byMachine[machine];
+        if (!row) return;
+        totalMt += row.QtyMT;
+        totalPc += row.QtyPC;
+
+        const col = document.createElement('div');
+        col.className = 'mis-pc-col';
+
+        const lbl = document.createElement('div');
+        lbl.className = 'mis-pc-col-label';
+        lbl.textContent = shortMachineLabel(row.MachineNo);
+        lbl.title = row.MachineNo;
+
+        const mt = document.createElement('div');
+        mt.className = 'mis-pc-col-mt';
+        mt.textContent = formatSummaryNumeric(row.QtyMT) + ' MT';
+
+        const pc = document.createElement('div');
+        pc.className = 'mis-pc-col-pc';
+        pc.textContent = '(' + formatSummaryPcsDisplay(row.QtyPC) + ' pcs)';
+
+        col.appendChild(lbl);
+        col.appendChild(mt);
+        col.appendChild(pc);
+        $cols[0].appendChild(col);
+    });
+
+    const titleMachines = sortedNames.join(', ');
+    $('#pipeCuttingTitle').text(
+        titleMachines
+            ? 'Cutting Production ' + titleMachines
+            : 'Cutting Production'
+    );
+    $('#pipeCuttingTotalMt').text(formatSummaryNumeric(totalMt) + ' MT');
+    $('#pipeCuttingTotalPc').text('(' + formatSummaryPcsDisplay(totalPc) + ' pcs)');
+
+    adjustTopFeatureRowLayout();
+}
+
+function adjustTopFeatureRowLayout() {
+    const rejVisible = $('#colSumRejection').is(':visible') && $('#secSumRejection').is(':visible');
+    const cutVisible = $('#colSumPipeCutting').is(':visible') && $('#secSumPipeCutting').is(':visible');
+    $('#colSumRejection').removeClass('col-lg-6 col-lg-12');
+    $('#colSumPipeCutting').removeClass('col-lg-6 col-lg-12');
+    if (rejVisible && cutVisible) {
+        $('#colSumRejection').addClass('col-lg-6');
+        $('#colSumPipeCutting').addClass('col-lg-6');
+    } else if (rejVisible) {
+        $('#colSumRejection').addClass('col-lg-12');
+    } else if (cutVisible) {
+        $('#colSumPipeCutting').addClass('col-lg-12');
+    }
+}
+
+function findQtyMtColumn(headers) {
+    return headers.find(function (h) {
+        const k = normalizeColName(h);
+        return k === 'qtymt' || k === 'weightinmt' || (k.indexOf('qty') !== -1 && k.indexOf('mt') !== -1);
+    }) || null;
+}
+
+function findWeightMtColumn(headers) {
+    return headers.find(function (h) {
+        const k = String(h || '').toLowerCase().replace(/[\s._%]/g, '');
+        return k.indexOf('weight') !== -1 && k.indexOf('mt') !== -1;
+    }) || null;
+}
+
+function sumColumn(data, columnKey) {
+    if (!columnKey || !data || !data.length) return 0;
+    return data.reduce(function (sum, row) {
+        const num = parseFloat(row[columnKey]);
+        return sum + (isNaN(num) ? 0 : num);
+    }, 0);
+}
+
+function normalizeSlittingShiftRows(rows) {
+    return (rows || []).map(function (row) {
+        const copy = Object.assign({}, row);
+        if (copy.ShiftName !== undefined && copy.Shift === undefined) {
+            copy.Shift = copy.ShiftName;
+            delete copy.ShiftName;
+        }
+        return copy;
+    });
+}
+
+const SUMMARY_DECIMAL_PLACES = 3;
+const SUMMARY_YIELD_DECIMAL_PLACES = 2;
+
+function isSummaryLabelColumn(key) {
+    if (!key) return false;
+    if (isSerialColumn(key)) return true;
+    const k = normalizeColName(key);
+    return k === 'shift' || k === 'shiftname' || k === 'itemname' ||
+        (k.indexOf('item') !== -1 && k.indexOf('name') !== -1);
+}
+
+function formatSummaryNumeric(value, decimalPlaces) {
+    if (value === null || value === undefined || value === '') return '';
+    const num = parseFloat(value);
+    if (isNaN(num)) return String(value);
+    const places = decimalPlaces === undefined ? SUMMARY_DECIMAL_PLACES : decimalPlaces;
+    return num.toFixed(places);
+}
+
+function isSummaryYieldValueColumn(key, cellOpts) {
+    if (isYieldColumn(key)) return true;
+    if (cellOpts && cellOpts.yieldHeatmap && key && !isSummaryLabelColumn(key)) {
+        return true;
+    }
+    return false;
+}
+
+function formatSummaryCellValue(value, key, cellOpts) {
+    if (value === null || value === undefined) return '';
+    if (isSummaryLabelColumn(key)) {
+        const str = String(value);
+        if (/^\d{4}-\d{2}-\d{2}T/.test(str)) return str.split('T')[0];
+        return str;
+    }
+    if (isNumericValue(value)) {
+        if (isPcsColumn(key)) {
+            return formatIntegerQuantity(value);
+        }
+        if (isSummaryYieldValueColumn(key, cellOpts)) {
+            return formatSummaryNumeric(value, SUMMARY_YIELD_DECIMAL_PLACES);
+        }
+        return formatSummaryNumeric(value);
+    }
+    return String(value);
+}
+
+function formatSummaryTotalValue(key, sum) {
+    if (isSummaryLabelColumn(key) || isYieldColumn(key)) return '';
+    if (isPcsColumn(key)) {
+        return formatIntegerQuantity(sum);
+    }
+    return Number(sum).toFixed(SUMMARY_DECIMAL_PLACES);
+}
+
+function orderMatrixHeadersShiftFirst(headers, shiftKey) {
+    if (!headers || !headers.length) return [];
+    if (!shiftKey || headers.indexOf(shiftKey) === -1) return headers.slice();
+    return [shiftKey].concat(headers.filter(function (h) { return h !== shiftKey; }));
+}
+
+function renderSummaryFlatTable(headerId, bodyId, footId, noDataId, data, options) {
+    const opts = options || {};
+    const $header = $('#' + headerId);
+    const $body = $('#' + bodyId);
+    const $foot = $('#' + footId);
+    const $noData = $('#' + noDataId);
+    const $table = $header.closest('table');
+
+    $header.empty();
+    $body.empty();
+    $foot.empty();
+
+    if (!data || data.length === 0) {
+        $table.hide();
+        $noData.show();
+        return 0;
+    }
+
+    $noData.hide();
+    $table.show();
+
+    const sourceHeaders = Object.keys(data[0]);
+    const renameMap = opts.rename || {};
+    const displayHeaders = sourceHeaders.filter(function (h) {
+        if (opts.hideSerial && isSerialColumn(h)) return false;
+        return true;
+    }).map(function (h) {
+        return renameMap[h] || h;
+    });
+
+    const numericCols = getNumericColumns(data, sourceHeaders);
+    const isRightAligned = makeAlignChecker(numericCols);
+    const isTotalable = makeTotalChecker(numericCols);
+    const totals = {};
+    displayHeaders.forEach(function (dispKey) {
+        const srcKey = Object.keys(renameMap).find(function (k) { return renameMap[k] === dispKey; }) || dispKey;
+        if (isTotalable(srcKey)) totals[dispKey] = 0;
+    });
+
+    displayHeaders.forEach(function (key) {
+        const th = document.createElement('th');
+        th.textContent = key;
+        $header[0].appendChild(th);
+    });
+
+    data.forEach(function (row) {
+        const tr = document.createElement('tr');
+        displayHeaders.forEach(function (dispKey) {
+            const srcKey = Object.keys(renameMap).find(function (k) { return renameMap[k] === dispKey; }) || dispKey;
+            const td = document.createElement('td');
+            td.textContent = formatSummaryCellValue(row[srcKey], srcKey, null);
+            if (isRightAligned(srcKey) || isYieldColumn(srcKey)) td.style.textAlign = 'right';
+            if (isYieldColumn(srcKey)) applyYieldCellColour(td, row[srcKey]);
+            tr.appendChild(td);
+            if (isTotalable(srcKey)) {
+                const num = parseFloat(row[srcKey]);
+                if (!isNaN(num)) totals[dispKey] += num;
+            }
+        });
+        $body[0].appendChild(tr);
+    });
+
+    const footTr = document.createElement('tr');
+    buildTotalRowCells(displayHeaders, totals, function (key) {
+        const srcKey = Object.keys(renameMap).find(function (k) { return renameMap[k] === key; }) || key;
+        return isTotalable(srcKey);
+    }, function (key) {
+        const srcKey = Object.keys(renameMap).find(function (k) { return renameMap[k] === key; }) || key;
+        return isRightAligned(srcKey);
+    }, 'Total', opts.footerBg || '#1f4e8c', formatSummaryTotalValue).forEach(function (td) {
+        td.style.color = '#fff';
+        footTr.appendChild(td);
+    });
+    $foot[0].appendChild(footTr);
+    $foot.attr('class', opts.footerClass || 'mis-sum-tfoot-default');
+
+    const wtKey = findWeightMtColumn(sourceHeaders);
+    return sumColumn(data, wtKey);
+}
+
+function renderSummaryMatrixTable(headerId, bodyId, footId, noDataId, data, options) {
+    const opts = options || {};
+    const $header = $('#' + headerId);
+    const $body = $('#' + bodyId);
+    const $foot = footId ? $('#' + footId) : $();
+    const $noData = $('#' + noDataId);
+    const $table = $header.closest('table');
+
+    $header.empty();
+    $body.empty();
+    if ($foot.length) $foot.empty();
+
+    if (!data || data.length === 0) {
+        $table.hide();
+        $noData.show();
+        return 0;
+    }
+
+    $noData.hide();
+    $table.show();
+
+    const rawHeaders = Object.keys(data[0]);
+    const shiftKey = rawHeaders.find(function (h) {
+        const k = normalizeColName(h);
+        return k === 'shift' || k === 'shiftname';
+    }) || rawHeaders[0];
+    const headers = orderMatrixHeadersShiftFirst(rawHeaders, shiftKey);
+
+    const numericCols = getNumericColumns(data, rawHeaders);
+    const isRightAligned = makeAlignChecker(numericCols);
+    const isTotalable = makeTotalChecker(numericCols);
+    const totals = {};
+    headers.forEach(function (key) {
+        if (key !== shiftKey && isTotalable(key)) totals[key] = 0;
+    });
+
+    headers.forEach(function (key) {
+        const th = document.createElement('th');
+        th.textContent = key === shiftKey ? 'Shift' : key;
+        $header[0].appendChild(th);
+    });
+
+    let productionGrandTotal = 0;
+
+    data.forEach(function (row) {
+        const shiftVal = String(row[shiftKey] || '').trim();
+        const tr = document.createElement('tr');
+        if (shiftVal.toLowerCase() === 'avg') tr.className = 'row-avg';
+
+        const summaryCellOpts = { yieldHeatmap: !!opts.yieldHeatmap };
+
+        headers.forEach(function (key) {
+            const td = document.createElement('td');
+            td.textContent = formatSummaryCellValue(row[key], key, summaryCellOpts);
+            if (key !== shiftKey && (isRightAligned(key) || isYieldColumn(key))) {
+                td.style.textAlign = 'right';
+            }
+            if (opts.yieldHeatmap && key !== shiftKey) {
+                applyYieldCellColour(td, row[key]);
+            } else if (isYieldColumn(key)) {
+                applyYieldCellColour(td, row[key]);
+            }
+            tr.appendChild(td);
+
+            if (key !== shiftKey && isTotalable(key)) {
+                const num = parseFloat(row[key]);
+                if (!isNaN(num)) totals[key] += num;
+            }
+        });
+        $body[0].appendChild(tr);
+    });
+
+    if ($foot.length && opts.showTotalRow !== false) {
+        const footTr = document.createElement('tr');
+        headers.forEach(function (key, idx) {
+            const td = document.createElement('td');
+            td.style.fontWeight = 'bold';
+            td.style.color = '#fff';
+            td.style.backgroundColor = opts.footerBg || '#1f4e8c';
+            if (key === shiftKey) {
+                td.textContent = 'Total';
+            } else if (isTotalable(key)) {
+                td.textContent = formatSummaryTotalValue(key, totals[key] || 0);
+                td.style.textAlign = 'right';
+            } else {
+                td.textContent = '';
+            }
+            footTr.appendChild(td);
+        });
+        $foot[0].appendChild(footTr);
+    }
+
+    const totalCol = headers.find(function (h) {
+        return normalizeColName(h) === 'total';
+    });
+    if (totalCol) {
+        productionGrandTotal = sumColumn(data, totalCol);
+    } else {
+        productionGrandTotal = Object.keys(totals).reduce(function (s, k) {
+            return s + (totals[k] || 0);
+        }, 0);
+    }
+
+    return productionGrandTotal;
+}
+
+function renderSummaryReport(data, dateVal) {
+    $('#divReportSections').hide();
+    $('#divSummaryReportSections').show();
+    $('#lblSummaryDate').text(convertDateFormat(dateVal) || dateVal);
+
+    const rejectionRows = data.RejectionItemData || [];
+    const rejectionMt = renderSummaryFlatTable(
+        'tblSumRejection-header', 'tblSumRejection-body', 'tblSumRejection-foot', 'noSumRejection',
+        rejectionRows,
+        {
+            hideSerial: true,
+            footerClass: 'mis-sum-tfoot-rejection',
+            footerBg: '#c55a11',
+            rename: { ItemName: 'Item Name', QtyMT: 'Qty MT', QtyPC: 'Qty PC' }
+        }
+    );
+    if (!rejectionRows.length) {
+        $('#secSumRejection').hide();
+        $('#colSumRejection').hide();
+    } else {
+        $('#secSumRejection').show();
+        $('#colSumRejection').show();
+    }
+
+    renderPipeCuttingRibbon(data.PipeCuttingData);
+    adjustTopFeatureRowLayout();
+
+    const receiveMt = renderSummaryFlatTable(
+        'tblSumReceive-header', 'tblSumReceive-body', 'tblSumReceive-foot', 'noSumReceive',
+        data.MRNReceive,
+        { hideSerial: true, footerClass: 'mis-sum-tfoot-receive', footerBg: '#005495' }
+    );
+
+    const dispatchMt = renderSummaryFlatTable(
+        'tblSumDispatch-header', 'tblSumDispatch-body', 'tblSumDispatch-foot', 'noSumDispatch',
+        data.DispatchSales,
+        { hideSerial: true, footerClass: 'mis-sum-tfoot-dispatch', footerBg: '#1e7e34' }
+    );
+
+    const slittingShiftRows = normalizeSlittingShiftRows(data.SlittingShiftSummary);
+
+    renderSummaryMatrixTable(
+        'tblSumSlittingShift-header', 'tblSumSlittingShift-body', 'tblSumSlittingShift-foot',
+        'noSumSlittingShift', slittingShiftRows,
+        { showTotalRow: true, footerClass: 'mis-sum-tfoot-production', footerBg: '#5b4099' }
+    );
+
+    const productionMt = renderSummaryMatrixTable(
+        'tblSumPipeProduction-header', 'tblSumPipeProduction-body', 'tblSumPipeProduction-foot',
+        'noSumPipeProduction', data.ProductionData,
+        { showTotalRow: true, footerClass: 'mis-sum-tfoot-production', footerBg: '#5b4099' }
+    );
+
+    renderSummaryMatrixTable(
+        'tblSumYield-header', 'tblSumYield-body', null,
+        'noSumYield', data.YieldPercentData,
+        { yieldHeatmap: true, showTotalRow: false }
+    );
+
+    renderSummaryFlatTable(
+        'tblSumSlittingItem-header', 'tblSumSlittingItem-body', 'tblSumSlittingItem-foot', 'noSumSlittingItem',
+        data.SlittingItemSummary,
+        {
+            hideSerial: true,
+            footerClass: 'mis-sum-tfoot-receive',
+            footerBg: '#005495',
+            rename: { ItemName: 'Item Name' }
+        }
+    );
+
+    const rejectionTotalMt = rejectionMt || sumColumn(rejectionRows, findQtyMtColumn(
+        rejectionRows.length ? Object.keys(rejectionRows[0]) : []
+    ));
+
+    $('#kpiReceiveMt').text(receiveMt ? Number(receiveMt).toFixed(3) + ' MT' : '—');
+    $('#kpiDispatchMt').text(dispatchMt ? Number(dispatchMt).toFixed(3) + ' MT' : '—');
+    $('#kpiProductionMt').text(productionMt ? Number(productionMt).toFixed(3) + ' MT' : '—');
+    $('#kpiRejectionMt').text(rejectionTotalMt ? Number(rejectionTotalMt).toFixed(3) + ' MT' : '—');
+}
+
+function GetSummaryReportData(dateVal) {
+    Promise.all([
+        MISReportsServices.GetGroupWiseDayWiseMISReports(dateVal),
+        getYieldConfigReady()
+    ]).then(function (results) {
+        const response = results[0];
+        $('#btnShow').prop('hidden', false);
+        $('#btnLoading').prop('hidden', true);
+
+        if (!response) {
+            toastr.error("No response from server.");
+            return;
+        }
+
+        const normalized = normalizeGroupWiseResponse(response);
+        lastReportMode = 'summary';
+        lastReportData = {
+            MRNReceive: normalized.MRNReceive,
+            ProductionData: normalized.ProductionData,
+            DispatchSales: normalized.DispatchSales,
+            SlittingData: normalized.SlittingItemSummary,
+            SlittingShiftSummary: normalized.SlittingShiftSummary,
+            SlittingItemSummary: normalized.SlittingItemSummary,
+            YieldPercentData: normalized.YieldPercentData,
+            RejectionItemData: normalized.RejectionItemData,
+            PipeCuttingData: normalized.PipeCuttingData
+        };
+
+        renderSummaryReport(lastReportData, dateVal);
+    }).catch(function (error) {
+        $('#btnShow').prop('hidden', false);
+        $('#btnLoading').prop('hidden', true);
+        console.error('Error fetching summary MIS report:', error);
+        toastr.error("Error fetching summary report data.");
+    });
+}
+
 function GetReportData() {
     const dateVal = $('#txtDate').val();
 
@@ -82,6 +665,11 @@ function GetReportData() {
         toastr.warning("Please select a Date.");
         $('#btnShow').prop('hidden', false);
         $('#btnLoading').prop('hidden', true);
+        return;
+    }
+
+    if (isSummaryReport()) {
+        GetSummaryReportData(dateVal);
         return;
     }
 
@@ -100,6 +688,8 @@ function GetReportData() {
             return;
         }
 
+        lastReportMode = 'detail';
+        $('#divSummaryReportSections').hide();
         $('#divReportSections').show();
 
         const MRNReceive    = response.MRNReceive    || [];
@@ -140,6 +730,16 @@ function isNumericValue(value) {
 
 function normalizeColName(key) {
     return String(key || '').toLowerCase().replace(/[\s._%]/g, '');
+}
+
+function isPcsColumn(key) {
+    if (!key) return false;
+    const k = normalizeColName(key);
+    if (k === 'pcs' || k === 'qtypc' || k === 'pcqty' || k === 'qtyinpc') return true;
+    if (k.indexOf('pct') !== -1 || k.indexOf('percent') !== -1) return false;
+    if (k.indexOf('mt') !== -1) return false;
+    if (k.indexOf('qty') !== -1 && k.indexOf('pc') !== -1) return true;
+    return k.endsWith('pc') && k.length <= 6;
 }
 
 function isYieldColumn(key) {
@@ -211,6 +811,10 @@ function formatCellValue(value, key) {
         return formatYieldPct(value);
     }
 
+    if (isPcsColumn(key)) {
+        return formatIntegerQuantity(value);
+    }
+
     // Round Weight / Qty MT columns to 3 decimal places
     if (key) {
         const k = key.toLowerCase();
@@ -233,6 +837,9 @@ function formatCellValue(value, key) {
 function formatTotalValue(key, sum) {
     if (isYieldColumn(key)) {
         return '';
+    }
+    if (isPcsColumn(key)) {
+        return formatIntegerQuantity(sum);
     }
     const k = String(key || '').toLowerCase();
     // Weight / Qty MT totals keep 3 decimals
@@ -266,8 +873,9 @@ function makeTotalChecker(numericCols) {
     };
 }
 
-function buildTotalRowCells(displayCols, totals, isTotalable, isRightAligned, labelText, bgColor) {
+function buildTotalRowCells(displayCols, totals, isTotalable, isRightAligned, labelText, bgColor, formatTotalFn) {
     let labelPlaced = false;
+    const formatTotal = formatTotalFn || formatTotalValue;
 
     return displayCols.map(function (key) {
         const td = document.createElement('td');
@@ -277,7 +885,7 @@ function buildTotalRowCells(displayCols, totals, isTotalable, isRightAligned, la
         if (isYieldColumn(key)) {
             td.textContent = '';
         } else if (isTotalable(key)) {
-            td.textContent = formatTotalValue(key, totals[key] || 0);
+            td.textContent = formatTotal(key, totals[key] || 0);
             if (isRightAligned(key)) td.style.textAlign = 'right';
         } else if (!labelPlaced) {
             td.textContent = labelText;
@@ -920,12 +1528,24 @@ function padRowToWidth(row, cols) {
 
 // Build a cell grid for a flat section (title, header, data, total) —
 // every row has exactly `cols` cells (no colspan, so columns align in Excel).
-function buildFlatBlock(title, data) {
+function buildFlatBlock(title, data, options) {
+    const opts = options || {};
+
     if (!data || data.length === 0) {
         return { rows: [[cell(title, { type: 'title', bold: true })], [cell('No data')]], cols: 1 };
     }
 
+    const formatCellFn = opts.formatCellFn || function (value, key) {
+        return formatCellValue(value, key);
+    };
+    const formatTotalFn = opts.formatTotalFn || function (key, sum) {
+        return formatTotalValue(key, sum);
+    };
+    const headerLabels = opts.headerLabels || {};
+    const yieldHeatmap = !!opts.yieldHeatmap;
+
     const headers = Object.keys(data[0]).filter(function (h) {
+        if (opts.hideSerial && isSerialColumn(h)) return false;
         if (h.toLowerCase().indexOf('code') !== -1) return false;
         if (data.some(function (r) { return isDateString(r[h]); })) return false;
         return true;
@@ -939,7 +1559,9 @@ function buildFlatBlock(title, data) {
     const rows = [];
 
     rows.push(tagExportRow([cell(title, { type: 'title', bold: true, align: 'center', colspan: cols })], 'sectionTitle'));
-    rows.push(tagExportRow(headers.map(function (k) { return cell(k, { type: 'header', bold: true }); }), 'columnHeader', { repeat: true }));
+    rows.push(tagExportRow(headers.map(function (k) {
+        return cell(headerLabels[k] || k, { type: 'header', bold: true });
+    }), 'columnHeader', { repeat: true }));
 
     const totals = {};
     headers.forEach(function (k) { if (isTotalable(k)) totals[k] = 0; });
@@ -950,23 +1572,29 @@ function buildFlatBlock(title, data) {
                 const n = parseFloat(item[k]);
                 if (!isNaN(n)) totals[k] += n;
             }
-            const baseOpts = { align: isRightAligned(k) ? 'right' : 'left' };
-            return cell(
-                formatCellValue(item[k], k),
-                isYieldColumn(k) ? yieldCellStyleOpts(item[k], baseOpts) : baseOpts
-            );
+            const baseOpts = { align: (isRightAligned(k) || isYieldColumn(k)) ? 'right' : 'left' };
+            let cellOpts = baseOpts;
+            if (isYieldColumn(k)) {
+                cellOpts = yieldCellStyleOpts(item[k], baseOpts);
+            } else if (yieldHeatmap && !isSummaryLabelColumn(k)) {
+                cellOpts = yieldCellStyleOpts(item[k], baseOpts);
+            }
+            return cell(formatCellFn(item[k], k), cellOpts);
         }), 'data'));
     });
 
     if (Object.keys(totals).length > 0) {
         let labelPlaced = false;
         rows.push(tagExportRow(headers.map(function (k) {
-            if (isTotalable(k)) return cell(formatTotalValue(k, totals[k]), { type: 'total', bold: true, align: 'right' });
+            if (isTotalable(k)) {
+                return cell(formatTotalFn(k, totals[k]), { type: 'total', bold: true, align: 'right' });
+            }
             if (!labelPlaced) { labelPlaced = true; return cell('Total', { type: 'total', bold: true }); }
             return cell('', { type: 'total' });
         }), 'total'));
     }
 
+    rows.forEach(function (row) { row._exportCols = cols; });
     return { rows: rows, cols: cols };
 }
 
@@ -1139,7 +1767,131 @@ function renderCellGridToTable($tbody, gridRows) {
     });
 }
 
+function summaryExportFlatOptions(extra) {
+    return Object.assign({
+        hideSerial: true,
+        formatCellFn: function (value, key) {
+            return formatSummaryCellValue(value, key, null);
+        },
+        formatTotalFn: formatSummaryTotalValue
+    }, extra || {});
+}
+
+function buildPipeCuttingExportBlock(data) {
+    const rows = data || [];
+    if (!rows.length) {
+        return { rows: [], cols: 0 };
+    }
+
+    const order = rows.map(function (r) { return r.MachineNo; });
+    const sortedNames = sortMillNames(order.filter(function (v, i, a) { return a.indexOf(v) === i; }));
+    const byMachine = {};
+    rows.forEach(function (r) {
+        const key = r.MachineNo;
+        if (!byMachine[key]) {
+            byMachine[key] = { MachineNo: key, QtyMT: 0, QtyPC: 0 };
+        }
+        byMachine[key].QtyMT += parseFloat(r.QtyMT) || 0;
+        byMachine[key].QtyPC += parseFloat(r.QtyPC) || 0;
+    });
+
+    const flatRows = sortedNames.map(function (machine) {
+        const row = byMachine[machine];
+        return {
+            Machine: shortMachineLabel(row.MachineNo),
+            'Qty MT': row.QtyMT,
+            'Qty PC': row.QtyPC
+        };
+    });
+
+    return buildFlatBlock('CUTTING PRODUCTION', flatRows, summaryExportFlatOptions());
+}
+
+function appendExportSpacerRows($tbody, count) {
+    for (let i = 0; i < count; i++) {
+        $tbody[0].appendChild(document.createElement('tr'));
+    }
+}
+
+function renderExportBlockRows($tbody, block) {
+    if (!block || !block.rows || !block.rows.length) return;
+    renderCellGridToTable($tbody, block.rows);
+}
+
+function renderExportBlockPair($tbody, left, right) {
+    const leftOk = left && left.rows && left.rows.length;
+    const rightOk = right && right.rows && right.rows.length;
+    if (leftOk && rightOk) {
+        renderCellGridToTable($tbody, combineSideBySide(left, right));
+    } else if (leftOk) {
+        renderExportBlockRows($tbody, left);
+    } else if (rightOk) {
+        renderExportBlockRows($tbody, right);
+    }
+}
+
+function getSummaryExportBlocks() {
+    const d = lastReportData || {};
+    const flatOpts = summaryExportFlatOptions();
+
+    return {
+        title: {
+            rows: [tagExportRow([cell(
+                'SUMMARY OF MIS REPORT — ' + ($('#lblSummaryDate').text() || convertDateFormat($('#txtDate').val()) || ''),
+                { type: 'title', bold: true, align: 'center', colspan: 6 }
+            )], 'sectionTitle')],
+            cols: 6
+        },
+        rejection: (d.RejectionItemData && d.RejectionItemData.length)
+            ? buildFlatBlock('REJECTION', d.RejectionItemData, summaryExportFlatOptions({
+                headerLabels: { ItemName: 'Item Name', QtyMT: 'Qty MT', QtyPC: 'Qty PC' }
+            }))
+            : null,
+        pipeCutting: buildPipeCuttingExportBlock(d.PipeCuttingData),
+        receiving: buildFlatBlock('RECEIVING', d.MRNReceive || [], flatOpts),
+        dispatch: buildFlatBlock('DISPATCH', d.DispatchSales || [], flatOpts),
+        pipeProduction: buildFlatBlock('PIPE PRODUCTION', d.ProductionData || [], flatOpts),
+        slittingShift: buildFlatBlock(
+            'SLITTING PRODUCTION',
+            normalizeSlittingShiftRows(d.SlittingShiftSummary || []),
+            flatOpts
+        ),
+        yield: buildFlatBlock('YIELD %', d.YieldPercentData || [], summaryExportFlatOptions({
+            yieldHeatmap: true,
+            formatCellFn: function (value, key) {
+                return formatSummaryCellValue(value, key, { yieldHeatmap: true });
+            }
+        })),
+        slittingItem: buildFlatBlock('ITEM WISE SUMMARY — SLITTING', d.SlittingItemSummary || [], summaryExportFlatOptions({
+            headerLabels: { ItemName: 'Item Name' }
+        }))
+    };
+}
+
+function buildSummaryExportTable() {
+    const sections = getSummaryExportBlocks();
+    const $table = $('#tblExportMaster');
+    const $tbody = $table.find('tbody');
+    $tbody.empty();
+    $table.attr('cellspacing', '0').attr('cellpadding', '0').css({ borderCollapse: 'collapse', width: '100%' });
+
+    renderExportBlockRows($tbody, sections.title);
+    appendExportSpacerRows($tbody, 2);
+    renderExportBlockPair($tbody, sections.rejection, sections.pipeCutting);
+    appendExportSpacerRows($tbody, 2);
+    renderExportBlockPair($tbody, sections.receiving, sections.dispatch);
+    appendExportSpacerRows($tbody, 2);
+    renderExportBlockPair($tbody, sections.pipeProduction, sections.slittingShift);
+    appendExportSpacerRows($tbody, 2);
+    renderExportBlockPair($tbody, sections.yield, sections.slittingItem);
+}
+
 function buildExportTable() {
+    if (getActiveReportMode() === 'summary') {
+        buildSummaryExportTable();
+        return;
+    }
+
     const receivingBlock = buildFlatBlock('RECEIVING', lastReportData.MRNReceive);
     const productionBlock = buildGroupedBlock('PRODUCTION', lastReportData.ProductionData, 'Machine');
     const dispatchBlock   = buildFlatBlock('DISPATCH', lastReportData.DispatchSales);
@@ -1172,8 +1924,42 @@ function applyPdfTableStyles(table) {
 }
 
 // PDF: one full-width table per section so mixed column counts do not leave blank space on the right
+function buildSummaryPdfExportDom(wrapper) {
+    wrapper.querySelectorAll('table.pdf-section-table').forEach(function (t) { t.remove(); });
+
+    const sections = getSummaryExportBlocks();
+    const blocks = [
+        sections.title,
+        sections.rejection,
+        sections.pipeCutting,
+        sections.receiving,
+        sections.dispatch,
+        sections.pipeProduction,
+        sections.slittingShift,
+        sections.yield,
+        sections.slittingItem
+    ];
+
+    const sectionTables = [];
+    blocks.forEach(function (block) {
+        if (!block || !block.rows || block.rows.length === 0) return;
+        const table = document.createElement('table');
+        applyPdfTableStyles(table);
+        const tbody = document.createElement('tbody');
+        renderCellGridToTable($(tbody), block.rows);
+        table.appendChild(tbody);
+        wrapper.appendChild(table);
+        sectionTables.push(table);
+    });
+    return sectionTables;
+}
+
 function buildPdfExportDom(wrapper) {
     wrapper.querySelectorAll('table.pdf-section-table').forEach(function (t) { t.remove(); });
+
+    if (getActiveReportMode() === 'summary') {
+        return buildSummaryPdfExportDom(wrapper);
+    }
 
     const blocks = [
         buildFlatBlock('RECEIVING', lastReportData.MRNReceive),
@@ -1373,7 +2159,8 @@ function getReportFileName() {
     const dateString = currentDate.getFullYear() + "-" +
         (currentDate.getMonth() + 1).toString().padStart(2, "0") + "-" +
         currentDate.getDate().toString().padStart(2, "0");
-    return "MISReport_" + dateString;
+    const prefix = getActiveReportMode() === 'summary' ? 'MISReportSummary_' : 'MISReport_';
+    return prefix + dateString;
 }
 
 function ExportExcel() {
@@ -1383,7 +2170,9 @@ function ExportExcel() {
     }
 
     buildExportTable();
+    const modeLabel = getActiveReportMode() === 'summary' ? 'Summary' : 'Detail';
     downloadTableAsExcel('tblExportMaster', getReportFileName());
+    toastr.success(modeLabel + ' report exported to Excel.');
 }
 
 function downloadTableAsExcel(tableId, filename) {
@@ -1544,6 +2333,7 @@ async function ExportPdf() {
         }
 
         pdf.save(getReportFileName() + '.pdf');
+        toastr.success((getActiveReportMode() === 'summary' ? 'Summary' : 'Detail') + ' report exported to PDF.');
     } catch (err) {
         console.error('PDF export failed:', err);
         toastr.error("Failed to generate PDF.");

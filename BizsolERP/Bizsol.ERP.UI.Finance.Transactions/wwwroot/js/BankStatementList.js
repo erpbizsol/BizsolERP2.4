@@ -192,12 +192,14 @@ function isApplicableReportY(row) {
  * Applicable Report Y + Reconciled Y = green
  * Applicable Report Y + Reconciled N = yellow
  * Reconciled Y + Applicable Report N = red
- * Deposit and none of the above = green; payment and none of the above = white
+ * Deposit (Cr) + Applicable Report N = red (credit lines stay IsReconciled N)
+ * Other deposit and none of the above = green; payment and none of the above = white
  */
 function statementRowToneClass(depositAmt, reconY, appY) {
     if (appY && reconY) return 'bs-row-tone-green';
     if (appY && !reconY) return 'bs-row-tone-yellow';
     if (reconY && !appY) return 'bs-row-tone-red';
+    if (depositAmt > 0 && !appY) return 'bs-row-tone-red';
     if (depositAmt > 0) return 'bs-row-tone-green';
     return 'bs-row-tone-white';
 }
@@ -1372,15 +1374,22 @@ function buildReconCellHtml(row) {
             ? '<span class="bs-badge bs-badge--recon-yes">Yes</span>'
             : '<span class="bs-badge bs-badge--recon-no">No</span>';
     }
-    if (reconY && dAmt > 0 && appY) {
-        return '<button type="button" class="bs-receipt-report-open bs-badge bs-badge--recon-yes" data-code="'
-            + String(row.Code) + '" title="Enter receipt details for the report">Yes</button>';
+    if (dAmt > 0) {
+        var depLabel = reconY ? 'Yes' : 'No';
+        var depBadge = reconY ? 'bs-badge--recon-yes' : 'bs-badge--recon-no';
+        var depLocked = reconY ? 'bs-recon-yes--locked' : 'bs-recon-no--locked';
+        if (appY) {
+            return '<button type="button" class="bs-receipt-report-open bs-badge ' + depBadge + '" data-code="'
+                + String(row.Code) + '" title="Enter receipt details for the report">' + depLabel + '</button>';
+        }
+        var depLockTitle = reconY
+            ? 'Deposit lines cannot be unreconciled from here.'
+            : 'Mark Applicable Report to enter receipt details.';
+        return '<span class="bs-badge ' + depBadge + ' ' + depLocked + '" title="' + depLockTitle + '">' + depLabel + '</span>';
     }
     if (reconY) {
-        return dAmt > 0
-            ? '<span class="bs-badge bs-badge--recon-yes bs-recon-yes--locked" title="Deposit lines cannot be unreconciled from here.">Yes</span>'
-            : '<button type="button" class="bs-recon-toggle bs-badge bs-badge--recon-yes" data-code="'
-                + String(row.Code) + '" data-recon="C" data-grn-master="' + String(grnMaster) + '" title="Unreconcile — clear reconciled for this line">Yes</button>';
+        return '<button type="button" class="bs-recon-toggle bs-badge bs-badge--recon-yes" data-code="'
+            + String(row.Code) + '" data-recon="C" data-grn-master="' + String(grnMaster) + '" title="Unreconcile — clear reconciled for this line">Yes</button>';
     }
     return '<button type="button" class="bs-recon-toggle bs-badge bs-badge--recon-no" data-code="'
         + String(row.Code) + '" data-recon="N" data-bs-withdraw="'
@@ -1510,6 +1519,33 @@ function typeableSelectValue($sel) {
     return String(v).trim().substring(0, 500);
 }
 
+/** Receipt details modal — all fields required before SAVERECEIPTREPORT. Returns payload fields or null. */
+function readReceiptReportModalPayload(code) {
+    var projectCode = parseInt($('#ddlReceiptProject').val() || '0', 10) || 0;
+    var siteCode = parseInt($('#ddlReceiptSite').val() || '0', 10) || 0;
+    var categoryCode = parseInt($('#ddlReceiptCategory').val() || '0', 10) || 0;
+    var itemDescription = typeableSelectValue($('#ddlReceiptItem'));
+    var customerName = typeableSelectValue($('#ddlReceiptCustomer'));
+    var missing = [];
+    if (!projectCode) missing.push('Project name');
+    if (!siteCode) missing.push('Site name');
+    if (!categoryCode) missing.push('Category');
+    if (!itemDescription) missing.push('Item wise');
+    if (!customerName) missing.push('Customer name');
+    if (missing.length) {
+        toastr && toastr.warning('Please fill all mandatory fields: ' + missing.join(', ') + '.');
+        return null;
+    }
+    return {
+        Code: code,
+        ProjectMaster_Code: projectCode,
+        SubProjectMaster_Code: siteCode,
+        CategoryMaster_Code: categoryCode,
+        ItemDescription: itemDescription,
+        CustomerName: customerName
+    };
+}
+
 function fillReceiptSites(projectCode, selectedSite) {
     var $site = $('#ddlReceiptSite');
     var pc = projectCode != null ? String(projectCode).trim() : '';
@@ -1575,14 +1611,8 @@ function closeReceiptReportModal() {
 function saveReceiptReportModal() {
     var code = receiptModalCode;
     if (!code) return;
-    var payload = {
-        Code: code,
-        ProjectMaster_Code: parseInt($('#ddlReceiptProject').val() || '0', 10) || 0,
-        SubProjectMaster_Code: parseInt($('#ddlReceiptSite').val() || '0', 10) || 0,
-        CategoryMaster_Code: parseInt($('#ddlReceiptCategory').val() || '0', 10) || 0,
-        ItemDescription: typeableSelectValue($('#ddlReceiptItem')),
-        CustomerName: typeableSelectValue($('#ddlReceiptCustomer'))
-    };
+    var payload = readReceiptReportModalPayload(code);
+    if (!payload) return;
     $('#btnReceiptReportSave').prop('disabled', true);
     BankStatementService.SaveReceiptReport(payload)
         .then(function (r) {
@@ -1597,7 +1627,9 @@ function saveReceiptReportModal() {
                 row.CategoryMaster_Code = payload.CategoryMaster_Code;
                 row.ItemDescription = payload.ItemDescription;
                 row.CustomerName = payload.CustomerName;
+                row.IsReconciled = 'Y';
             }
+            paintStatementRow(code);
             toastr && toastr.success((r && (r.Msg || r.msg)) || 'Receipt details saved.');
             closeReceiptReportModal();
         })

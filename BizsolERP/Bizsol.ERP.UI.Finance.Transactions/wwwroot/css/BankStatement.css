@@ -1012,6 +1012,13 @@
     user-select: none;
 }
 
+/* Deposit (Cr) lines: IsReconciled N — badge only until Applicable Report is set */
+.bs-recon-no--locked {
+    cursor: default;
+    opacity: 0.92;
+    user-select: none;
+}
+
 /* Statement list row tint: Applicable Report + Reconciled + deposit/payment */
 #cardList .bs-stmt-list-table tbody tr.bs-row-tone-green td {
     background: rgba(34, 197, 94, 0.22) !important;

@@ -24,21 +24,21 @@
             </div>
         </div>
         <div class="bb-filter-bar">
-            <div class="bb-filters">
-                <div class="bb-field">
+            <div class="row align-items-end g-3 bb-filters">
+                <div class="col-12 col-md-3 bb-field">
                     <label class="bb-label" for="ddlBbStatus">Status</label>
-                    <select id="ddlBbStatus" class="form-control form-control-sm">
+                    <select id="ddlBbStatus" class="form-control form-control-sm w-100">
                         <option value="Pending" selected>Pending</option>
                         <option value="Closed">Closed</option>
                     </select>
                 </div>
-                <div class="bb-field bb-field--project">
+                <div class="col-12 col-md-4 bb-field">
                     <label class="bb-label" for="ddlBbProject">Project name</label>
-                    <select id="ddlBbProject" class="form-control form-control-sm">
+                    <select id="ddlBbProject" class="form-control form-control-sm w-100">
                         <option value="0">All</option>
                     </select>
                 </div>
-                <div class="bb-filter-actions">
+                <div class="col-12 col-md-auto bb-filter-actions">
                     <button type="button" id="btnBbShow" class="bb-btn">
                         <i class="fas fa-search" aria-hidden="true"></i> Show
                     </button>
@@ -51,6 +51,10 @@
         <nav id="bbCrumb" class="bb-crumb" aria-label="Report level"></nav>
         @* <h2 id="bbLevelTitle" class="bb-level-title">Project Wise</h2> *@
         <div id="bbLevelSub" class="bb-level-sub"></div>
+        <div class="bb-scroll-hint" aria-hidden="true">
+            <i class="fas fa-arrows-alt-h" aria-hidden="true"></i>
+            <span>Swipe horizontally to see all columns</span>
+        </div>
         <div class="bb-table-wrap">
             <table class="bb-table" id="tblBankBook">
                 <thead>

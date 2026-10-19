@@ -127,50 +127,50 @@ body:has(#OrderLoadReportPage) #modern-content.modern-content > main {
     width: 100%;
 }
 
-/* Report Template — master (Y) = black, user copy (N) = orange */
+/* Report Template — master (Y) = green, user copy (N) = black */
 #ddlTemplate.ol-tpl-selected-y {
-    color: #111827;
+    color: #15803d;
     font-weight: 700;
 }
 
 #ddlTemplate.ol-tpl-selected-n {
-    color: #ea580c;
+    color: #111827;
     font-weight: 700;
 }
 
 #ddlTemplate option.ol-tpl-master-y {
-    color: #111827;
+    color: #15803d;
     font-weight: 600;
     background: #fff;
 }
 
 #ddlTemplate option.ol-tpl-master-n {
-    color: #ea580c;
+    color: #111827;
     font-weight: 600;
-    background: #fff7ed;
+    background: #f3f4f6;
 }
 
-/* Manage Template dropdown — master = black, user copy = orange */
+/* Manage Template dropdown — master = green, user copy = black */
 #ddlMtMaster.ol-tpl-selected-y {
-    color: #111827;
+    color: #15803d;
     font-weight: 700;
 }
 
 #ddlMtMaster.ol-tpl-selected-n {
-    color: #ea580c;
+    color: #111827;
     font-weight: 700;
 }
 
 #ddlMtMaster option.ol-tpl-master-y {
-    color: #111827;
+    color: #15803d;
     font-weight: 600;
     background: #fff;
 }
 
 #ddlMtMaster option.ol-tpl-master-n {
-    color: #ea580c;
+    color: #111827;
     font-weight: 600;
-    background: #fff7ed;
+    background: #f3f4f6;
 }
 
 .ol-header-filter-actions {
@@ -1005,6 +1005,37 @@ body > .ol-cd-menu,
 
 #olDynamicFilterHost {
     display: contents;
+}
+
+/* Date Field + header From/To mirror: full modal width, stacked (not beside combo). */
+.ol-filter-modal-grid .ol-dyn-date-field {
+    grid-column: 1 / -1;
+}
+
+.ol-filter-modal-grid .ol-dyn-date-field .ol-dyn-date-field-select {
+    width: 100%;
+    max-width: none;
+}
+
+.ol-dyn-date-mirror-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 18px;
+    margin-top: 10px;
+}
+
+.ol-dyn-date-mirror-item {
+    min-width: 0;
+}
+
+.ol-dyn-date-mirror-label {
+    margin-bottom: 2px !important;
+    font-size: 12px;
+}
+
+.ol-config-header-date-mirror input[type="date"] {
+    width: 100%;
+    max-width: none;
 }
 
 /* Date Field: a normal column (same size as other inputs); when ticked it spans the row: [combo] [From] [To] */
@@ -2184,6 +2215,10 @@ body.ol-print-preview-open {
     }
 
     .ol-filter-modal-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ol-dyn-date-mirror-pair {
         grid-template-columns: 1fr;
     }
 
