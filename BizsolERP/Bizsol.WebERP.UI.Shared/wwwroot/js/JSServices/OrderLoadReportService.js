@@ -36,24 +36,6 @@ const OrderLoadReportService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
 
-    GetDefaultReportDates: function GetDefaultReportDates(templeteMasterCode, reportType) {
-        var URL = templeteReportApiBase()
-            + '/GetDefaultReportDates?TempleteMasterCode=' + encodeURIComponent(templeteMasterCode || 0)
-            + '&ReportType=' + encodeURIComponent(reportType || '');
-        return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
-    },
-
-    // GetResolvedFilterTokens: function GetResolvedFilterTokens() {
-    //     var URL = templeteReportApiBase() + '/GetResolvedFilterTokens';
-    //     return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
-    // },
-
-    // GetTemplateFilterConfiguration: function GetTemplateFilterConfiguration(templeteMasterCode) {
-    //     var URL = templeteReportApiBase()
-    //         + '/GetTemplateFilterConfiguration?TempleteMasterCode=' + encodeURIComponent(templeteMasterCode || 0);
-    //     return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
-    // },
-
     GetOrderLoadReport: function GetOrderLoadReport(params) {
         var userMasterCode = params.userMasterCode || getAuthUserCode();
         var itemSizeMasterCodes = String(params.itemSizeMasterCodes || '').trim();
@@ -80,51 +62,50 @@ const OrderLoadReportService = {
         return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload), { suppressErrorToast: true });
     },
 
-    GetNestedMarketingManList: function GetNestedMarketingManList(userMasterCode, marketingManMasterCode) {
-        var URL = templeteReportApiBase()
-            + '/GetNestedMarketingManList'
-            + '?UserMaster_Code=' + encodeURIComponent(userMasterCode || getAuthUserCode())
-            + '&MarketingManMaster_Code=' + encodeURIComponent(marketingManMasterCode || 0);
-        return promiseAjaxCallApi.CallAPI('GET', URL, '');
-    },
-
-    GetGodownMaster: function GetGodownMaster() {
-        return promiseAjaxCallApi.CallAPI('GET', templeteReportApiBase() + '/GetGodownMaster', '');
-    },
-
-    GetItemGroupMaster: function GetItemGroupMaster() {
-        return promiseAjaxCallApi.CallAPI('GET', templeteReportApiBase() + '/GetItemGroupMaster', '');
-    },
-
-    GetProcessMaster: function GetProcessMaster() {
-        return promiseAjaxCallApi.CallAPI('GET', templeteReportApiBase() + '/GetProcessMaster', '');
-    },
-
-    GetItemTypeMaster: function GetItemTypeMaster() {
-        return promiseAjaxCallApi.CallAPI('GET', templeteReportApiBase() + '/GetItemTypeMaster', '');
-    },
-
-    GetItemMaster: function GetItemMaster() {
-        return promiseAjaxCallApi.CallAPI('GET', templeteReportApiBase() + '/GetItemMaster', '');
-    },
-
-    GetOrderNo: function GetOrderNo() {
-        return promiseAjaxCallApi.CallAPI('GET', templeteReportApiBase() + '/GetOrderNo', '');
-    },
-
-    GetOtherFilterDetails: function GetOtherFilterDetails(otherFilterQuery, templateCode, otherFilterNo) {
-        var URL = templeteReportApiBase()
-            + '/GetOtherFilterDetails'
-            + '?TempleteMasterCode=' + encodeURIComponent(templateCode || 0)
-            + '&OtherFilterNo=' + encodeURIComponent(otherFilterNo || 0)
-            + '&OtherFilterQuery=' + encodeURIComponent(otherFilterQuery || '');
-        return promiseAjaxCallApi.CallAPI('GET', URL, '');
-    },
-
     GetDdlOfOtherFilter: function GetDdlOfOtherFilter(objListTableName) {
         var URL = templeteReportApiBase()
             + '/GetDdlOfOtherFilter?ObjListTableName=' + encodeURIComponent(objListTableName || '');
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
+    },
+
+    GetDefaultReportDates: function GetDefaultReportDates(templeteMasterCode, reportType) {
+        var URL = templeteReportApiBase()
+            + '/GetDefaultReportDates?TempleteMasterCode=' + encodeURIComponent(templeteMasterCode || 0)
+            + '&ReportType=' + encodeURIComponent(reportType || '');
+        return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
+    },
+
+    GetResolvedFilterTokens: function GetResolvedFilterTokens() {
+        var URL = templeteReportApiBase() + '/GetResolvedFilterTokens';
+        return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
+    },
+
+    /** Filter setup rows only (ControlType, ComboQuery, DisplayName, ...). Not dropdown option rows. */
+    GetTemplateFilterConfiguration: function GetTemplateFilterConfiguration(templeteMasterCode) {
+        var URL = templeteReportApiBase()
+            + '/GetTemplateFilterConfiguration?TempleteMasterCode=' + encodeURIComponent(templeteMasterCode || 0);
+        return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
+    },
+
+    /**
+     * Dropdown option rows for ONE Combo filter (F_TemplateFilterConfiguration.Code = configCode).
+     * The API looks up ComboQuery / ComboDependsOn / ComboSortBy by configCode on the server and RUNS the
+     * query in SQL (USP_WebAPI_GetTempleteReport @Mode = TEMPLATEFILTERCOMBODATA), returning [{ Code, Desp }, ...].
+     * No SQL text is sent from the browser.
+     *
+     * filterSelectionJson: JSON array of the other combos' current selections, used to resolve
+     * ComboDependsOn tokens such as {{Client Nature}}, e.g.
+     *   '[{"configCode":68,"displayName":"Client Nature","selectedValue":"Store,Finish"}]'
+     */
+    GetTemplateFilterComboData: function GetTemplateFilterComboData(templeteMasterCode, configCode, filterSelectionJson) {
+        var URL = templeteReportApiBase() + '/GetTemplateFilterComboData';
+        var payload = {
+            TempleteMasterCode: parseInt(templeteMasterCode, 10) || 0,
+            ConfigCode: parseInt(configCode, 10) || 0,
+            FilterSelectionJson: String(filterSelectionJson || '')
+        };
+        // POST: selections (many party names) can exceed URL length limits.
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload), { suppressErrorToast: true });
     },
 
     // ===================== Manage Template =====================
@@ -157,10 +138,6 @@ const OrderLoadReportService = {
         return promiseAjaxCallApi.CallAPI('POST', URL, '');
     },
 
-    /**
-     * Amendment history (USP_GetCommonAmendmentDetails).
-     * Unused table names → ""; unused codes / AmendmentNo → 0.
-     */
     GetTemplateAmendmentDetails: function GetTemplateAmendmentDetails(options) {
         var opts = options || {};
         function amendmentNameQuery(value) {
