@@ -103,6 +103,9 @@ function fallbackDashboardUrl(desp, code) {
         return 'CRMTransactions/SalesPersonDashboard/SalesPersonDashboard' + q;
     }
     if (t.indexOf('expense') !== -1) return 'CRMTransactions/ExpenseDashboard/ExpenseDashboard' + q;
+    if (t.indexOf('notification') !== -1 || t.indexOf('default order detail') !== -1) {
+        return 'CRMTransactions/NotificationsDashboard/NotificationsDashboard' + q;
+    }
     if (t.indexOf('crm') !== -1) return 'CRMTransactions/CRMDashboard/CRMDashboard' + q;
     return '';
 }
@@ -112,6 +115,7 @@ function getDashboardIcon(label) {
     if (t.indexOf('sales person') !== -1 || t.indexOf('salesperson') !== -1) return 'fa-user-tie';
     if (t.indexOf('crm') !== -1) return 'fa-handshake';
     if (t.indexOf('expense') !== -1) return 'fa-wallet';
+    if (t.indexOf('notification') !== -1 || t.indexOf('default order detail') !== -1) return 'fa-bell';
     if (t.indexOf('project') !== -1) return 'fa-diagram-project';
     if (t.indexOf('customer') !== -1) return 'fa-users';
     return 'fa-gauge-high';
