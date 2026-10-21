@@ -1624,8 +1624,9 @@
     .btn-gpa-modal-attach:hover { transform:translateY(-1px); color:#fff; box-shadow:0 5px 14px rgba(2,132,199,0.45); }
     .btn-gpa-modal-attach.gpa-attach-has-files { background:linear-gradient(135deg,#16a34a,#15803d); box-shadow:0 3px 10px rgba(22,163,74,0.35); }
     .btn-gpa-modal-attach.gpa-attach-has-files:hover { box-shadow:0 5px 14px rgba(22,163,74,0.45); }
-    /* Attachment control modal must appear above the GRN approval modal (z-index 1055) */
-    #AttachmentControlmodal { z-index: 1080 !important; }
+    /* Above layout .modal-backdrop (100012). 1080 put the dim layer over this dialog and blocked every click. */
+    #AttachmentControlmodal { z-index: 100014 !important; pointer-events: none !important; }
+    #AttachmentControlmodal .modal-dialog { pointer-events: auto !important; }
     .btn-gpa-close {
         display:inline-flex; align-items:center; gap:5px;
         background:linear-gradient(135deg,#f59e0b,#d97706); border:none; color:#fff;
