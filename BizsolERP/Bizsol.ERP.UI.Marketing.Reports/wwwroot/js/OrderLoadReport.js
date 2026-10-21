@@ -1,4 +1,5 @@
 ﻿import { OrderLoadReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderLoadReportService.js';
+import { ItemMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_ItemMasterService.js';
 import { LedgerService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/LedgerService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { getOrderLoadFormTypeFromQuery } from '../../Bizsol.WebERP.UI.Shared/js/OrderLoadFormTypeUtil.js';
@@ -130,14 +131,6 @@ function bindEvents() {
         applyFilterActiveColors();
         updateFilterButtonState();
         updateFilterSummary();
-    });
-    $('#txtFromDate, #txtToDate').on('change', function () {
-        refreshReportOnDateChange();
-    });
-    $('#txtFromDate, #txtToDate').on('keydown', function (e) {
-        if (e.key === 'Enter') {
-            loadReportData();
-        }
     });
     $('#btnSizeParameterFilter').on('click', showOrderLoadSizeControlModal);
     $('#btnClearSizeParameterFilter, #btnEmptyClearSizeFilter').on('click', onClearSizeParameterFilterClick);
@@ -294,11 +287,7 @@ function onClearSizeParameterFilterClick() {
 
     clearSizeParameterFilter();
     updateFilterButtonState();
-    toastr.success('Size Parameter Filter cleared.');
-
-    if ($('#ddlTemplate').val()) {
-        loadReportData();
-    }
+    toastr.success('Size Parameter Filter cleared. Click Load Report to refresh.');
 }
 
 function updateEmptyStateMessage() {
@@ -329,12 +318,24 @@ function updateSizeParameterGridButton() {
     updateSizeFilterBadge();
 }
 
+function normalizeGridColumnKey(key) {
+    return String(key || '').replace(/[\s_\[\]]/g, '').toLowerCase();
+}
+
 function findGridColumnKey(rows, normalizedName) {
     if (!Array.isArray(rows) || !rows.length) return null;
-    var keys = Object.keys(rows[0]);
-    return keys.find(function (key) {
-        return key.replace(/[\s_]/g, '').toLowerCase() === normalizedName;
-    }) || null;
+    var found = null;
+    rows.some(function (row) {
+        if (!row || typeof row !== 'object') return false;
+        return Object.keys(row).some(function (key) {
+            if (normalizeGridColumnKey(key) === normalizedName) {
+                found = key;
+                return true;
+            }
+            return false;
+        });
+    });
+    return found;
 }
 
 function collectItemMasterCodesFromGridRows(rows) {
@@ -375,6 +376,158 @@ function getDynamicItemMasterCodesForSizeFilter() {
     return val.map(function (v) { return parseInt(v, 10); }).filter(function (n) { return n > 0; });
 }
 
+function collectItemNamesFromGridRows(rows) {
+    if (!Array.isArray(rows) || !rows.length) return [];
+
+    var nameCol = findGridColumnKey(rows, 'itemname');
+    if (!nameCol) return [];
+
+    var seen = {};
+    var names = [];
+    rows.forEach(function (row) {
+        if (!row) return;
+        var name = String(row[nameCol] == null ? '' : row[nameCol]).replace(/\s+/g, ' ').trim();
+        var key = name.toLowerCase();
+        if (!name || seen[key]) return;
+        seen[key] = true;
+        names.push(name);
+    });
+    return names;
+}
+
+function collectItemNamesFromRenderedGrid() {
+    var $table = $('#OrderLoadReport');
+    if (!$table.length) return [];
+    var idx = -1;
+    $table.find('thead th').each(function (i) {
+        var label = $(this).text().replace(/[\s_]/g, '').toLowerCase();
+        if (label.indexOf('itemname') >= 0) idx = i;
+    });
+    if (idx < 0) return [];
+
+    var seen = {};
+    var names = [];
+    $table.find('tbody tr').not('.total-row, .grand-total-row').each(function () {
+        var name = ($(this).children('td').eq(idx).text() || '').replace(/\s+/g, ' ').trim();
+        var key = name.toLowerCase();
+        if (!name || seen[key]) return;
+        seen[key] = true;
+        names.push(name);
+    });
+    return names;
+}
+
+function getItemNameFilterSelect() {
+    var row = (G_OL_DynamicFilters || []).find(function (r) {
+        if (String(r.controlType || '').toUpperCase() !== 'COMBO') return false;
+        var name = String(r.displayName || '').trim().toLowerCase();
+        return name === 'item name' || name === 'itemname';
+    });
+    if (row) {
+        var $dyn = $('#ddlDynFilter_' + row.code);
+        if ($dyn.length) return $dyn;
+    }
+    var $static = $('#ddlItemName');
+    return $static.length ? $static : $();
+}
+
+function getSelectedItemNamesForSizeFilter() {
+    var $sel = getItemNameFilterSelect();
+    if (!$sel.length) return [];
+    var val = $sel.val();
+    if (!val) return [];
+    if (!Array.isArray(val)) val = [val];
+    if (val.indexOf('0') >= 0) return [];
+    return val.map(function (v) {
+        var text = ($sel.find('option').filter(function () {
+            return String($(this).val()) === String(v);
+        }).first().text() || '').trim();
+        return text || String(v).trim();
+    }).filter(function (name) {
+        return !!name && name.toLowerCase() !== 'all' && name !== '0';
+    });
+}
+
+function matchItemNamesToSelectCodes(names) {
+    var wanted = {};
+    (names || []).forEach(function (name) {
+        var key = String(name || '').trim().toLowerCase();
+        if (key) wanted[key] = true;
+    });
+    if (!Object.keys(wanted).length) return '';
+
+    var $sel = getItemNameFilterSelect();
+    if (!$sel.length) return '';
+
+    var codes = [];
+    var seen = {};
+    $sel.find('option').each(function () {
+        var code = parseInt($(this).val(), 10);
+        var text = String($(this).text() || '').trim().toLowerCase();
+        if (code > 0 && wanted[text] && !seen[code]) {
+            seen[code] = true;
+            codes.push(code);
+        }
+    });
+    return codes.join(',');
+}
+
+function unwrapItemMasterRows(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (payload && Array.isArray(payload.data)) return payload.data;
+    if (payload && Array.isArray(payload.Data)) return payload.Data;
+    return unwrapApiList(payload);
+}
+
+function resolveItemNamesToMasterCodes(names) {
+    var fromSelect = matchItemNamesToSelectCodes(names);
+    if (fromSelect) return Promise.resolve(fromSelect);
+    if (!names || !names.length) return Promise.resolve('');
+
+    var wanted = {};
+    names.forEach(function (name) {
+        var key = String(name || '').trim().toLowerCase();
+        if (key) wanted[key] = true;
+    });
+
+    return ItemMasterService.GetItemMasterListData().then(function (payload) {
+        var codes = [];
+        var seen = {};
+        var wantedKey = {};
+        Object.keys(wanted).forEach(function (name) {
+            wantedKey[name.replace(/[^a-z0-9]/g, '')] = true;
+        });
+        unwrapItemMasterRows(payload).forEach(function (item) {
+            if (!item) return;
+            var name = '';
+            ['ItemName', 'itemName', 'Item Name', 'Desp', 'desp', 'ItemDesp', 'itemDesp'].some(function (key) {
+                if (item[key] != null && String(item[key]).trim()) {
+                    name = String(item[key]).replace(/\s+/g, ' ').trim();
+                    return true;
+                }
+                return false;
+            });
+            if (!name) {
+                Object.keys(item).some(function (key) {
+                    var nk = key.replace(/[\s_]/g, '').toLowerCase();
+                    if (nk !== 'itemname' && nk !== 'itemdesp' && nk !== 'desp') return false;
+                    if (item[key] == null || !String(item[key]).trim()) return false;
+                    name = String(item[key]).replace(/\s+/g, ' ').trim();
+                    return true;
+                });
+            }
+            var code = parseInt(item.Code != null ? item.Code : (item.code != null ? item.code : item.ItemMaster_Code), 10);
+            var nameKey = name.toLowerCase();
+            var compact = nameKey.replace(/[^a-z0-9]/g, '');
+            if (code > 0 && (wanted[nameKey] || wantedKey[compact]) && !seen[code]) {
+                seen[code] = true;
+                codes.push(code);
+            }
+        });
+        return codes.join(',');
+    });
+}
+
 function resolveOrderLoadItemMasterCodesForSizeFilter(tpl, options) {
     tpl = tpl || getSelectedTemplate();
     options = options || {};
@@ -394,7 +547,13 @@ function resolveOrderLoadItemMasterCodesForSizeFilter(tpl, options) {
     }
 
     var rows = getOrderLoadExportRows();
-    return Promise.resolve(collectItemMasterCodesFromGridRows(rows) || '');
+    var gridCodes = collectItemMasterCodesFromGridRows(rows);
+    if (gridCodes) return Promise.resolve(gridCodes);
+
+    var names = getSelectedItemNamesForSizeFilter();
+    if (!names.length) names = collectItemNamesFromGridRows(rows);
+    if (!names.length) names = collectItemNamesFromRenderedGrid();
+    return resolveItemNamesToMasterCodes(names);
 }
 
 function showOrderLoadSizeControlModal() {
@@ -448,9 +607,7 @@ window.onOrderLoadSizeFilterApplied = function (response) {
     updateSizeFilterBadge();
     updateFilterButtonState();
     updateEmptyStateMessage();
-    if ($('#ddlTemplate').val()) {
-        loadReportData();
-    }
+    toastr.info('Size Parameter Filter applied. Click Load Report to refresh.');
 };
 
 function syncTemplateGridMeta(tpl) {
@@ -684,6 +841,7 @@ function loadTemplateDefaultDatesFromApi(tpl) {
 }
 
 function showGridPanel(visible) {
+    hideOrderLoadErrorCombo();
     if (visible) {
         $('#tblOrderLoadReport').css('display', 'flex');
         $('#olEmptyState').hide();
@@ -696,6 +854,90 @@ function showGridPanel(visible) {
     }
     updateEmptyStateMessage();
     updateSizeParameterGridButton();
+}
+
+var OL_SQL_ERROR_KEYS = {
+    success: true,
+    errornumber: true,
+    errorseverity: true,
+    errorstate: true,
+    errorprocedure: true,
+    errorline: true,
+    errormessage: true
+};
+
+function isSqlErrorResultRow(row) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) return false;
+    var keys = Object.keys(row);
+    if (!keys.length) return false;
+
+    var lower = keys.map(function (key) { return String(key).toLowerCase(); });
+    if (lower.indexOf('errormessage') < 0) return false;
+    if (lower.indexOf('errornumber') < 0 && lower.indexOf('errorline') < 0) return false;
+
+    return lower.every(function (key) { return !!OL_SQL_ERROR_KEYS[key]; });
+}
+
+function isSqlErrorResultSet(rows) {
+    return !!(rows && rows.length && rows.every(isSqlErrorResultRow));
+}
+
+function sqlErrorMessageText(row) {
+    var msg = String(prop(row, ['ErrorMessage', 'errorMessage']) || '').trim();
+    if (!msg || msg.toLowerCase() === 'null') return '';
+    return msg;
+}
+
+function hideOrderLoadErrorCombo() {
+    $('#olErrorComboPanel').hide().empty();
+}
+
+function orderLoadErrorDisplayText(row) {
+    if (typeof row === 'string') {
+        var direct = String(row).trim();
+        return direct.toLowerCase() === 'null' ? '' : direct;
+    }
+
+    var text = sqlErrorMessageText(row);
+    if (text) return text;
+
+    var num = String(prop(row, ['ErrorNumber', 'errorNumber']) || '').trim();
+    var state = String(prop(row, ['ErrorState', 'errorState']) || '').trim();
+    var proc = String(prop(row, ['ErrorProcedure', 'errorProcedure']) || '').trim();
+    var line = String(prop(row, ['ErrorLine', 'errorLine']) || '').trim();
+    var bits = [];
+    if (num && num.toLowerCase() !== 'null') bits.push('Error ' + num);
+    if (state && state.toLowerCase() !== 'null') bits.push('State ' + state);
+    if (proc && proc.toLowerCase() !== 'null') bits.push(proc);
+    if (line && line.toLowerCase() !== 'null') bits.push('Line ' + line);
+    return bits.join(', ');
+}
+
+function showOrderLoadErrorCombo(rows) {
+    var messages = [];
+    (rows || []).forEach(function (row) {
+        var text = orderLoadErrorDisplayText(row);
+        if (text && messages.indexOf(text) < 0) messages.push(text);
+    });
+    if (!messages.length) messages.push('Report request failed.');
+
+    showGridPanel(false);
+
+    var $copy = $('<div class="ol-error-alert-copy"></div>');
+    $copy.append($('<h4></h4>').text('Report could not be loaded'));
+    messages.forEach(function (msg) {
+        $copy.append($('<p class="ol-error-alert-msg"></p>').text(msg));
+    });
+
+    var $alert = $('<div class="ol-error-alert" role="alert"></div>');
+    $alert.append('<div class="ol-error-alert-icon" aria-hidden="true"><i class="fas fa-circle-exclamation"></i></div>');
+    $alert.append($copy);
+
+    $('#olEmptyState').hide();
+    $('#olErrorComboPanel')
+        .empty()
+        .append($alert)
+        .css('display', 'flex');
 }
 
 function clearGridExportState() {
@@ -1203,9 +1445,6 @@ function updateTemplateSelectStyle() {
 
 function getTemplateMasterConfig(templateCode) {
     var tpl = Object.assign(getDefaultLevelTemplate(), findTemplate(templateCode) || {}, { code: templateCode });
-
-    if (!normalizeFieldName(tpl.fieldForClient)) tpl.fieldForClient = 'PartyName';
-
     return tpl;
 }
 
@@ -1267,7 +1506,7 @@ function applyApiLevelRow(tpl, row) {
     var fields = extractApiRowFields(row);
 
     if (fields.hasFieldForClient) {
-        tpl.fieldForClient = fields.fieldForClient || 'PartyName';
+        tpl.fieldForClient = fields.fieldForClient || '';
     }
     if (fields.hasFieldForDate) {
         tpl.fieldForDate = fields.fieldForDate;
@@ -1461,12 +1700,6 @@ function bindTemplateLevel(code) {
 
 function ensureStaticLevelDefaults(tpl) {
     if (!tpl) tpl = getDefaultLevelTemplate();
-    if (!normalizeFieldName(tpl.fieldForClient)) tpl.fieldForClient = 'PartyName';
-    if (!tpl.code) {
-        if (!normalizeFieldName(tpl.fieldForDate)) tpl.fieldForDate = 'OrderDate';
-    } else if (!tpl._fieldForDateFromApi && !normalizeFieldName(tpl.fieldForDate)) {
-        tpl.fieldForDate = '';
-    }
     return tpl;
 }
 
@@ -1554,6 +1787,10 @@ function syncLevelDateRangeUi() {
 function ensureLevelDateRangeDefaults() {
     syncLevelDateRangeUi();
     if (!isLevelDateRangeAvailable()) return;
+    if (hasActiveTemplateFilterConfiguration()) {
+        syncModalDatesFromHeader();
+        return;
+    }
 
     if (!dynamicConfigHasDateFilter('from') && !$('#txtFromDate').val()) {
         $('#txtFromDate').val(getDefaultFromDate());
@@ -1643,8 +1880,8 @@ function getDefaultLevelTemplate() {
         otherFilter1: '',
         otherFilter2: '',
         otherFilter3: '',
-        fieldForClient: 'PartyName',
-        fieldForDate: 'OrderDate'
+        fieldForClient: '',
+        fieldForDate: ''
     };
 }
 
@@ -2465,7 +2702,8 @@ function getTemplateDateField(tpl) {
         }
     }
 
-    var name = normalizeFieldName(tpl && tpl.fieldForDate) || 'OrderDate';
+    var name = normalizeFieldName(tpl && tpl.fieldForDate);
+    if (!name) return '';
     if (/^order\s*date$/i.test(name)) return 'OrderDate';
     return name;
 }
@@ -2706,6 +2944,8 @@ function applyDynamicDateDefaults(tpl) {
             $('#txtFromDate').val(fromIso);
         }
         $('#olFieldFromDate').removeAttr('title');
+    } else if (hasActiveTemplateFilterConfiguration()) {
+        $('#txtFromDate').val('');
     }
 
     if (toRow) {
@@ -2715,6 +2955,8 @@ function applyDynamicDateDefaults(tpl) {
             $('#txtToDate').val(toIso);
         }
         $('#olFieldToDate').removeAttr('title');
+    } else if (hasActiveTemplateFilterConfiguration()) {
+        $('#txtToDate').val('');
     }
 
     applyConfigTextHeaderDateLabels();
@@ -3151,8 +3393,6 @@ function routeConditionsForReportSource(conditions, tpl) {
 function buildConditionsFromFilterConfiguration(tpl, usesDateParams, fromIso, toIso) {
     var filterParts = [];
     var queryParts = [];
-    var usedDateTemplate = false;
-    var dateField = getTemplateDateField(tpl);
 
     (G_OL_DynamicFilters || []).forEach(function (row) {
         if (isDynamicDateRow(row)) {
@@ -3163,7 +3403,6 @@ function buildConditionsFromFilterConfiguration(tpl, usesDateParams, fromIso, to
                 if (!dateRawTpl) return;
                 var dateFragTpl = fragmentFromFilterTemplate(row, dateRawTpl, tpl);
                 if (!dateFragTpl) return;
-                usedDateTemplate = true;
                 if (isViewBasedTemplate(tpl) || row.procedureParameter === 'QUERYCONDITION') {
                     queryParts.push(dateFragTpl);
                 } else {
@@ -3184,16 +3423,6 @@ function buildConditionsFromFilterConfiguration(tpl, usesDateParams, fromIso, to
             filterParts.push(frag);
         }
     });
-
-    if (!usedDateTemplate && !usesDateParams) {
-        applySelectedConfigDateFieldCombo();
-        if (isViewBasedTemplate(tpl)) {
-            appendStaticDateFilterParts(queryParts, tpl, fromIso, toIso);
-        } else {
-            appendStaticDateFilterParts(filterParts, tpl, fromIso, toIso);
-        }
-        usedDateTemplate = true;
-    }
 
     return routeConditionsForReportSource({
         filterCondition: filterParts.join(''),
@@ -3308,27 +3537,18 @@ function populateDynamicComboSelect($sel, res, row, nameColumn) {
         'AccountDesp', 'accountDesp', 'PartyName', 'partyName', 'CustomerName', 'customerName', 'PersonName', 'personName',
         'ItemName', 'itemName', 'Category', 'category', 'Nature', 'nature', 'ClientNature', 'clientNature'];
     var useMulti = row.multi === 'Y';
+    var list = unwrapComboDataList(res);
     if (useMulti) {
-        bindDropdown($sel, dedupeDynamicComboList(unwrapComboDataList(res), textKeys, row), textKeys, 'Select ' + row.displayName + '...');
+        bindDropdown($sel, list, textKeys, 'Select ' + row.displayName + '...');
         return;
     }
-    var list = unwrapComboDataList(res);
     $sel.empty().append($('<option/>', { value: '0', text: 'All' }));
     list.forEach(function (item) {
-        var code = prop(item, ['Code', 'code', 'FieldName', 'fieldName', 'FieldForDate', 'fieldForDate',
-            'PartyName', 'partyName', 'CustomerName', 'customerName', 'ItemName', 'itemName']);
+        var code = prop(item, ['Code', 'code']);
         var text = prop(item, textKeys) || String(code || '');
         if (isAllComboOption(code, text)) return;
-        if (row.withCode !== 'Y' && !code && text) code = text;
+        if (code == null || code === '') code = text;
         if (!code && !text) return;
-        if (!code) code = text;
-        if (row.withCode !== 'Y' && (nameColumn === 'Category' || nameColumn === 'ItemName')) {
-            code = text;
-        }
-        var key = normalizeFieldName(text) || String(code).toLowerCase();
-        if ($sel.find('option').filter(function () {
-            return normalizeFieldName($(this).text()) === key || String($(this).val()).toLowerCase() === String(code).toLowerCase();
-        }).length) return;
         $sel.append($('<option/>', { value: code, text: text }));
     });
 }
@@ -3356,11 +3576,6 @@ function loadConfigDateFieldComboOptions(row) {
     var $field = $('#olDynField_' + row.code);
     var $sel = $('#ddlDynFilter_' + row.code);
     if (!$sel.length) return;
-
-    if (configHasTextHeaderDates() && G_OL_LevelRows && G_OL_LevelRows.length) {
-        fillFromLevelRows();
-        return;
-    }
 
     function fillAndFinish(res) {
         populateDateFieldComboSelect($sel, res, 'Desp');
@@ -3585,38 +3800,51 @@ function renderDynamicComboFilters() {
         if (useHeaderDateMirror) {
             var fromRow = findTextHeaderDateRow('from');
             var toRow = findTextHeaderDateRow('to');
-            var fromLbl = escapeHtml(headerDateLabelFromConfigRow(fromRow, 'From'));
-            var toLbl = escapeHtml(headerDateLabelFromConfigRow(toRow, 'To'));
-            var mirrorFromId = 'olMirrorFrom_' + row.code;
-            var mirrorToId = 'olMirrorTo_' + row.code;
-            modalDatesHtml = '<div class="ol-config-header-date-mirror">' +
-                '<div class="ol-dyn-date-mirror-pair">' +
-                '<div class="ol-dyn-date-mirror-item">' +
-                '<label class="form-label ol-dyn-date-mirror-label" for="' + mirrorFromId + '"><span class="ol-mirror-from-label">' + fromLbl + '</span></label>' +
-                '<input type="date" id="' + mirrorFromId + '" class="form-control form-control-sm box_border ol-mirror-from" aria-label="' + fromLbl + '" />' +
-                '</div>' +
-                '<div class="ol-dyn-date-mirror-item">' +
-                '<label class="form-label ol-dyn-date-mirror-label" for="' + mirrorToId + '"><span class="ol-mirror-to-label">' + toLbl + '</span></label>' +
-                '<input type="date" id="' + mirrorToId + '" class="form-control form-control-sm box_border ol-mirror-to" aria-label="' + toLbl + '" />' +
-                '</div></div></div>';
+            var mirrorItems = '';
+            if (fromRow) {
+                var fromLbl = escapeHtml(headerDateLabelFromConfigRow(fromRow, 'From'));
+                var mirrorFromId = 'olMirrorFrom_' + row.code;
+                mirrorItems += '<div class="ol-dyn-date-mirror-item">' +
+                    '<label class="form-label ol-dyn-date-mirror-label" for="' + mirrorFromId + '"><span class="ol-mirror-from-label">' + fromLbl + '</span></label>' +
+                    '<input type="date" id="' + mirrorFromId + '" class="form-control form-control-sm box_border ol-mirror-from" aria-label="' + fromLbl + '" />' +
+                    '</div>';
+            }
+            if (toRow) {
+                var toLbl = escapeHtml(headerDateLabelFromConfigRow(toRow, 'To'));
+                var mirrorToId = 'olMirrorTo_' + row.code;
+                mirrorItems += '<div class="ol-dyn-date-mirror-item">' +
+                    '<label class="form-label ol-dyn-date-mirror-label" for="' + mirrorToId + '"><span class="ol-mirror-to-label">' + toLbl + '</span></label>' +
+                    '<input type="date" id="' + mirrorToId + '" class="form-control form-control-sm box_border ol-mirror-to" aria-label="' + toLbl + '" />' +
+                    '</div>';
+            }
+            modalDatesHtml = mirrorItems
+                ? '<div class="ol-config-header-date-mirror"><div class="ol-dyn-date-mirror-pair">' + mirrorItems + '</div></div>'
+                : '';
         } else if (isDateField && !configHasTextHeaderDates()) {
             modalDatesHtml = '<div class="ol-level-dates ol-config-date-range-host"></div>';
         }
         var bodyHtml;
+        var fieldClass = 'ol-filter-field ol-filter-multiselect' + (isDateField ? ' ol-dyn-date-field' : '');
+        var fieldInner;
         if (isDateField && useHeaderDateMirror) {
-            bodyHtml = '<select id="' + selectId + '" class="form-control form-control-sm box_border ol-dyn-date-field-select">' +
-                (isDateField ? '' : '<option value="0">All</option>') + '</select>' +
-                modalDatesHtml;
+            fieldInner = '<div class="ol-dyn-date-inline">' +
+                '<div class="ol-dyn-date-inline-combo">' +
+                '<label for="' + selectId + '" class="form-label"><span>' + escapeHtml(row.displayName || 'Date Field') + '</span></label>' +
+                '<select id="' + selectId + '" class="form-control form-control-sm box_border ol-dyn-date-field-select"></select>' +
+                '</div>' +
+                modalDatesHtml +
+                '</div>';
         } else {
             bodyHtml = '<div class="ol-level-row">' +
                 '<select id="' + selectId + '" class="form-control form-control-sm box_border' + (multiple ? ' ol-multi-select' : '') + '"' + multiple + '>' +
                 (isDateField ? '' : '<option value="0">All</option>') + '</select>' +
                 modalDatesHtml +
                 '</div>';
+            fieldInner = '<label for="' + selectId + '" class="form-label"><span>' + escapeHtml(row.displayName || 'Filter') + '</span></label>' +
+                bodyHtml;
         }
-        var html = '<div class="ol-filter-field ol-filter-multiselect' + (isDateField ? ' ol-dyn-date-field' : '') + '" id="olDynField_' + row.code + '">' +
-            '<label for="' + selectId + '" class="form-label"><span>' + escapeHtml(row.displayName || 'Filter') + '</span></label>' +
-            bodyHtml +
+        var html = '<div class="' + fieldClass + '" id="olDynField_' + row.code + '">' +
+            fieldInner +
             '</div>';
         $('#olDynamicFilterHost').append(html);
     });
@@ -3823,8 +4051,9 @@ function buildReportConditions(tpl) {
     if (G_OL_HasDynamicComboFilters || dynamicDateRowsHaveQuery() || hasActiveTemplateFilterConfiguration()) {
         return buildConditionsFromFilterConfiguration(tpl, usesDateParams, fromIso, toIso);
     }
-    // Master + OtherFilter travel together (same routing rules)
-    var masterParts = buildMasterFilterParts(tpl).concat(buildOtherFilterParts(tpl));
+    // OtherFilter field names come from the template row. Do not add static column SQL
+    // (ItemMaster_Code, GodownMaster_Code, OrderDate, ...) — the procedure binds only returned columns.
+    var masterParts = buildOtherFilterParts(tpl);
     var dateField = getTemplateDateField(tpl);
 
     // Default: if procedure params unknown, prefer QueryCondition (stock-safe)
@@ -3835,14 +4064,6 @@ function buildReportConditions(tpl) {
     // Stock / bal / invoice-rate: never put ItemMaster.* style filters in FilterCondition
     if (isStockSafe) {
         usesQuery = true;
-    }
-
-    if (!usesDateParams) {
-        if (viewBased) {
-            appendStaticDateFilterParts(queryParts, tpl, fromIso, toIso);
-        } else {
-            appendStaticDateFilterParts(filterParts, tpl, fromIso, toIso);
-        }
     }
 
     if (usesQuery) {
@@ -4156,42 +4377,10 @@ function extractOrderLoadReportErrorMessage(payload, err) {
 
 function formatOrderLoadReportErrorMessage(rawMsg, tpl) {
     var msg = String(rawMsg || '').trim();
-    if (!msg) {
+    if (!msg || msg.toLowerCase() === 'null') {
         return 'Report request failed.';
     }
-
-    if (/report\s*source\s*not\s*configured|view\s*not\s*found/i.test(msg)) {
-        return 'Report is not configured for the selected template.';
-    }
-
-    if (/^(error|parsererror|not found|internal server error):?\s*/i.test(msg)) {
-        return 'Report request failed.';
-    }
-
     return msg;
-}
-
-function canAutoRefreshReportOnDateChange() {
-    if (G_OL_LoadingReport) return false;
-    if (!$('#ddlTemplate').val()) return false;
-
-    var tpl = getSelectedTemplate();
-    if (!tpl.code || !tpl.desp) return false;
-
-    var fromIso = $('#txtFromDate').val();
-    var toIso = $('#txtToDate').val();
-
-    if (isAsOnDateMode(tpl) && normalizeFieldName(tpl.fieldForDate) && !toIso) return false;
-    if (isFromDateRequired(tpl) && !fromIso) return false;
-    if (isToDateRequired(tpl) && !toIso) return false;
-    if (isFromDateRequired(tpl) && isToDateRequired(tpl) && fromIso && toIso && fromIso > toIso) return false;
-
-    return true;
-}
-
-function refreshReportOnDateChange() {
-    if (!canAutoRefreshReportOnDateChange()) return;
-    loadReportData();
 }
 
 function assertValidOrderLoadReportResponse(response, tpl) {
@@ -4236,6 +4425,9 @@ function validateOrderLoadReportTemplate(tpl) {
 
 function resolveReportToIsoForRequest(tpl, fromIso, toIso) {
     var to = String(toIso || '').trim();
+    if (hasActiveTemplateFilterConfiguration() && !dynamicConfigHasDateFilter('to')) {
+        return '';
+    }
     if (isAsOnDateMode(tpl)) return to;
     if (to) return to;
     if (!String(fromIso || '').trim()) return '';
@@ -4288,12 +4480,6 @@ function buildOrderLoadReportRequestParams(tpl) {
 
     var fromParam = resolveProcDateParamForRequest(tpl, fromIso, 'from');
     var toParam = resolveProcDateParamForRequest(tpl, toIso, 'to');
-    // Only one date visible on the frontend (From) => ToDate goes as the current date
-    if (!toParam && fromParam
-        && !$('#olFieldFromDate').hasClass('ol-hidden')
-        && $('#olFieldToDate').hasClass('ol-hidden')) {
-        toParam = isoToProcDateParam(getDefaultToDate());
-    }
 
     return {
         reportType: String(tpl.desp || '').trim(),
@@ -4411,10 +4597,10 @@ function loadReportData() {
             bindOrderLoadGrid(results[0]);
         })
         .catch(function (err) {
-            showGridPanel(false);
-            updateEmptyStateMessage();
             var rawMsg = extractOrderLoadReportErrorMessage(null, err) || (err && err.message) || 'Request failed';
-            toastr.error(formatOrderLoadReportErrorMessage(rawMsg, tpl));
+            var msg = formatOrderLoadReportErrorMessage(rawMsg, tpl);
+            showOrderLoadErrorCombo([msg]);
+            toastr.error(msg);
         })
         .finally(function () {
             setShowButtonLoading(false);
@@ -4505,6 +4691,11 @@ function getTemplateDecimalPoint(colName, templateDecimalMap) {
 
 function bindOrderLoadGrid(response) {
     var rows = formatGridRows(unwrapApiList(response));
+
+    if (isSqlErrorResultSet(rows)) {
+        showOrderLoadErrorCombo(rows);
+        return;
+    }
 
     if (!rows || !rows.length) {
         if (isSizeParameterFilterApplied()) {
@@ -4598,8 +4789,13 @@ function getOrderLoadExportColumns(rows) {
     return cols.length ? cols : Object.keys(rows[0]);
 }
 
+function isBlankNullValue(value) {
+    if (value === null || value === undefined) return true;
+    return String(value).trim().toLowerCase() === 'null';
+}
+
 function normalizeExportCellValue(value) {
-    if (value === null || value === undefined) return '';
+    if (isBlankNullValue(value)) return '';
     var text = String(value);
     if (text.indexOf('<') >= 0) {
         var $tmp = $('<div/>').html(text);
@@ -5694,6 +5890,10 @@ function buildGridConfig(rows) {
     var totalColumns = [];
 
     cols.forEach(function (col) {
+        if (normalizeGridColumnKey(col) === 'itemmastercode') {
+            hiddenColumns.push(col);
+            return;
+        }
         var sample = rows.slice(0, Math.min(rows.length, 25)).map(function (r) { return r[col]; });
 
         if (isDateColumn(col, sample)) {
@@ -5781,7 +5981,7 @@ function formatGridRows(rows) {
 }
 
 function formatCellValue(colName, val) {
-    if (val === null || val === undefined || val === '') return val;
+    if (isBlankNullValue(val) || val === '') return '';
     var str = String(val).trim();
 
     if (/^\d{4}-\d{2}-\d{2}T/.test(str)) {
@@ -5838,6 +6038,7 @@ function installOrderLoadGridRenderHook() {
     window.renderTable = function (items, bodyId, skipTotalRow) {
         origRenderTable.apply(this, arguments);
         if ($('#' + bodyId).closest('table').attr('id') === 'OrderLoadReport') {
+            blankOrderLoadNullCells();
             formatOrderLoadDateCells();
             applyGridCellEnhancements();
         }
@@ -5846,10 +6047,20 @@ function installOrderLoadGridRenderHook() {
     window.renderTableWithPagination = function (tableId, bodyId) {
         origRenderTableWithPagination.apply(this, arguments);
         if (tableId === 'OrderLoadReport') {
+            blankOrderLoadNullCells();
             formatOrderLoadDateCells();
             applyGridCellEnhancements();
         }
     };
+}
+
+function blankOrderLoadNullCells() {
+    $('#OrderLoadReport td').each(function () {
+        var text = ($(this).text() || '').replace(/\u00a0/g, ' ').trim();
+        if (text.toLowerCase() === 'null') {
+            $(this).text('');
+        }
+    });
 }
 
 function unwrapApiList(payload) {
