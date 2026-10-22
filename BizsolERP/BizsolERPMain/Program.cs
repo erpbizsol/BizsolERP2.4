@@ -47,8 +47,37 @@ namespace BizsolERPMain
 
             app.UseHttpsRedirection();
 
-            // Serve static files from wwwroot and all RCL _content paths
-            app.UseStaticFiles();
+            // Drop conditional headers so a publish cannot come back as 304 with the old script.
+            app.Use(async (context, next) =>
+            {
+                var path = context.Request.Path.Value ?? "";
+                if (path.EndsWith(".js", StringComparison.OrdinalIgnoreCase)
+                    || path.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Request.Headers.Remove("If-None-Match");
+                    context.Request.Headers.Remove("If-Modified-Since");
+                }
+
+                await next();
+            });
+
+            // Serve static files from wwwroot and all RCL _content paths.
+            // no-store forces the browser and WebView to take the published file.
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                OnPrepareResponse = ctx =>
+                {
+                    var path = ctx.Context.Request.Path.Value ?? "";
+                    if (path.EndsWith(".js", StringComparison.OrdinalIgnoreCase)
+                        || path.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var headers = ctx.Context.Response.Headers;
+                        headers.CacheControl = "no-store, no-cache, must-revalidate";
+                        headers.Pragma = "no-cache";
+                        headers.Expires = "0";
+                    }
+                }
+            });
 
             app.UseSession();
             app.UseRouting();
