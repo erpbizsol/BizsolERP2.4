@@ -44,8 +44,38 @@ function bindMenu() {
         });
 }
 
+function isBizSolMenuUserFromSession() {
+    try {
+        var details = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        var row = Array.isArray(details) ? details[0] : details;
+        var v = String((row && (row.IsBizSolUser || row.isBizSolUser)) || '').trim().toUpperCase();
+        return v === 'Y' || v === 'YES';
+    } catch (e) {
+        return false;
+    }
+}
+
+function isAdminToolsMenuItem(item) {
+    if (!item) return false;
+    var form = String(item.FormToOpen || item.DotNetFormToOpen || '').toLowerCase();
+    var desp = String(item.ModuleDesp || item.ModuleDescription || item.MenuName || '').toLowerCase().replace(/\s+/g, ' ');
+    return form.indexOf('admintools') !== -1
+        || desp.indexOf('administrative tool') !== -1
+        || desp.indexOf('admin tool') !== -1;
+}
+
+function hideAdminToolsForNonBizsol(items) {
+    if (isBizSolMenuUserFromSession() || !items) return items;
+    var list = [];
+    $.each(items, function (_, item) {
+        if (item && !isAdminToolsMenuItem(item)) list.push(item);
+    });
+    return list;
+}
+
 function loadMenuAfterUserDetails(baseUrl) {
             MenuService.GetMenuList(_menuUserID).then(function (value) {
+                value = hideAdminToolsForNonBizsol(value);
                 _menuAllItems = value;
 
                 // Load favourites first, then render menu
