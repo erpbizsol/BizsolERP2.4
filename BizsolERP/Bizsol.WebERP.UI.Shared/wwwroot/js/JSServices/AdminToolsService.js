@@ -30,9 +30,10 @@ const AdminToolsService = {
     HideMenu: function HideMenu(menuCode, companyCode) {
         var code = companyCode != null && companyCode !== '' ? companyCode
             : (JSON.parse(sessionStorage.getItem('authKey') || '{}').CompanyCode || '');
-        var url = UrlService.API_ENDPOINT_AdminTools + '/HideMenu';
-        var body = JSON.stringify({ Code: menuCode, CompanyCode: code });
-        return promiseAjaxCallApi.CallAPI('POST', url, body);
+        var url = UrlService.API_ENDPOINT_AdminTools + '/HideMenu'
+            + '?Code=' + encodeURIComponent(menuCode)
+            + '&CompanyCode=' + encodeURIComponent(code);
+        return promiseAjaxCallApi.CallAPI('POST', url, '');
     },
 
     /**
@@ -44,9 +45,10 @@ const AdminToolsService = {
     UnhideMenu: function UnhideMenu(menuCode, companyCode) {
         var code = companyCode != null && companyCode !== '' ? companyCode
             : (JSON.parse(sessionStorage.getItem('authKey') || '{}').CompanyCode || '');
-        var url = UrlService.API_ENDPOINT_AdminTools + '/UnhideMenu';
-        var body = JSON.stringify({ Code: menuCode, CompanyCode: code });
-        return promiseAjaxCallApi.CallAPI('POST', url, body);
+        var url = UrlService.API_ENDPOINT_AdminTools + '/UnhideMenu'
+            + '?Code=' + encodeURIComponent(menuCode)
+            + '&CompanyCode=' + encodeURIComponent(code);
+        return promiseAjaxCallApi.CallAPI('POST', url, '');
     },
 
     /**

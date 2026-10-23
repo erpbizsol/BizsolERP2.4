@@ -49,6 +49,7 @@
         position: relative;
     }
 
+
     #AdminToolsPage .at-card-toolbar {
         display: flex;
         align-items: center;
@@ -75,8 +76,8 @@
     }
 
     #AdminToolsPage .at-field-label {
-        font-size: 12px;
-        font-weight: 700;
+        font-size: 0.74rem;
+        font-weight: 600;
         color: var(--text-muted);
         white-space: nowrap;
         margin: 0;
@@ -92,13 +93,13 @@
         position: relative;
         width: 240px;
         max-width: 240px;
-        height: 38px;
+        height: 28px;
         flex: 0 0 240px;
     }
 
     #AdminToolsPage .search-input-wrap .search-icon {
         position: absolute;
-        left: 12px;
+        left: 10px;
         top: 0;
         bottom: 0;
         width: 16px;
@@ -106,22 +107,23 @@
         align-items: center;
         justify-content: center;
         color: var(--text-muted);
-        font-size: 0.8rem;
+        font-size: 0.68rem;
         pointer-events: none;
         z-index: 2;
     }
 
     #AdminToolsPage .at-card-toolbar .form-control,
     #AdminToolsPage .at-card-toolbar .form-select {
-        height: 38px !important;
-        min-height: 38px !important;
-        max-height: 38px;
+        height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px;
         padding-top: 0 !important;
         padding-bottom: 0 !important;
-        line-height: 38px;
+        line-height: 26px;
         border: 1px solid var(--border-color);
-        border-radius: 12px;
-        font-size: 13px;
+        border-radius: 7px;
+        font-size: 0.74rem;
+        font-weight: 500;
         color: var(--text-dark);
         background: #fff;
         box-sizing: border-box;
@@ -129,9 +131,9 @@
 
     #AdminToolsPage #txtMenuSearch {
         width: 100%;
-        height: 38px !important;
-        padding-left: 34px !important;
-        padding-right: 12px !important;
+        height: 28px !important;
+        padding-left: 28px !important;
+        padding-right: 10px !important;
     }
 
     #AdminToolsPage #selCompany {
@@ -139,7 +141,8 @@
         max-width: 320px;
     }
 
-    #AdminToolsPage #selVisibilityFilter {
+    #AdminToolsPage #selVisibilityFilter,
+    #AdminToolsPage #selApplicableFilter {
         width: 150px;
         max-width: 150px;
     }
@@ -155,13 +158,13 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 7px;
-        height: 38px;
-        padding: 0 16px;
+        gap: 6px;
+        height: 28px;
+        padding: 0 12px;
         border: none;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 700;
+        border-radius: 7px;
+        font-size: 0.74rem;
+        font-weight: 600;
         cursor: pointer;
         white-space: nowrap;
         transition: transform .15s, box-shadow .15s;
@@ -198,7 +201,7 @@
     #AdminToolsPage .at-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 13.5px;
+        font-size: 0.74rem;
         min-width: 760px;
     }
 
@@ -213,21 +216,21 @@
         color: #fff !important;
         background: transparent !important;
         font-weight: 700;
-        padding: 13px 14px;
+        padding: 8px 10px;
         white-space: nowrap;
         border: none !important;
-        font-size: 12px;
+        font-size: 0.68rem;
         letter-spacing: .04em;
         text-transform: uppercase;
         vertical-align: middle;
     }
 
     #AdminToolsPage .at-table td {
-        padding: 8px 14px;
+        padding: 4px 10px;
         border-bottom: 1px solid var(--border-light) !important;
         color: var(--text-dark);
         vertical-align: middle;
-        font-size: 13px;
+        font-size: 0.74rem;
     }
 
     #AdminToolsPage .at-table tbody tr:hover td {
@@ -261,12 +264,12 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 34px;
-        height: 30px;
-        border-radius: 9px;
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
         border: 1px solid transparent;
         cursor: pointer;
-        font-size: 0.95rem;
+        font-size: 0.68rem;
         padding: 0;
         transition: transform .14s, box-shadow .14s;
     }
@@ -290,8 +293,8 @@
 
     #AdminToolsPage .tree-sno {
         color: var(--text-muted);
-        font-size: 12px;
-        width: 46px;
+        font-size: 0.68rem;
+        width: 40px;
     }
 
     #AdminToolsPage .tree-desc-cell {
@@ -303,12 +306,12 @@
     #AdminToolsPage .tree-appfor-cell { width: 130px; }
 
     #AdminToolsPage .appfor-select {
-        font-size: 12px;
-        padding: 2px 8px;
-        height: 30px;
-        min-height: 30px;
+        font-size: 0.71rem;
+        padding: 0 6px;
+        height: 26px;
+        min-height: 26px;
         cursor: pointer;
-        border-radius: 8px;
+        border-radius: 5px;
         border: 1px solid #c7d2fe;
         color: var(--text-dark);
         background: #eef2ff;
@@ -332,14 +335,14 @@
     #AdminToolsPage .tree-connectors {
         display: inline-flex;
         align-items: stretch;
-        height: 34px;
+        height: 26px;
         vertical-align: middle;
     }
 
     #AdminToolsPage .tree-line {
         display: inline-block;
-        width: 22px;
-        height: 34px;
+        width: 18px;
+        height: 26px;
         position: relative;
         flex-shrink: 0;
     }
@@ -382,38 +385,51 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 18px;
-        height: 18px;
-        font-size: 0.95rem;
+        width: 16px;
+        height: 16px;
+        font-size: 0.62rem;
         font-weight: 700;
         line-height: 1;
         color: #fff;
         background: var(--primary-gradient);
         border: none;
-        border-radius: 5px;
+        border-radius: 4px;
         cursor: pointer;
         vertical-align: middle;
-        margin-right: 6px;
+        margin-right: 5px;
         flex-shrink: 0;
         padding: 0;
         box-shadow: 0 1px 3px rgba(102, 126, 234, 0.35);
     }
 
     #AdminToolsPage .tree-leaf-dot {
-        display: inline-block;
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: #667eea;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 5px;
+        background: rgba(248, 250, 252, 0.95);
+        border: 1px solid rgba(203, 213, 225, 0.75);
+        color: #6366f1;
+        font-size: 0.42rem;
         vertical-align: middle;
-        margin-right: 7px;
+        margin-right: 5px;
         flex-shrink: 0;
     }
 
+    #AdminToolsPage .tree-leaf-dot::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #667eea;
+    }
+
     #AdminToolsPage .tree-label { vertical-align: middle; }
-    #AdminToolsPage .tree-label-l0 { font-weight: 700; color: var(--text-dark); }
-    #AdminToolsPage .tree-label-l1 { font-weight: 600; color: #334155; }
-    #AdminToolsPage .tree-label-l2 { font-weight: 400; color: #475569; }
+    #AdminToolsPage .tree-label-l0 { font-size: 0.74rem; font-weight: 600; color: var(--text-dark); }
+    #AdminToolsPage .tree-label-l1 { font-size: 0.71rem; font-weight: 500; color: #334155; }
+    #AdminToolsPage .tree-label-l2 { font-size: 0.68rem; font-weight: 400; color: #475569; }
 
     #AdminToolsPage .tree-row-root td { background: #eef2ff; }
     #AdminToolsPage .tree-row-l1 td { background: #f8faff; }
@@ -589,7 +605,8 @@
 
         #AdminToolsPage .company-select-wrap,
         #AdminToolsPage .search-input-wrap,
-        #AdminToolsPage #selVisibilityFilter {
+        #AdminToolsPage #selVisibilityFilter,
+        #AdminToolsPage #selApplicableFilter {
             width: 100%;
             max-width: none;
         }
@@ -602,11 +619,12 @@
 
         #AdminToolsPage .search-input-wrap {
             flex: none;
-            height: 38px;
+            height: 28px;
         }
 
         #AdminToolsPage #selCompany,
         #AdminToolsPage #selVisibilityFilter,
+        #AdminToolsPage #selApplicableFilter,
         #AdminToolsPage .search-input-wrap,
         #AdminToolsPage #txtMenuSearch {
             width: 100% !important;
@@ -728,17 +746,16 @@
                         <option value="visible">Visible Only</option>
                         <option value="hidden">Hidden Only</option>
                     </select>
+                    <select id="selApplicableFilter" class="form-select form-select-sm box_border">
+                        <option value="">All Applicable</option>
+                        <option value="Y">Both</option>
+                        <option value="N">ERP</option>
+                        <option value="W">Web ERP</option>
+                    </select>
                 </div>
                 <div class="at-action-group">
                     <button type="button" id="btnRefreshMenuList" class="at-btn at-btn-refresh" title="Refresh list">
                         <i class="fas fa-sync-alt"></i>Refresh
-                    </button>
-                    <button type="button" id="btnCancelMenuChanges" class="at-btn at-btn-cancel">
-                        <i class="fas fa-times"></i>Cancel
-                    </button>
-                    <button type="button" id="btnSaveMenuVisibility" class="at-btn at-btn-save">
-                        <i class="fas fa-save"></i>Save Changes
-                        <span id="btnSaveMenuCount" class="badge bg-warning text-dark ms-1" style="display:none;"></span>
                     </button>
                 </div>
             </div>
