@@ -1,0 +1,600 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/AssetsMaster.js"></script>
+
+<style>
+    #AssetsMasterPage.amm-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        max-width: 100%;
+        padding: 4px 12px 32px;
+        box-sizing: border-box;
+    }
+
+    .amm-po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+    }
+
+    .amm-po-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .amm-hero-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+    .amm-hero-icon {
+        width: 50px; height: 50px; border-radius: 14px;
+        background: rgba(255,255,255,.2); border: 2px solid rgba(255,255,255,.35);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 22px; flex-shrink: 0;
+    }
+
+    .amm-hero-title { font-size: 1.05rem; font-weight: 800; color: #fff; margin: 0; }
+    .amm-hero-sub { font-size: .78rem; color: rgba(255,255,255,.78); margin-top: 4px; }
+
+    .amm-po-create-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,.6); color: #667eea;
+        border-radius: 10px; padding: 8px 16px; font-weight: 800; cursor: pointer;
+        box-shadow: 0 3px 12px rgba(0,0,0,.2); font-size: .85rem;
+    }
+
+    .amm-po-create-btn:hover { background: #f0f4ff; }
+
+    .amm-list-grid-wrap {
+        background: #fff; border: 1px solid #e2e8f0; border-top: none;
+        border-radius: 0 0 14px 14px;
+        box-shadow: 0 2px 12px rgba(102,126,234,.07);
+        margin-bottom: 18px; overflow: hidden;
+    }
+
+    .amm-card-toolbar {
+        display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+        padding: 16px 22px; border-bottom: 1px solid var(--border-light, #eef2ff);
+    }
+
+    .amm-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 320px; }
+    .amm-search-wrap i {
+        position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+        color: var(--text-muted, #64748b); pointer-events: none;
+    }
+
+    #ammSearch {
+        width: 100%; padding: 9px 14px 9px 38px; border-radius: 10px;
+        border: 1.5px solid var(--border-color, #e2e8f0); font-size: 13.5px;
+        background: var(--light-bg, #f8fafc); box-sizing: border-box;
+    }
+
+    .amm-table-wrap { overflow: auto; max-height: min(420px, calc(100vh - 340px)); }
+
+    .amm-table {
+        width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 720px;
+    }
+
+    #AssetsMasterPage #tblAssetList.amm-table thead tr {
+        position: sticky; top: 0; z-index: 3;
+        background: linear-gradient(135deg, #3730a3 0%, #4f46e5 45%, #6366f1 100%) !important;
+        box-shadow: 0 2px 8px rgba(55, 48, 163, 0.35);
+    }
+
+    #AssetsMasterPage #tblAssetList.amm-table thead th {
+        background: transparent !important;
+        color: #ffffff !important;
+        font-weight: 800;
+        padding: 13px 14px;
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: none !important;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.25) !important;
+        white-space: nowrap;
+    }
+
+    .amm-table tbody tr:nth-child(even) { background: #f8fafc; }
+    .amm-table tbody tr:hover { background: rgba(102,126,234,.07); }
+    .amm-table td { padding: 11px 14px; border-bottom: 1px solid #eef2ff; vertical-align: middle; }
+
+    .amm-icon-btn {
+        width: 32px; height: 32px; border-radius: 9px; border: none; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+    }
+
+    .amm-icon-btn.edit { background: rgba(102,126,234,.12); color: #667eea; }
+    .amm-icon-btn.view { background: rgba(14,165,233,.12); color: #0284c7; }
+    .amm-icon-btn.del { background: rgba(239,68,68,.1); color: #ef4444; }
+
+    .amm-list-attach-btn {
+        width: 32px; height: 32px; border-radius: 9px; border: none; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #fff; vertical-align: middle;
+    }
+
+    #AssetsMasterPage #tblAssetList.table-wrapper.filtered .amm-table thead th,
+    #AssetsMasterPage #tblAssetList .amm-table thead th {
+        color: #ffffff !important;
+    }
+
+    #ammDetailPanel.amm-readonly .amm-fg input,
+    #ammDetailPanel.amm-readonly .amm-fg select,
+    #ammDetailPanel.amm-readonly .amm-fg textarea {
+        background-color: #f1f5f9;
+        cursor: default;
+    }
+
+    #ammDetailPanel .amm-ci-po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0; padding: 16px 22px;
+    }
+
+    .amm-ci-po-header-top {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 10px;
+    }
+
+    .amm-ci-entry-title { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .amm-ci-entry-sub { color: rgba(255,255,255,.75); font-size: .78rem; display: block; margin-top: 4px; }
+
+    .amm-ci-po-back-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,.6); color: #667eea;
+        border-radius: 10px; padding: 8px 14px; font-weight: 800; cursor: pointer; font-size: .85rem;
+    }
+
+    #ammDetailPanel .btn-amm-save {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+        border: none;
+        color: #fff !important;
+        border-radius: 9999px;
+        padding: 10px 28px;
+        min-width: 110px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.4;
+        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.45);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+
+    #ammDetailPanel .btn-amm-save i {
+        font-size: 0.95rem;
+    }
+
+    #ammDetailPanel .btn-amm-save:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+        color: #fff !important;
+    }
+
+    #ammDetailPanel .btn-amm-save:active {
+        transform: translateY(0);
+    }
+
+    #ammDetailPanel .btn-amm-master-attach {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #fff !important;
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        box-shadow: 0 3px 10px rgba(14, 165, 233, 0.35);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+
+    #ammDetailPanel .btn-amm-master-attach.amm-attach-has-files {
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        box-shadow: 0 3px 10px rgba(22, 163, 74, 0.35);
+    }
+
+    #ammDetailPanel .btn-amm-master-attach:hover {
+        transform: translateY(-1px);
+        color: #fff !important;
+    }
+
+    .amm-ci-po-step-card {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 14px 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,.05); padding: 18px 22px 22px;
+    }
+
+    #ammDetailPanel .amm-fg {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+
+    #ammDetailPanel .amm-fg label {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--text-primary, #1e293b);
+        margin-bottom: 0;
+    }
+
+    #ammDetailPanel .amm-fg .form-control:not(.amm-currency-input),
+    #ammDetailPanel .amm-fg .form-select,
+    #ammDetailPanel .amm-fg select:not(.form-select) {
+        padding: 10px 13px;
+        border-radius: 10px;
+        border: 1.5px solid #e2e8f0;
+        font-size: 13.5px;
+        min-height: 42px;
+    }
+
+    #ammDetailPanel .amm-fg .form-control:not(.amm-currency-input):focus,
+    #ammDetailPanel .amm-fg .form-select:focus,
+    #ammDetailPanel .amm-fg select:not(.form-select):focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        outline: none;
+    }
+
+    #ammDetailPanel .amm-form-row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .amm-section-title {
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .08em; color: #667eea; margin: 8px 0 14px;
+        display: flex; align-items: center; gap: 8px;
+    }
+
+    .amm-section-title::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+
+    #ammDetailPanel .amm-currency-field {
+        display: flex;
+        align-items: stretch;
+        width: 100%;
+        min-height: 32px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+        box-sizing: border-box;
+    }
+
+    #ammDetailPanel .amm-currency-field:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+
+    #ammDetailPanel .amm-currency-prefix {
+        flex: 0 0 auto;
+        min-width: 48px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 13px;
+        color: #1e293b;
+        background: #f8fafc;
+        border: none;
+        border-right: 1px solid #e2e8f0;
+    }
+
+    #ammDetailPanel .amm-currency-input {
+        flex: 1 1 auto;
+        width: 1%;
+        min-width: 0;
+        min-height: 42px;
+        padding: 10px 13px;
+        font-size: 13.5px;
+        line-height: 1.4;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        outline: none !important;
+        background: transparent;
+    }
+
+    #ammDetailPanel .amm-currency-input:focus {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    .amm-delete-modal .modal-header {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: #fff;
+        border: none;
+    }
+
+    .amm-delete-modal .modal-title { font-weight: 700; color: #fff; }
+
+    .amm-delete-modal .amm-modal-close {
+        background: rgba(255,255,255,.2); border: none; color: #fff;
+        width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+    }
+
+    .amm-del-icon-wrap {
+        width: 56px; height: 56px; margin: 0 auto 14px;
+        border-radius: 50%; background: #fef2f2; color: #ef4444;
+        display: flex; align-items: center; justify-content: center; font-size: 24px;
+    }
+
+    .amm-btn-modal {
+        display: inline-flex; align-items: center; gap: 8px;
+        border-radius: 10px; padding: 9px 18px; font-weight: 700; font-size: 13px; cursor: pointer; border: none;
+    }
+
+    .amm-btn-modal.secondary { background: #f1f5f9; color: #475569; }
+    .amm-btn-modal.danger { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
+
+    #ammDetailPanel .btn-amm-verify {
+        display: inline-flex; align-items: center; gap: 8px;
+        border: 2px solid rgba(255,255,255,.55); border-radius: 10px;
+        padding: 8px 14px; font-size: 0.85rem; font-weight: 700;
+        color: #fff !important; background: rgba(34,197,94,.35); cursor: pointer;
+    }
+
+    #ammDetailPanel .btn-amm-branch {
+        display: inline-flex; align-items: center; gap: 8px;
+        border: 2px solid rgba(255,255,255,.55); border-radius: 10px;
+        padding: 8px 14px; font-size: 0.85rem; font-weight: 700;
+        color: #fff !important; background: rgba(255,255,255,.12); cursor: pointer;
+    }
+
+    .amm-branch-backdrop {
+        position: fixed; inset: 0; z-index: 1070; display: none;
+        align-items: center; justify-content: center; padding: 24px 16px;
+        background: rgba(8,12,36,0.54); backdrop-filter: blur(5px);
+    }
+
+    .amm-branch-backdrop.show { display: flex !important; }
+
+    .amm-branch-modal {
+        width: 520px; max-width: calc(100vw - 24px); background: #fff;
+        border-radius: 16px; overflow: hidden; max-height: calc(100dvh - 48px);
+        display: flex; flex-direction: column;
+        box-shadow: 0 20px 56px rgba(8,12,36,0.24);
+    }
+
+    .amm-branch-modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;
+        font-weight: 700;
+    }
+
+    .amm-branch-list {
+        max-height: 320px; overflow-y: auto; border: 1.5px solid #e2e8f0;
+        border-radius: 10px; background: #f8fafc; margin: 16px 18px;
+    }
+
+    .amm-branch-list-item {
+        display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px;
+        font-size: 13px; border-bottom: 1px solid #eef2ff; cursor: pointer;
+    }
+
+    .amm-branch-list-item--locked { background: #f1f5f9; pointer-events: none; }
+    .amm-branch-list-empty { padding: 18px; text-align: center; color: #64748b; font-size: 13px; margin: 0; }
+
+    .amm-branch-modal-footer {
+        padding: 12px 18px 16px; display: flex; justify-content: space-between; gap: 10px;
+        border-top: 1px solid #eef2ff;
+    }
+
+    .amm-branch-btn {
+        display: inline-flex; align-items: center; gap: 8px; border-radius: 10px;
+        padding: 9px 16px; font-weight: 700; font-size: 13px; border: none; cursor: pointer;
+    }
+
+    .amm-branch-btn.secondary { background: #f1f5f9; color: #475569; }
+    .amm-branch-btn.primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+
+    @@media (max-width: 600px) {
+        #AssetsMasterPage.amm-page { padding-left: 8px; padding-right: 8px; }
+        .amm-table { min-width: 580px; }
+        .amm-ci-po-footer-actions { width: 100%; justify-content: flex-end; }
+    }
+</style>
+
+<div class="amm-page" id="AssetsMasterPage">
+
+    <div id="ammListPanel">
+        <div class="amm-po-list-header">
+            <div class="amm-po-header-top">
+                <div class="amm-hero-left">
+                    <div class="amm-hero-icon"><i class="fas fa-boxes"></i></div>
+                    <div>
+                        <div class="amm-hero-title">Asset Master</div>
+                        <div class="amm-hero-sub">Fixed assets register</div>
+                    </div>
+                </div>
+                <button type="button" class="amm-po-create-btn" id="btnNewAsset">
+                    <span>+</span> Create New
+                </button>
+            </div>
+        </div>
+
+        <div class="amm-list-grid-wrap">
+            <div class="amm-card-toolbar">
+                <div class="amm-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="ammSearch" placeholder="Search ref no, tag, location…" autocomplete="off" />
+                </div>
+            </div>
+            <div class="amm-table-wrap table-wrapper">
+                <table class="amm-table" id="tblAssetList">
+                    <thead id="table-header-AssetsMaster"></thead>
+                    <tbody id="table-body-AssetsMaster">
+                        <tr><td colspan="9" class="text-center text-muted py-4">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-tblAssetList"></div>
+        </div>
+    </div>
+
+    <div id="ammDetailPanel" style="display:none;">
+        <input type="hidden" id="hdnAssetCode" value="0" />
+
+        <div class="amm-ci-po-list-header">
+            <div class="amm-ci-po-header-top">
+                <div>
+                    <h5 class="amm-ci-entry-title" id="lblAssetFormTitle">Asset Master</h5>
+                    <small class="amm-ci-entry-sub">Asset details and depreciation</small>
+                </div>
+                <div class="d-flex flex-wrap gap-2 amm-ci-po-footer-actions align-items-center">
+                    <button type="button" class="amm-ci-po-back-btn" onclick="ShowAssetList()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" id="btnAMMBranchDetails" class="btn-amm-branch" style="display:none;" onclick="OpenAMMBranchDetails()">
+                        <i class="fas fa-code-branch"></i> Branch Details
+                    </button>
+                    <button type="button" id="btnVerifyAsset" class="btn-amm-verify" style="display:none;" onclick="VerifyAsset()">
+                        <i class="fas fa-check-double"></i> Verify
+                    </button>
+                    <button type="button" id="btnAssetsMasterAttach" class="btn-amm-master-attach" title="Asset master attachments">
+                        <i class="fa fa-paperclip" aria-hidden="true"></i> Attachment
+                    </button>
+                    <button type="button" class="btn-amm-save" id="btnSaveAsset"><i class="fas fa-check"></i> Save</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="amm-ci-po-step-card">
+            <div class="amm-section-title"><i class="fas fa-info-circle"></i> Identification</div>
+            <div class="row g-3 amm-form-row">
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtRefNo">Ref No <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="txtRefNo" maxlength="100" autocomplete="off" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="ddlAssetType">Asset Type <span class="text-danger">*</span></label>
+                    <select class="form-select" id="ddlAssetType"></select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtAssetTagNo">Asset Tag No</label>
+                    <input type="text" class="form-control" id="txtAssetTagNo" maxlength="20" readonly placeholder="Auto-generated on save" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtAssetLife">Asset Life (years)</label>
+                    <input type="text" class="form-control" id="txtAssetLife" inputmode="decimal" maxlength="12" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg d-flex flex-column justify-content-end">
+                    <button type="button" id="btnPrintAssetQr" class="btn btn-outline-secondary btn-sm w-100" style="display:none;" onclick="PrintAssetQrCode()">
+                        <i class="fas fa-qrcode"></i> Print QR Code
+                    </button>
+                </div>
+            </div>
+
+            <div class="amm-section-title mt-3"><i class="fas fa-map-marker-alt"></i> Location &amp; value</div>
+            <div class="row g-3 amm-form-row">
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtLocation">Location</label>
+                    <input type="text" class="form-control" id="txtLocation" maxlength="200" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="ddlAssetCurrency">Currency / Unit <span class="text-danger">*</span></label>
+                    <select class="form-select" id="ddlAssetCurrency"></select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtAssetValue">Asset Value</label>
+                    <div class="amm-currency-field">
+                        <span class="amm-currency-prefix" id="lblAssetCurrencySymbol"></span>
+                        <input type="text" id="txtAssetValue" class="form-control amm-currency-input" inputmode="decimal" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="ddlDepartment">Department</label>
+                    <select class="form-select" id="ddlDepartment"></select>
+                </div>
+            </div>
+
+            <div class="amm-section-title mt-3"><i class="fas fa-calculator"></i> Depreciation</div>
+            <div class="row g-3 amm-form-row">
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtAccumulatedDep">Accumulated Dep</label>
+                    <input type="text" class="form-control" id="txtAccumulatedDep" maxlength="200" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtPurchaseDate">Date of Purchase</label>
+                    <input type="date" class="form-control" id="txtPurchaseDate" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtDepApplicableDate">Applicable Date for Dep</label>
+                    <input type="date" class="form-control" id="txtDepApplicableDate" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="ammBranchDetailsBackdrop" class="amm-branch-backdrop">
+    <div class="amm-branch-modal">
+        <div class="amm-branch-modal-header">
+            <span><i class="fas fa-code-branch me-2"></i>Branch Details</span>
+            <button type="button" class="amm-branch-btn secondary" id="btnAMMBranchClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="ammBranchListContainer" class="amm-branch-list">
+            <p class="amm-branch-list-empty">Loading branches...</p>
+        </div>
+        <div class="amm-branch-modal-footer">
+            <button type="button" class="amm-branch-btn secondary" id="btnAMMSelectAllBranches">
+                <i class="fas fa-check-double"></i> Select All
+            </button>
+            <button type="button" class="amm-branch-btn primary" id="btnAMMBranchOk">
+                <i class="fas fa-check"></i> OK
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade amm-delete-modal" id="dvAMMDeleteConfirmModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Confirm Delete</h5>
+                <button type="button" class="amm-modal-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body text-center" style="padding:28px 24px 20px;">
+                <div class="amm-del-icon-wrap">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div style="font-size:15px; font-weight:700; color:#1e293b; margin-bottom:8px;">
+                    Delete asset?
+                </div>
+                <div style="font-size:13px; color:#64748b; margin-bottom:16px; line-height:1.5;">
+                    You are about to delete <strong id="ammDelAssetName" style="color:#667eea;"></strong>.
+                    <br />This action <strong style="color:#ef4444;">cannot be undone</strong>.
+                </div>
+                <div style="text-align:left;">
+                    <label for="ammReasonForDeleteInput" style="font-size:12.5px; font-weight:700; margin-bottom:6px; display:block;">
+                        Reason for Deletion <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="ammReasonForDeleteInput" class="form-control" autocomplete="off"
+                           placeholder="Enter reason for deletion" maxlength="200" />
+                </div>
+                <input type="hidden" id="hfAMMDeleteCode" value="0" />
+            </div>
+            <div class="modal-footer justify-content-center gap-2" style="border-top:1px solid #fee2e2;">
+                <button type="button" class="amm-btn-modal secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-ban"></i> Cancel
+                </button>
+                <button type="button" class="amm-btn-modal danger" id="btnAMMConfirmDelete">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="AssetsMaster_AttachmentControlmodal"></div>
