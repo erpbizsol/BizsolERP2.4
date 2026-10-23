@@ -4,38 +4,290 @@
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/StoreRequisitionSlip.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/StoreRequisitionSlip.js?v=srs-locate-v69"></script>
 
 <style>
-    /* ── STORE REQUISITION LIST ──────────────────────────── */
-    .sr-list-header {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        border-radius: 14px 14px 0 0;
-        padding: 16px 22px 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+    .sr-page-wrapper {
+        padding: 0 2px 20px;
         min-width: 0;
-        overflow: visible;
+        max-width: 100%;
     }
-    .sr-list-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
-    .sr-list-header small { color: rgba(255,255,255,0.75); font-size: 0.78rem; display: block; }
-    .sr-header-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .sr-create-btn {
-        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-        background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #11998e;
-        border-radius: 10px; padding: 8px 16px; font-weight: 800;
-        box-shadow: 0 3px 12px rgba(0,0,0,0.2); white-space: nowrap;
-        cursor: pointer; font-size: 0.88rem; transition: background 0.18s;
+    .sr-card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #e5e7f0;
+        box-shadow: 0 4px 24px rgba(99, 102, 241, 0.09), 0 1px 4px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        max-width: 100%;
     }
-    .sr-create-btn:hover { background: #e8fff5; }
+    .sr-card-header {
+        background: linear-gradient(130deg, #5b5ef4 0%, #8b5cf6 55%, #a855f7 100%);
+        padding: 16px 20px;
+        position: relative;
+        overflow: hidden;
+    }
+    .sr-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        position: relative;
+        z-index: 1;
+        flex-wrap: wrap;
+    }
+    .sr-card-header::before {
+        content: '';
+        position: absolute;
+        top: -40px;
+        right: -40px;
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.07);
+        pointer-events: none;
+    }
+    .sr-header-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        position: relative;
+        z-index: 1;
+        min-width: 0;
+        flex: 0 1 auto;
+    }
+    .sr-header-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .sr-header-title {
+        color: #fff;
+        font-size: 1.125rem;
+        font-weight: 700;
+        line-height: 1.25;
+        margin: 0;
+    }
+    .sr-header-sub {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 0.75rem;
+        margin-top: 3px;
+        display: block;
+    }
+    .sr-filter-panel {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e8ecf4;
+    }
+    .sr-filter-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px 10px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .sr-filter-toolbar input[type="date"] {
+        width: 132px;
+        height: 34px;
+        min-height: 34px;
+        margin: 0;
+        padding: 0 8px;
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: #0f172a;
+        background: #fff;
+        box-sizing: border-box;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .sr-filter-toolbar input[type="date"]:hover {
+        border-color: #c4b5fd;
+    }
+    .sr-filter-toolbar input[type="date"]:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.12);
+        outline: none;
+    }
+    .sr-filter-dash {
+        color: #cbd5e1;
+        font-size: 0.875rem;
+        line-height: 1;
+        user-select: none;
+        flex-shrink: 0;
+    }
+    .sr-card-body {
+        padding: 16px 18px 20px;
+        max-width: 100%;
+        overflow: hidden;
+    }
     .sr-form-header {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        background: linear-gradient(90deg, #6f5bf5 0%, #7c6ef7 100%);
         border-radius: 14px 14px 0 0;
         padding: 16px 22px 14px;
         color: #fff;
     }
-    .sr-form-header h5 { margin: 0; font-weight: 700; }
+    .sr-form-header h5 { margin: 0; font-weight: 700; text-align: left; }
+    .sr-form-header .sr-btn-back {
+        color: #1e293b !important;
+        font-weight: 600;
+    }
+    .sr-form-header .sr-btn-back i {
+        color: #1e293b !important;
+    }
+    .sr-grid-wrap {
+        margin-bottom: 0;
+        max-width: 100%;
+    }
+    #divSRGrid .bizsol-global-search-wrap {
+        width: min(420px, 100%);
+        max-width: 100%;
+        margin-bottom: 12px;
+    }
+    .table-wrapper.sr-table-scroll {
+        max-height: 420px;
+        overflow-x: auto;
+        overflow-y: auto;
+        border-radius: 12px;
+        border: 1px solid #e4e7f0;
+        box-shadow: 0 2px 12px rgba(91, 94, 244, 0.06);
+        background: #fff;
+        -webkit-overflow-scrolling: touch;
+    }
+    #StoreRequisitionSlipTable {
+        width: 100% !important;
+        table-layout: auto !important;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    #StoreRequisitionSlipTable thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    #StoreRequisitionSlipTable thead th {
+        background: linear-gradient(90deg, #6f5bf5 0%, #7c6ef7 100%) !important;
+        color: #fff !important;
+        position: sticky;
+        top: 0;
+        z-index: 11;
+        border-bottom: none;
+        border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+        padding: 10px 14px !important;
+        font-weight: 700 !important;
+        font-size: 11.5px !important;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        line-height: 1.35;
+        vertical-align: middle;
+        width: auto;
+        min-width: max-content;
+        cursor: default;
+    }
+    #StoreRequisitionSlipTable thead th:first-child {
+        border-radius: 0;
+    }
+    #StoreRequisitionSlipTable thead th:last-child {
+        border-right: none !important;
+    }
+    #StoreRequisitionSlipTable thead th .filter-table-heading-div {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+    }
+    #StoreRequisitionSlipTable thead th .filter-table-heading {
+        display: inline-block;
+        padding-right: 2px;
+    }
+    #StoreRequisitionSlipTable thead th .table-filter-arrow {
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    #StoreRequisitionSlipTable tbody td {
+        padding: 8px 10px !important;
+        font-size: 13px;
+        color: #374151;
+        border-bottom: 1px solid #f0f2f9;
+        border-right: 1px solid #f5f6fb;
+        white-space: nowrap;
+        vertical-align: middle;
+        width: 1%;
+    }
+    #StoreRequisitionSlipTable tbody td:last-child {
+        border-right: none;
+    }
+    #StoreRequisitionSlipTable tbody tr:last-child td {
+        border-bottom: none;
+    }
+    #StoreRequisitionSlipTable tbody tr:nth-child(even) {
+        background: #f8f9ff;
+    }
+    #StoreRequisitionSlipTable tbody tr:nth-child(odd) {
+        background: #ffffff;
+    }
+    #StoreRequisitionSlipTable tbody tr:hover {
+        background: linear-gradient(90deg, #eef0ff, #f3f4ff) !important;
+        transition: background 0.15s;
+    }
+    #StoreRequisitionSlipTable tbody tr:hover td {
+        color: #1e1b4b;
+    }
+    #StoreRequisitionSlipTable th:nth-child(1),
+    #StoreRequisitionSlipTable td:nth-child(1) {
+        width: 48px;
+        min-width: 48px;
+        max-width: 56px;
+        text-align: center !important;
+    }
+    #StoreRequisitionSlipTable thead th.sr-action-col,
+    #StoreRequisitionSlipTable tbody td.sr-action-col {
+        width: auto !important;
+        min-width: 88px;
+        text-align: left !important;
+    }
+    #StoreRequisitionSlipTable tbody td.sr-action-col .btn {
+        margin-right: 4px;
+        margin-bottom: 0 !important;
+    }
+    #StoreRequisitionSlipTable thead th .filter-table-heading,
+    #StoreRequisitionSlipTable thead th .table-filter-arrow,
+    #StoreRequisitionSlipTable thead th .fa-angle-down {
+        color: #fff !important;
+    }
+    #divSRList .paginator { padding: 12px 2px 2px; }
+    #StoreRequisitionSlipTable .im-btn-view {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.13s;
+        margin: 0;
+        padding: 0;
+        font-size: 11px;
+        background: #ecfeff;
+        color: #0891b2;
+    }
+    #StoreRequisitionSlipTable .im-btn-view:hover {
+        background: #0891b2;
+        color: #fff;
+        transform: scale(1.10);
+        box-shadow: 0 3px 10px rgba(8, 145, 178, 0.30);
+    }
     .section-card {
         background: #fff;
         border-radius: 12px;
@@ -43,7 +295,7 @@
         margin-bottom: 18px;
     }
     .section-card-header {
-        background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+        background: linear-gradient(90deg, #6f5bf5 0%, #7c6ef7 100%);
         color: #fff;
         border-radius: 10px 10px 0 0;
         padding: 10px 18px;
@@ -52,169 +304,207 @@
     }
     .section-card-body { padding: 16px 18px; }
     .form-label { font-weight: 600; font-size: 0.85rem; }
-    .table-responsive { border-radius: 10px; overflow: hidden; }
-    .sr-detail-table thead { background: linear-gradient(90deg,#11998e,#38ef7d); color:#fff; }
-    .badge-pending   { background:#ffc107; color:#333; }
-    .badge-approved  { background:#28a745; color:#fff; }
-    .badge-cancelled { background:#dc3545; color:#fff; }
-    .action-btn { border: none; background: transparent; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
-    .action-btn:hover { background: rgba(0,0,0,0.07); }
+    .sr-btn-show {
+        color: #fff !important;
+        font-weight: 600;
+        font-size: 0.8125rem;
+        background: linear-gradient(135deg, #5b5ef4 0%, #7c3aed 100%);
+        border: none;
+        height: 34px !important;
+        min-height: 34px !important;
+        margin: 0 0 0 4px !important;
+        padding: 0 14px !important;
+        border-radius: 8px;
+        box-sizing: border-box;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        line-height: 1;
+        box-shadow: 0 2px 8px rgba(91, 94, 244, 0.28);
+        transition: transform 0.12s, box-shadow 0.12s;
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+    .sr-btn-show:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(91, 94, 244, 0.36);
+    }
+    .sr-btn-show i {
+        font-size: 0.75rem;
+        color: #fff !important;
+    }
+    .sr-btn-add {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 999px;
+        border: 2px solid rgba(255, 255, 255, 0.48);
+        background: rgba(255, 255, 255, 0.14);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.14s;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .sr-btn-add:hover {
+        background: rgba(255, 255, 255, 0.26);
+        border-color: rgba(255, 255, 255, 0.8);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    @@media (max-width: 768px) {
+        .sr-header-top {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .sr-btn-add {
+            width: 100%;
+            justify-content: center;
+        }
+        .sr-filter-toolbar {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .sr-filter-dash {
+            display: none;
+        }
+        .sr-filter-toolbar input[type="date"] {
+            width: 100%;
+            min-width: 0;
+        }
+        .sr-btn-show {
+            grid-column: 1 / -1;
+            width: 100%;
+            margin-left: 0 !important;
+        }
+    }
+
+    @@media (max-width: 520px) {
+        .sr-card-header {
+            padding: 14px 12px 16px;
+        }
+        .sr-header-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.05rem;
+        }
+        .sr-header-title {
+            font-size: 1rem;
+        }
+        .sr-card-body {
+            padding: 12px 10px 16px;
+        }
+        #divSRList .paginator {
+            overflow-x: auto;
+        }
+    }
 </style>
 
-<!-- ══════════════════════════════════════════════════════
-     LIST PANEL
-══════════════════════════════════════════════════════ -->
-<div id="divSRList">
-    <div class="section-card">
-        <div class="sr-list-header">
+<div id="divSRList" class="sr-page-wrapper">
+    <div class="sr-card">
+        <div class="sr-card-header">
             <div class="sr-header-top">
-                <div>
-                    <h5><i class="bi bi-clipboard2-check me-2"></i>Store Requisition Slip</h5>
-                    <small>Manage all store requisition slips</small>
+                <div class="sr-header-left">
+                    <div class="sr-header-icon" aria-hidden="true"><i class="fas fa-clipboard-list"></i></div>
+                    <div>
+                        <h1 class="sr-header-title">Store Requisition Slip</h1>
+                        <span class="sr-header-sub">Locate slips by date range</span>
+                    </div>
                 </div>
-                <button class="sr-create-btn" id="btnNewSR" onclick="ShowSRForm()">
-                    <i class="bi bi-plus-circle-fill"></i> New Requisition
-                </button>
-            </div>
-            <!-- Filter Row -->
-            <div class="d-flex flex-wrap gap-2 align-items-center mt-1">
-                <select id="ddlSRStatus" class="form-select form-select-sm" style="max-width:160px;">
-                    <option value="">All Status</option>
-                    <option value="PENDING">Pending</option>
-                    <option value="APPROVED">Approved</option>
-                    <option value="CANCELLED">Cancelled</option>
-                </select>
-                <input type="date" id="txtSRFromDate" class="form-control form-control-sm" style="max-width:150px;" />
-                <input type="date" id="txtSRToDate"   class="form-control form-control-sm" style="max-width:150px;" />
-                <button class="btn btn-sm btn-light border" onclick="LoadSRList()">
-                    <i class="bi bi-search"></i> Search
-                </button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="ClearSRFilter()">
-                    <i class="bi bi-x-circle"></i> Clear
+                <button type="button" class="sr-btn-add" onclick="ShowSRForm()">
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                    <span>Add Slip</span>
                 </button>
             </div>
         </div>
-        <div class="section-card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-sm mb-0 sr-detail-table" id="tblSRList">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>SR No</th>
-                            <th>Date</th>
-                            <th>Requested By</th>
-                            <th>Department</th>
-                            <th>Project</th>
-                            <th>Remarks</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tblSRListBody">
-                        <tr><td colspan="9" class="text-center text-muted py-4">No records found. Use Search to load data.</td></tr>
-                    </tbody>
-                </table>
+        <div class="sr-card-body">
+            <div class="sr-filter-panel">
+                <div class="sr-filter-toolbar">
+                    <input type="date" id="txtSRFromDate" class="form-control form-control-sm" aria-label="From date" title="From date" />
+                    <span class="sr-filter-dash" aria-hidden="true">–</span>
+                    <input type="date" id="txtSRToDate" class="form-control form-control-sm" aria-label="To date" title="To date" />
+                    <button type="button" class="btn btn-sm sr-btn-show" onclick="LoadSRList()">
+                        <i class="fas fa-magnifying-glass" aria-hidden="true"></i> Show
+                    </button>
+                </div>
+            </div>
+            <div id="divSRGrid" class="sr-grid-wrap" style="display:none;">
+                <div class="table-wrapper sr-table-scroll">
+                    <table id="StoreRequisitionSlipTable" class="table table-bordered table-hover mb-0">
+                        <thead id="tblSRListHeader"></thead>
+                        <tbody id="tblSRListBody"></tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-StoreRequisitionSlipTable"></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     FORM PANEL
-══════════════════════════════════════════════════════ -->
 <div id="divSRForm" style="display:none;">
     <div class="section-card">
         <div class="sr-form-header d-flex align-items-center justify-content-between">
-            <h5 class="mb-0"><i class="bi bi-clipboard2-plus me-2"></i><span id="lblSRFormTitle">New Store Requisition Slip</span></h5>
-            <button class="btn btn-sm btn-light" onclick="ShowSRList()">
-                <i class="bi bi-arrow-left"></i> Back to List
+            <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i><span id="lblSRFormTitle">Store Requisition Slip</span></h5>
+            <button type="button" class="btn btn-sm btn-light sr-btn-back" onclick="ShowSRList()">
+                <i class="fas fa-arrow-left"></i> Back to List
             </button>
         </div>
         <div class="section-card-body">
             <input type="hidden" id="hdnSRCode" value="0" />
-
-            <!-- Header Section -->
-            <div class="section-card mb-3">
-                <div class="section-card-header"><i class="bi bi-info-circle me-1"></i>Requisition Details</div>
+            <div class="section-card mb-0">
+                <div class="section-card-header"><i class="fas fa-circle-info me-1"></i>Requisition Header</div>
                 <div class="section-card-body">
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="form-label">SR Number</label>
-                            <input type="text" id="txtSRNumber" class="form-control form-control-sm" placeholder="Auto-generated" readonly />
+                            <label class="form-label">SRS No</label>
+                            <input type="text" id="txtSRNumber" class="form-control form-control-sm" readonly />
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Date <span class="text-danger">*</span></label>
-                            <input type="date" id="txtSRDate" class="form-control form-control-sm" />
+                            <label class="form-label">SRS Date</label>
+                            <input type="text" id="txtSRDate" class="form-control form-control-sm" readonly />
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Requested By <span class="text-danger">*</span></label>
-                            <input type="text" id="txtRequestedBy" class="form-control form-control-sm" placeholder="Requested by" />
+                            <label class="form-label">Issue Date</label>
+                            <input type="text" id="txtIssueDate" class="form-control form-control-sm" readonly />
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Department</label>
-                            <input type="text" id="txtDepartment" class="form-control form-control-sm" placeholder="Department" />
+                            <label class="form-label">Issue Slip No</label>
+                            <input type="text" id="txtIssueNo" class="form-control form-control-sm" readonly />
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Project</label>
-                            <select id="ddlSRProject" class="form-select form-select-sm">
-                                <option value="">-- Select Project --</option>
-                            </select>
+                            <label class="form-label">Division</label>
+                            <input type="text" id="txtDivisionDesp" class="form-control form-control-sm" readonly />
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Sub-Project</label>
-                            <select id="ddlSRSubProject" class="form-select form-select-sm">
-                                <option value="">-- Select Sub-Project --</option>
-                            </select>
+                            <label class="form-label">Sub Division</label>
+                            <input type="text" id="txtSubDivisionDesp" class="form-control form-control-sm" readonly />
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Required By Date</label>
-                            <input type="date" id="txtRequiredByDate" class="form-control form-control-sm" />
+                            <label class="form-label">Godown Name</label>
+                            <input type="text" id="txtGodownName" class="form-control form-control-sm" readonly />
                         </div>
-                        <div class="col-md-12">
-                            <label class="form-label">Remarks</label>
-                            <textarea id="txtSRRemarks" class="form-control form-control-sm" rows="2" placeholder="Remarks / purpose of requisition..."></textarea>
+                        <div class="col-md-4">
+                            <label class="form-label">Department Name</label>
+                            <input type="text" id="txtDepartment" class="form-control form-control-sm" readonly />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Sub Department Name</label>
+                            <input type="text" id="txtSubDepartment" class="form-control form-control-sm" readonly />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Issued</label>
+                            <input type="text" id="txtIssued" class="form-control form-control-sm" readonly />
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Item Details Section -->
-            <div class="section-card mb-3">
-                <div class="section-card-header d-flex align-items-center justify-content-between">
-                    <span><i class="bi bi-box-seam me-1"></i>Item Details</span>
-                    <button class="btn btn-sm btn-light border" onclick="AddSRItemRow()">
-                        <i class="bi bi-plus-circle"></i> Add Item
-                    </button>
-                </div>
-                <div class="section-card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm mb-0 sr-detail-table" id="tblSRItems">
-                            <thead>
-                                <tr>
-                                    <th style="width:40px">#</th>
-                                    <th>Item Name</th>
-                                    <th>UOM</th>
-                                    <th style="width:110px">Required Qty</th>
-                                    <th>Specification / Remarks</th>
-                                    <th style="width:50px">Del</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tblSRItemsBody">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="d-flex gap-2 justify-content-end mt-2">
-                <button class="btn btn-secondary btn-sm px-4" onclick="ResetSRForm()">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
-                </button>
-                <button class="btn btn-success btn-sm px-4" onclick="SaveSRSlip()">
-                    <i class="bi bi-save me-1"></i>Save
-                </button>
             </div>
         </div>
     </div>
 </div>
+
