@@ -31,13 +31,9 @@ var G_IsAdminAuthenticated = false;
 var G_SelectedCompanyCode = '';   // Currently selected company code
 var G_AllMenuItems = [];          // Full list from API
 var G_FilteredMenuItems = [];     // After search/filter
-var G_ChangedMenuItems = {};      // { MenuCode: { MenuCode, IsHidden } }
-var G_OriginalMenuItems = {};     // Snapshot for cancel
 
 // ─── Bootstrap modal reference ───────────────────────────────────────────────
 var adminPasswordModal = null;
-var adminConfirmModal = null;
-var adminConfirmCallback = null;
 
 // ─── DOMContentLoaded ────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
@@ -138,8 +134,6 @@ function bindEvents() {
     // Company dropdown change → reload menus
     document.getElementById('selCompany').addEventListener('change', function () {
         G_SelectedCompanyCode = this.value;
-        G_ChangedMenuItems = {};
-        updateSaveBadge();
         if (G_SelectedCompanyCode) {
             loadMenuList();
         } else {
@@ -150,42 +144,12 @@ function bindEvents() {
     // Search / filter
     document.getElementById('txtMenuSearch').addEventListener('input', applyFilters);
     document.getElementById('selVisibilityFilter').addEventListener('change', applyFilters);
+    document.getElementById('selApplicableFilter').addEventListener('change', applyFilters);
 
     // Refresh
     document.getElementById('btnRefreshMenuList').addEventListener('click', function () {
-        G_ChangedMenuItems = {};
         loadMenuList();
     });
-
-    // Save
-    document.getElementById('btnSaveMenuVisibility').addEventListener('click', saveMenuVisibilityChanges);
-
-    // Cancel
-    document.getElementById('btnCancelMenuChanges').addEventListener('click', cancelMenuChanges);
-
-    adminConfirmModal = new bootstrap.Modal(document.getElementById('adminConfirmModal'), {
-        backdrop: 'static',
-        keyboard: false
-    });
-    document.getElementById('btnAdminConfirmOk').addEventListener('click', function () {
-        var fn = adminConfirmCallback;
-        adminConfirmCallback = null;
-        adminConfirmModal.hide();
-        if (typeof fn === 'function') fn();
-    });
-    document.getElementById('btnAdminConfirmCancel').addEventListener('click', function () {
-        adminConfirmCallback = null;
-        adminConfirmModal.hide();
-    });
-}
-
-function showAdminConfirm(title, message, okText, onConfirm, iconClass) {
-    document.getElementById('adminConfirmTitleText').textContent = title || 'Confirm';
-    document.getElementById('adminConfirmMessage').textContent = message || 'Are you sure?';
-    document.getElementById('adminConfirmIcon').className = iconClass || 'fas fa-circle-question';
-    document.getElementById('btnAdminConfirmOk').innerHTML = '<i class="fas fa-check"></i>' + (okText || 'OK');
-    adminConfirmCallback = onConfirm;
-    adminConfirmModal.show();
 }
 
 // ─── Admin Password Validation ───────────────────────────────────────────────
@@ -238,7 +202,7 @@ function loadCompanyDropdown() {
     sel.innerHTML = '<option value="">-- Loading... --</option>';
     sel.disabled = true;
 
-    UserRightDashboardService.GetCompanyMasterList()
+    withProjectLoader(UserRightDashboardService.GetCompanyMasterList())
         .then(function (response) {
             var list = asList(response);
             sel.innerHTML = '<option value="">-- Select Company --</option>';
@@ -291,18 +255,38 @@ function showLoader(show) {
     document.getElementById('btnValidateAdminPassword').disabled = show;
 }
 
+function showProjectLoader() {
+    if (typeof window.Showloader === 'function') window.Showloader();
+}
+
+function hideProjectLoader() {
+    if (typeof window.HideLoader === 'function') window.HideLoader();
+}
+
+function withProjectLoader(promise) {
+    showProjectLoader();
+    return promise.then(
+        function (result) {
+            hideProjectLoader();
+            return result;
+        },
+        function (err) {
+            hideProjectLoader();
+            throw err;
+        }
+    );
+}
+
 // ─── Menu List Loading ────────────────────────────────────────────────────────
 function loadMenuList() {
     showMenuState('loading');
-    G_ChangedMenuItems = {};
-    updateSaveBadge();
 
     // GET api/AdminTools/GetAllMenus?CompanyCode=X
-    AdminToolsService.GetAllMenus(G_SelectedCompanyCode)
+    withProjectLoader(AdminToolsService.GetAllMenus(G_SelectedCompanyCode))
         .then(function (response) {
             var list = asList(response);
             G_AllMenuItems = list;
-            G_OriginalMenuItems = buildOriginalSnapshot(list);
+            G_ExpandedNodes = {};
 
             if (!list || list.length === 0) {
                 showMenuState('empty');
@@ -328,15 +312,6 @@ function asList(response) {
     if (Array.isArray(response.value)) return response.value;
     if (Array.isArray(response.Value)) return response.Value;
     return [];
-}
-
-function buildOriginalSnapshot(list) {
-    var snap = {};
-    list.forEach(function (item) {
-        var code = getMenuCode(item);
-        snap[code] = isHidden(item);
-    });
-    return snap;
 }
 
 function getMenuCode(item) {
@@ -397,50 +372,69 @@ function buildTree(items) {
     return roots;
 }
 
+function getParentCode(item) {
+    return String(item.MasterModuleCode || item.masterModuleCode || 0);
+}
+
+function getApplicableFor(item) {
+    var val = String(item.ApplicableForWebErp || item.applicableForWebErp || 'Y').trim().toUpperCase();
+    return (val === 'N' || val === 'W') ? val : 'Y';
+}
+
+function itemMatchesFilter(item, searchText, visibilityFilter, applicableFilter) {
+    if (searchText) {
+        var desc = getMenuDesc(item).toLowerCase();
+        if (desc.indexOf(searchText) === -1) return false;
+    }
+    if (visibilityFilter) {
+        var hidden = isHidden(item);
+        if (visibilityFilter === 'visible' && hidden) return false;
+        if (visibilityFilter === 'hidden' && !hidden) return false;
+    }
+    if (applicableFilter && getApplicableFor(item) !== applicableFilter) return false;
+    return true;
+}
+
+function collectFilterItemsWithAncestors(searchText, visibilityFilter, applicableFilter) {
+    var byCode = {};
+    G_AllMenuItems.forEach(function (item) {
+        byCode[String(getMenuCode(item))] = item;
+    });
+
+    var keep = {};
+    G_AllMenuItems.forEach(function (item) {
+        if (!itemMatchesFilter(item, searchText, visibilityFilter, applicableFilter)) return;
+        var current = item;
+        var guard = 0;
+        while (current && guard < 20) {
+            var code = String(getMenuCode(current));
+            if (keep[code]) break;
+            keep[code] = current;
+            var parentCode = getParentCode(current);
+            current = (parentCode && parentCode !== '0') ? byCode[parentCode] : null;
+            guard++;
+        }
+    });
+
+    return Object.keys(keep).map(function (code) { return keep[code]; });
+}
+
 // ─── Filtering ────────────────────────────────────────────────────────────────
 function applyFilters() {
     var searchText = (document.getElementById('txtMenuSearch').value || '').toLowerCase().trim();
     var visibilityFilter = document.getElementById('selVisibilityFilter').value;
+    var applicableFilter = document.getElementById('selApplicableFilter').value;
 
-    if (searchText || visibilityFilter) {
-        // Flat filtered list when searching
-        G_FilteredMenuItems = G_AllMenuItems.filter(function (item) {
-            if (searchText) {
-                var desc = getMenuDesc(item).toLowerCase();
-                if (desc.indexOf(searchText) === -1) return false;
-            }
-            if (visibilityFilter) {
-                var code = getMenuCode(item);
-                var hidden = (code in G_ChangedMenuItems) ? G_ChangedMenuItems[code].IsHidden : isHidden(item);
-                if (visibilityFilter === 'visible' && hidden) return false;
-                if (visibilityFilter === 'hidden' && !hidden) return false;
-            }
-            return true;
+    if (searchText || visibilityFilter || applicableFilter) {
+        G_FilteredMenuItems = collectFilterItemsWithAncestors(searchText, visibilityFilter, applicableFilter);
+        G_FilteredMenuItems.forEach(function (item) {
+            G_ExpandedNodes[String(getMenuCode(item))] = true;
         });
-        renderFlatTable(G_FilteredMenuItems);
+        renderTreeTable(buildTree(G_FilteredMenuItems));
     } else {
-        // Full tree view when no filter
         G_FilteredMenuItems = G_AllMenuItems;
-        var tree = buildTree(G_AllMenuItems);
-        renderTreeTable(tree);
+        renderTreeTable(buildTree(G_AllMenuItems));
     }
-}
-
-// ─── Flat Table Rendering (used when search/filter is active) ─────────────────
-function renderFlatTable(items) {
-    var tbody = document.getElementById('tblMenuVisibilityBody');
-    tbody.innerHTML = '';
-
-    if (!items || items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><i class="fas fa-search me-2"></i>No menus found matching the filter.</td></tr>';
-        return;
-    }
-
-    items.forEach(function (item, index) {
-        tbody.appendChild(buildMenuRow(item, index + 1, 0, false));
-    });
-
-    bindToggleEvents(tbody);
 }
 
 // ─── Tree Table Rendering (used when no filter is active) ─────────────────────
@@ -468,11 +462,6 @@ function renderTreeNode(tbody, node, level, rowIndex) {
     var item = node.item;
     var code = String(getMenuCode(item));
     var hasChildren = node.children && node.children.length > 0;
-
-    // Auto-expand first level
-    if (level === 0 && !(code in G_ExpandedNodes)) {
-        G_ExpandedNodes[code] = true;
-    }
     var isExpanded = G_ExpandedNodes[code] === true;
 
     tbody.appendChild(buildMenuRow(item, rowIndex.n++, level, hasChildren, isExpanded));
@@ -489,9 +478,8 @@ var INDENT_PX = 24;   // pixels per level
 
 function buildMenuRow(item, index, level, hasChildren, isExpanded) {
     var code = String(getMenuCode(item));
-    var currentlyHidden = (code in G_ChangedMenuItems) ? G_ChangedMenuItems[code].IsHidden : isHidden(item);
+    var currentlyHidden = isHidden(item);
     var isChecked = !currentlyHidden;
-    var isChanged = (code in G_ChangedMenuItems) && (G_ChangedMenuItems[code].IsHidden !== G_OriginalMenuItems[code]);
 
     // ── Expand / Collapse button ──────────────────────────────────────────────
     var toggleBtn = '';
@@ -517,7 +505,6 @@ function buildMenuRow(item, index, level, hasChildren, isExpanded) {
     row.setAttribute('data-menu-code', code);
     row.setAttribute('data-level', level);
     if (hasChildren) row.setAttribute('data-has-children', '1');
-    if (isChanged) row.classList.add('table-warning');
     row.classList.add(rowClass);
 
     // ── ApplicableForWebErp value ─────────────────────────────────────────────
@@ -553,7 +540,7 @@ function bindExpandEvents(tbody) {
         btn.addEventListener('click', function () {
             var code = btn.getAttribute('data-node-code');
             G_ExpandedNodes[code] = !(G_ExpandedNodes[code] === true);
-            var tree = buildTree(G_AllMenuItems);
+            var tree = buildTree(G_FilteredMenuItems.length ? G_FilteredMenuItems : G_AllMenuItems);
             renderTreeTable(tree);
         });
     });
@@ -577,35 +564,57 @@ function escHtml(str) {
 }
 
 // ─── Toggle Change Handler ────────────────────────────────────────────────────
+function isApiSuccess(response) {
+    return response && (
+        response.Status === 'Y' || response.status === 'Y' ||
+        response.Status === 'Success' || response.status === 'success' ||
+        response === true || response.isSuccess === true
+    );
+}
+
+function setEyeButtonState(btn, isVisible) {
+    var icon = btn.querySelector('i');
+    btn.className = 'eye-vis-btn ' + (isVisible ? 'show' : 'hide');
+    if (icon) icon.className = 'fas ' + (isVisible ? 'fa-eye' : 'fa-eye-slash');
+    btn.title = isVisible ? 'Visible. Click to hide.' : 'Hidden. Click to show.';
+}
+
+function updateLocalHidden(menuCode, hidden) {
+    G_AllMenuItems.forEach(function (item) {
+        if (String(getMenuCode(item)) === String(menuCode)) {
+            item.IsHidden = hidden ? 'Y' : 'N';
+        }
+    });
+}
+
 function onMenuToggleChanged(e) {
     var btn = e.currentTarget;
     var code = btn.getAttribute('data-menu-code');
-    var isVisible = btn.classList.contains('hide');
-    var isHiddenNow = !isVisible;
+    var willShow = btn.classList.contains('hide');
+    var apiCall = willShow
+        ? AdminToolsService.UnhideMenu(code, G_SelectedCompanyCode)
+        : AdminToolsService.HideMenu(code, G_SelectedCompanyCode);
 
-    // Update G_ChangedMenuItems
-    var originalHidden = G_OriginalMenuItems[code];
-    if (isHiddenNow === originalHidden) {
-        delete G_ChangedMenuItems[code];
-    } else {
-        G_ChangedMenuItems[code] = { MenuCode: code, IsHidden: isHiddenNow };
-    }
-
-    var icon = btn.querySelector('i');
-    btn.className = 'eye-vis-btn ' + (isVisible ? 'show' : 'hide');
-    icon.className = 'fas ' + (isVisible ? 'fa-eye' : 'fa-eye-slash');
-    btn.title = isVisible ? 'Visible. Click to hide.' : 'Hidden. Click to show.';
-
-    var row = btn.closest('tr');
-
-    var isChanged = code in G_ChangedMenuItems;
-    if (isChanged) {
-        row.classList.add('table-warning');
-    } else {
-        row.classList.remove('table-warning');
-    }
-
-    updateSaveBadge();
+    btn.disabled = true;
+    withProjectLoader(apiCall)
+        .then(function (response) {
+            btn.disabled = false;
+            if (isApiSuccess(response)) {
+                setEyeButtonState(btn, willShow);
+                updateLocalHidden(code, !willShow);
+                toastr.success(willShow ? 'Menu is now visible.' : 'Menu is now hidden.');
+                applyFilters();
+            } else {
+                var msg = (response && (response.Msg || response.msg || response.Message || response.message))
+                    || 'Failed to update visibility.';
+                toastr.error(msg);
+            }
+        })
+        .catch(function (err) {
+            btn.disabled = false;
+            toastr.error('Error updating visibility. Please try again.');
+            console.error('Hide/Unhide menu error:', err);
+        });
 }
 
 // ─── Applicable For Change Handler ───────────────────────────────────────────
@@ -617,7 +626,7 @@ function onApplicableForChanged(e) {
 
     sel.disabled = true;
 
-    AdminToolsService.UpdateApplicableFor(menuCode, newStatus)
+    withProjectLoader(AdminToolsService.UpdateApplicableFor(menuCode, newStatus))
         .then(function (response) {
             sel.disabled = false;
             var ok = response && (
@@ -627,13 +636,12 @@ function onApplicableForChanged(e) {
             );
             if (ok) {
                 toastr.success('Applicable For updated to "' + labelMap[newStatus] + '".');
-                // Update local data so tree re-renders correctly
                 G_AllMenuItems.forEach(function (item) {
                     if (String(getMenuCode(item)) === String(menuCode)) {
-                        if ('ApplicableForWebErp'  in item) item.ApplicableForWebErp  = newStatus;
-                        if ('applicableForWebErp'  in item) item.applicableForWebErp  = newStatus;
+                        item.ApplicableForWebErp = newStatus;
                     }
                 });
+                applyFilters();
             } else {
                 var msg = (response && (response.Msg || response.msg || response.Message || response.message)) || 'Update failed.';
                 toastr.error(msg);
@@ -651,95 +659,6 @@ function onApplicableForChanged(e) {
             toastr.error('Error updating Applicable For. Please try again.');
             console.error('UpdateApplicableFor error:', err);
         });
-}
-
-// ─── Save Badge ───────────────────────────────────────────────────────────────
-function updateSaveBadge() {
-    var count = Object.keys(G_ChangedMenuItems).length;
-    var badge = document.getElementById('btnSaveMenuCount');
-    if (count > 0) {
-        badge.textContent = count + ' change' + (count > 1 ? 's' : '');
-        badge.style.display = 'inline-block';
-    } else {
-        badge.style.display = 'none';
-    }
-}
-
-// ─── Save Changes ─────────────────────────────────────────────────────────────
-// Calls POST api/AdminTools/SaveMenuVisibility
-// Splits changed items into two CSV strings: MenuCodesToHide and MenuCodesToUnhide
-function saveMenuVisibilityChanges() {
-    var changedList = Object.values(G_ChangedMenuItems);
-
-    if (changedList.length === 0) {
-        toastr.info('No changes to save.');
-        return;
-    }
-
-    showAdminConfirm(
-        'Save Changes',
-        'Save visibility changes for ' + changedList.length + ' menu item(s)?',
-        'Save',
-        function () { performSaveMenuVisibility(changedList); },
-        'fas fa-save'
-    );
-}
-
-function performSaveMenuVisibility(changedList) {
-    // Split into two CSV lists for the API
-    var codesToHide   = changedList.filter(function (x) { return x.IsHidden === true; })
-                                   .map(function (x) { return x.MenuCode; }).join(',');
-    var codesToUnhide = changedList.filter(function (x) { return x.IsHidden === false; })
-                                   .map(function (x) { return x.MenuCode; }).join(',');
-
-    var btn = document.getElementById('btnSaveMenuVisibility');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Saving...';
-
-    // POST api/AdminTools/SaveMenuVisibility
-    AdminToolsService.SaveMenuVisibility(codesToHide, codesToUnhide, G_SelectedCompanyCode)
-        .then(function (response) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save me-1"></i>Save Changes<span id="btnSaveMenuCount" class="badge bg-warning text-dark ms-1" style="display:none;"></span>';
-
-            // SP returns { Status: 'Y', Msg: '...' }
-            if (response && (response.Status === 'Y' || response.status === 'Y'
-                || response.Status === 'Success' || response.status === 'success'
-                || response === true || response.isSuccess === true)) {
-                toastr.success('Menu visibility saved successfully.');
-                G_ChangedMenuItems = {};
-                updateSaveBadge();
-                loadMenuList();  // Refresh from API
-            } else {
-                var msg = (response && (response.Msg || response.msg || response.Message || response.message))
-                          || 'Failed to save changes.';
-                toastr.error(msg);
-            }
-        })
-        .catch(function (err) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save me-1"></i>Save Changes<span id="btnSaveMenuCount" class="badge bg-warning text-dark ms-1" style="display:none;"></span>';
-            toastr.error('Error saving changes. Please try again.');
-            console.error('Save menu visibility error:', err);
-        });
-}
-
-// ─── Cancel Changes ───────────────────────────────────────────────────────────
-function cancelMenuChanges() {
-    if (Object.keys(G_ChangedMenuItems).length === 0) return;
-
-    showAdminConfirm(
-        'Discard Changes',
-        'Discard all unsaved changes?',
-        'Discard',
-        function () {
-            G_ChangedMenuItems = {};
-            updateSaveBadge();
-            applyFilters();
-            toastr.info('Changes discarded.');
-        },
-        'fas fa-trash-alt'
-    );
 }
 
 // ─── UI State Manager ─────────────────────────────────────────────────────────
