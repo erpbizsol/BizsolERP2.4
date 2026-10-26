@@ -5669,10 +5669,10 @@ function renderCaGpSection(salesRows) {
 function renderCaProductSection(salesRows) {
     const grouped = groupCaBy(salesRows, getCaProduct);
     const total = grouped.reduce(function (sum, item) { return sum + item.mt; }, 0);
-    const top = grouped.slice(0, 4);
-    const othersMt = grouped.slice(4).reduce(function (sum, item) { return sum + item.mt; }, 0);
+    const top = grouped.slice(0, 10);
+    const othersMt = grouped.slice(10).reduce(function (sum, item) { return sum + item.mt; }, 0);
     const items = othersMt > 0 ? top.concat([{ name: 'Others', mt: othersMt, value: 0 }]) : top;
-    const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#858796'];
+    const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#6f42c1', '#fd7e14', '#20c997', '#e83e8c', '#0d6efd', '#858796'];
 
     const body = document.getElementById('caProductLegendBody');
     const foot = document.getElementById('caProductLegendFoot');
@@ -5744,7 +5744,7 @@ function renderCaProductSection(salesRows) {
 function renderCaTopAmountTable(bodyId, footId, rows, emptyLabel) {
     const body = document.getElementById(bodyId);
     const foot = document.getElementById(footId);
-    const top = (rows || []).slice(0, 5);
+    const top = (rows || []).slice(0, 10);
     if (!top.length) {
         renderCaEmptyTable(bodyId, footId, 3, emptyLabel);
         return 0;
@@ -5766,7 +5766,7 @@ function renderCaTopAmountTable(bodyId, footId, rows, emptyLabel) {
 }
 
 function renderCaTopPartyMonth(salesRows) {
-    const grouped = groupCaBy(salesRows, getCaPartyName).filter(function (item) { return item.name && item.name !== 'Unknown'; }).slice(0, 5);
+    const grouped = groupCaBy(salesRows, getCaPartyName).filter(function (item) { return item.name && item.name !== 'Unknown'; }).slice(0, 10);
     const body = document.getElementById('caTopPartyMonthBody');
     const foot = document.getElementById('caTopPartyMonthFoot');
     if (!grouped.length) {

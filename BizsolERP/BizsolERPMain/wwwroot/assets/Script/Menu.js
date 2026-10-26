@@ -22,9 +22,13 @@ function bindMenu() {
             $('#ERPProfileUserName').text('( ' + (UserDetailsobj[0].UserName || UserDetailsobj[0].UserDesp || UserDetailsobj[0].UserID || '') + ' )');
             bindUserProfileImage();
 
+            var allowAdminTools = isBizSolMenuUser(UserDetailsobj[0]);
             MenuService.GetMenuList(UserDetailsobj[0].UserID).then(function (value) {
                 var menuHtml = '';
                 $.each(value, function (index, item) {
+                    if (!allowAdminTools && isAdminToolsMenuItem(item)) {
+                        return;
+                    }
                     if (item.MasterCode === 0) {
                         var childMenuHtml = getChildMenu(value, item.Code, baseUrl);
                         var hasArrow = childMenuHtml ? 'has-arrow' : '';
@@ -95,11 +99,35 @@ function bindMenu() {
    
 }
 
+function isBizSolMenuUser(userRow) {
+    var v = String((userRow && (userRow.IsBizSolUser || userRow.isBizSolUser)) || '').trim().toUpperCase();
+    return v === 'Y' || v === 'YES';
+}
+
+function isAdminToolsMenuItem(item) {
+    if (!item) return false;
+    var form = String(item.FormToOpen || '').toLowerCase();
+    var desp = String(item.ModuleDesp || item.ModuleDescription || '').toLowerCase();
+    return form.indexOf('admintools') !== -1
+        || desp.indexOf('admin tool') !== -1
+        || desp.indexOf('administrative tool') !== -1;
+}
+
 function getChildMenu(value, masterCode, baseUrl) {
    
     var baseUrl = sessionStorage.getItem('AppBaseURL');
+    var allowAdminTools = false;
+    try {
+        var details = JSON.parse(sessionStorage.getItem('UserDetails') || '[]');
+        allowAdminTools = isBizSolMenuUser(details[0]);
+    } catch (e) {
+        allowAdminTools = false;
+    }
     var childMenuHtml = '';
     $.each(value, function (index, item) {
+        if (!allowAdminTools && isAdminToolsMenuItem(item)) {
+            return;
+        }
         if (item.MasterCode === masterCode && item.NotificationApplicable==='N') {
             var subChildMenuHtml = getChildMenu(value, item.Code);
             var hasArrow = subChildMenuHtml ? 'has-arrow' : '';

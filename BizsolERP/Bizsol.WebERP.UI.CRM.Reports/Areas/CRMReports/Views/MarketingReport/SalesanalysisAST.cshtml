@@ -1549,8 +1549,13 @@
     .ca-mini-table th, .ca-mini-table td { padding: 5px 6px; border-bottom: 1px solid #eef2f7; white-space: nowrap; }
     .ca-mini-table th { color: #4a5568; font-weight: 700; background: #f8fafc; }
     .ca-mini-table tfoot td { font-weight: 800; background: #f8fafc; }
-    .ca-product-wrap { display: grid; grid-template-columns: 140px 1fr; gap: 10px; align-items: center; }
-    .ca-product-chart { height: 150px; }
+    .ca-product-wrap { display: grid; grid-template-columns: 140px 1fr; gap: 10px; align-items: start; }
+    .ca-product-chart { height: 180px; position: sticky; top: 0; }
+    .ca-product-wrap > .table-responsive,
+    .ca-dash-out .ca-dash-card > .table-responsive {
+        max-height: 360px;
+        overflow-y: auto;
+    }
     .ca-out-total { text-align: center; padding-top: 8px; }
     .ca-out-label { font-size: 13px; font-weight: 800; color: #2b6cb0; margin-bottom: 6px; }
     .ca-out-value { font-size: 22px; font-weight: 800; color: #2b6cb0; }
@@ -3450,7 +3455,7 @@
                     </div>
                 </div>
                 <div class="ca-dash-card">
-                    <div class="ca-dash-title">Product Wise Sales (MT)</div>
+                    <div class="ca-dash-title">Top 10 Product Wise Sales (MT)</div>
                     <div class="ca-product-wrap">
                         <div class="ca-product-chart"><canvas id="caProductPieChart"></canvas></div>
                         <div class="table-responsive">
@@ -3472,7 +3477,7 @@
 
             <div class="ca-dash-row ca-dash-out">
                 <div class="ca-dash-card">
-                    <div class="ca-dash-title">Top 5 Party (Outstanding)</div>
+                    <div class="ca-dash-title">Top 10 Party (Outstanding)</div>
                     <div class="table-responsive">
                         <table class="ca-mini-table mb-0">
                             <thead>
@@ -3488,7 +3493,7 @@
                     </div>
                 </div>
                 <div class="ca-dash-card">
-                    <div class="ca-dash-title">Top 5 Party (Overdue)</div>
+                    <div class="ca-dash-title">Top 10 Party (Overdue)</div>
                     <div class="table-responsive">
                         <table class="ca-mini-table mb-0">
                             <thead>
@@ -3504,7 +3509,7 @@
                     </div>
                 </div>
                 <div class="ca-dash-card">
-                    <div class="ca-dash-title">Top Party (This Month)</div>
+                    <div class="ca-dash-title">Top 10 Party (This Month)</div>
                     <div class="table-responsive">
                         <table class="ca-mini-table mb-0">
                             <thead>
