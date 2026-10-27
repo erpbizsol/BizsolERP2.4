@@ -77,7 +77,8 @@ th {
 .filter-dropdown.bizsol-filter-floating,
 .filter-dropdown-double.bizsol-filter-floating,
 .filter-division.bizsol-filter-floating {
-    z-index: 10050 !important;
+    /* Above ERP modals (.modal is z-index 100013) so a filter card is not covered by a dialog */
+    z-index: 100060 !important;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
@@ -394,4 +395,66 @@ tfoot.bizsol-floating-tfoot tr td {
 tr.total-row td,
 tr.grand-total-row td {
     background-color: #ffffff !important;
+}
+
+/* Select2 attachBody portal on document.body — must sit above ERP modals (z-index 100013) */
+body > span.select2-container--open:not(.select2),
+body.modal-open > span:has(> .select2-dropdown),
+body.spm-modal-open > span:has(> .select2-dropdown),
+body.modal-open .select2-dropdown,
+body.spm-modal-open .select2-dropdown {
+    z-index: 100060 !important;
+}
+
+/* Purchase Order summary on a phone: Other Charges / Freight stay inside the card */
+@media (max-width: 576px) {
+    .po-summary-line { min-width: 0; max-width: 100%; }
+    .po-summary-line--charge,
+    .po-summary-line:has(.charge-inline-group) {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .po-summary-line--charge .lbl,
+    .po-summary-line:has(.charge-inline-group) .lbl {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+    .po-summary-line--charge .other-charge-lbl-input,
+    .po-summary-line:has(.charge-inline-group) .other-charge-lbl-input {
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    .po-summary-line--charge .charge-inline-group,
+    .po-summary-line:has(.charge-inline-group) .charge-inline-group {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.75fr) minmax(0, 1fr);
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+    .po-summary-line--charge .charge-gst-lbl,
+    .po-summary-line:has(.charge-inline-group) .charge-gst-lbl {
+        white-space: normal;
+        line-height: 1.15;
+        min-width: 0;
+    }
+    .po-summary-line--charge .other-charge-gst-input,
+    .po-summary-line--charge .other-charge-amt-input,
+    .po-summary-line:has(.charge-inline-group) .other-charge-gst-input,
+    .po-summary-line:has(.charge-inline-group) .other-charge-amt-input {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .po-summary-line .val { min-width: 0; }
+    .po-summary-total { gap: 8px; min-width: 0; }
+    .po-summary-total span { min-width: 0; }
 }
