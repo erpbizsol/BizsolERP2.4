@@ -14,6 +14,8 @@ let UrlService = {
     API_ENDPOINT_CHEMICAL: `${environment.BASE_URL}/Chemical`,
     API_ENDPOINT_CATEGORY: `${environment.BASE_URL}/Category`,
     API_ENDPOINT_SUBCATEGORY: `${environment.BASE_URL}/SubCategory`,
+    API_ENDPOINT_ASSETGROUP: `${environment.BASE_URL}/AssetGroup`,
+    API_ENDPOINT_MAINTENANCETYPE: `${environment.BASE_URL}/MaintenanceType`,
     API_ENDPOINT_CANCELPENDINGORDER: `${environment.BASE_URL}/CancelPendingOrder`,
     API_ENDPOINT_LEADSOURCE: `${environment.BASE_URL}/LeadSource`,
     API_ENDPOINT_INDUSTRYTYPE: `${environment.BASE_URL}/IndustryType`,
@@ -191,10 +193,12 @@ let UrlService = {
     API_ENDPOINT_IndentMasterLevelsApproval: `${environment.BASE_URL}/IndentMasterLevelsApproval`,
     API_ENDPOINT_TEMPLETE_REPORT: `${environment.BASE_URL}/OrderLoadReport`,
     API_ENDPOINT_DASHBOARD_CONFIGURATION: `${environment.BASE_URL}/DashboardConfiguration`,
+    API_ENDPOINT_NOTIFICATIONS_DASHBOARD: `${environment.BASE_URL}/NotificationsDashboard`,
     API_ENDPOINT_ProductionOrder: `${environment.BASE_URL}/ProductionOrder`,
     API_ENDPOINT_CRM_ORDER_IN_TRANSIT: `${environment.BASE_URL}/CRMOrderInTransit`,
     API_ENDPOINT_USER_DASHBOARD_MENU: `${environment.BASE_URL}/UserDashboardMenu`,
     API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisitionMaster`,
+    API_ENDPOINT_AdminTools: `${environment.BASE_URL}/AdminTools`,
 }
 
 export { UrlService }
