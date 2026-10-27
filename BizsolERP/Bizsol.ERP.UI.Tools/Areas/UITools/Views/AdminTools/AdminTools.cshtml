@@ -1,0 +1,791 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Tools/script/AdminTools.js"></script>
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
+
+<style>
+    #AdminToolsPage.at-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        padding: 4px 0 32px;
+    }
+
+    #AdminToolsPage .at-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        box-shadow: 0 4px 24px rgba(102, 126, 234, 0.22);
+    }
+
+    #AdminToolsPage .at-list-header-title {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+    }
+
+    #AdminToolsPage .at-list-header-title i {
+        opacity: 0.95;
+        margin-right: 8px;
+    }
+
+    #AdminToolsPage .at-list-header-sub {
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.78rem;
+        display: block;
+        margin-top: 4px;
+    }
+
+    #AdminToolsPage .at-card {
+        background: var(--white-bg);
+        border: 1px solid var(--border-color);
+        border-top: none;
+        border-radius: 0 0 20px 20px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        position: relative;
+    }
+
+
+    #AdminToolsPage .at-card-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 10px;
+        padding: 18px 22px 16px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    #AdminToolsPage .at-filter-group,
+    #AdminToolsPage .at-action-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    #AdminToolsPage .at-filter-group {
+        flex: 1 1 auto;
+    }
+
+    #AdminToolsPage .at-action-group {
+        flex: 0 0 auto;
+    }
+
+    #AdminToolsPage .at-field-label {
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        white-space: nowrap;
+        margin: 0;
+    }
+
+    #AdminToolsPage .company-select-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    #AdminToolsPage .search-input-wrap {
+        position: relative;
+        width: 240px;
+        max-width: 240px;
+        height: 28px;
+        flex: 0 0 240px;
+    }
+
+    #AdminToolsPage .search-input-wrap .search-icon {
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 0.68rem;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    #AdminToolsPage .at-card-toolbar .form-control,
+    #AdminToolsPage .at-card-toolbar .form-select {
+        height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        line-height: 26px;
+        border: 1px solid var(--border-color);
+        border-radius: 7px;
+        font-size: 0.74rem;
+        font-weight: 500;
+        color: var(--text-dark);
+        background: #fff;
+        box-sizing: border-box;
+    }
+
+    #AdminToolsPage #txtMenuSearch {
+        width: 100%;
+        height: 28px !important;
+        padding-left: 28px !important;
+        padding-right: 10px !important;
+    }
+
+    #AdminToolsPage #selCompany {
+        min-width: 220px;
+        max-width: 320px;
+    }
+
+    #AdminToolsPage #selVisibilityFilter,
+    #AdminToolsPage #selApplicableFilter {
+        width: 150px;
+        max-width: 150px;
+    }
+
+    #AdminToolsPage .at-card-toolbar .form-control:focus,
+    #AdminToolsPage .at-card-toolbar .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        outline: none;
+    }
+
+    #AdminToolsPage .at-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 28px;
+        padding: 0 12px;
+        border: none;
+        border-radius: 7px;
+        font-size: 0.74rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: transform .15s, box-shadow .15s;
+    }
+
+    #AdminToolsPage .at-btn-refresh {
+        background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.28);
+    }
+
+    #AdminToolsPage .at-btn-cancel {
+        background: linear-gradient(135deg, #f43f5e 0%, #dc2626 100%);
+        color: #fff !important;
+        box-shadow: 0 4px 14px rgba(220, 38, 38, 0.28);
+    }
+
+    #AdminToolsPage .at-btn-save {
+        background: var(--primary-gradient);
+        color: #fff;
+        box-shadow: var(--shadow-primary);
+    }
+
+    #AdminToolsPage .at-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    #AdminToolsPage .at-table-wrap {
+        overflow: auto;
+        max-height: calc(100vh - 340px);
+        padding: 0 8px 16px;
+    }
+
+    #AdminToolsPage .at-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.74rem;
+        min-width: 760px;
+    }
+
+    #AdminToolsPage .at-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+
+    #AdminToolsPage .at-table thead th {
+        color: #fff !important;
+        background: transparent !important;
+        font-weight: 700;
+        padding: 8px 10px;
+        white-space: nowrap;
+        border: none !important;
+        font-size: 0.68rem;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        vertical-align: middle;
+    }
+
+    #AdminToolsPage .at-table td {
+        padding: 4px 10px;
+        border-bottom: 1px solid var(--border-light) !important;
+        color: var(--text-dark);
+        vertical-align: middle;
+        font-size: 0.74rem;
+    }
+
+    #AdminToolsPage .at-table tbody tr:hover td {
+        background: rgba(102, 126, 234, .07) !important;
+    }
+
+    #AdminToolsPage .at-table tbody tr.table-warning td {
+        background: #fef9c3 !important;
+    }
+
+    #AdminToolsPage .admin-locked-overlay,
+    #AdminToolsPage .admin-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 260px;
+        gap: 10px;
+        color: var(--text-muted);
+        padding: 32px 16px;
+    }
+
+    #AdminToolsPage .admin-locked-overlay i,
+    #AdminToolsPage .admin-loading i {
+        font-size: 2.6rem;
+        color: #c7d2fe;
+        margin-bottom: 4px;
+    }
+
+    #AdminToolsPage .eye-vis-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        font-size: 0.68rem;
+        padding: 0;
+        transition: transform .14s, box-shadow .14s;
+    }
+
+    #AdminToolsPage .eye-vis-btn.show {
+        background: #ecfdf5;
+        color: #059669;
+        border-color: #6ee7b7;
+    }
+
+    #AdminToolsPage .eye-vis-btn.hide {
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fca5a5;
+    }
+
+    #AdminToolsPage .eye-vis-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+    }
+
+    #AdminToolsPage .tree-sno {
+        color: var(--text-muted);
+        font-size: 0.68rem;
+        width: 40px;
+    }
+
+    #AdminToolsPage .tree-desc-cell {
+        white-space: nowrap;
+        padding-left: 10px !important;
+    }
+
+    #AdminToolsPage .tree-vis-cell { width: 70px; }
+    #AdminToolsPage .tree-appfor-cell { width: 130px; }
+
+    #AdminToolsPage .appfor-select {
+        font-size: 0.71rem;
+        padding: 0 6px;
+        height: 26px;
+        min-height: 26px;
+        cursor: pointer;
+        border-radius: 5px;
+        border: 1px solid #c7d2fe;
+        color: var(--text-dark);
+        background: #eef2ff;
+    }
+
+    #AdminToolsPage .appfor-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    #AdminToolsPage .appfor-select:disabled {
+        opacity: 0.55;
+        cursor: wait;
+    }
+
+    #AdminToolsPage .appfor-select option[value="Y"] { color: #059669; }
+    #AdminToolsPage .appfor-select option[value="N"] { color: #d97706; }
+    #AdminToolsPage .appfor-select option[value="W"] { color: #2563eb; }
+
+    #AdminToolsPage .tree-connectors {
+        display: inline-flex;
+        align-items: stretch;
+        height: 26px;
+        vertical-align: middle;
+    }
+
+    #AdminToolsPage .tree-line {
+        display: inline-block;
+        width: 18px;
+        height: 26px;
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    #AdminToolsPage .tree-vert::before {
+        content: '';
+        position: absolute;
+        left: 9px;
+        top: -8px;
+        bottom: -8px;
+        width: 2px;
+        background: #667eea;
+        border-radius: 1px;
+    }
+
+    #AdminToolsPage .tree-corner::before {
+        content: '';
+        position: absolute;
+        left: 9px;
+        top: -8px;
+        height: calc(50% + 8px);
+        width: 2px;
+        background: #667eea;
+        border-radius: 1px;
+    }
+
+    #AdminToolsPage .tree-corner::after {
+        content: '';
+        position: absolute;
+        left: 9px;
+        top: 50%;
+        width: 14px;
+        height: 2px;
+        margin-top: -1px;
+        background: #667eea;
+        border-radius: 1px;
+    }
+
+    #AdminToolsPage .tree-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        font-size: 0.62rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #fff;
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        vertical-align: middle;
+        margin-right: 5px;
+        flex-shrink: 0;
+        padding: 0;
+        box-shadow: 0 1px 3px rgba(102, 126, 234, 0.35);
+    }
+
+    #AdminToolsPage .tree-leaf-dot {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 5px;
+        background: rgba(248, 250, 252, 0.95);
+        border: 1px solid rgba(203, 213, 225, 0.75);
+        color: #6366f1;
+        font-size: 0.42rem;
+        vertical-align: middle;
+        margin-right: 5px;
+        flex-shrink: 0;
+    }
+
+    #AdminToolsPage .tree-leaf-dot::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #667eea;
+    }
+
+    #AdminToolsPage .tree-label { vertical-align: middle; }
+    #AdminToolsPage .tree-label-l0 { font-size: 0.74rem; font-weight: 600; color: var(--text-dark); }
+    #AdminToolsPage .tree-label-l1 { font-size: 0.71rem; font-weight: 500; color: #334155; }
+    #AdminToolsPage .tree-label-l2 { font-size: 0.68rem; font-weight: 400; color: #475569; }
+
+    #AdminToolsPage .tree-row-root td { background: #eef2ff; }
+    #AdminToolsPage .tree-row-l1 td { background: #f8faff; }
+    #AdminToolsPage .tree-row-l2 td { background: #fff; }
+    #AdminToolsPage .tree-row-root td:nth-child(4) { border-left: 3px solid #667eea; }
+    #AdminToolsPage .tree-row-l1 td:nth-child(4) { border-left: 2px solid #a5b4fc; }
+    #AdminToolsPage .tree-row-l2 td:nth-child(4) { border-left: 2px solid #dde4ff; }
+
+    .admin-password-modal .modal-content {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+    }
+
+    .admin-password-modal .modal-header {
+        background: var(--primary-gradient);
+        color: #fff;
+        border-bottom: none;
+        padding: 18px 24px;
+    }
+
+    .admin-password-modal .modal-title-text {
+        font-weight: 800;
+        font-size: 1.1rem;
+    }
+
+    .admin-password-modal .modal-subtitle {
+        color: rgba(255,255,255,0.85);
+        font-size: 0.82rem;
+        margin-top: 4px;
+    }
+
+    .admin-password-modal .modal-body {
+        padding: 28px 28px 24px;
+    }
+
+    .admin-password-modal .lock-icon {
+        font-size: 2.6rem;
+        color: #667eea;
+        display: block;
+        text-align: center;
+        margin-bottom: 8px;
+    }
+
+    .admin-password-modal .password-input-group {
+        position: relative;
+    }
+
+    .admin-password-modal .toggle-pwd {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: var(--text-muted);
+        z-index: 5;
+        background: none;
+        border: none;
+        padding: 0 4px;
+    }
+
+    .admin-password-modal .at-validate-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 42px;
+        border-radius: 12px;
+        background: var(--primary-gradient);
+        color: #fff;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow: var(--shadow-primary);
+    }
+
+    #adminPasswordError { font-size: 0.82rem; }
+
+    .admin-confirm-modal .modal-content {
+        border: none;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 4px 24px rgba(102, 126, 234, 0.22);
+    }
+
+    .admin-confirm-modal .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border-bottom: none;
+        padding: 16px 22px 14px;
+    }
+
+    .admin-confirm-modal .modal-title {
+        margin: 0;
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .admin-confirm-modal .modal-title i {
+        opacity: 0.95;
+    }
+
+    .admin-confirm-modal .modal-body {
+        padding: 20px 22px;
+        color: var(--text-dark);
+        font-size: 14px;
+    }
+
+    .admin-confirm-modal .modal-footer {
+        border-top: 1px solid var(--border-color);
+        padding: 14px 22px 16px;
+        justify-content: flex-end;
+        gap: 10px;
+        background: #fff;
+    }
+
+    .admin-confirm-modal .at-confirm-btn {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        height: 36px;
+        min-width: 104px;
+        padding: 0 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        line-height: 1;
+    }
+
+    .admin-confirm-modal .at-confirm-btn-cancel {
+        background: #fff !important;
+        color: #334155 !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+
+    .admin-confirm-modal .at-confirm-btn-ok {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: #fff !important;
+        border: none !important;
+        box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
+    }
+
+    @@media (max-width: 1100px) {
+        #AdminToolsPage .at-card-toolbar {
+            flex-wrap: wrap;
+            align-items: stretch;
+            gap: 0;
+        }
+
+        #AdminToolsPage .at-filter-group {
+            width: 100%;
+            flex: 1 1 100%;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        #AdminToolsPage .at-action-group {
+            width: 100%;
+            flex: 1 1 100%;
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        #AdminToolsPage .company-select-wrap,
+        #AdminToolsPage .search-input-wrap,
+        #AdminToolsPage #selVisibilityFilter,
+        #AdminToolsPage #selApplicableFilter {
+            width: 100%;
+            max-width: none;
+        }
+
+        #AdminToolsPage .company-select-wrap {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            align-items: center;
+        }
+
+        #AdminToolsPage .search-input-wrap {
+            flex: none;
+            height: 28px;
+        }
+
+        #AdminToolsPage #selCompany,
+        #AdminToolsPage #selVisibilityFilter,
+        #AdminToolsPage #selApplicableFilter,
+        #AdminToolsPage .search-input-wrap,
+        #AdminToolsPage #txtMenuSearch {
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+        }
+
+        #AdminToolsPage .at-btn { width: 100%; }
+    }
+</style>
+
+<div class="modal fade admin-password-modal" id="adminPasswordModal" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false"
+     aria-labelledby="adminPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-0 modal-title-text" id="adminPasswordModalLabel">
+                        <i class="fas fa-shield-alt me-2"></i>Admin Authentication
+                    </h5>
+                    <div class="modal-subtitle">Enter admin password to access Administrative Tools</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-lock lock-icon"></i>
+                </div>
+                <div class="mb-3">
+                    <label for="txtAdminPassword" class="at-field-label d-block mb-1">
+                        Admin Password <span class="text-danger">*</span>
+                    </label>
+                    <div class="password-input-group">
+                        <input type="password"
+                               id="txtAdminPassword"
+                               class="form-control form-control-sm box_border pe-5"
+                               placeholder="Enter admin password"
+                               autocomplete="off"
+                               maxlength="50" />
+                        <button type="button" class="toggle-pwd" id="btnToggleAdminPwd" title="Show/Hide password">
+                            <i class="fas fa-eye" id="iconToggleAdminPwd"></i>
+                        </button>
+                    </div>
+                    <div id="adminPasswordError" class="text-danger mt-1" style="display:none;"></div>
+                </div>
+                <div class="d-grid mt-2">
+                    <a href="javascript:void(0);" id="btnValidateAdminPassword" class="at-validate-btn">
+                        <i class="fas fa-unlock-alt me-2"></i>Validate &amp; Access
+                    </a>
+                </div>
+                <div id="adminPwdLoader" class="text-center mt-2" style="display:none;">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <span class="ms-2 text-muted" style="font-size:0.82rem;">Validating password...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade admin-confirm-modal" id="adminConfirmModal" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="adminConfirmTitle">
+                    <i class="fas fa-circle-question" id="adminConfirmIcon"></i>
+                    <span id="adminConfirmTitleText">Confirm</span>
+                </h5>
+            </div>
+            <div class="modal-body" id="adminConfirmMessage">Are you sure?</div>
+            <div class="modal-footer">
+                <button type="button" class="at-confirm-btn at-confirm-btn-cancel" id="btnAdminConfirmCancel">
+                    <i class="fas fa-times"></i>Cancel
+                </button>
+                <button type="button" class="at-confirm-btn at-confirm-btn-ok" id="btnAdminConfirmOk">
+                    <i class="fas fa-check"></i>OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="AdminToolsPage" class="at-page">
+    <div class="at-list-header">
+        <h2 class="at-list-header-title">
+            <i class="fas fa-user-shield" aria-hidden="true"></i>Administrative Tools
+        </h2>
+        <small class="at-list-header-sub">Manage menu visibility and applicability by company</small>
+    </div>
+
+    <div id="divAdminTools" class="at-card">
+        <div id="divAdminLocked" class="admin-locked-overlay">
+            <i class="fas fa-lock"></i>
+            <p class="fw-semibold mb-0" style="color:var(--text-dark);">Admin access required</p>
+            <p class="small mb-0">Please authenticate to access Administrative Tools</p>
+            <button type="button" id="btnShowPasswordModal" class="at-btn at-btn-save mt-2">
+                <i class="fas fa-key"></i>Enter Admin Password
+            </button>
+        </div>
+
+        <div id="divAdminContent" style="display:none;">
+            <div class="at-card-toolbar admin-filter-bar">
+                <div class="at-filter-group">
+                    <div class="company-select-wrap">
+                        <label class="at-field-label" for="selCompany">Company</label>
+                        <select id="selCompany" class="form-select form-select-sm box_border">
+                            <option value="">-- Loading companies... --</option>
+                        </select>
+                    </div>
+                    <div class="search-input-wrap">
+                        <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                        <input type="text" id="txtMenuSearch"
+                               class="form-control form-control-sm box_border"
+                               placeholder="Search description..."
+                               autocomplete="off" />
+                    </div>
+                    <select id="selVisibilityFilter" class="form-select form-select-sm box_border">
+                        <option value="">All Status</option>
+                        <option value="visible">Visible Only</option>
+                        <option value="hidden">Hidden Only</option>
+                    </select>
+                    <select id="selApplicableFilter" class="form-select form-select-sm box_border">
+                        <option value="">All Applicable</option>
+                        <option value="Y">Both</option>
+                        <option value="N">ERP</option>
+                        <option value="W">Web ERP</option>
+                    </select>
+                </div>
+                <div class="at-action-group">
+                    <button type="button" id="btnRefreshMenuList" class="at-btn at-btn-refresh" title="Refresh list">
+                        <i class="fas fa-sync-alt"></i>Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div id="menuVisibilityLoader" class="admin-loading">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <span class="small">Loading menu list...</span>
+            </div>
+
+            <div id="divMenuVisibilityTable" style="display:none;">
+                <div class="at-table-wrap">
+                    <table id="tblMenuVisibility" class="at-table menu-toggle-table">
+                        <thead>
+                            <tr>
+                                <th style="width:45px;">S.No.</th>
+                                <th style="width:70px; text-align:center;">Visibility</th>
+                                <th style="width:130px; text-align:center;">Applicable For</th>
+                                <th>Menu Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblMenuVisibilityBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="divMenuVisibilityEmpty" style="display:none;" class="admin-locked-overlay">
+                <i class="fas fa-list-ul"></i>
+                <p class="mb-0">No menu items found</p>
+            </div>
+        </div>
+    </div>
+</div>

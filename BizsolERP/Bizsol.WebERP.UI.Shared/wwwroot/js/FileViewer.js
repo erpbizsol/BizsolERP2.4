@@ -11,6 +11,7 @@
     var currentUrl = null;
     var currentFileName = null;
     var currentBlob = null;
+    var onCloseHandler = null;
 
     function guessFileName(url) {
         try {
@@ -283,6 +284,9 @@
         currentBlob = null;
         document.body.style.overflow = previousOverflow;
 
+        var done = onCloseHandler;
+        onCloseHandler = null;
+
         if (historyPushed && !fromPopState) {
             closingFromPopState = true;
             historyPushed = false;
@@ -292,6 +296,12 @@
             setTimeout(function () { closingFromPopState = false; }, 200);
         } else {
             historyPushed = false;
+        }
+
+        if (typeof done === 'function') {
+            setTimeout(function () {
+                try { done(); } catch (e2) { }
+            }, 0);
         }
     }
 
@@ -309,7 +319,7 @@
 
     function ensureViewer() {
         var css =
-            '#' + VIEWER_ID + '{display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:20050;background:#1f2937;flex-direction:column;box-sizing:border-box;}' +
+            '#' + VIEWER_ID + '{display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:100060 !important;background:#1f2937;flex-direction:column;box-sizing:border-box;}' +
             '#' + VIEWER_ID + '.bizsol-file-open{display:-webkit-flex;display:flex;}' +
             '#' + VIEWER_ID + ' .bizsol-file-bar{display:-webkit-flex;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 10px;padding-top:calc(8px + env(safe-area-inset-top, 0px));background:linear-gradient(90deg,#4f46e5 0%,#6366f1 100%);color:#fff;flex-shrink:0;box-sizing:border-box;}' +
             '#' + VIEWER_ID + ' .bizsol-file-back{display:-webkit-inline-flex;display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:72px;height:34px;border:1px solid rgba(255,255,255,.6);border-radius:6px;background:rgba(255,255,255,.16);color:#fff;font-size:14px;font-weight:700;line-height:1;padding:0 10px;-webkit-tap-highlight-color:transparent;cursor:pointer;}' +
@@ -626,8 +636,12 @@
             ownedUrl = url;
         }
 
+        onCloseHandler = (typeof options.onClose === 'function') ? options.onClose : null;
+
         previousOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
+        document.body.appendChild(overlay);
+        overlay.style.setProperty('z-index', '100060', 'important');
         overlay.style.display = 'flex';
         overlay.classList.add('bizsol-file-open');
         overlay.setAttribute('aria-hidden', 'false');
