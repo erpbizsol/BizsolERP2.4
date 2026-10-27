@@ -12,15 +12,9 @@ let G_AssetDetailMode = 'list';
 /** Attachment flags for list paperclip color (keyed by AssetsMaster.Code). */
 let G_AMM_ListAttachmentYesMap = {};
 
-const AMM_BRANCH_MASTER_TABLE = 'AssetsMaster';
 let G_IsMainCompany = false;
 let G_AssetVerify = 'N';
-let G_BranchList = [];
-let G_SelectedBranchCodes = [];
-let G_LockedBranchCodes = [];
-let G_InitialLockedBranchCodes = [];
-let G_BranchSelectionDirty = false;
-let G_PendingVerifyAfterBranch = false;
+let G_VerifyInProgress = false;
 
 function firstPayloadArray(payload) {
     if (!payload) return [];
@@ -106,6 +100,21 @@ function parseAssetValueNumber() {
     return isNaN(n) ? 0 : n;
 }
 
+/** Read asset value for save (normalize formatted display first). */
+function readAssetValueForSave() {
+    formatAssetValueField();
+    return parseAssetValueNumber();
+}
+
+function formatAssetValuePlain(num) {
+    const n = parseFloat(num);
+    if (isNaN(n)) return '';
+    return n.toLocaleString('en-IN', {
+        minimumFractionDigits: G_CurrencyDecimals,
+        maximumFractionDigits: G_CurrencyDecimals
+    });
+}
+
 function parseOptionalFloat(val) {
     const raw = (val || '').toString().replace(/,/g, '').trim();
     if (raw === '') return 0;
@@ -146,7 +155,35 @@ function ensureAssetsMasterHeading() {
 }
 
 function checkAssetModuleRight(optionName, showMsg) {
-    return MenuService.CheckModuleOptionRight(AMM_MODULE_NAME, optionName, showMsg || 'Y', getAssetFinYear());
+    const finYear = (typeof BizSolHelperFunction.getFinancialYear === 'function')
+        ? BizSolHelperFunction.getFinancialYear()
+        : getAssetFinYear();
+    return MenuService.CheckModuleOptionRight(AMM_MODULE_NAME, optionName, showMsg || 'Y', finYear);
+}
+
+function checkAmmRight(optionName, showMsg) {
+    const show = showMsg == null ? 'Y' : showMsg;
+    return checkAssetModuleRight(optionName, show)
+        .then(function (response) {
+            if (response && response.CheckModuleOptionRight === 'N') {
+                if (show === 'Y') {
+                    toastr.error(response.Msg || ('No rights for ' + optionName));
+                }
+                return false;
+            }
+            return true;
+        })
+        .catch(function () {
+            if (show === 'Y') toastr.error('Unable to verify module rights.');
+            return false;
+        });
+}
+
+function checkAmmVerifyRight() {
+    return checkAmmRight('Verify', 'N').then(function (hasVerify) {
+        if (hasVerify) return true;
+        return checkAmmRight('Edit', 'N');
+    });
 }
 
 function getAssetFinYear() {
@@ -172,117 +209,62 @@ function setAssetDetailFormMode(mode) {
     } else {
         $('#btnSaveAsset').show();
     }
-    const pk = parseInt($('#hdnAssetCode').val(), 10) || 0;
-    $('#btnPrintAssetQr').toggle(G_CanPrintQr && pk > 0);
-    applyAmmBranchVerifyButtons();
-}
-
-function applyAmmBranchVerifyButtons() {
-    const pk = parseInt($('#hdnAssetCode').val(), 10) || 0;
-    const verified = String(G_AssetVerify || 'N').trim().toUpperCase() === 'Y';
-    const canEdit = G_AssetDetailMode !== 'view';
-    $('#btnAMMBranchDetails').toggle(G_IsMainCompany && canEdit);
-    $('#btnVerifyAsset').toggle(G_IsMainCompany && canEdit && pk > 0 && !verified);
 }
 
 function ammClearBranchFormState() {
-    G_SelectedBranchCodes = [];
-    G_LockedBranchCodes = [];
-    G_InitialLockedBranchCodes = [];
-    G_BranchSelectionDirty = false;
-    G_PendingVerifyAfterBranch = false;
     G_AssetVerify = 'N';
 }
 
-function ammNormalizeBranchCodes(codes) {
-    return (codes || []).map(function (c) { return parseInt(c, 10); }).filter(function (c) { return c > 0; });
+function isAmmRecordVerified(item) {
+    if (!item) return false;
+    const v = item.Verify != null ? item.Verify : item.verify;
+    return String(v || 'N').trim().toUpperCase() === 'Y';
 }
 
-function ammUnionBranchCodes() {
-    const merged = {};
-    for (let i = 0; i < arguments.length; i++) {
-        ammNormalizeBranchCodes(arguments[i]).forEach(function (c) { merged[c] = true; });
-    }
-    return Object.keys(merged).map(function (k) { return parseInt(k, 10); });
-}
-
-function ammApplyTransferredBranchState(fromApiCodes, resetSelection) {
-    const fromApi = ammNormalizeBranchCodes(fromApiCodes);
-    G_InitialLockedBranchCodes = ammUnionBranchCodes(G_InitialLockedBranchCodes, fromApi);
-    G_LockedBranchCodes = G_InitialLockedBranchCodes.slice();
-    if (resetSelection || !G_BranchSelectionDirty) {
-        G_SelectedBranchCodes = G_LockedBranchCodes.slice();
-    } else {
-        G_SelectedBranchCodes = ammUnionBranchCodes(G_LockedBranchCodes, G_SelectedBranchCodes);
-    }
-}
-
-function ammCollectBranchSelectionFromUi() {
-    return ammUnionBranchCodes(
-        G_LockedBranchCodes,
-        $('#ammBranchListContainer input[type="checkbox"]:not(:disabled):checked')
-            .map(function () { return parseInt($(this).val(), 10); }).get()
-    );
-}
-
-function ammRenderBranchList() {
-    const $container = $('#ammBranchListContainer');
-    if (!G_BranchList.length) {
-        $container.html('<p class="amm-branch-list-empty">No branches have Master Data Transfer enabled.</p>');
-        return;
-    }
-    const lockedSet = {};
-    ammNormalizeBranchCodes(G_LockedBranchCodes).forEach(function (c) { lockedSet[c] = true; });
-    const selectedSet = {};
-    ammNormalizeBranchCodes(G_SelectedBranchCodes).forEach(function (c) { selectedSet[c] = true; });
-    ammNormalizeBranchCodes(G_LockedBranchCodes).forEach(function (c) { selectedSet[c] = true; });
-    const html = G_BranchList.map(function (branch) {
-        const code = parseInt(branch.Code ?? branch.CompanyCode ?? branch.code, 10) || 0;
-        const name = branch.CompanyName ?? branch.ShortCompanyName ?? branch.name ?? ('Company ' + code);
-        const isLocked = !!lockedSet[code];
-        const checked = isLocked || !!selectedSet[code];
-        const itemClass = 'amm-branch-list-item' + (isLocked ? ' amm-branch-list-item--locked' : '');
-        return (
-            '<label class="' + itemClass + '">' +
-            '<input type="checkbox" value="' + code + '"' +
-            (checked ? ' checked' : '') + (isLocked ? ' disabled data-locked="1"' : '') + ' />' +
-            '<span>' + esc(name) + '</span></label>'
-        );
-    }).join('');
-    $container.html(html);
-}
-
-function ammLoadBranchListForModal() {
-    const $container = $('#ammBranchListContainer');
-    $container.html('<p class="amm-branch-list-empty">Loading branches...</p>');
-    const recordCode = parseInt($('#hdnAssetCode').val(), 10) || 0;
-    const transferredPromise = recordCode > 0
-        ? BranchDetailsFunction.GetTransferredBranches(AMM_BRANCH_MASTER_TABLE, recordCode).catch(function () {
-            return G_LockedBranchCodes.slice();
-        })
-        : Promise.resolve([]);
-    Promise.all([
-        BranchDetailsFunction.GetTransferApplicableBranches(),
-        transferredPromise
-    ]).then(function (results) {
-        G_BranchList = Array.isArray(results[0]) ? results[0] : [];
-        ammApplyTransferredBranchState(results[1], !G_BranchSelectionDirty);
-        ammRenderBranchList();
-    }).catch(function () {
-        G_BranchList = [];
-        $container.html('<p class="amm-branch-list-empty">Failed to load branches. Please try again.</p>');
+function findAssetListRowByCode(code) {
+    const pk = parseInt(code, 10) || 0;
+    return (G_AssetListRows || []).find(function (x) {
+        return parseInt(x.Code || x.AssetsMaster_Code, 10) === pk;
     });
 }
 
-function OpenAMMBranchDetails() {
-    if (!G_IsMainCompany) {
-        toastr.warning('Branch Details is only available for the Main Company.');
-        return;
+function formatAmmAjaxError(err, fallback) {
+    let detail = fallback || 'Request failed.';
+    if (err && err.xhr) {
+        const xhr = err.xhr;
+        const rt = xhr.responseText ? String(xhr.responseText).trim() : '';
+        if (rt) {
+            if (rt.indexOf('{') === 0) {
+                try {
+                    const parsed = JSON.parse(rt);
+                    detail = parsed.Msg || parsed.msg || parsed.title || parsed.message || rt;
+                } catch (e) {
+                    detail = rt;
+                }
+            } else {
+                detail = rt;
+            }
+        } else if (xhr.status) {
+            detail = 'HTTP ' + xhr.status + (xhr.statusText ? (' ' + xhr.statusText) : '');
+        }
+    } else if (err && err.message && err.message.indexOf('error:') !== 0) {
+        detail = err.message;
     }
-    $('#ammBranchDetailsBackdrop').addClass('show');
-    ammLoadBranchListForModal();
+    return detail;
 }
-window.OpenAMMBranchDetails = OpenAMMBranchDetails;
+
+function isAmmApiStatusYes(response) {
+    if (!response) return false;
+    const row = firstPayloadRow(response) || response;
+    const status = row.Status != null ? row.Status : row.status;
+    return String(status || '').trim().toUpperCase() === 'Y';
+}
+
+function getAmmApiMessage(response, fallback) {
+    if (!response) return fallback || '';
+    const row = firstPayloadRow(response) || response;
+    return (row.Msg != null ? row.Msg : row.msg) || fallback || '';
+}
 
 function loadAmmMainCompanyFlag() {
     if (!BranchDetailsFunction || typeof BranchDetailsFunction.MainCompany !== 'function') {
@@ -296,45 +278,40 @@ function loadAmmMainCompanyFlag() {
     });
 }
 
-function doVerifyAssetApi(code, companyCodes) {
-    const pk = parseInt(code, 10) || 0;
-    if (pk <= 0) return;
-    AssetsMasterService.VerifyAssetsMaster(pk, companyCodes || '').then(function (res) {
-        const r = firstPayloadRow(res) || res || {};
-        const ok = r.Status === 1 || r.status === 1 || r.Status === 'Y' || r.status === 'Y';
-        if (ok) {
-            G_AssetVerify = 'Y';
-            applyAmmBranchVerifyButtons();
-            toastr.success(r.Msg || r.Message || 'Verified and transferred successfully.');
-            LoadAssetList();
-        } else {
-            toastr.error(r.Msg || r.Message || 'Verify failed.');
-        }
-    }).catch(function () {
-        toastr.error('Verify request failed.');
-    });
-}
-
-function VerifyAsset() {
-    const code = parseInt($('#hdnAssetCode').val(), 10) || 0;
-    if (code <= 0) {
-        toastr.warning('Please save the asset before verify.');
+function VerifyAssetFromList(code) {
+    const recordCode = parseInt(code, 10) || 0;
+    if (recordCode <= 0) {
+        toastr.error('Invalid record. Refresh the list and try again.');
         return;
     }
-    if (String(G_AssetVerify || 'N').trim().toUpperCase() === 'Y') {
+    if (!G_IsMainCompany) {
+        toastr.warning('Verify is available only from the Main Company.');
+        return;
+    }
+    if (G_VerifyInProgress) return;
+    const row = findAssetListRowByCode(recordCode);
+    if (row && isAmmRecordVerified(row)) {
         toastr.info('This asset is already verified.');
         return;
     }
-    checkAssetModuleRight('Verify', 'Y').then(function (response) {
-        if (!response || response.CheckModuleOptionRight === 'N') {
-            toastr.error((response && response.Msg) || 'Permission denied.');
-            return;
-        }
-        G_PendingVerifyAfterBranch = true;
-        OpenAMMBranchDetails();
+    checkAmmVerifyRight().then(function (ok) {
+        if (!ok) return;
+        G_VerifyInProgress = true;
+        AssetsMasterService.VerifyAssetsMaster(recordCode).then(function (res) {
+            if (isAmmApiStatusYes(res)) {
+                toastr.success(getAmmApiMessage(res, 'Verified and transferred to all branch companies successfully.'));
+                LoadAssetList();
+            } else {
+                toastr.warning(getAmmApiMessage(res, 'Verification failed.'));
+            }
+        }).catch(function (err) {
+            toastr.error(formatAmmAjaxError(err, 'Error during verification.'));
+        }).finally(function () {
+            G_VerifyInProgress = false;
+        });
     });
 }
-window.VerifyAsset = VerifyAsset;
+window.VerifyAssetFromList = VerifyAssetFromList;
 
 function ShowAssetList() {
     G_AssetDetailMode = 'list';
@@ -368,7 +345,6 @@ function ResetAssetForm() {
     $('#txtDepApplicableDate').val('');
     $('#txtAccumulatedDep').val('');
     $('#ddlDepartment').val('');
-    $('#btnPrintAssetQr').hide();
     syncAssetsMasterAttachButton(false);
 }
 
@@ -483,16 +459,25 @@ function ammSyncListAttachmentStates(rows) {
     return Promise.all(tasks);
 }
 
-function buildAssetListActionHtml(code, entryDateIso, hasAttach) {
+function buildAssetListActionHtml(code, entryDateIso, hasAttach, item) {
     const attachBg = hasAttach
         ? 'linear-gradient(135deg,#16a34a,#15803d)'
         : 'linear-gradient(135deg,#0ea5e9,#0284c7)';
     const dateAttr = ammEscHtmlAttr(entryDateIso);
+    let verifyBtn = '';
+    if (G_IsMainCompany && !isAmmRecordVerified(item)) {
+        verifyBtn = `<button type="button" class="amm-icon-btn verify ms-1" title="Verify and transfer to all branches" onclick="VerifyAssetFromList(${code})"><i class="fas fa-check"></i></button>`;
+    } else if (isAmmRecordVerified(item)) {
+        verifyBtn = `<button type="button" class="amm-icon-btn verified ms-1" title="Verified and transferred" disabled><i class="fas fa-check"></i></button>`;
+    }
     return (
         '<div class="text-nowrap">' +
         `<button type="button" class="amm-icon-btn view" title="View" onclick="ViewAsset(${code})"><i class="fas fa-eye"></i></button>` +
         `<button type="button" class="amm-icon-btn edit ms-1" title="Edit" onclick="EditAsset(${code})"><i class="fas fa-pen"></i></button>` +
         `<button type="button" class="amm-icon-btn del ms-1" title="Delete" onclick="DeleteAsset(${code})"><i class="fas fa-trash"></i></button>` +
+        verifyBtn +
+        `<button type="button" class="amm-icon-btn preview ms-1" title="Print Preview" onclick="PrintAssetQrCode(${code},'preview')"><i class="fa fa-search-plus"></i></button>` +
+        `<button type="button" class="amm-icon-btn print ms-1" title="Print QR" onclick="PrintAssetQrCode(${code},'print')"><i class="fa fa-print"></i></button>` +
         `<button type="button" class="amm-list-attach-btn ms-1" title="Attachments" style="background:${attachBg};" onclick="openAMMListAttachmentControl(${code},'${dateAttr}')"><i class="fa fa-paperclip"></i></button>` +
         '</div>'
     );
@@ -510,8 +495,10 @@ function mapAssetRowForGrid(item, rowIndex) {
         'Asset Type': item.AssetType || '',
         Location: item.Location || '',
         'Date of Purchase': formatDisplayDatePlain(item.DateOfPurchase || item.PurchaseDate || ''),
+        'Asset Value': formatAssetValuePlain(item.AssetValue),
         Department: item.Department || '',
-        Action: buildAssetListActionHtml(code, entryDateIso, hasAttach)
+        Verify: item.Verify != null ? item.Verify : (item.verify != null ? item.verify : 'N'),
+        Action: buildAssetListActionHtml(code, entryDateIso, hasAttach, item)
     };
 }
 
@@ -519,7 +506,7 @@ function bindAssetsMasterGridData(filteredRows) {
     const rows = filteredRows || [];
     if (!rows.length) {
         $('#table-header-AssetsMaster').empty();
-        $('#table-body-AssetsMaster').html('<tr><td colspan="9" class="text-center text-muted py-4">No records found.</td></tr>');
+        $('#table-body-AssetsMaster').html('<tr><td colspan="10" class="text-center text-muted py-4">No records found.</td></tr>');
         $('#paginator-tblAssetList').empty();
         return;
     }
@@ -529,14 +516,15 @@ function bindAssetsMasterGridData(filteredRows) {
             return mapAssetRowForGrid(item, idx);
         });
         const StringFilterColumn = ['Ref No', 'Tag No', 'Asset Type', 'Location', 'Department'];
-        const NumericFilterColumn = [];
+        const NumericFilterColumn = ['Asset Value'];
         const DateFilterColumn = ['Date of Purchase'];
         const StringdoubleFilterColumn = [];
-        const hiddenColumns = ['Code'];
+        const hiddenColumns = ['Code', 'Verify'];
         const ColumnAlignment = {
             'S.No.': 'center;min-width:52px;white-space:nowrap;',
             'Date of Purchase': 'center;white-space:nowrap;',
-            Action: 'center;min-width:168px;white-space:nowrap;'
+            'Asset Value': 'right;white-space:nowrap;min-width:100px;',
+            Action: 'center;min-width:260px;white-space:nowrap;'
         };
 
         if (typeof window.columnFilters === 'object' && window.columnFilters !== null) {
@@ -569,7 +557,7 @@ function applyAssetListSearch(rows) {
     return src.filter(function (row) {
         const hay = [
             row.RefNo, row.AssetName, row.AssetTagNo, row.AssetType,
-            row.Location, row.Department, row.AccumulatedDep,
+            row.Location, row.Department, row.AssetValue, row.AccumulatedDep,
             row.DateOfPurchase, row.PurchaseDate
         ].join(' ').toLowerCase();
         return hay.indexOf(q) >= 0;
@@ -716,21 +704,34 @@ function SaveAsset() {
     if (!validateAssetForm()) return;
 
     const code = parseInt($('#hdnAssetCode').val(), 10) || 0;
-    const payload = {
+    const refNo = $('#txtRefNo').val().trim();
+    const purchaseDate = $('#txtPurchaseDate').val() || '';
+    const depDate = $('#txtDepApplicableDate').val() || '';
+    // TY_AssetsMaster — column names must match SQL user-defined table type
+    const Details = [{
         Code: code,
         AssetsMaster_Code: code,
-        RefNo: $('#txtRefNo').val().trim(),
+        RefNo: refNo,
+        AssetName: refNo,
         AssetTypeMaster_Code: parseInt($('#ddlAssetType').val(), 10) || 0,
+        View_UnitOfAssets_Code: 0,
         CurrencyMaster_Code: parseInt($('#ddlAssetCurrency').val(), 10) || 0,
-        AssetTagNo: '',
-        AssetLife: parseOptionalFloat($('#txtAssetLife').val()),
+        AssetsDays: 0,
+        DepPercentage: 0,
+        ITDespvalue: 0,
+        DatabaseLocation_Code: 0,
+        AssetTagNo: ($('#txtAssetTagNo').val() || '').trim(),
+        AssetLife: parseOptionalFloat($('#txtAssetLife').val()) || 0,
         Location: $('#txtLocation').val().trim(),
         DepartmentMaster_Code: parseInt($('#ddlDepartment').val(), 10) || 0,
-        AssetValue: parseAssetValueNumber(),
-        DateOfPurchase: $('#txtPurchaseDate').val() || null,
-        ApplicableDateOfDep: $('#txtDepApplicableDate').val() || null,
+        AssetValue: readAssetValueForSave(),
+        DateOfPurchase: purchaseDate,
+        PurchaseDate: purchaseDate,
+        ApplicableDateOfDep: depDate,
+        DepApplicableDate: depDate,
         AccumulatedDep: ($('#txtAccumulatedDep').val() || '').trim()
-    };
+    }];
+    const payload = { Code: code, Details: Details };
 
     AssetsMasterService.SaveAssetsMaster(payload).then(function (res) {
         const r = firstPayloadRow(res) || res || {};
@@ -740,7 +741,6 @@ function SaveAsset() {
             toastr.error(msg || 'Save failed.');
             return;
         }
-        const wasNew = isNewAssetForm();
         const newCode = r.Code || r.CodeOutput || r.codeOutput || r.Data || r.data || payload.AssetsMaster_Code;
         const savedCode = parseInt(newCode, 10) || payload.AssetsMaster_Code;
         const savedTag = r.AssetTagNo || r.assetTagNo || '';
@@ -748,13 +748,10 @@ function SaveAsset() {
         if (savedCode > 0) {
             $('#hdnAssetCode').val(savedCode);
             refreshAssetsMasterAttachmentButton(savedCode);
-            $('#btnPrintAssetQr').toggle(G_CanPrintQr);
         }
         toastr.success(msg || 'Asset saved successfully.');
+        ShowAssetList();
         LoadAssetList();
-        if (wasNew && savedCode > 0) {
-            $('#lblAssetFormTitle').text('Edit Asset Master');
-        }
     }).catch(function (err) {
         console.error('SaveAsset', err);
         toastr.error('Error while saving asset.');
@@ -771,30 +768,24 @@ function loadAssetRecord(code, mode) {
             return;
         }
         $('#lblAssetFormTitle').text(detailMode === 'view' ? 'View Asset Master' : 'Edit Asset Master');
-        ShowAssetForm(false);
-        setAssetDetailFormMode(detailMode);
-        const pk = data.Code || data.AssetsMaster_Code || code;
+        const pk = parseInt(data.Code || data.AssetsMaster_Code || code, 10) || 0;
         G_AssetVerify = String(data.Verify || data.verify || 'N').trim().toUpperCase();
         $('#hdnAssetCode').val(pk);
         $('#txtRefNo').val(data.RefNo || data.AssetName || '');
-        $('#txtAssetTagNo').val(data.AssetTagNo || '');
+        $('#txtAssetTagNo').val(data.AssetTagNo || data.assetTagNo || '');
+        ShowAssetForm(false);
         $('#txtAssetLife').val(data.AssetLife != null && data.AssetLife !== '' ? data.AssetLife : '');
         $('#txtLocation').val(data.Location || '');
-        $('#txtAssetValue').val(data.AssetValue != null ? data.AssetValue : '');
+        const assetValRaw = data.AssetValue != null ? data.AssetValue : (data.assetValue != null ? data.assetValue : '');
+        $('#txtAssetValue').val(assetValRaw !== '' && assetValRaw != null ? String(assetValRaw) : '');
         $('#txtPurchaseDate').val(parsePurchaseDateToIso(data.DateOfPurchase || data.PurchaseDate || ''));
         $('#txtDepApplicableDate').val(parsePurchaseDateToIso(data.ApplicableDateOfDep || data.DepApplicableDate || ''));
         $('#txtAccumulatedDep').val(data.AccumulatedDep != null ? data.AccumulatedDep : '');
 
-        const branchLoadPromise = (G_IsMainCompany && pk > 0 && detailMode !== 'view')
-            ? BranchDetailsFunction.GetTransferredBranches(AMM_BRANCH_MASTER_TABLE, pk).catch(function () { return []; })
-                .then(function (codes) { ammApplyTransferredBranchState(codes, true); })
-            : Promise.resolve();
-
         Promise.all([
             LoadAssetTypeDropdown(data.AssetTypeMaster_Code),
             LoadCurrencyDropdown(data.CurrencyMaster_Code),
-            LoadDepartmentDropdown(data.DepartmentMaster_Code),
-            branchLoadPromise
+            LoadDepartmentDropdown(data.DepartmentMaster_Code)
         ]).then(function () {
             applyCurrencyUi();
             formatAssetValueField();
@@ -950,70 +941,229 @@ function openAMMListAttachmentControl(code, entryDateIso) {
 }
 window.openAMMListAttachmentControl = openAMMListAttachmentControl;
 
-function PrintAssetQrCode() {
-    const code = parseInt($('#hdnAssetCode').val(), 10) || 0;
-    if (code <= 0) {
-        toastr.warning('Save the asset first to print QR code.');
+function getAmmPrintUserName() {
+    try {
+        const auth = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+        return (auth.UserName || auth.UserDesp || auth.EmployeeName || auth.Name || auth.UserMaster_Code || '').toString().trim();
+    } catch (e) {
+        return '';
+    }
+}
+
+function formatAmmPrintDate(d) {
+    const dt = d || new Date();
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const yyyy = dt.getFullYear();
+    return dd + '-' + mm + '-' + yyyy;
+}
+
+function buildAssetQrLabelModel(apiRow, formFallback) {
+    const row = apiRow || {};
+    const fb = formFallback || {};
+    const tag = (row.AssetTagNo || row.assetTagNo || fb.tag || '').trim();
+    const assetName = (row.RefNo || row.AssetName || row.assetName || fb.refNo || '').trim();
+    const assetType = (row.AssetType || row.assetType || fb.assetType || '').trim();
+    const location = (row.Location || row.location || fb.location || '').trim();
+    const printByApi = (row.PrintBy || row.printBy || row.UserName || row.userName || '').toString().trim();
+    const printDateApi = (row.PrintDate || row.printDate || '').toString().trim();
+    return {
+        tag: tag,
+        assetName: assetName.toUpperCase(),
+        assetType: assetType.toUpperCase(),
+        location: location.toUpperCase(),
+        printDate: printDateApi || formatAmmPrintDate(new Date()),
+        printBy: printByApi || getAmmPrintUserName()
+    };
+}
+
+/** 7cm × 4cm asset tag — print preview layout (reference label mockup). */
+function openAssetQrPrintWindow(labelModel, printUrl, mode) {
+    const printMode = (mode || 'preview').toLowerCase() === 'print' ? 'print' : 'preview';
+    if (printUrl) {
+        window.open(printUrl, '_blank');
         return;
     }
-    AssetsMasterService.GetPrintQrUrl(code).then(function (res) {
-        const row = firstPayloadRow(res);
-        const url = row ? (row.PrintUrl || row.QrPrintUrl || row.Url || '') : '';
-        if (url) {
-            window.open(url, '_blank');
-        } else {
-            toastr.info('QR print URL is not configured on the server.');
+    const m = labelModel || {};
+    const tag = (m.tag || '').trim();
+    if (!tag) {
+        toastr.warning('Asset Tag No is required to print QR code.');
+        return;
+    }
+    const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=' + encodeURIComponent(tag);
+    const w = window.open('', '_blank', 'width=420,height=320');
+    if (!w) {
+        toastr.warning('Allow pop-ups to print or preview the QR label.');
+        return;
+    }
+    const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+        '<title>Asset Tag ' + esc(tag) + '</title>' +
+        '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />' +
+        '<style>' +
+        '@page { size: 7cm 4cm; margin: 0; }' +
+        '* { box-sizing: border-box; }' +
+        'html, body { margin: 0; padding: 0; background: #e2e8f0; }' +
+        'body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }' +
+        '.amm-qr-toolbar { display: flex; gap: 8px; padding: 8px 10px; background: #fff; position: sticky; top: 0; z-index: 20; }' +
+        '.amm-qr-toolbar button { border: none; border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }' +
+        '.amm-qr-btn-print { background: #1f2937; color: #fff; }' +
+        '.amm-qr-btn-close { background: #e5e7eb; color: #111827; }' +
+        '.amm-qr-stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px 8px; }' +
+        '.amm-qr-label { width: 7cm; height: 4cm; background: #fff; border: 1px solid #334155; border-radius: 5px; ' +
+        'display: flex; flex-direction: column; overflow: hidden; color: #0f172a; font-family: Segoe UI, Arial, sans-serif; }' +
+        '.amm-qr-logo-bar { display: flex; align-items: stretch; min-height: 7.4mm; background: #0f2744; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
+        '.amm-qr-logo-wrap { display: flex; align-items: center; background: #fff; padding: 0.6mm 1.6mm; }' +
+        '.amm-qr-logo-wrap img { height: 5.6mm; width: auto; max-width: 26mm; object-fit: contain; display: block; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
+        '.amm-qr-header-title { flex: 1; display: flex; align-items: center; justify-content: center; gap: 1.6mm; color: #fff; font-size: 8.5pt; font-weight: 800; letter-spacing: 0.08em; white-space: nowrap; }' +
+        '.amm-qr-header-title i { font-size: 9pt; }' +
+        '.amm-qr-body { flex: 1; display: flex; min-height: 0; border-bottom: 1px solid #94a3b8; }' +
+        '.amm-qr-left { flex: 1; padding: 2.2mm 2mm; border-right: 1px solid #94a3b8; display: flex; flex-direction: column; justify-content: space-between; }' +
+        '.amm-qr-row { display: flex; align-items: flex-start; gap: 1.2mm; line-height: 1.15; }' +
+        '.amm-qr-row i { color: #475569; font-size: 7pt; width: 3.2mm; margin-top: 0.3mm; flex-shrink: 0; }' +
+        '.amm-qr-lbl { font-size: 5pt; color: #64748b; margin: 0; }' +
+        '.amm-qr-val { font-size: 6pt; font-weight: 700; margin: 0; word-break: break-word; }' +
+        '.amm-qr-right { width: 23mm; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1mm; }' +
+        '.amm-qr-right img { width: 17mm; height: 17mm; display: block; }' +
+        '.amm-qr-tag { font-size: 5.5pt; font-weight: 700; margin-top: 0.6mm; text-align: center; word-break: break-all; }' +
+        '.amm-qr-foot { display: flex; align-items: center; justify-content: space-between; padding: 0.7mm 2mm; font-size: 5pt; color: #64748b; }' +
+        '.amm-qr-foot span { display: inline-flex; align-items: center; gap: 1mm; }' +
+        '.amm-qr-foot i { font-size: 6pt; }' +
+        '.amm-qr-foot b { color: #0f172a; font-weight: 700; }' +
+        '.amm-qr-sep { margin: 0 2mm; color: #94a3b8; }' +
+        '@media print { html, body { background: #fff; min-height: 0; } .amm-qr-toolbar, .no-print { display: none !important; } .amm-qr-stage { padding: 0; } .amm-qr-label { margin: 0; border-radius: 0; } }' +
+        '</style></head><body>' +
+        '<div class="amm-qr-toolbar no-print">' +
+        '<button type="button" class="amm-qr-btn-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>' +
+        '<button type="button" class="amm-qr-btn-close" onclick="ammCloseQrPreview()"><i class="fa-solid fa-xmark"></i> Close</button>' +
+        '</div>' +
+        '<div class="amm-qr-stage"><div class="amm-qr-label">' +
+        '<div class="amm-qr-logo-bar">' +
+        '<div class="amm-qr-logo-wrap"><img src="https://www.ite-oman.com/images/ite-new-logo.png" alt="ITE" /></div>' +
+        '<div class="amm-qr-header-title"><i class="fa-solid fa-cube"></i> ASSET QR</div>' +
+        '</div>' +
+        '<div class="amm-qr-body">' +
+        '<div class="amm-qr-left">' +
+        '<div class="amm-qr-row"><i class="fa-solid fa-box"></i><div><p class="amm-qr-lbl">Asset Name</p><p class="amm-qr-val">' + esc(m.assetName || '—') + '</p></div></div>' +
+        '<div class="amm-qr-row"><i class="fa-solid fa-tag"></i><div><p class="amm-qr-lbl">Tag No.</p><p class="amm-qr-val">' + esc(tag) + '</p></div></div>' +
+        '<div class="amm-qr-row"><i class="fa-solid fa-sitemap"></i><div><p class="amm-qr-lbl">Asset Type</p><p class="amm-qr-val">' + esc(m.assetType || '—') + '</p></div></div>' +
+        '<div class="amm-qr-row"><i class="fa-solid fa-location-dot"></i><div><p class="amm-qr-lbl">Location</p><p class="amm-qr-val">' + esc(m.location || '—') + '</p></div></div>' +
+        '</div>' +
+        '<div class="amm-qr-right"><img src="' + qrImg + '" alt="QR" /><div class="amm-qr-tag">' + esc(tag) + '</div></div>' +
+        '</div>' +
+        '<div class="amm-qr-foot">' +
+        '<span><i class="fa-solid fa-print"></i> Print Date <b>' + esc(m.printDate) + '</b></span>' +
+        '<span class="amm-qr-sep">|</span>' +
+        '<span><i class="fa-solid fa-user"></i> Print By <b>' + esc(m.printBy || '—') + '</b></span>' +
+        '</div></div></div>' +
+        '<script>' +
+        'function ammCloseQrPreview(){' +
+        'if(window.opener){window.close();return;}' +
+        'if(history.length>1){history.back();return;}' +
+        'window.close();' +
+        '}' +
+        'window.onload=function(){window.focus();' +
+        (printMode === 'print' ? 'setTimeout(function(){window.print();},400);' : '') +
+        '};' +
+        '<\/script></body></html>';
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+}
+
+function getAssetQrFormFallback() {
+    const typeText = ($('#ddlAssetType option:selected').text() || '').trim();
+    return {
+        tag: ($('#txtAssetTagNo').val() || '').trim(),
+        refNo: ($('#txtRefNo').val() || '').trim(),
+        assetType: typeText === '-- Select Asset Type --' ? '' : typeText,
+        location: ($('#txtLocation').val() || '').trim()
+    };
+}
+
+function getAssetQrListFallback(code) {
+    const row = (G_AssetListRows || []).find(function (x) {
+        return parseInt(x.Code || x.AssetsMaster_Code, 10) === parseInt(code, 10);
+    }) || {};
+    return {
+        tag: (row.AssetTagNo || '').toString().trim(),
+        refNo: (row.RefNo || row.AssetName || '').toString().trim(),
+        assetType: (row.AssetType || '').toString().trim(),
+        location: (row.Location || '').toString().trim()
+    };
+}
+
+/** List Action: PrintAssetQrCode(code, 'preview' | 'print') — rights like New/Edit. */
+function PrintAssetQrCode(code, mode) {
+    const recordCode = parseInt(code, 10) || parseInt($('#hdnAssetCode').val(), 10) || 0;
+    const printMode = (mode || 'preview').toLowerCase() === 'print' ? 'print' : 'preview';
+    const optionName = printMode === 'print' ? 'Print' : 'Preview';
+    if (recordCode <= 0) {
+        toastr.warning('Invalid record. Refresh the list and try again.');
+        return;
+    }
+
+    const runPrint = function () {
+        const listFb = getAssetQrListFallback(recordCode);
+        const formFb = getAssetQrFormFallback();
+        const fb = {
+            tag: listFb.tag || formFb.tag,
+            refNo: listFb.refNo || formFb.refNo,
+            assetType: listFb.assetType || formFb.assetType,
+            location: listFb.location || formFb.location
+        };
+        AssetsMasterService.GetPrintQrUrl(recordCode).then(function (res) {
+            const row = firstPayloadRow(res) || {};
+            const url = (row.PrintUrl || row.QrPrintUrl || row.Url || '').trim();
+            const label = buildAssetQrLabelModel(row, fb);
+            if (!label.tag) label.tag = fb.tag;
+            if (!label.assetName) label.assetName = (fb.refNo || '').toUpperCase();
+            if (!label.tag) {
+                toastr.warning('Asset Tag No is not generated yet.');
+                return;
+            }
+            openAssetQrPrintWindow(label, url, printMode);
+        }).catch(function () {
+            if (!fb.tag) {
+                toastr.warning('Asset Tag No is not generated yet.');
+                return;
+            }
+            openAssetQrPrintWindow(buildAssetQrLabelModel({}, fb), '', printMode);
+        });
+    };
+
+    checkAssetModuleRight(optionName, 'Y').then(function (response) {
+        if (!response || response.CheckModuleOptionRight === 'N') {
+            toastr.error((response && response.Msg) || ('Permission denied for ' + optionName + '.'));
+            return;
         }
-    }).catch(function () {
-        toastr.error('Unable to open QR print.');
+        runPrint();
     });
 }
 window.PrintAssetQrCode = PrintAssetQrCode;
 
 function checkPrintQrRights() {
-    checkAssetModuleRight('Print QR Code', 'N')
-        .then(function (response) {
-            G_CanPrintQr = response && response.CheckModuleOptionRight === 'Y';
-            $('#btnPrintAssetQr').toggle(G_CanPrintQr && (parseInt($('#hdnAssetCode').val(), 10) || 0) > 0);
-        })
-        .catch(function () {
-            G_CanPrintQr = false;
+    const names = ['Print', 'Print QR', 'PrintQR'];
+    let chain = Promise.resolve(false);
+    names.forEach(function (name) {
+        chain = chain.then(function (found) {
+            if (found) return true;
+            return checkAssetModuleRight(name, 'N').then(function (response) {
+                if (response && response.CheckModuleOptionRight === 'Y') {
+                    G_CanPrintQr = true;
+                    return true;
+                }
+                return false;
+            }).catch(function () { return false; });
         });
+    });
 }
 
 $(document).ready(function () {
     ensureAssetsMasterHeading();
     $('#btnNewAsset').show();
-    loadAmmMainCompanyFlag().then(function () {
-        applyAmmBranchVerifyButtons();
-    });
     checkPrintQrRights();
-    LoadAssetList();
-
-    $('#btnAMMBranchClose').on('click', function () {
-        $('#ammBranchDetailsBackdrop').removeClass('show');
-        G_PendingVerifyAfterBranch = false;
-    });
-    $('#btnAMMBranchOk').on('click', function () {
-        G_SelectedBranchCodes = ammCollectBranchSelectionFromUi();
-        G_BranchSelectionDirty = true;
-        const selected = ammUnionBranchCodes(G_SelectedBranchCodes, G_LockedBranchCodes);
-        if (G_PendingVerifyAfterBranch && !selected.length) {
-            toastr.warning('Please select at least one branch for transfer.');
-            return;
-        }
-        $('#ammBranchDetailsBackdrop').removeClass('show');
-        if (G_PendingVerifyAfterBranch) {
-            G_PendingVerifyAfterBranch = false;
-            doVerifyAssetApi($('#hdnAssetCode').val(), selected.join(','));
-        }
-    });
-    $('#btnAMMSelectAllBranches').on('click', function () {
-        $('#ammBranchListContainer input[type="checkbox"]:not(:disabled)').prop('checked', true);
-        $('#ammBranchListContainer input[type="checkbox"][data-locked="1"]').prop('checked', true);
-    });
-    $('#ammBranchListContainer').on('change', 'input[type="checkbox"][data-locked="1"]', function () {
-        $(this).prop('checked', true);
+    loadAmmMainCompanyFlag().finally(function () {
+        LoadAssetList();
     });
 
     document.addEventListener('bizsol:attachmentcontrol:changed', function (ev) {
