@@ -66,7 +66,7 @@ window.bizsolFloatFilterPanel = function bizsolFloatFilterPanel($panel) {
         top: Math.round(rect.bottom + 2) + 'px',
         left: Math.round(rect.left) + 'px',
         right: 'auto',
-        zIndex: 10050
+        zIndex: 100060
     });
 
     var panelWidth = $panel.outerWidth() || 200;

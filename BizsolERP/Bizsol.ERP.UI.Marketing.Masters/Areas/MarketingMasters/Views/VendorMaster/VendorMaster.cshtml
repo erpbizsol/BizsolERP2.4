@@ -850,6 +850,7 @@
         background: var(--vm-control-bg, #f8f9fc) !important;
         display: flex !important;
         align-items: center !important;
+        position: relative !important;
         transition: border-color 0.13s, box-shadow 0.13s, background 0.13s;
     }
 
@@ -881,14 +882,33 @@
     }
 
     #vendorDialogBackdrop .select2-container .select2-selection__arrow {
-        height: calc(var(--vm-control-h, 42px) - 2px) !important;
-        top: 50% !important;
-        transform: translateY(-50%);
-        right: 10px !important;
+        position: absolute !important;
+        height: 100% !important;
+        top: 0 !important;
+        bottom: auto !important;
+        right: 8px !important;
+        width: 20px !important;
+        transform: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
     #vendorDialogBackdrop .select2-container .select2-selection__arrow b {
+        position: static !important;
+        top: auto !important;
+        left: auto !important;
+        margin: 0 !important;
         border-color: #6b7280 transparent transparent transparent !important;
+        border-style: solid !important;
+        border-width: 5px 4px 0 4px !important;
+    }
+
+    /* Phone sheet CSS must not cover this dialog. Keep a normal list under the field. */
+    #vendorDialogBackdrop:has(.select2-container--open),
+    #vendorDialogBackdrop:has(.select2-container--open) .vm-modal,
+    #vendorDialogBackdrop:has(.select2-container--open) .vm-modal-body {
+        overflow: visible !important;
     }
 
     /* Native selects before Select2 init — same footprint */

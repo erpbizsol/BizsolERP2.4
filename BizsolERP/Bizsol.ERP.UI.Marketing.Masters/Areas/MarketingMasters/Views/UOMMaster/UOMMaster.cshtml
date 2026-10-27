@@ -711,14 +711,56 @@
         .uom-form-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
+    @@media (max-width: 768px) {
+        .uom-po-list-header {
+            padding: 14px 16px 12px;
+            border-radius: 12px 12px 0 0;
+        }
+        .uom-po-header-top {
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .uom-po-list-header .uom-hero-left {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .uom-po-list-header .uom-hero-icon {
+            width: 42px;
+            height: 42px;
+            font-size: 18px;
+        }
+        .uom-po-list-header .uom-hero-title { font-size: 0.95rem; }
+        .uom-po-list-header .uom-hero-sub { font-size: 0.72rem; }
+        .uom-po-create-btn {
+            flex: 0 0 auto;
+            align-self: center;
+            margin: 0;
+        }
+
+        #uomDetailPanel .uom-ci-po-list-header { padding: 14px 16px 12px; }
+        #uomDetailPanel .uom-ci-po-header-top {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        #uomDetailPanel .uom-ci-po-footer-right {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+        }
+        #uomDetailPanel .uom-ci-po-footer-right .uom-ci-po-back-btn,
+        #uomDetailPanel .uom-ci-po-footer-right .btn-uom-save {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
     @@media (max-width: 600px) {
         .uom-form-grid { grid-template-columns: 1fr; }
         #UOMMasterPage { padding-left: 8px; padding-right: 8px; }
         .uom-po-create-btn .uom-po-create-label { display: none; }
         .uom-po-create-btn { padding: 8px 12px; }
-        #uomDetailPanel .uom-ci-po-footer-right { flex-direction: column; align-items: stretch; }
-        #uomDetailPanel .uom-ci-po-footer-right .uom-ci-po-back-btn,
-        #uomDetailPanel .uom-ci-po-footer-right .btn-uom-save { flex: 1; justify-content: center; }
     }
 </style>
 

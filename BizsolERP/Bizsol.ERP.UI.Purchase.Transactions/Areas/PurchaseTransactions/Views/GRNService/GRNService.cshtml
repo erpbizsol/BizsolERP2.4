@@ -166,6 +166,34 @@
         padding: 3px 8px;
         font-size: 0.8rem;
     }
+    /* Party Name — searchable Select2, same height as the other fields */
+    #ddlPartyName + .select2-container { width: 100% !important; }
+    #ddlPartyName + .select2-container .select2-selection--single {
+        height: 30px;
+        border: 1.5px solid #ddd6fe;
+        border-radius: 8px;
+        background-color: #f5f3ff;
+        display: flex;
+        align-items: center;
+    }
+    #ddlPartyName + .select2-container .select2-selection--single .select2-selection__rendered {
+        line-height: 28px;
+        font-size: 0.8rem;
+        color: #1e1b4b;
+        padding-left: 8px;
+    }
+    #ddlPartyName + .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 28px;
+    }
+    #ddlPartyName + .select2-container .select2-selection--single .select2-selection__placeholder {
+        color: #94a3b8;
+    }
+    #ddlPartyName + .select2-container.select2-container--focus .select2-selection--single,
+    #ddlPartyName + .select2-container.select2-container--open .select2-selection--single {
+        border-color: #667eea;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
 
     textarea.form-control-sm {
         height: auto;
@@ -367,7 +395,7 @@
     /* ── FLOATING SAVE BAR ────────────────────────── */
     .po-float-bar {
         position: fixed;
-        bottom: 44px;
+        bottom: 36px;
         left: 0;
         right: 0;
         margin-left: 280px; /* push right of sidebar — matches footer pattern */
@@ -973,6 +1001,66 @@
         line-height: 1.4;
     }
 
+    #floatBar .grn-act-short { display: none; }
+    #floatBar .btn-po-cancel,
+    #floatBar .btn-po-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    @@media (max-width: 768px) {
+        #floatBar.po-float-bar {
+            bottom: 86px;
+            left: 0;
+            right: 0;
+            margin-left: 0;
+            width: auto;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            border-radius: 14px 14px 0 0;
+        }
+        #floatBar .po-float-bar-left { display: none; }
+        #floatBar .po-float-bar-right {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            width: 100%;
+            min-width: 0;
+            margin-left: 0;
+            flex: 1 1 auto;
+            flex-shrink: 1;
+            gap: 6px;
+        }
+        #floatBar .gpa-attach-btn-wrap {
+            display: flex;
+            min-width: 0;
+            width: 100%;
+        }
+        #floatBar .btn-po-cancel,
+        #floatBar .btn-po-save,
+        #floatBar .btn-grn-footer-attach {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            justify-content: center;
+            margin: 0;
+            padding: 8px 6px;
+            font-size: 0.75rem;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        #floatBar .btn-po-cancel:hover,
+        #floatBar .btn-po-save:hover,
+        #floatBar .btn-grn-footer-attach:hover {
+            transform: none;
+        }
+        #floatBar .grn-act-full { display: none; }
+        #floatBar .grn-act-short { display: inline; }
+        .po-form-wrap { padding-bottom: 170px; }
+    }
+
     .vm-btn-new {
         display: inline-flex;
         align-items: center;
@@ -1224,6 +1312,32 @@
     #divGRNList .po-chip-link { transition: transform 0.18s ease, background 0.18s ease; cursor: pointer; pointer-events: auto; }
     #divGRNList .po-chip-link:hover { background: rgba(255,255,255,0.32) !important; transform: scale(1.06); }
     #divGRNList .po-stat-chip:not(.po-chip-link) { cursor: default; pointer-events: none; }
+    @@media (max-width: 576px) {
+        #divGRNList .grn-list-top-panel .po-list-header {
+            padding: 12px 12px 10px;
+        }
+        #divGRNList .po-stats-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            width: 100%;
+            overflow: visible;
+            gap: 6px;
+        }
+        #divGRNList .po-stat-chip {
+            min-width: 0;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 6px 4px;
+        }
+        #divGRNList .po-stat-chip .val { font-size: 1rem; }
+        #divGRNList .po-stat-chip .lbl {
+            font-size: 0.58rem;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+            white-space: normal;
+        }
+        #divGRNList .po-chip-link:hover { transform: none; }
+    }
     #divGRNList .grn-list-top-panel .po-filter-bar {
         margin-bottom: 0;
         border: none;
@@ -2022,17 +2136,23 @@
     </div>
     <div class="po-float-bar-right">
         <button type="button" class="btn-po-cancel" onclick="cancelGRN()">
-            <i class="fa fa-arrow-left me-1"></i> Back to List
+            <i class="fa fa-arrow-left"></i>
+            <span class="grn-act-full">Back to List</span>
+            <span class="grn-act-short">Back</span>
         </button>
         <div class="gpa-attach-btn-wrap">
             <button type="button" id="btnGrnFooterAttach" class="btn-po-cancel btn-grn-footer-attach"
                     onclick="openGrnServiceAttachmentControl()" title="Attachments">
-                <i class="fa fa-paperclip me-1"></i> Attachment
+                <i class="fa fa-paperclip"></i>
+                <span class="grn-act-full">Attachment</span>
+                <span class="grn-act-short">Attach</span>
             </button>
             <span id="grnTempAttachBadge" class="gpa-temp-badge">0</span>
         </div>
         <button type="button" class="btn-po-save" onclick="saveGRN()">
-            <i class="fa fa-save me-1"></i> Save GRN
+            <i class="fa fa-save"></i>
+            <span class="grn-act-full">Save GRN</span>
+            <span class="grn-act-short">Save</span>
         </button>
     </div>
 </div>

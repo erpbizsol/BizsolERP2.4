@@ -573,7 +573,7 @@
 .urd-td-module.urd-td-category { padding: 0; }
 .urd-td-access {
     width: var(--urd-col-access); min-width: var(--urd-col-access); padding: 6px 4px;
-    text-align: center; cursor: pointer;
+    text-align: center; cursor: default;
     background: #fafbff; transition: background .12s;
 }
 .urd-td-access.is-granted { background: #ecfdf5 !important; }
@@ -592,13 +592,23 @@
 .urd-toggle-btn:hover { background: var(--urd-primary-50); border-color: var(--urd-primary-100); color: var(--urd-primary-700); }
 .urd-cell-granted {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px; border-radius: 8px;
+    width: 32px; height: 32px; border-radius: 50%;
     background: #d1fae5; border: 2px solid #34d399; color: #047857;
     font-size: 14px; font-weight: 800; letter-spacing: 0.02em;
     box-shadow: 0 1px 4px rgba(16,185,129,0.25);
     transition: all .15s;
+    cursor: pointer;
 }
+.urd-cell-empty { cursor: pointer; }
+.urd-td-access { cursor: default; }
 .urd-td-access:hover .urd-cell-granted { background: #fef2f2; border-color: #f87171; color: #dc2626; box-shadow: none; }
+.urd-cell-pending {
+    background: #fffbeb !important; border: 2px dashed #f59e0b !important; color: #b45309 !important;
+    box-shadow: none !important;
+}
+.urd-td-access:hover .urd-cell-granted.urd-cell-pending {
+    background: #d1fae5 !important; border: 2px solid #34d399 !important; color: #047857 !important;
+}
 .urd-cell-empty {
     display: inline-flex; align-items: center; justify-content: center;
     width: 32px; height: 32px; border-radius: 8px;
@@ -671,15 +681,116 @@
     .urd-btn-go { width: 100%; min-width: 0; }
     .urd-card-body { padding: 14px 16px 22px; }
 }
-@@media (max-width: 640px) {
+@@media (max-width: 768px) {
+    .urd-page {
+        --urd-col-module: 148px;
+        --urd-col-access: 84px;
+        padding: 8px 8px 12px;
+    }
     .urd-card-header { padding: 12px 14px; flex-direction: column; align-items: flex-start; gap: 8px; }
     .urd-header-title { font-size: 1.1rem; }
-    .urd-card-body { padding: 12px 12px 20px; }
+    .urd-card-body { padding: 10px 8px 12px; }
     .urd-filter-row { flex-direction: column; align-items: stretch; }
     .urd-field-company, .urd-field-groups, .urd-field-users, .urd-field-go { flex: 1 1 auto; width: 100%; }
     .urd-field-label-spacer { display: none; }
-    .urd-page { --urd-col-module: 240px; --urd-col-access: 120px; }
-    .urd-table-wrap { max-height: min(calc(100vh - 220px), 480px); }
+    .urd-table-wrap {
+        max-height: calc(100dvh - var(--erp-header-height, 55px) - var(--erp-footer-height, 34px) - 96px - 230px);
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+    .urd-th-user { font-size: 9px; padding: 8px 4px; }
+    .urd-mod-row { padding: 6px 6px; gap: 4px; }
+    .urd-cat-inner { font-size: 10px; }
+    .urd-cat-badge,
+    .urd-td-module .urd-icon-n,
+    .urd-td-module .urd-icon-m,
+    .urd-td-module .urd-icon-s,
+    .urd-td-module .urd-icon-o { display: none !important; }
+    .urd-card-body, .urd-filter-row { overflow: visible; }
+    .urd-users-preview {
+        height: auto;
+        min-height: 88px;
+        max-height: 160px;
+        resize: vertical;
+        white-space: pre-wrap;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+    .urd-multi-checkbox-search input {
+        font-size: 16px;
+        height: 40px;
+    }
+    .urd-multi-checkbox-item label span {
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    /* Same as Select2 on a phone: sheet pinned to the bottom of the screen */
+    body.urd-group-sheet-open { overflow: hidden !important; }
+    .urd-group-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.48);
+        z-index: 100040;
+        -webkit-tap-highlight-color: transparent;
+    }
+    #urdGroupPanel.is-sheet {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        bottom: 0;
+        width: 100% !important;
+        max-width: 100vw !important;
+        height: auto !important;
+        max-height: min(62vh, 520px);
+        margin: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        border-radius: 18px 18px 0 0 !important;
+        border: none !important;
+        border-top: 3px solid var(--urd-primary) !important;
+        box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.28) !important;
+        background: #fff !important;
+        z-index: 100060 !important;
+        overflow: hidden !important;
+        padding: 6px 12px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+        animation: urdSheetIn 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    #urdGroupPanel.is-sheet::before {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: rgba(15, 23, 42, 0.18);
+        border-radius: 99px;
+        margin: 6px auto 8px;
+        flex-shrink: 0;
+    }
+    #urdGroupPanel.is-sheet .urd-multi-checkbox-search,
+    #urdGroupPanel.is-sheet .urd-multi-checkbox-selectall { flex-shrink: 0; }
+    #urdGroupPanel.is-sheet .urd-multi-checkbox-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: min(48vh, 380px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+    }
+    #urdGroupPanel.is-sheet .urd-multi-checkbox-item { padding: 4px 2px; }
+    #urdGroupPanel.is-sheet .urd-multi-checkbox-item label {
+        min-height: 44px;
+        align-items: center;
+        font-size: 16px !important;
+    }
+}
+@@keyframes urdSheetIn {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
 }
 </style>
 
@@ -741,7 +852,7 @@
 
             <div class="urd-field urd-field-users">
                 <label class="urd-field-label"><i class="fas fa-user"></i> Users <span class="urd-user-count" id="urdUserCount">—</span></label>
-                <textarea id="urdUsersPreview" class="urd-users-preview" readonly rows="1" placeholder="Select groups to preview users"></textarea>
+                <textarea id="urdUsersPreview" class="urd-users-preview" readonly rows="4" placeholder="Select groups to preview users"></textarea>
                 <select id="ddlUsers" multiple style="display:none" aria-hidden="true"></select>
             </div>
 
@@ -799,4 +910,4 @@
 </div><!-- /card -->
 </div><!-- /page -->
 
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserRightDashboardScript.js?v=20260904h"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserRightDashboardScript.js?v=20261026f"></script>
