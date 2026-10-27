@@ -61,7 +61,7 @@
         font-size:0.85rem; font-weight:700;
         box-shadow:0 3px 12px rgba(220,38,38,0.35);
         transition:all 0.2s; cursor:pointer;
-    }`
+    }
     body.erp-embedded.gpa-bs-embed-page .po-float-bar-left {
         display: none;
     }
@@ -260,7 +260,7 @@
     /* ── FLOATING SAVE BAR (GRN same) ── */
     #floatBar.po-float-bar {
         position: fixed;
-        bottom: 44px;
+        bottom: 36px;
         left: 0;
         right: 0;
         margin-left: 280px;
@@ -300,14 +300,17 @@
         letter-spacing: 0.05em;
     }
     .btn-po-save {
-        background: linear-gradient(170deg, #ffffff, #ffffff);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg,#667eea,#764ba2);
         border: none;
-        color: #925bf7;
+        color: #fff;
         border-radius: 10px;
-        padding: 3px 28px;
+        padding: 8px 22px;
         font-size: 0.9rem;
         font-weight: 700;
-        box-shadow: 0 4px 14px rgb(255 255 255);
+        box-shadow: 0 4px 14px rgba(102,126,234,0.4);
         transition: all 0.2s;
         cursor: pointer;
         line-height: 1.4;
@@ -315,14 +318,17 @@
         .btn-po-save:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102,126,234,0.5);
-            color: #e6091f;
+            color: #fff;
         }
     .btn-po-cancel {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         background: linear-gradient(135deg,#f59e0b,#d97706);
         border: none;
         color: #fff;
         border-radius: 10px;
-        padding: 4px 24px;
+        padding: 8px 18px;
         font-size: 0.9rem;
         font-weight: 700;
         box-shadow: 0 4px 14px rgba(245,158,11,0.4);
@@ -349,17 +355,76 @@
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+    /* Short labels used only on a phone-width bar */
+    #floatBar .gpa-act-short { display: none; }
     @@media (max-width: 768px) {
+        /* Sit on the mobile menu: footer offset (~28px) + nav height (~62px) */
         #floatBar.po-float-bar {
-            bottom: 95px;
+            bottom: 86px;
+            left: 0;
+            right: 0;
             margin-left: 0;
-            padding: 9px 14px;
-            justify-content: flex-end;
+            width: auto;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            justify-content: stretch;
+            align-items: stretch;
             border-radius: 14px 14px 0 0;
+            gap: 0;
         }
-        .po-float-bar-left { display: none; }
-        .po-float-bar-right { width: 100%; justify-content: flex-end; gap: 8px; }
-        .po-form-wrap { padding-bottom: 150px; }
+        #floatBar .po-float-bar-left { display: none; }
+        #floatBar .po-float-bar-right {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+            width: 100%;
+            min-width: 0;
+            margin-left: 0;
+            flex: 1 1 auto;
+            flex-shrink: 1;
+            gap: 6px;
+            justify-content: stretch;
+        }
+        #floatBar .po-float-bar-right > .btn-po-cancel,
+        #floatBar .po-float-bar-right > .btn-gpa-history,
+        #floatBar .po-float-bar-right > .btn-po-save,
+        #floatBar .gpa-attach-btn-wrap {
+            min-width: 0;
+            width: 100%;
+            max-width: 100%;
+        }
+        #floatBar .gpa-attach-btn-wrap {
+            display: flex;
+        }
+        #floatBar .btn-po-cancel,
+        #floatBar .btn-po-save,
+        #floatBar .btn-gpa-history,
+        #floatBar .btn-gpa-footer-attach {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            margin: 0;
+            padding: 8px 6px;
+            font-size: 0.72rem;
+            line-height: 1.15;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-radius: 8px;
+        }
+        #floatBar .btn-po-cancel:hover,
+        #floatBar .btn-po-save:hover,
+        #floatBar .btn-gpa-history:hover,
+        #floatBar .btn-gpa-footer-attach:hover {
+            transform: none;
+        }
+        #floatBar .gpa-act-full { display: none; }
+        #floatBar .gpa-act-short { display: inline; }
+        .po-form-wrap { padding-bottom: 220px; }
     }
     /* ── LIST: PO Store style header + stat chips ── */
     .po-list-header {
@@ -1405,22 +1470,32 @@
     </div>
     <div class="po-float-bar-right">
         <button type="button" class="btn-po-cancel gpa-bs-embed-hide" onclick="window.cancelGRNPaymentApproval()">
-            <i class="fa fa-arrow-left me-1"></i> Back to List
+            <i class="fa fa-arrow-left"></i>
+            <span class="gpa-act-full">Back to List</span>
+            <span class="gpa-act-short">Back</span>
         </button>
         <button type="button" class="btn-po-cancel" onclick="window.resetGRNPaymentApprovalForm()">
-            <i class="fa fa-undo me-1"></i> Reset
+            <i class="fa fa-undo"></i>
+            <span class="gpa-act-full">Reset</span>
+            <span class="gpa-act-short">Reset</span>
         </button>
         <button type="button" id="gpaBtnHistoryAction" class="btn-gpa-history" onclick="OpenApprovalHistory()" title="Party / Project history">
-                <i class="fa fa-history"></i>History
-          </button>
+            <i class="fa fa-history"></i>
+            <span class="gpa-act-full">History</span>
+            <span class="gpa-act-short">History</span>
+        </button>
         <div class="gpa-attach-btn-wrap">
             <button type="button" id="btnGpaFooterAttach" class="btn-po-cancel btn-gpa-footer-attach" onclick="window.openGpaAttachmentControl()" title="Attachments">
-                <i class="fa fa-paperclip me-1"></i> Attachment
+                <i class="fa fa-paperclip"></i>
+                <span class="gpa-act-full">Attachment</span>
+                <span class="gpa-act-short">Attach</span>
             </button>
             <span id="gpaTempAttachBadge" class="gpa-temp-badge">0</span>
         </div>
         <button type="button" class="btn-po-save" onclick="window.saveGRNPaymentApproval()">
-            <i class="fa fa-save me-1"></i> Save
+            <i class="fa fa-save"></i>
+            <span class="gpa-act-full">Save</span>
+            <span class="gpa-act-short">Save</span>
         </button>
     </div>
 </div>

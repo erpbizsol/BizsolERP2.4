@@ -728,35 +728,26 @@
 
         #StateMaster,
         #StateMaster.fixed-width-table {
-            min-width: 760px !important;
-            width: max-content;
+            width: max-content !important;
+            min-width: 100% !important;
+            max-width: none !important;
+            table-layout: auto !important;
         }
 
         #StateMaster thead th,
         #StateMaster tbody td {
-            white-space: nowrap;
+            width: auto !important;
+            max-width: none !important;
+            white-space: nowrap !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
         }
 
         #StateMaster thead th:last-child,
         #StateMaster tbody td:last-child {
-            position: sticky;
-            right: 0;
-            z-index: 2;
-            min-width: 118px;
-            box-shadow: -4px 0 10px rgba(15, 23, 42, .08);
-        }
-
-        #StateMaster thead th:last-child {
-            z-index: 5;
-            background: linear-gradient(135deg, #4f46e5, #667eea) !important;
-        }
-
-        #StateMaster tbody td:last-child {
-            background: #fff !important;
-        }
-
-        #StateMaster tbody tr:nth-child(even) td:last-child {
-            background: var(--light-bg) !important;
+            position: static !important;
+            right: auto !important;
+            box-shadow: none !important;
         }
 
         .pm-actions {

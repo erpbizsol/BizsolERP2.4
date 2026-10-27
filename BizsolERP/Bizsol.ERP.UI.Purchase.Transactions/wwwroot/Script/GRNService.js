@@ -1137,6 +1137,9 @@ function setTodayDates() {
 async function loadVendorList() {
     const ddl = document.getElementById('ddlPartyName');
     if (!ddl) return;
+    if (window.jQuery && window.jQuery('#ddlPartyName').data('select2')) {
+        window.jQuery('#ddlPartyName').select2('destroy');
+    }
     try {
         const result = await GRNService.GetVendor();
         const rows = normalizeApiRows(result);
@@ -1160,6 +1163,27 @@ async function loadVendorList() {
         console.error('Failed to load vendors:', e);
         grnVendorListCache = [];
     }
+    bindPartySelect2();
+}
+
+function bindPartySelect2() {
+    const $ = window.jQuery;
+    if (!$ || !$.fn || !$.fn.select2) return;
+    const $el = $('#ddlPartyName');
+    if (!$el.length) return;
+    if ($el.data('select2')) $el.select2('destroy');
+    $el.select2({
+        placeholder: '-- Select Party --',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $(document.body)
+    });
+}
+
+function syncPartySelect2() {
+    const $ = window.jQuery;
+    const $el = $ && $('#ddlPartyName');
+    if ($el && $el.length && $el.data('select2')) $el.trigger('change.select2');
 }
 
 function grnGetSelectedVendorRecord(ddlVal) {
@@ -4875,6 +4899,7 @@ async function editGRN(code) {
                             }
                         }
                         if (!matched) ddlParty.value = pv;
+                        syncPartySelect2();
                         await loadPOsForParty(ddlParty.value);
                     }
                 }
@@ -5416,6 +5441,7 @@ function resetForm() {
     if (totalBillGridEl) totalBillGridEl.value = '0.00';
 
     document.getElementById('ddlPartyName').value             = '';
+    syncPartySelect2();
     const hdnMrn = document.getElementById('hdnMRNMasterCode');
     if (hdnMrn) hdnMrn.value = '0';
     if (typeof window.ClearPendingAttachments_AttachmentControl === 'function') {

@@ -62,22 +62,27 @@
             </div>
         </div>
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-            <label for="ddlMarketingMan" class="form-label">Sales Person <span class="text-danger">*</span></label>
-            <input list="ddlSalesPersonList" id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" placeholder="Sales Person" autocomplete="off" required>
-            <datalist id="ddlSalesPersonList"></datalist>
+            <div class="ee-fg">
+                <label for="ddlMarketingMan">Sales Person <span class="text-danger">*</span></label>
+                <select id="ddlMarketingMan" name="ddlMarketingMan" class="form-control form-control-sm box_border" required>
+                    <option value="">Sales Person</option>
+                </select>
+            </div>
         </div>
         <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-            <label for="ddlListStatus" class="form-label">Status</label>
-            <select id="ddlListStatus" class="form-control form-control-sm box_border">
-                <option value="ALL">-- All Status --</option>
-                <option value="PENDING_ALL">Pending &amp; Rejected</option>
-                <option value="Unverified">Unverified</option>
-                <option value="Pending">Pending Approval</option>
-                <option value="Verified">Verified</option>
-                <option value="Rejected">Rejected</option>
-            </select>
+            <div class="ee-fg">
+                <label for="ddlListStatus">Status</label>
+                <select id="ddlListStatus" class="form-control form-control-sm box_border">
+                    <option value="ALL">-- All Status --</option>
+                    <option value="PENDING_ALL">Pending &amp; Rejected</option>
+                    <option value="Unverified">Unverified</option>
+                    <option value="Pending">Pending Approval</option>
+                    <option value="Verified">Verified</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+            </div>
         </div>
-        <div class="col-12 col-sm-6 col-md-4 col-lg-1 without-label-field" style="margin-bottom:0.5rem">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-1 without-label-field">
             <div class="expense-entry-actions ee-list-toolbar">
                 <button type="button" id="btnShow" class="btn btn-primary btn-height"><i class="fas fa-search me-1"></i>Show</button>
             </div>
