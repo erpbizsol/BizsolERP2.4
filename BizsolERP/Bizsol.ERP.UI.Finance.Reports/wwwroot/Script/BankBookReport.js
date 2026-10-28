@@ -1,4 +1,5 @@
 import { BankBookReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BankBookReportService.js';
+import { BankMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BankMasterService.js';
 
 var LEVELS = [
     { id: 'PROJECTWISE', label: 'Project Wise' },
@@ -24,10 +25,13 @@ var drill = {
 };
 
 var lastRows = [];
+var COL_COUNT = 6;
 
 $(document).ready(function () {
     $('#ddlBbStatus').val('Pending');
+    $('#ddlBbBank').val('0');
     $('#ddlBbProject').val('0');
+    initDates();
     $('#ddlBbStatus').on('change', function () {
         $('#ddlBbProject').html('<option value="0">All</option>').val('0');
         loadProjectFilter();
@@ -48,9 +52,103 @@ $(document).ready(function () {
     $('#tblBankBookBody').on('click', 'tr.bb-row-link', function () {
         openNextLevel($(this).data('row'));
     });
+    loadBankFilter();
     loadProjectFilter();
     goToLevel('PROJECTWISE');
 });
+
+function formatDmy(date) {
+    return String(date.getDate()).padStart(2, '0') + '/'
+        + String(date.getMonth() + 1).padStart(2, '0') + '/'
+        + date.getFullYear();
+}
+
+function setDefaultDates() {
+    var today = new Date();
+    var first = new Date(today.getFullYear(), today.getMonth(), 1);
+    $('#txtBbFromDate').val(formatDmy(first));
+    $('#txtBbToDate').val(formatDmy(today));
+    if ($.fn.datepicker) {
+        $('#txtBbFromDate').datepicker('update', first);
+        $('#txtBbToDate').datepicker('update', today);
+    }
+}
+
+function initDates() {
+    if ($.fn.datepicker) {
+        $('#txtBbFromDate, #txtBbToDate').datepicker({
+            format: 'dd/mm/yyyy',
+            autoclose: true,
+            todayHighlight: true,
+            orientation: 'bottom auto',
+            container: 'body'
+        });
+    }
+    setDefaultDates();
+}
+
+function parseDmy(value) {
+    var match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(value || '').trim());
+    if (!match) return null;
+    var day = parseInt(match[1], 10);
+    var month = parseInt(match[2], 10);
+    var year = parseInt(match[3], 10);
+    var date = new Date(year, month - 1, day);
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+    return date;
+}
+
+function readDateFilters() {
+    var fromRaw = ($('#txtBbFromDate').val() || '').trim();
+    var toRaw = ($('#txtBbToDate').val() || '').trim();
+    var fromDate = fromRaw ? parseDmy(fromRaw) : null;
+    var toDate = toRaw ? parseDmy(toRaw) : null;
+    if (fromRaw && !fromDate) {
+        if (window.toastr) toastr.warning('From date must be dd/mm/yyyy.');
+        return null;
+    }
+    if (toRaw && !toDate) {
+        if (window.toastr) toastr.warning('To date must be dd/mm/yyyy.');
+        return null;
+    }
+    if (fromDate && toDate && fromDate > toDate) {
+        if (window.toastr) toastr.warning('From date must be on or before To date.');
+        return null;
+    }
+    return { fromRaw: fromRaw, toRaw: toRaw };
+}
+
+function selectedBankCode() {
+    return parseInt($('#ddlBbBank').val() || '0', 10) || 0;
+}
+
+function selectedBankName() {
+    var text = $('#ddlBbBank option:selected').text() || 'All';
+    return String(text).trim() || 'All';
+}
+
+function loadBankFilter() {
+    BankMasterService.GetBankMasterList().then(function (data) {
+        var rows = Array.isArray(data) ? data
+            : (Array.isArray(data && data.data) ? data.data
+            : (Array.isArray(data && data.Data) ? data.Data : []));
+        var html = '<option value="0">All</option>';
+        var seen = {};
+        rows.forEach(function (b) {
+            var code = String(b.Code || b.code || b.BankMaster_Code || b.bankMaster_Code || '').trim();
+            var name = String(b.BankName || b.bankName || '').trim();
+            var account = String(b.AccountNo || b.accountNo || '').trim();
+            if (!code || code === '0' || !name || seen[code]) return;
+            seen[code] = true;
+            var label = account ? name + ' (' + account + ')' : name;
+            html += '<option value="' + escHtml(code) + '">' + escHtml(label) + '</option>';
+        });
+        var current = String($('#ddlBbBank').val() || '0');
+        $('#ddlBbBank').html(html);
+        if ($('#ddlBbBank option[value="' + current + '"]').length) $('#ddlBbBank').val(current);
+        else $('#ddlBbBank').val('0');
+    }).catch(function () { });
+}
 
 function selectedProjectCode() {
     return parseInt($('#ddlBbProject').val() || '0', 10) || 0;
@@ -164,8 +262,13 @@ function openNextLevel(row) {
 }
 
 function loadReport() {
+    var dates = readDateFilters();
+    if (!dates) return;
     var payload = {
         Mode: drill.level,
+        FromDate: dates.fromRaw,
+        ToDate: dates.toRaw,
+        BankMaster_Code: selectedBankCode(),
         ReportStatus: $('#ddlBbStatus').val() || 'Pending',
         FilterProjectMaster_Code: selectedProjectCode(),
         ProjectMaster_Code: drill.projectCode || 0,
@@ -174,7 +277,7 @@ function loadReport() {
         ItemDescription: drill.level === 'PARTYWISE' || drill.level === 'DETAIL' ? drill.desp : '',
         PartyName: drill.level === 'DETAIL' ? drill.party : ''
     };
-    $('#tblBankBookBody').html('<tr><td colspan="3" class="bb-empty">Loading…</td></tr>');
+    $('#tblBankBookBody').html(emptyRow('Loading…'));
     $('#tblBankBookFoot').empty();
     if (typeof Showloader === 'function') Showloader();
     BankBookReportService.GetBankBookReport(payload)
@@ -183,7 +286,7 @@ function loadReport() {
         })
         .catch(function () {
             lastRows = [];
-            $('#tblBankBookBody').html('<tr><td colspan="3" class="bb-empty">Could not load the bank book report.</td></tr>');
+            $('#tblBankBookBody').html(emptyRow('Could not load the bank book report.'));
             if (window.toastr) toastr.error('Could not load the bank book report.');
         })
         .then(function () {
@@ -199,8 +302,12 @@ function normalizeRows(data) {
         return {
             RowKey: pick(r, ['RowKey', 'rowKey']),
             Particular: pick(r, ['Particular', 'particular']),
+            OpeningAmount: num(pick(r, ['OpeningAmount', 'openingAmount'])),
             ReceivedAmount: num(pick(r, ['ReceivedAmount', 'receivedAmount'])),
             PaymentAmount: num(pick(r, ['PaymentAmount', 'paymentAmount'])),
+            ClosingAmount: closingOf(r),
+            ScopeOpening: num(pick(r, ['ScopeOpening', 'scopeOpening'])),
+            OpeningBanks: pick(r, ['OpeningBanks', 'openingBanks']),
             ParentName: pick(r, ['ParentName', 'parentName'])
         };
     });
@@ -219,36 +326,149 @@ function num(v) {
     return isNaN(n) ? 0 : n;
 }
 
+function closingOf(row) {
+    var sent = pick(row, ['ClosingAmount', 'closingAmount']);
+    if (sent !== '' && sent != null) return num(sent);
+    return num(pick(row, ['OpeningAmount', 'openingAmount']))
+        + num(pick(row, ['ReceivedAmount', 'receivedAmount']))
+        - num(pick(row, ['PaymentAmount', 'paymentAmount']));
+}
+
+function emptyRow(message) {
+    return '<tr><td colspan="' + COL_COUNT + '" class="bb-empty">' + message + '</td></tr>';
+}
+
+function totalCells(opening, received, payment, balance, drcr) {
+    return '<td>Total</td>'
+        + '<td class="bb-amt">' + formatAmt(opening) + '</td>'
+        + '<td class="bb-amt">' + formatAmt(received) + '</td>'
+        + '<td class="bb-amt">' + formatAmt(payment) + '</td>'
+        + '<td class="bb-amt">' + formatAmt(balance) + '</td>'
+        + '<td class="bb-side">' + escHtml(drcr || '') + '</td>';
+}
+
+function closingCells(balance, drcr) {
+    return '<td>Closing</td>'
+        + '<td></td><td></td><td></td>'
+        + '<td class="bb-amt">' + formatAmt(balance) + '</td>'
+        + '<td class="bb-side">' + escHtml(drcr || '') + '</td>';
+}
+
+function rowNet(row) {
+    return num(row.OpeningAmount) + num(row.ReceivedAmount) - num(row.PaymentAmount);
+}
+
+function drCrOf(balance) {
+    var n = Math.round((num(balance) + Number.EPSILON) * 100) / 100;
+    if (n > 0) return 'Dr';
+    if (n < 0) return 'Cr';
+    return '';
+}
+
+/* Same sign rule as the vendor ledger: received increases the balance (Dr), payment reduces it (Cr). */
+function applyRunningBalance(rows) {
+    var run = 0;
+    rows.forEach(function (row) {
+        run = Math.round((run + rowNet(row) + Number.EPSILON) * 100) / 100;
+        row.Balance = run;
+        row.DrCr = drCrOf(run);
+    });
+    rows.finalBalance = run;
+}
+
 function renderRows(rows) {
-    lastRows = rows || [];
+    rows = rows || [];
+    applyBulkOpening(rows);
+    applyRunningBalance(rows);
+    lastRows = rows;
     $('#bbParticularHead').text('Particular');
     renderParentPills();
+    renderOpeningNote(rows);
+    $('#bbOpeningHead').text('Opening');
 
     if (!rows.length) {
-        $('#tblBankBookBody').html('<tr><td colspan="3" class="bb-empty">No records for this level.</td></tr>');
-        $('#tblBankBookFoot').html('<tr><td>Total</td><td class="bb-amt">0.00</td><td class="bb-amt">0.00</td></tr>');
+        $('#tblBankBookBody').html(emptyRow('No records for this level.'));
+        $('#tblBankBookFoot').html('<tr>' + totalCells(0, 0, 0, 0, '') + '</tr>');
         return;
     }
 
+    var opening = 0;
     var received = 0;
     var payment = 0;
     var canDrill = drill.level !== 'DETAIL';
     var html = '';
     rows.forEach(function (row) {
+        opening += row.OpeningAmount;
         received += row.ReceivedAmount;
         payment += row.PaymentAmount;
         var cls = canDrill ? ' class="bb-row-link"' : '';
         html += '<tr' + cls + '><td class="bb-particular">' + escHtml(row.Particular) + '</td>'
+            + '<td class="bb-amt">' + formatAmt(row.OpeningAmount) + '</td>'
             + '<td class="bb-amt">' + formatAmt(row.ReceivedAmount) + '</td>'
-            + '<td class="bb-amt">' + formatAmt(row.PaymentAmount) + '</td></tr>';
+            + '<td class="bb-amt">' + formatAmt(row.PaymentAmount) + '</td>'
+            + '<td class="bb-amt">' + formatAmt(row.Balance) + '</td>'
+            + '<td class="bb-side">' + escHtml(row.DrCr) + '</td></tr>';
     });
+    if (rows.bulkOpening != null && drill.level !== 'PROJECTWISE' && drill.level !== 'SUBPROJECTWISE' && rows.length > 1) {
+        opening = rows.bulkOpening;
+    }
+    var balance = rows.finalBalance || 0;
+    if (rows.bulkOpening != null && drill.level !== 'PROJECTWISE' && drill.level !== 'SUBPROJECTWISE' && rows.length > 1) {
+        balance = Math.round((opening + received - payment + Number.EPSILON) * 100) / 100;
+    }
     $('#tblBankBookBody').html(html);
     $('#tblBankBookBody tr.bb-row-link').each(function (i) {
         $(this).data('row', rows[i]);
     });
     $('#tblBankBookFoot').html(
-        '<tr><td>Total</td><td class="bb-amt">' + formatAmt(received) + '</td><td class="bb-amt">' + formatAmt(payment) + '</td></tr>'
+        '<tr class="bb-total">' + totalCells(opening, received, payment, balance, drCrOf(balance)) + '</tr>'
+        + '<tr class="bb-closing">' + closingCells(balance, drCrOf(balance)) + '</tr>'
     );
+}
+
+function applyBulkOpening(rows) {
+    rows.bulkOpening = null;
+    if (!rows.length || drill.level === 'PROJECTWISE' || drill.level === 'SUBPROJECTWISE') return;
+    var scope = num(rows[0].ScopeOpening);
+    rows.bulkOpening = scope;
+    if (rows.length === 1) {
+        rows[0].OpeningAmount = scope;
+    } else {
+        rows[0].OpeningAmount = num(rows[0].OpeningAmount) + scope;
+    }
+}
+
+function parseOpeningBanks(text) {
+    if (!text) return [];
+    return String(text).split('|').map(function (part) {
+        var cut = part.lastIndexOf('^');
+        if (cut < 0) return null;
+        return {
+            name: part.slice(0, cut),
+            amount: num(part.slice(cut + 1))
+        };
+    }).filter(function (bank) { return bank && bank.name; });
+}
+
+function renderOpeningNote(rows) {
+    var $note = $('#bbOpenNote');
+    if (drill.level === 'PROJECTWISE' || !rows.length) {
+        $note.empty().attr('hidden', 'hidden');
+        return;
+    }
+    var banks = parseOpeningBanks(rows[0].OpeningBanks);
+    if (!banks.length) {
+        $note.empty().attr('hidden', 'hidden');
+        return;
+    }
+    var title = drill.level === 'SUBPROJECTWISE'
+        ? 'Opening balances for this project'
+        : 'Opening balances for this subproject';
+    var html = '<span class="bb-open-note-title">' + escHtml(title) + '</span>';
+    banks.forEach(function (bank) {
+        html += '<span class="bb-open-bank">' + escHtml(bank.name) + ' <b>' + formatAmt(bank.amount) + '</b></span>';
+    });
+    $note.html(html).removeAttr('hidden');
 }
 
 function parentParts() {
@@ -291,11 +511,36 @@ function clearReport() {
     drill.party = '';
     drill.partyLabel = '';
     $('#ddlBbStatus').val('Pending');
-    $('#ddlBbProject').val('0');
+    $('#ddlBbBank').val('0');
+    $('#txtBbFromDate, #txtBbToDate').val('');
+    setDefaultDates();
+    $('#ddlBbProject').html('<option value="0">All</option>').val('0');
+    loadProjectFilter();
     renderCrumb();
     $('#bbParticularHead').text('Particular');
-    $('#tblBankBookBody').html('<tr><td colspan="3" class="bb-empty">Click Show to load the report.</td></tr>');
+    $('#bbOpeningHead').text('Opening');
+    $('#bbOpenNote').empty().attr('hidden', 'hidden');
+    $('#tblBankBookBody').html(emptyRow('Click Show to load the report.'));
     $('#tblBankBookFoot').empty();
+}
+
+function exportMetaRows() {
+    var projectText = $('#ddlBbProject option:selected').text() || 'All';
+    var fromRaw = ($('#txtBbFromDate').val() || '').trim() || 'All';
+    var toRaw = ($('#txtBbToDate').val() || '').trim() || 'All';
+    var parents = parentParts();
+    return [
+        ['Bank Book Report', '', '', '', '', ''],
+        ['Bank name', selectedBankName(), '', '', '', ''],
+        ['From date', fromRaw, '', '', '', ''],
+        ['To date', toRaw, '', '', '', ''],
+        ['Status', $('#ddlBbStatus').val() || 'Pending', '', '', '', ''],
+        ['Project name', String(projectText).trim() || 'All', '', '', '', ''],
+        ['Level', levelMeta(drill.level).label, '', '', '', ''],
+        ['Path', parents.length ? parents.join(' > ') : levelMeta(drill.level).label, '', '', '', ''],
+        ['', '', '', '', '', ''],
+        ['Particular', 'Opening', 'Received amount', 'Payment amount', 'Balance', 'Dr/Cr']
+    ];
 }
 
 function exportExcel() {
@@ -303,29 +548,50 @@ function exportExcel() {
         if (window.toastr) toastr.warning('Load the report first.');
         return;
     }
+    var opening = 0;
     var received = 0;
     var payment = 0;
-    var $head = $('#tblBankBookExport thead tr');
+    var balance = lastRows.length ? lastRows[lastRows.length - 1].Balance : 0;
+    var $thead = $('#tblBankBookExport thead');
     var $body = $('#tblBankBookExport tbody');
-    $head.empty();
+    $thead.empty();
     $body.empty();
-    $head.append($('<th/>').text('Particular'));
-    $head.append($('<th/>').text('Received amount'));
-    $head.append($('<th/>').text('Payment amount'));
+    exportMetaRows().forEach(function (cells) {
+        var meta = $('<tr/>');
+        cells.forEach(function (cell) {
+            meta.append($('<th/>').text(cell));
+        });
+        $thead.append(meta);
+    });
     lastRows.forEach(function (row) {
+        opening += row.OpeningAmount;
         received += row.ReceivedAmount;
         payment += row.PaymentAmount;
         var tr = $('<tr/>');
         tr.append($('<td/>').text(row.Particular));
+        tr.append($('<td/>').text(formatAmt(row.OpeningAmount)));
         tr.append($('<td/>').text(formatAmt(row.ReceivedAmount)));
         tr.append($('<td/>').text(formatAmt(row.PaymentAmount)));
+        tr.append($('<td/>').text(formatAmt(row.Balance)));
+        tr.append($('<td/>').text(row.DrCr || ''));
         $body.append(tr);
     });
     var total = $('<tr/>');
     total.append($('<td/>').text('Total'));
+    total.append($('<td/>').text(formatAmt(opening)));
     total.append($('<td/>').text(formatAmt(received)));
     total.append($('<td/>').text(formatAmt(payment)));
+    total.append($('<td/>').text(formatAmt(balance)));
+    total.append($('<td/>').text(drCrOf(balance)));
     $body.append(total);
+    var closing = $('<tr/>');
+    closing.append($('<td/>').text('Closing'));
+    closing.append($('<td/>').text(''));
+    closing.append($('<td/>').text(''));
+    closing.append($('<td/>').text(''));
+    closing.append($('<td/>').text(formatAmt(balance)));
+    closing.append($('<td/>').text(drCrOf(balance)));
+    $body.append(closing);
 
     var now = new Date();
     var dateString = now.getFullYear() + '-'
@@ -334,21 +600,22 @@ function exportExcel() {
         + String(now.getHours()).padStart(2, '0') + '-'
         + String(now.getMinutes()).padStart(2, '0');
     var level = levelMeta(drill.level).label.replace(/\s+/g, '');
+    var bankPart = selectedBankName().replace(/[^\w]+/g, '_').replace(/^_+|_+$/g, '') || 'AllBanks';
     if ($.fn.table2excel) {
         $('#tblBankBookExport').table2excel({
-            filename: 'BankBookReport_' + level + '_' + dateString,
+            filename: 'BankBookReport_' + bankPart + '_' + level + '_' + dateString,
             fileext: '.xlsx'
         });
         return;
     }
-    downloadCsv('BankBookReport_' + level + '_' + dateString + '.csv');
+    downloadCsv('BankBookReport_' + bankPart + '_' + level + '_' + dateString + '.csv');
 }
 
 function downloadCsv(filename) {
-    var lines = ['Particular,Received amount,Payment amount'];
-    $('#tblBankBookExport tbody tr').each(function () {
+    var lines = [];
+    $('#tblBankBookExport thead tr, #tblBankBookExport tbody tr').each(function () {
         var cols = [];
-        $(this).find('td').each(function () {
+        $(this).find('th, td').each(function () {
             var text = $(this).text().replace(/"/g, '""');
             cols.push('"' + text + '"');
         });
@@ -363,7 +630,7 @@ function downloadCsv(filename) {
 }
 
 function formatAmt(n) {
-    var v = Math.round((num(n) + Number.EPSILON) * 100) / 100;
+    var v = Math.round((Math.abs(num(n)) + Number.EPSILON) * 100) / 100;
     return v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
