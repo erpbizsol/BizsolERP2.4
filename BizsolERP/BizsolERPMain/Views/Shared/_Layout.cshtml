@@ -1875,14 +1875,25 @@
         }
 
         .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: auto !important;
-            top: 50% !important;
-            transform: translateY(-50%);
-            right: 4px !important;
+            height: 100% !important;
+            top: 0 !important;
+            bottom: auto !important;
+            right: 8px !important;
+            width: 20px !important;
+            transform: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
         .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            position: static !important;
+            top: auto !important;
+            left: auto !important;
+            margin: 0 !important;
             border-color: #667eea transparent transparent transparent !important;
+            border-style: solid !important;
+            border-width: 5px 4px 0 4px !important;
         }
 
         .select2-container--default.select2-container--focus .select2-selection--single,
@@ -1905,9 +1916,74 @@
         }
 
         .select2-container--open .select2-dropdown {
-            z-index: 100020 !important;
+            z-index: 100060 !important;
             max-width: 100vw !important;
             box-sizing: border-box;
+        }
+
+        /*
+         * Select2 attachBody portals a span onto document.body.
+         * .modal is z-index 100013, so the portal must be higher or the list hides behind the dialog.
+         */
+        body > span.select2-container--open:not(.select2),
+        body > .select2-container--open:not(.select2),
+        body.modal-open > span:has(> .select2-dropdown) {
+            z-index: 100060 !important;
+        }
+
+        /*
+         * Opening a list must not scroll the dialog. The search box focus
+         * otherwise pushes the card up and leaves an empty gap under it.
+         */
+        .im-backdrop.s2-scroll-lock,
+        .vm-backdrop.s2-scroll-lock,
+        .pm-modal.s2-scroll-lock,
+        .modal.s2-scroll-lock,
+        .im-backdrop:has(.select2-container--open),
+        .vm-backdrop:has(.select2-container--open),
+        .pm-modal:has(.select2-container--open) {
+            overflow: hidden !important;
+        }
+
+        .im-modal-body.s2-scroll-lock,
+        .vm-modal-body.s2-scroll-lock,
+        .modal-body.s2-scroll-lock,
+        .modal-dialog.s2-scroll-lock {
+            overflow: hidden !important;
+        }
+
+        /* Inside a dialog, keep a normal list under the field — not the phone bottom sheet. */
+        .select2-container--open.s2-in-dialog:not(.select2) {
+            position: fixed !important;
+            z-index: 100060 !important;
+            margin: 0 !important;
+            transform: none !important;
+        }
+
+        .select2-container--open.s2-in-dialog:not(.select2) .select2-dropdown {
+            border-radius: 10px !important;
+            overflow: hidden !important;
+            max-height: min(280px, 46vh) !important;
+        }
+
+        .select2-container--open.s2-in-dialog:not(.select2) .select2-results__options {
+            max-height: min(220px, 40vh) !important;
+        }
+
+        /*
+         * Modals, scrollable dialogs, and filter cards use overflow:hidden, which clips
+         * a Select2 list that is still inside the dialog. While a list is open, let it paint outside.
+         */
+        .modal:has(.select2-container--open),
+        .modal:has(.select2-container--open) .modal-dialog,
+        .modal:has(.select2-container--open) .modal-content,
+        .modal:has(.select2-container--open) .modal-body,
+        .modal:has(.select2-container--open) .card,
+        .modal:has(.select2-container--open) .card-body,
+        .modal:has(.select2-container--open) .table-responsive,
+        .modal:has(.select2-container--open) .table-wrapper,
+        .modal:has(.select2-container--open) div[id^="tbl"] {
+            overflow: visible !important;
         }
 
         /*
@@ -1946,14 +2022,14 @@
                 position: fixed;
                 inset: 0;
                 background: rgba(15, 23, 42, 0.48);
-                z-index: 99998;
+                z-index: 100040;
                 animation: backdropFadeIn 0.2s ease;
                 -webkit-tap-highlight-color: transparent;
                 touch-action: auto;
             }
 
             /* Dropdown portal pinned to the bottom (beats Select2 inline top/left) */
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) {
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) {
                 position: fixed !important;
                 display: block !important;
                 left: 0 !important;
@@ -1963,16 +2039,16 @@
                 width: 100% !important;
                 max-width: 100vw !important;
                 height: auto !important;
-                z-index: 100000 !important;
+                z-index: 100060 !important;
                 margin: 0 !important;
                 overflow: visible !important;
                 animation: s2SheetIn 0.28s cubic-bezier(0.32, 0.72, 0, 1);
                 transition: bottom 0.2s ease;
             }
 
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-dropdown,
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-dropdown--below,
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-dropdown--above {
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-dropdown,
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-dropdown--below,
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-dropdown--above {
                 position: relative !important;
                 top: auto !important;
                 left: auto !important;
@@ -1989,12 +2065,12 @@
                 border-top: 3px solid var(--accent-primary) !important;
                 box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.28) !important;
                 background: #fff !important;
-                z-index: 100000 !important;
+                z-index: 100060 !important;
                 overflow: hidden !important;
                 padding-bottom: env(safe-area-inset-bottom, 8px);
             }
 
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-dropdown::before {
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-dropdown::before {
                 content: '';
                 display: block;
                 width: 36px;
@@ -2005,15 +2081,15 @@
                 flex-shrink: 0;
             }
 
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-search--dropdown,
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-search--hide {
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-search--dropdown,
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-search--hide {
                 display: block !important;
                 order: 0;
                 flex-shrink: 0;
                 padding: 8px 12px 10px !important;
             }
 
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-search--dropdown .select2-search__field {
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-search--dropdown .select2-search__field {
                 display: block !important;
                 width: 100% !important;
                 height: 42px !important;
@@ -2028,20 +2104,20 @@
                 box-shadow: none !important;
             }
 
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-search--dropdown .select2-search__field:focus {
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-search--dropdown .select2-search__field:focus {
                 border-color: var(--accent-primary) !important;
                 background: #fff !important;
                 box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18) !important;
             }
 
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-results {
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-results {
                 order: 1;
                 flex: 0 1 auto;
                 min-height: 0;
                 overflow: hidden;
             }
 
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-results__options {
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-results__options {
                 max-height: min(48vh, 380px) !important;
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
@@ -2050,7 +2126,7 @@
                 touch-action: pan-y;
             }
 
-            .select2-container--open:not(.select2):not(.plan-s2-sheet) .select2-results__option {
+            .select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog) .select2-results__option {
                 padding: 12px 16px !important;
                 min-height: 44px;
                 line-height: 1.35;
@@ -3136,8 +3212,20 @@
             return !!(target && $(target).closest('#PlannedMyModal').length);
         }
 
+        function _select2IsInDialog(target) {
+            if (!target || !window.jQuery) return false;
+            return jQuery(target).closest('.modal, .vm-backdrop, .im-backdrop, .pm-modal').length > 0;
+        }
+
+        function _tagDialogSelect2Portal() {
+            var nodes = document.querySelectorAll('.select2-container--open:not(.select2):not(.plan-s2-sheet)');
+            for (var i = 0; i < nodes.length; i++) {
+                nodes[i].classList.add('s2-in-dialog');
+            }
+        }
+
         function _getSelect2MobilePortal() {
-            return document.querySelector('.select2-container--open:not(.select2):not(.plan-s2-sheet)');
+            return document.querySelector('.select2-container--open:not(.select2):not(.plan-s2-sheet):not(.s2-in-dialog)');
         }
 
         function _lockSelect2PageScroll() {
@@ -3223,7 +3311,159 @@
             }
         }
 
+        var _s2ScrollLocks = [];
+        var _s2DialogLocks = [];
+        var _s2HoldTimer = null;
+
+        function _isDialogScrollRoot(node) {
+            if (!node || !node.classList) return false;
+            return node.classList.contains('im-backdrop')
+                || node.classList.contains('im-modal')
+                || node.classList.contains('im-modal-body')
+                || node.classList.contains('im-view-body')
+                || node.classList.contains('vm-backdrop')
+                || node.classList.contains('vm-modal')
+                || node.classList.contains('vm-modal-body')
+                || node.classList.contains('pm-modal')
+                || node.classList.contains('modal')
+                || node.classList.contains('modal-dialog')
+                || node.classList.contains('modal-content')
+                || node.classList.contains('modal-body');
+        }
+
+        function _captureDialogScroll(fromEl) {
+            _s2ScrollLocks = [];
+            var node = fromEl || null;
+            while (node && node !== document.body) {
+                if (node.scrollHeight > node.clientHeight + 1 || node.scrollWidth > node.clientWidth + 1 || _isDialogScrollRoot(node)) {
+                    _s2ScrollLocks.push({ el: node, top: node.scrollTop, left: node.scrollLeft });
+                }
+                node = node.parentElement;
+            }
+            _s2ScrollLocks.push({
+                win: true,
+                top: window.pageYOffset || 0,
+                left: window.pageXOffset || 0
+            });
+        }
+
+        function _restoreDialogScroll() {
+            for (var i = 0; i < _s2ScrollLocks.length; i++) {
+                var s = _s2ScrollLocks[i];
+                if (s.win) window.scrollTo(s.left, s.top);
+                else if (s.el) {
+                    s.el.scrollTop = s.top;
+                    s.el.scrollLeft = s.left;
+                }
+            }
+        }
+
+        function _lockDialogScroll(fromEl) {
+            _captureDialogScroll(fromEl);
+            _s2DialogLocks = [];
+            var seen = [];
+            for (var i = 0; i < _s2ScrollLocks.length; i++) {
+                var s = _s2ScrollLocks[i];
+                if (!s.el || seen.indexOf(s.el) !== -1) continue;
+                if (!_isDialogScrollRoot(s.el)) continue;
+                seen.push(s.el);
+                _s2DialogLocks.push({ el: s.el, top: s.top, left: s.left });
+                s.el.classList.add('s2-scroll-lock');
+                s.el.scrollTop = s.top;
+                s.el.scrollLeft = s.left;
+            }
+        }
+
+        function _holdDialogScroll() {
+            for (var i = 0; i < _s2DialogLocks.length; i++) {
+                var s = _s2DialogLocks[i];
+                if (!s.el) continue;
+                if (s.el.scrollTop !== s.top) s.el.scrollTop = s.top;
+                if (s.el.scrollLeft !== s.left) s.el.scrollLeft = s.left;
+            }
+            _restoreDialogScroll();
+        }
+
+        function _unlockDialogScroll() {
+            for (var i = 0; i < _s2DialogLocks.length; i++) {
+                var s = _s2DialogLocks[i];
+                if (!s.el) continue;
+                s.el.classList.remove('s2-scroll-lock');
+                s.el.scrollTop = s.top;
+                s.el.scrollLeft = s.left;
+            }
+            _s2DialogLocks = [];
+        }
+
+        function _placeDialogSelect2() {
+            if (!document.body.classList.contains('s2-in-dialog')) return;
+            var portal = document.querySelector('body > span.select2-container--open:not(.select2), body > .select2-container--open:not(.select2)');
+            var trigger = document.querySelector('.select2-container.select2-container--open');
+            if (!portal || !trigger) return;
+            portal.classList.add('s2-in-dialog');
+            var rect = trigger.getBoundingClientRect();
+            var drop = portal.querySelector('.select2-dropdown');
+            var dropH = drop ? drop.offsetHeight : 220;
+            if (!dropH || dropH < 40) dropH = 220;
+            var spaceBelow = window.innerHeight - rect.bottom - 12;
+            var openAbove = spaceBelow < Math.min(dropH, 180) && rect.top > spaceBelow;
+            var top = openAbove ? Math.max(8, rect.top - dropH - 4) : (rect.bottom + 2);
+            var width = Math.max(rect.width, 140);
+            var left = rect.left;
+            if (left + width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - width - 8);
+            if (left < 8) left = 8;
+            portal.style.setProperty('position', 'fixed', 'important');
+            portal.style.setProperty('top', top + 'px', 'important');
+            portal.style.setProperty('left', left + 'px', 'important');
+            portal.style.setProperty('width', width + 'px', 'important');
+            portal.style.setProperty('right', 'auto', 'important');
+            portal.style.setProperty('bottom', 'auto', 'important');
+            portal.style.setProperty('transform', 'none', 'important');
+            portal.style.setProperty('margin', '0', 'important');
+        }
+
+        function _stopDialogScrollHold() {
+            if (_s2HoldTimer) {
+                window.clearInterval(_s2HoldTimer);
+                _s2HoldTimer = null;
+            }
+        }
+
+        function _startDialogScrollHold() {
+            _stopDialogScrollHold();
+            var n = 0;
+            _s2HoldTimer = window.setInterval(function () {
+                _holdDialogScroll();
+                _placeDialogSelect2();
+                n++;
+                if (n > 15) _stopDialogScrollHold();
+            }, 40);
+        }
+
+        document.addEventListener('focusin', function (e) {
+            var t = e.target;
+            if (!t || !t.classList || !t.classList.contains('select2-search__field')) return;
+            if (!document.body.classList.contains('s2-in-dialog')) return;
+            _holdDialogScroll();
+            _placeDialogSelect2();
+        }, true);
+
+        $(document).on('mousedown touchstart', '.select2-container', function () {
+            var sel = $(this).prev('select')[0];
+            var from = sel || this;
+            if (_select2IsInDialog(from)) {
+                document.body.classList.add('s2-in-dialog');
+                _lockDialogScroll(from);
+            } else {
+                _captureDialogScroll(from);
+            }
+        });
+
         $(document).on('select2:opening', function (e) {
+            var inDialog = _select2IsInDialog(e.target);
+            document.body.classList.toggle('s2-in-dialog', inDialog);
+            if (inDialog) _lockDialogScroll(e.target);
+
             var $modal = $(e.target).closest('.modal');
             if ($modal.length) {
                 _s2ModalEl  = $modal[0];
@@ -3232,7 +3472,7 @@
                 _s2ModalEl = null;
             }
 
-            if (_isSelect2Mobile() && !_isPlanSelect2Sheet(e.target)) {
+            if (_isSelect2Mobile() && !_isPlanSelect2Sheet(e.target) && !inDialog) {
                 document.body.classList.add('s2-mobile-open');
             }
         });
@@ -3246,6 +3486,20 @@
 
             var isMobile = _isSelect2Mobile();
             var skipSheet = _isPlanSelect2Sheet(e.target);
+            var inDialog = document.body.classList.contains('s2-in-dialog') || _select2IsInDialog(e.target);
+
+            if (inDialog) {
+                if (!_s2DialogLocks.length) _lockDialogScroll(e.target);
+                _tagDialogSelect2Portal();
+                _placeDialogSelect2();
+                _holdDialogScroll();
+                _startDialogScrollHold();
+                window.requestAnimationFrame(function () {
+                    _tagDialogSelect2Portal();
+                    _placeDialogSelect2();
+                    _holdDialogScroll();
+                });
+            }
 
             setTimeout(function () {
                 var searchField = null;
@@ -3268,14 +3522,29 @@
                     searchField.placeholder = 'Search...';
                 }
 
-                // Desktop: focus search. Mobile: do not auto-focus — opening the
-                // keyboard immediately was stretching the sheet into a blank half-page.
-                if (searchField && !isMobile) {
-                    searchField.focus({ preventScroll: true });
+                if (searchField) {
+                    try { searchField.focus({ preventScroll: true }); }
+                    catch (err) { searchField.focus(); }
+                    if (inDialog) {
+                        _holdDialogScroll();
+                        _placeDialogSelect2();
+                    }
                 }
             }, 10);
 
-            if (isMobile && !skipSheet) {
+            if (inDialog) {
+                _holdDialogScroll();
+                window.setTimeout(function () {
+                    _holdDialogScroll();
+                    _placeDialogSelect2();
+                }, 60);
+                window.setTimeout(function () {
+                    _holdDialogScroll();
+                    _placeDialogSelect2();
+                }, 180);
+            }
+
+            if (isMobile && !skipSheet && !inDialog) {
                 if (!$('.select2-backdrop').length) {
                     $('<div class="select2-backdrop"></div>').appendTo('body');
                 }
@@ -3296,6 +3565,10 @@
 
         $(document).on('select2:close select2:closing select2:select', function () {
             _s2ModalEl = null;
+            _stopDialogScrollHold();
+            _holdDialogScroll();
+            _unlockDialogScroll();
+            document.body.classList.remove('s2-in-dialog');
             _cleanupSelect2MobileState();
         });
 

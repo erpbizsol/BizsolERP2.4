@@ -466,56 +466,132 @@ function updateUrdGroupTriggerText() {
     $text.text(shown).removeClass('is-placeholder');
 }
 
+var urdGroupIgnoreCloseUntil = 0;
+
+function isUrdPhoneView() {
+    return window.innerWidth <= 768;
+}
+
+function mountUrdGroupSheet(panel) {
+    var backdrop = document.getElementById('urdGroupBackdrop');
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.id = 'urdGroupBackdrop';
+        backdrop.className = 'urd-group-backdrop';
+        backdrop.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            setUrdGroupDropdownOpen(false);
+        });
+        document.body.appendChild(backdrop);
+    }
+    if (panel.parentElement !== document.body) document.body.appendChild(panel);
+    panel.classList.add('is-sheet');
+    document.body.classList.add('urd-group-sheet-open');
+}
+
+function clearUrdGroupPanelLayout(panel) {
+    if (!panel) return;
+    panel.classList.remove('is-sheet');
+    panel.style.position = '';
+    panel.style.top = '';
+    panel.style.left = '';
+    panel.style.right = '';
+    panel.style.bottom = '';
+    panel.style.width = '';
+    panel.style.maxWidth = '';
+    panel.style.zIndex = '';
+    panel.style.maxHeight = '';
+    panel.style.display = '';
+    var list = document.getElementById('urdGroupCheckList');
+    if (list) list.style.maxHeight = '';
+}
+
+function unmountUrdGroupSheet(panel) {
+    var backdrop = document.getElementById('urdGroupBackdrop');
+    if (backdrop) backdrop.remove();
+    document.body.classList.remove('urd-group-sheet-open');
+    clearUrdGroupPanelLayout(panel);
+    var root = document.getElementById('urdGroupMulti');
+    if (panel && root && panel.parentElement !== root) root.appendChild(panel);
+}
+
 function positionUrdGroupPanel() {
     var trigger = document.getElementById('btnUrdGroupTrigger');
     var panel = document.getElementById('urdGroupPanel');
-    if (!trigger || !panel) return;
+    if (!trigger || !panel || !$('#urdGroupMulti').hasClass('is-open')) return;
+
+    if (isUrdPhoneView()) {
+        mountUrdGroupSheet(panel);
+        var vv = window.visualViewport;
+        var keyboard = 0;
+        if (vv) keyboard = Math.max(0, window.innerHeight - vv.offsetTop - vv.height);
+        if (keyboard < 40) keyboard = 0;
+        panel.style.bottom = keyboard + 'px';
+        var list = document.getElementById('urdGroupCheckList');
+        if (keyboard && vv) {
+            var maxH = Math.max(180, Math.min(vv.height - 8, 520));
+            panel.style.maxHeight = maxH + 'px';
+            if (list) list.style.maxHeight = Math.max(100, maxH - 148) + 'px';
+        } else {
+            panel.style.maxHeight = '';
+            if (list) list.style.maxHeight = '';
+        }
+        return;
+    }
+
+    if (panel.classList.contains('is-sheet')) unmountUrdGroupSheet(panel);
 
     var rect = trigger.getBoundingClientRect();
+    var viewHeight = window.innerHeight;
     var top = rect.bottom + 4;
-    var left = rect.left;
-    var width = rect.width;
-    var maxHeight = Math.max(160, Math.min(280, window.innerHeight - top - 16));
+    var panelH = Math.max(180, Math.min(320, viewHeight - top - 12));
 
     panel.style.position = 'fixed';
-    panel.style.top = top + 'px';
-    panel.style.left = left + 'px';
-    panel.style.width = width + 'px';
+    panel.style.left = rect.left + 'px';
+    panel.style.width = rect.width + 'px';
     panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
     panel.style.zIndex = '9999';
+    panel.style.maxHeight = panelH + 'px';
+    panel.style.top = top + 'px';
 
-    var list = document.getElementById('urdGroupCheckList');
-    if (list) {
-        list.style.maxHeight = Math.max(120, maxHeight - 90) + 'px';
-    }
+    var deskList = document.getElementById('urdGroupCheckList');
+    if (deskList) deskList.style.maxHeight = Math.max(110, panelH - 100) + 'px';
 }
 
 function setUrdGroupDropdownOpen(isOpen) {
     var $root = $('#urdGroupMulti');
     if (!$root.length) return;
+    if (!isOpen && Date.now() < urdGroupIgnoreCloseUntil) return;
+
     $root.toggleClass('is-open', !!isOpen);
     $('#btnUrdGroupTrigger').attr('aria-expanded', isOpen ? 'true' : 'false');
 
     var panel = document.getElementById('urdGroupPanel');
     if (isOpen) {
+        if (isUrdPhoneView()) urdGroupIgnoreCloseUntil = Date.now() + 500;
         positionUrdGroupPanel();
-        setTimeout(function () { $('#txtUrdGroupSearch').trigger('focus'); }, 0);
+        if (!isUrdPhoneView()) {
+            setTimeout(function () { $('#txtUrdGroupSearch').trigger('focus'); }, 0);
+        }
         $(window).off('scroll.urdGroupPanel resize.urdGroupPanel')
             .on('scroll.urdGroupPanel resize.urdGroupPanel', function () {
-                if ($('#urdGroupMulti').hasClass('is-open')) {
-                    positionUrdGroupPanel();
-                }
+                if ($('#urdGroupMulti').hasClass('is-open')) positionUrdGroupPanel();
             });
+        if (window.visualViewport) {
+            window.visualViewport.removeEventListener('resize', positionUrdGroupPanel);
+            window.visualViewport.removeEventListener('scroll', positionUrdGroupPanel);
+            window.visualViewport.addEventListener('resize', positionUrdGroupPanel);
+            window.visualViewport.addEventListener('scroll', positionUrdGroupPanel);
+        }
     } else {
         $(window).off('scroll.urdGroupPanel resize.urdGroupPanel');
-        if (panel) {
-            panel.style.position = '';
-            panel.style.top = '';
-            panel.style.left = '';
-            panel.style.width = '';
-            panel.style.right = '';
-            panel.style.zIndex = '';
+        if (window.visualViewport) {
+            window.visualViewport.removeEventListener('resize', positionUrdGroupPanel);
+            window.visualViewport.removeEventListener('scroll', positionUrdGroupPanel);
         }
+        unmountUrdGroupSheet(panel);
         $('#txtUrdGroupSearch').val('');
         applyUrdGroupSearch('');
     }
@@ -564,7 +640,7 @@ function bindUrdGroupMultiselectEvents() {
     });
 
     $(document).off('click.urdGroupMulti').on('click.urdGroupMulti', function (e) {
-        if (!$(e.target).closest('#urdGroupMulti').length) {
+        if (!$(e.target).closest('#urdGroupMulti, #urdGroupPanel').length) {
             setUrdGroupDropdownOpen(false);
         }
     });
@@ -572,6 +648,18 @@ function bindUrdGroupMultiselectEvents() {
     $(document).off('keydown.urdGroupMulti').on('keydown.urdGroupMulti', function (e) {
         if (e.key === 'Escape') setUrdGroupDropdownOpen(false);
     });
+}
+
+function fitUsersPreviewHeight() {
+    var el = document.getElementById('urdUsersPreview');
+    if (!el) return;
+    if (window.innerWidth > 768) {
+        el.style.height = '';
+        return;
+    }
+    el.style.height = 'auto';
+    var next = Math.min(160, Math.max(88, el.scrollHeight));
+    el.style.height = next + 'px';
 }
 
 function setUsersPreview(text, title, hasUsers) {
@@ -583,14 +671,15 @@ function setUsersPreview(text, title, hasUsers) {
     if (!hasUsers && !text) {
         $pv.attr('placeholder', 'Select groups to preview users');
     }
+    fitUsersPreviewHeight();
 }
 
 function cellValueHtml(val, canEdit) {
     var granted = val === 'Y';
     var cls = granted ? 'urd-cell-granted' : 'urd-cell-empty';
     var tip = granted
-        ? (canEdit ? 'Granted (Y) — click for N' : 'Granted (Y)')
-        : (canEdit ? 'No access (N) — click for Y' : 'No access (N)');
+        ? (canEdit ? 'Click the Y circle to update' : 'Granted (Y)')
+        : (canEdit ? 'No access (N) — click N to show Y, then click the Y circle to save' : 'No access (N)');
     return '<span class="' + cls + '" title="' + tip + '">' + (granted ? 'Y' : 'N') + '</span>';
 }
 
@@ -987,9 +1076,10 @@ function RenderDashboard(res, selectedGroupCodes) {
     $('#urd-table-wrap').show();
     $('#urd-table-toolbar').show();
 
-    // ─ Column widths — module name + group cols ─
-    var colModule = 300;
-    var colAccessMin = 140;
+    // ─ Column widths — narrower on a phone so group columns stay on screen ─
+    var isPhone = window.innerWidth <= 768;
+    var colModule = isPhone ? 148 : 300;
+    var colAccessMin = isPhone ? 84 : 140;
     var tableW = colModule + groups.length * colAccessMin;
     var $table = $('.urd-table-matrix');
     $table.css({ width: tableW + 'px', minWidth: tableW + 'px', maxWidth: tableW + 'px' });
@@ -1054,9 +1144,19 @@ function RenderDashboard(res, selectedGroupCodes) {
         var $btn = $(this);
         ToggleRow($btn.attr('data-parent-code'), $btn.data('level'), $btn);
     });
-    $tbody.off('click.urdAccess').on('click.urdAccess', '.urd-td-access', function () {
+    $tbody.off('click.urdAccess').on('click.urdAccess', '.urd-td-access', function (e) {
         var $cell = $(this);
         if ($cell.hasClass('urd-td-category-gap') || $cell.hasClass('is-readonly')) return;
+        var $hit = $(e.target);
+        if ($hit.closest('.urd-cell-empty').length) {
+            e.preventDefault();
+            e.stopPropagation();
+            markCellPendingY($cell);
+            return;
+        }
+        if (!$hit.closest('.urd-cell-granted').length) return;
+        e.preventDefault();
+        e.stopPropagation();
         OnCellClick($cell);
     });
 
@@ -1112,15 +1212,12 @@ function buildRowHtml(row) {
             '</div></div></td>' + cells + '</tr>';
     }
 
-    var indent = Math.max(0, lavel - 1) * 18;
-    var toggleHtml = hasKids
-        ? buildToggleBtn(code, lavel)
-        : '<span class="urd-toggle-spacer"></span>';
+    var toggleHtml = hasKids ? buildToggleBtn(code, lavel) : '';
     return tr +
         '<td class="urd-td-module" title="' + escHtml(modulePath.join(' > ')) + '">' +
         '<div class="urd-mod-row">' +
         toggleHtml +
-        '<span class="urd-mod-text" style="padding-left:' + indent + 'px">' +
+        '<span class="urd-mod-text">' +
         GetModuleIcon(moduleType, lavel) + escHtml(moduleName) + '</span>' +
         '</div></td>' + cells + '</tr>';
 }
@@ -1524,6 +1621,13 @@ function isSaveOk(res) {
     return !!(res && (res.Status === 'Success' || res.status === 'Success' || res.Success === true));
 }
 
+function markCellPendingY($cell) {
+    if ($cell.hasClass('is-readonly')) return;
+    if (String($cell.data('value') || 'N') === 'Y') return;
+    $cell.addClass('is-pending is-granted');
+    $cell.html('<span class="urd-cell-granted urd-cell-pending" title="Click the Y circle to save">Y</span>');
+}
+
 function OnCellClick($cell) {
     var moduleCode = parseInt($cell.data('module-code'), 10);
     var moduleType = $cell.data('module-type');
@@ -1607,11 +1711,12 @@ function OnCellClick($cell) {
 
 function UpdateCellUI($cell, val, saving) {
     if (saving) {
-        $cell.removeClass('is-granted').html('<span class="urd-matrix-saving"><i class="fas fa-spinner fa-spin"></i></span>');
+        $cell.removeClass('is-granted is-pending').html('<span class="urd-matrix-saving"><i class="fas fa-spinner fa-spin"></i></span>');
         return;
     }
     var granted = val === 'Y';
     var canEdit = !$cell.hasClass('is-readonly');
+    $cell.removeClass('is-pending');
     $cell.toggleClass('is-granted', granted);
     $cell.html(cellValueHtml(val, canEdit));
 }

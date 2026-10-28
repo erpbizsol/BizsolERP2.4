@@ -10,10 +10,14 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 // ─── Admin password validation via HomeController.ValidateAdminPassword ───────
 // Password variable is managed in:
 //   BizsolERPMain/Controllers/HomeController.cs  →  AdminToolsPasswordHash
+function getAppBaseUrl() {
+    return (sessionStorage.getItem('AppBaseURL') || '').replace(/\/$/, '');
+}
+
 function validatePasswordLocally(password) {
     return new Promise(function (resolve, reject) {
         $.ajax({
-            url: '/Home/ValidateAdminPassword',
+            url: getAppBaseUrl() + '/Home/ValidateAdminPassword',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ Password: password }),

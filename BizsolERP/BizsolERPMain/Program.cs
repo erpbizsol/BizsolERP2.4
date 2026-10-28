@@ -48,6 +48,7 @@ namespace BizsolERPMain
             app.UseHttpsRedirection();
 
             // Drop conditional headers so a publish cannot come back as 304 with the old script.
+
             app.Use(async (context, next) =>
             {
                 var path = context.Request.Path.Value ?? "";
@@ -73,6 +74,7 @@ namespace BizsolERPMain
                     {
                         var headers = ctx.Context.Response.Headers;
                         headers.CacheControl = "no-store, no-cache, must-revalidate";
+                        //headers.CacheControl = "no-cache, must-revalidate";
                         headers.Pragma = "no-cache";
                         headers.Expires = "0";
                     }

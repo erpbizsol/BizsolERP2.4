@@ -875,6 +875,136 @@ body:has(.ee-backdrop.show) { overflow: hidden; }
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15) !important;
 }
 
+.ee-list-filter-bar .row {
+    align-items: flex-end;
+}
+.ee-list-filter-bar .row > [class*="col-"],
+.ee-list-filter-bar .ee-fg {
+    min-width: 0;
+    max-width: 100%;
+}
+@media (min-width: 992px) {
+    .ee-list-filter-bar .row {
+        flex-wrap: nowrap;
+    }
+}
+.ee-list-filter-bar .ee-fg input[type="date"],
+.ee-list-filter-bar .ee-fg select.form-control {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 31px !important;
+    min-height: 31px !important;
+    max-height: 31px !important;
+    padding: 2px 8px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    box-sizing: border-box !important;
+}
+/* iPhone date controls have a large intrinsic width and paint past the card. */
+.ee-list-filter-bar .ee-fg input[type="date"]::-webkit-datetime-edit,
+.ee-list-filter-bar .ee-fg input[type="date"]::-webkit-date-and-time-value {
+    min-width: 0;
+    padding: 0;
+}
+.ee-list-filter-bar .ee-fg .select2-container {
+    width: 100% !important;
+}
+.ee-list-filter-bar .ee-fg .select2-container--default .select2-selection--single,
+.ee-list-filter-bar .ee-fg .select2-container .select2-selection--single {
+    height: 31px !important;
+    min-height: 31px !important;
+    max-height: 31px !important;
+    padding: 0 28px 0 8px !important;
+    border-radius: 8px !important;
+    border: 1px solid #ced4da !important;
+    background: #fff !important;
+    display: flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+}
+.ee-list-filter-bar .ee-fg .select2-container--default .select2-selection--single .select2-selection__rendered,
+.ee-list-filter-bar .ee-fg .select2-container .select2-selection--single .select2-selection__rendered {
+    line-height: 29px !important;
+    padding: 0 !important;
+    font-size: 13px !important;
+}
+.ee-list-filter-bar .ee-fg .select2-container--default .select2-selection--single .select2-selection__arrow,
+.ee-list-filter-bar .ee-fg .select2-container .select2-selection--single .select2-selection__arrow {
+    height: 29px !important;
+    top: 0 !important;
+}
+.ee-list-filter-bar .without-label-field {
+    margin-bottom: 0 !important;
+}
+.ee-list-filter-bar #btnShow {
+    height: 31px;
+    min-height: 31px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    padding: 0 14px;
+    margin: 0;
+}
+
+/* Phone: keep From/To date (and the other filters) inside the white card.
+   Bootstrap's negative row margin plus the iOS date control's min-content width
+   pushes the inputs past the card border. */
+@media (max-width: 576px) {
+    .ee-page:not(.elr-page):not(.pmr-page) .ee-list-header,
+    .ee-page:not(.elr-page):not(.pmr-page) .ee-list-filter-bar {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    .ee-page:not(.elr-page):not(.pmr-page) .ee-list-filter-bar {
+        padding: 12px 12px 10px;
+        overflow: hidden;
+    }
+    .ee-page:not(.elr-page):not(.pmr-page) .ee-list-filter-bar .row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        --bs-gutter-x: 0px;
+        --bs-gutter-y: 0px;
+        gap: 10px;
+    }
+    .ee-page:not(.elr-page):not(.pmr-page) .ee-list-filter-bar .row > [class*="col-"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        flex: none !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin-top: 0;
+    }
+    .ee-page:not(.elr-page):not(.pmr-page) .ee-list-filter-bar .ee-fg,
+    .ee-page:not(.elr-page):not(.pmr-page) .ee-list-filter-bar .ee-fg input[type="date"],
+    .ee-page:not(.elr-page):not(.pmr-page) .ee-list-filter-bar .ee-fg select.form-control,
+    .ee-page:not(.elr-page):not(.pmr-page) .ee-list-filter-bar .ee-fg .select2-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+    /* Native iOS date widgets ignore width:100% and spill past the card. */
+    html.ios-device .ee-page:not(.elr-page):not(.pmr-page) .ee-list-filter-bar .ee-fg input[type="date"] {
+        -webkit-appearance: none;
+        appearance: none;
+        background-color: #fff !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 16px 16px;
+        padding-right: 34px !important;
+        line-height: 27px !important;
+    }
+}
+
 /* ── Datepicker ─────────────────────────────────────────────────────── */
 .highlighted-date {
     background: var(--primary-gradient) !important;
