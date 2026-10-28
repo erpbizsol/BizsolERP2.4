@@ -27,11 +27,9 @@ function getDropdownList(tableName, fieldName, filterCondition) {
 }
 
 /**
- * Bank Master — matches BizSol.WebERP.DAL.Common.Masters.Service.BankMasterService
- * and dbo.USP_WebAPI_BankMaster (LOCATE, SHOWDATA, SAVEDATA, DELETE).
- *
- * SaveBankMaster DAL: SaveBankMaster(..., IEnumerable<tblBankMaster> BankMaster)
- * API POST body: [ tblBankMaster ]  (raw JSON array — not wrapped in { BankMaster: ... })
+ * Bank Master — api/Bank
+ * Save body:
+ * { bankMaster: [ tblBankMaster ], projectWiseOpenningDetail: [ { code, bankMaster_Code, projectMaster_Code, subProjectMaster_Code, amount } ] }
  */
 const BankMasterService = {
     GetBankMasterList: function GetBankMasterList() {
@@ -49,13 +47,28 @@ const BankMasterService = {
     },
 
     /**
-     * POST body must be a JSON array: [ tblBankMaster ]
-     * Controller: SaveBankMaster([FromBody] IEnumerable<tblBankMaster> BankMaster)
+     * POST api/Bank/SaveBankMaster
+     * { bankMaster: [...], projectWiseOpenningDetail: [...] }
+     * A raw array is still accepted and wrapped so ServiceTaxNo keeps saving on the bank row.
      */
-    SaveBankMaster: function SaveBankMaster(bankMasterRows) {
-        const rows = Array.isArray(bankMasterRows) ? bankMasterRows : bankMasterRows ? [bankMasterRows] : [];
+    SaveBankMaster: function SaveBankMaster(payload) {
+        var body = payload;
+        if (Array.isArray(payload) || (payload && !payload.bankMaster && !payload.BankMaster)) {
+            body = {
+                bankMaster: Array.isArray(payload) ? payload : payload ? [payload] : [],
+                projectWiseOpenningDetail: [],
+            };
+        }
         const URL = UrlService.API_ENDPOINT_BANK_MASTER + '/SaveBankMaster';
-        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(rows)).then(function (value) {
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(body)).then(function (value) {
+            return value;
+        });
+    },
+
+    /** GET api/Bank/GetFixedParameterFinance — AskProjectOpenningInBankMaster */
+    GetFixedParameterFinance: function GetFixedParameterFinance() {
+        const URL = UrlService.API_ENDPOINT_BANK_MASTER + '/GetFixedParameterFinance';
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
             return value;
         });
     },
