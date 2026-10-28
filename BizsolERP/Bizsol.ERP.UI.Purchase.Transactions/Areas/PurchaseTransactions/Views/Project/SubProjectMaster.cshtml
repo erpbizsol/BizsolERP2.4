@@ -4,7 +4,7 @@
 
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/SubProjectMaster.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/SubProjectMaster.js?v=spm-select2-3"></script>
 
 <style>
     /* ── Page wrapper ──────────────────────────────────────────── */
@@ -551,6 +551,8 @@
         border: 1px solid var(--border-color);
         padding: 20px 20px 6px;
         box-shadow: var(--shadow-sm);
+        max-width: 100%;
+        min-width: 0;
     }
 
     .pm-form-section-title {
@@ -574,12 +576,14 @@
 
     .pm-form-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 16px 18px;
         margin-bottom: 16px;
+        width: 100%;
+        min-width: 0;
     }
 
-    .pm-fg { display: flex; flex-direction: column; gap: 6px; }
+    .pm-fg { display: flex; flex-direction: column; gap: 6px; min-width: 0; max-width: 100%; }
     .pm-fg.span2 { grid-column: span 2; }
     .pm-fg.span3 { grid-column: span 3; }
 
@@ -607,6 +611,44 @@
     .pm-fg select:focus {
         border-color: var(--accent-primary);
         box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+    }
+
+    /* iOS date controls have a large intrinsic width and spill out of the card */
+    .pm-form-section .row {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .pm-form-section .row > [class*="col-"] {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .pm-fg input[type="date"] {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    @@supports (-webkit-touch-callout: none) {
+        .pm-fg input[type="date"] {
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .pm-fg input[type="date"]::-webkit-date-and-time-value,
+        .pm-fg input[type="date"]::-webkit-datetime-edit,
+        .pm-fg input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+            display: inline-flex;
+            align-items: center;
+            min-width: 0;
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
     }
 
     /* ── Form buttons ──────────────────────────────────────────── */
@@ -693,6 +735,63 @@
 
     /* ── Select2 multiselect overrides ─────────────────────────── */
     .pm-fg .select2-container { width: 100% !important; }
+
+    /*
+     * Select2 attachBody puts the list on document.body.
+     * .modal is z-index 100013, so the portal must be higher or the list stays hidden.
+     */
+    body.modal-open > span.spm-select2-portal,
+    body.spm-modal-open > span.spm-select2-portal,
+    body.modal-open > span:has(> .select2-dropdown),
+    body.spm-modal-open > span:has(> .select2-dropdown),
+    body > span.select2-container--open:not(.select2) {
+        z-index: 100060 !important;
+    }
+
+    /*
+     * .pm-modal and the levels table use overflow:hidden, which cuts off a Select2 list.
+     * While a list is open, let it paint outside the dialog.
+     */
+    .pm-modal:has(.select2-container--open),
+    .pm-modal:has(.select2-container--open) .modal-dialog,
+    .pm-modal:has(.select2-container--open) .modal-content,
+    .pm-modal:has(.select2-container--open) .modal-body,
+    .pm-modal:has(.select2-container--open) .pm-form-section,
+    .pm-modal:has(.select2-container--open) [id^="dvLevelsTableWrap_"] {
+        overflow: visible !important;
+    }
+
+    #dvSubProjectModal .pm-site-rep-select-wrap.select2-open {
+        position: relative;
+        z-index: 2;
+    }
+
+    .pm-fg .select2-container--default .select2-selection--single {
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        min-height: 42px;
+        background: var(--white-bg);
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+    .pm-fg .select2-container--default.select2-container--focus .select2-selection--single,
+    .pm-fg .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+        outline: none;
+    }
+
+    .pm-fg .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 40px;
+        padding-left: 13px;
+        color: var(--text-dark);
+        font-size: 13.5px;
+    }
+
+    .pm-fg .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+        right: 8px;
+    }
 
     .pm-fg .select2-container--default .select2-selection--multiple {
         border: 1.5px solid var(--border-color);
@@ -934,7 +1033,7 @@
     @@media (max-width: 880px) {
         .pm-stats { gap: 10px; }
         .pm-stat-chip { min-width: 120px; padding: 13px 16px; }
-        .pm-form-grid { grid-template-columns: repeat(2, 1fr); }
+        .pm-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .pm-fg.span2 { grid-column: span 1; }
         .pm-fg.span3 { grid-column: span 2; }
     }
@@ -943,7 +1042,7 @@
         .pm-hero-title { font-size: 17px; }
         .pm-stats { flex-wrap: wrap; }
         .pm-stat-chip { min-width: calc(50% - 7px); }
-        .pm-form-grid { grid-template-columns: 1fr; }
+        .pm-form-grid { grid-template-columns: minmax(0, 1fr); }
         .pm-fg.span2, .pm-fg.span3 { grid-column: span 1; }
         .pm-modal .modal-dialog {
             margin: 0.5rem auto;
@@ -1143,7 +1242,7 @@
                             <div class="pm-fg">
                                 <label>Site Representative</label>
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="flex-grow-1" style="min-width:0;">
+                                    <div class="flex-grow-1 pm-site-rep-select-wrap" style="min-width:0;">
                                         <select id="frmDdlSiteRepSPM" style="width:100%;"></select>
                                     </div>
                                     <button type="button"

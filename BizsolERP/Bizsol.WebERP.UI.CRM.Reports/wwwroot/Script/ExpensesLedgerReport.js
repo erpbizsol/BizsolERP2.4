@@ -10,6 +10,10 @@ let G_LedgerCurrentPage = 1;
 let G_AllProjects = [];
 let G_FiltersReady = false;
 const PROJECT_EXPENSE_REPORT = 'project expense report';
+const VENDOR_PROJECT_REPORT = 'vendor project wise';
+const VENDOR_LEDGER_REPORT = 'vendor ledger report';
+const LEDGER_PAGE_SUBTITLE = 'View payments, expenses and running balance for the selected period and filters.';
+const VENDOR_PROJECT_SUBTITLE = 'Vendor-wise PO, GRN and payment summary for the selected date range. Click a vendor to open project / sub-project breakdown.';
 const PROJECT_LEVELS = [
     { id: 'PROJECTWISE', label: 'Project Wise' },
     { id: 'SUBPROJECTWISE', label: 'Sub Project Wise' },
@@ -39,6 +43,19 @@ function emptyProjectDrill() {
 
 function isProjectExpenseReport() {
     return String($('#ddlReportType').val() || '').trim().toLowerCase() === PROJECT_EXPENSE_REPORT;
+}
+
+function normalizeReportLabel(value) {
+    return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function isVendorProjectReport() {
+    const label = normalizeReportLabel($('#ddlReportType').val());
+    return label === VENDOR_PROJECT_REPORT || label === 'vendor wise';
+}
+
+function isVendorLedgerReport() {
+    return normalizeReportLabel($('#ddlReportType').val()) === VENDOR_LEDGER_REPORT;
 }
 
 function pad2(n) {
@@ -346,15 +363,22 @@ function loadDropdowns() {
         const rows = asDdLArray(response);
         const $rt = $('#ddlReportType');
         $rt.empty();
-        if (!rows.length) {
-            $rt.append($('<option/>').attr('value', '').text('-- No report types --'));
-            return;
-        }
         rows.forEach(function (row) {
             const label = reportTypeDisplay(row);
             if (!label) return;
             $rt.append($('<option/>').attr('value', label).text(label));
         });
+        // let hasVendorProject = false;
+        // $rt.find('option').each(function () {
+        //     const label = normalizeReportLabel($(this).val());
+        //     if (label === VENDOR_PROJECT_REPORT || label === 'vendor wise') hasVendorProject = true;
+        // });
+        // if (!hasVendorProject) {
+        //     $rt.append($('<option/>').attr('value', 'Vendor Project Wise').text('Vendor Project Wise'));
+        // }
+        if (!$rt.find('option').length) {
+            $rt.append($('<option/>').attr('value', '').text('-- No report types --'));
+        }
         initSelect2('#ddlReportType');
     });
 
@@ -456,7 +480,87 @@ function ledgerParticularsRowKind(particulars) {
     return '';
 }
 
+function vendorLedgerKind(row) {
+    const rowType = String(firstNonEmpty(row, ['RowType', 'rowType']) || '').trim().toLowerCase();
+    if (rowType) return rowType;
+    return ledgerParticularsRowKind(String(row.Particulars || row.Desp || ''));
+}
+
+function vendorSideAmount(row, side) {
+    const keys = side === 'dr' ? ['Dr', 'dr', 'DR'] : ['CR', 'Cr', 'cr'];
+    return firstNonEmpty(row, keys);
+}
+
+function applyLedgerTableHeaders() {
+    const $tr = $('#tblLedger thead tr');
+    if (!$tr.length) return;
+    $tr.empty();
+    const cols = isVendorLedgerReport()
+        ? [
+            { t: 'Date', w: '7.5rem' },
+            { t: 'Desp' },
+            { t: 'Project' },
+            { t: 'Sub project' },
+            { t: 'Dr', num: true },
+            { t: 'CR', num: true },
+            { t: 'Balance', num: true },
+            { t: 'Dr/Cr', w: '3.5rem' },
+        ]
+        : [
+            { t: 'S.No', w: '3rem' },
+            { t: 'Date', w: '7rem' },
+            { t: 'Particulars' },
+            { t: 'Project' },
+            { t: 'Sub project' },
+            { t: 'Payment', num: true },
+            { t: 'Expenses', num: true },
+            { t: 'Balance', num: true },
+            { t: 'Dr/Cr', w: '3.5rem' },
+        ];
+    cols.forEach(function (c) {
+        const th = $('<th/>').text(c.t);
+        if (c.w) th.css('width', c.w);
+        if (c.num) th.addClass('num');
+        $tr.append(th);
+    });
+}
+
+function computeVendorLedgerStats(rows) {
+    const data = rows.filter((r) => !(r.Error != null && r.Error !== '') && !(r.error != null && r.error !== ''));
+    let sumPay = 0;
+    let sumExp = 0;
+    let closingBal = null;
+    let closingDrCr = '';
+    data.forEach(function (r) {
+        const kind = vendorLedgerKind(r);
+        if (kind === 'closing') {
+            const bal = firstNonEmpty(r, ['Balance', 'balance']);
+            const side = String(firstNonEmpty(r, ['DrCr', 'drCr', 'DRCR']) || '').trim();
+            if (bal !== '' && bal != null) {
+                closingBal = bal;
+                closingDrCr = side;
+            } else {
+                const dr = parseAmountForSum(vendorSideAmount(r, 'dr'));
+                const cr = parseAmountForSum(vendorSideAmount(r, 'cr'));
+                if (cr > 0) {
+                    closingBal = cr;
+                    closingDrCr = 'Cr';
+                } else if (dr > 0) {
+                    closingBal = dr;
+                    closingDrCr = 'Dr';
+                }
+            }
+            return;
+        }
+        if (kind === 'opening' || kind === 'total') return;
+        sumPay += parseAmountForSum(vendorSideAmount(r, 'dr'));
+        sumExp += parseAmountForSum(vendorSideAmount(r, 'cr'));
+    });
+    return { rows: data.length, sumPay, sumExp, closingBal, closingDrCr };
+}
+
 function computeLedgerStats(rows) {
+    if (isVendorLedgerReport()) return computeVendorLedgerStats(rows);
     const data = rows.filter((r) => !(r.Error != null && r.Error !== '') && !(r.error != null && r.error !== ''));
     let sumPay = 0;
     let sumExp = 0;
@@ -533,7 +637,41 @@ function updateLedgerPaginatorUi() {
     $('#elrBtnLast').prop('disabled', atLast);
 }
 
+function appendVendorLedgerRow($body, row) {
+    const kind = vendorLedgerKind(row);
+    const particulars = String(row.Particulars || row.Desp || '');
+    const tr = $('<tr/>');
+    if (kind === 'opening') tr.addClass('row-opening');
+    if (kind === 'closing') tr.addClass('row-closing');
+    if (kind === 'total') tr.addClass('row-total');
+
+    const desp = kind === 'total' || kind === 'closing'
+        ? ''
+        : String(row.Desp != null && String(row.Desp) !== '' ? row.Desp : particulars);
+    let project = '';
+    let sub = '';
+    if (kind === 'closing') sub = 'Closing';
+    else if (kind !== 'total') {
+        project = ledgerRowProjectName(row);
+        sub = ledgerRowSubProjectName(row);
+    }
+
+    tr.append($('<td/>').text(row.Date != null ? row.Date : ''));
+    tr.append($('<td/>').text(desp));
+    tr.append($('<td/>').text(project));
+    tr.append($('<td/>').text(sub));
+    tr.append($('<td class="num"/>').text(formatAmount(vendorSideAmount(row, 'dr'))));
+    tr.append($('<td class="num"/>').text(formatAmount(vendorSideAmount(row, 'cr'))));
+    tr.append($('<td class="num"/>').text(kind === 'total' ? '' : formatAmount(firstNonEmpty(row, ['Balance', 'balance']))));
+    tr.append($('<td/>').text(kind === 'total' ? '' : String(firstNonEmpty(row, ['DrCr', 'drCr', 'DRCR']) || '')));
+    $body.append(tr);
+}
+
 function appendLedgerRow($body, row) {
+    if (isVendorLedgerReport()) {
+        appendVendorLedgerRow($body, row);
+        return;
+    }
     const p = (row.Particulars || '').toString();
     const tr = $('<tr/>');
     const kind = ledgerParticularsRowKind(p);
@@ -851,7 +989,32 @@ function restoreLedgerProjects() {
 
 function applyReportTypeLayout() {
     const projectMode = isProjectExpenseReport();
-    $('.elr-page').toggleClass('is-project-expense', projectMode);
+    const vendorMode = !projectMode && isVendorProjectReport();
+    const vendorLedger = !projectMode && !vendorMode && isVendorLedgerReport();
+    $('.elr-page')
+        .toggleClass('is-project-expense', projectMode)
+        .toggleClass('is-vendor-project', vendorMode)
+        .toggleClass('is-vendor-ledger', vendorLedger);
+    applyLedgerTableHeaders();
+    $('#elrPageSubtitle').text(vendorMode ? VENDOR_PROJECT_SUBTITLE : LEDGER_PAGE_SUBTITLE);
+    if (vendorMode) {
+        clearLedgerView();
+        projectRows = [];
+        G_VendorProjectDrill = resetVendorProjectDrill();
+        showVendorPlaceholder('Click Show to load the report.');
+        ensureVendorNameDropdown('0');
+        loadVendorNameOptions();
+        return;
+    }
+    clearVendorProjectView();
+    if (vendorLedger) {
+        clearLedgerView();
+        projectRows = [];
+        ensureVendorNameDropdown($('#ddlVendorName').val() || '0');
+        loadVendorNameOptions();
+        restoreLedgerProjects();
+        return;
+    }
     if (projectMode) {
         clearLedgerView();
         projectDrill = emptyProjectDrill();
@@ -901,7 +1064,606 @@ function exportProjectExcel() {
     });
 }
 
+const VENDOR_PROJECT_DRILL_LEVELS = [
+    { key: 'vendor', title: 'Vendor wise', next: 'project' },
+    { key: 'project', title: 'Project / Sub project wise', next: null },
+];
+const VENDOR_PROJECT_VENDOR_METRICS = [
+    { id: 'poAmountWithGst', label: 'PO Amount With Gst', keys: ['POAmountWithGST', 'poAmountWithGST', 'POAmountWithGst'] },
+    { id: 'totalGrnAmount', label: 'Total GRN Amount', keys: ['TotalGRNAmount', 'totalGRNAmount', 'TotalGrnAmount'] },
+    { id: 'tdsDeposit', label: 'TDS Deposit', keys: ['TDSDeposit', 'tdsDeposit', 'TDS_Deposit'] },
+    { id: 'netPay', label: 'NetPay', keys: ['NetPay', 'netPay'] },
+    { id: 'payment', label: 'Payment', keys: ['PaymentAmount', 'paymentAmount', 'Payment', 'payment'] },
+];
+const VENDOR_PROJECT_PROJECT_METRICS = [
+    { id: 'poTaxableAmount', label: 'PO Taxable Amount', keys: ['POTaxableAmount', 'poTaxableAmount', 'POTaxableAmt'] },
+    { id: 'gstAmount', label: 'GST Amount', keys: ['GSTAmount', 'gstAmount', 'GST'] },
+    { id: 'totalPoAmount', label: 'Total PO Amount', keys: ['TotalPOAmount', 'totalPOAmount', 'TotalPoAmount'] },
+    { id: 'totalBillGrnAmount', label: 'Total Bill Grn Amount', keys: ['TotalBillGRNAmount', 'totalBillGRNAmount', 'TotalGRNAmount', 'TotalBillAmount'] },
+    { id: 'tdsDeposit', label: 'TDS Deposit', keys: ['TDSDeposit', 'tdsDeposit', 'TDS_Deposit'] },
+    { id: 'netPay', label: 'NetPay', keys: ['NetPay', 'netPay'] },
+    { id: 'totalPayment', label: 'Total Payment', keys: ['TotalPaymentAmount', 'totalPaymentAmount', 'TotalPayment', 'PaymentAmount', 'paymentAmount'] },
+];
+const VENDOR_PROJECT_BALANCE_KEYS = {
+    vendor: {
+        dr: ['BalanceDR', 'balanceDR', 'BalanceDr'],
+        cr: ['BalanceCR', 'balanceCR', 'BalanceCr'],
+    },
+    project: {
+        dr: ['BalanceDR', 'balanceDR', 'BalanceDr'],
+        cr: ['BalanceCR', 'balanceCR', 'BalanceCr'],
+    },
+};
+let G_VendorProjectRows = [];
+let G_VendorProjectDrill = resetVendorProjectDrill();
+let G_VendorNameOptions = [];
+let G_VendorColFilter = {};
+let G_VendorColSort = null;
+
+function resetVendorProjectDrill() {
+    return { level: 'vendor', vendorCode: 0, vendorName: '' };
+}
+
+function vendorProjectLevel(key) {
+    for (let i = 0; i < VENDOR_PROJECT_DRILL_LEVELS.length; i++) {
+        if (VENDOR_PROJECT_DRILL_LEVELS[i].key === key) return VENDOR_PROJECT_DRILL_LEVELS[i];
+    }
+    return VENDOR_PROJECT_DRILL_LEVELS[0];
+}
+
+function vendorProjectValue(row, keys) {
+    return firstNonEmpty(row, keys);
+}
+
+function vendorProjectCode(row, keys) {
+    const n = parseInt(vendorProjectValue(row, keys), 10);
+    return Number.isNaN(n) ? 0 : n;
+}
+
+function vendorProjectMetricValue(row, metricDef) {
+    return parseAmountForSum(vendorProjectValue(row, metricDef.keys));
+}
+
+function vendorProjectSignedBalance(lines, levelKey) {
+    const keys = VENDOR_PROJECT_BALANCE_KEYS[levelKey] || VENDOR_PROJECT_BALANCE_KEYS.vendor;
+    let dr = 0;
+    let cr = 0;
+    lines.forEach(function (row) {
+        dr += parseAmountForSum(vendorProjectValue(row, keys.dr));
+        cr += parseAmountForSum(vendorProjectValue(row, keys.cr));
+    });
+    return dr - cr;
+}
+
+function vendorApiDate(dateString) {
+    const parts = String(dateString || '').trim().split('/');
+    if (parts.length !== 3) return '';
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+    return year + '-' + month + '-' + day;
+}
+
+function vendorBalanceCell(amount) {
+    const n = parseAmountForSum(amount);
+    const cls = n < 0 ? 'num elr-balance-negative' : 'num';
+    return '<td class="' + cls + '">' + escHtml(formatAmount(Math.abs(n))) + '</td>';
+}
+
+function vendorBalanceSides(lines, levelKey) {
+    const keys = VENDOR_PROJECT_BALANCE_KEYS[levelKey] || VENDOR_PROJECT_BALANCE_KEYS.vendor;
+    let dr = 0;
+    let cr = 0;
+    (lines || []).forEach(function (row) {
+        dr += parseAmountForSum(vendorProjectValue(row, keys.dr));
+        cr += parseAmountForSum(vendorProjectValue(row, keys.cr));
+    });
+    return { dr: dr, cr: cr };
+}
+
+function vendorDrCrLabel(lines, levelKey) {
+    const sides = vendorBalanceSides(lines, levelKey);
+    if (sides.dr > sides.cr) return 'Dr';
+    if (sides.cr > sides.dr) return 'Cr';
+    return '';
+}
+
+function vendorDrCrCell(lines, levelKey) {
+    return '<td class="elr-drcr">' + escHtml(vendorDrCrLabel(lines, levelKey)) + '</td>';
+}
+
+function showVendorPlaceholder(message) {
+    $('#elrVendorCrumb').empty();
+    $('#tblVendorProjectHead').html('<tr><th>Vendor Project Wise</th></tr>');
+    $('#tblVendorProjectBody').html('<tr><td class="elr-drill-empty">' + escHtml(message) + '</td></tr>');
+}
+
+function clearVendorProjectView() {
+    G_VendorProjectRows = [];
+    G_VendorProjectDrill = resetVendorProjectDrill();
+    showVendorPlaceholder('Click Show to load the report.');
+}
+
+function renderVendorCrumb() {
+    if (G_VendorProjectDrill.level === 'vendor') {
+        $('#elrVendorCrumb').empty();
+        return;
+    }
+    const name = G_VendorProjectDrill.vendorName || 'Project / Sub project';
+    $('#elrVendorCrumb').html(
+        '<button type="button" class="elr-crumb-btn" data-vw-level="vendor">Vendor wise</button>' +
+        '<span class="elr-crumb-sep">→</span>' +
+        '<span class="elr-crumb-btn is-current">' + escHtml(name) + '</span>'
+    );
+}
+
+function vendorProjectHeaders(level) {
+    if (level === 'project') {
+        return ['S.No', 'Project', 'Sub project'].concat(VENDOR_PROJECT_PROJECT_METRICS.map(function (m) { return m.label; }), ['Balance', 'Dr/Cr']);
+    }
+    return ['S.No', 'Vendor name'].concat(VENDOR_PROJECT_VENDOR_METRICS.map(function (m) { return m.label; }), ['Balance', 'Dr/Cr']);
+}
+
+function selectedVendorMasterCode() {
+    const raw = String($('#ddlVendorName').val() || '').trim();
+    if (!raw || raw === '0' || raw === 'All') return 0;
+    return parseInt(raw, 10) || 0;
+}
+
+function ensureVendorNameDropdown(keepValue) {
+    const $el = $('#ddlVendorName');
+    if (!$el.length) return;
+    const keep = keepValue != null ? String(keepValue) : String($el.val() || '0');
+    bindSelectList($el[0], G_VendorNameOptions, isVendorLedgerReport() ? 'Select' : 'All');
+    if ($el.data('select2')) $el.select2('destroy');
+    initSelect2($el);
+    if (keep && $el.find('option[value="' + keep.replace(/"/g, '\\"') + '"]').length) {
+        $el.val(keep).trigger('change.select2');
+    } else {
+        $el.val('0').trigger('change.select2');
+    }
+}
+
+function loadVendorNameOptions() {
+    const fromDate = vendorApiDate($('#txtdateFrom').val());
+    const toDate = vendorApiDate($('#txtdateTo').val());
+    if (!fromDate || !toDate) {
+        ensureVendorNameDropdown('0');
+        return;
+    }
+    ExpensesLedgerReportService.GetVendorWiseReport(fromDate, toDate, 0).then(function (response) {
+        if (!isVendorProjectReport() && !isVendorLedgerReport()) return;
+        const rows = asDdLArray(response).filter(function (row) { return row && !row.Error && !row.error; });
+        rememberVendorOptions(rows, true);
+    }).catch(function () {
+        ensureVendorNameDropdown($('#ddlVendorName').val() || '0');
+    });
+}
+
+function rememberVendorOptions(rows, replaceList) {
+    const map = new Map();
+    if (!replaceList) {
+        G_VendorNameOptions.forEach(function (opt) {
+            map.set(String(opt.Code), opt);
+        });
+    }
+    rows.forEach(function (row) {
+        const code = vendorProjectCode(row, ['VendorMaster_Code', 'vendorMaster_Code']);
+        const name = String(vendorProjectValue(row, ['VendorName', 'vendorName']) || '').trim();
+        if (!code || !name) return;
+        map.set(String(code), { Code: String(code), Desp: name });
+    });
+    G_VendorNameOptions = Array.from(map.values()).sort(function (a, b) {
+        return String(a.Desp).localeCompare(String(b.Desp), undefined, { sensitivity: 'base' });
+    });
+    ensureVendorNameDropdown($('#ddlVendorName').val());
+}
+
+function resetVendorColumnFilters() {
+    G_VendorColFilter = {};
+    G_VendorColSort = null;
+}
+
+function vendorFilterDomId(column) {
+    return 'vw-' + String(column || '').replace(/\s+/g, '');
+}
+
+function vendorGroupColumnText(group, column) {
+    return column === 'Sub project' ? (group.subName || '') : (group.projectName || '');
+}
+
+function applyVendorColumnView(groups) {
+    let list = groups.slice();
+    Object.keys(G_VendorColFilter).forEach(function (column) {
+        const selected = G_VendorColFilter[column];
+        if (!selected || !selected.length) return;
+        list = list.filter(function (group) {
+            return selected.indexOf(vendorGroupColumnText(group, column)) >= 0;
+        });
+    });
+    if (G_VendorColSort && G_VendorColSort.column) {
+        const column = G_VendorColSort.column;
+        const dir = G_VendorColSort.order === 'desc' ? -1 : 1;
+        list.sort(function (a, b) {
+            return dir * String(vendorGroupColumnText(a, column)).localeCompare(
+                String(vendorGroupColumnText(b, column)),
+                undefined,
+                { sensitivity: 'base' }
+            );
+        });
+    }
+    return list;
+}
+
+function vendorFilterHeader(label) {
+    const id = vendorFilterDomId(label);
+    const active = G_VendorColFilter[label] && G_VendorColFilter[label].length;
+    const filterIcon = active ? '<i class="fa-solid fa-filter" style="color:#fff;margin-left:5px;"></i>' : '';
+    return (
+        '<th class="elr-vw-filter-th">' +
+            '<div class="filter-table-heading-div">' +
+                '<span class="filter-table-heading">' + escHtml(label) + filterIcon + '</span>' +
+                '<span class="table-filter-arrow">' +
+                    '<i class="fa-solid fa-angle-down elr-vw-open" data-col="' + escHtml(label) + '" style="cursor:pointer;"></i>' +
+                '</span>' +
+                '<div class="filter-division" id="filterDropdown-' + id + '" style="display:none;">' +
+                    '<div class="dropdown-content">' +
+                        '<div class="dropdown-item elr-vw-sort" data-col="' + escHtml(label) + '" data-order="asc">' +
+                            '<i class="fa-solid fa-arrow-up-a-z sort-indicator sort-indicator-color"></i> Ascending' +
+                        '</div>' +
+                        '<div class="dropdown-item elr-vw-sort" data-col="' + escHtml(label) + '" data-order="desc">' +
+                            '<i class="fa-solid fa-arrow-down-z-a sort-indicator sort-indicator-color"></i> Descending' +
+                        '</div>' +
+                        '<div class="dropdown-item fafilter elr-vw-filter" data-col="' + escHtml(label) + '">' +
+                            '<i class="fa-solid fa-filter sort-indicator-color"></i> Filter...' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="filter-dropdown" id="filter-' + id + '" style="display:none;">' +
+                '<input type="text" placeholder="Search..." class="filter-input form-control form-control-sm" data-column="' + escHtml(label) + '" />' +
+                '<div class="checkbox-container" id="checkbox-container-' + id + '"></div>' +
+                '<hr>' +
+                '<button type="button" class="btn btn-success btn-height elr-vw-apply" data-col="' + escHtml(label) + '">Apply</button>' +
+                '<button type="button" class="btn btn-success btn-height elr-vw-clear" data-col="' + escHtml(label) + '">Clear</button>' +
+            '</div>' +
+        '</th>'
+    );
+}
+
+function filterVendorProjectRows() {
+    let rows = G_VendorProjectRows.slice();
+    if (G_VendorProjectDrill.level !== 'project') return rows;
+    if (G_VendorProjectDrill.vendorCode > 0) {
+        return rows.filter(function (row) {
+            return vendorProjectCode(row, ['VendorMaster_Code', 'vendorMaster_Code']) === G_VendorProjectDrill.vendorCode;
+        });
+    }
+    if (G_VendorProjectDrill.vendorName) {
+        const want = G_VendorProjectDrill.vendorName.toLowerCase();
+        return rows.filter(function (row) {
+            return String(vendorProjectValue(row, ['VendorName', 'vendorName']) || '').trim().toLowerCase() === want;
+        });
+    }
+    return rows;
+}
+
+function groupVendorProjectRows(rows, level) {
+    const map = new Map();
+    const metricDefs = level === 'vendor' ? VENDOR_PROJECT_VENDOR_METRICS : VENDOR_PROJECT_PROJECT_METRICS;
+    rows.forEach(function (row) {
+        const vendorCode = vendorProjectCode(row, ['VendorMaster_Code', 'vendorMaster_Code']);
+        const vendorName = String(vendorProjectValue(row, ['VendorName', 'vendorName']) || '(No Vendor)').trim() || '(No Vendor)';
+        const projectCode = vendorProjectCode(row, ['ProjectMaster_Code', 'projectMaster_Code']);
+        const projectName = String(vendorProjectValue(row, ['ProjectName', 'projectName']) || '(No Project)').trim() || '(No Project)';
+        const subCode = vendorProjectCode(row, ['SubProjectMaster_Code', 'subProjectMaster_Code']);
+        const subName = String(vendorProjectValue(row, ['SubProjectDesp', 'subProjectDesp', 'SubProjectName', 'ProjectLocation']) || '(No Sub Project)').trim() || '(No Sub Project)';
+        const key = level === 'vendor'
+            ? String(vendorCode || 0) + '|' + vendorName.toLowerCase()
+            : String(projectCode || 0) + '|' + String(subCode || 0) + '|' + projectName.toLowerCase() + '|' + subName.toLowerCase();
+        if (!map.has(key)) {
+            map.set(key, {
+                vendorCode: vendorCode,
+                vendorName: vendorName,
+                projectName: projectName,
+                subName: subName,
+                lines: [],
+            });
+        }
+        map.get(key).lines.push(row);
+    });
+    const groups = Array.from(map.values()).map(function (group) {
+        const agg = {};
+        metricDefs.forEach(function (metric) {
+            let total = 0;
+            group.lines.forEach(function (line) {
+                total += vendorProjectMetricValue(line, metric);
+            });
+            agg[metric.id] = total;
+        });
+        agg.signedBalance = vendorProjectSignedBalance(group.lines, level);
+        return Object.assign(group, agg);
+    });
+    groups.sort(function (a, b) {
+        const left = level === 'vendor' ? a.vendorName : (a.projectName + ' ' + a.subName);
+        const right = level === 'vendor' ? b.vendorName : (b.projectName + ' ' + b.subName);
+        return String(left).localeCompare(String(right), undefined, { sensitivity: 'base' });
+    });
+    return groups;
+}
+
+function renderVendorProjectLevel() {
+    const level = G_VendorProjectDrill.level;
+    const metricDefs = level === 'vendor' ? VENDOR_PROJECT_VENDOR_METRICS : VENDOR_PROJECT_PROJECT_METRICS;
+    const rows = filterVendorProjectRows();
+    let groups = groupVendorProjectRows(rows, level);
+    if (level === 'project') groups = applyVendorColumnView(groups);
+    const headers = vendorProjectHeaders(level);
+    const canDrill = !!vendorProjectLevel(level).next;
+    renderVendorCrumb();
+    if (typeof closeAllFilters === 'function') closeAllFilters();
+    $('#tblVendorProjectHead').html(
+        '<tr>' + headers.map(function (header, index) {
+            if (level === 'project' && (header === 'Project' || header === 'Sub project')) {
+                return vendorFilterHeader(header);
+            }
+            if (header === 'Dr/Cr') return '<th class="elr-drcr">Dr/Cr</th>';
+            const cls = index === 0 ? '' : (index < (level === 'project' ? 3 : 2) ? '' : ' class="num"');
+            return '<th' + cls + '>' + escHtml(header) + '</th>';
+        }).join('') + '</tr>'
+    );
+    if (!groups.length) {
+        $('#tblVendorProjectBody').html('<tr><td colspan="' + headers.length + '" class="elr-drill-empty">No records found.</td></tr>');
+        return;
+    }
+    let html = '';
+    groups.forEach(function (group, index) {
+        const link = canDrill
+            ? '<a href="#" class="elr-vendor-link">' + escHtml(group.vendorName) + '</a>'
+            : escHtml(group.projectName);
+        let cells = '<td>' + (index + 1) + '</td><td>' + link + '</td>';
+        if (level === 'project') cells += '<td>' + escHtml(group.subName) + '</td>';
+        metricDefs.forEach(function (metric) {
+            cells += '<td class="num">' + escHtml(formatAmount(group[metric.id])) + '</td>';
+        });
+        cells += vendorBalanceCell(group.signedBalance);
+        cells += vendorDrCrCell(group.lines, level);
+        html += '<tr class="' + (canDrill ? 'elr-row-link' : '') + '" data-vendor-code="' + escHtml(group.vendorCode || 0) + '" data-vendor-name="' + escHtml(group.vendorName) + '">' + cells + '</tr>';
+    });
+    const totalLines = [];
+    groups.forEach(function (group) {
+        group.lines.forEach(function (line) { totalLines.push(line); });
+    });
+    const total = { signedBalance: vendorProjectSignedBalance(totalLines, level) };
+    metricDefs.forEach(function (metric) {
+        let sum = 0;
+        totalLines.forEach(function (row) { sum += vendorProjectMetricValue(row, metric); });
+        total[metric.id] = sum;
+    });
+    let totalCells = '<td></td><td><strong>Total</strong></td>';
+    if (level === 'project') totalCells += '<td></td>';
+    metricDefs.forEach(function (metric) {
+        totalCells += '<td class="num">' + escHtml(formatAmount(total[metric.id])) + '</td>';
+    });
+    totalCells += vendorBalanceCell(total.signedBalance);
+    totalCells += vendorDrCrCell(totalLines, level);
+    html += '<tr class="row-total">' + totalCells + '</tr>';
+    $('#tblVendorProjectBody').html(html);
+}
+
+function openVendorColumnMenu(column) {
+    if (typeof closeAllFilters === 'function') closeAllFilters();
+    const $menu = $('#filterDropdown-' + vendorFilterDomId(column));
+    $menu.show();
+    if (typeof bizsolFloatFilterPanel === 'function') bizsolFloatFilterPanel($menu);
+}
+
+function vendorProjectSourceGroups() {
+    return groupVendorProjectRows(filterVendorProjectRows(), 'project');
+}
+
+function openVendorValueFilter(column) {
+    const id = vendorFilterDomId(column);
+    $('#filterDropdown-' + id).hide();
+    const values = [];
+    vendorProjectSourceGroups().forEach(function (group) {
+        const text = vendorGroupColumnText(group, column);
+        if (values.indexOf(text) < 0) values.push(text);
+    });
+    values.sort(function (a, b) {
+        return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
+    });
+    const selected = G_VendorColFilter[column];
+    const $box = $('#checkbox-container-' + id);
+    $box.empty();
+    const $all = $('<input type="checkbox" class="filter-checkbox"/>').val('All');
+    $box.append($('<label/>').append($all).append(document.createTextNode(' All')));
+    values.forEach(function (value) {
+        const $cb = $('<input type="checkbox" class="filter-checkbox"/>').val(value);
+        if (!selected || !selected.length || selected.indexOf(value) >= 0) $cb.prop('checked', true);
+        $box.append($('<label/>').append($cb).append(document.createTextNode(' ' + value)));
+    });
+    if (!selected || !selected.length) $box.find('input[type="checkbox"]').prop('checked', true);
+    $all.on('change', function () {
+        $box.find('input[type="checkbox"]').prop('checked', $(this).is(':checked'));
+    });
+    const $panel = $('#filter-' + id);
+    $panel.show();
+    if (typeof bizsolFloatFilterPanel === 'function') bizsolFloatFilterPanel($panel);
+}
+
+function applyVendorValueFilter(column) {
+    const id = vendorFilterDomId(column);
+    const selected = [];
+    $('#checkbox-container-' + id + ' input:checked').each(function () {
+        const value = $(this).val();
+        if (value && value !== 'All') selected.push(value);
+    });
+    const total = $('#checkbox-container-' + id + ' input').not('[value="All"]').length;
+    if (!selected.length || selected.length === total) delete G_VendorColFilter[column];
+    else G_VendorColFilter[column] = selected;
+    if (typeof closeAllFilters === 'function') closeAllFilters();
+    renderVendorProjectLevel();
+}
+
+function vendorProjectGoToLevel(levelKey) {
+    if (levelKey === 'vendor') {
+        G_VendorProjectDrill = resetVendorProjectDrill();
+        resetVendorColumnFilters();
+    } else {
+        G_VendorProjectDrill.level = 'project';
+    }
+    renderVendorProjectLevel();
+}
+
+function vendorProjectDrillInto($tr) {
+    const current = vendorProjectLevel(G_VendorProjectDrill.level);
+    if (!current.next) return;
+    G_VendorProjectDrill.vendorCode = parseInt($tr.attr('data-vendor-code') || '0', 10) || 0;
+    G_VendorProjectDrill.vendorName = String($tr.attr('data-vendor-name') || '').trim();
+    G_VendorProjectDrill.level = current.next;
+    renderVendorProjectLevel();
+}
+
+function fetchVendorProjectReport() {
+    const fromDate = vendorApiDate($('#txtdateFrom').val());
+    const toDate = vendorApiDate($('#txtdateTo').val());
+    if (!fromDate || !toDate) {
+        toastr.warning('Select from date and to date.');
+        return;
+    }
+    G_VendorProjectDrill = resetVendorProjectDrill();
+    resetVendorColumnFilters();
+    showVendorPlaceholder('Loading…');
+    if (typeof Showloader === 'function') Showloader();
+    const vendorCode = selectedVendorMasterCode();
+    ExpensesLedgerReportService.GetVendorWiseReport(fromDate, toDate, vendorCode).then(function (response) {
+        const rows = asDdLArray(response);
+        if (!rows.length) {
+            G_VendorProjectRows = [];
+            showVendorPlaceholder('No records found.');
+            toastr.error('Record not found.');
+            return;
+        }
+        const err0 = rows[0].Error || rows[0].error || rows[0].Msg || rows[0].msg;
+        if (err0 != null && err0 !== '') {
+            G_VendorProjectRows = [];
+            showVendorPlaceholder(String(err0));
+            toastr.error(String(err0));
+            return;
+        }
+        G_VendorProjectRows = rows.filter(function (row) { return !row.Error && !row.error; });
+        rememberVendorOptions(G_VendorProjectRows, vendorCode === 0);
+        renderVendorProjectLevel();
+    }).catch(function (err) {
+        console.error('GetVendorWiseReport error:', err);
+        G_VendorProjectRows = [];
+        showVendorPlaceholder('Could not load the vendor project report.');
+        toastr.error((err && (err.Msg || err.message)) || 'Error loading vendor project report.');
+    }).then(function () {
+        if (typeof HideLoader === 'function') HideLoader();
+    });
+}
+
+function exportVendorProjectExcel() {
+    if (!G_VendorProjectRows.length) {
+        toastr.warning('Load the report first.');
+        return;
+    }
+    const rows = filterVendorProjectRows();
+    const $h = $('#tblLedgerExport thead tr');
+    const $b = $('#tblLedgerExport tbody');
+    $h.empty();
+    $b.empty();
+    const headers = [
+        'Vendor Name', 'Project Name', 'Sub Project',
+        'PO Amount with GST', 'Total Grn Amount', 'TDS Deposit', 'Net Pay', 'Payment', 'Balance (Vendor)', 'Dr/Cr (Vendor)',
+        'PO Taxable Amount', 'GST', 'Total PO Amount', 'Total Bill Amount (GRN)', 'TDS Deposit', 'Net Pay', 'Total Payment', 'Balance (Project)', 'Dr/Cr (Project)',
+    ];
+    headers.forEach(function (header) { $h.append($('<th/>').text(header)); });
+    rows.forEach(function (item) {
+        const tr = $('<tr/>');
+        tr.append($('<td/>').text(vendorProjectValue(item, ['VendorName', 'vendorName'])));
+        tr.append($('<td/>').text(vendorProjectValue(item, ['ProjectName', 'projectName'])));
+        tr.append($('<td/>').text(vendorProjectValue(item, ['SubProjectDesp', 'subProjectDesp', 'SubProjectName', 'ProjectLocation'])));
+        VENDOR_PROJECT_VENDOR_METRICS.forEach(function (metric) {
+            tr.append($('<td/>').text(formatAmount(vendorProjectMetricValue(item, metric))));
+        });
+        tr.append($('<td/>').text(formatAmount(vendorProjectSignedBalance([item], 'vendor'))));
+        tr.append($('<td/>').text(vendorDrCrLabel([item], 'vendor')));
+        VENDOR_PROJECT_PROJECT_METRICS.forEach(function (metric) {
+            tr.append($('<td/>').text(formatAmount(vendorProjectMetricValue(item, metric))));
+        });
+        tr.append($('<td/>').text(formatAmount(vendorProjectSignedBalance([item], 'project'))));
+        tr.append($('<td/>').text(vendorDrCrLabel([item], 'project')));
+        $b.append(tr);
+    });
+    const now = new Date();
+    const dateString =
+        now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + '_' +
+        String(now.getHours()).padStart(2, '0') + '-' +
+        String(now.getMinutes()).padStart(2, '0');
+    $('#tblLedgerExport').table2excel({
+        filename: 'VendorProjectWise_' + dateString,
+        fileext: '.xlsx',
+    });
+}
+
+function fetchVendorLedgerReport() {
+    const reportType = ($('#ddlReportType option:selected').val() || '').trim();
+    if (!reportType) {
+        toastr.warning('Select report type.');
+        return;
+    }
+    const fromDate = convertDateFormat($('#txtdateFrom').val());
+    const toDate = convertDateFormat($('#txtdateTo').val());
+    const vendor = selectedVendorMasterCode();
+    if (vendor <= 0) {
+        toastr.warning('Select vendor name.');
+        return;
+    }
+    const proj =
+        $('#ddlProject option:selected').val() === '0' || $('#ddlProject option:selected').val() === 'All'
+            ? 0
+            : parseInt($('#ddlProject option:selected').val(), 10) || 0;
+    const sub =
+        $('#ddlSubProject option:selected').val() === '0' || $('#ddlSubProject option:selected').val() === 'All'
+            ? 0
+            : parseInt($('#ddlSubProject option:selected').val(), 10) || 0;
+
+    ExpensesLedgerReportService.GetVendorLedgerReport(fromDate, toDate, vendor, proj, sub).then(function (response) {
+        if (!response || !response.length) {
+            clearLedgerView();
+            toastr.error('Record not found.');
+            return;
+        }
+        const err0 = response[0].Error || response[0].error;
+        if (err0 != null && err0 !== '') {
+            clearLedgerView();
+            toastr.error(err0);
+            return;
+        }
+        const clean = response.filter((r) => !r.Error && !r.error);
+        renderLedger(clean);
+        populateExportTable(clean);
+    }).catch(function (err) {
+        console.error(err);
+        clearLedgerView();
+        toastr.error('Failed to load report.');
+    });
+}
+
 function fetchReport() {
+    if (isVendorProjectReport()) {
+        fetchVendorProjectReport();
+        return;
+    }
+    if (isVendorLedgerReport()) {
+        fetchVendorLedgerReport();
+        return;
+    }
     if (isProjectExpenseReport()) {
         const selected = selectedProjectFilterCode();
         if (selected > 0 && projectDrill.projectCode > 0 && projectDrill.projectCode !== selected) {
@@ -967,6 +1729,34 @@ function populateExportTable(data) {
     $h.empty();
     $b.empty();
     if (!data.length) return;
+    if (isVendorLedgerReport()) {
+        const headers = ['Date', 'Desp', 'Project', 'Sub project', 'Dr', 'CR', 'Balance', 'Dr/Cr'];
+        headers.forEach((h) => $h.append($('<th/>').text(h)));
+        data.forEach(function (item) {
+            const kind = vendorLedgerKind(item);
+            const tr = $('<tr/>');
+            const desp = kind === 'total' || kind === 'closing'
+                ? ''
+                : String(item.Desp != null && String(item.Desp) !== '' ? item.Desp : (item.Particulars || ''));
+            let project = '';
+            let sub = '';
+            if (kind === 'closing') sub = 'Closing';
+            else if (kind !== 'total') {
+                project = ledgerRowProjectName(item);
+                sub = ledgerRowSubProjectName(item);
+            }
+            tr.append($('<td/>').text(item.Date != null ? item.Date : ''));
+            tr.append($('<td/>').text(desp));
+            tr.append($('<td/>').text(project));
+            tr.append($('<td/>').text(sub));
+            tr.append($('<td/>').text(formatAmount(vendorSideAmount(item, 'dr'))));
+            tr.append($('<td/>').text(formatAmount(vendorSideAmount(item, 'cr'))));
+            tr.append($('<td/>').text(kind === 'total' ? '' : formatAmount(firstNonEmpty(item, ['Balance', 'balance']))));
+            tr.append($('<td/>').text(kind === 'total' ? '' : String(firstNonEmpty(item, ['DrCr', 'drCr', 'DRCR']) || '')));
+            $b.append(tr);
+        });
+        return;
+    }
     const headers = ['S.No', 'Date', 'Particulars', 'Project', 'SubProject', 'Payment', 'Expenses', 'Balance', 'DrCr'];
     headers.forEach((h) => $h.append($('<th/>').text(h)));
     data.forEach(function (item) {
@@ -984,6 +1774,10 @@ function populateExportTable(data) {
 }
 
 function exportExcel() {
+    if (isVendorProjectReport()) {
+        exportVendorProjectExcel();
+        return;
+    }
     if (isProjectExpenseReport()) {
         exportProjectExcel();
         return;
@@ -1001,7 +1795,7 @@ function exportExcel() {
         currentDate.getMinutes().toString().padStart(2, '0');
 
     $('#tblLedgerExport').table2excel({
-        filename: 'EmployeeExpensesLedger_' + dateString,
+        filename: (isVendorLedgerReport() ? 'VendorLedger_' : 'EmployeeExpensesLedger_') + dateString,
         fileext: '.xlsx',
     });
 }
@@ -1016,7 +1810,7 @@ $(document).ready(function () {
         refreshSubProjectOptions();
     });
     $('#ddlEmployee').on('change', function () {
-        if (!G_FiltersReady || isProjectExpenseReport()) return;
+        if (!G_FiltersReady || isProjectExpenseReport() || isVendorProjectReport() || isVendorLedgerReport()) return;
         reloadLedgerProjectFilters();
     });
     $('#ddlReportType').on('change', function () {
@@ -1036,11 +1830,52 @@ $(document).ready(function () {
     $('#tblProjectExpenseBody').on('click', 'tr.elr-row-link', function () {
         openNextProjectLevel($(this).data('row'));
     });
+    $('#elrVendorCrumb').on('click', '.elr-crumb-btn', function () {
+        const level = $(this).attr('data-vw-level');
+        if (level) vendorProjectGoToLevel(level);
+    });
+    $('#tblVendorProjectBody').on('click', 'tr.elr-row-link', function (e) {
+        e.preventDefault();
+        vendorProjectDrillInto($(this));
+    });
+    $(document).on('click', '#tblVendorProjectHead .elr-vw-open', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openVendorColumnMenu($(this).attr('data-col'));
+    });
+    $(document).on('click', '.elr-vw-sort', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        G_VendorColSort = { column: $(this).attr('data-col'), order: $(this).attr('data-order') };
+        if (typeof closeAllFilters === 'function') closeAllFilters();
+        renderVendorProjectLevel();
+    });
+    $(document).on('click', '.elr-vw-filter', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openVendorValueFilter($(this).attr('data-col'));
+    });
+    $(document).on('click', '.elr-vw-apply', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        applyVendorValueFilter($(this).attr('data-col'));
+    });
+    $(document).on('click', '.elr-vw-clear', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        delete G_VendorColFilter[$(this).attr('data-col')];
+        if (typeof closeAllFilters === 'function') closeAllFilters();
+        renderVendorProjectLevel();
+    });
 
     $('#fetchReportButton').on('click', fetchReport);
     $('#btnDownload').on('click', exportExcel);
     $('#btnLedgerClosing').on('click', scrollLedgerToClosing);
     $('#btnLedgerClose').on('click', function () {
+        if (isVendorProjectReport()) {
+            clearVendorProjectView();
+            return;
+        }
         if (isProjectExpenseReport()) {
             $('#ddlProject').val('0').trigger('change');
             $('#ddlElrStatus').val('Pending').trigger('change');
@@ -1071,7 +1906,7 @@ $(document).ready(function () {
     });
 
     window.addEventListener('beforeprint', function () {
-        if (isProjectExpenseReport() || !G_LedgerData.length) return;
+        if (isProjectExpenseReport() || isVendorProjectReport() || !G_LedgerData.length) return;
         printLedgerRestore = {
             page: G_LedgerCurrentPage,
             size: ledgerPageSize(),

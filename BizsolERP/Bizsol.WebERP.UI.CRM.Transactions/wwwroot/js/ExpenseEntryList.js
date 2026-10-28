@@ -93,7 +93,11 @@ $(document).ready(function () {
     });
     $('#txtToDate').on('keydown', function (e) {
         if (e.key === "Enter") {
-            $("#ddlMarketingMan").focus();
+            if ($('#ddlMarketingMan').data('select2')) {
+                $('#ddlMarketingMan').select2('open');
+            } else {
+                $('#ddlMarketingMan').focus();
+            }
         }
     });
 
@@ -240,8 +244,24 @@ function bindSalesPersonValue(matchedPersonName, urlPersonName, personNames) {
 
     if (bound) {
         $('#ddlMarketingMan').val(bound);
+        if ($('#ddlMarketingMan').data('select2')) {
+            $('#ddlMarketingMan').trigger('change.select2');
+        }
     }
     return bound;
+}
+
+function initSalesPersonSelect2() {
+    var $el = $('#ddlMarketingMan');
+    if (!$el.length || typeof $.fn.select2 === 'undefined') return;
+    if ($el.data('select2')) {
+        $el.select2('destroy');
+    }
+    $el.select2({
+        width: '100%',
+        placeholder: 'Search sales person',
+        allowClear: false
+    });
 }
 
 function loadExpenseListWhenSalesPersonReady(opts) {
@@ -299,7 +319,8 @@ function GetNestedMarketingManList(attempt) {
             options += '<option value="' + eeEscHtmlAttr(personName) + '">' + eeEscHtmlAttr(personName) + '</option>';
         }
 
-        $('#ddlSalesPersonList').empty().html(options);
+        $('#ddlMarketingMan').empty().html(options);
+        initSalesPersonSelect2();
 
         var urlPersonName = resolveMarketingManNameFromUrl();
         bindSalesPersonValue(matchedPersonName, urlPersonName, personNames);

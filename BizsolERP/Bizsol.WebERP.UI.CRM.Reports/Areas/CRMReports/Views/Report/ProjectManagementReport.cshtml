@@ -4,9 +4,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <link href="~/_content/Bizsol.WebERP.UI.CRM.Transactions/css/ExpenseEntry.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker3.min.css" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Reports/Script/ProjectManagementReport.js"></script>
 <script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 <style>
@@ -20,20 +18,9 @@
         display: none;
     }
     @@media (min-width: 992px) {
-        .pmr-page.pmr-budget-mode .pmr-filter-row,
-        .pmr-page.pmr-vendorwise-mode .pmr-filter-row {
-            grid-template-columns: minmax(220px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr) auto;
+        .pmr-page.pmr-budget-mode .pmr-filter-row {
+            grid-template-columns: minmax(220px, 1fr) minmax(160px, 1fr) auto;
         }
-    }
-    #tblPMR thead th.pmr-vendorwise-col {
-        display: none;
-    }
-    .pmr-page.pmr-vendorwise-mode #tblPMR thead th.pmr-wise-col,
-    .pmr-page.pmr-vendorwise-mode #tblPMR thead th.pmr-budget-col {
-        display: none !important;
-    }
-    .pmr-page.pmr-vendorwise-mode #tblPMR thead th.pmr-vendorwise-col {
-        display: table-cell;
     }
     .pmr-page.pmr-budget-mode #tblPMR {
         table-layout: auto;
@@ -108,12 +95,6 @@
         font-weight: 700;
         padding: 0 1.2rem;
     }
-    .pmr-page.pmr-vendorwise-mode #pmrReportKindField .select2-container {
-        margin-bottom: 8px;
-    }
-    .pmr-page.pmr-vendorwise-mode .pmr-filter-actions .pmr-btn-show {
-        margin-bottom: 8px;
-    }
     .pmr-page .ee-list-stats-strip .ee-list-stat-chip {
         cursor: default;
         pointer-events: none;
@@ -183,21 +164,6 @@
     #tblPMR td.pmr-balance-negative,
     #tblPMR tr.row-total td.pmr-balance-negative {
         color: #dc2626 !important;
-    }
-    .pmr-page.pmr-vendorwise-mode #tblPMR {
-        table-layout: auto;
-        min-width: 100%;
-    }
-    .pmr-page.pmr-vendorwise-mode #tblPMR thead th.pmr-vendorwise-col,
-    .pmr-page.pmr-vendorwise-mode #tblPMR thead th.pmr-th-dim {
-        white-space: nowrap;
-        word-break: normal;
-        line-height: 1.2;
-        font-size: 0.62rem;
-        padding: 0.4rem 0.45rem;
-    }
-    .pmr-page.pmr-vendorwise-mode #tblPMR thead th.pmr-vendorwise-col {
-        min-width: 5.5rem;
     }
     .pmr-drill-crumb {
         display: flex;
@@ -511,25 +477,19 @@
 
     @@media (max-width: 991px) {
         .pmr-page .pmr-filter-row,
-        .pmr-page.pmr-budget-mode .pmr-filter-row,
-        .pmr-page.pmr-vendorwise-mode .pmr-filter-row {
+        .pmr-page.pmr-budget-mode .pmr-filter-row {
             grid-template-columns: minmax(0, 1fr) !important;
             gap: 0.65rem;
         }
         .pmr-page .pmr-filter-actions,
-        .pmr-page.pmr-budget-mode .pmr-filter-actions,
-        .pmr-page.pmr-vendorwise-mode .pmr-filter-actions {
+        .pmr-page.pmr-budget-mode .pmr-filter-actions {
             width: 100%;
             align-self: stretch;
         }
         .pmr-page .pmr-filter-actions .pmr-btn-show,
-        .pmr-page.pmr-budget-mode .pmr-filter-actions .pmr-btn-show,
-        .pmr-page.pmr-vendorwise-mode .pmr-filter-actions .pmr-btn-show {
+        .pmr-page.pmr-budget-mode .pmr-filter-actions .pmr-btn-show {
             width: 100%;
             min-height: 38px;
-            margin-bottom: 0 !important;
-        }
-        .pmr-page.pmr-vendorwise-mode #pmrReportKindField .select2-container {
             margin-bottom: 0 !important;
         }
     }
@@ -637,10 +597,6 @@
 
         .pmr-page.pmr-budget-mode #tblPMR {
             min-width: 680px !important;
-        }
-
-        .pmr-page.pmr-vendorwise-mode #tblPMR {
-            min-width: 1180px !important;
         }
 
         #tblPMR thead th {
@@ -801,16 +757,7 @@
                 <select id="ddlReportKind" class="form-control form-control-sm box_border w-100">
                     <option value="projectWise">Project Wise</option>
                     <option value="projectBudget">Project Budget</option>
-                    <option value="vendorWise">Vendor Wise</option>
                 </select>
-            </div>
-            <div class="pmr-filter-field" id="pmrFromDateField" style="display:none">
-                <label for="txtpmrFromDate" class="form-label">From date <span class="text-danger">*</span></label>
-                <input type="text" id="txtpmrFromDate" class="form-control form-control-sm box_border w-100" autocomplete="off" placeholder="dd/mm/yyyy" />
-            </div>
-            <div class="pmr-filter-field" id="pmrToDateField" style="display:none">
-                <label for="txtpmrToDate" class="form-label">To date <span class="text-danger">*</span></label>
-                <input type="text" id="txtpmrToDate" class="form-control form-control-sm box_border w-100" autocomplete="off" placeholder="dd/mm/yyyy" />
             </div>
             <div class="pmr-filter-field" id="pmrProjectOptionField">
                 <label for="ddlReportType" class="form-label">Project Option</label>
@@ -875,20 +822,6 @@
                         <th class="num pmr-budget-col">Budget GST<br>amount</th>
                         <th class="num pmr-budget-col">Payment</th>
                         <th class="num pmr-budget-col">Balance</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-vendor-metric" data-vw-metric="poAmountWithGst">PO Amount With Gst</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-vendor-metric" data-vw-metric="totalGrnAmount">Total GRN Amount</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-vendor-metric" data-vw-metric="tdsDeposit">TDS Deposit</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-vendor-metric" data-vw-metric="netPay">NetPay</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-vendor-metric" data-vw-metric="payment">Payment</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-vendor-metric">Balance</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-project-metric" data-vw-metric="poTaxableAmount">PO Taxable Amount</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-project-metric" data-vw-metric="gstAmount">GST Amount</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-project-metric" data-vw-metric="totalPoAmount">Total PO Amount</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-project-metric" data-vw-metric="totalBillGrnAmount">Total Bill Grn Amount</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-project-metric" data-vw-metric="tdsDeposit">TDS Deposit</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-project-metric" data-vw-metric="netPay">NetPay</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-project-metric" data-vw-metric="totalPayment">Total Payment</th>
-                        <th class="num pmr-vendorwise-col pmr-vw-project-metric">Balance</th>
                     </tr>
                 </thead>
                 <tbody id="tblPMRBody"></tbody>

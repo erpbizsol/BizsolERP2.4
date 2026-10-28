@@ -269,6 +269,65 @@ function pickUserDisplayName(u, val) {
         || val;
 }
 
+/** Append Select2 dropdown to body so it is not clipped by modal overflow. */
+function subProjectSelect2DropdownParent() {
+    return $(document.body);
+}
+
+/* ERP _Layout sets .modal to z-index 100013 — portal must be higher or the list stays hidden */
+const SPM_SELECT2_MODAL_Z = 100050;
+const SPM_SELECT2_SCROLL_WANTED = 220;
+
+function findSubProjectSelect2PortalSpan() {
+    return $('body > span').filter(function () {
+        return $(this).children('.select2-dropdown').length > 0;
+    }).last();
+}
+
+/** Bootstrap modal is ~1055; body-portaled Select2 must sit above the whole modal layer. */
+function elevateSubProjectSelect2Portal() {
+    const $portal = findSubProjectSelect2PortalSpan();
+    if ($portal.length) {
+        $portal.addClass('spm-select2-portal').css({
+            zIndex  : SPM_SELECT2_MODAL_Z,
+            position: 'absolute'
+        });
+    }
+}
+
+function reserveSubProjectSelect2ScrollSpace($select) {
+    if (!$select || !$select.length) return;
+    const scroller = document.querySelector('#dvSubProjectModal .modal-body');
+    const $container = $select.next('.select2-container');
+    if (!scroller || !$container.length) return;
+    const rect = $container[0].getBoundingClientRect();
+    const roomBelow = window.innerHeight - rect.bottom;
+    if (roomBelow >= SPM_SELECT2_SCROLL_WANTED) return;
+    const roomAboveField = rect.top - scroller.getBoundingClientRect().top - 8;
+    const scrollLeftOver = Math.max(scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop, 0);
+    const shift = Math.min(SPM_SELECT2_SCROLL_WANTED - roomBelow, roomAboveField, scrollLeftOver);
+    if (shift > 0) scroller.scrollTop += shift;
+}
+
+function bindSubProjectSelect2PortalFix($select) {
+    if (!$select || !$select.length) return;
+    $select.off('select2:open.spmportal select2:close.spmportal')
+        .on('select2:open.spmportal', function () {
+            const $one = $(this);
+            $one.closest('.pm-site-rep-select-wrap').addClass('select2-open');
+            reserveSubProjectSelect2ScrollSpace($one);
+            const lift = function () { elevateSubProjectSelect2Portal(); };
+            window.requestAnimationFrame(function () {
+                lift();
+                window.requestAnimationFrame(lift);
+            });
+        })
+        .on('select2:close.spmportal', function () {
+            $(this).closest('.pm-site-rep-select-wrap').removeClass('select2-open');
+            $('body > span.spm-select2-portal').removeClass('spm-select2-portal').css({ zIndex: '', position: '' });
+        });
+}
+
 /** Destroy Select2 only when initialized (avoids console error on re-render). */
 function safeDestroySelect2($el) {
     if (!$el || !$el.length || typeof $.fn.select2 !== 'function') return;
@@ -289,8 +348,9 @@ function initLevelUserSelect2($select) {
         placeholder    : 'Select users\u2026',
         allowClear     : true,
         width          : '100%',
-        dropdownParent : $('#dvSubProjectModal')
+        dropdownParent : subProjectSelect2DropdownParent()
     });
+    bindSubProjectSelect2PortalFix($select);
     if (isDisabled) $select.prop('disabled', true).trigger('change');
 }
 
@@ -332,8 +392,9 @@ function bindGRNCheckUserSelect() {
                 placeholder  : 'Select user(s)\u2026',
                 allowClear   : true,
                 width        : '100%',
-                dropdownParent: $('#dvSubProjectModal')
+                dropdownParent: subProjectSelect2DropdownParent()
             });
+            bindSubProjectSelect2PortalFix($sel);
         } catch (e) {}
     }
 }
@@ -490,8 +551,9 @@ function populateSiteRepDropdown(selectedCode) {
             placeholder   : '-- Select Site Representative --',
             allowClear    : true,
             width         : '100%',
-            dropdownParent: $('body')
+            dropdownParent: subProjectSelect2DropdownParent()
         });
+        bindSubProjectSelect2PortalFix($('#frmDdlSiteRepSPM'));
         $('#frmDdlSiteRepSPM').off('change.srepspm').on('change.srepspm', function () {
             showSiteRepDetailsSPM($(this).val());
         });

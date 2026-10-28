@@ -112,16 +112,71 @@ function Close_AttachmentControl() {
     _acOnModalHidden({ target: modalEl });
 }
 
+/** Stacking level above page modals (layout uses 100013, drag uses 100030). */
+function _acViewerStackZ() {
+    var z = 100060;
+    document.querySelectorAll('.modal.show, .modal-backdrop').forEach(function (el) {
+        var n = parseInt(window.getComputedStyle(el).zIndex || '0', 10);
+        if (!isNaN(n) && n >= z) z = n + 2;
+    });
+    return z;
+}
+
+function _acPlaceViewerAboveModal() {
+    var z = String(_acViewerStackZ());
+    ['bizsolFileViewer', 'bizsolFileViewerFallbackAc'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el || el.style.display === 'none') return;
+        document.body.appendChild(el);
+        el.style.setProperty('z-index', z, 'important');
+    });
+    var modalEl = _acGetVisibleModalEl();
+    if (!modalEl || !window.bootstrap || !window.bootstrap.Modal) return;
+    try {
+        var inst = window.bootstrap.Modal.getInstance(modalEl);
+        if (inst && inst._focustrap && typeof inst._focustrap.deactivate === 'function') {
+            inst._focustrap.deactivate();
+        }
+    } catch (e) { }
+}
+
+/** Back from the file preview returns to the attachment modal. */
+function _acRestoreAttachmentModal() {
+    var modalEl = _acGetVisibleModalEl();
+    if (!modalEl) {
+        var nodes = document.querySelectorAll('[id="AttachmentControlmodal"]');
+        modalEl = nodes.length ? nodes[nodes.length - 1] : null;
+    }
+    if (!modalEl) return;
+    if (!modalEl.classList.contains('show')) {
+        Show_AttachmentControl();
+        return;
+    }
+    try {
+        if (window.bootstrap && window.bootstrap.Modal) {
+            var inst = window.bootstrap.Modal.getInstance(modalEl);
+            if (inst && inst._focustrap && typeof inst._focustrap.activate === 'function') {
+                inst._focustrap.activate();
+            }
+        }
+    } catch (e) { }
+    _acEnsureModalInteractive();
+}
+
 function _acOpenPreview(url, fileName) {
     if (typeof window.openInAppViewer === 'function') {
-        window.openInAppViewer(url, fileName, { ownUrl: true });
+        window.openInAppViewer(url, fileName, {
+            ownUrl: true,
+            onClose: function () { _acRestoreAttachmentModal(); }
+        });
+        _acPlaceViewerAboveModal();
         return;
     }
     var overlay = document.getElementById('bizsolFileViewerFallbackAc');
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'bizsolFileViewerFallbackAc';
-        overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:20050;background:#111827;flex-direction:column;';
+        overlay.style.cssText = 'display:none;position:fixed;inset:0;background:#111827;flex-direction:column;';
         overlay.innerHTML =
             '<div style="display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 10px;background:#4f46e5;color:#fff;">' +
             '<button type="button" id="bizsolFileViewerFallbackAcBack" style="min-width:72px;height:34px;border:1px solid rgba(255,255,255,.6);border-radius:6px;background:rgba(255,255,255,.16);color:#fff;font-weight:700;">Back</button>' +
@@ -139,6 +194,7 @@ function _acOpenPreview(url, fileName) {
                 try { URL.revokeObjectURL(overlay._ownedUrl); } catch (e) { }
                 overlay._ownedUrl = null;
             }
+            _acRestoreAttachmentModal();
         };
     }
     overlay._ownedUrl = url;
@@ -155,6 +211,7 @@ function _acOpenPreview(url, fileName) {
         if (img) img.style.display = 'none';
         if (frame) { frame.style.display = 'block'; frame.src = url; }
     }
+    _acPlaceViewerAboveModal();
 }
 
 function _acNotifySaveComplete() {

@@ -784,13 +784,35 @@ function LoadStatusDropdown() {
     }).catch(() => { $('#lstDdlStatus').html('<option value="">-- All Status --</option>'); });
 }
 
+function BindVendorSelect2() {
+    const $el = $('#frmDdlVendor');
+    if (!$el.length || !$.fn.select2) return;
+    if ($el.data('select2')) $el.select2('destroy');
+    $el.select2({
+        placeholder: '-- Select Vendor --',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('body')
+    });
+}
+
 function LoadVendorDropdown() {
     PurchaseOrderStoreService.GetVendorList().then(function (data) {
         G_VendorList = data || [];
+        const keep = $('#frmDdlVendor').val() || '';
         let html = '<option value="">-- Select Vendor --</option>';
         G_VendorList.forEach(v => { html += `<option value="${v.Code}">${v.Name}</option>`; });
-        $('#frmDdlVendor').html(html);
-    }).catch(() => { $('#frmDdlVendor').html('<option value="">-- Select Vendor --</option>'); });
+        const $el = $('#frmDdlVendor');
+        if ($el.data('select2')) $el.select2('destroy');
+        $el.html(html);
+        BindVendorSelect2();
+        if (keep) $el.val(String(keep)).trigger('change');
+    }).catch(() => {
+        const $el = $('#frmDdlVendor');
+        if ($el.data('select2')) $el.select2('destroy');
+        $el.html('<option value="">-- Select Vendor --</option>');
+        BindVendorSelect2();
+    });
 }
 
 function LoadWorkTypeDropdown() {
@@ -1314,7 +1336,11 @@ function ResetPOForm() {
     $('#frmHfCode').val('');
     $('#frmTxtPONo').val('');
     $('#frmTxtPODate').val('');
-    $('#frmDdlVendor').val('');
+    if ($('#frmDdlVendor').data('select2')) {
+        $('#frmDdlVendor').val(null).trigger('change');
+    } else {
+        $('#frmDdlVendor').val('');
+    }
     $('#frmTxtRefNo').val('');
     $('#frmTxtRefDate').val('');
     $('#frmDdlPaymentTerms').val('');
@@ -1808,7 +1834,7 @@ function LoadPOForEdit(code) {
         $('#frmHfCode').val(header.Code);
         $('#frmTxtPONo').val(header.PONo || '');
         $('#frmTxtPODate').val(FormatDateInput(new Date(header.PODate)));
-        $('#frmDdlVendor').val(header.VendorMaster_Code);
+        $('#frmDdlVendor').val(header.VendorMaster_Code).trigger('change');
         $('#frmTxtRefNo').val(header.RefNo || '');
         if (header.RefDate) $('#frmTxtRefDate').val(FormatDateInput(new Date(header.RefDate)));
         $('#frmDdlPaymentTerms').val(header.PaymentTermsMaster_Code || '');
