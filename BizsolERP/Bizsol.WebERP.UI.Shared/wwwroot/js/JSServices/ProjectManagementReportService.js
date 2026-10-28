@@ -82,16 +82,6 @@ const ProjectManagementReportService = {
         });
     },
 
-    GetVendorWiseReport: function GetVendorWiseReport(fromDate, toDate) {
-        const url =
-            `${getReportApiBase()}/GetVendorWiseReport` +
-            `?FromDate=${encodeURIComponent(fromDate || '')}` +
-            `&ToDate=${encodeURIComponent(toDate || '')}`;
-        return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
-            return value;
-        });
-    },
-
     GetProjectMasterList: function GetProjectMasterList() {
         const url = ddlUrl('GetProjectMasterList', PMR_DDL_MODE.PROJECT);
         return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
