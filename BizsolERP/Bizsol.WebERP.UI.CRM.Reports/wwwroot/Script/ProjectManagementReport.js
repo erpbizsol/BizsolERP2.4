@@ -225,50 +225,8 @@ let G_CategoryGroupCache = {};
 let G_TreeExpandId = 0;
 let G_BudgetRawRows = [];
 let G_BudgetDrill = resetBudgetDrill();
-let G_VendorWiseRawRows = [];
-let G_VendorWiseDrill = resetVendorWiseDrill();
-
-const VENDOR_WISE_DRILL_LEVELS = [
-    { key: 'vendor', title: 'Vendor wise', firstCol: 'Vendor<br>name', next: 'project' },
-    { key: 'project', title: 'Project / Sub project wise', firstCol: 'Project /<br>Sub project', next: null },
-];
-
-const VENDOR_WISE_VENDOR_METRICS = [
-    { id: 'poAmountWithGst', keys: ['POAmountWithGST', 'poAmountWithGST', 'POAmountWithGst'] },
-    { id: 'totalGrnAmount', keys: ['TotalGRNAmount', 'totalGRNAmount', 'TotalGrnAmount'] },
-    { id: 'tdsDeposit', keys: ['TDSDeposit', 'tdsDeposit', 'TDS_Deposit'] },
-    { id: 'netPay', keys: ['NetPay', 'netPay'] },
-    { id: 'payment', keys: ['PaymentAmount', 'paymentAmount', 'Payment', 'payment'] },
-];
-
-const VENDOR_WISE_PROJECT_METRICS = [
-    { id: 'poTaxableAmount', keys: ['POTaxableAmount', 'poTaxableAmount', 'POTaxableAmt'] },
-    { id: 'gstAmount', keys: ['GSTAmount', 'gstAmount', 'GST'] },
-    { id: 'totalPoAmount', keys: ['TotalPOAmount', 'totalPOAmount', 'TotalPoAmount'] },
-    { id: 'totalBillGrnAmount', keys: ['TotalBillGRNAmount', 'totalBillGRNAmount', 'TotalGRNAmount', 'TotalBillAmount'] },
-    { id: 'tdsDeposit', keys: ['TDSDeposit', 'tdsDeposit', 'TDS_Deposit'] },
-    { id: 'netPay', keys: ['NetPay', 'netPay'] },
-    { id: 'totalPayment', keys: ['TotalPaymentAmount', 'totalPaymentAmount', 'TotalPayment', 'PaymentAmount', 'paymentAmount'] },
-];
-
-const VENDOR_WISE_BALANCE_KEYS = {
-    vendor: {
-        dr: ['BalanceDR', 'balanceDR', 'BalanceDr'],
-        cr: ['BalanceCR', 'balanceCR', 'BalanceCr'],
-    },
-    /* Report B: Balance (A − B) where A = Net Pay, B = Total payment */
-    project: {
-        dr: ['BalanceDR', 'balanceDR', 'BalanceDr'],
-        cr: ['BalanceCR', 'balanceCR', 'BalanceCr'],
-    },
-};
-
-function resetVendorWiseDrill() {
-    return { level: 'vendor', vendorCode: 0, vendorName: '' };
-}
 
 const BUDGET_PAGE_SUBTITLE = 'Project, sub-project and category / expense-head budget vs payment. Click a project to open sub-projects, then category.';
-const VENDOR_WISE_PAGE_SUBTITLE = 'Vendor-wise PO, GRN and payment summary for the selected date range. Click a vendor to open project / sub-project breakdown.';
 const WISE_PAGE_SUBTITLE = 'BOM, PO, GRN and payment summary with balance columns for the selected project filters.';
 
 const BUDGET_DRILL_LEVELS = [
@@ -286,50 +244,9 @@ function isProjectBudgetMode() {
     return v === 'projectbudget';
 }
 
-function isVendorWiseMode() {
-    const v = String($('#ddlReportKind').val() || '').toLowerCase().replace(/\s+/g, '');
-    return v === 'vendorwise';
-}
-
-function isDrillStyleReportMode() {
-    return isProjectBudgetMode() || isVendorWiseMode();
-}
-
 function setPmrFilterFieldsVisible($fields, visible) {
     if (!$fields || !$fields.length) return;
     $fields.css('display', visible ? 'flex' : 'none');
-}
-
-function pad2(n) {
-    return String(n).padStart(2, '0');
-}
-
-function convertDateFormat(dateString) {
-    const s = String(dateString || '').trim();
-    if (!s) return '';
-    const parts = s.split(/[/-]/);
-    if (parts.length !== 3) return s;
-    const dd = parts[0].padStart(2, '0');
-    const mm = parts[1].padStart(2, '0');
-    const yyyy = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-    return `${yyyy}-${mm}-${dd}`;
-}
-
-function initVendorWiseDatePickers() {
-    const today = new Date();
-    const first = new Date(today.getFullYear(), today.getMonth(), 1);
-    const dd = (x) => `${pad2(x.getDate())}/${pad2(x.getMonth() + 1)}/${x.getFullYear()}`;
-    if (!$('#txtpmrFromDate').val()) $('#txtpmrFromDate').val(dd(first));
-    if (!$('#txtpmrToDate').val()) $('#txtpmrToDate').val(dd(today));
-
-    $('#txtpmrFromDate, #txtpmrToDate').datepicker({
-        format: 'dd/mm/yyyy',
-        autoclose: true,
-        todayHighlight: true,
-        todayBtn: false,
-        orientation: 'bottom auto',
-        container: 'body',
-    });
 }
 
 function asArray(response) {
@@ -553,46 +470,17 @@ function findReportTypeOption(matchKey) {
 }
 
 function applyBudgetUi() {
-    $('.pmr-page').addClass('pmr-budget-mode').removeClass('pmr-vendorwise-mode');
-    setPmrFilterFieldsVisible($('#pmrFromDateField, #pmrToDateField'), false);
+    $('.pmr-page').addClass('pmr-budget-mode');
     setPmrFilterFieldsVisible($('#pmrProjectField'), true);
     setPmrFilterFieldsVisible($('#pmrProjectOptionField'), false);
     setPmrFilterFieldsVisible($('#pmrSubProjectField'), false);
     $('#ddlSubProject').val('0').trigger('change.select2');
     $('#tblPMR thead th.pmr-wise-col').hide();
     $('#tblPMR thead th.pmr-budget-col').show();
-    $('#tblPMR thead th.pmr-vendorwise-col').hide();
     $('#thSubProject, #thVendor, #thCategory, #thItem').hide();
     const level = getBudgetLevel(G_BudgetDrill.level);
     $('#thProject').show().html(level.firstCol);
     $('#pmrPageSubtitle').text(BUDGET_PAGE_SUBTITLE);
-}
-
-function applyVendorWiseMetricHeaders(levelKey) {
-    const isVendorLevel = levelKey === 'vendor';
-    $('#tblPMR thead th.pmr-vw-vendor-metric').toggle(isVendorLevel);
-    $('#tblPMR thead th.pmr-vw-project-metric').toggle(!isVendorLevel);
-}
-
-function applyVendorWiseUi() {
-    $('.pmr-page').addClass('pmr-vendorwise-mode pmr-budget-mode').removeClass('pmr-budget-only');
-    setPmrFilterFieldsVisible($('#pmrFromDateField, #pmrToDateField'), true);
-    setPmrFilterFieldsVisible($('#pmrProjectField, #pmrProjectOptionField, #pmrSubProjectField'), false);
-    $('#ddlSubProject').val('0').trigger('change.select2');
-    $('#tblPMR thead th.pmr-wise-col, #tblPMR thead th.pmr-budget-col').hide();
-    $('#tblPMR thead th.pmr-vendorwise-col').show();
-    $('#thVendor, #thCategory, #thItem').hide();
-    const level = getVendorWiseLevel(G_VendorWiseDrill.level);
-    const isProjectLevel = G_VendorWiseDrill.level === 'project';
-    if (isProjectLevel) {
-        $('#thProject').show().html('Project');
-        $('#thSubProject').show().html('Sub project');
-    } else {
-        $('#thProject').show().html(level.firstCol);
-        $('#thSubProject').hide();
-    }
-    applyVendorWiseMetricHeaders(G_VendorWiseDrill.level);
-    $('#pmrPageSubtitle').text(VENDOR_WISE_PAGE_SUBTITLE);
 }
 
 function applyModeUi() {
@@ -600,15 +488,10 @@ function applyModeUi() {
         applyBudgetUi();
         return;
     }
-    if (isVendorWiseMode()) {
-        applyVendorWiseUi();
-        return;
-    }
-    $('.pmr-page').removeClass('pmr-budget-mode pmr-vendorwise-mode');
-    setPmrFilterFieldsVisible($('#pmrFromDateField, #pmrToDateField'), false);
+    $('.pmr-page').removeClass('pmr-budget-mode');
     setPmrFilterFieldsVisible($('#pmrProjectField'), true);
     setPmrFilterFieldsVisible($('#pmrProjectOptionField'), true);
-    $('#tblPMR thead th.pmr-budget-col, #tblPMR thead th.pmr-vendorwise-col').hide();
+    $('#tblPMR thead th.pmr-budget-col').hide();
     $('#tblPMR thead th.pmr-wise-col').show();
     $('#pmrPageSubtitle').text(WISE_PAGE_SUBTITLE);
     applyReportTypeUi();
@@ -658,24 +541,6 @@ function balanceAmountCellHtml(amount) {
     const safe = escapeHtmlText(formatAmount(Math.abs(n)));
     const cls = isNegative ? 'num pmr-balance-negative' : 'num';
     return '<td class="' + cls + '">' + safe + '</td>';
-}
-
-function vendorWiseSignedBalanceFromLines(lines, levelKey) {
-    const keys = VENDOR_WISE_BALANCE_KEYS[levelKey] || VENDOR_WISE_BALANCE_KEYS.vendor;
-    let dr = 0;
-    let cr = 0;
-    lines.forEach(function (r) {
-        dr += parseNum(rowValue(r, keys.dr));
-        cr += parseNum(rowValue(r, keys.cr));
-    });
-    return dr - cr;
-}
-
-function vendorWiseSignedBalanceFromAgg(agg) {
-    if (agg && agg.signedBalance != null && !Number.isNaN(agg.signedBalance)) return agg.signedBalance;
-    const dr = parseAmountNumber(agg.balanceDr != null ? agg.balanceDr : agg.projectBalanceDr);
-    const cr = parseAmountNumber(agg.balanceCr != null ? agg.balanceCr : agg.projectBalanceCr);
-    return dr - cr;
 }
 
 function formatQty(v) {
@@ -1377,22 +1242,16 @@ function clearReport() {
     G_CategoryGroupCache = {};
     G_BudgetRawRows = [];
     G_BudgetDrill = resetBudgetDrill();
-    G_VendorWiseRawRows = [];
-    G_VendorWiseDrill = resetVendorWiseDrill();
     $('#tblPMRBody').empty();
     $('#pmrDrillBreadcrumb').hide();
     updateSummaryChips([]);
     populateExportTable([]);
-    if (isDrillStyleReportMode()) applyModeUi();
+    if (isProjectBudgetMode()) applyModeUi();
 }
 
 function fetchReport() {
     if (isProjectBudgetMode()) {
         fetchBudgetReport();
-        return;
-    }
-    if (isVendorWiseMode()) {
-        fetchVendorWiseReport();
         return;
     }
     const reportType = ($('#ddlReportType option:selected').val() || '').trim();
@@ -1468,10 +1327,6 @@ function populateExportTable(data) {
 function exportExcel() {
     if (isProjectBudgetMode()) {
         exportBudgetExcel();
-        return;
-    }
-    if (isVendorWiseMode()) {
-        exportVendorWiseExcel();
         return;
     }
     if (!G_ReportData.length) {
@@ -1558,287 +1413,6 @@ function loadTreeChildPanel($panel) {
 
 function getBudgetLevel(key) {
     return BUDGET_DRILL_LEVELS.find(function (l) { return l.key === key; }) || BUDGET_DRILL_LEVELS[0];
-}
-
-function getVendorWiseLevel(key) {
-    return VENDOR_WISE_DRILL_LEVELS.find(function (l) { return l.key === key; }) || VENDOR_WISE_DRILL_LEVELS[0];
-}
-
-function vendorWiseField(row, keys, emptyLabel) {
-    const v = String(rowValue(row, keys) || '').trim();
-    return v || (emptyLabel || '');
-}
-
-function vendorWiseMetricValue(row, metricDef) {
-    return parseNum(rowValue(row, metricDef.keys));
-}
-
-function sumVendorWiseMetrics(lines, metricDefs, levelKey) {
-    const agg = {};
-    metricDefs.forEach(function (m) {
-        let total = 0;
-        lines.forEach(function (r) {
-            total += vendorWiseMetricValue(r, m);
-        });
-        agg[m.id] = total;
-    });
-    agg.signedBalance = vendorWiseSignedBalanceFromLines(lines, levelKey || 'vendor');
-    return agg;
-}
-
-function vendorWiseMetricCells(agg, metricDefs) {
-    let html = '';
-    metricDefs.forEach(function (m) {
-        html += '<td class="num">' + formatAmount(agg[m.id]) + '</td>';
-    });
-    html += balanceAmountCellHtml(vendorWiseSignedBalanceFromAgg(agg));
-    return html;
-}
-
-function vendorWiseDimColCount() {
-    return G_VendorWiseDrill.level === 'project' ? 3 : 2;
-}
-
-function vendorWiseLabelCells(g, canDrill) {
-    if (G_VendorWiseDrill.level === 'project') {
-        const proj = escapeHtmlText(g.projectName || '(No Project)');
-        const sub = escapeHtmlText(g.subProjectName || '(No Sub Project)');
-        return (
-            '<td class="pmr-th-dim pmr-particulars-cell"><span class="pmr-particulars-text">' + proj + '</span></td>' +
-            '<td class="pmr-th-dim pmr-particulars-cell"><span class="pmr-particulars-text">' + sub + '</span></td>'
-        );
-    }
-    const labelHtml = canDrill
-        ? '<a href="#" class="pmr-budget-drill-link">' + escapeHtmlText(g.label) + '</a>'
-        : '<span class="pmr-particulars-text">' + escapeHtmlText(g.label) + '</span>';
-    return '<td class="pmr-th-dim pmr-particulars-cell">' + labelHtml + '</td>';
-}
-
-function filterVendorWiseRows() {
-    let rows = G_VendorWiseRawRows.slice();
-    if (G_VendorWiseDrill.level === 'project') {
-        if (G_VendorWiseDrill.vendorCode > 0) {
-            rows = rows.filter(function (r) {
-                return rowCode(r, ['VendorMaster_Code', 'vendorMaster_Code']) === G_VendorWiseDrill.vendorCode;
-            });
-        } else if (G_VendorWiseDrill.vendorName) {
-            const want = G_VendorWiseDrill.vendorName.toLowerCase();
-            rows = rows.filter(function (r) {
-                return vendorWiseField(r, ['VendorName', 'vendorName']).toLowerCase() === want;
-            });
-        }
-    }
-    return rows;
-}
-
-function vendorWiseGroupRows(rows, level) {
-    const map = new Map();
-    rows.forEach(function (r) {
-        let key = '';
-        let label = '';
-        let vendorCode = rowCode(r, ['VendorMaster_Code', 'vendorMaster_Code']);
-        let projectCode = rowCode(r, ['ProjectMaster_Code', 'projectMaster_Code']);
-        let subCode = rowCode(r, ['SubProjectMaster_Code', 'subProjectMaster_Code']);
-        if (level === 'vendor') {
-            label = vendorWiseField(r, ['VendorName', 'vendorName'], '(No Vendor)');
-            key = String(vendorCode || 0) + '|' + label.toLowerCase();
-        } else {
-            const project = vendorWiseField(r, ['ProjectName', 'projectName'], '(No Project)');
-            const sub = vendorWiseField(r, ['SubProjectDesp', 'subProjectDesp', 'SubProjectName', 'ProjectLocation'], '(No Sub Project)');
-            label = sub && sub !== '(No Sub Project)' ? project + ' / ' + sub : project;
-            key = String(projectCode || 0) + '|' + String(subCode || 0) + '|' + label.toLowerCase();
-        }
-        if (!map.has(key)) {
-            map.set(key, {
-                key: key,
-                label: label,
-                vendorCode: vendorCode,
-                vendorName: vendorWiseField(r, ['VendorName', 'vendorName']),
-                projectCode: projectCode,
-                projectName: level === 'project'
-                    ? vendorWiseField(r, ['ProjectName', 'projectName'], '(No Project)')
-                    : '',
-                subProjectCode: subCode,
-                subProjectName: level === 'project'
-                    ? vendorWiseField(r, ['SubProjectDesp', 'subProjectDesp', 'SubProjectName', 'ProjectLocation'], '(No Sub Project)')
-                    : '',
-                lines: [],
-            });
-        }
-        map.get(key).lines.push(r);
-    });
-    const metricDefs = level === 'vendor' ? VENDOR_WISE_VENDOR_METRICS : VENDOR_WISE_PROJECT_METRICS;
-    const list = Array.from(map.values()).map(function (g) {
-        return Object.assign(g, sumVendorWiseMetrics(g.lines, metricDefs, level));
-    });
-    list.sort(function (a, b) {
-        return String(a.label || '').localeCompare(String(b.label || ''), undefined, { sensitivity: 'base' });
-    });
-    return list;
-}
-
-function updateVendorWiseBreadcrumb() {
-    const level = G_VendorWiseDrill.level;
-    if (level === 'vendor') {
-        $('#pmrDrillBreadcrumb').hide();
-        return;
-    }
-    const cfg = getVendorWiseLevel(level);
-    $('#pmrDrillTitle').text(cfg.title);
-    const crumbs = [{ level: 'vendor', label: 'Vendor wise' }];
-    if (G_VendorWiseDrill.vendorName) {
-        crumbs.push({ level: 'project', label: G_VendorWiseDrill.vendorName });
-    }
-    const html = crumbs.map(function (c, i) {
-        const last = i === crumbs.length - 1;
-        if (last) return '<span class="pmr-crumb-current">' + escapeHtmlText(c.label) + '</span>';
-        return '<a href="#" class="pmr-crumb-link" data-vw-level="' + c.level + '">' + escapeHtmlText(c.label) + '</a><span class="pmr-crumb-sep"> › </span>';
-    }).join('');
-    $('#pmrDrillPath').html(html);
-    $('#pmrDrillBackText').text('Back to Vendor wise');
-    $('#pmrDrillBreadcrumb').show();
-}
-
-function renderVendorWiseLevel() {
-    applyVendorWiseUi();
-    const levelCfg = getVendorWiseLevel(G_VendorWiseDrill.level);
-    const rows = filterVendorWiseRows();
-    const groups = vendorWiseGroupRows(rows, G_VendorWiseDrill.level);
-    const metricDefs = G_VendorWiseDrill.level === 'vendor' ? VENDOR_WISE_VENDOR_METRICS : VENDOR_WISE_PROJECT_METRICS;
-    const $body = $('#tblPMRBody');
-    $body.empty();
-    updateVendorWiseBreadcrumb();
-    const colSpan = vendorWiseDimColCount() + metricDefs.length + 1;
-
-    if (!groups.length) {
-        $body.append('<tr><td colspan="' + colSpan + '" class="text-muted text-center py-3">No records found.</td></tr>');
-        return;
-    }
-
-    const canDrill = !!levelCfg.next;
-    groups.forEach(function (g, idx) {
-        const $tr = $('<tr/>')
-            .addClass(canDrill ? 'pmr-budget-drill' : '')
-            .attr('data-vw-level', G_VendorWiseDrill.level)
-            .attr('data-vendor-code', g.vendorCode || 0)
-            .attr('data-vendor-name', g.vendorName || g.label || '');
-        $tr.html(
-            '<td class="text-center">' + (idx + 1) + '</td>' +
-            vendorWiseLabelCells(g, canDrill) +
-            vendorWiseMetricCells(g, metricDefs)
-        );
-        $body.append($tr);
-    });
-
-    const totalAgg = sumVendorWiseMetrics(rows, metricDefs, G_VendorWiseDrill.level);
-    const totalLabelCells =
-        G_VendorWiseDrill.level === 'project'
-            ? '<td><strong>Total</strong></td><td></td>'
-            : '<td><strong>Total</strong></td>';
-    $body.append(
-        '<tr class="row-total"><td></td>' + totalLabelCells +
-        vendorWiseMetricCells(totalAgg, metricDefs) +
-        '</tr>'
-    );
-}
-
-function vendorWiseDrillInto($tr) {
-    const current = getVendorWiseLevel(G_VendorWiseDrill.level);
-    if (!current.next) return;
-    G_VendorWiseDrill.vendorCode = parseInt($tr.attr('data-vendor-code') || '0', 10) || 0;
-    G_VendorWiseDrill.vendorName = String($tr.attr('data-vendor-name') || '').trim();
-    G_VendorWiseDrill.level = current.next;
-    renderVendorWiseLevel();
-}
-
-function vendorWiseGoToLevel(levelKey) {
-    if (levelKey === 'vendor') {
-        G_VendorWiseDrill = resetVendorWiseDrill();
-    } else {
-        G_VendorWiseDrill.level = 'project';
-    }
-    renderVendorWiseLevel();
-}
-
-function vendorWiseDrillBack() {
-    if (G_VendorWiseDrill.level === 'project') vendorWiseGoToLevel('vendor');
-}
-
-function fetchVendorWiseReport() {
-    applyVendorWiseUi();
-    G_VendorWiseDrill = resetVendorWiseDrill();
-    const fromDate = convertDateFormat($('#txtpmrFromDate').val());
-    const toDate = convertDateFormat($('#txtpmrToDate').val());
-    if (!fromDate || !toDate) {
-        toastr.warning('Select from date and to date.');
-        return;
-    }
-    if (typeof Showloader === 'function') Showloader();
-    ProjectManagementReportService.GetVendorWiseReport(fromDate, toDate)
-        .then(function (response) {
-            if (typeof HideLoader === 'function') HideLoader();
-            const rows = asArray(response);
-            if (!rows.length) {
-                G_VendorWiseRawRows = [];
-                $('#tblPMRBody').empty();
-                $('#pmrDrillBreadcrumb').hide();
-                toastr.error('Record not found.');
-                return;
-            }
-            const err0 = rows[0].Error || rows[0].error || rows[0].Msg || rows[0].msg;
-            if (err0 != null && err0 !== '') {
-                G_VendorWiseRawRows = [];
-                $('#tblPMRBody').empty();
-                toastr.error(String(err0));
-                return;
-            }
-            G_VendorWiseRawRows = rows.filter(function (r) { return !r.Error && !r.error; });
-            G_ReportData = G_VendorWiseRawRows.slice();
-            renderVendorWiseLevel();
-        })
-        .catch(function (err) {
-            if (typeof HideLoader === 'function') HideLoader();
-            console.error('GetVendorWiseReport error:', err);
-            G_VendorWiseRawRows = [];
-            $('#tblPMRBody').empty();
-            toastr.error((err && (err.Msg || err.message)) || 'Error loading vendor wise report.');
-        });
-}
-
-function exportVendorWiseExcel() {
-    if (!G_VendorWiseRawRows.length) {
-        toastr.warning('Load the report first.');
-        return;
-    }
-    const rows = filterVendorWiseRows();
-    const $h = $('#tblPMRExport thead tr');
-    const $b = $('#tblPMRExport tbody');
-    $h.empty();
-    $b.empty();
-    const headers = [
-        'Vendor Name', 'Project Name', 'Sub Project',
-        'PO Amount with GST', 'Total Grn Amount', 'TDS Deposit', 'Net Pay', 'Payment', 'Balance (Vendor)',
-        'PO Taxable Amount', 'GST', 'Total PO Amount', 'Total Bill Amount (GRN)', 'TDS Deposit', 'Net Pay', 'Total Payment', 'Balance (Project)',
-    ];
-    headers.forEach(function (h) { $h.append($('<th/>').text(h)); });
-    rows.forEach(function (item) {
-        const tr = $('<tr/>');
-        tr.append($('<td/>').text(vendorWiseField(item, ['VendorName', 'vendorName'])));
-        tr.append($('<td/>').text(vendorWiseField(item, ['ProjectName', 'projectName'])));
-        tr.append($('<td/>').text(vendorWiseField(item, ['SubProjectDesp', 'SubProjectName', 'ProjectLocation'])));
-        VENDOR_WISE_VENDOR_METRICS.forEach(function (m) {
-            tr.append($('<td/>').text(formatAmount(vendorWiseMetricValue(item, m))));
-        });
-        tr.append($('<td/>').text(formatAmount(vendorWiseSignedBalanceFromLines([item], 'vendor'))));
-        VENDOR_WISE_PROJECT_METRICS.forEach(function (m) {
-            tr.append($('<td/>').text(formatAmount(vendorWiseMetricValue(item, m))));
-        });
-        tr.append($('<td/>').text(formatAmount(vendorWiseSignedBalanceFromLines([item], 'project'))));
-        $b.append(tr);
-    });
-    const now = new Date();
-    const dateString = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + '_' + String(now.getHours()).padStart(2, '0') + '-' + String(now.getMinutes()).padStart(2, '0');
-    $('#tblPMRExport').table2excel({ filename: 'VendorWiseReport_' + dateString, fileext: '.xlsx' });
 }
 
 function budgetField(row, keys, emptyLabel) {
@@ -2023,10 +1597,6 @@ function renderBudgetLevel() {
 }
 
 function budgetDrillInto($tr) {
-    if (isVendorWiseMode()) {
-        vendorWiseDrillInto($tr);
-        return;
-    }
     const current = getBudgetLevel(G_BudgetDrill.level);
     if (!current.next) return;
     if (current.key === 'project') {
@@ -2054,10 +1624,6 @@ function budgetGoToLevel(levelKey) {
 }
 
 function budgetDrillBack() {
-    if (isVendorWiseMode()) {
-        vendorWiseDrillBack();
-        return;
-    }
     if (G_BudgetDrill.level === 'category') budgetGoToLevel('subproject');
     else if (G_BudgetDrill.level === 'subproject') budgetGoToLevel('project');
 }
@@ -2130,7 +1696,7 @@ function exportBudgetExcel() {
 }
 
 function handleTreeRowClick($row) {
-    if (isDrillStyleReportMode()) return;
+    if (isProjectBudgetMode()) return;
     const rowId = $row.attr('data-tree-id');
     if (!rowId) return;
 
@@ -2148,7 +1714,6 @@ function handleTreeRowClick($row) {
 
 $(document).ready(function () {
     applyPageHeadingFromModuleDesp();
-    initVendorWiseDatePickers();
     loadDropdowns();
     $('#ddlReportKind').select2({ width: '100%', minimumResultsForSearch: Infinity });
     applyModeUi();
@@ -2170,7 +1735,7 @@ $(document).ready(function () {
     });
 
     $(document).on('click', '#tblPMRBody .pmr-tree-parent, .pmr-nested-table .pmr-tree-parent', function (e) {
-        if (isDrillStyleReportMode()) return;
+        if (isProjectBudgetMode()) return;
         e.stopPropagation();
         handleTreeRowClick($(this));
     });
@@ -2189,11 +1754,6 @@ $(document).ready(function () {
     });
     $(document).on('click', '#pmrDrillPath .pmr-crumb-link', function (e) {
         e.preventDefault();
-        const vwLevel = $(this).data('vwLevel');
-        if (vwLevel) {
-            vendorWiseGoToLevel(vwLevel);
-            return;
-        }
         budgetGoToLevel($(this).data('level'));
     });
 

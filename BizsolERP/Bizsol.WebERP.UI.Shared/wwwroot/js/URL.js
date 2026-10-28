@@ -197,6 +197,9 @@ let UrlService = {
     API_ENDPOINT_ProductionOrder: `${environment.BASE_URL}/ProductionOrder`,
     API_ENDPOINT_CRM_ORDER_IN_TRANSIT: `${environment.BASE_URL}/CRMOrderInTransit`,
     API_ENDPOINT_USER_DASHBOARD_MENU: `${environment.BASE_URL}/UserDashboardMenu`,
+    API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisition`,
+    API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisitionMaster`,
+    API_ENDPOINT_AssetsMaster: `${environment.BASE_URL}/AssetsMaster`,
     API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisitionMaster`,
     API_ENDPOINT_AdminTools: `${environment.BASE_URL}/AdminTools`,
 }

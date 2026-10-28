@@ -489,7 +489,12 @@ function BindEvents() {
         if (e.target === this) closeReceiptReportModal();
     });
     $('#ddlReceiptProject').off('change.bsReceipt').on('change.bsReceipt', function () {
+        markReceiptFieldInvalid($(this), false);
         fillReceiptSites($(this).val(), '');
+        markReceiptFieldInvalid($('#ddlReceiptSite'), false);
+    });
+    $('#ddlReceiptSite, #ddlReceiptCategory').off('change.bsReceiptReq').on('change.bsReceiptReq', function () {
+        markReceiptFieldInvalid($(this), false);
     });
 
     if (!window.__bizsolBsGrnEmbedMsgBound) {
@@ -1519,21 +1524,52 @@ function typeableSelectValue($sel) {
     return String(v).trim().substring(0, 500);
 }
 
-/** Receipt details modal — all fields required before SAVERECEIPTREPORT. Returns payload fields or null. */
+function markReceiptFieldInvalid($sel, invalid) {
+    if (!$sel || !$sel.length) return;
+    $sel.toggleClass('bs-field-invalid', !!invalid);
+    var $s2 = $sel.next('.select2-container');
+    if ($s2.length) $s2.toggleClass('bs-field-invalid', !!invalid);
+}
+
+function clearReceiptFieldInvalid() {
+    markReceiptFieldInvalid($('#ddlReceiptProject'), false);
+    markReceiptFieldInvalid($('#ddlReceiptSite'), false);
+    markReceiptFieldInvalid($('#ddlReceiptCategory'), false);
+}
+
+/** Receipt details: Project, Site, Category are mandatory before save. */
 function readReceiptReportModalPayload(code) {
-    var projectCode = parseInt($('#ddlReceiptProject').val() || '0', 10) || 0;
-    var siteCode = parseInt($('#ddlReceiptSite').val() || '0', 10) || 0;
-    var categoryCode = parseInt($('#ddlReceiptCategory').val() || '0', 10) || 0;
+    var $project = $('#ddlReceiptProject');
+    var $site = $('#ddlReceiptSite');
+    var $category = $('#ddlReceiptCategory');
+    var projectCode = parseInt($project.val() || '0', 10) || 0;
+    var siteCode = parseInt($site.val() || '0', 10) || 0;
+    var categoryCode = parseInt($category.val() || '0', 10) || 0;
     var itemDescription = typeableSelectValue($('#ddlReceiptItem'));
     var customerName = typeableSelectValue($('#ddlReceiptCustomer'));
+    var checks = [
+        { ok: !!projectCode, $el: $project, name: 'Project name' },
+        { ok: !!siteCode, $el: $site, name: 'Site name' },
+        { ok: !!categoryCode, $el: $category, name: 'Category' }
+    ];
     var missing = [];
-    if (!projectCode) missing.push('Project name');
-    if (!siteCode) missing.push('Site name');
-    if (!categoryCode) missing.push('Category');
-    if (!itemDescription) missing.push('Item wise');
-    if (!customerName) missing.push('Customer name');
+    var $firstInvalid = null;
+    checks.forEach(function (c) {
+        markReceiptFieldInvalid(c.$el, !c.ok);
+        if (!c.ok) {
+            missing.push(c.name);
+            if (!$firstInvalid) $firstInvalid = c.$el;
+        }
+    });
     if (missing.length) {
         toastr && toastr.warning('Please fill all mandatory fields: ' + missing.join(', ') + '.');
+        if ($firstInvalid && $firstInvalid.length) {
+            if ($firstInvalid.hasClass('select2-hidden-accessible')) {
+                $firstInvalid.select2('open');
+            } else {
+                $firstInvalid.trigger('focus');
+            }
+        }
         return null;
     }
     return {
@@ -1589,6 +1625,7 @@ function openReceiptReportModal(code) {
     var itemText = String(rowField(row, ['ItemDescription', 'itemDescription']) || '');
     var customer = String(rowField(row, ['CustomerName', 'customerName']) || '');
     $('#btnReceiptReportSave').prop('disabled', true);
+    clearReceiptFieldInvalid();
     showBsBackdrop($('#bsReceiptReportBackdrop'));
     ensureReceiptMasters().then(function () {
         fillSelectOptions($('#ddlReceiptProject'), receiptProjectRows.map(projectOptionFromRow), projectCode, '-- Select --');
@@ -1603,6 +1640,7 @@ function openReceiptReportModal(code) {
 
 function closeReceiptReportModal() {
     receiptModalCode = 0;
+    clearReceiptFieldInvalid();
     destroyTypeableSelect($('#ddlReceiptItem'));
     destroyTypeableSelect($('#ddlReceiptCustomer'));
     hideBsBackdrop($('#bsReceiptReportBackdrop'));
