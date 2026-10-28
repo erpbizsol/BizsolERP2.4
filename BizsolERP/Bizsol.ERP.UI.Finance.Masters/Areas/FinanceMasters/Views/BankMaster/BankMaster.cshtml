@@ -14,8 +14,9 @@
         width: 100%;
         box-sizing: border-box;
         padding: 4px 12px 0;
-        height: calc(100vh - 174px);
-        overflow: hidden;
+        height: auto;
+        min-height: 0;
+        overflow: visible;
         display: flex;
         flex-direction: column;
     }
@@ -112,7 +113,8 @@
     }
 
     #bankListPanel {
-        flex: 1;
+        flex: none;
+        height: calc(100vh - 174px);
         min-height: 0;
         overflow: hidden;
         display: flex;
@@ -250,11 +252,12 @@
     .pm-icon-btn.del { background: rgba(239, 68, 68, .1); color: #ef4444; border: 1px solid rgba(239, 68, 68, .2); }
 
     #bankDetailPanel {
-        flex: 1;
+        flex: none;
         min-height: 0;
         max-width: 100%;
         margin: 0;
-        overflow-y: auto;
+        overflow: visible;
+        padding-bottom: 16px;
     }
 
     #bankDetailPanel .bank-ci-po-list-header {
@@ -493,16 +496,174 @@
         align-items: center;
         gap: 7px;
         border: none;
-        padding: 10px 18px;
+        padding: 11px 18px;
         border-radius: 10px;
         font-size: 14px;
         font-weight: 700;
         cursor: pointer;
-        min-height: 40px;
+        min-height: 27px;
     }
 
     .pm-btn.secondary { background: var(--light-bg); color: var(--text-muted); border: 1.5px solid var(--border-color); }
     .pm-btn.danger { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff !important; }
+
+    .bank-opening-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .bank-opening-line input {
+        flex: 1;
+        min-width: 0;
+    }
+
+    #txtServiceTaxNo[readonly] {
+        background: var(--light-bg);
+    }
+
+    .btn-bank-opening {
+        flex-shrink: 0;
+        width: 42px;
+        height: 32px;
+        border-radius: 10px;
+        border: 1.5px solid var(--accent-primary);
+        background: #eef2ff;
+        color: var(--accent-primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 15px;
+    }
+
+    .btn-bank-opening:hover {
+        background: var(--accent-primary);
+        color: #fff;
+    }
+
+    #dvBankOpeningModal .modal-dialog { max-width: 860px; }
+    #dvBankOpeningModal .modal-header {
+        background: var(--primary-gradient);
+        color: #fff;
+        border-bottom: none;
+        padding: 16px 20px;
+    }
+    #dvBankOpeningModal .modal-title { font-weight: 800; font-size: 1rem; }
+    #dvBankOpeningModal .modal-body { background: #fff; padding: 16px 18px 8px; }
+    #dvBankOpeningModal .bank-op-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    #dvBankOpeningModal .bank-op-hint {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+    .bank-op-scroll {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+    .bank-op-table {
+        width: 100%;
+        min-width: 680px;
+        table-layout: fixed;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .bank-op-table .bank-op-col-project { width: 250px; }
+    .bank-op-table .bank-op-col-sub { width: 250px; }
+    .bank-op-table .bank-op-col-amt { width: 140px; }
+    .bank-op-table .bank-op-col-act { width: 48px; }
+    .bank-op-table th {
+        text-align: left;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--text-primary);
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 8px 10px;
+    }
+    .bank-op-table td {
+        border: 1px solid #e2e8f0;
+        padding: 8px;
+        vertical-align: middle;
+        background: #fff;
+    }
+    .bank-op-table .bank-op-col-act {
+        text-align: center;
+        width: 48px;
+    }
+    .bank-op-table .bank-op-amt {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        text-align: right;
+        box-sizing: border-box;
+    }
+    .bank-op-table .bank-op-amt:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, .15);
+    }
+    .btn-bank-op-del {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 8px;
+        background: #fef2f2;
+        color: #dc2626;
+        cursor: pointer;
+    }
+    .bank-op-total {
+        margin-top: 12px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+    .bank-op-total span {
+        min-width: 120px;
+        text-align: right;
+        font-size: 1.05rem;
+        color: var(--accent-primary);
+    }
+    #dvBankOpeningModal .select2-container { width: 100% !important; max-width: 100%; }
+    @@media (max-width: 767.98px) {
+        #dvBankOpeningModal .modal-dialog {
+            max-width: calc(100vw - 12px);
+            margin: 6px auto;
+        }
+        #dvBankOpeningModal .modal-body { padding: 12px 10px 8px; }
+        #dvBankOpeningModal .bank-op-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        #dvBankOpeningModal .bank-op-hint { line-height: 1.4; }
+        .bank-op-table {
+            width: 680px;
+            min-width: 680px;
+        }
+        .bank-op-table .bank-op-col-project { width: 240px; min-width: 240px; }
+        .bank-op-table .bank-op-col-sub { width: 240px; min-width: 240px; }
+        .bank-op-table .bank-op-col-amt { width: 140px; min-width: 140px; }
+        .bank-op-table .bank-op-col-act { width: 48px; min-width: 48px; }
+    }
+    #dvBankOpeningModal .select2-container--default .select2-selection--single {
+        min-height: 38px;
+        border-radius: 8px;
+        border: 1.5px solid var(--border-color) !important;
+    }
+    .select2-container--open.bank-op-dd { z-index: 20050 !important; }
 </style>
 
 <div id="BankMasterPage">
@@ -646,8 +807,13 @@
                     </div>
                     <div class="col-12 col-md-6">
                         <div class="bank-fg">
-                            <label for="txtServiceTaxNo">Service Tax No</label>
-                            <input type="text" id="txtServiceTaxNo" maxlength="50" autocomplete="off" />
+                            <label for="txtServiceTaxNo" id="lblServiceTaxNo">Service Tax No</label>
+                            <div class="bank-opening-line">
+                                <input type="text" id="txtServiceTaxNo" maxlength="50" autocomplete="off" />
+                                <button type="button" id="btnBankOpening" class="btn-bank-opening" title="Project wise opening" style="display:none;">
+                                    <i class="fas fa-table-list"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="col-12 col-md-6">
@@ -738,6 +904,45 @@
             <div class="modal-footer" style="border-top:1px solid var(--border-color);">
                 <button type="button" class="pm-btn secondary" data-bs-dismiss="modal"><i class="fas fa-ban"></i> Cancel</button>
                 <button type="button" class="pm-btn danger" id="btnBankConfirmDelete"><i class="fas fa-trash-alt me-1"></i> Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="dvBankOpeningModal" tabindex="-1" role="dialog" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-folder-open me-2"></i>Project wise Openning</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="bank-op-toolbar">
+                    <div class="bank-op-hint">Project and sub project are searchable. The amount total is written into Openning.</div>
+                    <button type="button" class="bank-po-create-btn" id="btnBankOpeningAdd" style="color:var(--accent-primary);">
+                        <span class="pm-plus">+</span>
+                        <span>Add Row</span>
+                    </button>
+                </div>
+                <div class="bank-op-scroll">
+                    <table class="bank-op-table">
+                        <thead>
+                            <tr>
+                                <th class="bank-op-col-project">Project <span class="text-danger">*</span></th>
+                                <th class="bank-op-col-sub">Sub Project (By Project) <span class="text-danger">*</span></th>
+                                <th class="bank-op-col-amt" style="text-align:right;">Amount <span class="text-danger">*</span></th>
+                                <th class="bank-op-col-act"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="bankOpeningBody"></tbody>
+                    </table>
+                </div>
+                <div class="bank-op-total">Total <span id="bankOpeningTotal">0.00</span></div>
+            </div>
+            <div class="modal-footer" style="border-top:1px solid var(--border-color);">
+                <button type="button" class="pm-btn secondary" data-bs-dismiss="modal"><i class="fas fa-ban"></i> Close</button>
+                <button type="button" class="btn-bank-save" id="btnBankOpeningSave"><i class="fas fa-check"></i> Save</button>
             </div>
         </div>
     </div>
