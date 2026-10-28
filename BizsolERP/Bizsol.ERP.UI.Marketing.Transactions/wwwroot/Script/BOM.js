@@ -71,6 +71,9 @@ $(document).ready(function () {
         filterBOMs($(this).val().toLowerCase().trim());
     });
 
+    ensureBomItemSelect2Styles();
+    $('#dvBomTableWrap').on('scroll.bomItemS2', closeOpenBomItemDropdowns);
+
     $('#dvBOMViewModal, #dvBOMCopyFromModal, #dvBomAmendmentHistoryModal, #dvBOMDeleteConfirmModal')
         .on('shown.bs.modal', function () {
             document.documentElement.classList.add('bom-modal-open');
@@ -705,6 +708,7 @@ function bindBomHeaderFromDetailRows(detailRows, options) {
  * Used after load and after Save so a second Save sends real detail Codes, not 0.
  */
 function applyBomDetailRows(detailRows) {
+    releaseBomItemDropdowns();
     $('#tblBOM tbody').empty();
 
     if (detailRows.length > 0) {
@@ -722,6 +726,7 @@ function applyBomDetailRows(detailRows) {
             setWorkTypeSilent($tr, d.WorkTypeMaster_Code || 0, d.WorkTypeDesp || '');
 
             var $itemDdl = $tr.find('.bom-item');
+            destroyBomItemSelect2($itemDdl);
             $itemDdl.empty().append('<option value="">Select</option>');
             if (d.ItemMaster_Code) {
                 var cachedUom = getUomTextFromCache(d.WorkTypeDesp || '', d.ItemMaster_Code);
@@ -1084,6 +1089,7 @@ function prepareCopyFromDetailRows(detailRows) {
 }
 
 function clearBomTableAndSummary() {
+    releaseBomItemDropdowns();
     $('#tblBOM tbody').empty();
     $('#tblExpenseBOM tbody').empty();
     $('#tblBOMSummary tbody').empty();
@@ -1263,6 +1269,7 @@ function resetBomForm() {
     G_ExpenseLoadedForKey = '';
     clearCopyFromSession();
 
+    releaseBomItemDropdowns();
     $('#hfBOMCode').val(0);
     $('#ddlProject').val('').prop('disabled', false);
     $('#ddlSubProject').empty().append('<option value="">Select project first</option>').prop('disabled', false);
@@ -1299,14 +1306,14 @@ function addNewBomRow() {
                     <option value="">Select</option>
                 </select>
             </td>
-            <td>
+            <td class="bom-col-work-type">
                 <select class="bom-select bom-work-type">
                     <option value="">Select</option>
                 </select>
             </td>
             <td class="bom-col-item-name">
-                <div style="display:flex;align-items:center;gap:4px;">
-                    <select class="bom-select bom-item" style="flex:1;min-width:0;">
+                <div class="bom-item-wrap">
+                    <select class="bom-select bom-item">
                         <option value="">Select</option>
                     </select>
                     <button type="button" class="item-add-btn js-open-item-master" title="Add New Item">
@@ -1357,6 +1364,127 @@ function addNewBomRow() {
     initRowCategoryDropdown($tr);
     initRowWorkTypeDropdown($tr);
     initRowEvents($tr);
+    initBomItemSelect2($tr.find('.bom-item'));
+}
+
+function closeOpenBomItemDropdowns() {
+    $('#tblBOM .bom-item').each(function () {
+        const s2 = $(this).data('select2');
+        if (s2 && s2.isOpen()) $(this).select2('close');
+    });
+}
+
+function destroyBomItemSelect2($item) {
+    if ($item && $item.length && $.fn.select2 && $item.data('select2')) {
+        $item.select2('destroy');
+    }
+}
+
+function releaseBomItemDropdowns() {
+    $('#tblBOM .bom-item').each(function () {
+        destroyBomItemSelect2($(this));
+    });
+}
+
+function focusBomItemSearch() {
+    const field = document.querySelector('.select2-container--open .select2-search__field');
+    if (!field) return;
+    field.setAttribute('placeholder', 'Search item');
+}
+
+function placeBomItemDropdown($item) {
+    const s2 = $item.data('select2');
+    if (!s2 || !s2.$container || !s2.$dropdown) return;
+    const rect = s2.$container[0].getBoundingClientRect();
+    const width = Math.round(Math.min(380, Math.max(rect.width, 300)));
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+    s2.$dropdown[0].style.setProperty('width', width + 'px', 'important');
+    s2.$dropdown[0].style.setProperty('min-width', width + 'px', 'important');
+    s2.$dropdown[0].style.setProperty('max-width', width + 'px', 'important');
+    const holder = s2.$dropdown.parent()[0];
+    if (holder && holder !== document.body) {
+        holder.style.setProperty('width', width + 'px', 'important');
+        holder.style.setProperty('max-width', width + 'px', 'important');
+        holder.style.setProperty('left', left + 'px', 'important');
+    }
+}
+
+function ensureBomItemSelect2Styles() {
+    const old = document.getElementById('bom-item-s2-styles');
+    if (old) old.remove();
+    let style = document.getElementById('bom-entry-grid-styles');
+    if (!style) {
+        style = document.createElement('style');
+        style.id = 'bom-entry-grid-styles';
+        document.head.appendChild(style);
+    }
+    style.textContent = [
+        '#tblBOM{table-layout:fixed !important;width:100% !important;min-width:1660px !important;max-width:none !important;}',
+        '#tblBOM thead th{overflow:visible !important;text-overflow:clip !important;white-space:nowrap !important;}',
+        '#tblBOM col.bom-c-sno{width:42px !important;}',
+        '#tblBOM col.bom-c-cat{width:124px !important;}',
+        '#tblBOM col.bom-c-wt{width:116px !important;}',
+        '#tblBOM col.bom-c-item{width:280px !important;}',
+        '#tblBOM col.bom-c-uom{width:72px !important;}',
+        '#tblBOM col.bom-c-spec{width:160px !important;}',
+        '#tblBOM col.bom-c-tol,#tblBOM col.bom-c-rate-tol{width:84px !important;min-width:84px !important;max-width:none !important;}',
+        '#tblBOM col.bom-c-qty{width:88px !important;}',
+        '#tblBOM col.bom-c-rate{width:110px !important;}',
+        '#tblBOM col.bom-c-gst-pct{width:76px !important;}',
+        '#tblBOM col.bom-c-amt{width:124px !important;}',
+        '#tblBOM col.bom-c-del{width:42px !important;}',
+        '#tblBOM thead th:last-child,#tblBOM tbody td:last-child{position:static !important;right:auto !important;z-index:auto !important;box-shadow:none !important;width:42px !important;min-width:42px !important;}',
+        '#tblBOM .bom-col-category{width:124px !important;min-width:124px !important;max-width:none !important;}',
+        '#tblBOM .bom-col-work-type{width:116px !important;min-width:116px !important;max-width:none !important;}',
+        '#tblBOM .bom-col-item-name{width:280px !important;min-width:280px !important;max-width:none !important;}',
+        '#tblBOM .bom-col-uom{width:72px !important;min-width:72px !important;max-width:72px !important;}',
+        '#tblBOM .bom-col-spec{width:160px !important;min-width:160px !important;max-width:none !important;}',
+        '#tblBOM .bom-col-tolerance,#tblBOM .bom-col-rate-tol{width:84px !important;min-width:84px !important;max-width:none !important;}',
+        '#tblBOM .bom-col-qty{width:88px !important;min-width:88px !important;}',
+        '#tblBOM .bom-col-gst-pct{width:76px !important;min-width:76px !important;}',
+        '#tblBOM .bom-col-rate{width:110px !important;min-width:110px !important;}',
+        '#tblBOM .bom-col-amount,#tblBOM .bom-col-gst-amt,#tblBOM .bom-col-total-amt{width:124px !important;min-width:124px !important;max-width:none !important;}',
+        '#tblBOM .bom-item-wrap{display:flex;align-items:center;gap:4px;min-width:0;}',
+        '#tblBOM .bom-col-item-name .select2-container{flex:1 1 0% !important;width:1px !important;min-width:0 !important;max-width:100%;}',
+        '#tblBOM .bom-col-item-name .select2-container--default .select2-selection--single .select2-selection__rendered{display:block !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important;line-height:28px !important;}',
+        'body>.select2-container--open:has(.bom-item-s2-dropdown){width:auto !important;min-width:0 !important;max-width:380px !important;}',
+        '.select2-dropdown.bom-item-s2-dropdown{width:340px !important;min-width:280px !important;max-width:380px !important;border:1px solid #d6d3f0 !important;border-radius:10px !important;box-shadow:0 12px 32px rgba(30,27,75,.18) !important;overflow:hidden !important;box-sizing:border-box !important;}',
+        '.select2-dropdown.bom-item-s2-dropdown .select2-search--dropdown{padding:8px 8px 4px;}',
+        '.select2-dropdown.bom-item-s2-dropdown .select2-search__field{width:100% !important;height:32px !important;margin:0 !important;border:1px solid #c7d2fe !important;border-radius:8px !important;padding:4px 8px !important;font-size:13px !important;box-sizing:border-box !important;}',
+        '.select2-dropdown.bom-item-s2-dropdown .select2-results__options{max-height:220px !important;}',
+        '.select2-dropdown.bom-item-s2-dropdown .select2-results__option{white-space:normal;word-break:break-word;line-height:1.35;padding:7px 10px;font-size:13px;}',
+        '@media (max-width:991px){',
+        '.bom-page{max-width:100% !important;overflow-x:clip !important;padding-bottom:12px !important;}',
+        '#dvBOMEntry,#dvBOMEntry.bom-card,#dvBOMSummary,#dvBOMSummary.bom-card{max-width:100% !important;min-width:0 !important;overflow:hidden !important;}',
+        '#dvBOMEntry .bom-card-toolbar,#dvBomTableWrap,#dvExpenseTableWrap,#dvBOMSummary .bom-table-wrap{max-width:100% !important;min-width:0 !important;}',
+        '#dvBomTableWrap,#dvBOMEntry .bom-entry-table-wrap,#dvExpenseTableWrap{overflow-x:auto !important;overflow-y:auto !important;}',
+        '#dvBOMSummary .bom-summary-table-wrap,#dvBOMSummary .bom-table-wrap{max-height:none !important;overflow-x:auto !important;overflow-y:visible !important;}',
+        '}'
+    ].join('');
+}
+
+function initBomItemSelect2($item) {
+    if (!$item || !$item.length || !$.fn.select2) return;
+    ensureBomItemSelect2Styles();
+    destroyBomItemSelect2($item);
+    $item.select2({
+        width: '100%',
+        dropdownParent: $(document.body),
+        placeholder: 'Select',
+        allowClear: false,
+        dropdownAutoWidth: false,
+        dropdownCssClass: 'bom-item-s2-dropdown',
+        minimumResultsForSearch: 0
+    });
+    $item.off('select2:open.bomItem').on('select2:open.bomItem', function () {
+        const $sel = $(this);
+        placeBomItemDropdown($sel);
+        focusBomItemSearch();
+        requestAnimationFrame(function () {
+            placeBomItemDropdown($sel);
+            focusBomItemSearch();
+        });
+    });
 }
 function initRowCategoryDropdown($tr) {
     const $cat = $tr.find('.bom-project-category');
@@ -1501,17 +1629,26 @@ function bindItemDropdownForRow($tr, options) {
 
     const $item = $tr.find('.bom-item');
     const prevItemCode = options.preselectCode || $item.val();
+    const reqToken = String(Date.now()) + Math.random();
+    $tr.data('bomItemReq', reqToken);
+    destroyBomItemSelect2($item);
     $item.empty().append('<option value="">Select</option>');
     if (!options.preserveFields) {
         $tr.find('.bom-uom').val('');
         $tr.attr('data-uom-code', 0);
     }
 
-    if (!selectedCode || !workTypeName) return;
+    if (!selectedCode || !workTypeName) {
+        initBomItemSelect2($item);
+        return;
+    }
 
     const cacheKey = workTypeName.toUpperCase();
 
     function bindItems(items) {
+        if ($tr.data('bomItemReq') !== reqToken) return;
+        destroyBomItemSelect2($item);
+        $item.empty().append('<option value="">Select</option>');
         (items || []).forEach(function (it) {
             const itemCode = it.Code || 0;
             const name     = (it.ItemName || '').trim();
@@ -1536,12 +1673,15 @@ function bindItemDropdownForRow($tr, options) {
                 });
             }
         }
+        initBomItemSelect2($item);
     }
 
     if (G_ItemCacheByWorkType[cacheKey]) {
         bindItems(G_ItemCacheByWorkType[cacheKey]);
         return;
     }
+
+    initBomItemSelect2($item);
 
     if (!BOMService || typeof BOMService.GetItemMasterList !== 'function') return;
 
@@ -1659,12 +1799,14 @@ function deleteBomRow($tr) {
     const $tbody = $('#tblBOM tbody');
     if ($tbody.children('tr').length <= 1) {
         $tr.find('input.bom-input').val('');
-        $tr.find('select.bom-select').val('');
+        $tr.find('select.bom-select').not('.bom-item').val('');
+        $tr.find('.bom-item').val('').trigger('change');
         $tr.find('.bom-uom').val('');
-        $tr.attr('data-detail-code', 0).attr('data-uom-code', 0);
+        $tr.attr('data-detail-code', 0).attr('data-uom-code', 0).attr('data-item-code', 0);
         refreshBOMSummary();
         return;
     }
+    destroyBomItemSelect2($tr.find('.bom-item'));
     $tr.remove();
     $tbody.children('tr').each(function (idx) {
         $(this).find('td').first().text(idx + 1);

@@ -19,11 +19,91 @@
     }
     @@media (min-width: 992px) {
         .pmr-page.pmr-budget-mode .pmr-filter-row {
-            grid-template-columns: minmax(220px, 1fr) minmax(160px, 1fr) auto;
+            grid-template-columns: minmax(220px, 1fr) minmax(130px, 1fr) minmax(160px, 1fr) auto;
+        }
+        .pmr-page.pmr-pogr-mode .pmr-filter-row {
+            grid-template-columns: minmax(180px, 1fr) minmax(130px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr) auto;
+        }
+        .pmr-page.pmr-pogr-mode.pmr-pogr-sub .pmr-filter-row {
+            grid-template-columns: minmax(160px, 1fr) minmax(120px, 1fr) minmax(150px, 1fr) minmax(150px, 1fr) minmax(150px, 1fr) auto;
+        }
+        .pmr-page.pmr-pogr-mode.pmr-pogr-detail .pmr-filter-row {
+            grid-template-columns: minmax(140px, 1fr) minmax(110px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(120px, 1fr) auto;
         }
     }
-    .pmr-page.pmr-budget-mode #tblPMR {
+    .pmr-page.pmr-budget-mode #tblPMR,
+    .pmr-page.pmr-pogr-mode #tblPOGRN {
         table-layout: auto;
+    }
+    .pmr-page.pmr-budget-detail #tblPMR {
+        display: none !important;
+    }
+    #pmrBudgetDetail {
+        display: none;
+        padding: 0.85rem 1rem 1.1rem;
+    }
+    .pmr-page.pmr-budget-detail #pmrBudgetDetail {
+        display: block;
+    }
+    .pmr-budget-detail-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        gap: 1.1rem;
+        align-items: start;
+    }
+    .pmr-budget-detail-card {
+        min-width: 0;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .pmr-budget-detail-card h3 {
+        margin: 0;
+        padding: 0.55rem 0.75rem;
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: #1e293b;
+        background: #f4c430;
+        border-bottom: 1px solid #e0b000;
+    }
+    .pmr-budget-detail-card table {
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+    }
+    .pmr-budget-detail-card thead th {
+        background: #f4c430 !important;
+        color: #1e293b !important;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-align: left;
+        padding: 0.45rem 0.6rem;
+        border: 1px solid #e0b000 !important;
+    }
+    .pmr-budget-detail-card thead th.num,
+    .pmr-budget-detail-card td.num {
+        text-align: right;
+    }
+    .pmr-budget-detail-card td {
+        font-size: 0.76rem;
+        padding: 0.4rem 0.6rem;
+        border: 1px solid #e2e8f0;
+        vertical-align: middle;
+    }
+    .pmr-budget-detail-card tr.row-total td {
+        font-weight: 700;
+        background: #fff8d6;
+    }
+    .pmr-budget-detail-empty {
+        padding: 0.85rem 0.75rem;
+        color: #64748b;
+        font-size: 0.78rem;
+        text-align: center;
+    }
+    .pmr-page.pmr-pogr-mode #tblPMR,
+    .pmr-page:not(.pmr-pogr-mode) #tblPOGRN {
+        display: none;
     }
     #tblPMRBody a.pmr-budget-drill-link {
         color: #4338ca;
@@ -40,11 +120,55 @@
     #tblPMRBody tr.pmr-budget-drill:hover {
         background: #eef2ff;
     }
+    #pogrTableBody a.pogr-drill-link {
+        color: #4338ca;
+        font-weight: 600;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    #pogrTableBody a.pogr-drill-link:hover {
+        color: #312e81;
+    }
+    #pogrTableBody tr.pogr-drill {
+        cursor: pointer;
+    }
+    #pogrTableBody tr.pogr-drill:hover {
+        background: #eef2ff;
+    }
     .pmr-drill-crumb #pmrDrillPath {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: 0.35rem 0.4rem;
+    }
+    .pmr-selected-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+    .pmr-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.28rem 0.7rem;
+        border-radius: 999px;
+        background: #fff;
+        border: 1px solid #c7d2fe;
+        font-size: 0.78rem;
+        color: #1e293b;
+        max-width: 100%;
+    }
+    .pmr-chip .lbl {
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.65rem;
+        letter-spacing: 0.03em;
+    }
+    .pmr-chip .val {
+        font-weight: 800;
+        color: #312e81;
+        word-break: break-word;
     }
     .pmr-page .pmr-filter-field {
         min-width: 0;
@@ -103,6 +227,37 @@
         .pmr-page .expense-entry-table-wrapper {
             overflow-x: hidden !important;
         }
+    }
+    .pmr-page.pmr-pogr-mode,
+    .pmr-page.pmr-pogr-mode .expense-entry-card.ee-list-grid-wrap {
+        overflow: visible;
+        max-width: 100%;
+        min-width: 0;
+    }
+    .pmr-page.pmr-pogr-mode .expense-entry-table-wrapper.pmr-table-wrap {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        max-height: none !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: auto;
+        touch-action: pan-x pan-y;
+        scrollbar-width: thin;
+        scrollbar-color: #64748b #e2e8f0;
+    }
+    .pmr-page.pmr-pogr-mode .expense-entry-table-wrapper.pmr-table-wrap::-webkit-scrollbar {
+        height: 12px;
+        display: block;
+    }
+    .pmr-page.pmr-pogr-mode .expense-entry-table-wrapper.pmr-table-wrap::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 999px;
+    }
+    .pmr-page.pmr-pogr-mode .pmr-scroll-hint {
+        display: flex;
     }
     #tblPMR {
         table-layout: fixed;
@@ -477,17 +632,20 @@
 
     @@media (max-width: 991px) {
         .pmr-page .pmr-filter-row,
-        .pmr-page.pmr-budget-mode .pmr-filter-row {
+        .pmr-page.pmr-budget-mode .pmr-filter-row,
+        .pmr-page.pmr-pogr-mode .pmr-filter-row {
             grid-template-columns: minmax(0, 1fr) !important;
             gap: 0.65rem;
         }
         .pmr-page .pmr-filter-actions,
-        .pmr-page.pmr-budget-mode .pmr-filter-actions {
+        .pmr-page.pmr-budget-mode .pmr-filter-actions,
+        .pmr-page.pmr-pogr-mode .pmr-filter-actions {
             width: 100%;
             align-self: stretch;
         }
         .pmr-page .pmr-filter-actions .pmr-btn-show,
-        .pmr-page.pmr-budget-mode .pmr-filter-actions .pmr-btn-show {
+        .pmr-page.pmr-budget-mode .pmr-filter-actions .pmr-btn-show,
+        .pmr-page.pmr-pogr-mode .pmr-filter-actions .pmr-btn-show {
             width: 100%;
             min-height: 38px;
             margin-bottom: 0 !important;
@@ -588,6 +746,12 @@
             touch-action: pan-x pan-y;
             border-radius: 0 0 12px 12px;
         }
+        .pmr-page.pmr-pogr-mode .expense-entry-table-wrapper.pmr-table-wrap {
+            max-height: none !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            overscroll-behavior: auto;
+        }
 
         #tblPMR {
             table-layout: auto !important;
@@ -597,6 +761,9 @@
 
         .pmr-page.pmr-budget-mode #tblPMR {
             min-width: 680px !important;
+        }
+        .pmr-budget-detail-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
         }
 
         #tblPMR thead th {
@@ -705,6 +872,111 @@
         }
     }
 
+    #tblPOGRN {
+        table-layout: auto;
+        width: max-content !important;
+        min-width: 1480px;
+        max-width: none !important;
+        border-collapse: collapse;
+        border: 1px solid #94a3b8;
+    }
+    .pmr-page.pmr-pogr-detail #tblPOGRN {
+        min-width: 2100px;
+    }
+    .pmr-page .expense-entry-table-wrapper #tblPOGRN > thead th,
+    .pmr-page .expense-entry-table-wrapper #tblPOGRN > tbody td,
+    #tblPOGRN th,
+    #tblPOGRN td {
+        border: 1px solid #94a3b8 !important;
+    }
+    #tblPOGRN thead th {
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: break-word;
+        line-height: 1.2;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 0.4rem 0.4rem;
+        vertical-align: middle;
+        text-align: center;
+        min-width: 5.4rem;
+    }
+    #tblPOGRN thead th.col-po,
+    #tblPOGRN thead th.col-grn,
+    #tblPOGRN thead th.col-val,
+    #tblPOGRN thead th.col-qty {
+        min-width: 6.2rem;
+    }
+    #tblPOGRN thead th.pogr-col-balance,
+    #tblPOGRN td.pogr-col-balance,
+    #tblPOGRN thead th.col-grn:last-child,
+    #tblPOGRN td.col-grn:last-child {
+        min-width: 7.8rem;
+    }
+    #tblPOGRN td.num, #tblPOGRN th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    #tblPOGRN td.num {
+        white-space: nowrap;
+        font-size: 0.74rem;
+        padding: 0.3rem 0.25rem;
+    }
+    #tblPOGRN td.label-cell,
+    #tblPOGRN th.pmr-th-dim {
+        text-align: left;
+        min-width: 10rem;
+        font-weight: 600;
+    }
+    #tblPOGRN tr.pogr-row-total td {
+        font-weight: 700;
+        background: rgba(102, 126, 234, 0.12) !important;
+        color: #4338ca !important;
+    }
+    .pmr-page .expense-entry-table-wrapper #tblPOGRN > thead {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+    .pmr-page .expense-entry-table-wrapper #tblPOGRN > thead th {
+        color: #fff !important;
+    }
+    .pmr-page .expense-entry-table-wrapper #tblPOGRN > thead th.pmr-th-dim {
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+    .pmr-page .expense-entry-table-wrapper #tblPOGRN > thead th.col-po-group,
+    .pmr-page .expense-entry-table-wrapper #tblPOGRN > thead th.col-po {
+        background: #2563eb !important;
+        background-color: #2563eb !important;
+    }
+    .pmr-page .expense-entry-table-wrapper #tblPOGRN > thead th.col-grn-group,
+    .pmr-page .expense-entry-table-wrapper #tblPOGRN > thead th.col-grn {
+        background: #0d9488 !important;
+        background-color: #0d9488 !important;
+    }
+    #tblPOGRN td.col-po { background: #eff6ff; }
+    #tblPOGRN td.col-grn { background: #f0fdfa; }
+    #tblPOGRN tr.pogr-row-total td.col-po {
+        background: #dbeafe !important;
+        color: #1e40af !important;
+    }
+    #tblPOGRN tr.pogr-row-total td.col-grn {
+        background: #ccfbf1 !important;
+        color: #115e59 !important;
+    }
+    #tblPOGRN .col-qty.hidden-col,
+    #tblPOGRN .col-val.hidden-col {
+        display: none;
+    }
+    #tblPOGRN td.pogr-po-once {
+        vertical-align: middle;
+        font-weight: 700;
+        background: #eff6ff !important;
+    }
+    #tblPOGRN tr.pogr-grn-row td.col-grn {
+        background: #f0fdfa;
+    }
+
     @@media print {
         .no-print { display: none !important; }
         .expense-entry-table-wrapper { max-height: none !important; overflow: visible !important; }
@@ -757,11 +1029,19 @@
                 <select id="ddlReportKind" class="form-control form-control-sm box_border w-100">
                     <option value="projectWise">Project Wise</option>
                     <option value="projectBudget">Project Budget</option>
+                    <option value="poGrn">PO / GRN Report</option>
                 </select>
             </div>
             <div class="pmr-filter-field" id="pmrProjectOptionField">
                 <label for="ddlReportType" class="form-label">Project Option</label>
                 <select id="ddlReportType" class="form-control form-control-sm box_border w-100"></select>
+            </div>
+            <div class="pmr-filter-field" id="pmrStatusField" style="display:none">
+                <label for="ddlStatus" class="form-label">Status <span class="text-danger">*</span></label>
+                <select id="ddlStatus" class="form-control form-control-sm box_border w-100">
+                    <option value="Pending">Pending</option>
+                    <option value="Closed">Closed</option>
+                </select>
             </div>
             <div class="pmr-filter-field" id="pmrProjectField">
                 <label for="ddlProject" class="form-label">Project</label>
@@ -770,6 +1050,22 @@
             <div class="pmr-filter-field" id="pmrSubProjectField">
                 <label for="ddlSubProject" class="form-label">Sub project</label>
                 <select id="ddlSubProject" class="form-control form-control-sm box_border w-100"></select>
+            </div>
+            <div class="pmr-filter-field" id="pmrPoGrnViewField" style="display:none">
+                <label for="ddlPoGrnView" class="form-label">Show</label>
+                <select id="ddlPoGrnView" class="form-control form-control-sm box_border w-100">
+                    <option value="all" selected>All</option>
+                    <option value="withPo">With PO</option>
+                    <option value="grnOnly">GRN without PO</option>
+                </select>
+            </div>
+            <div class="pmr-filter-field" id="pmrQtyValueField" style="display:none">
+                <label for="ddlQtyValue" class="form-label">QTY / Value</label>
+                <select id="ddlQtyValue" class="form-control form-control-sm box_border w-100">
+                    <option value="both" selected>Both</option>
+                    <option value="qty">Qty only</option>
+                    <option value="value">Value only</option>
+                </select>
             </div>
             <div class="pmr-filter-actions">
                 <button type="button" id="fetchReportButton" class="btn btn-sm pmr-btn-show">
@@ -787,6 +1083,7 @@
             </button>
             <span class="pmr-drill-current-title" id="pmrDrillTitle"></span>
         </div>
+        <div class="pmr-selected-chips" id="pmrSelectedChips" style="display:none"></div>
         <div id="pmrDrillPath"></div>
         <span id="pmrDrillLabel" style="display:none"></span>
     </div>
@@ -826,6 +1123,28 @@
                 </thead>
                 <tbody id="tblPMRBody"></tbody>
             </table>
+            <table id="tblPOGRN" class="table table-sm table-bordered mb-0" style="display:none">
+                <thead id="pogrTableHead"></thead>
+                <tbody id="pogrTableBody"></tbody>
+            </table>
+            <div id="pmrBudgetDetail">
+                <div class="pmr-budget-detail-grid">
+                    <div class="pmr-budget-detail-card">
+                        <h3 id="pmrBudgetItemTitle">Items</h3>
+                        <table id="tblBudgetItems" class="table table-sm mb-0">
+                            <thead id="tblBudgetItemsHead"></thead>
+                            <tbody id="tblBudgetItemsBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="pmr-budget-detail-card">
+                        <h3 id="pmrBudgetPayTitle">Payment</h3>
+                        <table id="tblBudgetPays" class="table table-sm mb-0">
+                            <thead id="tblBudgetPaysHead"></thead>
+                            <tbody id="tblBudgetPaysBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

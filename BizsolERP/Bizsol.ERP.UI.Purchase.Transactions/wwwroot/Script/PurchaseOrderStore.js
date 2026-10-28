@@ -1213,10 +1213,46 @@ window.SaveSiteRepresentative = function () {
 
 // ─── PO LIST GRID ──────────────────────────────────────────────────
 
+/** Report Type option value is the Getddl Mode: Po Wise = Locate, Po Item Wise = ItemWiseLocate. */
+function GetPOListReportMode() {
+    const mode = ($('#lstDdlReportType').val() || 'Locate').trim();
+    return mode === 'ItemWiseLocate' ? 'ItemWiseLocate' : 'Locate';
+}
+
+function poListFirst(item, keys) {
+    for (let i = 0; i < keys.length; i++) {
+        const v = item[keys[i]];
+        if (v !== undefined && v !== null && v !== '') return v;
+    }
+    return '';
+}
+
+function poListActionCode(item) {
+    return poListFirst(item, ['PurchaseOrderMaster_Code', 'POMaster_Code', 'MasterCode', 'Code']) || 0;
+}
+
+function BuildPOListActions(item) {
+    const code = poListActionCode(item);
+    const poNo = item.PONo || item.PO_No || '';
+    const status = item.Status || '';
+    const poDate = (item.PODate || item.PO_Date || '').toString().substring(0, 10);
+    const safeStatus = String(status).replace(/'/g, '');
+    return `<button class="btn btn-info icon-height mb-1" title="View" onclick="ViewPO('${code}')"><i class="fa fa-eye"></i></button>
+                       <button class="btn btn-warning icon-height mb-1 ms-1" title="Edit" onclick="OpenPOForm('Edit','${code}','${safeStatus}')"><i class="fa fa-edit"></i></button>
+                       <button class="btn btn-danger icon-height mb-1 ms-1" title="Delete" onclick="InitDeletePO('${code}','${poNo}')"><i class="fa fa-trash"></i></button>
+                       <button class="btn btn-secondary icon-height mb-1 ms-1" title="Print Preview" onclick="PrintPO('${code}','preview')"><i class="fa fa-search-plus"></i></button>
+                       <button class="btn btn-dark icon-height mb-1 ms-1" title="Print" onclick="PrintPO('${code}','print')"><i class="fa fa-print"></i></button>
+                       <button class="btn icon-height mb-1 ms-1" title="Attachments" style="background:${(item.HasAttach || '').toUpperCase() === 'Y' ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#0284c7)'};color:#fff;border:none;" onclick="openPOListAttachmentControl('${code}','${poNo}','${poDate}')"><i class="fa fa-paperclip"></i></button>
+                       ${String(status).toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;" title="Cancel PO" onclick="InitCancelPO('${code}','${poNo}')"><i class="fa fa-ban"></i></button>` : ''}
+                       ${String(status).toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:${((item.MailSendAfterAutoGenerate || item.mailSendAfterAutoGenerate || '').toUpperCase() === 'Y') ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#2563eb)'};color:#fff;border:none;" title="Send Email" onclick="SendMailPO('${code}')"><i class="fa fa-envelope"></i></button>` : ''}`;
+}
+
 window.ShowPOListGrid = function () {
     const fromDate = $('#lstTxtFromDate').val();
     const toDate = $('#lstTxtToDate').val();
     const status = $('#lstDdlStatus').val();
+    const reportMode = GetPOListReportMode();
+    const isItemWise = reportMode === 'ItemWiseLocate';
 
     if (!fromDate || !toDate) {
         toastr.warning('Please select From Date and To Date.');
@@ -1227,46 +1263,53 @@ window.ShowPOListGrid = function () {
         return;
     }
 
-    PurchaseOrderStoreService.GetPurchaseOrderStoreList(status, fromDate, toDate).then(function (data) {
+    PurchaseOrderStoreService.GetPurchaseOrderStoreList(status, fromDate, toDate, reportMode).then(function (data) {
         G_POStoreList = data || [];
         UpdatePOStoreStatChips(G_POStoreList);
         if (G_POStoreList.length === 0) {
             $('#tblPOListHeader').html('');
-            $('#tblPOListBody').html('<tr><td colspan="10" class="text-center text-muted py-4"><i class="fa fa-inbox fa-2x d-block mb-2 text-muted"></i>No records found for the selected period.</td></tr>');
+            $('#tblPOListBody').html('<tr><td colspan="12" class="text-center text-muted py-4"><i class="fa fa-inbox fa-2x d-block mb-2 text-muted"></i>No records found for the selected period.</td></tr>');
             $('#paginator-tblPOList').html('');
             return;
         }
-        const stringFilterColumn = ['PO No', 'Vendor', 'Status', 'Project Name', 'Sub Project Name','Work Type'];
-        const numericFilterColumn = ['Total Amount'];
-        const dateFilterColumn = ['PO Date'];
+
+        const displayData = G_POStoreList.map(function (item) {
+            if (isItemWise) return item;
+            return Object.assign({}, item, { Action: BuildPOListActions(item) });
+        });
+
         const button = false;
         const showButtons = [];
-        const hiddenColumns = ['Code'];
-        const columnAlignment = { 'Total Amount': 'right', 'PO Date': 'center', 'PO No': 'center' };
-        const TotalColumns = ['Total Amount'];
-        const commaColumns = ['Total Amount'];
+        const stringFilterColumn = ["PO No", "Vendor Name", "Ref No", "Project Name", "Sub Project Name", "Status", "Work Type","Item Name","Specification"];
+        const numericFilterColumn = ["Total PO Amount"];
+        const dateFilterColumn = ["PO Date"];
+        const stringDoubleFilterColumn = [];
+        const hiddenColumns = ["Code", "VendorMaster_Code", "PO Type", "IsPOAgainstProject", "Fin Year", "Ref Date","IsPOAgainstProject","HasAttach","MailSendAfterAutoGenerate"];
+        const columnAlignment = {
+            "Total PO Amount": "right",
+            "Amount": "right"
+        };
+        const totalColumns = ["Total PO Amount","Amount"];
+        const fixedDecimalValue = { "Total PO Amount": 2, "Amount": 2 };
 
-        const displayData = G_POStoreList.map(item => ({
-            'Code': item.Code,
-            'PO No': item.PONo || item.PO_No || '',
-            'PO Date': FormatDateDisplay(item.PODate || item.PO_Date),
-            'Vendor': item.VendorName || item.Vendor || '',
-            'Ref No': item.RefNo || '',
-            'Project Name': item.ProjectName,
-            'Sub Project Name': item.SubProjectName,
-            'Work Type': item.WorkType,
-            'Total Amount': parseFloat(item.TotalPOAmount || item.Total_Amount || 0),
-            'Status': item.Status || '',
-            'Action': `<button class="btn btn-info icon-height mb-1" title="View" onclick="ViewPO('${item.Code}')"><i class="fa fa-eye"></i></button>
-                       <button class="btn btn-warning icon-height mb-1 ms-1" title="Edit" onclick="OpenPOForm('Edit','${item.Code}','${(item.Status || '').replace(/'/g, '')}')"><i class="fa fa-edit"></i></button>
-                       <button class="btn btn-danger icon-height mb-1 ms-1" title="Delete" onclick="InitDeletePO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-trash"></i></button>
-                       <button class="btn btn-secondary icon-height mb-1 ms-1" title="Print Preview" onclick="PrintPO('${item.Code}','preview')"><i class="fa fa-search-plus"></i></button>
-                       <button class="btn btn-dark icon-height mb-1 ms-1" title="Print" onclick="PrintPO('${item.Code}','print')"><i class="fa fa-print"></i></button>
-                       <button class="btn icon-height mb-1 ms-1" title="Attachments" style="background:${(item.HasAttach || '').toUpperCase() === 'Y' ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#0284c7)'};color:#fff;border:none;" onclick="openPOListAttachmentControl('${item.Code}','${item.PONo || item.PO_No || ''}','${(item.PODate || item.PO_Date || '').substring(0, 10)}')"><i class="fa fa-paperclip"></i></button>
-                       ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;" title="Cancel PO" onclick="InitCancelPO('${item.Code}','${item.PONo || item.PO_No || ''}')"><i class="fa fa-ban"></i></button>` : ''}
-                       ${(item.Status || '').toLowerCase() === 'approved' ? `<button class="btn icon-height mb-1 ms-1" style="background:${((item.MailSendAfterAutoGenerate || item.mailSendAfterAutoGenerate || '').toUpperCase() === 'Y') ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#0ea5e9,#2563eb)'};color:#fff;border:none;" title="Send Email" onclick="SendMailPO('${item.Code}')"><i class="fa fa-envelope"></i></button>` : ''}`
-        }));
-        BizsolCustomFilterGrid.CreateDataTable('tblPOListHeader', 'tblPOListBody', displayData, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, [], hiddenColumns, columnAlignment, true, TotalColumns, null, commaColumns, 'Search by PO No, Vendor, Project, Status...');
+        BizsolCustomFilterGrid.CreateDataTable(
+            'tblPOListHeader',
+            'tblPOListBody',
+            displayData,
+            button,
+            showButtons,
+            stringFilterColumn,
+            numericFilterColumn,
+            dateFilterColumn,
+            stringDoubleFilterColumn,
+            hiddenColumns,
+            columnAlignment,
+            true,
+            totalColumns,
+            fixedDecimalValue,
+            null,
+            'Search...'
+        );
     }).catch(err => {
         toastr.error('Error loading PO list.');
         console.error(err);

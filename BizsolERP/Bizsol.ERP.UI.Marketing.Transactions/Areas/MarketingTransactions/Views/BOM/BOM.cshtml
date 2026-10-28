@@ -3,7 +3,7 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=29"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=31"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 
 <style>
@@ -182,15 +182,15 @@
     #tblBOM {
         table-layout: fixed;
         width: 100%;
-        min-width: 0;
+        min-width: 1660px;
         font-size: 12.5px;
     }
 
     #tblBOM thead th {
-        padding: 9px 5px;
+        padding: 9px 6px;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        overflow: visible;
+        text-overflow: clip;
         line-height: 1.25;
         font-size: 11px;
     }
@@ -310,7 +310,9 @@
     .bom-summary-table-wrap {
         overflow-x: auto;
         overflow-y: visible;
-        max-height: none;
+        max-height: none !important;
+        max-width: 100%;
+        min-width: 0;
         -webkit-overflow-scrolling: touch;
     }
     #tblBOMSummary {
@@ -883,38 +885,28 @@
     }
     .item-add-btn:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(16,185,129,0.5); }
 
-  /* BOM entry grid — column width tuning (fits viewport, no horizontal scroll) */
-    #tblBOM col.bom-c-sno { width: 36px; }
-    #tblBOM col.bom-c-cat { width: 6%; }
-    #tblBOM col.bom-c-wt { width: 8%; }
-    #tblBOM col.bom-c-item { width: 21%; }
+    /* BOM entry grid — fixed readable columns; the wrap scrolls when the card is narrower */
+    #tblBOM col.bom-c-sno { width: 42px; }
+    #tblBOM col.bom-c-cat { width: 124px; }
+    #tblBOM col.bom-c-wt { width: 116px; }
+    #tblBOM col.bom-c-item { width: 280px; }
     #tblBOM col.bom-c-uom { width: 72px; }
-    #tblBOM col.bom-c-spec { width: 12%; }
+    #tblBOM col.bom-c-spec { width: 160px; }
     #tblBOM col.bom-c-tol,
-    #tblBOM col.bom-c-rate-tol {
-        width: 56px;
-        min-width: 56px;
-        max-width: 64px;
-    }
-    #tblBOM col.bom-c-qty { width: 6%; }
-    #tblBOM col.bom-c-rate { width: 7%; }
-    #tblBOM col.bom-c-gst-pct { width: 6%; }
-    #tblBOM col.bom-c-amt { width: 7%; }
+    #tblBOM col.bom-c-rate-tol { width: 84px; }
+    #tblBOM col.bom-c-qty { width: 88px; }
+    #tblBOM col.bom-c-rate { width: 110px; }
+    #tblBOM col.bom-c-gst-pct { width: 76px; }
+    #tblBOM col.bom-c-amt { width: 124px; }
     #tblBOM col.bom-c-del { width: 42px; min-width: 42px; }
 
     #tblBOM thead th:last-child,
     #tblBOM tbody td:last-child {
-        position: sticky;
-        right: 0;
-        z-index: 2;
+        position: static;
+        right: auto;
         min-width: 42px;
         width: 42px;
-        box-shadow: -4px 0 10px rgba(15, 23, 42, .08);
-    }
-
-    #tblBOM thead th:last-child {
-        z-index: 6;
-        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+        box-shadow: none;
     }
 
     #tblBOM tbody td:last-child {
@@ -930,15 +922,19 @@
     }
 
     #tblBOM .bom-col-category {
-        width: 6%;
-        max-width: 88px;
+        width: 124px;
+        min-width: 124px;
     }
     #tblBOM .bom-col-category .bom-select {
         padding: 5px 4px;
     }
+    #tblBOM .bom-col-work-type {
+        width: 116px;
+        min-width: 116px;
+    }
     #tblBOM .bom-col-item-name {
-        width: 21%;
-        min-width: 0;
+        width: 280px;
+        min-width: 280px;
     }
     #tblBOM .bom-col-uom {
         width: 72px;
@@ -954,14 +950,13 @@
         letter-spacing: 0.02em;
     }
     #tblBOM .bom-col-spec {
-        width: 12%;
-        min-width: 0;
+        width: 160px;
+        min-width: 160px;
     }
     #tblBOM .bom-col-tolerance,
     #tblBOM .bom-col-rate-tol {
-        width: 56px;
-        min-width: 56px;
-        max-width: 64px;
+        width: 84px;
+        min-width: 84px;
     }
     #tblBOM thead th.bom-col-tolerance,
     #tblBOM thead th.bom-col-rate-tol {
@@ -972,15 +967,23 @@
     #tblBOM .bom-col-rate-tol .bom-input {
         padding: 5px 4px;
     }
-    #tblBOM .bom-col-qty,
-    #tblBOM .bom-col-rate,
+    #tblBOM .bom-col-qty {
+        width: 88px;
+        min-width: 88px;
+    }
     #tblBOM .bom-col-gst-pct {
-        width: 6%;
+        width: 76px;
+        min-width: 76px;
+    }
+    #tblBOM .bom-col-rate {
+        width: 110px;
+        min-width: 110px;
     }
     #tblBOM .bom-col-gst-amt,
     #tblBOM .bom-col-total-amt,
     #tblBOM .bom-col-amount {
-        width: 7%;
+        width: 124px;
+        min-width: 124px;
     }
     #tblBOM .bom-select {
         font-size: 12px;
@@ -992,6 +995,72 @@
     }
     #tblBOM .bom-item {
         min-width: 0;
+    }
+
+    #tblBOM .bom-item-wrap {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    #tblBOM .bom-col-item-name .select2-container {
+        flex: 1 1 0% !important;
+        width: 1px !important;
+        min-width: 0 !important;
+        max-width: 100%;
+    }
+
+    #tblBOM .bom-col-item-name .select2-container--default .select2-selection--single .select2-selection__rendered {
+        display: block !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        line-height: 28px !important;
+    }
+
+    body > .select2-container--open:has(.bom-item-s2-dropdown) {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: 380px !important;
+    }
+
+    .select2-dropdown.bom-item-s2-dropdown {
+        width: 340px !important;
+        min-width: 280px !important;
+        max-width: 380px !important;
+        border: 1px solid #d6d3f0 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 12px 32px rgba(30, 27, 75, 0.18) !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    .select2-dropdown.bom-item-s2-dropdown .select2-search--dropdown {
+        padding: 8px 8px 4px;
+    }
+
+    .select2-dropdown.bom-item-s2-dropdown .select2-search__field {
+        width: 100% !important;
+        height: 32px !important;
+        margin: 0 !important;
+        border: 1px solid #c7d2fe !important;
+        border-radius: 8px !important;
+        padding: 4px 8px !important;
+        font-size: 13px !important;
+        box-sizing: border-box !important;
+    }
+
+    .select2-dropdown.bom-item-s2-dropdown .select2-results__options {
+        max-height: 220px !important;
+    }
+
+    .select2-dropdown.bom-item-s2-dropdown .select2-results__option {
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.35;
+        padding: 7px 10px;
+        font-size: 13px;
     }
 
     /* ── Modal (scroll inside, not page) ─────────────────────── */
@@ -1359,9 +1428,17 @@
             padding: 8px 10px;
         }
 
-        #dvBOMEntry.bom-card {
-            overflow: visible;
+        #dvBOMEntry.bom-card,
+        #dvBOMSummary.bom-card {
+            overflow: hidden;
+            max-width: 100%;
             border-radius: 16px;
+        }
+
+        .bom-page {
+            max-width: 100%;
+            overflow-x: clip;
+            padding-bottom: 12px;
         }
 
         .bom-entry-scroll-hint {
@@ -1622,7 +1699,7 @@
                 <tr>
                     <th class="center">#</th>
                     <th class="bom-col-category">Prj Category</th>
-                    <th>Work Type</th>
+                    <th class="bom-col-work-type">Work Type</th>
                     <th class="bom-col-item-name">Item Name</th>
                     <th class="bom-col-uom center">UOM</th>
                     <th class="bom-col-spec">Item Spec</th>

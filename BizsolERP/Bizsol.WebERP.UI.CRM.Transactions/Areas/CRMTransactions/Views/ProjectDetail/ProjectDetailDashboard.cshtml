@@ -4,7 +4,6 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
 <link href="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/DateRangeControl/DateRangeControl.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Shared/components/FilterSidePanelControl/FilterSidePanelControl.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.CRM.Transactions/js/ProjectDetailDashboard.js"></script>
@@ -850,12 +849,11 @@
     }
     .pdd-fin-row {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
         gap: 16px;
         margin-bottom: 18px;
     }
     @@media (max-width: 1300px) { .pdd-table-row { grid-template-columns: repeat(2, 1fr); } }
-    @@media (max-width: 900px)  { .pdd-fin-row   { grid-template-columns: 1fr; } }
     @@media (max-width: 650px)  { .pdd-table-row { grid-template-columns: 1fr; } }
 
     .pdd-tbl-scroll { overflow-x: auto; }
@@ -882,17 +880,6 @@
     .pdd-tbl-scroll-y::-webkit-scrollbar { width: 8px; height: 8px; }
     .pdd-tbl-scroll-y::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 8px; }
     .pdd-tbl-scroll-y::-webkit-scrollbar-track { background: #f1f5f9; }
-
-    /* Horizontal scroll for the Payment Received vs Made chart */
-    .pdd-chart-area.pdd-chart-area-scrollx { height: 360px; overflow: hidden; }
-    .pdd-chart-scrollx {
-        width: 100%; height: 100%;
-        overflow-x: auto; overflow-y: hidden;
-    }
-    .pdd-chart-scrollx-inner { position: relative; height: calc(100% - 4px); min-width: 100%; }
-    .pdd-chart-scrollx::-webkit-scrollbar { height: 8px; }
-    .pdd-chart-scrollx::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 8px; }
-    .pdd-chart-scrollx::-webkit-scrollbar-track { background: #f1f5f9; }
 
     .pdd-tbl {
         width: 100%;
@@ -934,12 +921,23 @@
     .pdd-tbl thead th.pdd-th-blue  { background: #dbeafe; color: #1d4ed8; }
     .pdd-tbl-fin tbody td:first-child { font-weight: 700; }
 
-    .pdd-chart-legend-inline {
-        display: flex; gap: 14px; flex-wrap: wrap;
-        font-size: 0.68rem; font-weight: 600; color: #475569;
+    .pdd-fin-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        color: #475569;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
     }
-    .pdd-chart-legend-inline span { display: inline-flex; align-items: center; gap: 5px; }
-    .pdd-chart-legend-inline .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+    .pdd-fin-toggle input {
+        width: 15px;
+        height: 15px;
+        accent-color: #6366f1;
+        cursor: pointer;
+    }
 
     .pdd-tile-hidden {
         display: none !important;
@@ -1135,7 +1133,7 @@
                 </div>
             </div>
 
-            <!-- ── ROW 3: FINANCIAL SUMMARY + PAYMENT RECEIVED VS MADE ── -->
+            <!-- ── ROW 3: FINANCIAL SUMMARY ── -->
             <div class="pdd-fin-row">
                 <div class="pdd-chart-card accent-indigo" data-tile-desp="Project Financial Summary">
                     <div class="pdd-chart-header">
@@ -1143,6 +1141,10 @@
                             <div class="pdd-chart-title-icon ti-indigo"><i class="fa-solid fa-chart-column"></i></div>
                             <div class="pdd-chart-title">Project Financial Summary</div>
                         </div>
+                        <label class="pdd-fin-toggle" for="chkShowAllProjects">
+                            <input type="checkbox" id="chkShowAllProjects" />
+                            Show all projects
+                        </label>
                     </div>
                     <div class="pdd-tbl-scroll pdd-tbl-scroll-y pdd-tbl-scroll-lg">
                         <table class="pdd-tbl pdd-tbl-fin">
@@ -1168,26 +1170,6 @@
                                 </tr>
                             </tfoot>
                         </table>
-                    </div>
-                </div>
-
-                <div class="pdd-chart-card accent-indigo" data-tile-desp="Project-wise Payment Received vs Payment Made">
-                    <div class="pdd-chart-header">
-                        <div class="pdd-chart-title-wrap">
-                            <div class="pdd-chart-title-icon ti-indigo"><i class="fa-solid fa-chart-simple"></i></div>
-                            <div class="pdd-chart-title">Project-wise Payment Received vs Payment Made</div>
-                        </div>
-                        <div class="pdd-chart-legend-inline">
-                            <span><i class="dot" style="background:#10b981"></i>Payment Received</span>
-                            <span><i class="dot" style="background:#3b82f6"></i>Payment Made</span>
-                        </div>
-                    </div>
-                    <div class="pdd-chart-area pdd-chart-area-scrollx">
-                        <div class="pdd-chart-scrollx">
-                            <div class="pdd-chart-scrollx-inner" id="chartPaymentVsReceivedInner">
-                                <canvas id="chartPaymentVsReceived"></canvas>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
