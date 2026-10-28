@@ -7,7 +7,12 @@ var G_EditCode = 0;
 var G_List = [];
 var G_DeleteCode = 0;
 var G_IsMainCompany = false;
+var G_AllowNew = true;
+var G_AllowEdit = true;
+var G_AllowDelete = true;
 var G_VerifyInProgress = false;
+var TITLE_BRANCH_NEW = 'Adding a new Maintenance Type is not allowed for this branch.';
+var TITLE_BRANCH_EDIT = 'Editing is not allowed for this branch.';
 var G_SaveInProgress = false;
 var MODULE_NAME = 'Maintenance Type Master';
 
@@ -140,12 +145,13 @@ function isRecordVerified(item) {
 function buildActionButtons(code, item) {
     var verifyBtn = '';
     if (G_IsMainCompany && !isRecordVerified(item)) {
-        verifyBtn = '<button type="button" class="im-btn-view im-btn-verify" title="Verify and transfer to all branches" onclick="VerifyMaintenanceType(' + code + ')"><i class="fas fa-check"></i></button>';
+        verifyBtn = '<button type="button" class="im-btn-view im-btn-verify" title="Unverified" onclick="VerifyMaintenanceType(' + code + ')"><i class="far fa-circle-check"></i></button>';
     } else if (isRecordVerified(item)) {
-        verifyBtn = '<button type="button" class="im-btn-view im-btn-verified-mark" title="Verified and transferred" disabled><i class="fas fa-check"></i></button>';
+        verifyBtn = '<button type="button" class="im-btn-view im-btn-verified-mark" title="Verified" tabindex="-1"><i class="fas fa-circle-check"></i></button>';
     }
     return ''
-        + '<button type="button" class="im-btn-edit" title="Edit" onclick="EditMaintenanceType(' + code + ')"><i class="fas fa-pen"></i></button>'
+        + '<button type="button" class="im-btn-edit" title="Edit" onclick="EditMaintenanceType(' + code + ')"'
+        + (G_AllowEdit ? '' : ' disabled title="' + TITLE_BRANCH_EDIT + '"') + '><i class="fas fa-pen"></i></button>'
         + '<button type="button" class="im-btn-delete" title="Delete" onclick="ConfirmDeleteMaintenanceType(' + code + ')"><i class="fas fa-trash-can"></i></button>'
         + verifyBtn;
 }
@@ -160,6 +166,42 @@ function loadMainCompanyFlag() {
     }).catch(function () {
         G_IsMainCompany = false;
     });
+}
+
+function loadBranchPermissions() {
+    try {
+        return Promise.all([
+            BranchDetailsFunction.AllowNew(),
+            BranchDetailsFunction.AllowEdit(),
+            BranchDetailsFunction.AllowDelete()
+        ]).then(function (results) {
+            G_AllowNew = results[0] === true;
+            G_AllowEdit = results[1] === true;
+            G_AllowDelete = results[2] !== false;
+        }).catch(function () {
+            G_AllowNew = G_IsMainCompany;
+            G_AllowEdit = G_IsMainCompany;
+            G_AllowDelete = true;
+        });
+    } catch (e) {
+        G_AllowNew = G_IsMainCompany;
+        G_AllowEdit = G_IsMainCompany;
+        G_AllowDelete = true;
+        return Promise.resolve();
+    }
+}
+
+function applyActionRightsToUI() {
+    if (!G_IsMainCompany) {
+        G_AllowNew = false;
+        G_AllowEdit = false;
+    }
+    var $btnNew = $('#btnNewMaintenanceType');
+    if (!G_AllowNew) {
+        $btnNew.prop('disabled', true).attr('title', TITLE_BRANCH_NEW);
+    } else {
+        $btnNew.prop('disabled', false).removeAttr('title');
+    }
 }
 
 function loadMaintenanceTypeList() {
@@ -177,8 +219,8 @@ function loadMaintenanceTypeList() {
             return {
                 'S.No.': item['S.No.'],
                 Code: code,
-                'Maintenance Type Name': item.MaintenanceTypeName || item.maintenanceTypeName || item['Maintenance Type Name'] || '—',
-                DESP: item.DESP || item.desp || '—',
+                'Maintenance type name': item.MaintenanceTypeName || item.maintenanceTypeName || item['Maintenance Type Name'] || '—',
+                Description: item.DESP || item.desp || '—',
                 Action: buildActionButtons(code, item)
             };
         });
@@ -187,7 +229,7 @@ function loadMaintenanceTypeList() {
             'MaintenanceTypeMaster-body',
             gridRows,
             false, [],
-            ['Maintenance Type Name', 'DESP'],
+            ['Maintenance type name', 'Description'],
             [],
             [],
             [],
@@ -206,12 +248,16 @@ function loadMaintenanceTypeList() {
 
 function clearFormFields() {
     $('#txtMaintenanceTypeName, #txtDesp').val('').removeClass('im-input-error');
-    $('#err_MaintenanceTypeName').hide();
+    $('#err_MaintenanceTypeName, #err_Desp').hide();
 }
 
 function openNewMaintenanceType() {
     checkRight('New').then(function (ok) {
         if (!ok) return;
+        if (!G_AllowNew) {
+            toastr.warning(TITLE_BRANCH_NEW);
+            return;
+        }
         G_EditCode = 0;
         clearFormFields();
         $('#formModalTitle').text('Add New Maintenance Type');
@@ -237,6 +283,10 @@ function EditMaintenanceType(code) {
     }
     checkRight('Edit').then(function (ok) {
         if (!ok) return;
+        if (!G_AllowEdit) {
+            toastr.warning(TITLE_BRANCH_EDIT);
+            return;
+        }
         G_EditCode = editCode;
         clearFormFields();
         MaintenanceTypeMasterService.GetMaintenanceTypeMasterByCode(editCode).then(function (response) {
@@ -265,14 +315,21 @@ function closeForm() {
 
 function validateForm() {
     var name = $('#txtMaintenanceTypeName').val().trim();
-    $('#err_MaintenanceTypeName').hide();
-    $('#txtMaintenanceTypeName').removeClass('im-input-error');
+    var desp = ($('#txtDesp').val() || '').trim();
+    $('#err_MaintenanceTypeName, #err_Desp').hide();
+    $('#txtMaintenanceTypeName, #txtDesp').removeClass('im-input-error');
+    var ok = true;
     if (!name) {
         $('#err_MaintenanceTypeName').show();
         $('#txtMaintenanceTypeName').addClass('im-input-error');
-        return false;
+        ok = false;
     }
-    return true;
+    if (!desp) {
+        $('#err_Desp').show();
+        $('#txtDesp').addClass('im-input-error');
+        ok = false;
+    }
+    return ok;
 }
 
 function saveMaintenanceType() {
@@ -286,6 +343,16 @@ function saveMaintenanceType() {
     G_SaveInProgress = true;
     checkRight(isEdit ? 'Edit' : 'New').then(function (ok) {
         if (!ok) {
+            G_SaveInProgress = false;
+            return;
+        }
+        if (isEdit && !G_AllowEdit) {
+            toastr.warning(TITLE_BRANCH_EDIT);
+            G_SaveInProgress = false;
+            return;
+        }
+        if (!isEdit && !G_AllowNew) {
+            toastr.warning(TITLE_BRANCH_NEW);
             G_SaveInProgress = false;
             return;
         }
@@ -405,8 +472,9 @@ $(document).ready(function () {
     $('#btnModalClose, #btnCancelMaintenanceType').on('click', closeForm);
     $('#btnSaveMaintenanceType').on('click', saveMaintenanceType);
     $('#btnCancelDelete').on('click', closeDeleteModal);
-    loadMainCompanyFlag().finally(function () {
-        loadMaintenanceTypeList();
+    Promise.all([loadMainCompanyFlag(), loadBranchPermissions()]).then(function () {
+        applyActionRightsToUI();
+        return loadMaintenanceTypeList();
     });
 });
 

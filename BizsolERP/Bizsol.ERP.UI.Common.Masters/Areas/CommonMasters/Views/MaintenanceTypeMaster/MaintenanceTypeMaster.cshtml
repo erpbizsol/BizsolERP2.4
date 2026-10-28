@@ -14,7 +14,7 @@
     .im-btn-new { display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; border-radius: 999px; border: 2px solid rgba(255,255,255,0.48); background: rgba(255,255,255,0.14); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; position: relative; z-index: 1; }
     .im-card-body { padding: 18px 20px 26px; }
     .im-table-wrapper { border-radius: 12px; border: 1px solid #e4e7f0; overflow: auto; height: 388px; background: #fff; box-shadow: 0 2px 12px rgba(91,94,244,0.06); }
-    .im-table-wrapper thead th { position: sticky; top: 0; z-index: 10; background: linear-gradient(90deg, #6f5bf5 0%, #7c6ef7 100%) !important; color: #fff !important; font-size: 11.5px !important; font-weight: 700 !important; padding: 5px 14px !important; text-transform: uppercase; }
+    .im-table-wrapper thead th { position: sticky; top: 0; z-index: 10; background: linear-gradient(90deg, #6f5bf5 0%, #7c6ef7 100%) !important; color: #fff !important; font-size: 11.5px !important; font-weight: 700 !important; padding: 5px 14px !important; text-transform: none; }
     .im-table-wrapper td { padding: 5px 10px !important; font-size: 13px; border-bottom: 1px solid #f0f2f9; }
     #MaintenanceTypeMasterGrid th:first-child,
     #MaintenanceTypeMasterGrid td:first-child {
@@ -31,10 +31,18 @@
     .im-btn-view, .im-btn-edit, .im-btn-delete { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; border: none; cursor: pointer; font-size: 11px; margin-right: 2px; }
     .im-btn-edit { background: #eef2ff; color: #5b5ef4; }
     .im-btn-delete { background: #fef2f2; color: #ef4444; }
-    .im-btn-view { background: #ecfdf5; color: #10b981; }
-    .im-btn-view.im-btn-verified-mark { cursor: default; opacity: 1 !important; background: #ecfdf5; color: #10b981; }
-    .im-btn-view.im-btn-verified-mark:disabled { pointer-events: none; }
-    .im-btn-view.im-btn-verified-mark i { font-size: 17px; font-weight: 900; color: #047857; opacity: 1; -webkit-text-stroke: 0.45px #047857; }
+    .im-btn-new:disabled,
+    .im-btn-view:disabled, .im-btn-edit:disabled, .im-btn-delete:disabled {
+        opacity: 0.42; cursor: not-allowed; pointer-events: none;
+        transform: none !important; box-shadow: none !important;
+    }
+    .im-btn-view.im-btn-verify,
+    .im-btn-view.im-btn-verified-mark { padding: 0; line-height: 1; vertical-align: middle; }
+    .im-btn-view.im-btn-verify { background: #f1f5f9; color: #1f2937; }
+    .im-btn-view.im-btn-verify:hover { background: #eef2ff; }
+    .im-btn-view.im-btn-verify i { font-size: 17px; display: block; }
+    .im-btn-view.im-btn-verified-mark { cursor: default; opacity: 1 !important; background: transparent; color: #16a34a; pointer-events: auto; }
+    .im-btn-view.im-btn-verified-mark i { font-size: 18px; display: block; }
     .im-backdrop { position: fixed; inset: 0; background: rgba(8,12,36,0.54); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1060; padding: 24px 16px; overflow-y: auto; }
     .im-backdrop.show { display: flex !important; }
     .im-modal { width: 560px; max-width: calc(100vw - 20px); background: #fff; border-radius: 18px; box-shadow: 0 20px 56px rgba(8,12,36,0.24); display: flex; flex-direction: column; overflow: hidden; animation: im-up 0.24s cubic-bezier(0.34,1.46,0.64,1); }
@@ -106,13 +114,14 @@
         <div class="im-modal-body">
             <div class="im-form-grid">
                 <div class="im-form-group">
-                    <label for="txtMaintenanceTypeName">Maintenance Type Name <span class="im-required">*</span></label>
+                    <label for="txtMaintenanceTypeName">Maintenance Type (Ex:- ????) <span class="im-required">*</span></label>
                     <input type="text" id="txtMaintenanceTypeName" class="im-input" maxlength="100" autocomplete="off" placeholder="Enter maintenance type name" />
-                    <span class="im-err-text" id="err_MaintenanceTypeName"><i class="fas fa-circle-exclamation"></i> Maintenance Type Name is required.</span>
+                    <span class="im-err-text" id="err_MaintenanceTypeName"><i class="fas fa-circle-exclamation"></i> Maintenance Type is required.</span>
                 </div>
                 <div class="im-form-group">
-                    <label for="txtDesp">DESP</label>
-                    <input type="text" id="txtDesp" class="im-input" maxlength="500" autocomplete="off" placeholder="Description" />
+                    <label for="txtDesp">Description <span class="im-required">*</span></label>
+                    <input type="text" id="txtDesp" class="im-input" maxlength="500" autocomplete="off" placeholder="Enter description" />
+                    <span class="im-err-text" id="err_Desp"><i class="fas fa-circle-exclamation"></i> Description is required.</span>
                 </div>
             </div>
         </div>
@@ -145,4 +154,4 @@
         </div>
     </div>
 </div>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/MaintenanceTypeMaster.js?v=maintenance-type-v19"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/MaintenanceTypeMaster.js?v=maintenance-type-v26"></script>

@@ -15,6 +15,7 @@ let UrlService = {
     API_ENDPOINT_CATEGORY: `${environment.BASE_URL}/Category`,
     API_ENDPOINT_SUBCATEGORY: `${environment.BASE_URL}/SubCategory`,
     API_ENDPOINT_ASSETGROUP: `${environment.BASE_URL}/AssetGroup`,
+    API_ENDPOINT_ASSETTYPE: `${environment.BASE_URL}/AssetType`,
     API_ENDPOINT_MAINTENANCETYPE: `${environment.BASE_URL}/MaintenanceType`,
     API_ENDPOINT_CANCELPENDINGORDER: `${environment.BASE_URL}/CancelPendingOrder`,
     API_ENDPOINT_LEADSOURCE: `${environment.BASE_URL}/LeadSource`,

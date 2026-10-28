@@ -6,7 +6,12 @@ var G_EditCode = 0;
 var G_List = [];
 var G_DeleteCode = 0;
 var G_IsMainCompany = false;
+var G_AllowNew = true;
+var G_AllowEdit = true;
+var G_AllowDelete = true;
 var G_VerifyInProgress = false;
+var TITLE_BRANCH_NEW = 'Adding a new Asset Group is not allowed for this branch.';
+var TITLE_BRANCH_EDIT = 'Editing is not allowed for this branch.';
 var G_SaveInProgress = false;
 var MODULE_NAME = 'Asset Group Master';
 var MAX_ASSET_GROUP_NAME_LEN = 80;
@@ -153,12 +158,13 @@ function isRecordVerified(item) {
 function buildActionButtons(code, item) {
     var verifyBtn = '';
     if (G_IsMainCompany && !isRecordVerified(item)) {
-        verifyBtn = '<button type="button" class="im-btn-view im-btn-verify" title="Verify and transfer to all branches" onclick="VerifyAssetGroup(' + code + ')"><i class="fas fa-check"></i></button>';
+        verifyBtn = '<button type="button" class="im-btn-view im-btn-verify" title="Unverified" onclick="VerifyAssetGroup(' + code + ')"><i class="far fa-circle-check"></i></button>';
     } else if (isRecordVerified(item)) {
-        verifyBtn = '<button type="button" class="im-btn-view im-btn-verified-mark" title="Verified and transferred" disabled><i class="fas fa-check"></i></button>';
+        verifyBtn = '<button type="button" class="im-btn-view im-btn-verified-mark" title="Verified" tabindex="-1"><i class="fas fa-circle-check"></i></button>';
     }
     return ''
-        + '<button type="button" class="im-btn-edit" title="Edit" onclick="EditAssetGroup(' + code + ')"><i class="fas fa-pen"></i></button>'
+        + '<button type="button" class="im-btn-edit" title="Edit" onclick="EditAssetGroup(' + code + ')"'
+        + (G_AllowEdit ? '' : ' disabled title="' + TITLE_BRANCH_EDIT + '"') + '><i class="fas fa-pen"></i></button>'
         + '<button type="button" class="im-btn-delete" title="Delete" onclick="ConfirmDeleteAssetGroup(' + code + ')"><i class="fas fa-trash-can"></i></button>'
         + verifyBtn;
 }
@@ -173,6 +179,42 @@ function loadMainCompanyFlag() {
     }).catch(function () {
         G_IsMainCompany = false;
     });
+}
+
+function loadBranchPermissions() {
+    try {
+        return Promise.all([
+            BranchDetailsFunction.AllowNew(),
+            BranchDetailsFunction.AllowEdit(),
+            BranchDetailsFunction.AllowDelete()
+        ]).then(function (results) {
+            G_AllowNew = results[0] === true;
+            G_AllowEdit = results[1] === true;
+            G_AllowDelete = results[2] !== false;
+        }).catch(function () {
+            G_AllowNew = G_IsMainCompany;
+            G_AllowEdit = G_IsMainCompany;
+            G_AllowDelete = true;
+        });
+    } catch (e) {
+        G_AllowNew = G_IsMainCompany;
+        G_AllowEdit = G_IsMainCompany;
+        G_AllowDelete = true;
+        return Promise.resolve();
+    }
+}
+
+function applyActionRightsToUI() {
+    if (!G_IsMainCompany) {
+        G_AllowNew = false;
+        G_AllowEdit = false;
+    }
+    var $btnNew = $('#btnNewAssetGroup');
+    if (!G_AllowNew) {
+        $btnNew.prop('disabled', true).attr('title', TITLE_BRANCH_NEW);
+    } else {
+        $btnNew.prop('disabled', false).removeAttr('title');
+    }
 }
 
 function loadAssetGroupList() {
@@ -190,8 +232,8 @@ function loadAssetGroupList() {
             return {
                 'S.No.': item['S.No.'],
                 Code: code,
-                'Asset Group': item.AssetGroupName || item.assetGroupName || item['Asset Group'] || '—',
-                EPIC: formatEpicForGrid(item),
+                'Asset group': item.AssetGroupName || item.assetGroupName || item['Asset Group'] || '—',
+                Epic: formatEpicForGrid(item),
                 Action: buildActionButtons(code, item)
             };
         });
@@ -200,7 +242,7 @@ function loadAssetGroupList() {
             'AssetGroupMaster-body',
             gridRows,
             false, [],
-            ['Asset Group', 'EPIC'],
+            ['Asset group', 'Epic'],
             [],
             [],
             [],
@@ -234,6 +276,10 @@ function clearFormFields() {
 function openNewAssetGroup() {
     checkRight('New').then(function (ok) {
         if (!ok) return;
+        if (!G_AllowNew) {
+            toastr.warning(TITLE_BRANCH_NEW);
+            return;
+        }
         G_EditCode = 0;
         clearFormFields();
         $('#formModalTitle').text('Add New Asset Group');
@@ -259,6 +305,10 @@ function EditAssetGroup(code) {
     }
     checkRight('Edit').then(function (ok) {
         if (!ok) return;
+        if (!G_AllowEdit) {
+            toastr.warning(TITLE_BRANCH_EDIT);
+            return;
+        }
         G_EditCode = editCode;
         clearFormFields();
         AssetGroupMasterService.GetAssetGroupMasterByCode(editCode).then(function (response) {
@@ -317,6 +367,16 @@ function saveAssetGroup() {
     G_SaveInProgress = true;
     checkRight(isEdit ? 'Edit' : 'New').then(function (ok) {
         if (!ok) {
+            G_SaveInProgress = false;
+            return;
+        }
+        if (isEdit && !G_AllowEdit) {
+            toastr.warning(TITLE_BRANCH_EDIT);
+            G_SaveInProgress = false;
+            return;
+        }
+        if (!isEdit && !G_AllowNew) {
+            toastr.warning(TITLE_BRANCH_NEW);
             G_SaveInProgress = false;
             return;
         }
@@ -451,8 +511,9 @@ $(document).ready(function () {
     $('#btnModalClose, #btnCancelAssetGroup').on('click', closeForm);
     $('#btnSaveAssetGroup').on('click', saveAssetGroup);
     $('#btnCancelDelete').on('click', closeDeleteModal);
-    loadMainCompanyFlag().finally(function () {
-        loadAssetGroupList();
+    Promise.all([loadMainCompanyFlag(), loadBranchPermissions()]).then(function () {
+        applyActionRightsToUI();
+        return loadAssetGroupList();
     });
 });
 
