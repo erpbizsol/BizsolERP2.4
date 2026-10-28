@@ -22,16 +22,15 @@
         padding-bottom: 48px !important;
     }
 
-    /* Fill area below fixed header; only the grid scrolls (not the browser page).
-       math: #modern-content pad-top (~24) + this block + pad-bottom (~48) + margin ≤ viewport below header */
+    /* Fill layout content pane (see _Layout *-page-wrapper flex rules); grid scrolls, paginator stays visible */
     .vm-page-wrapper {
         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        /* inner height −2px so + margin-bottom keeps same viewport fit */
-        height: calc(100dvh - 160px);
-        max-height: calc(100dvh - 160px);
+        flex: 1 1 auto;
+        height: auto !important;
+        max-height: 100% !important;
         min-height: 0;
         overflow: hidden;
         background: #f1f3fb;
@@ -39,14 +38,20 @@
         margin-bottom: 2px;
     }
 
+    /* Vendor Master: KPI strip + card share viewport; card grows, table scrolls inside */
+    body:has(.vm-page-wrapper) .vm-page-wrapper .vm-card {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    body:has(.vm-page-wrapper) .vm-page-wrapper .vm-card-body {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
     @@media (max-width: 768px) {
         body:has(.vm-page-wrapper) #modern-content {
-            padding-bottom: 72px !important;
-        }
-
-        .vm-page-wrapper {
-            height: calc(100dvh - 228px);
-            max-height: calc(100dvh - 228px);
+            padding-bottom: 8px !important;
         }
     }
 
@@ -59,14 +64,23 @@
         border: 1px solid #e5e7f0;
         box-shadow: 0 4px 24px rgba(99,102,241,0.09), 0 1px 4px rgba(0,0,0,0.04);
         overflow: hidden;
-        flex: 1 1 auto;
         min-height: 0;
         display: flex;
         flex-direction: column;
     }
 
-    .vm-page-wrapper > .vm-stats-strip {
-        flex-shrink: 0;
+    /* Beat layout [class$="-card"] (flex-direction:column). That rule stacked these KPIs because the old class ended in "-card". */
+    body:has(.vm-page-wrapper) #vendorMasterStatsStrip.vm-stats-strip {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        flex: 0 0 auto;
+        flex-direction: row;
+        align-self: stretch;
+        width: 100%;
+        min-height: 0;
+        height: auto;
+        max-height: none;
+        overflow: visible;
     }
 
     /* ── Card Header ── */
@@ -192,7 +206,8 @@
         overflow-x: auto;
         overflow-y: auto;
         flex: 1 1 auto;
-        min-height: 132px;
+        min-height: 0;
+        max-height: 100%;
         -webkit-overflow-scrolling: touch;
         box-shadow: 0 2px 12px rgba(91,94,244,0.06);
         background: #fff;
@@ -846,10 +861,23 @@
     }
 
     #vendorDialogBackdrop .select2-container .select2-selection__rendered {
-        line-height: 1.35 !important;
+        line-height: normal !important;
+        display: flex !important;
+        align-items: center !important;
+        height: 100% !important;
         padding-left: 12px !important;
         padding-right: 32px !important;
         color: #111827 !important;
+    }
+
+    #vendorDialogBackdrop .select2-container .select2-selection__clear {
+        float: none !important;
+        height: auto !important;
+        line-height: 1 !important;
+        margin-top: 0 !important;
+        margin-right: 6px !important;
+        align-self: center;
+        flex-shrink: 0;
     }
 
     #vendorDialogBackdrop .select2-container .select2-selection__arrow {
@@ -1579,7 +1607,9 @@
            RESPONSIVE — MOBILE ≤ 640px
         ═══════════════════════════════════════════════════ */
     @@media (max-width: 640px) {
-        
+        .vm-page-wrapper {
+            padding: 0 4px 6px;
+        }
 
         .vm-card-header {
             padding: 14px 16px;
@@ -1926,24 +1956,24 @@
             font-size: 10px;
         }
 
-    /* ── Summary stat cards (Project Master style) ───────────── */
+    /* ── Summary stat cards — full-width row, equal columns ── */
     .vm-stats-strip {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
-        flex-wrap: wrap;
+        width: 100%;
     }
 
-    /* Above purple header: sits in main content strip under app bar */
-    .vm-stats-strip--above-card {
-        padding: 0 0 16px;
-        margin: 0 0 4px;
+    /* Above the list card. Class must not end with "-card" (see layout [class$="-card"] rule). */
+    .vm-stats-strip--summary {
+        padding: 8px 0 12px;
+        margin: 0;
         background: transparent;
         border: none;
     }
 
     .vm-stat-chip {
-        flex: 1;
-        min-width: 150px;
+        min-width: 0;
         background: #fff;
         border: 1px solid #e5e7f0;
         border-radius: 14px;
@@ -2045,20 +2075,101 @@
         margin-top: 3px;
     }
 
+    @@media (max-width: 900px) {
+        .vm-stat-chip {
+            padding: 12px 12px;
+            gap: 10px;
+        }
+
+        .vm-stat-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 17px;
+        }
+
+        .vm-stat-val {
+            font-size: 20px;
+        }
+    }
+
     @@media (max-width: 640px) {
-        .vm-stats-strip--above-card {
-            padding: 0 0 12px;
+        .vm-stats-strip--summary {
+            padding: 6px 0 10px;
+        }
+
+        .vm-stats-strip {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
         }
 
         .vm-stat-chip {
-            min-width: calc(50% - 7px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px 6px;
+            gap: 6px;
+            border-radius: 12px;
+        }
+
+        .vm-stat-icon {
+            width: 34px;
+            height: 34px;
+            font-size: 15px;
+            border-radius: 10px;
+        }
+
+        .vm-stat-val {
+            font-size: 17px;
+        }
+
+        .vm-stat-lbl {
+            font-size: 9px;
+            letter-spacing: 0.06em;
+            margin-top: 1px;
+        }
+
+        .vm-stat-chip:hover {
+            transform: none;
+        }
+
+        .vm-table-wrapper {
+            min-height: 160px;
+        }
+
+        .vm-card-body {
+            padding: 10px 8px 12px;
+        }
+    }
+
+    @@media (max-width: 380px) {
+        .vm-stats-strip {
+            gap: 6px;
+        }
+
+        .vm-stat-chip {
+            padding: 8px 4px;
+        }
+
+        .vm-stat-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 13px;
+        }
+
+        .vm-stat-val {
+            font-size: 15px;
+        }
+
+        .vm-stat-lbl {
+            font-size: 8px;
         }
     }
 </style>
 
 <div class="vm-page-wrapper">
     <!-- ── Summary: Total / Verified / Pending — top strip (above purple header) ── -->
-    <div id="vendorMasterStatsStrip" class="vm-stats-strip vm-stats-strip--above-card" style="display:none;" aria-label="Vendor summary counts — click to filter the grid">
+    <div id="vendorMasterStatsStrip" class="vm-stats-strip vm-stats-strip--summary" style="display:none;" aria-label="Vendor summary counts — click to filter the grid">
         <div class="vm-stat-chip vm-stat-total vm-stat-chip--active" data-vm-filter="all" role="button" tabindex="0" aria-pressed="true" title="Show all vendors">
             <div class="vm-stat-icon" aria-hidden="true"><i class="fas fa-layer-group"></i></div>
             <div>

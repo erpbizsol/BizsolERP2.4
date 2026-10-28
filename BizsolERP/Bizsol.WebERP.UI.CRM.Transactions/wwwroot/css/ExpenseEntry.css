@@ -1257,3 +1257,246 @@ input[type="number"] {
     font-size: 0.82rem;
     padding: 2px 4px;
 }
+
+/* Approval Configuration header: keep Levels / Add Level / Back inside the card on phones */
+@media (max-width: 768px) {
+    .ee-page { max-width: 100%; overflow-x: hidden; }
+    .ee-page .pac-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px;
+        gap: 10px;
+    }
+    .ee-page .pac-header h5 { font-size: 0.92rem; }
+    .ee-page .pac-header > .d-flex,
+    .ee-page .pac-header-actions {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        flex-shrink: 1 !important;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+    }
+    .ee-page .pac-header #statLevelChip {
+        min-width: 64px !important;
+        padding: 4px 10px !important;
+    }
+    .ee-page .pac-header .btn-add-level {
+        flex: 1 1 110px;
+        height: auto !important;
+        padding: 7px 10px;
+        font-size: 0.75rem;
+        white-space: normal;
+    }
+    .ee-page .pac-header .mb-1 { margin: 0 !important; flex: 1 1 100%; }
+    .ee-page .pac-header .btn-ee-back-nav {
+        width: 100%;
+        height: auto !important;
+        white-space: normal;
+        padding: 7px 10px;
+        text-align: center;
+    }
+}
+
+/*
+ * Employee Expenses Ledger on a phone.
+ * overflow-x:hidden on .ee-page computes to overflow-y:auto and swallows the swipe,
+ * and the table wrapper's max-height adds a second scroller under the filters.
+ * This page scrolls once, on #modern-content.
+ */
+@media (max-width: 768px) {
+    body:has(.elr-page):not(.modal-open) #modern-content.modern-content {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+        overscroll-behavior-y: auto;
+    }
+
+    body:has(.elr-page) #modern-content.modern-content > main {
+        display: block !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+    }
+
+    .elr-page.ee-page {
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        max-width: 100%;
+        padding-bottom: 20px;
+    }
+
+    .elr-page .ee-list-header {
+        padding: 12px 12px 10px;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .elr-page .ee-list-header-top {
+        align-items: flex-start;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .elr-page .ee-list-header-title-block {
+        min-width: 0;
+    }
+
+    .elr-page .ee-list-header-title {
+        line-height: 1.25;
+    }
+
+    .elr-page .ee-list-header-sub {
+        line-height: 1.35;
+        max-width: none;
+    }
+
+    .elr-page .elr-header-toolbar,
+    .elr-page .ee-list-header-actions {
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .elr-page .elr-header-icon-btn {
+        width: 40px;
+        height: 40px !important;
+        min-width: 40px;
+        min-height: 40px;
+        padding: 0;
+        border-radius: 12px;
+    }
+
+    .elr-page .ee-list-stats-strip {
+        overflow-x: auto;
+        touch-action: pan-x;
+    }
+
+    .elr-page .ee-list-filter-bar {
+        padding: 12px 12px 10px;
+        margin-bottom: 10px;
+        max-width: 100%;
+    }
+
+    .elr-page .elr-filter-row,
+    .elr-page.is-project-expense .elr-filter-row {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 0.65rem;
+        max-width: 100%;
+    }
+
+    .elr-page .elr-filter-field,
+    .elr-page .elr-filter-field .select2-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .elr-page .elr-filter-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .elr-page .elr-filter-actions .elr-btn-show-led {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .elr-page .expense-entry-card.ee-list-grid-wrap {
+        overflow: visible;
+        margin-bottom: 12px;
+        max-width: 100%;
+    }
+
+    .elr-page .expense-entry-table-wrapper {
+        max-height: none !important;
+        height: auto !important;
+        overflow-x: auto;
+        overflow-y: clip;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x pan-y;
+    }
+
+    .elr-page #tblLedger {
+        min-width: 720px;
+    }
+
+    .elr-page .elr-drill-table {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .elr-page .elr-drill-table thead th,
+    .elr-page .elr-drill-table tbody td,
+    .elr-page .elr-drill-table tfoot td {
+        white-space: normal;
+    }
+
+    .elr-page .elr-drill-table tfoot td {
+        position: static;
+    }
+
+    .elr-page .elr-crumb,
+    .elr-page .elr-level-sub {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .elr-page .elr-paginator {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px;
+    }
+}
+
+/* Employee Expenses Ledger: compact type. Beats the layout 16px phone input size. */
+.elr-page .ee-list-header-title {
+    font-size: 0.88rem !important;
+}
+.elr-page .ee-list-header-sub {
+    font-size: 0.68rem !important;
+}
+.elr-page .elr-filter-field .form-label,
+.elr-page .ee-list-filter-bar .form-label {
+    font-size: 0.72rem !important;
+}
+#modern-content .elr-page input.form-control:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="image"]):not([type="range"]):not([type="file"]),
+#modern-content .elr-page select.form-control,
+#modern-content .elr-page .form-select {
+    font-size: 12px !important;
+}
+#modern-content .elr-page .select2-container--default .select2-selection--single .select2-selection__rendered {
+    font-size: 12px !important;
+}
+body:has(.elr-page) .select2-dropdown .select2-search__field,
+body:has(.elr-page) .select2-dropdown .select2-results__option {
+    font-size: 12px !important;
+}
+.elr-page .elr-filter-actions .btn,
+.elr-page .elr-btn-show-led {
+    font-size: 0.75rem !important;
+}
+.elr-page .expense-entry-table-wrapper .table,
+.elr-page .elr-drill-table {
+    font-size: 12px;
+}
+.elr-page .expense-entry-table-wrapper .table thead th,
+.elr-page .expense-entry-table-wrapper .table td,
+.elr-page .elr-drill-table thead th,
+.elr-page .elr-drill-table tbody td,
+.elr-page .elr-drill-table tfoot td {
+    font-size: 12px;
+}
+.elr-page .elr-crumb-btn {
+    font-size: 0.72rem;
+}
+.elr-page .ee-list-stat-chip .val {
+    font-size: 0.95rem;
+}
+.elr-page .ee-list-stat-chip .lbl {
+    font-size: 0.58rem;
+}

@@ -683,7 +683,11 @@ $(document).ready(function () {
 
     $('#ddlItemNameFilter').on('change', function () {
         if (isLogicalStockWithSeparateParameters()) {
-            Bind_ddlSizeParameter($(this).val());
+            if ($(this).val() == 'All') {
+                Bind_ddlSizeParameter(0);
+            } else {
+                Bind_ddlSizeParameter($(this).val());
+            }
         }
     });
 
@@ -1421,7 +1425,7 @@ export function GetStockAgeingReportList() {
                 prepared.gridConfig.columnAlignment,
                 false,
                 prepared.gridConfig.totalColKeys,
-                null
+                3
             );
             setTimeout(function () {
                 applyStockAgeingNegativeBalanceRowStyle();

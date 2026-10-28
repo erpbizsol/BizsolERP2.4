@@ -213,7 +213,7 @@ body:has(#DealerTargetReportPage) #modern-content.modern-content > main {
 
 .dtr-kpi-row {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
     flex-shrink: 0;
     min-width: 0;

@@ -1,13 +1,7 @@
-// Helper function to escape special characters in IDs for jQuery selectors
 window.escapeId = function escapeId(id) {
     return id.replace(/([\/.:\[\]#@$%^&*()+=,!~`{}'"<>?|\\])/g, '\\$1');
 }
 
-/**
- * Keep column filter panels visible when the grid scrolls or the page is zoomed.
- * Uses fixed positioning relative to the header cell so panels are not clipped
- * by overflow on .table-wrapper / .sa-table-wrapper.
- */
 window.bizsolGetFilterAnchor = function bizsolGetFilterAnchor($panel) {
     if (!$panel || !$panel.length) {
         return $();
@@ -128,6 +122,95 @@ window.bizsolBindFilterFloatListeners = function bizsolBindFilterFloatListeners(
 };
 
 bizsolBindFilterFloatListeners();
+
+window.getBizsolHelperForFilter = function getBizsolHelperForFilter() {
+    return window.BizSolHelperFunction || null;
+};
+
+window.getBizsolPerPageConfig = function getBizsolPerPageConfig() {
+    var helper = window.getBizsolHelperForFilter();
+    if (helper && typeof helper.getWebUserPerPageConfig === 'function') {
+        return helper.getWebUserPerPageConfig();
+    }
+    return { options: [10, 20, 30, 50, 100, 200], value: 10 };
+};
+
+window.buildPageSizeOptionsHtml = function buildPageSizeOptionsHtml(options, selectedValue) {
+    var list = (options || []).slice();
+    var selected = parseInt(selectedValue, 10);
+    if (isNaN(selected) || selected <= 0) {
+        selected = list[0] || window.getBizsolPerPageConfig().value;
+    }
+    if (list.indexOf(selected) === -1) {
+        list.push(selected);
+    }
+    list.sort(function (a, b) { return a - b; });
+    return list.map(function (n) {
+        var sel = n === selected ? ' selected' : '';
+        return '<option value="' + n + '"' + sel + '>' + n + '</option>';
+    }).join('');
+};
+
+window.applyBizsolPerPageConfigToGrids = function applyBizsolPerPageConfigToGrids() {
+    var cfg = window.getBizsolPerPageConfig();
+    $('select.pageSize[id^="pageSize-"]').each(function () {
+        var $sel = $(this);
+        var tableId = ($sel.attr('id') || '').replace(/^pageSize-/, '');
+        if (!tableId) {
+            return;
+        }
+        var prev = parseInt($sel.val(), 10);
+        $sel.html(window.buildPageSizeOptionsHtml(cfg.options, cfg.value));
+        if (!isNaN(prev) && cfg.options.indexOf(prev) !== -1) {
+            $sel.val(String(prev));
+        } else {
+            $sel.val(String(cfg.value));
+        }
+        window['itemsPerPage_' + tableId] = parseInt($sel.val(), 10) || cfg.value;
+        window['currentPage_' + tableId] = 1;
+        var bodyId = $('#' + tableId).find('tbody').attr('id');
+        if (bodyId && window['Paginator_' + tableId]) {
+            renderTableWithPagination(tableId, bodyId);
+        }
+    });
+};
+
+window.ensureBizsolWebUserConfiguration = function ensureBizsolWebUserConfiguration() {
+    if (window._bizsolWebUserConfigPromise) {
+        return window._bizsolWebUserConfigPromise;
+    }
+    window._bizsolWebUserConfigPromise = new Promise(function (resolve) {
+        function runWithHelper(helper) {
+            if (helper && typeof helper.ensureWebUserPerPageConfiguration === 'function') {
+                helper.ensureWebUserPerPageConfiguration(window.applyBizsolPerPageConfigToGrids)
+                    .then(resolve)
+                    .catch(function () { resolve(window.getBizsolPerPageConfig()); });
+                return;
+            }
+            resolve(window.getBizsolPerPageConfig());
+        }
+        var helper = window.getBizsolHelperForFilter();
+        if (helper) {
+            runWithHelper(helper);
+            return;
+        }
+        import('/_content/Bizsol.WebERP.UI.Shared/js/HelperFunction.js')
+            .then(function (module) {
+                if (module && module.BizSolHelperFunction) {
+                    window.BizSolHelperFunction = module.BizSolHelperFunction;
+                }
+                runWithHelper(window.getBizsolHelperForFilter());
+            })
+            .catch(function () {
+                resolve(window.getBizsolPerPageConfig());
+            });
+    });
+    return window._bizsolWebUserConfigPromise;
+};
+
+$(function () {
+    window.ensureBizsolWebUserConfiguration();
+});
 
 /**
  * Format a number with Indian comma grouping  e.g. 2,00,000.00
@@ -284,7 +367,7 @@ const BizsolCustomFilterGrid = {
         window[`filteredDataTemp_${tableId}`] = data;
         bodyId = bodyId;
         window[`currentPage_${tableId}`] = 1;
-        window[`itemsPerPage_${tableId}`] = 10;
+        window[`itemsPerPage_${tableId}`] = window.getBizsolPerPageConfig().value;
         window[`Paginator_${tableId}`] = Paginator;
         window[`globalSearch_${tableId}`] = !!GlobalSearch;
 
@@ -310,6 +393,7 @@ const BizsolCustomFilterGrid = {
         }
 
         if (Paginator) {
+            window.ensureBizsolWebUserConfiguration();
             createPaginator(tableId, bodyId);
             renderTableWithPagination(tableId, bodyId);
         }
@@ -958,10 +1042,10 @@ columns.forEach(col => {
                                         </span>
                                           <div class="filter-division" id="filterDropdown-${uniqueId}" style="display:none;">
                                             <div class="dropdown-content">
-                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                 <i class="fa-solid fa-arrow-up-a-z sort-indicator sort-indicator-color"></i> Ascending
                                               </div>
-                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                              <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                 <i class="fa-solid fa-arrow-down-z-a sort-indicator sort-indicator-color"></i> Descending
                                               </div>
                                               <div class="dropdown-item fafilter" onclick="toggleFilter('${col}','${bodyId}')">
@@ -988,10 +1072,10 @@ columns.forEach(col => {
                                                 </span>
                                                   <div class="filter-division" id="filterDropdown-${uniqueId}" style="display:none;">
                                                     <div class="dropdown-content">
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                       </div>
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                       </div>
                                                       <div class="dropdown-item fafilter" onclick="toggleFilterNumeric('filter-dropdown-numeric-${uniqueId}','${col}','${bodyId}');">
@@ -1025,10 +1109,10 @@ columns.forEach(col => {
                                                 </span>
                                                   <div class="filter-division" id="filterDropdown-${uniqueId}" style="display:none;">
                                                     <div class="dropdown-content">
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                       </div>
-                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                                      <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                         <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                       </div>
                                                       <div class="dropdown-item fafilter" onclick="populateDateFilter('${col}','${bodyId}')">
@@ -1052,10 +1136,10 @@ columns.forEach(col => {
                                            </span>
                                              <div class="filter-division" onclick="stopPropagationdouble(event)" id="filterDropdown-${uniqueId}" style="display:none;">
                                                <div class="dropdown-content">
-                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc">
+                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="asc" data-tbody-id="${bodyId}">
                                                    <i class="fa-solid fa-arrow-up-a-z sort-indicator  sort-indicator-color"></i> Ascending
                                                  </div>
-                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc">
+                                                 <div class="dropdown-item" onclick="sortable(this)" data-column="${col}" data-order="desc" data-tbody-id="${bodyId}">
                                                    <i class="fa-solid fa-arrow-down-z-a sort-indicator  sort-indicator-color"></i> Descending
                                                  </div>
                                                  <div class="dropdown-item fafilter" onclick="toggleFilterDouble('${col}','${bodyId}')">
@@ -1095,12 +1179,24 @@ columns.forEach(col => {
 window.sortable = function sortable(element) {
     var column = $(element).data('column');
     var order = $(element).data('order');
-    var tbodyId = $(element).closest('table').find('tbody').attr('id');
+    // Use data-tbody-id stored on the button at render time, because the filter
+    // panel is moved to <body> by bizsolMoveFilterPanelToBody and is no longer
+    // a descendant of the table when the user clicks Ascending/Descending.
+    var tbodyId = $(element).data('tbody-id');
+    if (!tbodyId) {
+        // Fallback for older markup that may not have the attribute
+        tbodyId = $(element).closest('table').find('tbody').attr('id');
+    }
     sortTable(column, order, tbodyId);
 };
 window.sortTable = function sortTable(column, order, tbodyId) {
     const tableId = $('#' + tbodyId).closest('table').attr('id');
     var data = window[`filteredData_${tableId}`];
+
+    if (!Array.isArray(data)) {
+        console.warn('sortTable: no data found for tableId:', tableId, 'tbodyId:', tbodyId);
+        return;
+    }
 
     data.sort(function (a, b) {
         var keyA = a[column] !== undefined && a[column] !== null ? String(a[column]).trim() : '';
@@ -1293,6 +1389,9 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
     if (tableId === "OrderList" && typeof window.applyOrderListTransferredRowColors === "function") {
         window.applyOrderListTransferredRowColors();
     }
+    if (tableId === "RMReport" && typeof window.applyRMReportRemarkColors === "function") {
+        window.applyRMReportRemarkColors();
+    }
 }
 window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
     const totalColumns = window[`totalColumns_${bodyId}`];
@@ -1465,16 +1564,13 @@ window.pageSize = function pageSize(tableId, bodyId) {
 };
 window.createPaginator = function createPaginator(tableId, bodyId) {
     $('#paginator-' + tableId).empty();
+    var perPageCfg = window.getBizsolPerPageConfig();
+    var pageSizeOptionsHtml = window.buildPageSizeOptionsHtml(perPageCfg.options, perPageCfg.value);
     var filterHtml = `
         <div class="page-size-select">
             <label for="pageSize-${tableId}">Lines Per Page:</label>
             <select onchange="pageSize('${tableId}','${bodyId}')" class="pageSize" id="pageSize-${tableId}">
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="30">30</option>
-                <option value="50">50</option>   
-                <option value="100">100</option>   
-                <option value="200">200</option>   
+                ${pageSizeOptionsHtml}
             </select>
         </div>
         <button id="firstBtn-${tableId}" onclick="firstBtn('${tableId}','${bodyId}')" class="btn btn-primary paginator-btn icon-height">
@@ -1500,7 +1596,9 @@ window.createPaginator = function createPaginator(tableId, bodyId) {
         </button>
     `;
 
-    $('#paginator-' + tableId).append(filterHtml);
+    var $pag = $('#paginator-' + tableId);
+    $pag.append(filterHtml);
+    $pag.css('display', 'flex').show();
 }
 window.OpenFilter = function OpenFilter(columnName, event) {
     // Prevent event from bubbling to document click handler

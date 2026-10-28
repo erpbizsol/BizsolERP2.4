@@ -40,6 +40,8 @@
                     <option value="Unreconciled">Un reconciled</option>
                     <option value="BankStatement">Reconciled</option>
                     <option value="ImportReconciled">Reconciled (Manual)</option>
+                    <option value="ApplicableReport">Applicable Report</option>
+                    <option value="NotApplicableReport">Not Applicable Report</option>
                 </select>
             </div>
             <div class="col-12 col-sm-6 col-md-2 d-flex flex-column">
@@ -87,11 +89,12 @@
                         <th class="bs-col-hidden bs-col-drcr">Dr / Cr</th>
                         <th class="bs-col-hidden bs-col-batch">Batch No</th>
                         <th>Reconciled</th>
+                        <th class="text-center">Applicable Report</th>
                     </tr>
                 </thead>
                 <tbody id="tblStatementsBody">
                     <tr>
-                        <td colspan="11" class="text-center py-3 text-muted">
+                        <td colspan="12" class="text-center py-3 text-muted">
                             <i class="fas fa-spinner fa-spin me-2"></i>Loading…
                         </td>
                     </tr>
@@ -117,6 +120,7 @@
                         <td class="bs-col-hidden bs-col-drcr"></td>
                         <td class="bs-col-hidden bs-col-batch"></td>
                         <td class="text-end text-muted bs-tfoot-recon-dash">—</td>
+                        <td class="text-center text-muted">—</td>
                     </tr>
                 </tfoot>
             </table>
@@ -234,6 +238,54 @@
                     <i class="fas fa-ban me-1"></i>Cancel
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deposit + Applicable Report = Yes: receipt details for the report -->
+<div id="bsReceiptReportBackdrop" class="bs-backdrop" aria-hidden="true">
+    <div class="bs-receipt-report-modal" role="dialog" aria-modal="true" aria-labelledby="bsReceiptReportTitle">
+        <div class="bs-confirm-title" id="bsReceiptReportTitle">Receipt details</div>
+        <div class="bs-confirm-text text-start mb-0">Enter the receipt details for this deposit line, then save.</div>
+        <div class="bs-receipt-report-grid">
+            <div>
+                <label class="bs-label" for="ddlReceiptProject">Project name</label>
+                <select id="ddlReceiptProject" class="form-control form-control-sm bs-input">
+                    <option value="">-- Select --</option>
+                </select>
+            </div>
+            <div>
+                <label class="bs-label" for="ddlReceiptSite">Site name</label>
+                <select id="ddlReceiptSite" class="form-control form-control-sm bs-input">
+                    <option value="">-- Select --</option>
+                </select>
+            </div>
+            <div>
+                <label class="bs-label" for="ddlReceiptCategory">Category</label>
+                <select id="ddlReceiptCategory" class="form-control form-control-sm bs-input">
+                    <option value="">-- Select --</option>
+                </select>
+            </div>
+            <div>
+                <label class="bs-label" for="ddlReceiptItem">Item wise</label>
+                <select id="ddlReceiptItem" class="form-control form-control-sm bs-input" style="width:100%;">
+                    <option value=""></option>
+                </select>
+            </div>
+            <div>
+                <label class="bs-label" for="ddlReceiptCustomer">Customer name</label>
+                <select id="ddlReceiptCustomer" class="form-control form-control-sm bs-input" style="width:100%;">
+                    <option value=""></option>
+                </select>
+            </div>
+        </div>
+        <div class="bs-confirm-actions">
+            <button type="button" class="bs-btn-ghost" id="btnReceiptReportCancel">
+                <i class="fas fa-ban me-1"></i>Cancel
+            </button>
+            <button type="button" class="bs-btn-primary" id="btnReceiptReportSave">
+                <i class="fas fa-save me-1"></i>Save
+            </button>
         </div>
     </div>
 </div>

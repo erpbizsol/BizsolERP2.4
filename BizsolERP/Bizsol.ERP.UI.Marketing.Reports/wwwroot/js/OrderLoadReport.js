@@ -1,4 +1,6 @@
 ﻿import { OrderLoadReportService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/OrderLoadReportService.js';
+import { ItemMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_ItemMasterService.js';
+import { LedgerService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/LedgerService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { getOrderLoadFormTypeFromQuery } from '../../Bizsol.WebERP.UI.Shared/js/OrderLoadFormTypeUtil.js';
 
@@ -20,9 +22,15 @@ var G_OL_PrintPreviewHtml = '';
 var G_OL_ItemSizeMaster_Codes = '';
 var G_OL_SizeFilterItemMasterCodes = '';
 var G_OL_FreezeColumnLabel = '';
-var G_OL_ItemMasterLookup = null;
 var G_OL_FilterModalFocusTrapSuspended = false;
 var G_OL_OpenCheckboxDropdownId = '';
+var G_OL_DynamicFilters = [];
+var G_OL_HasDynamicComboFilters = false;
+var G_OL_FilterConfigCache = null;
+var G_OL_FilterLoadSeq = 0;
+var G_OL_FilterConfigFetchPending = false;
+var G_OL_FinYear = { desp: '', startIso: '', endIso: '' };
+var G_OL_FinYearLoaded = false;
 
 function getFormTypeFromQuery() {
     var urlParams = BizSolHelperFunction.getUrlVars();
@@ -36,7 +44,6 @@ var G_OL_FORM_TYPE = getFormTypeFromQuery();
 window.G_OL_FORM_TYPE = G_OL_FORM_TYPE;
 
 var G_OL_MODAL_FIELD_IDS = [
-    'olFieldFromDate', 'olFieldToDate',
     'olFieldLevel',
     'olFieldWareHouse', 'olFieldItemGroup', 'olFieldProcess', 'olFieldMarketingMan',
     'olFieldOrderNo', 'olFieldItemType', 'olFieldItemName',
@@ -58,17 +65,6 @@ var G_OL_OTHER_FILTER_META = {
     3: { query: '', fieldName: '', label: '', nameColumn: '', flag: '', tableName: '' }
 };
 
-var G_OL_FILTER_MAP = [
-    { flag: 'showWareHouse', fieldId: 'olFieldWareHouse', select: '#ddlWareHouse', cacheKey: 'warehouse', loader: loadWareHouseDropdown, textKeys: ['GodownName', 'godownName'] },
-    { flag: 'showItemGroup', fieldId: 'olFieldItemGroup', select: '#ddlItemGroup', cacheKey: 'itemGroup', loader: loadItemGroupDropdown, textKeys: ['ItemGroup', 'itemGroup'] },
-    { flag: 'showProcess', fieldId: 'olFieldProcess', select: '#ddlProcess', cacheKey: 'process', loader: loadProcessDropdown, textKeys: ['ProcessName', 'processName'] },
-    { flag: 'showMarketingMan', fieldId: 'olFieldMarketingMan', select: '#ddlMarketingMan', cacheKey: 'marketingMan', loader: loadMarketingManDropdown, textKeys: ['PersonName', 'personName', 'Desp', 'desp'] },
-    { flag: 'showAsPerMarketingPerson', fieldId: 'olFieldMarketingMan', select: '#ddlMarketingMan', cacheKey: 'marketingMan', loader: loadMarketingManDropdown, textKeys: ['PersonName', 'personName', 'Desp', 'desp'] },
-    { flag: 'showOrderNo', fieldId: 'olFieldOrderNo', select: '#ddlOrderNo', cacheKey: 'orderNo', loader: loadOrderNoDropdown, textKeys: ['OrderNo', 'orderNo'] },
-    { flag: 'showItemType', fieldId: 'olFieldItemType', select: '#ddlItemType', cacheKey: 'itemType', loader: loadItemTypeDropdown, textKeys: ['ItemType', 'itemType'] },
-    { flag: 'showItemName', fieldId: 'olFieldItemName', select: '#ddlItemName', cacheKey: 'itemName', loader: loadItemMasterDropdown, textKeys: ['ItemName', 'itemName'] }
-];
-
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
     if (!$('#ERPHeading').text() || $('#ERPHeading').text() === 'undefined') {
@@ -76,7 +72,7 @@ $(document).ready(function () {
     }
 
     bindEvents();
-    setDefaultDateFilterInputs();
+    clearDateFilterInputs();
     loadTemplateDropdown();
     installOrderLoadGridRenderHook();
     initOrderLoadPreviewModal();
@@ -84,6 +80,7 @@ $(document).ready(function () {
 
     // Called by the Manage Template module after a template is saved/deleted.
     window.OrderLoadReportRefreshTemplates = function (selectCode) {
+        G_OL_FilterConfigCache = null;
         loadTemplateDropdown(selectCode);
     };
 
@@ -104,9 +101,28 @@ function bindEvents() {
         updateFilterButtonState();
         updateFilterSummary();
     });
+    // modal From/To -> header From/To (no auto report refresh while the modal is open)
+    $('#txtFromDateModal, #txtToDateModal').on('change input', function () {
+        $('#txtFromDate').val($('#txtFromDateModal').val());
+        $('#txtToDate').val($('#txtToDateModal').val());
+        applyFilterActiveColors();
+        updateFilterButtonState();
+        updateFilterSummary();
+    });
+    // header From/To -> modal From/To
+    $('#txtFromDate, #txtToDate').on('change input', syncModalDatesFromHeader);
+    $('#olDynamicFilterHost').on('change input', '.ol-mirror-from, .ol-mirror-to', function () {
+        syncHeaderDatesFromModalMirror();
+        applyFilterActiveColors();
+        updateFilterButtonState();
+        updateFilterSummary();
+    });
     $('#ddlLevel').on('change', function () {
         applySelectedLevel();
-        loadTemplateDefaultDatesFromApi(G_OL_CurrentLevel);
+        loadTemplateDefaultDatesFromApi(G_OL_CurrentLevel).then(function () {
+            ensureLevelDateRangeDefaults();
+            applyStaticDateFieldsFromTemplate(G_OL_CurrentLevel || getSelectedTemplate());
+        });
         applyFilterActiveColors();
         updateFilterButtonState();
         updateFilterSummary();
@@ -116,14 +132,6 @@ function bindEvents() {
         updateFilterButtonState();
         updateFilterSummary();
     });
-    $('#txtFromDate, #txtToDate').on('change', function () {
-        refreshReportOnDateChange();
-    });
-    $('#txtFromDate, #txtToDate').on('keydown', function (e) {
-        if (e.key === 'Enter') {
-            loadReportData();
-        }
-    });
     $('#btnSizeParameterFilter').on('click', showOrderLoadSizeControlModal);
     $('#btnClearSizeParameterFilter, #btnEmptyClearSizeFilter').on('click', onClearSizeParameterFilterClick);
 
@@ -131,6 +139,8 @@ function bindEvents() {
         $('.ol-cd-menu').each(function () {
             ensureCheckboxDropdownMenuContainer($(this));
         });
+        syncLevelDateRangeUi();
+        syncDateFieldModalHeaderMirror();
         applyFilterActiveColors();
         updateModalEmptyState();
     });
@@ -156,7 +166,7 @@ function bindEvents() {
             toastr.warning('Please load the report first.');
             return;
         }
-        printOrderLoadReport();
+        onOrderLoadPrintClick();
     });
 
     $('#btnOlPreview').on('click', function () {
@@ -164,7 +174,7 @@ function bindEvents() {
             toastr.warning('Please load the report first.');
             return;
         }
-        openOrderLoadPrintPreview();
+        onOrderLoadPreviewClick();
     });
 }
 
@@ -178,12 +188,6 @@ function formatDisplayDate(iso) {
 function getActiveModalFilterCount() {
     var count = 0;
 
-    if (!$('#olFieldFromDate').hasClass('ol-hidden') && $('#txtFromDate').val()) {
-        count += 1;
-    }
-    if (!$('#olFieldToDate').hasClass('ol-hidden') && $('#txtToDate').val()) {
-        count += 1;
-    }
     if (!$('#olFieldLevel').hasClass('ol-hidden') && $('#ddlLevel').val() !== null && $('#ddlLevel').val() !== '') {
         count += 1;
     }
@@ -192,6 +196,10 @@ function getActiveModalFilterCount() {
         var $field = $(selector).closest('.ol-filter-field');
         if ($field.hasClass('ol-hidden')) return;
         if (getDropdownCodes(selector).length > 0) count += 1;
+    });
+
+    $('#olDynamicFilterHost select').each(function () {
+        if (dynamicSelectHasValue($(this))) count += 1;
     });
 
     return count;
@@ -223,11 +231,11 @@ function openFilterModal() {
     var tpl = G_OL_CurrentLevel || getSelectedTemplate();
     if (tpl) {
         applyOtherFiltersVisibility(tpl);
-        loadVisibleDropdowns(tpl);
     }
 
     applyFilterActiveColors();
     updateModalEmptyState();
+    syncDateFieldModalHeaderMirror();
 
     var modalEl = document.getElementById('olFilterModal');
     if (window.bootstrap && bootstrap.Modal) {
@@ -279,11 +287,7 @@ function onClearSizeParameterFilterClick() {
 
     clearSizeParameterFilter();
     updateFilterButtonState();
-    toastr.success('Size Parameter Filter cleared.');
-
-    if ($('#ddlTemplate').val()) {
-        loadReportData();
-    }
+    toastr.success('Size Parameter Filter cleared. Click Load Report to refresh.');
 }
 
 function updateEmptyStateMessage() {
@@ -314,35 +318,27 @@ function updateSizeParameterGridButton() {
     updateSizeFilterBadge();
 }
 
+function normalizeGridColumnKey(key) {
+    return String(key || '').replace(/[\s_\[\]]/g, '').toLowerCase();
+}
+
 function findGridColumnKey(rows, normalizedName) {
     if (!Array.isArray(rows) || !rows.length) return null;
-    var keys = Object.keys(rows[0]);
-    return keys.find(function (key) {
-        return key.replace(/[\s_]/g, '').toLowerCase() === normalizedName;
-    }) || null;
-}
-
-function ensureItemMasterLookup() {
-    if (G_OL_ItemMasterLookup) {
-        return Promise.resolve(G_OL_ItemMasterLookup);
-    }
-
-    return OrderLoadReportService.GetItemMaster()
-        .then(function (res) {
-            var lookup = {};
-            unwrapApiList(res).forEach(function (row) {
-                var code = parseInt(prop(row, ['Code', 'code']), 10);
-                var name = String(prop(row, ['ItemName', 'itemName']) || '').trim().toLowerCase();
-                if (code > 0 && name) {
-                    lookup[name] = code;
-                }
-            });
-            G_OL_ItemMasterLookup = lookup;
-            return lookup;
+    var found = null;
+    rows.some(function (row) {
+        if (!row || typeof row !== 'object') return false;
+        return Object.keys(row).some(function (key) {
+            if (normalizeGridColumnKey(key) === normalizedName) {
+                found = key;
+                return true;
+            }
+            return false;
         });
+    });
+    return found;
 }
 
-function collectItemMasterCodesFromGridRows(rows, lookup) {
+function collectItemMasterCodesFromGridRows(rows) {
     if (!Array.isArray(rows) || !rows.length) return '';
 
     var seen = {};
@@ -362,56 +358,202 @@ function collectItemMasterCodesFromGridRows(rows, lookup) {
         }
     }
 
-    lookup = lookup || {};
-    var nameCol = findGridColumnKey(rows, 'itemname');
-    if (!nameCol) return '';
+    return '';
+}
 
+function getDynamicItemMasterCodesForSizeFilter() {
+    var row = (G_OL_DynamicFilters || []).find(function (r) {
+        if (String(r.controlType || '').toUpperCase() !== 'COMBO') return false;
+        var name = String(r.displayName || '').trim().toLowerCase();
+        return name === 'item name' || name === 'itemname';
+    });
+    if (!row || row.withCode !== 'Y') return [];
+    var $sel = $('#ddlDynFilter_' + row.code);
+    if (!$sel.length) return [];
+    var val = $sel.val();
+    if (!val) return [];
+    if (!Array.isArray(val)) val = [val];
+    return val.map(function (v) { return parseInt(v, 10); }).filter(function (n) { return n > 0; });
+}
+
+function collectItemNamesFromGridRows(rows) {
+    if (!Array.isArray(rows) || !rows.length) return [];
+
+    var nameCol = findGridColumnKey(rows, 'itemname');
+    if (!nameCol) return [];
+
+    var seen = {};
+    var names = [];
     rows.forEach(function (row) {
-        var name = String(row[nameCol] || '').trim().toLowerCase();
-        if (!name) return;
-        var code = lookup[name];
-        if (code > 0 && !seen[code]) {
+        if (!row) return;
+        var name = String(row[nameCol] == null ? '' : row[nameCol]).replace(/\s+/g, ' ').trim();
+        var key = name.toLowerCase();
+        if (!name || seen[key]) return;
+        seen[key] = true;
+        names.push(name);
+    });
+    return names;
+}
+
+function collectItemNamesFromRenderedGrid() {
+    var $table = $('#OrderLoadReport');
+    if (!$table.length) return [];
+    var idx = -1;
+    $table.find('thead th').each(function (i) {
+        var label = $(this).text().replace(/[\s_]/g, '').toLowerCase();
+        if (label.indexOf('itemname') >= 0) idx = i;
+    });
+    if (idx < 0) return [];
+
+    var seen = {};
+    var names = [];
+    $table.find('tbody tr').not('.total-row, .grand-total-row').each(function () {
+        var name = ($(this).children('td').eq(idx).text() || '').replace(/\s+/g, ' ').trim();
+        var key = name.toLowerCase();
+        if (!name || seen[key]) return;
+        seen[key] = true;
+        names.push(name);
+    });
+    return names;
+}
+
+function getItemNameFilterSelect() {
+    var row = (G_OL_DynamicFilters || []).find(function (r) {
+        if (String(r.controlType || '').toUpperCase() !== 'COMBO') return false;
+        var name = String(r.displayName || '').trim().toLowerCase();
+        return name === 'item name' || name === 'itemname';
+    });
+    if (row) {
+        var $dyn = $('#ddlDynFilter_' + row.code);
+        if ($dyn.length) return $dyn;
+    }
+    var $static = $('#ddlItemName');
+    return $static.length ? $static : $();
+}
+
+function getSelectedItemNamesForSizeFilter() {
+    var $sel = getItemNameFilterSelect();
+    if (!$sel.length) return [];
+    var val = $sel.val();
+    if (!val) return [];
+    if (!Array.isArray(val)) val = [val];
+    if (val.indexOf('0') >= 0) return [];
+    return val.map(function (v) {
+        var text = ($sel.find('option').filter(function () {
+            return String($(this).val()) === String(v);
+        }).first().text() || '').trim();
+        return text || String(v).trim();
+    }).filter(function (name) {
+        return !!name && name.toLowerCase() !== 'all' && name !== '0';
+    });
+}
+
+function matchItemNamesToSelectCodes(names) {
+    var wanted = {};
+    (names || []).forEach(function (name) {
+        var key = String(name || '').trim().toLowerCase();
+        if (key) wanted[key] = true;
+    });
+    if (!Object.keys(wanted).length) return '';
+
+    var $sel = getItemNameFilterSelect();
+    if (!$sel.length) return '';
+
+    var codes = [];
+    var seen = {};
+    $sel.find('option').each(function () {
+        var code = parseInt($(this).val(), 10);
+        var text = String($(this).text() || '').trim().toLowerCase();
+        if (code > 0 && wanted[text] && !seen[code]) {
             seen[code] = true;
             codes.push(code);
         }
     });
-
     return codes.join(',');
+}
+
+function unwrapItemMasterRows(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (payload && Array.isArray(payload.data)) return payload.data;
+    if (payload && Array.isArray(payload.Data)) return payload.Data;
+    return unwrapApiList(payload);
+}
+
+function resolveItemNamesToMasterCodes(names) {
+    var fromSelect = matchItemNamesToSelectCodes(names);
+    if (fromSelect) return Promise.resolve(fromSelect);
+    if (!names || !names.length) return Promise.resolve('');
+
+    var wanted = {};
+    names.forEach(function (name) {
+        var key = String(name || '').trim().toLowerCase();
+        if (key) wanted[key] = true;
+    });
+
+    return ItemMasterService.GetItemMasterListData().then(function (payload) {
+        var codes = [];
+        var seen = {};
+        var wantedKey = {};
+        Object.keys(wanted).forEach(function (name) {
+            wantedKey[name.replace(/[^a-z0-9]/g, '')] = true;
+        });
+        unwrapItemMasterRows(payload).forEach(function (item) {
+            if (!item) return;
+            var name = '';
+            ['ItemName', 'itemName', 'Item Name', 'Desp', 'desp', 'ItemDesp', 'itemDesp'].some(function (key) {
+                if (item[key] != null && String(item[key]).trim()) {
+                    name = String(item[key]).replace(/\s+/g, ' ').trim();
+                    return true;
+                }
+                return false;
+            });
+            if (!name) {
+                Object.keys(item).some(function (key) {
+                    var nk = key.replace(/[\s_]/g, '').toLowerCase();
+                    if (nk !== 'itemname' && nk !== 'itemdesp' && nk !== 'desp') return false;
+                    if (item[key] == null || !String(item[key]).trim()) return false;
+                    name = String(item[key]).replace(/\s+/g, ' ').trim();
+                    return true;
+                });
+            }
+            var code = parseInt(item.Code != null ? item.Code : (item.code != null ? item.code : item.ItemMaster_Code), 10);
+            var nameKey = name.toLowerCase();
+            var compact = nameKey.replace(/[^a-z0-9]/g, '');
+            if (code > 0 && (wanted[nameKey] || wantedKey[compact]) && !seen[code]) {
+                seen[code] = true;
+                codes.push(code);
+            }
+        });
+        return codes.join(',');
+    });
 }
 
 function resolveOrderLoadItemMasterCodesForSizeFilter(tpl, options) {
     tpl = tpl || getSelectedTemplate();
     options = options || {};
 
-    function resolveFromGridOrLookup() {
-        if (!options.skipCache && String(G_OL_SizeFilterItemMasterCodes || '').trim()) {
-            return Promise.resolve(G_OL_SizeFilterItemMasterCodes);
-        }
-
-        var rows = getOrderLoadExportRows();
-        var directCodes = collectItemMasterCodesFromGridRows(rows);
-        if (directCodes) {
-            return Promise.resolve(directCodes);
-        }
-
-        return ensureItemMasterLookup()
-            .then(function (lookup) {
-                return collectItemMasterCodesFromGridRows(rows, lookup);
-            });
+    if (!options.skipCache && String(G_OL_SizeFilterItemMasterCodes || '').trim()) {
+        return Promise.resolve(G_OL_SizeFilterItemMasterCodes);
     }
 
-    if (isFlagY(tpl.showItemName)) {
-        return loadItemMasterDropdown()
-            .then(function () {
-                var codes = getItemNameCodesForSizeFilter();
-                if (codes.length) {
-                    return codes.join(',');
-                }
-                return resolveFromGridOrLookup();
-            });
+    var dynamicCodes = getDynamicItemMasterCodesForSizeFilter();
+    if (dynamicCodes.length) {
+        return Promise.resolve(dynamicCodes.join(','));
     }
 
-    return resolveFromGridOrLookup();
+    var staticCodes = getItemNameCodesForSizeFilter();
+    if (staticCodes.length) {
+        return Promise.resolve(staticCodes.join(','));
+    }
+
+    var rows = getOrderLoadExportRows();
+    var gridCodes = collectItemMasterCodesFromGridRows(rows);
+    if (gridCodes) return Promise.resolve(gridCodes);
+
+    var names = getSelectedItemNamesForSizeFilter();
+    if (!names.length) names = collectItemNamesFromGridRows(rows);
+    if (!names.length) names = collectItemNamesFromRenderedGrid();
+    return resolveItemNamesToMasterCodes(names);
 }
 
 function showOrderLoadSizeControlModal() {
@@ -465,9 +607,7 @@ window.onOrderLoadSizeFilterApplied = function (response) {
     updateSizeFilterBadge();
     updateFilterButtonState();
     updateEmptyStateMessage();
-    if ($('#ddlTemplate').val()) {
-        loadReportData();
-    }
+    toastr.info('Size Parameter Filter applied. Click Load Report to refresh.');
 };
 
 function syncTemplateGridMeta(tpl) {
@@ -488,10 +628,15 @@ function clearModalFilters() {
         clearDateFilterInputs();
     }
     resetDropdownFilters();
+    resetDynamicFilterSelections();
     clearSizeParameterFilter();
     if (tpl) {
         applyOtherFiltersVisibility(tpl);
-        loadVisibleDropdowns(tpl);
+        applyDynamicDateDefaults(tpl);
+    }
+    if (isLevelDateRangeAvailable()) {
+        applyStaticDateFieldsFromTemplate(tpl || G_OL_CurrentLevel || getSelectedTemplate());
+        ensureLevelDateRangeDefaults();
     }
     applyFilterActiveColors();
     updateFilterButtonState();
@@ -499,7 +644,7 @@ function clearModalFilters() {
 }
 
 function applyFilterActiveColors() {
-    $('#olFilterModal .ol-filter-field, #olFieldTemplate')
+    $('#olFilterModal .ol-filter-field, #olFieldTemplate, #olHeaderDateBar .ol-filter-field')
         .removeClass('ol-filter-applied');
 
     if (!$('#olFieldFromDate').hasClass('ol-hidden') && $('#txtFromDate').val()) {
@@ -508,10 +653,17 @@ function applyFilterActiveColors() {
     if (!$('#olFieldToDate').hasClass('ol-hidden') && $('#txtToDate').val()) {
         $('#olFieldToDate').addClass('ol-filter-applied');
     }
+    $('#olDynamicFilterHost .ol-filter-field').each(function () {
+        var $sel = $(this).find('select');
+        if ($sel.length && dynamicSelectHasValue($sel)) $(this).addClass('ol-filter-applied');
+    });
     if ($('#ddlTemplate').val()) {
         $('#olFieldTemplate').addClass('ol-filter-applied');
     }
     if (!$('#olFieldLevel').hasClass('ol-hidden') && $('#ddlLevel').val() !== null && $('#ddlLevel').val() !== '') {
+        $('#olFieldLevel').addClass('ol-filter-applied');
+    }
+    if (isLevelDateRangeAvailable() && ($('#txtFromDateModal').val() || $('#txtToDateModal').val())) {
         $('#olFieldLevel').addClass('ol-filter-applied');
     }
 
@@ -545,7 +697,8 @@ function setDefaultDateFilterInputs() {
 }
 
 function clearDateFilterInputs() {
-    setDefaultDateFilterInputs();
+    $('#txtFromDate').val('');
+    $('#txtToDate').val('');
 }
 
 function apiDateToIso(value) {
@@ -611,19 +764,26 @@ function extractDatesFromApiRow(row) {
 function applyTemplateDefaultDates(tpl) {
     tpl = tpl || getSelectedTemplate();
     var dates = extractDatesFromApiRow(tpl);
-    var fromIso = apiDateToIso(dates.fromDate || tpl.fromDate) || getDefaultFromDate();
-    var toIso = apiDateToIso(dates.toDate || tpl.toDate) || getDefaultToDate();
+    var fromIso = apiDateToIso(dates.fromDate || tpl.fromDate);
+    var toIso = apiDateToIso(dates.toDate || tpl.toDate);
+
+    if (isAsOnDateMode(tpl)) {
+        $('#txtFromDate').val('');
+        $('#txtToDate').val(toIso || fromIso || '');
+        return;
+    }
+
     var showFrom = !tpl.code || isFlagY(tpl.showFromDate);
     var showTo = !tpl.code || isFlagY(tpl.showToDate);
 
-    if (showFrom) {
-        $('#txtFromDate').val(fromIso);
+    if (showFrom && normalizeFieldName(tpl.fieldForDate)) {
+        $('#txtFromDate').val(fromIso || '');
     } else {
         $('#txtFromDate').val('');
     }
 
-    if (showTo) {
-        $('#txtToDate').val(toIso);
+    if (showTo && normalizeFieldName(tpl.fieldForDate)) {
+        $('#txtToDate').val(toIso || '');
     } else {
         $('#txtToDate').val('');
     }
@@ -639,7 +799,11 @@ function loadTemplateDefaultDatesFromApi(tpl) {
     var master = findTemplate(tpl.code) || {};
     var levelRow = null;
     if (G_OL_LevelRows && G_OL_LevelRows.length) {
-        var levelIndex = resolveLevelIndex(G_OL_LevelRows, tpl.levelIndex != null ? tpl.levelIndex : $('#ddlLevel').val());
+        var levelIndex = tpl.levelIndex != null
+            ? tpl.levelIndex
+            : (templateTransactionHasDateField(G_OL_LevelRows)
+                ? resolveLevelIndexByDateField(G_OL_LevelRows, $('#ddlLevel').val())
+                : resolveLevelIndex(G_OL_LevelRows, $('#ddlLevel').val()));
         levelRow = levelIndex >= 0 ? G_OL_LevelRows[levelIndex] : G_OL_LevelRows[0];
     }
 
@@ -659,15 +823,25 @@ function loadTemplateDefaultDatesFromApi(tpl) {
         mergedDates.toDate || tpl.toDate || levelDates.toDate || masterDates.toDate || optionDates.toDate
     );
 
+    var hasDynamicFrom = dynamicConfigHasDateFilter('from');
+    var hasDynamicTo = dynamicConfigHasDateFilter('to');
+    if (hasDynamicFrom || hasDynamicTo) {
+        applyDynamicDateDefaults(tpl);
+        ensureLevelDateRangeDefaults();
+        return Promise.resolve();
+    }
+
     applyTemplateDefaultDates(Object.assign({}, tpl, master, {
         fromDate: fromIso || mergedDates.fromDate || tpl.fromDate || '',
         toDate: toIso || mergedDates.toDate || tpl.toDate || ''
     }));
+    ensureLevelDateRangeDefaults();
 
     return Promise.resolve();
 }
 
 function showGridPanel(visible) {
+    hideOrderLoadErrorCombo();
     if (visible) {
         $('#tblOrderLoadReport').css('display', 'flex');
         $('#olEmptyState').hide();
@@ -680,6 +854,90 @@ function showGridPanel(visible) {
     }
     updateEmptyStateMessage();
     updateSizeParameterGridButton();
+}
+
+var OL_SQL_ERROR_KEYS = {
+    success: true,
+    errornumber: true,
+    errorseverity: true,
+    errorstate: true,
+    errorprocedure: true,
+    errorline: true,
+    errormessage: true
+};
+
+function isSqlErrorResultRow(row) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) return false;
+    var keys = Object.keys(row);
+    if (!keys.length) return false;
+
+    var lower = keys.map(function (key) { return String(key).toLowerCase(); });
+    if (lower.indexOf('errormessage') < 0) return false;
+    if (lower.indexOf('errornumber') < 0 && lower.indexOf('errorline') < 0) return false;
+
+    return lower.every(function (key) { return !!OL_SQL_ERROR_KEYS[key]; });
+}
+
+function isSqlErrorResultSet(rows) {
+    return !!(rows && rows.length && rows.every(isSqlErrorResultRow));
+}
+
+function sqlErrorMessageText(row) {
+    var msg = String(prop(row, ['ErrorMessage', 'errorMessage']) || '').trim();
+    if (!msg || msg.toLowerCase() === 'null') return '';
+    return msg;
+}
+
+function hideOrderLoadErrorCombo() {
+    $('#olErrorComboPanel').hide().empty();
+}
+
+function orderLoadErrorDisplayText(row) {
+    if (typeof row === 'string') {
+        var direct = String(row).trim();
+        return direct.toLowerCase() === 'null' ? '' : direct;
+    }
+
+    var text = sqlErrorMessageText(row);
+    if (text) return text;
+
+    var num = String(prop(row, ['ErrorNumber', 'errorNumber']) || '').trim();
+    var state = String(prop(row, ['ErrorState', 'errorState']) || '').trim();
+    var proc = String(prop(row, ['ErrorProcedure', 'errorProcedure']) || '').trim();
+    var line = String(prop(row, ['ErrorLine', 'errorLine']) || '').trim();
+    var bits = [];
+    if (num && num.toLowerCase() !== 'null') bits.push('Error ' + num);
+    if (state && state.toLowerCase() !== 'null') bits.push('State ' + state);
+    if (proc && proc.toLowerCase() !== 'null') bits.push(proc);
+    if (line && line.toLowerCase() !== 'null') bits.push('Line ' + line);
+    return bits.join(', ');
+}
+
+function showOrderLoadErrorCombo(rows) {
+    var messages = [];
+    (rows || []).forEach(function (row) {
+        var text = orderLoadErrorDisplayText(row);
+        if (text && messages.indexOf(text) < 0) messages.push(text);
+    });
+    if (!messages.length) messages.push('Report request failed.');
+
+    showGridPanel(false);
+
+    var $copy = $('<div class="ol-error-alert-copy"></div>');
+    $copy.append($('<h4></h4>').text('Report could not be loaded'));
+    messages.forEach(function (msg) {
+        $copy.append($('<p class="ol-error-alert-msg"></p>').text(msg));
+    });
+
+    var $alert = $('<div class="ol-error-alert" role="alert"></div>');
+    $alert.append('<div class="ol-error-alert-icon" aria-hidden="true"><i class="fas fa-circle-exclamation"></i></div>');
+    $alert.append($copy);
+
+    $('#olEmptyState').hide();
+    $('#olErrorComboPanel')
+        .empty()
+        .append($alert)
+        .css('display', 'flex');
 }
 
 function clearGridExportState() {
@@ -713,6 +971,7 @@ function canOpenOrderLoadSizeParameterFilter(tpl) {
     if (!shouldShowSizeParameterGridButton(tpl)) return false;
     if (G_OL_GridDataReady) return true;
     if (String(G_OL_SizeFilterItemMasterCodes || '').trim()) return true;
+    if (getDynamicItemMasterCodesForSizeFilter().length) return true;
     if (isFlagY(tpl.showItemName)) return true;
     return false;
 }
@@ -741,6 +1000,7 @@ function canExportOrderLoadGrid() {
 function resetFilters() {
     resetDropdownFilters();
     clearSizeParameterFilter();
+    $('#chkOlReportFormat2').prop('checked', false);
     $('.ol-cd-wrap').removeClass('ol-cd-has-selection');
     $('#olFilterModal .ol-filter-field, #olFieldTemplate')
         .removeClass('ol-filter-applied');
@@ -779,6 +1039,241 @@ function normalizeFieldName(value) {
         text = text.slice(1, -1).trim();
     }
     return text;
+}
+
+/** Dedup Date Field options when API returns BookingDate and Booking Date as separate keys. */
+function canonicalDateFieldKey(value) {
+    var n = normalizeFieldName(value);
+    if (!n) return '';
+    return n.replace(/[\s_]+/g, '').toLowerCase();
+}
+
+function resolveDateFieldOption(code, text) {
+    var physical = normalizeFieldName(code) || normalizeFieldName(text);
+    if (!physical) return null;
+    return {
+        value: physical,
+        label: fieldNameToLabel(physical, physical)
+    };
+}
+
+function getDistinctDateFieldOptions(rows) {
+    var seen = {};
+    var out = [];
+    (rows || []).forEach(function (row) {
+        var field = normalizeFieldName(prop(row, ['FieldForDate', 'fieldForDate']));
+        if (!field || seen[field]) return;
+        seen[field] = true;
+        out.push({ value: field, label: fieldNameToLabel(field, field) });
+    });
+    return out;
+}
+
+/** Same default as report SP: last F_TempleteTransaction row with FieldForDate. */
+function getDefaultDateFieldFromLevelRows(rows) {
+    if (!rows || !rows.length) return '';
+    for (var i = rows.length - 1; i >= 0; i--) {
+        var field = normalizeFieldName(prop(rows[i], ['FieldForDate', 'fieldForDate']));
+        if (field) return field;
+    }
+    return '';
+}
+
+function selectDateFieldComboValue($sel, physicalField) {
+    if (!$sel || !$sel.length) return false;
+    var target = normalizeFieldName(physicalField);
+    var targetKey = canonicalDateFieldKey(target);
+    if (!target && !targetKey) return false;
+    var matched = false;
+    $sel.find('option').each(function () {
+        var val = normalizeFieldName($(this).val());
+        var text = normalizeFieldName($(this).text());
+        if (val === target || text === target
+            || (targetKey && (canonicalDateFieldKey(val) === targetKey || canonicalDateFieldKey(text) === targetKey))) {
+            $sel.val($(this).val());
+            matched = true;
+        }
+    });
+    return matched;
+}
+
+function templateTransactionHasDateField(rows) {
+    return getDistinctDateFieldOptions(rows).length > 0;
+}
+
+function resolveLevelIndexByDateField(rows, dateField) {
+    if (!rows || !rows.length) return -1;
+    var target = normalizeFieldName(dateField);
+    if (!target) return resolveLevelIndex(rows, null);
+
+    for (var i = rows.length - 1; i >= 0; i--) {
+        if (normalizeFieldName(prop(rows[i], ['FieldForDate', 'fieldForDate'])) === target) {
+            return i;
+        }
+    }
+    return resolveLevelIndex(rows, null);
+}
+
+function isAsOnDateMode(tpl) {
+    tpl = tpl || getSelectedTemplate();
+    if (!tpl || !tpl.code) return false;
+    if (!normalizeFieldName(tpl.fieldForDate)) return false;
+    return !isFlagY(tpl.showFromDate) && isFlagY(tpl.showToDate);
+}
+
+function isDynamicDateFieldCombo(row) {
+    return String(row && row.displayName || '').trim().toLowerCase() === 'date field';
+}
+
+function getDynamicDateFieldComboRow() {
+    return (G_OL_DynamicFilters || []).find(isDynamicDateFieldCombo) || null;
+}
+
+function configHasTextHeaderDates() {
+    return dynamicConfigHasDateFilter('from') || dynamicConfigHasDateFilter('to');
+}
+
+function usesTemplateFilterConfigurationUi(tpl) {
+    tpl = tpl || getSelectedTemplate();
+    return hasActiveTemplateFilterConfiguration()
+        || templateUsesFilterConfiguration(tpl && tpl.code);
+}
+
+function findTextHeaderDateRow(kind) {
+    var param = String(kind || '').toLowerCase() === 'to' ? 'TODATE' : 'FROMDATE';
+    return (G_OL_DynamicFilters || []).find(function (row) {
+        return isTextHeaderDateRow(row) && resolveDynamicRowProcedureParameter(row) === param;
+    }) || null;
+}
+
+function headerDateLabelFromConfigRow(row, fallback) {
+    var label = String(row && row.displayName || '').trim();
+    return label || fallback || '';
+}
+
+/** Label (display text) of the option picked in the "Date Field" combo, e.g. "Receive Date"; '' when nothing is picked. */
+function selectedDateFieldLabel() {
+    var row = getDynamicDateFieldComboRow();
+    if (!row) return '';
+    var $sel = $('#ddlDynFilter_' + row.code);
+    if (!$sel.length) return '';
+    var val = $sel.val();
+    if (!val || val === '0') return '';
+    var text = ($sel.find('option:selected').first().text() || '').trim();
+    if (text && text.toLowerCase() !== 'all') return text;
+    return fieldNameToLabel(normalizeFieldName(String(val)), '');
+}
+
+/** "From" + "Receive Date" -> "Receive Date From"; "To Date" -> "Receive Date To" (no doubled "Date"). */
+function composeDateFieldLabel(dateFieldLabel, baseLabel) {
+    var base = String(baseLabel || '').trim();
+    var field = String(dateFieldLabel || '').trim();
+    if (!field) return base;
+    if (base.toLowerCase().indexOf(field.toLowerCase()) >= 0) return base;
+    var shortBase = base.replace(/\s*date\s*$/i, '').trim() || base;
+    return field + ' ' + shortBase;
+}
+
+/** Header + modal date inputs: labels from F_TemplateFilterConfiguration DisplayName (From / To). */
+function applyConfigTextHeaderDateLabels() {
+    if (!configHasTextHeaderDates()) return;
+
+    var fromLbl = headerDateLabelFromConfigRow(findTextHeaderDateRow('from'), 'From');
+    var toLbl = headerDateLabelFromConfigRow(findTextHeaderDateRow('to'), 'To');
+
+    if (!$('#olFieldFromDate').hasClass('ol-hidden')) {
+        $('#lblFromDateText').text(fromLbl);
+        $('label[for="txtFromDate"]').html(escapeHtml(fromLbl) + ' <span class="text-danger">*</span>');
+    }
+    if (!$('#olFieldToDate').hasClass('ol-hidden')) {
+        $('#lblToDateText').text(toLbl);
+        $('label[for="txtToDate"]').html(escapeHtml(toLbl) + ' <span class="text-danger">*</span>');
+    }
+
+    /* Modal From/To sit under the "Date Field" combo: show which date they apply to (Receive Date From / To). */
+    var dateFieldLbl = selectedDateFieldLabel();
+    var mirrorFromLbl = composeDateFieldLabel(dateFieldLbl, fromLbl);
+    var mirrorToLbl = composeDateFieldLabel(dateFieldLbl, toLbl);
+    $('#olDynamicFilterHost .ol-mirror-from-label').text(mirrorFromLbl);
+    $('#olDynamicFilterHost .ol-mirror-to-label').text(mirrorToLbl);
+    $('#olDynamicFilterHost .ol-mirror-from').attr('aria-label', mirrorFromLbl);
+    $('#olDynamicFilterHost .ol-mirror-to').attr('aria-label', mirrorToLbl);
+}
+
+function applySelectedConfigDateFieldCombo() {
+    var row = getDynamicDateFieldComboRow();
+    if (!row || !G_OL_CurrentLevel) return;
+
+    var $sel = $('#ddlDynFilter_' + row.code);
+    if (!$sel.length) return;
+
+    var val = $sel.val();
+    if (!val || val === '0') return;
+
+    var field = normalizeFieldName(String(val));
+    if (!field) {
+        var text = ($sel.find('option:selected').first().text() || '').trim();
+        field = normalizeFieldName(text);
+    }
+    if (!field) return;
+
+    G_OL_CurrentLevel.fieldForDate = field;
+    mergeTemplateLevel(G_OL_CurrentLevel);
+    if (!configHasTextHeaderDates()) {
+        applyFilterLabels(G_OL_CurrentLevel);
+    } else {
+        applyConfigTextHeaderDateLabels(); // modal From/To labels follow the selected Date Field
+    }
+}
+
+function appendStaticDateFilterParts(filterParts, tpl, fromIso, toIso) {
+    if (!normalizeFieldName(tpl && tpl.fieldForDate)) return;
+    var dateField = getTemplateDateField(tpl);
+    if (!dateField) return;
+
+    var sqlDateField = toSqlFieldName(dateField);
+    if (isAsOnDateMode(tpl)) {
+        var asOnIso = String(toIso || fromIso || '').trim();
+        if (asOnIso && !$('#olFieldToDate').hasClass('ol-hidden')) {
+            filterParts.push(buildSqlDateCompareFragment(sqlDateField, '=', asOnIso));
+        }
+        return;
+    }
+
+    var showFrom = reportIncludesFromDate(tpl) && fromIso;
+    var showTo = reportIncludesToDate(tpl) && toIso;
+    if (showFrom) {
+        filterParts.push(buildSqlDateCompareFragment(sqlDateField, '>=', fromIso));
+    }
+    if (showTo) {
+        filterParts.push(buildSqlDateCompareFragment(sqlDateField, '<=', toIso));
+    }
+}
+
+function reportIncludesFromDate(tpl) {
+    if (shouldShowStaticFromDate(tpl) && !$('#olFieldFromDate').hasClass('ol-hidden')) return true;
+    return isLevelDateRangeAvailable() && !!$('#txtFromDate').val();
+}
+
+function reportIncludesToDate(tpl) {
+    if (shouldShowStaticToDate(tpl) && !$('#olFieldToDate').hasClass('ol-hidden')) return true;
+    return isLevelDateRangeAvailable() && !!$('#txtToDate').val();
+}
+
+function isFromDateRequired(tpl) {
+    if (isAsOnDateMode(tpl)) return false;
+    if (dynamicConfigHasDateFilter('from')) return true;
+    if (isLevelDateRangeAvailable() && normalizeFieldName(tpl && tpl.fieldForDate)) return true;
+    if (hasActiveTemplateFilterConfiguration()) return false;
+    return (!tpl || !tpl.code || isFlagY(tpl.showFromDate)) && !!normalizeFieldName(tpl && tpl.fieldForDate);
+}
+
+function isToDateRequired(tpl) {
+    if (isAsOnDateMode(tpl)) return !!normalizeFieldName(tpl && tpl.fieldForDate);
+    if (dynamicConfigHasDateFilter('to')) return true;
+    if (isLevelDateRangeAvailable() && normalizeFieldName(tpl && tpl.fieldForDate)) return true;
+    if (hasActiveTemplateFilterConfiguration()) return false;
+    return (!tpl || !tpl.code || isFlagY(tpl.showToDate)) && !!normalizeFieldName(tpl && tpl.fieldForDate);
 }
 
 function toSqlFieldName(value) {
@@ -887,6 +1382,8 @@ function collapseAutoFilterTemplateRows(rows) {
                 otherFilter3: prop(row, ['OtherFilter3', 'otherFilter3']),
                 freezeFromColumn: prop(row, ['FreezeFromColumn', 'freezeFromColumn']),
                 showSizeParameterFilter: prop(row, ['ShowSizeParameterFilter', 'showSizeParameterFilter']) || 'N',
+                reportFileName: String(prop(row, ['ReportFileName', 'reportFileName']) || '').trim(),
+                reportFileNameFormat2: String(prop(row, ['ReportFileNameFormat2', 'reportFileNameFormat2']) || '').trim(),
                 fromDate: extractDatesFromApiRow(row).fromDate,
                 toDate: extractDatesFromApiRow(row).toDate
             };
@@ -912,7 +1409,9 @@ function mapTemplate(row) {
         otherFilter2: String(prop(row, ['OtherFilter2', 'otherFilter2']) || '').trim(),
         otherFilter3: String(prop(row, ['OtherFilter3', 'otherFilter3']) || '').trim(),
         freezeFromColumn: String(prop(row, ['FreezeFromColumn', 'freezeFromColumn']) || '').trim(),
-        showSizeParameterFilter: prop(row, ['ShowSizeParameterFilter', 'showSizeParameterFilter']) || 'N'
+        showSizeParameterFilter: prop(row, ['ShowSizeParameterFilter', 'showSizeParameterFilter']) || 'N',
+        reportFileName: String(prop(row, ['ReportFileName', 'reportFileName']) || '').trim(),
+        reportFileNameFormat2: String(prop(row, ['ReportFileNameFormat2', 'reportFileNameFormat2']) || '').trim()
     });
     var rowDates = extractDatesFromApiRow(row);
     tpl.fromDate = rowDates.fromDate || tpl.fromDate;
@@ -946,10 +1445,6 @@ function updateTemplateSelectStyle() {
 
 function getTemplateMasterConfig(templateCode) {
     var tpl = Object.assign(getDefaultLevelTemplate(), findTemplate(templateCode) || {}, { code: templateCode });
-
-    if (!normalizeFieldName(tpl.fieldForClient)) tpl.fieldForClient = 'PartyName';
-    if (!normalizeFieldName(tpl.fieldForDate)) tpl.fieldForDate = 'OrderDate';
-
     return tpl;
 }
 
@@ -1011,7 +1506,7 @@ function applyApiLevelRow(tpl, row) {
     var fields = extractApiRowFields(row);
 
     if (fields.hasFieldForClient) {
-        tpl.fieldForClient = fields.fieldForClient || 'PartyName';
+        tpl.fieldForClient = fields.fieldForClient || '';
     }
     if (fields.hasFieldForDate) {
         tpl.fieldForDate = fields.fieldForDate;
@@ -1053,30 +1548,74 @@ function buildLevelOptionText(row, index) {
     return 'Level ' + (index + 1) + ' — ' + client + dateLabel;
 }
 
+/** True when F_TemplateFilterConfiguration rows exist for this template (cache or in-memory). */
+function templateUsesFilterConfiguration(templateCode) {
+    var code = parseInt(templateCode, 10) || parseInt($('#ddlTemplate').val(), 10) || 0;
+    if (!code) return false;
+
+    if ((G_OL_DynamicFilters || []).some(function (row) {
+        return row.templateCode === code && row.code > 0 && row.isActive !== 'N';
+    })) {
+        return true;
+    }
+
+    var cacheKey = 'tpl_' + code;
+    if (G_OL_FilterConfigCache && G_OL_FilterConfigCache.key === cacheKey) {
+        return (G_OL_FilterConfigCache.rows || []).some(function (row) {
+            var tplCode = parseInt(prop(row, ['F_TempleteMaster_Code', 'f_TempleteMaster_Code']), 10) || 0;
+            var rowCode = parseInt(prop(row, ['Code', 'code']), 10) || 0;
+            return tplCode === code && rowCode > 0;
+        });
+    }
+
+    return false;
+}
+
+/*
+  "Date Field" (#olFieldLevel) comes from GetLevel → F_TempleteTransaction.FieldForDate,
+  NOT from F_TemplateFilterConfiguration. When filter configuration rows exist, modal
+  filters must match that table only (Text dates → header; Combo → modal).
+*/
+function syncOrderLoadTemplateDateFieldUi(tpl) {
+    tpl = tpl || getSelectedTemplate();
+    var levelOptions = getDistinctDateFieldOptions(G_OL_LevelRows);
+
+    if (hasActiveTemplateFilterConfiguration() || templateUsesFilterConfiguration(tpl.code)) {
+        toggleFilterField('olFieldLevel', false);
+        applyStaticDateFieldsFromTemplate(tpl);
+        return;
+    }
+
+    toggleFilterField('olFieldLevel', levelOptions.length > 0);
+    if (levelOptions.length > 0) {
+        ensureLevelDateRangeDefaults();
+    } else {
+        syncLevelDateRangeUi();
+    }
+}
+
 function bindLevelDropdown(rows) {
     var $field = $('#olFieldLevel');
     var $ddl = $('#ddlLevel').empty();
+    var dateOptions = getDistinctDateFieldOptions(rows);
+    var templateCode = parseInt($('#ddlTemplate').val(), 10) || 0;
 
-    if (!rows || rows.length <= 1) {
+    if (!dateOptions.length || templateUsesFilterConfiguration(templateCode)) {
         $field.addClass('ol-hidden');
-        return 0;
+        syncLevelDateRangeUi();
+        return resolveLevelIndex(rows || [], null);
     }
 
     $field.removeClass('ol-hidden');
-    rows.forEach(function (row, index) {
-        $ddl.append($('<option/>').val(index).text(buildLevelOptionText(row, index)));
+    dateOptions.forEach(function (opt) {
+        $ddl.append($('<option/>').val(opt.value).text(opt.label));
     });
 
-    var defaultIndex = rows.length - 1;
-    for (var i = rows.length - 1; i >= 0; i--) {
-        if (normalizeFieldName(prop(rows[i], ['FieldForDate', 'fieldForDate']))) {
-            defaultIndex = i;
-            break;
-        }
-    }
-
-    $ddl.val(String(defaultIndex));
-    return defaultIndex;
+    var defaultValue = dateOptions[dateOptions.length - 1].value;
+    $ddl.val(defaultValue);
+    syncLevelDateRangeUi();
+    ensureLevelDateRangeDefaults();
+    return resolveLevelIndexByDateField(rows, defaultValue);
 }
 
 function resolveLevelIndex(rows, preferredIndex) {
@@ -1124,7 +1663,9 @@ function applySelectedLevel() {
         return;
     }
 
-    var levelIndex = resolveLevelIndex(G_OL_LevelRows, $('#ddlLevel').val());
+    var levelIndex = templateTransactionHasDateField(G_OL_LevelRows)
+        ? resolveLevelIndexByDateField(G_OL_LevelRows, $('#ddlLevel').val())
+        : resolveLevelIndex(G_OL_LevelRows, $('#ddlLevel').val());
     var levelRow = levelIndex >= 0 ? G_OL_LevelRows[levelIndex] : null;
     var tpl = buildTemplateLevel(code, levelRow);
     tpl.levelIndex = levelIndex;
@@ -1134,16 +1675,20 @@ function applySelectedLevel() {
 }
 
 function bindTemplateLevel(code) {
-    return OrderLoadReportService.GetLevel(code).then(function (res) {
+    return ensureFinYearTokens().then(function () {
+        return Promise.all([
+            OrderLoadReportService.GetLevel(code).then(function (res) {
+                return unwrapApiList(res);
+            }),
+            fetchTemplateFilterConfigurationRows(code)
+        ]);
+    }).then(function (results) {
         if ((parseInt($('#ddlTemplate').val(), 10) || 0) !== code) return null;
 
-        G_OL_LevelRows = unwrapApiList(res);
-        if (G_OL_LevelRows.length === 1 && isFullTemplateRow(G_OL_LevelRows[0])) {
-            bindLevelDropdown([]);
-        } else {
-            bindLevelDropdown(G_OL_LevelRows);
-        }
+        G_OL_LevelRows = results[0] || [];
+        G_OL_FilterConfigCache = { key: 'tpl_' + code, rows: results[1] || [] };
 
+        bindLevelDropdown(G_OL_LevelRows);
         applySelectedLevel();
         return loadTemplateDefaultDatesFromApi(G_OL_CurrentLevel).then(function () {
             applyFilterActiveColors();
@@ -1155,29 +1700,30 @@ function bindTemplateLevel(code) {
 
 function ensureStaticLevelDefaults(tpl) {
     if (!tpl) tpl = getDefaultLevelTemplate();
-    if (!normalizeFieldName(tpl.fieldForClient)) tpl.fieldForClient = 'PartyName';
-    if (!tpl._fieldForDateFromApi && !normalizeFieldName(tpl.fieldForDate)) {
-        tpl.fieldForDate = 'OrderDate';
-    }
     return tpl;
 }
 
 function applyFilterLabels(tpl) {
-    var dateField = normalizeFieldName(tpl.fieldForDate);
+    var dateField = normalizeFieldName(getTemplateDateField(tpl)) || normalizeFieldName(tpl.fieldForDate);
     var dateLabel = dateField
         ? fieldNameToLabel(dateField, 'Order Date')
         : 'Order Date';
     var clientLabel = fieldNameToLabel(tpl.fieldForClient || 'PartyName', 'Party Name');
+    var textHeaderDates = configHasTextHeaderDates();
 
     $('#txtFromDate').attr('data-level-field', dateField || '');
     $('#txtToDate').attr('data-level-field', dateField || '');
 
-    if ($('#lblFromDateText').length) {
-        $('#lblFromDateText').text(dateLabel);
-        $('#lblToDateText').text('To Date');
+    if (!textHeaderDates) {
+        if ($('#lblFromDateText').length) {
+            $('#lblFromDateText').text(dateLabel);
+            $('#lblToDateText').text('To Date');
+        } else {
+            $('label[for="txtFromDate"]').html(dateLabel + ' <span class="text-danger">*</span>');
+            $('label[for="txtToDate"]').html('To Date <span class="text-danger">*</span>');
+        }
     } else {
-        $('label[for="txtFromDate"]').html(dateLabel + ' <span class="text-danger">*</span>');
-        $('label[for="txtToDate"]').html('To Date <span class="text-danger">*</span>');
+        applyConfigTextHeaderDateLabels();
     }
 
     $('#olSearchSlot input[type="text"], #global-search-wrap-OrderLoadReport input').attr(
@@ -1188,12 +1734,91 @@ function applyFilterLabels(tpl) {
 
 function toggleFilterField(fieldId, visible) {
     $('#' + fieldId).toggleClass('ol-hidden', !visible);
+    if (fieldId === 'olFieldFromDate' || fieldId === 'olFieldToDate') {
+        syncHeaderDateBarVisibility();
+    }
+}
+
+function syncHeaderDateBarVisibility() {
+    var showBar = !$('#olFieldFromDate').hasClass('ol-hidden') || !$('#olFieldToDate').hasClass('ol-hidden');
+    $('#olHeaderDateBar').toggleClass('ol-hidden', !showBar);
+}
+
+/**
+ * Date Field (template level dropdown): From/To stay inside the filter modal only.
+ * F_TemplateFilterConfiguration ControlType Text (From/To) binds in the header bar.
+ */
+function isLevelDateRangeAvailable() {
+    return !$('#olFieldLevel').hasClass('ol-hidden');
+}
+
+function syncModalDatesFromHeader() {
+    $('#txtFromDateModal').val($('#txtFromDate').val() || '');
+    $('#txtToDateModal').val($('#txtToDate').val() || '');
+    syncDateFieldModalHeaderMirror();
+}
+
+/** Modal From/To under Date Field — same values as header; editable both ways. */
+function syncDateFieldModalHeaderMirror() {
+    var fromIso = $('#txtFromDate').val() || '';
+    var toIso = $('#txtToDate').val() || '';
+    $('#olDynamicFilterHost .ol-config-header-date-mirror .ol-mirror-from').val(fromIso);
+    $('#olDynamicFilterHost .ol-config-header-date-mirror .ol-mirror-to').val(toIso);
+}
+
+function syncHeaderDatesFromModalMirror() {
+    var $from = $('#olDynamicFilterHost .ol-config-header-date-mirror .ol-mirror-from').first();
+    var $to = $('#olDynamicFilterHost .ol-config-header-date-mirror .ol-mirror-to').first();
+    if ($from.length) $('#txtFromDate').val($from.val() || '');
+    if ($to.length) $('#txtToDate').val($to.val() || '');
+    $('#txtFromDateModal').val($('#txtFromDate').val() || '');
+    $('#txtToDateModal').val($('#txtToDate').val() || '');
+}
+
+function syncLevelDateRangeUi() {
+    var available = isLevelDateRangeAvailable();
+    $('#olLevelDates').toggleClass('ol-hidden', !available);
+    $('#olFieldLevel').toggleClass('ol-level-range-on', available);
+    $('#txtFromDateModal, #txtToDateModal').prop('disabled', !available);
+    syncModalDatesFromHeader();
+}
+
+/** Default range for modal date field: 1st of current month .. today (only fills blanks). */
+function ensureLevelDateRangeDefaults() {
+    syncLevelDateRangeUi();
+    if (!isLevelDateRangeAvailable()) return;
+    if (hasActiveTemplateFilterConfiguration()) {
+        syncModalDatesFromHeader();
+        return;
+    }
+
+    if (!dynamicConfigHasDateFilter('from') && !$('#txtFromDate').val()) {
+        $('#txtFromDate').val(getDefaultFromDate());
+    }
+    if (!dynamicConfigHasDateFilter('to') && !$('#txtToDate').val()) {
+        $('#txtToDate').val(getDefaultToDate());
+    }
+    syncModalDatesFromHeader();
+}
+
+function prepareTemplateFilterSwitch(code) {
+    ++G_OL_FilterLoadSeq;
+    G_OL_FilterConfigFetchPending = false;
+    G_OL_DynamicFilters = [];
+    G_OL_HasDynamicComboFilters = false;
+    clearDynamicFilterHost();
+    if (code > 0) {
+        hideStaticComboFilters();
+        toggleFilterField('olFieldLevel', false);
+    }
+    updateModalEmptyState();
 }
 
 function applyTemplateFilters() {
     updateTemplateSelectStyle();
 
     var code = parseInt($('#ddlTemplate').val(), 10) || 0;
+    prepareTemplateFilterSwitch(code);
 
     resetDropdownFilters();
     G_OL_DropdownLoaded = {};
@@ -1209,6 +1834,7 @@ function applyTemplateFilters() {
         G_OL_CurrentLevel = null;
         bindLevelDropdown([]);
         applyLevelToFilters(getDefaultLevelTemplate());
+        updateReportFormat2Checkbox(getDefaultLevelTemplate());
         return;
     }
 
@@ -1248,68 +1874,187 @@ function getDefaultLevelTemplate() {
         showItemType: 'N',
         showItemName: 'N',
         showSizeParameterFilter: 'N',
+        reportFileName: '',
+        reportFileNameFormat2: '',
         freezeFromColumn: '',
         otherFilter1: '',
         otherFilter2: '',
         otherFilter3: '',
-        fieldForClient: 'PartyName',
-        fieldForDate: 'OrderDate'
+        fieldForClient: '',
+        fieldForDate: ''
     };
+}
+
+function applyStaticDateFieldsFromTemplate(tpl) {
+    applyStaticDateFieldsCore(tpl);
+    ensureLevelDateRangeDefaults();
+}
+
+function applyStaticDateFieldsCore(tpl) {
+    tpl = ensureStaticLevelDefaults(tpl || getDefaultLevelTemplate());
+    var levelDatesInModal = isLevelDateRangeAvailable();
+
+    if (hasActiveTemplateFilterConfiguration()) {
+        applyFilterLabels(tpl);
+        if (configHasTextHeaderDates()) {
+            applyDynamicDateDefaults(tpl);
+        }
+        if (isAsOnDateMode(tpl)) {
+            toggleFilterField('olFieldFromDate', false);
+            toggleFilterField('olFieldToDate', true);
+            $('#txtFromDate').val('');
+            $('#lblToDateText').text('As On');
+            $('label[for="txtToDate"]').html('As On <span class="text-danger">*</span>');
+        } else {
+            toggleFilterField('olFieldFromDate', dynamicConfigHasDateFilter('from'));
+            toggleFilterField('olFieldToDate', dynamicConfigHasDateFilter('to'));
+        }
+        syncLevelDateRangeUi();
+        syncHeaderDateBarVisibility();
+        syncModalDatesFromHeader();
+        return;
+    }
+
+    var hasDateField = !!normalizeFieldName(tpl.fieldForDate);
+    if (levelDatesInModal && hasDateField) {
+        toggleFilterField('olFieldFromDate', false);
+        toggleFilterField('olFieldToDate', false);
+        syncLevelDateRangeUi();
+        return;
+    }
+
+    var showFromFlag = !tpl.code || isFlagY(tpl.showFromDate);
+    var showToFlag = !tpl.code || isFlagY(tpl.showToDate);
+    var asOn = hasDateField && isAsOnDateMode(tpl);
+    var hideDates = !hasDateField || (!showFromFlag && !showToFlag);
+
+    if (hideDates) {
+        toggleFilterField('olFieldFromDate', false);
+        toggleFilterField('olFieldToDate', false);
+        $('#txtFromDate').val('');
+        $('#txtToDate').val('');
+        return;
+    }
+
+    if (asOn) {
+        toggleFilterField('olFieldFromDate', false);
+        toggleFilterField('olFieldToDate', true);
+        $('#txtFromDate').val('');
+        $('#lblToDateText').text('As On');
+        $('label[for="txtToDate"]').html('As On <span class="text-danger">*</span>');
+        $('#txtToDate').attr('data-level-field', normalizeFieldName(tpl.fieldForDate) || '');
+        return;
+    }
+
+    applyFilterLabels(tpl);
+    toggleFilterField('olFieldFromDate', showFromFlag);
+    toggleFilterField('olFieldToDate', showToFlag);
+    if (!showFromFlag && !levelDatesInModal) $('#txtFromDate').val('');
+    if (!showToFlag && !levelDatesInModal) $('#txtToDate').val('');
+    syncLevelDateRangeUi();
 }
 
 function applyLevelToFilters(tpl) {
     tpl = ensureStaticLevelDefaults(tpl);
     G_OL_CurrentLevel = tpl;
 
-    applyFilterLabels(tpl);
-
-    var hasDateField = !!normalizeFieldName(tpl.fieldForDate);
-    var showFrom = (!tpl.code || isFlagY(tpl.showFromDate)) && hasDateField;
-    var showTo = (!tpl.code || isFlagY(tpl.showToDate)) && hasDateField;
-
-    toggleFilterField('olFieldFromDate', showFrom);
-    toggleFilterField('olFieldToDate', showTo);
-    if (showFrom && !$('#txtFromDate').val()) $('#txtFromDate').val(getDefaultFromDate());
-    if (showTo && !$('#txtToDate').val()) $('#txtToDate').val(getDefaultToDate());
-    if (!showFrom) $('#txtFromDate').val('');
-    if (!showTo) $('#txtToDate').val('');
-
-    toggleFilterField('olFieldWareHouse', isFlagY(tpl.showWareHouse));
-    toggleFilterField('olFieldItemGroup', isFlagY(tpl.showItemGroup));
-    toggleFilterField('olFieldProcess', isFlagY(tpl.showProcess));
-    toggleFilterField('olFieldMarketingMan', isFlagY(tpl.showMarketingMan) || isFlagY(tpl.showAsPerMarketingPerson));
-    toggleFilterField('olFieldOrderNo', isFlagY(tpl.showOrderNo));
-    toggleFilterField('olFieldItemType', isFlagY(tpl.showItemType));
-    toggleFilterField('olFieldItemName', isFlagY(tpl.showItemName));
-
-    applyOtherFiltersVisibility(tpl);
-    loadVisibleDropdowns(tpl);
     syncTemplateGridMeta(tpl);
+    loadDynamicTemplateFilters(tpl);
+
+    var usesConfigUi = usesTemplateFilterConfigurationUi(tpl);
+    var configReady = hasActiveTemplateFilterConfiguration();
+
+    if (!usesConfigUi || configReady) {
+        applyStaticDateFieldsFromTemplate(tpl);
+    }
+
+    if (usesConfigUi || G_OL_HasDynamicComboFilters) {
+        hideStaticComboFilters();
+    } else if (!configReady && (tpl.code || 0) > 0 && templateUsesFilterConfiguration(tpl.code)) {
+        hideStaticComboFilters();
+    } else if (!G_OL_FilterConfigFetchPending && !templateUsesFilterConfiguration(tpl.code)) {
+        toggleFilterField('olFieldWareHouse', isFlagY(tpl.showWareHouse));
+        toggleFilterField('olFieldItemGroup', isFlagY(tpl.showItemGroup));
+        toggleFilterField('olFieldProcess', isFlagY(tpl.showProcess));
+        toggleFilterField('olFieldMarketingMan', isFlagY(tpl.showMarketingMan) || isFlagY(tpl.showAsPerMarketingPerson));
+        toggleFilterField('olFieldOrderNo', isFlagY(tpl.showOrderNo));
+        toggleFilterField('olFieldItemType', isFlagY(tpl.showItemType));
+        toggleFilterField('olFieldItemName', isFlagY(tpl.showItemName));
+        applyOtherFiltersVisibility(tpl);
+    }
+
     applyFilterActiveColors();
     updateFilterButtonState();
+    updateReportFormat2Checkbox(tpl);
+}
+
+function trimReportFileName(value) {
+    return String(value || '').trim();
+}
+
+function formatReportFileLabel(fileName) {
+    var text = trimReportFileName(fileName);
+    if (!text) return 'Format 2';
+    return text.replace(/\.rpt$/i, '') || 'Format 2';
+}
+
+function usesOrderLoadCrystalReport(tpl) {
+    return !!trimReportFileName(tpl && tpl.reportFileName);
+}
+
+function getOrderLoadCrystalReportFileName(tpl) {
+    tpl = tpl || getSelectedTemplate();
+    var primary = trimReportFileName(tpl.reportFileName);
+    var format2 = trimReportFileName(tpl.reportFileNameFormat2);
+    if (!primary) return '';
+    if (format2 && $('#chkOlReportFormat2').prop('checked')) {
+        return format2;
+    }
+    return primary;
+}
+
+function updateReportFormat2Checkbox(tpl) {
+    tpl = tpl || getSelectedTemplate();
+    var $wrap = $('#olReportFormat2Wrap');
+    var format2 = trimReportFileName(tpl.reportFileNameFormat2);
+
+    if (format2 && usesOrderLoadCrystalReport(tpl)) {
+        $wrap.removeClass('is-hidden');
+        $('#lblOlReportFormat2').text(formatReportFileLabel(format2));
+    } else {
+        $wrap.addClass('is-hidden');
+        $('#chkOlReportFormat2').prop('checked', false);
+    }
+}
+
+function openOrderLoadCrystalReportUrl(response) {
+    var url = LedgerService.extractCrystalUrl(response);
+    if (!url) return false;
+
+    var win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win) {
+        var a = document.createElement('a');
+        a.style.display = 'none';
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    return true;
 }
 
 function hasOtherFilterValue(value) {
     return String(value || '').trim() !== '';
 }
 
-function applyOtherFiltersVisibility(tpl) {
-    // Blank OtherFilter => hide; non-blank => show inside modal
-    var show1 = hasOtherFilterValue(tpl.otherFilter1);
-    var show2 = hasOtherFilterValue(tpl.otherFilter2);
-    var show3 = hasOtherFilterValue(tpl.otherFilter3);
-
-    toggleFilterField('olFieldOtherFilter1', show1);
-    toggleFilterField('olFieldOtherFilter2', show2);
-    toggleFilterField('olFieldOtherFilter3', show3);
-
-    if (!show1) resetOtherFilterSlot(1);
-    if (!show2) resetOtherFilterSlot(2);
-    if (!show3) resetOtherFilterSlot(3);
-
-    if (show1) loadOtherFilterDropdown(1, tpl.otherFilter1);
-    if (show2) loadOtherFilterDropdown(2, tpl.otherFilter2);
-    if (show3) loadOtherFilterDropdown(3, tpl.otherFilter3);
+function applyOtherFiltersVisibility() {
+    // OtherFilter1/2/3 options were loaded via GetOtherFilterDetails (removed) — keep slots hidden and empty.
+    [1, 2, 3].forEach(function (index) {
+        toggleFilterField('olFieldOtherFilter' + index, false);
+        resetOtherFilterSlot(index);
+    });
 
     updateModalEmptyState();
 }
@@ -1317,7 +2062,7 @@ function applyOtherFiltersVisibility(tpl) {
 function updateModalEmptyState() {
     var anyVisible = G_OL_MODAL_FIELD_IDS.some(function (fieldId) {
         return !$('#' + fieldId).hasClass('ol-hidden');
-    });
+    }) || $('#olDynamicFilterHost .ol-filter-field').length > 0;
     $('#olFilterModalEmpty').toggleClass('ol-hidden', anyVisible);
     $('.ol-filter-modal-grid').toggleClass('ol-hidden', !anyVisible);
 }
@@ -1333,13 +2078,6 @@ function resetOtherFilterSlot(index) {
         $('.ol-cd-menu[data-for="' + dropdownId + '"]').remove();
     }
     $('#lblOtherFilter' + index).text('Other Filter ' + index);
-}
-
-function resolveOtherFilterLabel(meta, fallbackIndex) {
-    return meta.label
-        || fieldNameToLabel(meta.nameColumn, '')
-        || fieldNameToLabel(meta.fieldName, '')
-        || ('Other Filter ' + fallbackIndex);
 }
 
 /*
@@ -1372,80 +2110,6 @@ function parseOtherFilterDefinition(raw) {
         flag: String(parts[parts.length - 1] || '').trim(),
         raw: text
     };
-}
-
-function loadOtherFilterDropdown(index, otherFilterQuery) {
-    var cacheKey = 'otherFilter' + index;
-    var query = String(otherFilterQuery || '').trim();
-    if (!query) return;
-    if (G_OL_DropdownLoaded[cacheKey] && G_OL_OTHER_FILTER_META[index].query === query) return;
-
-    var parsed = parseOtherFilterDefinition(query) || {};
-    G_OL_OTHER_FILTER_META[index] = {
-        query: query,
-        fieldName: parsed.filterField || '',
-        label: parsed.label || '',
-        nameColumn: parsed.nameColumn || '',
-        flag: parsed.flag || '',
-        tableName: ''
-    };
-
-    var label = resolveOtherFilterLabel(G_OL_OTHER_FILTER_META[index], index);
-    $('#lblOtherFilter' + index).text(label);
-
-    var templateCode = parseInt($('#ddlTemplate').val(), 10) || 0;
-
-    OrderLoadReportService.GetOtherFilterDetails('', templateCode, index)
-        .then(function (res) {
-            var list = unwrapApiList(res);
-            var first = list[0] || {};
-
-            // Prefer API meta when available
-            var apiLabel = String(prop(first, ['FilterCaption', 'filterCaption']) || '').trim();
-            var apiField = String(prop(first, ['FieldName', 'fieldName']) || '').trim();
-            var apiNameCol = String(prop(first, ['NameColumn', 'nameColumn']) || '').trim();
-            var apiFlag = String(prop(first, ['Flag', 'flag']) || '').trim();
-
-            if (apiLabel) G_OL_OTHER_FILTER_META[index].label = apiLabel;
-            if (apiField) G_OL_OTHER_FILTER_META[index].fieldName = apiField;
-            if (apiNameCol) G_OL_OTHER_FILTER_META[index].nameColumn = apiNameCol;
-            if (apiFlag) G_OL_OTHER_FILTER_META[index].flag = apiFlag;
-
-            label = resolveOtherFilterLabel(G_OL_OTHER_FILTER_META[index], index);
-            $('#lblOtherFilter' + index).text(label);
-
-            var nameCol = G_OL_OTHER_FILTER_META[index].nameColumn;
-            var textKeys = ['Desp', 'desp'];
-            if (nameCol) {
-                textKeys = [nameCol, nameCol.charAt(0).toLowerCase() + nameCol.slice(1), 'Desp', 'desp'];
-            }
-            textKeys = textKeys.concat(['EntryType', 'entryType', 'Name', 'name', 'Value', 'value']);
-
-            bindDropdown(
-                $('#ddlOtherFilter' + index),
-                list,
-                textKeys,
-                'Select ' + label + '...'
-            );
-            G_OL_DropdownLoaded[cacheKey] = true;
-        })
-        .catch(function () {
-            toastr.error('Could not load ' + label + '.');
-        });
-}
-
-function loadVisibleDropdowns(tpl) {
-    var loaders = {};
-
-    G_OL_FILTER_MAP.forEach(function (cfg) {
-        if (!isFlagY(tpl[cfg.flag])) return;
-        if ($('#' + cfg.fieldId).hasClass('ol-hidden')) return;
-        loaders[cfg.cacheKey] = cfg.loader;
-    });
-
-    Object.keys(loaders).forEach(function (key) {
-        loaders[key]();
-    });
 }
 
 /* ── Checkbox multi-select dropdown (same pattern as CommonSizeFilterControl.js) ── */
@@ -1824,97 +2488,19 @@ function buildCheckboxDropdown($select, placeholder) {
 }
 
 function bindDropdown($select, rows, textKeys, placeholder) {
-    var list = unwrapApiList(rows);
+    var list = unwrapComboDataList(rows);
     $select.empty().append($('<option/>', { value: '0', text: 'All' }));
 
     list.forEach(function (row) {
-        var code = prop(row, ['Code', 'code']);
-        var text = prop(row, textKeys) || String(code);
+        var code = prop(row, ['Code', 'code', 'ItemName', 'itemName', 'PartyName', 'partyName', 'Category', 'category']);
+        var text = prop(row, textKeys) || String(code || '');
+        if (!code && text) code = text;
+        if (!code && !text) return;
+        if (isAllComboOption(code, text)) return;
         $select.append($('<option/>', { value: code, text: text }));
     });
 
     buildCheckboxDropdown($select, placeholder);
-}
-
-function loadWareHouseDropdown() {
-    if (G_OL_DropdownLoaded.warehouse) return;
-    OrderLoadReportService.GetGodownMaster()
-        .then(function (res) {
-            bindDropdown($('#ddlWareHouse'), res, ['GodownName', 'godownName'], 'Select Warehouse...');
-            G_OL_DropdownLoaded.warehouse = true;
-        })
-        .catch(function () { toastr.error('Could not load Warehouse list.'); });
-}
-
-function loadItemGroupDropdown() {
-    if (G_OL_DropdownLoaded.itemGroup) return;
-    OrderLoadReportService.GetItemGroupMaster()
-        .then(function (res) {
-            bindDropdown($('#ddlItemGroup'), res, ['ItemGroup', 'itemGroup'], 'Select Item Group...');
-            G_OL_DropdownLoaded.itemGroup = true;
-        })
-        .catch(function () { toastr.error('Could not load Item Group list.'); });
-}
-
-function loadProcessDropdown() {
-    if (G_OL_DropdownLoaded.process) return;
-    OrderLoadReportService.GetProcessMaster()
-        .then(function (res) {
-            bindDropdown($('#ddlProcess'), res, ['ProcessName', 'processName'], 'Select Process...');
-            G_OL_DropdownLoaded.process = true;
-        })
-        .catch(function () { toastr.error('Could not load Process list.'); });
-}
-
-function loadMarketingManDropdown() {
-    if (G_OL_DropdownLoaded.marketingMan) return;
-
-    var auth = {};
-    try { auth = JSON.parse(sessionStorage.getItem('authKey') || '{}'); } catch (e) { auth = {}; }
-
-    OrderLoadReportService.GetNestedMarketingManList(auth.UserMaster_Code || 0, 0)
-        .then(function (res) {
-            bindDropdown($('#ddlMarketingMan'), res, ['PersonName', 'personName', 'Desp', 'desp'], 'Select Marketing Man...');
-            G_OL_DropdownLoaded.marketingMan = true;
-        })
-        .catch(function () { toastr.error('Could not load Marketing Man list.'); });
-}
-
-function loadOrderNoDropdown() {
-    if (G_OL_DropdownLoaded.orderNo) return;
-    OrderLoadReportService.GetOrderNo()
-        .then(function (res) {
-            bindDropdown($('#ddlOrderNo'), res, ['OrderNo', 'orderNo'], 'Select Order No...');
-            G_OL_DropdownLoaded.orderNo = true;
-        })
-        .catch(function () { toastr.error('Could not load Order No list.'); });
-}
-
-function loadItemTypeDropdown() {
-    if (G_OL_DropdownLoaded.itemType) return;
-    OrderLoadReportService.GetItemTypeMaster()
-        .then(function (res) {
-            bindDropdown($('#ddlItemType'), res, ['ItemType', 'itemType'], 'Select Item Type...');
-            G_OL_DropdownLoaded.itemType = true;
-        })
-        .catch(function () { toastr.error('Could not load Item Type list.'); });
-}
-
-function loadItemMasterDropdown() {
-    if (G_OL_DropdownLoaded.itemName) {
-        return Promise.resolve();
-    }
-
-    return OrderLoadReportService.GetItemMaster()
-        .then(function (res) {
-            bindDropdown($('#ddlItemName'), res, ['ItemName', 'itemName'], 'Select Item Name...');
-            G_OL_DropdownLoaded.itemName = true;
-            refreshOrderLoadSizeFilterItemCodes(getSelectedTemplate());
-        })
-        .catch(function () {
-            toastr.error('Could not load Item list.');
-            return Promise.reject(new Error('Could not load Item list.'));
-        });
 }
 
 function procedureUsesParam(tpl, paramName) {
@@ -2107,7 +2693,19 @@ function buildOtherFilterParts(tpl) {
 }
 
 function getTemplateDateField(tpl) {
-    return normalizeFieldName(tpl && tpl.fieldForDate) || 'OrderDate';
+    var dfRow = getDynamicDateFieldComboRow();
+    if (dfRow) {
+        var selected = selectedRawForDynamicRow(dfRow);
+        if (selected) {
+            var picked = normalizeFieldName(String(selected).split(',')[0]);
+            if (picked) return picked;
+        }
+    }
+
+    var name = normalizeFieldName(tpl && tpl.fieldForDate);
+    if (!name) return '';
+    if (/^order\s*date$/i.test(name)) return 'OrderDate';
+    return name;
 }
 
 function isViewBasedTemplate(tpl) {
@@ -2124,6 +2722,1319 @@ function normalizeReportCondition(value) {
     }
 }
 
+function resolveDynamicRowProcedureParameter(row) {
+    if (!row) return '';
+    var param = String(row.procedureParameter || prop(row, ['ProcedureParameter', 'procedureParameter']) || '')
+        .trim()
+        .toUpperCase();
+    if (param === 'FROMDATE' || param === 'TODATE') return param;
+
+    if (String(row.controlType || prop(row, ['ControlType', 'controlType']) || '').trim().toUpperCase() !== 'TEXT') {
+        return param;
+    }
+
+    var dn = String(row.displayName || prop(row, ['DisplayName', 'displayName']) || '').trim().toLowerCase();
+    if (dn === 'from' || dn === 'from date') return 'FROMDATE';
+    if (dn === 'to' || dn === 'to date' || dn === 'as on' || dn === 'as on date') return 'TODATE';
+    return param;
+}
+
+function isTextHeaderDateRow(row) {
+    if (!row || row.isActive === 'N') return false;
+    if (String(row.controlType || '').trim().toUpperCase() !== 'TEXT') return false;
+    var param = resolveDynamicRowProcedureParameter(row);
+    return param === 'FROMDATE' || param === 'TODATE';
+}
+
+function mapDynamicFilterRow(row) {
+    var mapped = {
+        code: parseInt(prop(row, ['Code', 'code']), 10) || 0,
+        templateCode: parseInt(prop(row, ['F_TempleteMaster_Code', 'f_TempleteMaster_Code']), 10) || 0,
+        controlType: String(prop(row, ['ControlType', 'controlType']) || '').trim(),
+        displayName: String(prop(row, ['DisplayName', 'displayName']) || '').trim(),
+        comboQuery: String(prop(row, ['ComboQuery', 'comboQuery']) || '').trim(),
+        comboDependsOn: String(prop(row, ['ComboDependsOn', 'comboDependsOn']) || '').trim(),
+        defaultValue: String(prop(row, ['DefaultValue', 'defaultValue']) || '').trim(),
+        resolvedDefaultValue: String(prop(row, ['ResolvedDefaultValue', 'resolvedDefaultValue']) || '').trim(),
+        queryCondition: String(prop(row, ['QueryCondition', 'queryCondition']) || '').trim(),
+        withCode: String(prop(row, ['WithCode', 'withCode']) || 'N').trim().toUpperCase(),
+        multi: String(prop(row, ['MultiSelectionApplicable', 'multiSelectionApplicable']) || 'Y').trim().toUpperCase(),
+        procedureParameter: String(prop(row, ['ProcedureParameter', 'procedureParameter']) || '').trim().toUpperCase(),
+        comboSortBy: String(prop(row, ['ComboSortBy', 'comboSortBy']) || '').trim(),
+        sortOrder: parseInt(prop(row, ['SortOrder', 'sortOrder', 'DisplayOrder', 'displayOrder']), 10)
+            || (parseInt(prop(row, ['Code', 'code']), 10) || 0),
+        isActive: String(prop(row, ['IsActive', 'isActive']) || 'Y').trim().toUpperCase()
+    };
+    mapped.procedureParameter = resolveDynamicRowProcedureParameter(mapped);
+    return mapped;
+}
+
+function isDynamicDateRow(row) {
+    if (!row) return false;
+    if (String(row.controlType || '').trim().toUpperCase() === 'COMBO') return false;
+    var param = resolveDynamicRowProcedureParameter(row);
+    return param === 'FROMDATE' || param === 'TODATE';
+}
+
+function dynamicDateRowsHaveQuery() {
+    if (configHasTextHeaderDates()) return true;
+    return (G_OL_DynamicFilters || []).some(function (row) {
+        return isDynamicDateRow(row) && !!row.queryCondition;
+    });
+}
+
+/** True when F_TemplateFilterConfiguration returned at least one active row for this template. */
+function hasActiveTemplateFilterConfiguration() {
+    return (G_OL_DynamicFilters || []).some(function (row) {
+        return row.code > 0 && row.isActive !== 'N';
+    });
+}
+
+function dynamicConfigHasDateFilter(kind) {
+    var param = String(kind || '').toLowerCase() === 'to' ? 'TODATE' : 'FROMDATE';
+    return (G_OL_DynamicFilters || []).some(function (row) {
+        return isTextHeaderDateRow(row) && resolveDynamicRowProcedureParameter(row) === param;
+    });
+}
+
+/** Header From/To: F_TemplateFilterConfiguration ControlType Text only (modal level dates stay inside). */
+function shouldShowStaticFromDate(tpl) {
+    if (isAsOnDateMode(tpl)) return false;
+    if (isLevelDateRangeAvailable()) return dynamicConfigHasDateFilter('from');
+    if (hasActiveTemplateFilterConfiguration()) {
+        return dynamicConfigHasDateFilter('from');
+    }
+    return (!tpl || !tpl.code || isFlagY(tpl.showFromDate)) && !!normalizeFieldName(tpl && tpl.fieldForDate);
+}
+
+function shouldShowStaticToDate(tpl) {
+    if (isAsOnDateMode(tpl)) {
+        return dynamicConfigHasDateFilter('to') || (!hasActiveTemplateFilterConfiguration()
+            && !!normalizeFieldName(tpl && tpl.fieldForDate));
+    }
+    if (isLevelDateRangeAvailable()) return dynamicConfigHasDateFilter('to');
+    if (hasActiveTemplateFilterConfiguration()) {
+        return dynamicConfigHasDateFilter('to');
+    }
+    return (!tpl || !tpl.code || isFlagY(tpl.showToDate)) && !!normalizeFieldName(tpl && tpl.fieldForDate);
+}
+
+function syncFilterFieldsFromTemplateFilterConfiguration(tpl) {
+    tpl = tpl || getSelectedTemplate();
+    if (!hasActiveTemplateFilterConfiguration()) {
+        return false;
+    }
+
+    applyStaticDateFieldsFromTemplate(tpl);
+    applyFilterActiveColors();
+    updateFilterButtonState();
+    return true;
+}
+
+function resolveDynamicDefaultValue(raw) {
+    var value = String(raw || '');
+    var now = new Date();
+    var tokens = {};
+    tokens['{{DefaultDate}}'] = toIsoDate(now);
+    tokens['{{MonthStartDate}}'] = toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    tokens['{{MonthEndDate}}'] = toIsoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    tokens['{{FinYearStartDate}}'] = G_OL_FinYear.startIso || '';
+    tokens['{{FinYearEndDate}}'] = G_OL_FinYear.endIso || '';
+    tokens['{{FinYear}}'] = G_OL_FinYear.desp || '';
+    Object.keys(tokens).forEach(function (token) {
+        if (!tokens[token]) return;
+        value = value.split(token).join(tokens[token]);
+    });
+    value = value.trim();
+    if (!value || value.indexOf('{{') >= 0) return value;
+    return apiDateToIso(value) || value;
+}
+
+function applyResolvedFilterTokenMap(tokenRows) {
+    var map = {};
+    (tokenRows || []).forEach(function (row) {
+        var token = String(prop(row, ['Token', 'token']) || '').trim();
+        var val = String(prop(row, ['ResolvedValue', 'resolvedValue']) || '').trim();
+        if (token) map[token] = val;
+    });
+
+    if (map['{{FinYear}}']) G_OL_FinYear.desp = map['{{FinYear}}'];
+    if (map['{{FinYearStartDate}}']) G_OL_FinYear.startIso = apiDateToIso(map['{{FinYearStartDate}}']) || G_OL_FinYear.startIso;
+    if (map['{{FinYearEndDate}}']) G_OL_FinYear.endIso = apiDateToIso(map['{{FinYearEndDate}}']) || G_OL_FinYear.endIso;
+}
+
+function ensureFinYearTokens() {
+    if (G_OL_FinYearLoaded) return Promise.resolve(G_OL_FinYear);
+
+    if (typeof OrderLoadReportService.GetResolvedFilterTokens !== 'function') {
+        G_OL_FinYearLoaded = true;
+        return Promise.resolve(G_OL_FinYear);
+    }
+
+    return OrderLoadReportService.GetResolvedFilterTokens()
+        .then(function (res) {
+            applyResolvedFilterTokenMap(unwrapApiList(res));
+            G_OL_FinYearLoaded = true;
+            return G_OL_FinYear;
+        })
+        .catch(function () {
+            G_OL_FinYearLoaded = true;
+            return G_OL_FinYear;
+        });
+}
+
+function fetchTemplateFilterConfigurationRows(templateCode) {
+    var code = parseInt(templateCode, 10) || 0;
+    function rowsForTemplate(list) {
+        return (list || []).filter(function (row) {
+            var tplCode = parseInt(prop(row, ['F_TempleteMaster_Code', 'f_TempleteMaster_Code', 'templateCode']), 10) || 0;
+            return !code || tplCode === code;
+        });
+    }
+    function loadFilterConfigTableDdl() {
+        return OrderLoadReportService.GetDdlOfOtherFilter('F_TemplateFilterConfiguration')
+            .then(function (res) { return rowsForTemplate(unwrapApiList(res)); })
+            .catch(function () {
+                return OrderLoadReportService.GetDdlOfOtherFilter('F_TempleteFilterConfiguration')
+                    .then(function (res) { return rowsForTemplate(unwrapApiList(res)); });
+            });
+    }
+    if (typeof OrderLoadReportService.GetTemplateFilterConfiguration === 'function') {
+        return OrderLoadReportService.GetTemplateFilterConfiguration(code)
+            .then(function (res) {
+                var rows = rowsForTemplate(unwrapApiList(res));
+                if (rows.length) return rows;
+                return loadFilterConfigTableDdl();
+            })
+            .catch(function () {
+                return loadFilterConfigTableDdl();
+            });
+    }
+    return loadFilterConfigTableDdl();
+}
+
+function clearDynamicFilterHost() {
+    $('#olDynamicFilterHost select').each(function () {
+        var dropdownId = $(this).attr('id') + '_cdDropdown';
+        $('#' + dropdownId).remove();
+        $('.ol-cd-menu[data-for="' + dropdownId + '"]').remove();
+        $(document).off('click.' + dropdownId);
+    });
+    $('#olDynamicFilterHost').empty();
+}
+
+function hideStaticComboFilters() {
+    [
+        'olFieldWareHouse', 'olFieldItemGroup', 'olFieldProcess', 'olFieldMarketingMan',
+        'olFieldOrderNo', 'olFieldItemType', 'olFieldItemName',
+        'olFieldOtherFilter1', 'olFieldOtherFilter2', 'olFieldOtherFilter3'
+    ].forEach(function (id) {
+        $('#' + id).addClass('ol-hidden');
+    });
+}
+
+function applyDynamicDateDefaults(tpl) {
+    var fromRow = findTextHeaderDateRow('from');
+    var toRow = findTextHeaderDateRow('to');
+
+    if (fromRow) {
+        var fromIso = apiDateToIso(fromRow.resolvedDefaultValue)
+            || apiDateToIso(resolveDynamicDefaultValue(fromRow.defaultValue));
+        if (fromIso) {
+            $('#txtFromDate').val(fromIso);
+        }
+        $('#olFieldFromDate').removeAttr('title');
+    } else if (hasActiveTemplateFilterConfiguration()) {
+        $('#txtFromDate').val('');
+    }
+
+    if (toRow) {
+        var toIso = apiDateToIso(toRow.resolvedDefaultValue)
+            || apiDateToIso(resolveDynamicDefaultValue(toRow.defaultValue));
+        if (toIso) {
+            $('#txtToDate').val(toIso);
+        }
+        $('#olFieldToDate').removeAttr('title');
+    } else if (hasActiveTemplateFilterConfiguration()) {
+        $('#txtToDate').val('');
+    }
+
+    applyConfigTextHeaderDateLabels();
+    syncModalDatesFromHeader();
+    syncHeaderDateBarVisibility();
+}
+
+function comboResultColumn(sql) {
+    var text = String(sql || '');
+    var match = /^\s*select\s+(?:distinct\s+)?(?:\[[^\]]+\]|\w+)\s*,\s*(?:\[[^\]]+\]|\w+)(?:\s+as\s+(\[[^\]]+\]|\w+))?/i.exec(text);
+    if (match && match[1]) return match[1].replace(/[\[\]]/g, '');
+    var second = /^\s*select\s+(?:distinct\s+)?(?:\[[^\]]+\]|\w+)\s*,\s*(\[[^\]]+\]|\w+)/i.exec(text);
+    if (second) return second[1].replace(/[\[\]]/g, '');
+    return 'Desp';
+}
+
+function comboQueryHasTwoColumns(sql) {
+    return /^\s*select\s+(?:distinct\s+)?(?:\[[^\]]+\]|\w+)\s*,/i.test(String(sql || ''));
+}
+
+function normalizeDynamicComboSql(sql) {
+    sql = String(sql || '').trim().replace(/;+\s*$/, '');
+    if (!sql) return '';
+
+    sql = replaceDynamicFilterTokens(sql);
+    /* T-SQL empty string: N'' — use double-quoted JS so quotes are not parsed as string delimiters */
+    var notEmptyNvarchar = " <> N''";
+    sql = sql.replace(/<>\s*''/gi, notEmptyNvarchar);
+    sql = sql.replace(/<>\s*""/gi, notEmptyNvarchar);
+
+    if (!comboQueryHasTwoColumns(sql)) {
+        var single = /^\s*select\s+(?:distinct\s+)?(\[[^\]]+\]|\w+)\s+from\b/i.exec(sql);
+        if (single) {
+            var col = single[1];
+            sql = 'SELECT ' + col + ' AS Code, ' + col + ' AS Desp FROM (' + sql + ') _olq';
+        }
+    }
+
+    return sql;
+}
+
+function formatDynamicFilterTokenValue(row, raw) {
+    if (!raw) return '';
+    if (row.withCode === 'Y') return raw;
+    return raw.split(',').map(function (part) {
+        return "'" + String(part).trim().replace(/'/g, "''") + "'";
+    }).join(',');
+}
+
+function replaceDynamicFilterTokens(text) {
+    var out = String(text || '');
+    if (!out || out.indexOf('{{') < 0) return out;
+
+    var templateCode = parseInt($('#ddlTemplate').val(), 10) || 0;
+    if (templateCode > 0) {
+        ['{{F_TempleteMaster_Code}}', '{{F_TemplateMaster_Code}}', '{{f_templetemaster_code}}'].forEach(function (token) {
+            if (out.indexOf(token) >= 0) {
+                out = out.split(token).join(String(templateCode));
+            }
+        });
+    }
+
+    (G_OL_DynamicFilters || []).forEach(function (row) {
+        var token = '{{' + row.displayName + '}}';
+        if (out.indexOf(token) < 0) return;
+
+        var raw = effectiveRawForDynamicRow(row);
+        var replacement = formatDynamicFilterTokenValue(row, raw);
+        out = out.split(token).join(replacement);
+    });
+
+    return cleanupInvalidDynamicComboSql(out);
+}
+
+function splitComboDependsOnSegments(depends) {
+    return String(depends || '')
+        .split('#')
+        .map(function (part) { return String(part || '').trim(); })
+        .filter(function (part) { return !!part; });
+}
+
+function replaceDependsOnSegment(segment) {
+    var out = String(segment || '').trim();
+    if (!out) return '';
+
+    var tokenMatch = out.match(/\{\{([^}]+)\}\}/g) || [];
+    var i;
+    for (i = 0; i < tokenMatch.length; i++) {
+        var token = tokenMatch[i];
+        var displayName = token.slice(2, -2);
+        var parentRow = (G_OL_DynamicFilters || []).find(function (r) {
+            return String(r.displayName || '').trim() === String(displayName).trim();
+        });
+        if (!parentRow) return '';
+
+        var raw = effectiveRawForDynamicRow(parentRow);
+        if (!raw) return '';
+
+        out = out.split(token).join(formatDynamicFilterTokenValue(parentRow, raw));
+    }
+
+    if (out.indexOf('{{') >= 0) return '';
+    return cleanupInvalidDynamicComboSql(out);
+}
+
+function cleanupInvalidDynamicComboSql(sql) {
+    var out = String(sql || '');
+    if (!out) return out;
+
+    out = out.replace(/\s+and\s+([^\s]+(?:\.[^\s]+)?)\s+in\s*\(\s*\)/gi, '');
+    out = out.replace(/\s+and\s+\(\s*[^)]+\)\s+in\s*\(\s*\)/gi, '');
+    out = out.replace(/\s+where\s+([^\s]+(?:\.[^\s]+)?)\s+in\s*\(\s*\)/gi, ' WHERE 1=1');
+    out = out.replace(/\s{2,}/g, ' ').trim();
+    return out;
+}
+
+function appendDynamicComboCondition(baseSql, conditionPart) {
+    var sql = String(baseSql || '').trim();
+    var cond = String(conditionPart || '').trim();
+    if (!cond) return sql;
+
+    if (/^\s*order\s+by\b/i.test(cond)) {
+        return sql + ' ' + cond;
+    }
+
+    if (/^\s*where\b/i.test(cond)) {
+        if (/\bwhere\b/i.test(sql)) {
+            return sql + ' ' + cond.replace(/^\s*where\b/i, 'AND');
+        }
+        return sql + ' ' + cond;
+    }
+
+    if (/^\s*and\b/i.test(cond) || /^\s*or\b/i.test(cond)) {
+        return sql + ' ' + cond;
+    }
+
+    if (/\bwhere\b/i.test(sql)) {
+        return sql + ' AND ' + cond;
+    }
+
+    return sql + ' WHERE ' + cond;
+}
+
+function buildDynamicComboSql(row) {
+    var sql = String(row.comboQuery || '').trim().replace(/;+\s*$/, '');
+    sql = replaceDynamicFilterTokens(sql);
+
+    splitComboDependsOnSegments(row.comboDependsOn).forEach(function (segment) {
+        var resolved = replaceDependsOnSegment(segment);
+        if (!resolved) return;
+        sql = appendDynamicComboCondition(sql, resolved);
+    });
+
+    return normalizeDynamicComboSql(sql);
+}
+
+function getDynamicFilterRowsDependingOn(displayName) {
+    var name = String(displayName || '').trim();
+    if (!name) return [];
+    var token = '{{' + name + '}}';
+    return (G_OL_DynamicFilters || []).filter(function (row) {
+        return String(row.comboDependsOn || '').indexOf(token) >= 0
+            || String(row.comboQuery || '').indexOf(token) >= 0;
+    });
+}
+
+function bindDynamicComboCascade() {
+    $('#olDynamicFilterHost').off('change.olDynCascade', 'select');
+    $('#olDynamicFilterHost').on('change.olDynCascade', 'select', function () {
+        var id = $(this).attr('id') || '';
+        var code = parseInt(String(id).replace('ddlDynFilter_', ''), 10) || 0;
+        var parent = (G_OL_DynamicFilters || []).find(function (r) { return r.code === code; });
+        if (!parent) return;
+
+        if (isDynamicDateFieldCombo(parent)) {
+            applySelectedConfigDateFieldCombo();
+        }
+
+        /* buildCheckboxDropdown() fires 'change' on every (re)bind; while the initial load runs, the loader itself
+           orders parents before children, so do not reset/reload children for those programmatic events. */
+        if (!G_OL_ComboBulkLoading) {
+            getDynamicFilterRowsDependingOn(parent.displayName).forEach(function (child) {
+                if (child.code === parent.code) return;
+                var $child = $('#ddlDynFilter_' + child.code);
+                if (!$child.length) return;
+                if (child.multi === 'Y') setCheckboxDropdownValue($child, ['0']);
+                else $child.val('0');
+                loadDynamicComboOptionsAsync(child);
+            });
+        }
+
+        if (String(parent.displayName || '').trim().toLowerCase() === 'item name') {
+            refreshOrderLoadSizeFilterItemCodes(getSelectedTemplate());
+            updateSizeParameterGridButton();
+        }
+
+        applyFilterActiveColors();
+        updateFilterButtonState();
+    });
+}
+
+function escapeXmlAttr(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function buildDynamicFilterSelectionJson() {
+    var filters = [];
+    (G_OL_DynamicFilters || []).forEach(function (row) {
+        if (String(row.controlType || '').toUpperCase() !== 'COMBO') return;
+        if (isDynamicDateFieldCombo(row)) return;
+        var raw = selectedRawForDynamicRow(row);
+        if (!raw) return;
+        var item = {
+            configCode: row.code || 0,
+            displayName: String(row.displayName || '').trim(),
+            selectedValue: raw
+        };
+        // WithCode='Y' combos send numeric codes in selectedValue. A dependent ComboDependsOn condition on a TEXT column
+        // (e.g. AccountNature in ({{Client Nature}})) cannot use the code, so also send the option text; the server falls
+        // back to it when the code form raises "Conversion failed ... to data type int".
+        if (row.withCode === 'Y') {
+            var text = selectedTextForDynamicRow(row);
+            if (text) item.selectedText = text;
+        }
+        filters.push(item);
+    });
+    if (!filters.length) return '';
+    return JSON.stringify(filters);
+}
+
+/** F_TemplateFilterConfiguration metadata — not SQL combo result rows (no DisplayName+ControlType on data). */
+function isTemplateFilterConfigurationRecord(item) {
+    if (!item || typeof item !== 'object') return false;
+    var displayName = String(prop(item, ['DisplayName', 'displayName']) || '').trim();
+    var controlType = String(prop(item, ['ControlType', 'controlType']) || '').trim().toUpperCase();
+    if (displayName && controlType) return true;
+    var comboQuery = String(prop(item, ['ComboQuery', 'comboQuery']) || '').trim();
+    var tplCode = prop(item, ['F_TempleteMaster_Code', 'f_TempleteMaster_Code', 'F_TemplateMaster_Code']);
+    if (comboQuery && tplCode !== '' && tplCode != null) return true;
+    return false;
+}
+
+function normalizeComboDataRow(item) {
+    if (!item || typeof item !== 'object') return item;
+    if (prop(item, ['Code', 'code']) != null && prop(item, ['Desp', 'desp', 'ItemName', 'itemName', 'Name', 'name']) != null) {
+        return item;
+    }
+    var code = prop(item, ['Code', 'code', 'ItemName', 'itemName', 'Category', 'category',
+        'AccountDesp', 'accountDesp', 'PartyName', 'partyName', 'CustomerName', 'customerName',
+        'PersonName', 'personName', 'Nature', 'nature', 'ClientNature', 'clientNature', 'Value', 'value']);
+    if (code != null && code !== '') {
+        var desp = prop(item, ['Desp', 'desp', 'Value', 'value', 'Category', 'category', 'ItemName', 'itemName',
+            'Name', 'name', 'AccountDesp', 'accountDesp', 'PartyName', 'partyName', 'CustomerName', 'customerName',
+            'PersonName', 'personName']) || code;
+        return { Code: code, Desp: desp };
+    }
+    var keys = Object.keys(item);
+    if (keys.length === 1) {
+        var only = item[keys[0]];
+        if (only != null && only !== '') return { Code: only, Desp: only };
+    }
+    return item;
+}
+
+/** Rows to bind in ddlDynFilter_* — excludes config metadata mistaken for combo data. */
+function unwrapComboDataList(payload) {
+    var list = unwrapApiList(payload);
+    if (!list.length) return [];
+    return list.filter(function (item) { return !isTemplateFilterConfigurationRecord(item); })
+        .map(normalizeComboDataRow);
+}
+
+/** True when API returned only config metadata — not when JSON also has Code/Desp (or PartyName) rows. */
+function looksLikeFilterConfigPayload(res) {
+    var list = unwrapApiList(res);
+    if (!list.length) return false;
+    var bindable = list.filter(function (item) { return !isTemplateFilterConfigurationRecord(item); });
+    if (bindable.length > 0) return false;
+    return list.some(isTemplateFilterConfigurationRecord);
+}
+
+/**
+ * Single place that supplies option rows for a Combo filter row.
+ * GetTemplateFilterConfiguration returns setup only (ComboQuery text, not data), so the dropdown rows come from
+ * the API GetTemplateFilterComboData: the server reads this row's ComboQuery / ComboDependsOn / ComboSortBy
+ * (by configCode), applies the parent combo selections sent in FilterSelectionJson, runs the SQL and returns
+ * [{ Code: 1, Desp: 'Name' }, ...]. SQL is never sent from the browser.
+ */
+function fetchTemplateFilterComboData(templateCode, configCode, row) {
+    return OrderLoadReportService.GetTemplateFilterComboData(
+        templateCode,
+        configCode,
+        buildDynamicFilterSelectionJson()
+    );
+}
+
+/** Display text of the selected option(s), comma-joined — same selection rules as selectedRawForDynamicRow. */
+function selectedTextForDynamicRow(row) {
+    var $sel = $('#ddlDynFilter_' + row.code);
+    if (!$sel.length) return '';
+    var val = $sel.val();
+    if (!val) return '';
+    if (!Array.isArray(val)) val = [val];
+    val = val.filter(function (v) { return String(v) !== '0' && String(v) !== ''; });
+    if (!val.length) return '';
+    if (row.multi !== 'Y') val = [val[0]];
+    return val.map(function (v) {
+        return ($sel.find('option').filter(function () {
+            return String($(this).val()) === String(v);
+        }).first().text() || '').trim();
+    }).filter(function (text) { return !!text && text.toLowerCase() !== 'all'; }).join(',');
+}
+
+function selectedRawForDynamicRow(row) {
+    var $sel = $('#ddlDynFilter_' + row.code);
+    if (!$sel.length) return '';
+    var val = $sel.val();
+    if (!val) return '';
+    if (!Array.isArray(val)) val = [val];
+    val = val.filter(function (v) { return String(v) !== '0' && String(v) !== ''; });
+    if (!val.length) return '';
+    if (row.multi !== 'Y') val = [val[0]];
+    if (row.withCode === 'Y') return val.join(',');
+    return val.map(function (v) {
+        return ($sel.find('option').filter(function () {
+            return String($(this).val()) === String(v);
+        }).first().text() || '').trim();
+    }).filter(function (text) { return !!text && text.toLowerCase() !== 'all'; }).join(',');
+}
+
+/** UI selection, else ResolvedDefaultValue (for ComboDependsOn before user picks parent). */
+function effectiveRawForDynamicRow(row) {
+    var raw = selectedRawForDynamicRow(row);
+    if (raw) return raw;
+    if (!row) return '';
+    var def = String(row.resolvedDefaultValue || '').trim();
+    if (def && def.indexOf('{{') < 0 && def.toLowerCase() !== 'all' && def !== '0') return def;
+    def = String(row.defaultValue || '').trim();
+    if (def && def.indexOf('{{') < 0 && def.toLowerCase() !== 'all' && def !== '0') {
+        return String(resolveDynamicDefaultValue(def) || def).trim();
+    }
+    return '';
+}
+
+function dynamicSelectHasValue($sel) {
+    var val = $sel.val();
+    if (!val) return false;
+    if (!Array.isArray(val)) val = [val];
+    return val.some(function (v) { return String(v) !== '0' && String(v) !== ''; });
+}
+
+function fragmentFromFilterTemplate(row, rawValue, tpl) {
+    var template = bracketSpacedDateColumnsInSql(
+        rewriteDisplayDateColumnsInSql(String(row.queryCondition || ''), tpl)
+    );
+    var raw = String(rawValue || '').trim();
+    if (!template || !raw || raw === '0') return '';
+    var literal = /'\{\{SelectedValue\}\}'/.test(template);
+    var sqlValue = raw;
+    if (row.withCode === 'Y') {
+        if (/[^0-9,]/.test(raw)) return '';
+    } else if (!literal) {
+        sqlValue = raw.split(',').map(function (part) {
+            return "'" + String(part).trim().replace(/'/g, "''") + "'";
+        }).join(',');
+    } else {
+        sqlValue = raw.replace(/'/g, "''");
+    }
+    var frag = template.split('{{SelectedValue}}').join(sqlValue);
+    if (!/^\s*AND\b/i.test(frag)) frag = ' AND ' + frag.replace(/^\s+/, '');
+    if (/CAST\s*\(\s*'[^']*'\s*AS\s*DATE\s*\)/i.test(frag)) {
+        frag = applyTryCastToDateCompareFragment(frag);
+    }
+    return frag;
+}
+
+function isDateCompareConditionFragment(part) {
+    var p = String(part || '');
+    if (!p) return false;
+    return (/\bTRY_CAST\s*\(/i.test(p) || /\bCAST\s*\(\s*'[^']*'\s*AS\s*DATE\s*\)/i.test(p))
+        && /\s(>=|<=|=)\s/i.test(p);
+}
+
+function extractDateCompareSqlFromCondition(sql) {
+    var rest = String(sql || '').trim();
+    if (!rest) return '';
+    if (/^and\b/i.test(rest)) rest = rest.replace(/^and\s+/i, '').trim();
+    if (!rest) return '';
+    var out = [];
+    rest.split(/\s+and\s+/i).forEach(function (chunk) {
+        chunk = String(chunk || '').trim();
+        if (!chunk) return;
+        var frag = ' AND ' + chunk;
+        if (isDateCompareConditionFragment(frag)) out.push(frag);
+    });
+    return out.join('');
+}
+
+/**
+ * View (ViewName, no ProcedureName): user filters → QueryCondition only (SP view WHERE).
+ * Procedure: FilterCondition and/or QueryCondition per ProcedureParameters (#FilterCondition# / #QueryCondition#).
+ */
+function routeConditionsForReportSource(conditions, tpl) {
+    tpl = tpl || getSelectedTemplate();
+    if (!conditions) return { filterCondition: '', queryCondition: '' };
+
+    var fc = String(conditions.filterCondition || '');
+    var qc = String(conditions.queryCondition || '');
+
+    if (isViewBasedTemplate(tpl)) {
+        return { filterCondition: '', queryCondition: fc + qc };
+    }
+
+    var hasFilterParam = procedureUsesParam(tpl, 'FilterCondition') || inferUsesFilterCondition(tpl);
+    var hasQueryParam = procedureUsesParam(tpl, 'QueryCondition') || inferUsesQueryCondition(tpl);
+
+    if (hasFilterParam && !hasQueryParam) {
+        return { filterCondition: fc + qc, queryCondition: '' };
+    }
+    if (hasQueryParam && !hasFilterParam) {
+        return { filterCondition: '', queryCondition: fc + qc };
+    }
+    if (!hasFilterParam && !hasQueryParam) {
+        return { filterCondition: fc + qc, queryCondition: '' };
+    }
+    return { filterCondition: fc, queryCondition: qc };
+}
+
+function buildConditionsFromFilterConfiguration(tpl, usesDateParams, fromIso, toIso) {
+    var filterParts = [];
+    var queryParts = [];
+
+    (G_OL_DynamicFilters || []).forEach(function (row) {
+        if (isDynamicDateRow(row)) {
+            if (row.queryCondition) {
+                if (row.procedureParameter === 'FROMDATE' && !fromIso) return;
+                if (row.procedureParameter === 'TODATE' && !toIso) return;
+                var dateRawTpl = row.procedureParameter === 'TODATE' ? isoToSqlCastLiteral(toIso) : isoToSqlCastLiteral(fromIso);
+                if (!dateRawTpl) return;
+                var dateFragTpl = fragmentFromFilterTemplate(row, dateRawTpl, tpl);
+                if (!dateFragTpl) return;
+                if (isViewBasedTemplate(tpl) || row.procedureParameter === 'QUERYCONDITION') {
+                    queryParts.push(dateFragTpl);
+                } else {
+                    filterParts.push(dateFragTpl);
+                }
+            }
+            return;
+        }
+
+        if (String(row.controlType || '').toUpperCase() !== 'COMBO') return;
+        if (isDynamicDateFieldCombo(row)) return;
+        var selected = selectedRawForDynamicRow(row);
+        var frag = fragmentFromFilterTemplate(row, selected, tpl);
+        if (!frag) return;
+        if (isViewBasedTemplate(tpl) || row.procedureParameter === 'QUERYCONDITION') {
+            queryParts.push(frag);
+        } else {
+            filterParts.push(frag);
+        }
+    });
+
+    return routeConditionsForReportSource({
+        filterCondition: filterParts.join(''),
+        queryCondition: queryParts.join('')
+    }, tpl);
+}
+
+function resolveDynamicComboDefaultWanted(row) {
+    if (!row) return '';
+    var wanted = String(row.resolvedDefaultValue || '').trim();
+    if (!wanted || wanted.indexOf('{{') >= 0) {
+        wanted = String(row.defaultValue || '').trim();
+    }
+    if (!wanted || wanted.indexOf('{{') >= 0) {
+        wanted = String(resolveDynamicDefaultValue(row.defaultValue || '') || '').trim();
+    }
+    if (!wanted || wanted.toLowerCase() === 'all') return '';
+    return wanted;
+}
+
+function applyDynamicComboDefault(row) {
+    if (isDynamicDateFieldCombo(row)) return;
+    var wanted = resolveDynamicComboDefaultWanted(row);
+    if (!wanted) return;
+    var $sel = $('#ddlDynFilter_' + row.code);
+    if (!$sel.length || $sel.find('option').length <= 1) return;
+    var match = '';
+    $sel.find('option').each(function () {
+        var text = String($(this).text() || '').trim();
+        var val = String($(this).val() || '');
+        if (val === '0') return;
+        if (text.toLowerCase() === wanted.toLowerCase() || val === wanted
+            || String(val).toLowerCase() === wanted.toLowerCase()) {
+            match = val;
+        }
+    });
+    if (!match) return;
+    if (row.multi === 'Y') setCheckboxDropdownValue($sel, [match]);
+    else $sel.val(match);
+}
+
+function applyAllDynamicComboDefaults() {
+    sortDynamicComboFiltersForRender((G_OL_DynamicFilters || []).filter(function (row) {
+        return String(row.controlType || '').toUpperCase() === 'COMBO' && !isDynamicDateFieldCombo(row);
+    })).forEach(function (row) {
+        applyDynamicComboDefault(row);
+    });
+}
+
+/** True when ComboQuery/DependsOn needs other filter selections (not only template code tokens). */
+function comboQueryNeedsClientFilterTokens(row) {
+    var blob = String(row && row.comboQuery || '') + String(row && row.comboDependsOn || '');
+    var tokens = blob.match(/\{\{([^}]+)\}\}/g);
+    if (!tokens) return false;
+    for (var i = 0; i < tokens.length; i++) {
+        var inner = tokens[i].slice(2, -2).trim().toLowerCase();
+        if (inner !== 'f_templetemaster_code' && inner !== 'f_templatemaster_code') {
+            return true;
+        }
+    }
+    return false;
+}
+
+function isAllComboOption(code, text) {
+    var c = String(code == null ? '' : code).trim();
+    var t = String(text || '').trim();
+    if (!c && !t) return true;
+    if (c === '0' || /^all$/i.test(c)) return true;
+    return /^all$/i.test(t);
+}
+
+/** Date Field combo: no "All"; distinct date columns only (modal). Header keeps Text From/To. */
+function populateDateFieldComboSelect($sel, res, nameColumn) {
+    var textKeys = [nameColumn, 'Desp', 'desp', 'Value', 'value', 'Name', 'name', 'FieldName', 'fieldName', 'FieldForDate', 'fieldForDate'];
+    var list = unwrapComboDataList(res);
+    var seen = {};
+    $sel.empty();
+    list.forEach(function (item) {
+        var code = prop(item, ['Code', 'code', 'FieldName', 'fieldName', 'FieldForDate', 'fieldForDate']);
+        var text = String(prop(item, textKeys) || code || '').trim();
+        if (isAllComboOption(code, text)) return;
+        var opt = resolveDateFieldOption(code, text);
+        if (!opt) return;
+        var key = canonicalDateFieldKey(opt.value) || canonicalDateFieldKey(opt.label);
+        if (!key || seen[key]) return;
+        seen[key] = true;
+        $sel.append($('<option/>', { value: opt.value, text: opt.label }));
+    });
+}
+
+/** ComboQuery like "select Code, Category from ItemMaster" repeats the same label; keep one option per label (or per Code when WithCode=Y). */
+function dedupeDynamicComboList(list, textKeys, row) {
+    var seen = {};
+    var out = [];
+    (list || []).forEach(function (item) {
+        var code = prop(item, ['Code', 'code']);
+        var text = String(prop(item, textKeys) || code || '').trim();
+        var key = String(row && row.withCode === 'Y' ? code : text).trim().toLowerCase();
+        if (!key || seen[key]) return;
+        seen[key] = true;
+        out.push(item);
+    });
+    return out;
+}
+
+function populateDynamicComboSelect($sel, res, row, nameColumn) {
+    if (isDynamicDateFieldCombo(row)) {
+        populateDateFieldComboSelect($sel, res, nameColumn);
+        return;
+    }
+    var textKeys = [nameColumn, 'Desp', 'desp', 'Value', 'value', 'Name', 'name', 'FieldName', 'fieldName',
+        'AccountDesp', 'accountDesp', 'PartyName', 'partyName', 'CustomerName', 'customerName', 'PersonName', 'personName',
+        'ItemName', 'itemName', 'Category', 'category', 'Nature', 'nature', 'ClientNature', 'clientNature'];
+    var useMulti = row.multi === 'Y';
+    var list = unwrapComboDataList(res);
+    if (useMulti) {
+        bindDropdown($sel, list, textKeys, 'Select ' + row.displayName + '...');
+        return;
+    }
+    $sel.empty().append($('<option/>', { value: '0', text: 'All' }));
+    list.forEach(function (item) {
+        var code = prop(item, ['Code', 'code']);
+        var text = prop(item, textKeys) || String(code || '');
+        if (isAllComboOption(code, text)) return;
+        if (code == null || code === '') code = text;
+        if (!code && !text) return;
+        $sel.append($('<option/>', { value: code, text: text }));
+    });
+}
+
+function afterDynamicComboOptionsLoaded(row, $field) {
+    if ($field && $field.length) {
+        $field.removeAttr('title');
+    }
+    applyDynamicComboDefault(row);
+    if (isDynamicDateFieldCombo(row)) {
+        applySelectedConfigDateFieldCombo();
+    } else if (!G_OL_ComboBulkLoading) {
+        /* During the initial sequential load every combo is loaded in order anyway (parents first), so children
+           are not loaded a second time here. After that, a parent reload refreshes its dependent combos. */
+        getDynamicFilterRowsDependingOn(row.displayName).forEach(function (child) {
+            loadDynamicComboOptionsAsync(child);
+        });
+    }
+    applyFilterActiveColors();
+    updateFilterButtonState();
+}
+
+function loadConfigDateFieldComboOptions(row) {
+    var templateCode = parseInt($('#ddlTemplate').val(), 10) || 0;
+    var $field = $('#olDynField_' + row.code);
+    var $sel = $('#ddlDynFilter_' + row.code);
+    if (!$sel.length) return;
+
+    function fillAndFinish(res) {
+        populateDateFieldComboSelect($sel, res, 'Desp');
+        if (!$sel.find('option').length) {
+            fillFromLevelRows();
+            return;
+        }
+        var target = normalizeFieldName(G_OL_CurrentLevel && G_OL_CurrentLevel.fieldForDate);
+        if (!selectDateFieldComboValue($sel, target)) {
+            selectDateFieldComboValue($sel, getDefaultDateFieldFromLevelRows(G_OL_LevelRows));
+        }
+        if (!$sel.val() && $sel.find('option').length) {
+            $sel.prop('selectedIndex', 0);
+        }
+        afterDynamicComboOptionsLoaded(row, $field);
+    }
+
+    function fillFromLevelRows() {
+        var opts = getDistinctDateFieldOptions(G_OL_LevelRows);
+        fillAndFinish(opts.map(function (o) {
+            return { code: o.value, desp: o.label };
+        }));
+    }
+
+    fetchTemplateFilterComboData(templateCode, row.code, row)
+        .then(function (res) {
+            var list = unwrapComboDataList(res);
+            if (!list.length) {
+                fillFromLevelRows();
+                return;
+            }
+            var looksLikeCategoryLeak = list.some(function (item) {
+                var t = String(prop(item, ['Desp', 'desp', 'Code', 'code']) || '').trim().toLowerCase();
+                return t === 'finish' || t === 'raw' || t === 'grey';
+            }) && !list.some(function (item) {
+                var t = String(prop(item, ['Desp', 'desp', 'Code', 'code']) || '').trim();
+                return /date/i.test(t);
+            });
+            if (looksLikeCategoryLeak) {
+                fillFromLevelRows();
+                return;
+            }
+            fillAndFinish(res);
+        })
+        .catch(function () {
+            if (G_OL_LevelRows && G_OL_LevelRows.length) {
+                fillFromLevelRows();
+                return;
+            }
+            OrderLoadReportService.GetLevel(templateCode)
+                .then(function (res) {
+                    G_OL_LevelRows = unwrapApiList(res);
+                    fillFromLevelRows();
+                })
+                .catch(function () {
+                    if ($field.length) $field.removeAttr('title');
+                    toastr.error('Could not load Date Field options.');
+                });
+        });
+}
+
+function resolveDynamicComboNameColumn(row) {
+    var configNameCol = comboResultColumn(row.comboQuery || '') || 'Desp';
+    if (/,\s*Value\b/i.test(row.comboQuery || '')) configNameCol = 'Value';
+    if (/,\s*Category\b/i.test(row.comboQuery || '')) configNameCol = 'Category';
+    if (/,\s*AccountDesp\b/i.test(row.comboQuery || '')) configNameCol = 'AccountDesp';
+    if (/select\s+ItemName\b/i.test(row.comboQuery || '')) configNameCol = 'ItemName';
+    if (/,\s*PartyName\b/i.test(row.comboQuery || '') || /select\s+PartyName\b/i.test(row.comboQuery || '')) configNameCol = 'PartyName';
+    if (/,\s*CustomerName\b/i.test(row.comboQuery || '') || /select\s+CustomerName\b/i.test(row.comboQuery || '')) configNameCol = 'CustomerName';
+    if (/,\s*PersonName\b/i.test(row.comboQuery || '')) configNameCol = 'PersonName';
+    return configNameCol;
+}
+
+function loadDynamicComboOptionsAsync(row) {
+    if (!row || !(row.code > 0)) return Promise.resolve();
+
+    if (isDynamicDateFieldCombo(row)) {
+        return new Promise(function (resolve) {
+            loadConfigDateFieldComboOptions(row);
+            resolve();
+        });
+    }
+
+    var templateCode = parseInt($('#ddlTemplate').val(), 10) || 0;
+    var configNameCol = resolveDynamicComboNameColumn(row);
+    var $field = $('#olDynField_' + row.code);
+    var $sel = $('#ddlDynFilter_' + row.code);
+    if (!$sel.length) return Promise.resolve();
+
+    /* Same combo can be requested again while an older request is still running (parent changed quickly, template
+       re-rendered ...). Only the LATEST request may write into the dropdown, otherwise a slow unfiltered answer
+       overwrites the filtered list. */
+    var loadSeq = (G_OL_ComboLoadSeq[row.code] = (G_OL_ComboLoadSeq[row.code] || 0) + 1);
+    function isStaleLoad() {
+        return G_OL_ComboLoadSeq[row.code] !== loadSeq || !document.body.contains($sel[0]);
+    }
+
+    return fetchTemplateFilterComboData(templateCode, row.code, row)
+        .then(function (res) {
+            if (isStaleLoad()) return;
+            if (!unwrapComboDataList(res).length) {
+                return Promise.reject(new Error('Empty combo list'));
+            }
+            populateDynamicComboSelect($sel, res, row, configNameCol);
+            afterDynamicComboOptionsLoaded(row, $field);
+        })
+        .catch(function (err) {
+            if (isStaleLoad()) return;
+            var failure = describeComboLoadFailure(err);
+            if ($field.length) {
+                $field.attr('title', failure.title);
+            }
+            /* A real failure (HTTP error / script error) keeps whatever was already loaded; only a genuinely empty
+               answer (parent selection matches nothing) clears the list. */
+            var hasLoadedOptions = $sel.find('option').filter(function () {
+                return String($(this).val()) !== '0';
+            }).length > 0;
+            if (failure.empty || !hasLoadedOptions) {
+                if (row.multi === 'Y') {
+                    bindDropdown($sel, [], resolveDynamicComboNameColumn(row), 'Select ' + (row.displayName || 'filter') + '...');
+                } else {
+                    $sel.empty().append($('<option/>', { value: '0', text: 'All' }));
+                }
+            }
+            if (window.console && console.warn) {
+                console.warn('Combo not loaded: ' + (row.displayName || row.code) + ' - ' + failure.reason, err);
+            }
+            notifyComboLoadFailureOnce(failure);
+        });
+}
+
+var G_OL_ComboLoadSeq = {};
+var G_OL_ComboFailureShown = {};
+
+/**
+ * Why a combo stayed empty. GetTemplateFilterComboData returns the SQL error text on HTTP 500 and the call runs with
+ * suppressErrorToast, so without this a missing API (404) or a bad ComboQuery looks the same as "no data".
+ */
+function describeComboLoadFailure(err) {
+    if (err && err.message === 'Empty combo list') {
+        return { empty: true, reason: 'the ComboQuery returned no rows', title: 'No options returned for this filter' };
+    }
+    var xhr = err && err.xhr;
+    var status = xhr && xhr.status ? xhr.status : 0;
+    var body = xhr && xhr.responseText
+        ? String(xhr.responseText).replace(/\s+/g, ' ').trim().substring(0, 300)
+        : '';
+    var reason;
+    if (status === 404 || status === 405) {
+        reason = 'API OrderLoadReport/GetTemplateFilterComboData not found (HTTP ' + status + ') - deploy the Web API method';
+    } else if (status) {
+        reason = 'HTTP ' + status + (body ? ': ' + body : '');
+    } else {
+        reason = (err && err.message) ? String(err.message) : 'no response from the API';
+    }
+    return { empty: false, reason: reason, title: 'Dropdown options could not be loaded - ' + reason };
+}
+
+/** One toast per distinct reason (four combos failing for the same reason must not show four toasts). */
+function notifyComboLoadFailureOnce(failure) {
+    if (!failure || failure.empty) return;
+    if (G_OL_ComboFailureShown[failure.reason]) return;
+    G_OL_ComboFailureShown[failure.reason] = true;
+    if (typeof toastr !== 'undefined') {
+        toastr.error('Filter dropdowns could not be loaded: ' + failure.reason);
+    }
+}
+
+function loadDynamicComboOptions(row) {
+    loadDynamicComboOptionsAsync(row);
+}
+
+/** True while loadAllDynamicCombosSequential runs: parents are loaded before children, no extra cascade reloads needed. */
+var G_OL_ComboBulkLoading = false;
+
+function loadAllDynamicCombosSequential() {
+    var combos = sortDynamicComboFiltersForRender((G_OL_DynamicFilters || []).filter(function (row) {
+        return String(row.controlType || '').toUpperCase() === 'COMBO';
+    }));
+    G_OL_ComboBulkLoading = true;
+    var chain = Promise.resolve();
+    combos.forEach(function (row) {
+        chain = chain.then(function () { return loadDynamicComboOptionsAsync(row); });
+    });
+    var done = function () { G_OL_ComboBulkLoading = false; };
+    return chain.then(done, done);
+}
+
+function isClientNatureParentComboName(name) {
+    var n = String(name || '').trim().toLowerCase();
+    return n === 'customername' || n === 'partyname' || n === 'party name';
+}
+
+function sortDynamicComboFiltersForRender(combos) {
+    return (combos || []).slice().sort(function (a, b) {
+        if (isDynamicDateFieldCombo(a)) return -1;
+        if (isDynamicDateFieldCombo(b)) return 1;
+        var an = String(a.displayName || '').trim().toLowerCase();
+        var bn = String(b.displayName || '').trim().toLowerCase();
+        if (an === 'client nature' && isClientNatureParentComboName(bn)) return -1;
+        if (bn === 'client nature' && isClientNatureParentComboName(an)) return 1;
+        if (an === 'item category' && (bn === 'item name' || bn === 'item type')) return -1;
+        if (bn === 'item category' && (an === 'item name' || an === 'item type')) return 1;
+        if (an === 'item type' && bn === 'item name') return -1;
+        if (an === 'item name' && bn === 'item type') return 1;
+        return (a.sortOrder || a.code) - (b.sortOrder || b.code);
+    });
+}
+
+function renderDynamicComboFilters() {
+    clearDynamicFilterHost();
+    var combos = sortDynamicComboFiltersForRender((G_OL_DynamicFilters || []).filter(function (row) {
+        return String(row.controlType || '').toUpperCase() === 'COMBO';
+    }));
+
+    combos.forEach(function (row) {
+        var selectId = 'ddlDynFilter_' + row.code;
+        var isDateField = isDynamicDateFieldCombo(row);
+        var multiple = (row.multi === 'Y' && !isDateField) ? ' multiple' : '';
+        var useHeaderDateMirror = isDateField && configHasTextHeaderDates();
+        var modalDatesHtml = '';
+        if (useHeaderDateMirror) {
+            var fromRow = findTextHeaderDateRow('from');
+            var toRow = findTextHeaderDateRow('to');
+            var mirrorItems = '';
+            if (fromRow) {
+                var fromLbl = escapeHtml(headerDateLabelFromConfigRow(fromRow, 'From'));
+                var mirrorFromId = 'olMirrorFrom_' + row.code;
+                mirrorItems += '<div class="ol-dyn-date-mirror-item">' +
+                    '<label class="form-label ol-dyn-date-mirror-label" for="' + mirrorFromId + '"><span class="ol-mirror-from-label">' + fromLbl + '</span></label>' +
+                    '<input type="date" id="' + mirrorFromId + '" class="form-control form-control-sm box_border ol-mirror-from" aria-label="' + fromLbl + '" />' +
+                    '</div>';
+            }
+            if (toRow) {
+                var toLbl = escapeHtml(headerDateLabelFromConfigRow(toRow, 'To'));
+                var mirrorToId = 'olMirrorTo_' + row.code;
+                mirrorItems += '<div class="ol-dyn-date-mirror-item">' +
+                    '<label class="form-label ol-dyn-date-mirror-label" for="' + mirrorToId + '"><span class="ol-mirror-to-label">' + toLbl + '</span></label>' +
+                    '<input type="date" id="' + mirrorToId + '" class="form-control form-control-sm box_border ol-mirror-to" aria-label="' + toLbl + '" />' +
+                    '</div>';
+            }
+            modalDatesHtml = mirrorItems
+                ? '<div class="ol-config-header-date-mirror"><div class="ol-dyn-date-mirror-pair">' + mirrorItems + '</div></div>'
+                : '';
+        } else if (isDateField && !configHasTextHeaderDates()) {
+            modalDatesHtml = '<div class="ol-level-dates ol-config-date-range-host"></div>';
+        }
+        var bodyHtml;
+        var fieldClass = 'ol-filter-field ol-filter-multiselect' + (isDateField ? ' ol-dyn-date-field' : '');
+        var fieldInner;
+        if (isDateField && useHeaderDateMirror) {
+            fieldInner = '<div class="ol-dyn-date-inline">' +
+                '<div class="ol-dyn-date-inline-combo">' +
+                '<label for="' + selectId + '" class="form-label"><span>' + escapeHtml(row.displayName || 'Date Field') + '</span></label>' +
+                '<select id="' + selectId + '" class="form-control form-control-sm box_border ol-dyn-date-field-select"></select>' +
+                '</div>' +
+                modalDatesHtml +
+                '</div>';
+        } else {
+            bodyHtml = '<div class="ol-level-row">' +
+                '<select id="' + selectId + '" class="form-control form-control-sm box_border' + (multiple ? ' ol-multi-select' : '') + '"' + multiple + '>' +
+                (isDateField ? '' : '<option value="0">All</option>') + '</select>' +
+                modalDatesHtml +
+                '</div>';
+            fieldInner = '<label for="' + selectId + '" class="form-label"><span>' + escapeHtml(row.displayName || 'Filter') + '</span></label>' +
+                bodyHtml;
+        }
+        var html = '<div class="' + fieldClass + '" id="olDynField_' + row.code + '">' +
+            fieldInner +
+            '</div>';
+        $('#olDynamicFilterHost').append(html);
+    });
+
+    syncConfigDateFieldModalRangeUi();
+    applyConfigTextHeaderDateLabels();
+    syncDateFieldModalHeaderMirror();
+    loadAllDynamicCombosSequential().then(function () {
+        applyAllDynamicComboDefaults();
+        bindDynamicComboCascade();
+        var templateCode = parseInt($('#ddlTemplate').val(), 10) || 0;
+        sortDynamicComboFiltersForRender((G_OL_DynamicFilters || []).filter(function (row) {
+            return String(row.controlType || '').toUpperCase() === 'COMBO';
+        })).forEach(function (row) {
+            if (isDynamicDateFieldCombo(row)) return;
+            /* Only a parent that now HAS a selection (e.g. Item Category default "Finish") narrows its children;
+               children of an unselected parent were already loaded unfiltered during the sequential load. */
+            if (!dynamicSelectHasValue($('#ddlDynFilter_' + row.code))) return;
+            getDynamicFilterRowsDependingOn(row.displayName).forEach(function (child) {
+                loadDynamicComboOptionsAsync(child);
+            });
+        });
+    });
+}
+
+/** When Text From/To are outside, Date Field combo stays in modal only; else show modal From/To under that combo. */
+function syncConfigDateFieldModalRangeUi() {
+    var dfCombo = getDynamicDateFieldComboRow();
+    var showModalDates = !!dfCombo && hasActiveTemplateFilterConfiguration() && !configHasTextHeaderDates();
+    var $levelDates = $('#olLevelDates');
+
+    toggleFilterField('olFieldLevel', false);
+
+    if (showModalDates && $levelDates.length) {
+        var $host = $('#olDynamicFilterHost .ol-config-date-range-host').first();
+        if ($host.length) {
+            $host.append($levelDates.removeClass('ol-hidden'));
+        }
+        ensureLevelDateRangeDefaults();
+        syncModalDatesFromHeader();
+    } else if ($levelDates.length && $('#olFieldLevel .ol-level-row').length) {
+        $('#olFieldLevel .ol-level-row').append($levelDates.addClass('ol-hidden'));
+    }
+
+    if (configHasTextHeaderDates()) {
+        syncDateFieldModalHeaderMirror();
+    }
+}
+
+function resetDynamicFilterSelections() {
+    (G_OL_DynamicFilters || []).forEach(function (row) {
+        if (String(row.controlType || '').toUpperCase() !== 'COMBO') return;
+        var $sel = $('#ddlDynFilter_' + row.code);
+        if (!$sel.length) return;
+        if (isDynamicDateFieldCombo(row)) {
+            if ($sel.find('option').length) $sel.prop('selectedIndex', 0);
+            applySelectedConfigDateFieldCombo();
+            return;
+        }
+        if (row.defaultValue && row.defaultValue.indexOf('{{') < 0) {
+            applyDynamicComboDefault(row);
+            return;
+        }
+        if (row.multi === 'Y') setCheckboxDropdownValue($sel, ['0']);
+        else $sel.val('0');
+    });
+}
+
+function loadDynamicTemplateFilters(tpl) {
+    tpl = tpl || getSelectedTemplate();
+    var code = parseInt(tpl && tpl.code, 10) || 0;
+    var seq = ++G_OL_FilterLoadSeq;
+
+    if (!code) {
+        G_OL_DynamicFilters = [];
+        G_OL_HasDynamicComboFilters = false;
+        clearDynamicFilterHost();
+        return;
+    }
+
+    var applyRows = function (rows) {
+        if (seq !== G_OL_FilterLoadSeq) return;
+        if ((parseInt($('#ddlTemplate').val(), 10) || 0) !== code) return;
+
+        G_OL_FilterConfigFetchPending = false;
+
+        G_OL_DynamicFilters = (rows || []).filter(function (row) {
+            return (parseInt(row.templateCode, 10) || 0) === code && row.isActive !== 'N' && row.code > 0;
+        }).sort(function (a, b) {
+            return (a.sortOrder || a.code) - (b.sortOrder || b.code);
+        });
+
+        G_OL_HasDynamicComboFilters = G_OL_DynamicFilters.some(function (row) {
+            return String(row.controlType || '').toUpperCase() === 'COMBO';
+        });
+
+        if (usesTemplateFilterConfigurationUi(tpl)) {
+            hideStaticComboFilters();
+        } else if (G_OL_HasDynamicComboFilters) {
+            hideStaticComboFilters();
+        } else {
+            clearDynamicFilterHost();
+        }
+
+        applyDynamicDateDefaults(tpl);
+        syncOrderLoadTemplateDateFieldUi(tpl);
+        syncFilterFieldsFromTemplateFilterConfiguration(tpl);
+        if (G_OL_HasDynamicComboFilters) renderDynamicComboFilters();
+        applyFilterActiveColors();
+        updateFilterButtonState();
+        updateModalEmptyState();
+
+        var needsFinYear = (G_OL_DynamicFilters || []).some(function (row) {
+            return isDynamicDateRow(row) && String(row.defaultValue || '').indexOf('{{FinYear') >= 0;
+        });
+        if (needsFinYear && typeof OrderLoadReportService.GetDefaultReportDates === 'function') {
+            OrderLoadReportService.GetDefaultReportDates(code, '')
+                .then(function (res) {
+                    if (seq !== G_OL_FilterLoadSeq) return;
+                    unwrapApiList(res).forEach(function (item) {
+                        var param = String(prop(item, ['ProcedureParameter', 'procedureParameter']) || '').toUpperCase();
+                        var iso = apiDateToIso(prop(item, ['ResolvedDefaultValue', 'resolvedDefaultValue']));
+                        if (!iso) return;
+                        if (param === 'FROMDATE') $('#txtFromDate').val(iso);
+                        if (param === 'TODATE') $('#txtToDate').val(iso);
+                    });
+                })
+                .catch(function () { });
+        }
+    };
+
+    var useCache = function (list) {
+        applyRows((list || []).map(function (row) {
+            var mapped = mapDynamicFilterRow(row);
+            if (!mapped.resolvedDefaultValue && mapped.defaultValue) {
+                mapped.resolvedDefaultValue = resolveDynamicDefaultValue(mapped.defaultValue);
+            }
+            return mapped;
+        }));
+    };
+
+    var cacheKey = 'tpl_' + code;
+    var cachedRows = G_OL_FilterConfigCache && G_OL_FilterConfigCache.key === cacheKey
+        ? G_OL_FilterConfigCache.rows
+        : null;
+
+    if (cachedRows) {
+        useCache(cachedRows);
+        return;
+    }
+
+    G_OL_FilterConfigFetchPending = true;
+
+    ensureFinYearTokens().then(function () {
+        if (seq !== G_OL_FilterLoadSeq) return;
+
+        fetchTemplateFilterConfigurationRows(code)
+            .then(function (list) {
+                if (seq !== G_OL_FilterLoadSeq) return;
+                G_OL_FilterConfigCache = { key: cacheKey, rows: list };
+                useCache(list);
+            })
+            .catch(function () {
+                if (seq !== G_OL_FilterLoadSeq) return;
+                G_OL_FilterConfigFetchPending = false;
+                G_OL_DynamicFilters = [];
+                G_OL_HasDynamicComboFilters = false;
+                clearDynamicFilterHost();
+                syncOrderLoadTemplateDateFieldUi(tpl);
+                applyStaticDateFieldsFromTemplate(tpl);
+                applyLevelToFiltersStaticCombosOnly(tpl);
+                updateModalEmptyState();
+            });
+    });
+}
+
+/** Static modal combos when F_TemplateFilterConfiguration is unavailable. */
+function applyLevelToFiltersStaticCombosOnly(tpl) {
+    tpl = tpl || getSelectedTemplate();
+    if (usesTemplateFilterConfigurationUi(tpl) || G_OL_HasDynamicComboFilters) return;
+    toggleFilterField('olFieldWareHouse', isFlagY(tpl.showWareHouse));
+    toggleFilterField('olFieldItemGroup', isFlagY(tpl.showItemGroup));
+    toggleFilterField('olFieldProcess', isFlagY(tpl.showProcess));
+    toggleFilterField('olFieldMarketingMan', isFlagY(tpl.showMarketingMan) || isFlagY(tpl.showAsPerMarketingPerson));
+    toggleFilterField('olFieldOrderNo', isFlagY(tpl.showOrderNo));
+    toggleFilterField('olFieldItemType', isFlagY(tpl.showItemType));
+    toggleFilterField('olFieldItemName', isFlagY(tpl.showItemName));
+    applyOtherFiltersVisibility(tpl);
+}
+
 function buildReportConditions(tpl) {
     var filterParts = [];
     var queryParts = [];
@@ -2135,9 +4046,14 @@ function buildReportConditions(tpl) {
     var usesQuery = !viewBased && (procedureUsesParam(tpl, 'QueryCondition') || isStockSafe);
     var usesDateParams = !viewBased && (procedureUsesParam(tpl, 'FromDate') || procedureUsesParam(tpl, 'ToDate'));
     var fromIso = $('#txtFromDate').val();
-    var toIso = $('#txtToDate').val();
-    // Master + OtherFilter travel together (same routing rules)
-    var masterParts = buildMasterFilterParts(tpl).concat(buildOtherFilterParts(tpl));
+    var toIso = resolveReportToIsoForRequest(tpl, fromIso, $('#txtToDate').val());
+
+    if (G_OL_HasDynamicComboFilters || dynamicDateRowsHaveQuery() || hasActiveTemplateFilterConfiguration()) {
+        return buildConditionsFromFilterConfiguration(tpl, usesDateParams, fromIso, toIso);
+    }
+    // OtherFilter field names come from the template row. Do not add static column SQL
+    // (ItemMaster_Code, GodownMaster_Code, OrderDate, ...) — the procedure binds only returned columns.
+    var masterParts = buildOtherFilterParts(tpl);
     var dateField = getTemplateDateField(tpl);
 
     // Default: if procedure params unknown, prefer QueryCondition (stock-safe)
@@ -2150,26 +4066,18 @@ function buildReportConditions(tpl) {
         usesQuery = true;
     }
 
-    if (!usesDateParams) {
-        var sqlDateField = toSqlFieldName(dateField);
-        if (isFlagY(tpl.showFromDate) && dateField && fromIso) {
-            filterParts.push(" AND " + sqlDateField + " >= CAST('" + isoToApiDate(fromIso) + "' AS DATE)");
-        }
-        if (isFlagY(tpl.showToDate) && dateField && toIso) {
-            filterParts.push(" AND " + sqlDateField + " <= CAST('" + isoToApiDate(toIso) + "' AS DATE)");
-        }
-    }
-
     if (usesQuery) {
-        queryParts = masterParts.slice();
+        queryParts = queryParts.concat(masterParts);
     }
 
     if (usesFilter && !usesQuery) {
         filterParts = filterParts.concat(masterParts);
+    } else if (viewBased) {
+        queryParts = queryParts.concat(masterParts);
     }
 
     if (usesFilter && usesQuery) {
-        // Dates (if any) stay in FilterCondition; item/other filters only in QueryCondition
+        // Procedure with both params: dates in FilterCondition; item/other filters in QueryCondition
         filterParts = filterParts.filter(function (part) {
             return part.indexOf(dateField) >= 0;
         });
@@ -2185,10 +4093,10 @@ function buildReportConditions(tpl) {
         }
     }
 
-    return {
+    return routeConditionsForReportSource({
         filterCondition: filterParts.join(''),
         queryCondition: queryParts.join('')
-    };
+    }, tpl);
 }
 
 function toIsoDate(d) {
@@ -2203,6 +4111,139 @@ function isoToApiDate(iso) {
     if (p.length !== 3) return iso;
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return p[2] + '-' + months[parseInt(p[1], 10) - 1] + '-' + p[0];
+}
+
+/** dd/mm/yyyy for @FromDate/@ToDate — legacy procs use CONVERT(..., 103); dd-MMM-yyyy fails there. */
+function isoToProcDateParam(iso) {
+    var text = isoToSqlCastLiteral(iso);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+        return String(iso || '').trim();
+    }
+    var parts = text.split('-');
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
+/** yyyy-mm-dd for CAST(... AS DATE) — locale-safe on SQL Server. */
+function isoToSqlCastLiteral(iso) {
+    var text = String(iso || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+    return apiDateToIso(text) || text;
+}
+
+function rewriteDisplayDateColumnsInSql(sql, tpl) {
+    if (!sql || !tpl) return sql;
+    var physical = toSqlFieldName(getTemplateDateField(tpl));
+    if (!physical) return sql;
+    var out = String(sql);
+    var label = fieldNameToLabel(getTemplateDateField(tpl), 'Order Date');
+    out = out.replace(/\[\s*Order\s*Date\s*\]/gi, physical);
+    if (label) {
+        var esc = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        out = out.replace(new RegExp('\\[\\s*' + esc + '\\s*\\]', 'gi'), physical);
+    }
+    return out;
+}
+
+/** Receive Date -> [Receive Date]; alias.Receive Date -> alias.[Receive Date]. Single words / already bracketed: unchanged. */
+function bracketSpacedColumnName(name) {
+    var text = String(name || '').trim();
+    if (!text || !/\s/.test(text) || text.indexOf('[') >= 0) return text;
+    var dot = text.indexOf('.');
+    if (dot > 0 && !/\s/.test(text.slice(0, dot))) {
+        return text.slice(0, dot + 1) + '[' + text.slice(dot + 1).trim().replace(/\]/g, ']]') + ']';
+    }
+    return '[' + text.replace(/\]/g, ']]') + ']';
+}
+
+/**
+ * F_TemplateFilterConfiguration.QueryCondition may hold the date column without brackets when its name has a space:
+ *   AND TRY_CAST(Receive Date AS DATE) >= CAST('...' AS DATE)   ->   AND TRY_CAST([Receive Date] AS DATE) >= ...
+ *   AND Receive Date >= CAST('...' AS DATE)                      ->   AND [Receive Date] >= ...
+ * Only adds brackets (never renames a column); single-word and already bracketed names are left alone.
+ */
+function bracketSpacedDateColumnsInSql(sql) {
+    if (!sql) return sql;
+    var word = '[A-Za-z_]\\w*';
+    var notKeyword = '(?!(?:AND|OR|NOT|WHERE)\\b)';
+    var ident = word + '(?:\\.' + word + ')?';
+
+    // TRY_CAST(Receive Date AS DATE) / CAST(Receive Date AS DATE)
+    var reCast = new RegExp(
+        '(\\b(?:TRY_)?CAST\\s*\\(\\s*)(' + ident + '(?:\\s+(?!AS\\s+DATE\\b)' + notKeyword + word + ')+)(\\s+AS\\s+DATE\\s*\\))',
+        'gi'
+    );
+    var out = String(sql).replace(reCast, function (_, pre, col, post) {
+        // CAST('2026-07-02' AS DATE) has a quoted literal, never matches: only identifiers get here.
+        return pre + bracketSpacedColumnName(col) + post;
+    });
+
+    // AND Receive Date >= CAST('2026-07-02' AS DATE)
+    var reCompare = new RegExp(
+        '((?:^|\\b(?:AND|OR|WHERE)\\s+|\\()\\s*)(?!(?:AND|OR|NOT|WHERE|CAST|TRY_CAST|CONVERT)\\b)'
+        + '(' + ident + '(?:\\s+' + notKeyword + word + ')+)'
+        + '(\\s*(?:>=|<=|<>|=|>|<)\\s*(?:TRY_)?CAST\\s*\\()',
+        'gi'
+    );
+    out = out.replace(reCompare, function (_, pre, col, post) {
+        return pre + bracketSpacedColumnName(col) + post;
+    });
+    return out;
+}
+
+function sqlDateCompareExpression(columnRef) {
+    var col = String(columnRef || '').trim();
+    if (!col) return '';
+    if (/TRY_CAST\s*\(/i.test(col)) return col;
+    var bare = col.replace(/^\[|\]$/g, '');
+    if (/\s/.test(bare)) return 'TRY_CAST(' + bracketSpacedColumnName(col) + ' AS DATE)';
+    return col;
+}
+
+function simplifyPhysicalDateTryCast(sql) {
+    if (!sql) return sql;
+    return String(sql).replace(
+        /TRY_CAST\((\[[A-Za-z0-9_]+\]|[A-Za-z_][A-Za-z0-9_.]*)\s+AS\s+DATE\)/gi,
+        function (_, col) {
+            var bare = col.replace(/^\[|\]$/g, '');
+            return /\s/.test(bare) ? ('TRY_CAST(' + col + ' AS DATE)') : col;
+        }
+    );
+}
+
+function finalizeReportSqlDateConditions(condition, tpl) {
+    var text = normalizeReportCondition(condition);
+    text = rewriteDisplayDateColumnsInSql(text, tpl);
+    text = bracketSpacedDateColumnsInSql(text);
+    text = applyTryCastToDateCompareFragment(text);
+    text = simplifyPhysicalDateTryCast(text);
+    return text;
+}
+
+function applyTryCastToDateCompareFragment(frag) {
+    if (!frag) return frag;
+    var text = String(frag).replace(
+        /CAST\s*\(\s*'([^']*)'\s*AS\s*DATE\s*\)/gi,
+        function (_, raw) {
+            var iso = isoToSqlCastLiteral(apiDateToIso(raw) || raw);
+            return "CAST('" + iso.replace(/'/g, "''") + "' AS DATE)";
+        }
+    );
+    if (!/TRY_CAST\s*\(/i.test(text)) {
+        text = text.replace(
+            /(\sAND\s+)(\[[^\]]+\]|[A-Za-z_][\w.]*)(\s*(?:>=|<=|=|>|<)\s*CAST\s*\(\s*'[^']*'\s*AS\s*DATE\s*\))/gi,
+            function (_, and, col, rest) {
+                return and + sqlDateCompareExpression(col) + rest;
+            }
+        );
+    }
+    return text;
+}
+
+function buildSqlDateCompareFragment(sqlDateField, operator, iso) {
+    var literal = isoToSqlCastLiteral(iso);
+    if (!sqlDateField || !literal) return '';
+    var expr = sqlDateCompareExpression(String(sqlDateField).trim());
+    return ' AND ' + expr + ' ' + operator + " CAST('" + literal.replace(/'/g, "''") + "' AS DATE)";
 }
 
 function setPageLoader(visible, text) {
@@ -2336,41 +4377,10 @@ function extractOrderLoadReportErrorMessage(payload, err) {
 
 function formatOrderLoadReportErrorMessage(rawMsg, tpl) {
     var msg = String(rawMsg || '').trim();
-    if (!msg) {
+    if (!msg || msg.toLowerCase() === 'null') {
         return 'Report request failed.';
     }
-
-    if (/report\s*source\s*not\s*configured|view\s*not\s*found/i.test(msg)) {
-        return 'Report is not configured for the selected template.';
-    }
-
-    if (/^(error|parsererror|not found|internal server error):?\s*/i.test(msg)) {
-        return 'Report request failed.';
-    }
-
     return msg;
-}
-
-function canAutoRefreshReportOnDateChange() {
-    if (G_OL_LoadingReport) return false;
-    if (!$('#ddlTemplate').val()) return false;
-
-    var tpl = getSelectedTemplate();
-    if (!tpl.code || !tpl.desp) return false;
-
-    var fromIso = $('#txtFromDate').val();
-    var toIso = $('#txtToDate').val();
-
-    if (isFlagY(tpl.showFromDate) && normalizeFieldName(tpl.fieldForDate) && !fromIso) return false;
-    if (isFlagY(tpl.showToDate) && normalizeFieldName(tpl.fieldForDate) && !toIso) return false;
-    if (isFlagY(tpl.showFromDate) && isFlagY(tpl.showToDate) && fromIso && toIso && fromIso > toIso) return false;
-
-    return true;
-}
-
-function refreshReportOnDateChange() {
-    if (!canAutoRefreshReportOnDateChange()) return;
-    loadReportData();
 }
 
 function assertValidOrderLoadReportResponse(response, tpl) {
@@ -2384,30 +4394,74 @@ function assertValidOrderLoadReportResponse(response, tpl) {
     }
 }
 
-function loadReportData() {
-    if (G_OL_LoadingReport) return;
-
-    var tpl = getSelectedTemplate();
+function validateOrderLoadReportTemplate(tpl) {
     if (!tpl.code || !tpl.desp) {
-        toastr.warning('Please select Template.');
-        return;
+        return 'Please select Template.';
     }
 
     var fromIso = $('#txtFromDate').val();
     var toIso = $('#txtToDate').val();
-    if (isFlagY(tpl.showFromDate) && normalizeFieldName(tpl.fieldForDate) && !fromIso) {
-        toastr.warning('Please select ' + fieldNameToLabel(tpl.fieldForDate, 'Order Date') + ' From.');
-        return;
+    if (isAsOnDateMode(tpl) && normalizeFieldName(tpl.fieldForDate) && !toIso) {
+        return 'Please select As On date.';
     }
-    if (isFlagY(tpl.showToDate) && normalizeFieldName(tpl.fieldForDate) && !toIso) {
-        toastr.warning('Please select ' + fieldNameToLabel(tpl.fieldForDate, 'Order Date') + ' To.');
-        return;
+    if (isFromDateRequired(tpl) && !fromIso) {
+        var fromWhere = isLevelDateRangeAvailable() && !shouldShowStaticFromDate(tpl)
+            ? ' (Filters → Date Field)'
+            : '';
+        return 'Please select ' + fieldNameToLabel(tpl.fieldForDate, 'Order Date') + ' From' + fromWhere + '.';
     }
-    if (isFlagY(tpl.showFromDate) && isFlagY(tpl.showToDate) && fromIso > toIso) {
-        toastr.warning('From Date must be less than or equal to To Date.');
-        return;
+    if (isToDateRequired(tpl) && !toIso) {
+        var toWhere = isLevelDateRangeAvailable() && !shouldShowStaticToDate(tpl)
+            ? ' (Filters → Date Field)'
+            : '';
+        return 'Please select ' + fieldNameToLabel(tpl.fieldForDate, 'Order Date') + ' To' + toWhere + '.';
+    }
+    if (isFromDateRequired(tpl) && isToDateRequired(tpl) && fromIso && toIso && fromIso > toIso) {
+        return 'From Date must be less than or equal to To Date.';
     }
 
+    return '';
+}
+
+function resolveReportToIsoForRequest(tpl, fromIso, toIso) {
+    var to = String(toIso || '').trim();
+    if (hasActiveTemplateFilterConfiguration() && !dynamicConfigHasDateFilter('to')) {
+        return '';
+    }
+    if (isAsOnDateMode(tpl)) return to;
+    if (to) return to;
+    if (!String(fromIso || '').trim()) return '';
+    if (hasActiveTemplateFilterConfiguration() && !dynamicConfigHasDateFilter('to') && !isLevelDateRangeAvailable()) {
+        return '';
+    }
+    if (!isViewBasedTemplate(tpl)) {
+        return getDefaultToDate();
+    }
+    if (shouldShowStaticToDate(tpl) || procedureUsesParam(tpl, 'ToDate')) {
+        return getDefaultToDate();
+    }
+    return '';
+}
+
+function resolveProcDateParamForRequest(tpl, iso, kind) {
+    var value = String(iso || '').trim();
+    if (!value) return '';
+    if (kind === 'from') {
+        if (!isFromDateRequired(tpl) && !(isLevelDateRangeAvailable() && value)) return '';
+        return isoToProcDateParam(value);
+    }
+    if (!isToDateRequired(tpl) && !(isLevelDateRangeAvailable() && value)) return '';
+    return isoToProcDateParam(value);
+}
+
+function buildOrderLoadReportRequestParams(tpl) {
+    var validationMsg = validateOrderLoadReportTemplate(tpl);
+    if (validationMsg) {
+        return { error: validationMsg };
+    }
+
+    var fromIso = $('#txtFromDate').val();
+    var toIso = resolveReportToIsoForRequest(tpl, fromIso, $('#txtToDate').val());
     var auth = {};
     try {
         auth = JSON.parse(sessionStorage.getItem('authKey') || '{}');
@@ -2423,14 +4477,17 @@ function loadReportData() {
     }
 
     var sizeCodes = isOrderLoadSizeParameterFilterEnabled(tpl) ? String(G_OL_ItemSizeMaster_Codes || '').trim() : '';
-    var params = {
+
+    var fromParam = resolveProcDateParamForRequest(tpl, fromIso, 'from');
+    var toParam = resolveProcDateParamForRequest(tpl, toIso, 'to');
+
+    return {
         reportType: String(tpl.desp || '').trim(),
         templateCode: tpl.code,
-        filterCondition: normalizeReportCondition(conditions.filterCondition),
-        // Size filter travels only via ItemSizeMaster_Codes; SP builds FilterCondition/QueryCondition.
-        queryCondition: normalizeReportCondition(sizeCodes ? '' : conditions.queryCondition),
-        fromDate: (isFlagY(tpl.showFromDate) && fromIso) ? isoToApiDate(fromIso) : '',
-        toDate: (isFlagY(tpl.showToDate) && toIso) ? isoToApiDate(toIso) : '',
+        filterCondition: finalizeReportSqlDateConditions(conditions.filterCondition, tpl),
+        queryCondition: finalizeReportSqlDateConditions(sizeCodes ? '' : conditions.queryCondition, tpl),
+        fromDate: fromParam,
+        toDate: toParam,
         userMasterCode: auth.UserMaster_Code || 0,
         marketingManMasterCode: marketingManCode,
         godownMasterCode: filterCodes.godownMasterCode,
@@ -2441,6 +4498,78 @@ function loadReportData() {
         buyerPOMasterCode: filterCodes.buyerPOMasterCode,
         itemSizeMasterCodes: sizeCodes
     };
+}
+
+function resolveOrderLoadProcedureParamValue(paramName, tpl, requestParams, reportFileName) {
+    var key = String(paramName || '').trim().toUpperCase();
+    switch (key) {
+        case 'F_TEMPLETEMASTER_CODE':
+            return String(requestParams.templateCode || (tpl && tpl.code) || 0);
+        case 'USERMASTER_CODE':
+            return String(requestParams.userMasterCode || 0);
+        case 'FROMDATE':
+            return String(requestParams.fromDate || '');
+        case 'TODATE':
+            return String(requestParams.toDate || '');
+        case 'FILTERCONDITION':
+            return String(requestParams.filterCondition || '');
+        case 'QUERYCONDITION':
+            return String(requestParams.queryCondition || '');
+        case 'MARKETINGMANMASTER_CODE':
+            return String(requestParams.marketingManMasterCode || 0);
+        case 'GODOWNMASTER_CODE':
+            return String(requestParams.godownMasterCode || 0);
+        case 'ITEMGROUPMASTER_CODE':
+            return String(requestParams.itemGroupMasterCode || 0);
+        case 'PROCESSMASTER_CODE':
+            return String(requestParams.processMasterCode || 0);
+        case 'ITEMTYPEMASTER_CODE':
+            return String(requestParams.itemTypeMasterCode || 0);
+        case 'ITEMMASTER_CODE':
+            return String(requestParams.itemMasterCode || 0);
+        case 'BUYERPOMASTER_CODE':
+            return String(requestParams.buyerPOMasterCode || 0);
+        case 'ITEMSIZEMASTER_CODES':
+            return String(requestParams.itemSizeMasterCodes || '');
+        case 'REPORTFILENAME':
+            return String(reportFileName || '');
+        case 'DATABASELOCATION_CODE':
+        case 'SUBREPORTNAME':
+            return '';
+        case 'FILLDATAONLY':
+            return 'N';
+        default:
+            return '';
+    }
+}
+
+function quoteOrderLoadProcedureParamValue(value) {
+    return '\'' + String(value == null ? '' : value).replace(/'/g, "''") + '\'';
+}
+
+function buildOrderLoadPrintProcedureParameters(tpl, requestParams, reportFileName) {
+    var spec = String(tpl && tpl.procedureParameters || '').trim();
+    if (!spec) return '';
+
+    return spec.split('#')
+        .map(function (name) { return String(name || '').trim(); })
+        .filter(function (name) { return !!name; })
+        .map(function (name) {
+            var value = resolveOrderLoadProcedureParamValue(name, tpl, requestParams, reportFileName);
+            return name + '=' + quoteOrderLoadProcedureParamValue(value);
+        })
+        .join('#');
+}
+
+function loadReportData() {
+    if (G_OL_LoadingReport) return;
+
+    var tpl = getSelectedTemplate();
+    var params = buildOrderLoadReportRequestParams(tpl);
+    if (params.error) {
+        toastr.warning(params.error);
+        return;
+    }
 
     setShowButtonLoading(true);
     setGridLoader(true);
@@ -2468,10 +4597,10 @@ function loadReportData() {
             bindOrderLoadGrid(results[0]);
         })
         .catch(function (err) {
-            showGridPanel(false);
-            updateEmptyStateMessage();
             var rawMsg = extractOrderLoadReportErrorMessage(null, err) || (err && err.message) || 'Request failed';
-            toastr.error(formatOrderLoadReportErrorMessage(rawMsg, tpl));
+            var msg = formatOrderLoadReportErrorMessage(rawMsg, tpl);
+            showOrderLoadErrorCombo([msg]);
+            toastr.error(msg);
         })
         .finally(function () {
             setShowButtonLoading(false);
@@ -2519,8 +4648,54 @@ function isShowTotalColumn(colName) {
     });
 }
 
+/* Template DecimalPoint (DataType = N) → normalized column keys for grid formatting */
+function buildTemplateDecimalPointMap(gridKeys) {
+    var map = {};
+    var keys = gridKeys || [];
+
+    (G_OL_TemplateTransactions || []).forEach(function (row) {
+        if (String(prop(row, ['DataType', 'dataType']) || '').trim().toUpperCase() !== 'N') return;
+
+        var dec = parseInt(prop(row, ['DecimalPoint', 'decimalPoint']), 10);
+        if (isNaN(dec) || dec < 0) dec = 0;
+        if (dec > 9) dec = 9;
+
+        var fieldName = prop(row, ['FieldName', 'fieldName']);
+        var fieldNameAs = prop(row, ['FieldNameAs', 'fieldNameAs']);
+        var gridKey = resolveGridColumnKey(keys, fieldName, fieldNameAs);
+
+        [fieldName, fieldNameAs, gridKey].forEach(function (alias) {
+            if (!alias) return;
+            var n = normalizeColumnKey(alias);
+            if (!n) return;
+            map[n] = dec;
+            map[n.replace(/\s+/g, '')] = dec;
+        });
+    });
+
+    return map;
+}
+
+function getTemplateDecimalPoint(colName, templateDecimalMap) {
+    if (!templateDecimalMap || !colName) return null;
+    var key = normalizeColumnKey(colName);
+    if (Object.prototype.hasOwnProperty.call(templateDecimalMap, key)) {
+        return templateDecimalMap[key];
+    }
+    var compact = key.replace(/\s+/g, '');
+    if (Object.prototype.hasOwnProperty.call(templateDecimalMap, compact)) {
+        return templateDecimalMap[compact];
+    }
+    return null;
+}
+
 function bindOrderLoadGrid(response) {
     var rows = formatGridRows(unwrapApiList(response));
+
+    if (isSqlErrorResultSet(rows)) {
+        showOrderLoadErrorCombo(rows);
+        return;
+    }
 
     if (!rows || !rows.length) {
         if (isSizeParameterFilterApplied()) {
@@ -2614,8 +4789,13 @@ function getOrderLoadExportColumns(rows) {
     return cols.length ? cols : Object.keys(rows[0]);
 }
 
+function isBlankNullValue(value) {
+    if (value === null || value === undefined) return true;
+    return String(value).trim().toLowerCase() === 'null';
+}
+
 function normalizeExportCellValue(value) {
-    if (value === null || value === undefined) return '';
+    if (isBlankNullValue(value)) return '';
     var text = String(value);
     if (text.indexOf('<') >= 0) {
         var $tmp = $('<div/>').html(text);
@@ -3315,6 +5495,67 @@ function openOrderLoadPrintPreview() {
     });
 }
 
+function openOrderLoadCrystalReport(isPrint) {
+    var tpl = getSelectedTemplate();
+    if (!usesOrderLoadCrystalReport(tpl)) {
+        return Promise.resolve(false);
+    }
+
+    var params = buildOrderLoadReportRequestParams(tpl);
+    if (params.error) {
+        toastr.warning(params.error);
+        return Promise.resolve(false);
+    }
+
+    var reportFileName = getOrderLoadCrystalReportFileName(tpl);
+    if (!reportFileName) {
+        toastr.warning('Crystal report file is not configured for this template.');
+        return Promise.resolve(false);
+    }
+
+    if (typeof ShowLoader === 'function') ShowLoader();
+
+    return OrderLoadReportService.PrintTemplateReport({
+        isPrint: !!isPrint,
+        reportFileName: reportFileName,
+        procedureParametersAndValues: buildOrderLoadPrintProcedureParameters(tpl, params, reportFileName)
+    })
+        .then(function (response) {
+            if (!openOrderLoadCrystalReportUrl(response)) {
+                var msg = extractOrderLoadReportErrorMessage(response) || 'Crystal report could not be opened.';
+                toastr.error(formatOrderLoadReportErrorMessage(msg, tpl));
+                return false;
+            }
+            return true;
+        })
+        .catch(function (err) {
+            var rawMsg = extractOrderLoadReportErrorMessage(null, err) || 'Crystal report request failed.';
+            toastr.error(formatOrderLoadReportErrorMessage(rawMsg, tpl));
+            return false;
+        })
+        .finally(function () {
+            if (typeof HideLoader === 'function') HideLoader();
+        });
+}
+
+function onOrderLoadPreviewClick() {
+    var tpl = getSelectedTemplate();
+    if (usesOrderLoadCrystalReport(tpl)) {
+        openOrderLoadCrystalReport(false);
+        return;
+    }
+    openOrderLoadPrintPreview();
+}
+
+function onOrderLoadPrintClick() {
+    var tpl = getSelectedTemplate();
+    if (usesOrderLoadCrystalReport(tpl)) {
+        openOrderLoadCrystalReport(true);
+        return;
+    }
+    printOrderLoadReport();
+}
+
 function printOrderLoadReport() {
     prepareOrderLoadPrintHtml(function (html) {
         var frame = document.getElementById('olPrintHiddenFrame') || document.getElementById('olPrintPreviewFrame');
@@ -3649,6 +5890,10 @@ function buildGridConfig(rows) {
     var totalColumns = [];
 
     cols.forEach(function (col) {
+        if (normalizeGridColumnKey(col) === 'itemmastercode') {
+            hiddenColumns.push(col);
+            return;
+        }
         var sample = rows.slice(0, Math.min(rows.length, 25)).map(function (r) { return r[col]; });
 
         if (isDateColumn(col, sample)) {
@@ -3689,8 +5934,14 @@ function buildGridConfig(rows) {
 }
 
 function buildDecimalConfig(numericCols) {
+    var templateDecimals = buildTemplateDecimalPointMap(numericCols);
     var cfg = {};
     numericCols.forEach(function (col) {
+        var fromTemplate = getTemplateDecimalPoint(col, templateDecimals);
+        if (fromTemplate !== null) {
+            cfg[col] = fromTemplate;
+            return;
+        }
         if (/qty|weight|sqm|kg|mt|mtr|amount|rate|value/i.test(col)) {
             cfg[col] = /amount|rate|value/i.test(col) ? 2 : 3;
         } else {
@@ -3730,7 +5981,7 @@ function formatGridRows(rows) {
 }
 
 function formatCellValue(colName, val) {
-    if (val === null || val === undefined || val === '') return val;
+    if (isBlankNullValue(val) || val === '') return '';
     var str = String(val).trim();
 
     if (/^\d{4}-\d{2}-\d{2}T/.test(str)) {
@@ -3787,6 +6038,7 @@ function installOrderLoadGridRenderHook() {
     window.renderTable = function (items, bodyId, skipTotalRow) {
         origRenderTable.apply(this, arguments);
         if ($('#' + bodyId).closest('table').attr('id') === 'OrderLoadReport') {
+            blankOrderLoadNullCells();
             formatOrderLoadDateCells();
             applyGridCellEnhancements();
         }
@@ -3795,10 +6047,20 @@ function installOrderLoadGridRenderHook() {
     window.renderTableWithPagination = function (tableId, bodyId) {
         origRenderTableWithPagination.apply(this, arguments);
         if (tableId === 'OrderLoadReport') {
+            blankOrderLoadNullCells();
             formatOrderLoadDateCells();
             applyGridCellEnhancements();
         }
     };
+}
+
+function blankOrderLoadNullCells() {
+    $('#OrderLoadReport td').each(function () {
+        var text = ($(this).text() || '').replace(/\u00a0/g, ' ').trim();
+        if (text.toLowerCase() === 'null') {
+            $(this).text('');
+        }
+    });
 }
 
 function unwrapApiList(payload) {
@@ -3821,7 +6083,14 @@ function unwrapApiList(payload) {
         return payload;
     }
     if (payload.$values && Array.isArray(payload.$values)) return payload.$values;
-    var keys = ['Data', 'data', 'Result', 'result', 'Rows', 'rows'];
+    if (typeof payload === 'object') {
+        var objKeys = Object.keys(payload);
+        if (objKeys.length && objKeys.every(function (k) { return /^\d+$/.test(k); })) {
+            return objKeys.sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10); })
+                .map(function (k) { return payload[k]; });
+        }
+    }
+    var keys = ['Data', 'data', 'Result', 'result', 'Rows', 'rows', 'Items', 'items', 'List', 'list'];
     for (var i = 0; i < keys.length; i++) {
         if (payload[keys[i]] && Array.isArray(payload[keys[i]])) return payload[keys[i]];
     }

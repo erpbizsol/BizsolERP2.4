@@ -312,6 +312,33 @@ tbody tr:hover td { color: #1e1b4b; }
 
 .im-input[readonly] { background: #f3f4f6; color: #6b7280; cursor: not-allowed; }
 
+/* ── Active / Inactive toggle ── */
+.im-active-toggle {
+    display: inline-flex; align-items: center; gap: 10px;
+    height: 38px; cursor: pointer; user-select: none;
+    text-transform: none !important; letter-spacing: 0 !important;
+}
+.im-active-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.im-switch {
+    position: relative; width: 42px; height: 22px; flex-shrink: 0;
+    border-radius: 999px; background: #d1d5db;
+    transition: background 0.18s;
+}
+.im-switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    transition: transform 0.18s;
+}
+.im-active-toggle input:checked + .im-switch { background: #10b981; }
+.im-active-toggle input:checked + .im-switch::after { transform: translateX(20px); }
+.im-active-toggle input:focus-visible + .im-switch { box-shadow: 0 0 0 3px rgba(91,94,244,0.25); }
+.im-active-text { font-size: 13px; font-weight: 600; color: #6b7280; }
+.im-active-toggle input:checked ~ .im-active-text { color: #059669; }
+
+.im-status-active   { background: rgba(16,185,129,0.30) !important; border-color: rgba(16,185,129,0.65) !important; }
+.im-status-inactive { background: rgba(239,68,68,0.30) !important;  border-color: rgba(239,68,68,0.65) !important; }
+
 select.im-input {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -904,6 +931,15 @@ select.im-input {
                            inputmode="decimal" />
                 </div>
 
+                <div class="im-form-group">
+                    <label>Status</label>
+                    <label class="im-active-toggle" for="IsActive">
+                        <input type="checkbox" id="IsActive" checked />
+                        <span class="im-switch"></span>
+                        <span class="im-active-text" id="IsActiveText">Active</span>
+                    </label>
+                </div>
+
                 <div class="im-form-group" style="grid-column: span 3;">
                     <label for="ItemSpecification">Item Specification</label>
                     <input type="text" id="ItemSpecification" class="im-input" placeholder="Enter item specification" autocomplete="off" />
@@ -950,6 +986,7 @@ select.im-input {
                 <div class="im-view-badges">
                     <span class="im-view-badge" id="viewItemTypeBadge" style="display:none;"></span>
                     <span class="im-view-badge" id="viewGSTBadge" style="display:none;"></span>
+                    <span class="im-view-badge" id="viewStatusBadge" style="display:none;"></span>
                 </div>
             </div>
         </div>
@@ -1011,6 +1048,14 @@ select.im-input {
                     <div class="im-view-field-info">
                         <div class="im-view-field-label">GST (%)</div>
                         <div class="im-view-field-value" id="vf_GSTRate">—</div>
+                    </div>
+                </div>
+
+                <div class="im-view-field">
+                    <div class="im-view-field-icon"><i class="fas fa-toggle-on"></i></div>
+                    <div class="im-view-field-info">
+                        <div class="im-view-field-label">Status</div>
+                        <div class="im-view-field-value" id="vf_IsActive">—</div>
                     </div>
                 </div>
 

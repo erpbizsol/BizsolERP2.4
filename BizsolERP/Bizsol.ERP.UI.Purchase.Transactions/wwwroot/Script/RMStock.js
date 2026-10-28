@@ -1841,17 +1841,40 @@ function GetSlittedCoilStockList(G_FromDateSlittedCoilStockValue, G_ToDateSlitte
                 if (item["Qty MT"] !== undefined && item["Qty MT"] !== null && !isNaN(item["Qty MT"])) {
                     item["Qty MT"] = parseFloat(item["Qty MT"]).toFixed(3);
                 }
+                const widthKey = Object.keys(item).find(function (k) { return k.toUpperCase() === 'WIDTH'; });
+                if (widthKey && item["Numeric Value"] !== undefined && item["Numeric Value"] !== null && item["Numeric Value"] !== '') {
+                    const widthNum = parseFloat(item["Numeric Value"]);
+                    if (!isNaN(widthNum)) {
+                        item[widthKey] = widthNum;
+                    }
+                }
                 return item;
             });
             $('#tblSlitted_Coil_Stock').show();
-            const stringFilterColumn = ["Item Name", "IdentificationNo", "Qty PC", "Qty MT"];
-            const numericFilterColumn = [];
+            const sampleRow = response[0] || {};
+            const rowKeys = Object.keys(sampleRow);
+            const pivotFilterTypes = ['GRADE', 'THICKNESS', 'MAKE', 'SIZE'];
+            const stringFilterColumn = ["Item Name", "IdentificationNo"];
+            pivotFilterTypes.forEach(function (paramType) {
+                const key = rowKeys.find(function (k) { return k.toUpperCase() === paramType; });
+                if (key) {
+                    stringFilterColumn.push(key);
+                }
+            });
+            const widthLabelKey = rowKeys.find(function (k) { return k.toUpperCase() === 'WIDTH'; });
+            const numericFilterColumn = ["Qty PC", "Qty MT"];
+            if (widthLabelKey) {
+                numericFilterColumn.unshift(widthLabelKey);
+            }
             const dateFilterColumn = ["Create Date"];
             const button = false;
             const stringDoubleFilterColumn = [];
             const showButtons = [];
-            let hiddenColumns = ["Code","Qty MTRS"];
-            const columnAlignment = { "Qty PC": 'right', "Qty MT": 'right', "Qty MTRS": 'right',"Create Date":'center'};
+            let hiddenColumns = ["Code", "Qty MTRS", "Numeric Value"];
+            const columnAlignment = { "Qty PC": 'right', "Qty MT": 'right', "Qty MTRS": 'right', "Create Date": 'center' };
+            if (widthLabelKey) {
+                columnAlignment[widthLabelKey] = 'right';
+            }
             calculateTotalFooterSlitted_Coil_Stock(response);
             BizsolCustomFilterGrid.CreateDataTable("table-header-Slitted_Coil_Stock", "table-body-Slitted_Coil_Stock", response, button, showButtons, stringFilterColumn, numericFilterColumn, dateFilterColumn, stringDoubleFilterColumn, hiddenColumns, columnAlignment, false, null, null, null, 'Search by Item Name, Identification No, Size...');
             PopulateTableForPrint(response);
@@ -2344,6 +2367,7 @@ function loadJobWorkData(G_FromDateValueJobWork, G_ToDateValueJobWork, Status) {
             const showButtons = [];
             let hiddenColumns = []
             const columnAlignment = {
+                'Entry No': "right",
                 'Thickness': "right;min-width:20px", 'Width': "right;min-width:20px", 'Entry Date': "center", "Party Name": "left;min-width:262px", "Warehouse":";min-width:110px",
                 'Weight': "right;min-width:20px", 'ACT WT': "right;min-width:20px", 'Output WT': "right", "Scrap": "right", "Yield %": "right", "Width Loss %": "right"
             };
@@ -2831,8 +2855,47 @@ function getActiveTabFooterContext() {
 document.addEventListener("DOMContentLoaded", function () {
     setInterval(ChangecolorTr, 1000); 
     setInterval(ChangecolorTrYeald, 1000); 
-    setInterval(ChangecolorTrYeildSlitted, 1000); 
+    setInterval(ChangecolorTrYeildSlitted, 1000);
+    setInterval(applyRMReportRemarkColors, 1000);
 });
+function getRMReportRemarkClass(text) {
+    const value = String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!value) return '';
+    if (value.indexOf('job') !== -1) return 'rms-remark-jobwork';
+    if (value.indexOf('dispatch') !== -1 || value.indexOf('slit') !== -1) return 'rms-remark-grey';
+    if (value.indexOf('stock') !== -1) return 'rms-remark-stock';
+    return '';
+}
+function applyRMReportRemarkColors() {
+    const tbody = document.getElementById('table-body-RMReport');
+    if (!tbody) return;
+
+    const headerCells = document.querySelectorAll('#table-header-RMReport th');
+    let remarkIndex = -1;
+    headerCells.forEach(function (th, index) {
+        const headingEl = th.querySelector('.filter-table-heading');
+        const heading = (headingEl ? headingEl.textContent : th.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (heading === 'remark') {
+            remarkIndex = index;
+        }
+    });
+    if (remarkIndex < 0) return;
+
+    tbody.querySelectorAll('tr').forEach(function (row) {
+        if (row.classList.contains('total-row') || row.classList.contains('grand-total-row')) return;
+        const td = row.querySelectorAll('td')[remarkIndex];
+        if (!td || td.querySelector('.rms-remark-pill')) return;
+        const text = td.textContent.replace(/\s+/g, ' ').trim();
+        const cls = getRMReportRemarkClass(text);
+        if (!cls) return;
+        const pill = document.createElement('span');
+        pill.className = 'rms-remark-pill ' + cls;
+        pill.textContent = text;
+        td.textContent = '';
+        td.appendChild(pill);
+    });
+}
+window.applyRMReportRemarkColors = applyRMReportRemarkColors;
 function ChangecolorTr() {
     const tbody = document.getElementById("table-body-UnApproved_Planned");
     if (!tbody) return;

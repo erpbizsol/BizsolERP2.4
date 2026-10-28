@@ -250,8 +250,39 @@
         to   { opacity: 1; transform: translateY(0); }
     }
     @@media (max-width: 768px) {
+        .ee-page { max-width: 100%; overflow-x: hidden; }
         .pac-field-lbl { flex: 0 0 110px; font-size: 0.74rem; }
-        .pac-header { border-radius: 10px; }
+        .pac-header {
+            flex-direction: column;
+            align-items: stretch;
+            border-radius: 10px;
+            padding: 12px;
+            gap: 10px;
+        }
+        .pac-header h5 { font-size: 0.92rem; }
+        .pac-header-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            min-width: 0;
+        }
+        .pac-header-actions > * { min-width: 0; }
+        #statLevelChip { min-width: 64px !important; padding: 4px 10px !important; }
+        .pac-header .btn-add-level {
+            flex: 1 1 110px;
+            padding: 7px 10px;
+            font-size: 0.75rem;
+            white-space: normal;
+        }
+        .pac-header .mb-1 { margin: 0 !important; flex: 1 1 100%; }
+        .pac-header .btn-ee-back-nav {
+            width: 100%;
+            white-space: normal;
+            padding: 7px 10px;
+            text-align: center;
+        }
     }
 </style>
 
@@ -265,7 +296,7 @@
             <h5><i class="fa fa-cogs me-2"></i>Expense Entry Approval Configuration</h5>
             <small>Configure expense entry approval levels &amp; approver groups</small>
         </div>
-        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <div class="pac-header-actions d-flex align-items-center gap-2">
             <div id="statLevelChip"
                  style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:5px 14px;text-align:center;min-width:80px;">
                 <div style="font-size:1.1rem;font-weight:800;color:#fff;line-height:1;" id="statLevelCount">—</div>

@@ -1,4 +1,5 @@
 import { GateEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/GateEntryService.js';
+import { PackingListFGService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/PackingListFGService.js';
 import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { AutoSuggestionControl } from '../../Bizsol.WebERP.UI.Shared/js/AutoSuggestion.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
@@ -9,6 +10,7 @@ import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToE
 $("#ERPHeading").text("Gate Entry");
 
 let ConfigGateEntry = [];
+let ApplicableValidationInPackingList = 'N';
 let IsWithPo = false;
 let IsEntryWithoutExistingItem = false;
 let GateEntryMaster_Code = 0;
@@ -35,6 +37,8 @@ let G_GateEntryLinkedERPDocuments = [];
 let baseUrl = sessionStorage.getItem('AppBaseURL');
 let G_TableName = '';
 let G_TableCode = 0;
+let G_LoadedOutDocNoLockToList = false;
+let G_LoadedOutDocNoOptions = [];
 function GateEntryGirdByDates() {
 
     let UserDetailsobj = JSON.parse(sessionStorage.getItem('UserDetails'));
@@ -1108,6 +1112,18 @@ function GetConfigGateEntry() {
         GateEntry_ApplyModeOfTransportVisibility();
         GateEntry_ApplyEntryWithoutExistingItemRadioVisibility();
 
+    });
+    GateEntry_LoadApplicableValidationInPackingList();
+}
+
+function GateEntry_LoadApplicableValidationInPackingList() {
+    return PackingListFGService.GetFixedParaMeter().then(function (response) {
+        const param = (response || []).find(function (x) { return x.PeramaterName === 'ApplicableValidationInPackingList'; });
+        ApplicableValidationInPackingList = param && param.PeramaterValue === 'Y' ? 'Y' : 'N';
+        return ApplicableValidationInPackingList;
+    }).catch(function () {
+        ApplicableValidationInPackingList = 'N';
+        return 'N';
     });
 }
 
@@ -2218,6 +2234,12 @@ function GateEntry_SaveData(Mode) {
                 $('#frmLoadedOut_txtDocumentNo').focus();
                 return;
             }
+            if (RejectEntry == 'N' && G_LoadedOutDocNoLockToList && !GateEntry_IsLoadedOutDocNoInList(InvoiceNo)) {
+                valid = false;
+                toastr.error('Please select Document No. from the list');
+                $('#frmLoadedOut_txtDocumentNo').focus();
+                return;
+            }
             if (RejectEntry == 'N' && (typeof InvoiceDate === 'undefined' || InvoiceDate === '' || InvoiceDate === null)) {
                 valid = false;
                 toastr.error('Please Check! Document Date can not be blank');
@@ -2748,21 +2770,39 @@ function GateEntry_SaveData(Mode) {
 
         //alert('Save Alert!' + Mode + ' Post Data: ' + JSON.stringify(GateEntryPostdata));
 
-        Showloader();
-        GateEntryService.SaveGateEntryMaster(JSON.stringify(GateEntryPostdata), POItemsData, 'SAVEDATA').then(function (response) {
-            if (response.Status === 'Y') {
-                HideLoader();
-                //toastr.success(`Entry save success`);
-                        ShowGateEntrySaveSuccessModal(response.Msg);
-                        // window.location.href = sessionStorage.getItem('AppBaseURL') +'PurchaseTransactions/GateEntry/GateEntryView';
-                        GateEntyMode_GateEntry('grid', '');
-                        GateEntryGirdByDates();
-            }
-            else {
-                toastr.error(response.Msg);
-                HideLoader();
-            }
-        });
+        const saveGateEntryNow = function () {
+            Showloader();
+            GateEntryService.SaveGateEntryMaster(JSON.stringify(GateEntryPostdata), POItemsData, 'SAVEDATA').then(function (response) {
+                if (response.Status === 'Y') {
+                    HideLoader();
+                    //toastr.success(`Entry save success`);
+                            ShowGateEntrySaveSuccessModal(response.Msg);
+                            // window.location.href = sessionStorage.getItem('AppBaseURL') +'PurchaseTransactions/GateEntry/GateEntryView';
+                            GateEntyMode_GateEntry('grid', '');
+                            GateEntryGirdByDates();
+                }
+                else {
+                    toastr.error(response.Msg);
+                    HideLoader();
+                }
+            });
+        };
+
+        const invoiceMasterCodes = GateEntry_InvoiceMasterCodesFromDetails(G_GateEntryLinkedERPDocuments);
+        if (invoiceMasterCodes.length === 0) {
+            saveGateEntryNow();
+        } else {
+            const loadedOutNo = ($('#frmLoadedOut_txtDocumentNo').val() || '').trim();
+            const loadedInNo = ($('#frmLoadedIn_txtDocumentNo').val() || '').trim();
+            const invoiceNoText = (Mode === 'LoadedInSave' || Mode === 'loadedinedit' || Mode === 'loadedineditfull' || Mode === 'UpdateLoadedInSave') ? loadedInNo : loadedOutNo;
+            GateEntry_CheckInvoicePackingListValidated(invoiceMasterCodes.join(','), invoiceNoText || loadedOutNo || loadedInNo).then(function (errorMsg) {
+                if (errorMsg) {
+                    toastr.error(errorMsg);
+                    return;
+                }
+                saveGateEntryNow();
+            });
+        }
 
     }
 
@@ -3230,6 +3270,8 @@ function ClearAllFrm() {
     $('#frmLoadedOut_txtCustomerName').removeAttr('readonly');
     $('#frmLoadedOut_ddlDocumentType').removeAttr('disabled');
     $('#frmLoadedOut_txtDocumentNo').removeAttr('readonly');
+    $('#frmLoadedOut_txtDocumentNo').data('docNoKeep', false);
+    GateEntry_ApplyLoadedOutDocumentNoLock([]);
     $('#frmLoadedOut_txtDocumentDate').removeAttr('readonly');
     $('#frmLoadedOut_txtManualDocNo').removeAttr('readonly');
     $('#frmLoadedOut_txtGRNo').removeAttr('readonly');
@@ -3586,12 +3628,14 @@ function EditGateEntry(gateEntryData, EntryType) {
             });
             frmLoadedOut_ddlDocumentType('view');
             GateEntry_changeDocumentType();
+            $('#frmLoadedOut_txtDocumentNo').data('docNoKeep', true);
         });
 
 
         $('#frmLoadedOut_txtCustomerName').val(gateEntryData[0].VendorName);
 
         $('#frmLoadedOut_txtDocumentNo').val(gateEntryData[0].DocNo);
+        $('#frmLoadedOut_txtDocumentNo').data('docNoKeep', true);
         $('#frmLoadedOut_txtDocumentDate').val(geFormatGateEntryInputDate(gateEntryData[0].InvoiceDate));
 
         $('#frmLoadedOut_txtManualDocNo').val(gateEntryData[0].ManualDocNo);
@@ -4176,12 +4220,197 @@ function CopyWeightmentSlip(transactionType) {
 
     
 }
+function GateEntry_LoadedOutDocNoParts(value) {
+    return (value || '').split(',').map(function (part) { return part.trim(); }).filter(Boolean);
+}
+
+function GateEntry_IsLoadedOutDocNoInList(value) {
+    const parts = GateEntry_LoadedOutDocNoParts(value);
+    if (parts.length === 0) return false;
+    return parts.every(function (part) {
+        return G_LoadedOutDocNoOptions.some(function (option) {
+            return option.toLowerCase() === part.toLowerCase();
+        });
+    });
+}
+
+function GateEntry_ShowLoadedOutDocumentNoList() {
+    const $list = $('#frmLoadedOut_txtDocumentNo_List');
+    $list.children().show();
+    $list.show();
+}
+
+function GateEntry_ApplyLoadedOutDocumentNoLock(docList) {
+    const $input = $('#frmLoadedOut_txtDocumentNo');
+    const keepExisting = $input.data('docNoKeep') === true;
+    const existingValue = ($input.val() || '').trim();
+    const listOptions = (docList || [])
+        .map(function (item) { return (item.Desp || '').toString().trim(); })
+        .filter(Boolean);
+
+    G_LoadedOutDocNoOptions = listOptions.slice();
+    G_LoadedOutDocNoLockToList = listOptions.length > 0;
+    $input.off('.docNoLock');
+
+    if (!G_LoadedOutDocNoLockToList) {
+        $('#frmLoadedOut_txtDocumentNo_List').off('mousedown.docNoLock');
+        $input.removeAttr('placeholder').removeAttr('title');
+        return;
+    }
+
+    if (keepExisting && existingValue) {
+        GateEntry_LoadedOutDocNoParts(existingValue).forEach(function (part) {
+            const alreadyListed = G_LoadedOutDocNoOptions.some(function (option) {
+                return option.toLowerCase() === part.toLowerCase();
+            });
+            if (!alreadyListed) {
+                G_LoadedOutDocNoOptions.push(part);
+            }
+        });
+        $input.data('docNoCommitted', existingValue);
+    } else if (!$input.prop('readonly')) {
+        $input.val('');
+        $input.data('docNoCommitted', '');
+    }
+
+    $input.attr('placeholder', 'Search and select');
+    $input.attr('title', 'Type to search, then select Document No. from the list');
+
+    $input.on('focus.docNoLock click.docNoLock', function () {
+        if ($(this).prop('readonly') || !G_LoadedOutDocNoLockToList) return;
+        const el = this;
+        setTimeout(function () {
+            if ($(el).prop('readonly') || document.activeElement !== el) return;
+            GateEntry_ShowLoadedOutDocumentNoList();
+        }, 0);
+    });
+
+    $input.on('input.docNoLock', function () {
+        if ($(this).prop('readonly')) return;
+        const raw = $(this).val() || '';
+        const segments = raw.split(',');
+        const term = (segments[segments.length - 1] || '').trim().toLowerCase();
+        const $list = $('#frmLoadedOut_txtDocumentNo_List');
+        const $items = $list.children();
+        if (!term) {
+            $items.show();
+            $list.show();
+            return;
+        }
+        let anyMatch = false;
+        $items.each(function () {
+            const match = $(this).text().toLowerCase().indexOf(term) !== -1;
+            $(this).toggle(match);
+            if (match) anyMatch = true;
+        });
+        if (anyMatch) {
+            $list.show();
+        }
+    });
+
+    let selectingFromList = false;
+    $('#frmLoadedOut_txtDocumentNo_List').off('mousedown.docNoLock').on('mousedown.docNoLock', function () {
+        selectingFromList = true;
+    });
+
+    $input.on('blur.docNoLock', function () {
+        if (!G_LoadedOutDocNoLockToList || $(this).prop('readonly')) return;
+        const el = this;
+        setTimeout(function () {
+            if (selectingFromList) {
+                selectingFromList = false;
+                $(el).data('docNoCommitted', ($(el).val() || '').trim());
+                return;
+            }
+
+            const val = ($(el).val() || '').trim();
+            if (!val) {
+                $(el).data('docNoCommitted', '');
+                return;
+            }
+
+            if (GateEntry_IsLoadedOutDocNoInList(val)) {
+                const committed = (($(el).data('docNoCommitted') || '') + '').trim();
+                $(el).data('docNoCommitted', val);
+                if (val.replace(/,\s*$/, '').toLowerCase() !== committed.replace(/,\s*$/, '').toLowerCase()) {
+                    const lastPart = GateEntry_LoadedOutDocNoParts(val).pop();
+                    const $item = $('#frmLoadedOut_txtDocumentNo_List li').filter(function () {
+                        return $(this).text().trim().toLowerCase() === (lastPart || '').toLowerCase();
+                    }).first();
+                    if ($item.length) {
+                        $item.trigger('click');
+                    }
+                }
+                return;
+            }
+
+            const committed = ($(el).data('docNoCommitted') || '') + '';
+            $(el).val(committed);
+            $('#frmLoadedOut_txtDocumentNo_List').children().show();
+            toastr.error('Please select Document No. from the list');
+            if (document.activeElement === el) {
+                GateEntry_ShowLoadedOutDocumentNoList();
+            }
+        }, 200);
+    });
+}
+
+function GateEntry_InvoiceMasterCodesFromDetails(details) {
+    const codes = [];
+    (details || []).forEach(function (item) {
+        const tableName = (item.TableName || item.tableName || '').toString().replace(/\s/g, '').toLowerCase();
+        const code = parseInt(item.Code || item.TableCode || item.table_Code || 0, 10) || 0;
+        if (code > 0 && tableName === 'invoicemaster' && codes.indexOf(String(code)) === -1) {
+            codes.push(String(code));
+        }
+    });
+    return codes;
+}
+
+function GateEntry_PackingListValidationMessage(response, invoiceNoText) {
+    if (!response) return '';
+    if (response.Status === 'N' && response.Msg) return response.Msg;
+
+    let rows = response;
+    if (Array.isArray(response) && response.length > 0 && Array.isArray(response[0])) {
+        rows = response[0];
+    }
+    if (!Array.isArray(rows)) return '';
+
+    const numbers = [];
+    rows.forEach(function (row) {
+        const validated = (row.Validated == null ? 'N' : row.Validated).toString().trim().toUpperCase();
+        if (validated !== 'N') return;
+        const packingListNo = (row.PackingListNo || row.packingListNo || '').toString().trim();
+        if (packingListNo && numbers.indexOf(packingListNo) === -1) {
+            numbers.push(packingListNo);
+        }
+    });
+    if (numbers.length === 0) return '';
+
+    const invoiceNo = (invoiceNoText || '').toString().replace(/,\s*$/, '').trim();
+    const packingListMsg = 'Packing List No. ' + numbers.join(', ') + ' is not validated.';
+    if (!invoiceNo) return packingListMsg;
+    return 'Invoice No. ' + invoiceNo + ', ' + packingListMsg;
+}
+
+function GateEntry_CheckInvoicePackingListValidated(invoiceMasterCodes, invoiceNoText) {
+    const codeText = (invoiceMasterCodes || '').toString().trim();
+    if (!codeText || codeText === '0' || ApplicableValidationInPackingList !== 'Y') {
+        return Promise.resolve('');
+    }
+    return GateEntryService.CheckInvoicePackingListValidated(codeText).then(function (response) {
+        return GateEntry_PackingListValidationMessage(response, invoiceNoText);
+    });
+}
+
 function GateEntry_changeDocumentType() {
     G_TableName = '';
     G_TableCode = 0;
     $('#frmLoadedOut_txtCustomerName').removeAttr('readonly');
     $('#frmLoadedOut_txtGoodsDescription').removeAttr('readonly');
     $('#frmLoadedOut_txtQty').removeAttr('readonly');
+    $('#frmLoadedOut_txtDocumentNo').data('docNoKeep', false);
     let F_GateEntryType_Desp = $('#frmLoadedOut_ddlDocumentType').val();
     let IsMultipleDocument = false;
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'MultipleDocument').PerameterValue === 'Y') {
@@ -4209,38 +4438,54 @@ function GateEntry_changeDocumentType() {
                         }
                         GateEntryService.GetGateEntryERPDocumentDetails(DocNos, F_GateEntryType_Desp, 'N', LoginGodownMaster_Code).then(function (RespDocumentDetails) {
                             if (RespDocumentDetails.length > 0) {
+                                const applyLoadedOutDocument = function () {
+                                    const sumtotalWeight = RespDocumentDetails.reduce((sum, item) => {
+                                        // Adjust keys if API uses a slightly different name (TotalWegit vs TotalWeight)
+                                        const raw = item.TotalWeight?? 0;
+                                        // normalize string (remove thousands separators) and parse
+                                        const parsed = parseFloat(String(raw).replace(/,/g, '')) || 0;
+                                        return sum + parsed;
+                                    }, 0);
 
-                                const sumtotalWeight = RespDocumentDetails.reduce((sum, item) => {
-                                    // Adjust keys if API uses a slightly different name (TotalWegit vs TotalWeight)
-                                    const raw = item.TotalWeight?? 0;
-                                    // normalize string (remove thousands separators) and parse
-                                    const parsed = parseFloat(String(raw).replace(/,/g, '')) || 0;
-                                    return sum + parsed;
-                                }, 0);
+
+                                    $('#frmLoadedOut_txtCustomerName').val(RespDocumentDetails[0].PartyName)
+                                    $('#frmLoadedOut_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
+                                    $('#frmLoadedOut_txtQty').val(parseFloat(sumtotalWeight).toFixed(2))
+                                    $('#frmLoadedOut_txtGRNo').val(RespDocumentDetails[0].GRNo)
+                                    $('#frmLoadedOut_ddlUOM').val(RespDocumentDetails[0].UOM).trigger('change')
+                                    $('#frmLoadedOut_txtEWayBillNo').val(RespDocumentDetails[0].EWayBillNo)
+                                    if (RespDocumentDetails[0].EWayBillDate) {
+                                        $('#frmLoadedOut_txtEWayBillDate').val(RespDocumentDetails[0].EWayBillDate.split('T')[0]);
+                                    }
+                                    if (RespDocumentDetails[0].DocumentDate) {
+                                        $('#frmLoadedOut_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
+                                    }
+
+                                   // G_TableName = RespDocumentDetails[0].TableName;
+                                   // G_TableCode = RespDocumentDetails[0].Code;
 
 
-                                $('#frmLoadedOut_txtCustomerName').val(RespDocumentDetails[0].PartyName)
-                                $('#frmLoadedOut_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
-                                $('#frmLoadedOut_txtQty').val(parseFloat(sumtotalWeight).toFixed(2))
-                                $('#frmLoadedOut_txtGRNo').val(RespDocumentDetails[0].GRNo)
-                                $('#frmLoadedOut_ddlUOM').val(RespDocumentDetails[0].UOM).trigger('change')
-                                $('#frmLoadedOut_txtEWayBillNo').val(RespDocumentDetails[0].EWayBillNo)
-                                if (RespDocumentDetails[0].EWayBillDate) {
-                                    $('#frmLoadedOut_txtEWayBillDate').val(RespDocumentDetails[0].EWayBillDate.split('T')[0]);
+                                    $('#frmLoadedOut_txtCustomerName').attr('readonly', 'readonly');
+                                    $('#frmLoadedOut_txtGoodsDescription').attr('readonly', 'readonly');
+                                    $('#frmLoadedOut_txtQty').attr('readonly', 'readonly');
+                                    $('#frmLoadedOut_txtDocumentNo').data('docNoCommitted', ($('#frmLoadedOut_txtDocumentNo').val() || '').trim());
+
+                                    G_GateEntryLinkedERPDocuments = RespDocumentDetails.map((x) => ({ TableName: x.TableName, TableCode: x.Code }));
+                                };
+
+                                const invoiceMasterCodes = GateEntry_InvoiceMasterCodesFromDetails(RespDocumentDetails);
+                                if (invoiceMasterCodes.length === 0) {
+                                    applyLoadedOutDocument();
+                                    return;
                                 }
-                                if (RespDocumentDetails[0].DocumentDate) {
-                                    $('#frmLoadedOut_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
-                                }
-
-                               // G_TableName = RespDocumentDetails[0].TableName;
-                               // G_TableCode = RespDocumentDetails[0].Code;
-
-
-                                $('#frmLoadedOut_txtCustomerName').attr('readonly', 'readonly');
-                                $('#frmLoadedOut_txtGoodsDescription').attr('readonly', 'readonly');
-                                $('#frmLoadedOut_txtQty').attr('readonly', 'readonly');
-
-                                G_GateEntryLinkedERPDocuments = RespDocumentDetails.map((x) => ({ TableName: x.TableName, TableCode: x.Code }));
+                                GateEntry_CheckInvoicePackingListValidated(invoiceMasterCodes.join(','), DocNos).then(function (errorMsg) {
+                                    applyLoadedOutDocument();
+                                    if (errorMsg) {
+                                        toastr.error(errorMsg);
+                                    }
+                                }).catch(function () {
+                                    applyLoadedOutDocument();
+                                });
 
                             } else {
                                 toastr.error('Document Not Fund');
@@ -4256,6 +4501,7 @@ function GateEntry_changeDocumentType() {
                 ,IsMultipleDocument
             );
 
+            GateEntry_ApplyLoadedOutDocumentNoLock(DocList);
 
             //MultiAutoSuggestionControl.SetUpMultiAutoSuggestion(
             //    $('#frmLoadedOut_txtDocumentNo'),
@@ -4298,7 +4544,9 @@ function GateEntry_changeDocumentType() {
             //    }
             //);
         });
-    } 
+    } else {
+        GateEntry_ApplyLoadedOutDocumentNoLock([]);
+    }
 }
 function GateEntry_GetNetWeight() {
     let EmptyWeight = 0;
@@ -4367,30 +4615,45 @@ function GateEntry_changeDocumentType_LoadedIn() {
                         }
                         GateEntryService.GetGateEntryERPDocumentDetails(DocNos, F_GateEntryType_Desp, 'N', LoginGodownMaster_Code).then(function (RespDocumentDetails) {
                             if (RespDocumentDetails.length > 0) {
+                                const applyLoadedInDocument = function () {
+                                    const sumtotalWeight = RespDocumentDetails.reduce((sum, item) => {
+                                        const raw = item.TotalWeight ?? 0;
+                                        const parsed = parseFloat(String(raw).replace(/,/g, '')) || 0;
+                                        return sum + parsed;
+                                    }, 0);
 
-                                const sumtotalWeight = RespDocumentDetails.reduce((sum, item) => {
-                                    const raw = item.TotalWeight ?? 0;
-                                    const parsed = parseFloat(String(raw).replace(/,/g, '')) || 0;
-                                    return sum + parsed;
-                                }, 0);
+                                    $('#frmLoadedIn_txtVendorName').val(RespDocumentDetails[0].PartyName)
+                                    $('#frmLoadedIn_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
+                                    $('#frmLoadedIn_txtQTY').val(parseFloat(sumtotalWeight).toFixed(2))
+                                    $('#frmLoadedIn_txtUOM').val(RespDocumentDetails[0].UOM).trigger('change')
+                                    $('#frmLoadedIn_txtEWayBillNo').val(RespDocumentDetails[0].EWayBillNo)
+                                    if (RespDocumentDetails[0].EWayBillDate) {
+                                        $('#frmLoadedIn_txtEWayBillDate').val(RespDocumentDetails[0].EWayBillDate.split('T')[0]);
+                                    }
+                                    if (RespDocumentDetails[0].DocumentDate) {
+                                        $('#frmLoadedIn_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
+                                    }
 
-                                $('#frmLoadedIn_txtVendorName').val(RespDocumentDetails[0].PartyName)
-                                $('#frmLoadedIn_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
-                                $('#frmLoadedIn_txtQTY').val(parseFloat(sumtotalWeight).toFixed(2))
-                                $('#frmLoadedIn_txtUOM').val(RespDocumentDetails[0].UOM).trigger('change')
-                                $('#frmLoadedIn_txtEWayBillNo').val(RespDocumentDetails[0].EWayBillNo)
-                                if (RespDocumentDetails[0].EWayBillDate) {
-                                    $('#frmLoadedIn_txtEWayBillDate').val(RespDocumentDetails[0].EWayBillDate.split('T')[0]);
+                                    $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
+                                    $('#frmLoadedIn_txtGoodsDescription').attr('readonly', 'readonly');
+                                    $('#frmLoadedIn_txtQTY').attr('readonly', 'readonly');
+
+                                    G_GateEntryLinkedERPDocuments = RespDocumentDetails.map((x) => ({ TableName: x.TableName, TableCode: x.Code }));
+                                };
+
+                                const invoiceMasterCodes = GateEntry_InvoiceMasterCodesFromDetails(RespDocumentDetails);
+                                if (invoiceMasterCodes.length === 0) {
+                                    applyLoadedInDocument();
+                                    return;
                                 }
-                                if (RespDocumentDetails[0].DocumentDate) {
-                                    $('#frmLoadedIn_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
-                                }
-
-                                $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
-                                $('#frmLoadedIn_txtGoodsDescription').attr('readonly', 'readonly');
-                                $('#frmLoadedIn_txtQTY').attr('readonly', 'readonly');
-
-                                G_GateEntryLinkedERPDocuments = RespDocumentDetails.map((x) => ({ TableName: x.TableName, TableCode: x.Code }));
+                                GateEntry_CheckInvoicePackingListValidated(invoiceMasterCodes.join(','), DocNos).then(function (errorMsg) {
+                                    applyLoadedInDocument();
+                                    if (errorMsg) {
+                                        toastr.error(errorMsg);
+                                    }
+                                }).catch(function () {
+                                    applyLoadedInDocument();
+                                });
 
                             } else {
                                 toastr.error('Document Not Fund');

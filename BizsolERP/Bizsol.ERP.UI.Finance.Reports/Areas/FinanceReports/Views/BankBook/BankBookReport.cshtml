@@ -1,0 +1,83 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Finance.Reports/css/BankBookReport.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
+<div class="bb-page" id="bankBookReportPage">
+    <div class="bb-shell">
+        <div class="bb-hero">
+            <div class="bb-hero-top">
+                <div class="bb-hero-title-block">
+                    <h1 class="bb-hero-title"><i class="fa fa-book" aria-hidden="true"></i> Bank Book Report</h1>
+                    <small class="bb-hero-sub">Received and payment summary by project, site, category, description and vendor.</small>
+                </div>
+                <div class="bb-hero-actions">
+                    <button type="button" id="btnBbExcel" class="bb-icon-btn bb-icon-btn--excel" title="Export to Excel" aria-label="Export to Excel">
+                        <i class="fas fa-file-excel" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" id="btnBbClear" class="bb-icon-btn bb-icon-btn--close" title="Clear report" aria-label="Clear report">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="bb-filter-bar">
+            <div class="row align-items-end g-3 bb-filters">
+                <div class="col-12 col-md-3 bb-field">
+                    <label class="bb-label" for="ddlBbStatus">Status</label>
+                    <select id="ddlBbStatus" class="form-control form-control-sm w-100">
+                        <option value="Pending" selected>Pending</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-4 bb-field">
+                    <label class="bb-label" for="ddlBbProject">Project name</label>
+                    <select id="ddlBbProject" class="form-control form-control-sm w-100">
+                        <option value="0">All</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-auto bb-filter-actions">
+                    <button type="button" id="btnBbShow" class="bb-btn">
+                        <i class="fas fa-search" aria-hidden="true"></i> Show
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bb-card bb-card--grid">
+        <nav id="bbCrumb" class="bb-crumb" aria-label="Report level"></nav>
+        @* <h2 id="bbLevelTitle" class="bb-level-title">Project Wise</h2> *@
+        <div id="bbLevelSub" class="bb-level-sub"></div>
+        <div class="bb-scroll-hint" aria-hidden="true">
+            <i class="fas fa-arrows-alt-h" aria-hidden="true"></i>
+            <span>Swipe horizontally to see all columns</span>
+        </div>
+        <div class="bb-table-wrap">
+            <table class="bb-table" id="tblBankBook">
+                <thead>
+                    <tr>
+                        <th id="bbParticularHead">Particular</th>
+                        <th class="bb-amt">Received amount</th>
+                        <th class="bb-amt">Payment amount</th>
+                    </tr>
+                </thead>
+                <tbody id="tblBankBookBody">
+                    <tr>
+                        <td colspan="3" class="bb-empty">Loading project wise report…</td>
+                    </tr>
+                </tbody>
+                <tfoot id="tblBankBookFoot"></tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<table id="tblBankBookExport" hidden="hidden" style="display:none">
+    <thead><tr></tr></thead>
+    <tbody></tbody>
+</table>
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Finance.Reports/Script/BankBookReport.js"></script>

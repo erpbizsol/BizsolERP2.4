@@ -3,7 +3,6 @@ import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFun
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { AttachmentControlService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_AttachmentControlService.js';
 import { CheckGSTNStatus } from '../../Bizsol.WebERP.UI.Shared/js/CheckGSTINStatus.js?v=20260615_3';
-
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
 var G_UserMasterCode = authKeyData.UserMaster_Code;
 var G_EditCode = 0;
@@ -27,15 +26,62 @@ let G_GSTINValidatedNo = "";
 /** DocumentMaster — same table key as other Account / party attachments (e.g. Lead). */
 var VM_ATTACHMENT_MASTER_TABLE = "AccountMaster";
 
-/** Letterhead for vendor/client register print preview (replaces session “Solar” branding). */
-function vmGetPrintPreviewHeaderInfo() {
+/** Company info loaded from GetCompanyList API (cached after first successful load). */
+var G_VendorPrintCompanyInfo = null;
+
+function vmPickRowField(row, keys) {
+    if (!row) return "";
+    for (var i = 0; i < keys.length; i++) {
+        var v = row[keys[i]];
+        if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+    }
+    return "";
+}
+
+
+function vmMapCompanyApiToHeaderInfo(res) {
+    var row = null;
+    if (Array.isArray(res) && res.length > 0) row = res[0];
+    else if (res && Array.isArray(res.data) && res.data.length > 0) row = res.data[0];
+    else if (res && Array.isArray(res.Data) && res.Data.length > 0) row = res.Data[0];
+    else if (res && typeof res === "object" && !Array.isArray(res)) row = res;
+    if (!row || typeof row !== "object") return null;
     return {
-        companyName: "PURSHOTAM PROFILES PVT.LTD.",
-        tagline: "OPTIMISING STRUCTURAL SOLUTIONS",
-        companyPhone: "011-47049127",
-        companyEmail: "info@purshotamgroup.com",
-        companyWeb: "www.purshotamgroup.com",
-        footerAddress: "City Tower, 2nd Floor, Netaji Subhash Place, Pitampura, Delhi-110034",
+        companyName: vmPickRowField(row, ["CompanyName", "companyName"]),
+        tagline: vmPickRowField(row, ["TagLine", "tagLine", "CompanyTagLine", "Tagline"]),
+        companyPhone: vmPickRowField(row, ["OfficePhones1", "officePhones1"]),
+        companyEmail: vmPickRowField(row, ["EMail", "eMail", "Email", "email"]),
+        companyWeb: vmPickRowField(row, ["WebSite", "webSite", "Website", "website"]),
+        companyGST: vmPickRowField(row, ["GSTNo", "gstNo", "GSTIN"]),
+        footerAddress: vmPickRowField(row, ["OfficeAddress1", "officeAddress1", "CompanyAddress", "Address"]),
+    };
+}
+
+/** Loads company letterhead details once; never rejects (falls back to session info). */
+function vmLoadPrintCompanyInfo() {
+    if (G_VendorPrintCompanyInfo) return Promise.resolve(G_VendorPrintCompanyInfo);
+    return VendorMasterService.GetCompanyList()
+        .then(function (res) {
+            G_VendorPrintCompanyInfo = vmMapCompanyApiToHeaderInfo(res);
+            return G_VendorPrintCompanyInfo;
+        })
+        .catch(function () {
+            return null;
+        });
+}
+
+/** Letterhead for vendor/client register print preview — API first, session as fallback. */
+function vmGetPrintPreviewHeaderInfo() {
+    var api = G_VendorPrintCompanyInfo || {};
+    var s = vmGetSessionCompanyInfo();
+    return {
+        companyName: api.companyName || s.companyName || "",
+        tagline: api.tagline || "",
+        companyPhone: api.companyPhone || s.companyPhone || "",
+        companyEmail: api.companyEmail || s.companyEmail || "",
+        companyWeb: api.companyWeb || s.companyWeb || "",
+        companyGST: api.companyGST || s.companyGST || "",
+        footerAddress: api.footerAddress || s.companyAddr || "",
     };
 }
 
@@ -462,7 +508,7 @@ function vmBuildVendorMasterPrintHtml(payload) {
     if (pp.companyPhone) hdrContact += "&#9990;&nbsp;" + vmEscapeHtml(pp.companyPhone) + "<br>";
     if (pp.companyEmail) hdrContact += "&#9993;&nbsp;" + vmEscapeHtml(pp.companyEmail) + "<br>";
     if (pp.companyWeb) hdrContact += "&#127760;&nbsp;" + vmEscapeHtml(pp.companyWeb) + "<br>";
-    if (co.companyGST) hdrContact += "GSTIN:&nbsp;" + vmEscapeHtml(co.companyGST);
+    if (pp.companyGST) hdrContact += "GSTIN:&nbsp;" + vmEscapeHtml(pp.companyGST);
 
     var logoUrl =
         (sessionStorage.getItem("AppBaseURL") || (window.location.origin + "/")).replace(/\/?$/, "/") +
@@ -658,13 +704,168 @@ function vmBuildVendorMasterPrintHtml(payload) {
     return html;
 }
 
+/** iOS ignores window.close() on tabs from window.open(), so iPhone/iPad use an in-page overlay. */
+function vmIsMobilePrintDevice() {
+    var ua = navigator.userAgent || "";
+    return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function vmLoadScriptOnce(src) {
+    return new Promise(function (resolve, reject) {
+        var s = document.createElement("script");
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
+
+function vmEnsurePdfLibs() {
+    var p = Promise.resolve();
+    if (typeof window.html2canvas !== "function") {
+        p = p.then(function () {
+            return vmLoadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+        });
+    }
+    if (!(window.jspdf && window.jspdf.jsPDF)) {
+        p = p.then(function () {
+            return vmLoadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+        });
+    }
+    return p;
+}
+
+function vmPrintHtmlWithoutToolbar(html, extraCss) {
+    var css = "<style>.no-print{display:none!important;}" + (extraCss || "") + "</style>";
+    return html.indexOf("</head>") >= 0 ? html.replace("</head>", css + "</head>") : css + html;
+}
+
+function vmVendorPdfFileName(item, code) {
+    var base = ((item && item.AccountDesp) || (G_ModuleName === "Vendor Master" ? "Vendor" : "Client")) + "_" + code;
+    return base.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_") + ".pdf";
+}
+
+/** Renders the print HTML off-screen at A4 width and saves it as PDF (no window opened). */
+function vmDownloadHtmlAsPdf(html, fileName) {
+    return vmEnsurePdfLibs().then(function () {
+        return new Promise(function (resolve, reject) {
+            var ifr = document.createElement("iframe");
+            ifr.setAttribute("aria-hidden", "true");
+            ifr.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;";
+            document.body.appendChild(ifr);
+            var doc = ifr.contentDocument;
+            doc.open();
+            doc.write(vmPrintHtmlWithoutToolbar(html, "body{padding:8mm 10mm!important;}"));
+            doc.close();
+
+            var cleanup = function () {
+                if (ifr.parentNode) ifr.parentNode.removeChild(ifr);
+            };
+            var started = Date.now();
+            var waitImages = function () {
+                var pending = [].some.call(doc.images, function (im) {
+                    return !im.complete;
+                });
+                if (pending && Date.now() - started < 4000) {
+                    setTimeout(waitImages, 150);
+                    return;
+                }
+                ifr.style.height = Math.max(doc.documentElement.scrollHeight, 1123) + "px";
+                setTimeout(function () {
+                    window
+                        .html2canvas(doc.documentElement, { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: 794 })
+                        .then(function (canvas) {
+                            var pdf = new window.jspdf.jsPDF("p", "mm", "a4");
+                            var pw = 210,
+                                ph = 297;
+                            var imgH = (canvas.height * pw) / canvas.width;
+                            var img = canvas.toDataURL("image/jpeg", 0.95);
+                            var y = 0;
+                            pdf.addImage(img, "JPEG", 0, y, pw, imgH);
+                            for (var left = imgH - ph; left > 1; left -= ph) {
+                                y -= ph;
+                                pdf.addPage();
+                                pdf.addImage(img, "JPEG", 0, y, pw, imgH);
+                            }
+                            pdf.save(fileName);
+                            cleanup();
+                            resolve();
+                        })
+                        .catch(function (e) {
+                            cleanup();
+                            reject(e);
+                        });
+                }, 200);
+            };
+            setTimeout(waitImages, 100);
+        });
+    });
+}
+
+function vmClosePrintOverlay() {
+    var ov = document.getElementById("vmPrintOverlay");
+    if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+}
+
+function vmShowPrintOverlay(html, pdfName) {
+    vmClosePrintOverlay();
+    var btn = "color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;";
+    var ov = document.createElement("div");
+    ov.id = "vmPrintOverlay";
+    ov.style.cssText = "position:fixed;inset:0;z-index:100050;background:#fff;display:flex;flex-direction:column;";
+    ov.innerHTML =
+        '<div style="flex:none;display:flex;gap:8px;align-items:center;padding:8px 10px;padding-top:max(8px, env(safe-area-inset-top));background:#f3f4f6;border-bottom:1px solid #ddd;">' +
+        '<button type="button" id="vmPoPrint" style="background:#1a2a6c;' + btn + '">Print</button>' +
+        '<button type="button" id="vmPoPdf" style="background:#059669;' + btn + '">Download PDF</button>' +
+        '<button type="button" id="vmPoClose" style="background:#666;margin-left:auto;' + btn + '">Close</button>' +
+        "</div>" +
+        '<div style="flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;">' +
+        '<iframe id="vmPoFrame" title="Print preview" style="display:block;width:100%;height:100%;border:0;"></iframe></div>';
+    document.body.appendChild(ov);
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+
+    var frame = document.getElementById("vmPoFrame");
+    var fdoc = frame.contentDocument;
+    fdoc.open();
+    fdoc.write(vmPrintHtmlWithoutToolbar(html, "body{padding:6px;}"));
+    fdoc.close();
+
+    document.getElementById("vmPoClose").onclick = vmClosePrintOverlay;
+    document.getElementById("vmPoPrint").onclick = function () {
+        try {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+        } catch (e) {
+            toastr.warning("Print is not available on this device. Use Download PDF.");
+        }
+    };
+    document.getElementById("vmPoPdf").onclick = function () {
+        var b = this;
+        b.disabled = true;
+        vmDownloadHtmlAsPdf(html, pdfName)
+            .catch(function (err) {
+                toastr.error("Could not create PDF.");
+                console.error(err);
+            })
+            .then(function () {
+                b.disabled = false;
+            });
+    };
+}
+
 function PrintVendor(code, mode) {
     var c = parseInt(code, 10);
     if (!c) {
         toastr.warning("Invalid vendor.");
         return;
     }
-    VendorMasterService.GetSolarVendorMasterByCode(c)
+    vmLoadPrintCompanyInfo()
+        .then(function () {
+            return VendorMasterService.GetSolarVendorMasterByCode(c);
+        })
         .then(function (res) {
             var payload = vmParseVendorPrintPayload(res);
             if (!payload || !payload.item) {
@@ -679,6 +880,19 @@ function PrintVendor(code, mode) {
                     attach: { data: payload.attach.data, fileName: payload.attach.fileName },
                     industryTypeLabel: industryLabel
                 });
+                if (vmIsMobilePrintDevice()) {
+                    var pdfName = vmVendorPdfFileName(payload.item, c);
+                    if (mode === "print") {
+                        toastr.info("Preparing PDF...");
+                        vmDownloadHtmlAsPdf(html, pdfName).catch(function (err) {
+                            toastr.error("Could not create PDF.");
+                            console.error(err);
+                        });
+                    } else {
+                        vmShowPrintOverlay(html, pdfName);
+                    }
+                    return;
+                }
                 var win = window.open("", "_blank", "width=920,height=760,scrollbars=yes,resizable=yes");
                 if (!win) {
                     toastr.warning("Please allow popups for this site to use print.");
@@ -741,6 +955,52 @@ function applyVendorMasterPartyVerificationUi() {
     }
 }
 
+/**
+ * Parses config like "VENDOR=EDIT#DELETE*CLINT=EDIT#DELETE" (modules split by '*', buttons split by '#')
+ * and returns the list of action buttons to hide for the current module (Vendor / Client).
+ */
+function parseHiddenActionButtons(res, isClientOrVendor) {
+    var raw = null;
+    var row = null;
+    if (typeof res === "string") raw = res;
+    else if (Array.isArray(res) && res.length > 0) row = res[0];
+    else if (res && Array.isArray(res.data) && res.data.length > 0) row = res.data[0];
+    else if (res && Array.isArray(res.Data) && res.Data.length > 0) row = res.Data[0];
+    else if (res && typeof res === "object") row = res;
+
+    if (raw === null && row) {
+        if (typeof row === "string") raw = row;
+        else {
+            var k = Object.keys(row).filter(function (x) { return x.toLowerCase() === "hideactionbuttonforweberp"; })[0];
+            raw = k ? row[k] : null;
+        }
+    }
+    if (!raw) return [];
+
+    var moduleKeys = isClientOrVendor === "C" ? ["CLINT", "CLIENT"] : ["VENDOR"];
+    var hidden = [];
+    String(raw).split("*").forEach(function (part) {
+        var idx = part.indexOf("=");
+        if (idx < 0) return;
+        var key = part.substring(0, idx).trim().toUpperCase();
+        if (moduleKeys.indexOf(key) < 0) return;
+        part.substring(idx + 1).split("#").forEach(function (b) {
+            var name = b.trim().toUpperCase();
+            if (name) hidden.push(name);
+        });
+    });
+    return hidden;
+}
+
+function isVendorActionButtonHidden(name) {
+    var list = window.G_HiddenActionButtons || [];
+    return list.indexOf(String(name).toUpperCase()) >= 0;
+}
+
+function applyVendorHiddenActionButtonsToViewModal() {
+    $(".vm-btn-view-edit").toggle(!isVendorActionButtonHidden("EDIT"));
+}
+
 function shouldShowVendorPartyVerifyColumn() {
     return !!(window.G_PartyVerificationBeforeOrderY && window.G_VendorHasVerifyRight);
 }
@@ -778,9 +1038,22 @@ $(document).ready(function () {
         })
         .finally(function () {
             applyVendorMasterPartyVerificationUi();
-            resolveVendorVerifyRight().then(function () {
-                GetVendorMasterList();
-            });
+            window.G_HiddenActionButtons = [];
+            VendorMasterService.HideActionbuttonForWebERP()
+                .then(function (res) {
+                    window.G_HiddenActionButtons = parseHiddenActionButtons(res, G_IsClientOrVendor);
+                })
+                .catch(function () {
+                    window.G_HiddenActionButtons = [];
+                })
+                .finally(function () {
+                    window.G_HiddenActionButtonsLoaded = true;
+                    applyVendorMasterClientModeUi();
+                    applyVendorHiddenActionButtonsToViewModal();
+                    resolveVendorVerifyRight().then(function () {
+                        GetVendorMasterList();
+                    });
+                });
         });
 
     GetNationList();
@@ -1231,34 +1504,46 @@ function mapVendorRowsToGrid(rows) {
         var attachBtnClass = attYesBtn ? "vm-btn-attach vm-btn-attach--yes" : "vm-btn-attach";
         var btns =
             '<span class="vm-action-btns">' +
-            '<button class="vm-btn-view" title="View" onclick="ViewVendor(' + item.Code + ')">' +
-            '<i class="fas fa-eye"></i>' +
-            "</button>" +
-            '<button class="vm-btn-view" title="Print Preview" onclick="PrintVendor(' +
-            item.Code +
-            ',\'preview\')">' +
-            '<i class="fas fa-search-plus"></i>' +
-            "</button>" +
-            '<button class="vm-btn-view" title="Print" onclick="PrintVendor(' +
-            item.Code +
-            ',\'print\')">' +
-            '<i class="fas fa-print"></i>' +
-            "</button>" +
-            '<button type="button" class="' +
-            attachBtnClass +
-            '" title="Attachment" onclick="openVendorMasterListAttachmentControl(' +
-            item.Code +
-            "," +
-            item.Code +
-            ",\'\')\">" +
-            '<i class="fas fa-paperclip"></i>' +
-            "</button>" +
-            '<button class="vm-btn-edit" title="Edit" onclick="EditVendor(' + item.Code + ')">' +
-            '<i class="fas fa-pen"></i>' +
-            "</button>" +
-            '<button class="vm-btn-delete" title="Delete" onclick="ConfirmVendorDelete(' + item.Code + ')">' +
-            '<i class="fas fa-trash-can"></i>' +
-            "</button>" +
+            (isVendorActionButtonHidden("VIEW")
+                ? ""
+                : '<button class="vm-btn-view" title="View" onclick="ViewVendor(' + item.Code + ')">' +
+                  '<i class="fas fa-eye"></i>' +
+                  "</button>") +
+            (isVendorActionButtonHidden("PRINTPREVIEW") || isVendorActionButtonHidden("PREVIEW")
+                ? ""
+                : '<button class="vm-btn-view" title="Print Preview" onclick="PrintVendor(' +
+                  item.Code +
+                  ',\'preview\')">' +
+                  '<i class="fas fa-search-plus"></i>' +
+                  "</button>") +
+            (isVendorActionButtonHidden("PRINT")
+                ? ""
+                : '<button class="vm-btn-view" title="Print" onclick="PrintVendor(' +
+                  item.Code +
+                  ',\'print\')">' +
+                  '<i class="fas fa-print"></i>' +
+                  "</button>") +
+            (isVendorActionButtonHidden("ATTACHMENT")
+                ? ""
+                : '<button type="button" class="' +
+                  attachBtnClass +
+                  '" title="Attachment" onclick="openVendorMasterListAttachmentControl(' +
+                  item.Code +
+                  "," +
+                  item.Code +
+                  ",\'\')\">" +
+                  '<i class="fas fa-paperclip"></i>' +
+                  "</button>") +
+            (isVendorActionButtonHidden("EDIT")
+                ? ""
+                : '<button class="vm-btn-edit" title="Edit" onclick="EditVendor(' + item.Code + ')">' +
+                  '<i class="fas fa-pen"></i>' +
+                  "</button>") +
+            (isVendorActionButtonHidden("DELETE")
+                ? ""
+                : '<button class="vm-btn-delete" title="Delete" onclick="ConfirmVendorDelete(' + item.Code + ')">' +
+                  '<i class="fas fa-trash-can"></i>' +
+                  "</button>") +
             "</span>";
         var patch = {};
         if (shouldShowVendorPartyVerifyColumn()) {
@@ -1271,7 +1556,9 @@ function mapVendorRowsToGrid(rows) {
 function applyVendorMasterClientModeUi() {
     var $btn = $("#vmBtnNewVendor");
     if (!$btn.length) return;
-    if (G_IsClientOrVendor === "C") {
+    // Client me button hamesha hide.
+    // Vendor me: config load hone tak hide (flicker avoid); config me NEW aaye to hide, nahi aaye to show.
+    if (G_IsClientOrVendor === "C" || !window.G_HiddenActionButtonsLoaded || isVendorActionButtonHidden("NEW")) {
         $btn.hide();
     } else {
         $btn.show();

@@ -1896,22 +1896,22 @@ function renderTaskGrid() {
             '<tr data-row-idx="' +
             idx +
             '">' +
-            '<td class="text-center"><span class="pm-sno">' +
+            '<td class="tlm-col-sno text-center"><span class="pm-sno">' +
             (idx + 1) +
             '</span></td>' +
-            '<td><input type="text" class="tlm-task-name" maxlength="500" value="' +
+            '<td class="tlm-col-task"><input type="text" class="tlm-task-name" maxlength="500" value="' +
             escapeHtml(row.Task) +
             '" placeholder="Enter task" /></td>' +
-            '<td><select class="tlm-task-freq">' +
+            '<td class="tlm-col-freq"><select class="tlm-task-freq">' +
             freqOpts +
             '</select></td>' +
-            '<td><select class="tlm-task-status">' +
+            '<td class="tlm-col-status"><select class="tlm-task-status">' +
             statusOpts +
             '</select></td>' +
-            '<td>' +
+            '<td class="tlm-col-date">' +
             dateCellHtml +
             '</td>' +
-            '<td class="text-center"><button type="button" class="tlm-row-del tlm-btn-remove-row" title="Remove"><i class="fas fa-times"></i></button></td>' +
+            '<td class="tlm-col-del text-center"><button type="button" class="tlm-row-del tlm-btn-remove-row" title="Remove"><i class="fas fa-times"></i></button></td>' +
             '</tr>';
 
         $tbody.append(tr);

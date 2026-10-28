@@ -16,7 +16,6 @@
     .datepicker table tfoot { display: none; }
     #hidetexbox { display: none; }
     .btn:not(:disabled):not(.disabled) { cursor: pointer !important; }
-    #ExportModal .modal-dialog { max-width: 90%; }
     #ViewInIDPallet .modal-dialog { max-width: 560px; }
 </style>
 
@@ -179,19 +178,41 @@
     </table>
 </div>
 
-<div class="modal fade" id="ExportModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modal-title">Please Choose Button</h5>
-                <button type="button" class="close modal-close" aria-label="Close" onclick="Close_ExportModal()"<span aria-hidden="true">x</span></button>
+<div class="modal fade" id="ExportModal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered pp-export-modal-dialog">
+        <div class="modal-content pp-export-modal">
+            <div class="modal-header pp-export-modal-header">
+                <h5 class="modal-title" id="modal-title">
+                    <i class="fa-solid fa-file-export" aria-hidden="true"></i>
+                    <span>Export pallet data</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" aria-label="Close" onclick="Close_ExportModal()"></button>
             </div>
-            <div class="modal-body d-flex flex-wrap gap-2">
-                <button type="button" id="btnDownload" class="btn btn-primary btn-height" onclick="ExportSummary()">Export Summary</button>
-                <button type="button" id="btnDownloadDetails" class="btn btn-primary btn-height" onclick="DownloadPalletPacking()">Export Details</button>
+            <div class="modal-body pp-export-modal-body">
+                <p class="pp-export-modal-hint">Select an export type</p>
+                <div class="pp-export-options" role="group" aria-label="Export format">
+                    <button type="button" id="btnDownload" class="pp-export-option" onclick="ExportSummary()">
+                        <span class="pp-export-option-icon pp-export-option-icon--summary" aria-hidden="true">
+                            <i class="fa-solid fa-table-list"></i>
+                        </span>
+                        <span class="pp-export-option-label">
+                            <span class="pp-export-option-title">Summary</span>
+                            <span class="pp-export-option-desc">Pallet totals</span>
+                        </span>
+                    </button>
+                    <button type="button" id="btnDownloadDetails" class="pp-export-option" onclick="DownloadPalletPacking()">
+                        <span class="pp-export-option-icon pp-export-option-icon--details" aria-hidden="true">
+                            <i class="fa-solid fa-list-ul"></i>
+                        </span>
+                        <span class="pp-export-option-label">
+                            <span class="pp-export-option-title">Details</span>
+                            <span class="pp-export-option-desc">Line-level data</span>
+                        </span>
+                    </button>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger btn-height" onclick="Close_ExportModal()">Cancel</button>
+            <div class="modal-footer pp-export-modal-footer">
+                <button type="button" class="pp-export-cancel-btn" onclick="Close_ExportModal()">Cancel</button>
             </div>
         </div>
     </div>

@@ -24,9 +24,22 @@ function _AP_getReopenPref(formName, formType) {
 }
 
 // ── Modal HTML ───────────────────────────────────────────────────────────────
+function _AP_applyStyles() {
+    let apStyleEl = document.getElementById('AP_Styles');
+    if (!apStyleEl) {
+        apStyleEl = document.createElement('style');
+        apStyleEl.id = 'AP_Styles';
+        document.head.appendChild(apStyleEl);
+    }
+    apStyleEl.textContent = _AP_styles();
+}
+
 function createAgeingParameterModal(id) {
     const modalId = id || 'AgeingParameterModal';
-    if (document.getElementById(modalId)) return modalId;
+    if (document.getElementById(modalId)) {
+        _AP_applyStyles();
+        return modalId;
+    }
 
     const html = `
     <div class="modal fade" id="${modalId}" tabindex="-1" role="dialog" aria-hidden="true"
@@ -60,7 +73,7 @@ function createAgeingParameterModal(id) {
                                    onchange="AP_onNoOfColumnsChange();"
                                    readonly />
                         </div>
-                        <div class="d-flex flex-column flex-shrink-0">
+                        <div class="d-flex flex-column flex-shrink-0 ap-btn-row">
                             <label class="ap-lbl mb-1 ap-lbl-spacer" aria-hidden="true">&nbsp;</label>
                             <div id="AP_btnGroup" class="d-flex gap-1 align-items-center">
                             <button id="AP_btnUse"
@@ -121,13 +134,7 @@ function createAgeingParameterModal(id) {
     </div>`;
 
     document.body.insertAdjacentHTML('beforeend', html);
-
-    if (!document.getElementById('AP_Styles')) {
-        const s = document.createElement('style');
-        s.id = 'AP_Styles';
-        s.textContent = _AP_styles();
-        document.head.appendChild(s);
-    }
+    _AP_applyStyles();
     return modalId;
 }
 
@@ -147,24 +154,11 @@ function _AP_styles() {
     #AgeingParameterModal .ap-inp[readonly] { cursor:default; color:#555; }
     #AgeingParameterModal .ap-days-last     { background:#c5d8e8 !important; cursor:not-allowed; }
     #AgeingParameterModal .ap-lbl-spacer    { visibility:hidden; }
-    #AgeingParameterModal #AP_rowSavedFormat .form-control-sm {
-        height: calc(1.5em + 0.5rem + 2px);
-        min-height: calc(1.5em + 0.5rem + 2px);
-        box-sizing: border-box;
+    #AgeingParameterModal #AP_rowSavedFormat .ap-btn-row {
+        flex-basis: 100%;
     }
-    #AgeingParameterModal #AP_rowSavedFormat .ap-btn {
-        height: calc(1.5em + 0.5rem + 2px);
-        min-height: calc(1.5em + 0.5rem + 2px);
-        max-height: calc(1.5em + 0.5rem + 2px);
-        line-height: 1;
-        font-size: 12px;
-        font-weight: 700;
-        padding: 0 10px;
-        min-width: 44px;
-        box-sizing: border-box;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+    #AgeingParameterModal #AP_rowSavedFormat .ap-btn-row .ap-lbl-spacer {
+        display: none;
     }
     `;
 }

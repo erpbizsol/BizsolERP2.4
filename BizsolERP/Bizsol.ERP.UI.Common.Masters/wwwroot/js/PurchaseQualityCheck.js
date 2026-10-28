@@ -61,6 +61,7 @@ $(document).ready(function () {
         $('#txtBillDate').val('');
         $('#txtVehicleNo').val('');
         $('#txtBillNo').val('');
+        $('#txtEntryDate').val('');
     });
 });
 function toggleMRNField(isView) {
@@ -463,6 +464,7 @@ function bindMRNDropdown(list) {
                     $('#txtBillDate').val('');
                     $('#txtVehicleNo').val('');
                     $('#txtBillNo').val('');
+                    $('#txtEntryDate').val('');
                     clearMRNData();
                     clearTable();
                 }
@@ -493,6 +495,7 @@ function loadPurchaseQualityCheckData(mrnMasterCode) {
             if (response && Array.isArray(response) && response.length > 0) {
                 if (response[0].Status2 == 'Y') {
                     G_PurchaseQualityCheckData = response;
+                    $('#txtEntryDate').val(response[0].EntryDate || response[0].entryDate || '');
                     buildQualityCheckTable(response);
                 } else {
                     toastr.warning(response[0].Msg);
@@ -1514,6 +1517,7 @@ function bindVendorDropdown(list) {
                 $('#txtBillDate').val('');
                 $('#txtVehicleNo').val('');
                 $('#txtBillNo').val('');
+                $('#txtEntryDate').val('');
             });
         }
     } catch (e) {

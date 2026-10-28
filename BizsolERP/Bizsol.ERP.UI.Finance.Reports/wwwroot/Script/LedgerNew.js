@@ -713,7 +713,8 @@ function buildLedgerPreviewBodyRowHtmlList(rows) {
 }
 
 const LEDGER_PREVIEW_COLS = 6;
-const LEDGER_PREVIEW_ROWS_PER_PAGE = 28;
+/** Keeps each HTML page within one A4 sheet when exported to PDF (tall rows/narration need fewer rows). */
+const LEDGER_PREVIEW_ROWS_PER_PAGE = 22;
 
 function buildLedgerPreviewStackedCell(top, bottom) {
     const topHtml = escapeLedgerPreviewHtml(top);
@@ -1300,26 +1301,249 @@ function printLedgerPreviewModal() {
     frame.contentWindow.print();
 }
 
-function downloadLedgerPreviewModal() {
-    if (!G_LedgerPreviewHtml) {
-        if (typeof toastr !== 'undefined') toastr.warning('Nothing to download.');
-        return;
-    }
-    const party = (getLedgerPartyDisplayName() || 'Ledger').replace(/[^\w\-]+/g, '_').slice(0, 40);
-    const filters = GetAllFilters();
-    const from = (filters.fromDate || 'from').replace(/[^\d\-]/g, '');
-    const to = (filters.toDate || 'to').replace(/[^\d\-]/g, '');
-    const fileName = `Ledger_${party}_${from}_${to}.html`;
-    const blob = new Blob([G_LedgerPreviewHtml], { type: 'text/html;charset=utf-8' });
+function ledgerPreviewIsIOSClient() {
+    const ua = String(navigator.userAgent || navigator.vendor || '');
+    if (/iPhone|iPad|iPod/i.test(ua)) return true;
+    if (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1) return true;
+    return /Macintosh/i.test(ua) && 'ontouchend' in document;
+}
+
+function ledgerPreviewIsMobileClient() {
+    const ua = String(navigator.userAgent || navigator.vendor || '');
+    if (/Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return true;
+    return ledgerPreviewIsIOSClient();
+}
+
+function ledgerPreviewSafeFileName(name) {
+    return String(name || 'Ledger.pdf').replace(/[\\/:*?"<>|]/g, '_').trim() || 'Ledger.pdf';
+}
+
+function ledgerPreviewTriggerAnchorDownload(blob, fileName) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.style.display = 'none';
     a.href = url;
     a.download = fileName;
+    a.setAttribute('download', fileName);
+    a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(function () {
+        try { a.remove(); } catch (e) { }
+        try { URL.revokeObjectURL(url); } catch (e) { }
+    }, 4000);
+}
+
+/** Mobile Safari opens text/html blob URLs; save via octet-stream / Share instead of previewing. */
+function ledgerPreviewDownloadBlob(blob, fileName) {
+    fileName = ledgerPreviewSafeFileName(fileName);
+
+    if (ledgerPreviewIsIOSClient() && typeof File === 'function' && typeof navigator.share === 'function') {
+        const isPdf = /\.pdf$/i.test(fileName);
+        const shareTypes = isPdf
+            ? ['application/pdf', 'application/octet-stream', '']
+            : ['application/octet-stream', 'text/html', ''];
+        let chain = Promise.reject(new Error('ledger-share-start'));
+        shareTypes.forEach(function (mime) {
+            chain = chain.catch(function (err) {
+                if (err && err.name === 'AbortError') throw err;
+                const file = new File([blob], fileName, {
+                    type: mime || 'application/octet-stream',
+                    lastModified: Date.now()
+                });
+                return navigator.share({ files: [file], title: fileName, text: fileName });
+            });
+        });
+        chain.catch(function (err) {
+            if (err && err.name === 'AbortError') return;
+            ledgerPreviewTriggerAnchorDownload(
+                new Blob([blob], { type: 'application/octet-stream' }),
+                fileName
+            );
+        });
+        return;
+    }
+
+    const downloadBlob = ledgerPreviewIsMobileClient()
+        ? new Blob([blob], { type: 'application/octet-stream' })
+        : blob;
+    ledgerPreviewTriggerAnchorDownload(downloadBlob, fileName);
+}
+
+const G_LedgerPdfScriptPromises = {};
+
+function ledgerLoadScriptOnce(src) {
+    if (!G_LedgerPdfScriptPromises[src]) {
+        G_LedgerPdfScriptPromises[src] = new Promise(function (resolve, reject) {
+            if (document.querySelector('script[src="' + src + '"]')) {
+                resolve();
+                return;
+            }
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+    return G_LedgerPdfScriptPromises[src];
+}
+
+function ledgerEnsurePdfLibs() {
+    let p = Promise.resolve();
+    if (typeof window.html2canvas !== 'function') {
+        p = p.then(function () {
+            return ledgerLoadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        });
+    }
+    if (!(window.jspdf && window.jspdf.jsPDF)) {
+        p = p.then(function () {
+            return ledgerLoadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+        });
+    }
+    return p;
+}
+
+function buildLedgerPreviewDownloadFileName() {
+    const party = (getLedgerPartyDisplayName() || 'Ledger').replace(/[^\w\-]+/g, '_').slice(0, 40);
+    const filters = GetAllFilters();
+    const from = (filters.fromDate || 'from').replace(/[^\d\-]/g, '');
+    const to = (filters.toDate || 'to').replace(/[^\d\-]/g, '');
+    return `Ledger_${party}_${from}_${to}.pdf`;
+}
+
+function ledgerInjectPdfCaptureStyles(doc) {
+    if (!doc || doc.getElementById('ledger-pdf-capture-style')) return;
+    const st = doc.createElement('style');
+    st.id = 'ledger-pdf-capture-style';
+    st.textContent = 'html,body{background:#fff!important;margin:0!important;padding:0!important;}'
+        + ' body{display:block!important;gap:0!important;align-items:stretch!important;}'
+        + ' .a4-page{width:210mm!important;max-width:210mm!important;min-height:auto!important;'
+        + ' box-shadow:none!important;margin:0!important;padding:10mm 10mm 8mm!important;}'
+        + ' .ledger-table-wrap{overflow:visible!important;}';
+    doc.head.appendChild(st);
+}
+
+/** Fit one captured ledger page on exactly one A4 PDF page (never slice through rows). */
+function ledgerAddCanvasToPdfFitOnePage(pdf, canvas, pw, ph, addNewPageFirst) {
+    if (addNewPageFirst) pdf.addPage();
+    const img = canvas.toDataURL('image/jpeg', 0.92);
+    const ratio = canvas.height / canvas.width;
+    let drawW = pw;
+    let drawH = drawW * ratio;
+    if (drawH > ph) {
+        drawH = ph;
+        drawW = drawH / ratio;
+    }
+    const x = (pw - drawW) / 2;
+    pdf.addImage(img, 'JPEG', x, 0, drawW, drawH);
+}
+
+/** Renders preview HTML off-screen at A4 width and saves as PDF. */
+function ledgerDownloadHtmlAsPdf(html, fileName) {
+    return ledgerEnsurePdfLibs().then(function () {
+        return new Promise(function (resolve, reject) {
+            const ifr = document.createElement('iframe');
+            ifr.setAttribute('aria-hidden', 'true');
+            ifr.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;height:1200px;border:0;';
+            document.body.appendChild(ifr);
+            const doc = ifr.contentDocument;
+            doc.open();
+            doc.write(html);
+            doc.close();
+
+            const cleanup = function () {
+                if (ifr.parentNode) ifr.parentNode.removeChild(ifr);
+            };
+            const started = Date.now();
+            const waitReady = function (cb) {
+                const pending = [].some.call(doc.images, function (im) {
+                    return !im.complete;
+                });
+                if (pending && Date.now() - started < 4000) {
+                    setTimeout(function () { waitReady(cb); }, 150);
+                    return;
+                }
+                setTimeout(cb, 200);
+            };
+
+            waitReady(function () {
+                ledgerInjectPdfCaptureStyles(doc);
+                ifr.style.height = Math.max(doc.documentElement.scrollHeight, 1200) + 'px';
+
+                const pageEls = doc.querySelectorAll('.a4-page');
+                const pages = pageEls.length ? [].slice.call(pageEls) : [doc.body];
+                const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+                const pw = 210;
+                const ph = 297;
+                let pageIndex = 0;
+                let pdfHasContent = false;
+
+                const captureNext = function () {
+                    if (pageIndex >= pages.length) {
+                        try {
+                            ledgerPreviewDownloadBlob(pdf.output('blob'), fileName);
+                            cleanup();
+                            resolve();
+                        } catch (e) {
+                            cleanup();
+                            reject(e);
+                        }
+                        return;
+                    }
+                    const el = pages[pageIndex];
+                    window
+                        .html2canvas(el, {
+                            scale: 2,
+                            useCORS: true,
+                            backgroundColor: '#ffffff',
+                            logging: false,
+                            width: el.scrollWidth,
+                            height: el.scrollHeight,
+                            windowWidth: doc.documentElement.clientWidth || 794
+                        })
+                        .then(function (canvas) {
+                            ledgerAddCanvasToPdfFitOnePage(pdf, canvas, pw, ph, pdfHasContent);
+                            pdfHasContent = true;
+                            pageIndex += 1;
+                            captureNext();
+                        })
+                        .catch(function (e) {
+                            cleanup();
+                            reject(e);
+                        });
+                };
+                captureNext();
+            });
+        });
+    });
+}
+
+function downloadLedgerPreviewModal() {
+    const fileName = buildLedgerPreviewDownloadFileName();
+    const startPdf = function (html) {
+        if (!html) {
+            if (typeof toastr !== 'undefined') toastr.warning('Nothing to download.');
+            return;
+        }
+        if (typeof toastr !== 'undefined') toastr.info('Preparing PDF...');
+        ledgerDownloadHtmlAsPdf(html, fileName).catch(function () {
+            if (typeof toastr !== 'undefined') toastr.error('Could not create PDF.');
+        });
+    };
+
+    if (G_IsDataLoaded && G_RawLedgerData.length) {
+        CompanyInformationService.GetCompanyInfo()
+            .then(function (info) {
+                startPdf(buildLedgerPrintPreviewHtml(info || {}));
+            })
+            .catch(function () {
+                startPdf(buildLedgerPrintPreviewHtml({}));
+            });
+        return;
+    }
+
+    startPdf(G_LedgerPreviewHtml);
 }
 
 function initLedgerPreviewModal() {

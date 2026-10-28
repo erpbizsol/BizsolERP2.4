@@ -27,11 +27,61 @@ let salesComparisonBarChartInstance = null;
 let partyScoreDonutChartInstance = null;
 let caProductPieChartInstance = null;
 let G_SummaryReportRows = [];
+let G_SummaryReportRow = null;
+let G_DreamClientRows = [];
 let G_PartyScoringRows = [];
 let G_PartyScoringLastMonthMap = {};
 let G_PartySaleMap = {};
 let G_ClientRatingMaster = [];
 const HIGH_GP_SALE_TARGET_PCT = 60;
+
+// ── Tab Cache ──────────────────────────────────────────────────────────────────
+// G_FilterGeneration is incremented every time the user applies new filters.
+// Each tab stores the generation number it was last loaded for.
+// Revisiting a tab without changing filters → same generation → no API call.
+// Apply filters or Refresh button → generation bumps / cache cleared → API call.
+let G_FilterGeneration = 0;
+let G_TabCache = {};      // tabId → generation number when last loaded
+let G_TabData   = {};     // tabId → raw API data saved for cache re-renders
+
+function getActiveTabId() {
+    const activePane = document.querySelector('.tab-pane.show.active') ||
+                       document.querySelector('.tab-pane.active');
+    return activePane ? activePane.id : 'summaryReport';
+}
+
+function isTabCached(tabId) {
+    return G_TabCache[tabId] !== undefined && G_TabCache[tabId] === G_FilterGeneration;
+}
+
+function markTabCached(tabId) {
+    G_TabCache[tabId] = G_FilterGeneration;
+}
+
+function setTabData(tabId, data) {
+    G_TabData[tabId]  = data;
+    markTabCached(tabId);
+}
+
+function getTabData(tabId) {
+    return G_TabData[tabId];
+}
+
+function clearTabCache(tabId) {
+    delete G_TabCache[tabId];
+    delete G_TabData[tabId];
+}
+
+function clearAllTabCache() {
+    G_TabCache = {};
+    G_TabData  = {};
+}
+
+function bumpFilterGeneration() {
+    G_FilterGeneration++;
+    clearAllTabCache();
+}
+// ──────────────────────────────────────────────────────────────────────────────
 
 // Regional Analysis data and drill-down state
 let G_RegionalAnalysisData = [];
@@ -357,24 +407,27 @@ function setSummaryKpiTrend(elementId, current, previous, higherIsBetter = true)
 function parseSummaryReportResponse(response) {
     let rows = [];
     let summaryRow = null;
+    let dreamClients = [];
 
     if (!response) {
-        return { rows, summaryRow };
+        return { rows, summaryRow, dreamClients };
     }
 
     if (Array.isArray(response)) {
         if (Array.isArray(response[0])) {
             rows = response[0] || [];
             summaryRow = (response[1] && response[1][0]) ? response[1][0] : null;
+            dreamClients = Array.isArray(response[2]) ? (response[2] || []) : [];
         } else if (response.length > 0) {
             rows = response;
         }
     } else if (response.Table || response.Table1) {
         rows = response.Table || response.Table1 || [];
         summaryRow = (response.Table2 && response.Table2[0]) ? response.Table2[0] : null;
+        dreamClients = response.Table3 || [];
     }
 
-    return { rows: rows || [], summaryRow: summaryRow || null };
+    return { rows: rows || [], summaryRow: summaryRow || null, dreamClients: dreamClients || [] };
 }
 
 function categorizeGpForSummary(gpValue) {
@@ -449,10 +502,10 @@ function aggregateSummaryMetrics(rows, summaryRow) {
         : totalManifested;
     const readyDispatch = parseFloat(sr.ReadyToDispatch || sr.ReaddyToDispatch || sr.ReadyToDispatchStock || sr['Ready To Dispatch'] || 0) || 0;
     const readyDispatchValue = parseFloat(sr.ReadyToDispatchValue || sr['Ready To Dispatch Value'] || sr.ReadyDispatchValue || 0) || 0;
-    const closeDreamClient = parseInt(
-        sr.CloseDreamClient ?? sr.ClosedDreamClient ?? sr['Close Dream Client'] ?? sr.NofDreamClient ?? 0,
-        10
-    ) || 0;
+    const closeDreamClientRaw = sr.CloseDreamClient ?? sr.ClosedDreamClient ?? sr['Close Dream Client'] ?? sr.NofDreamClient;
+    const closeDreamClient = (closeDreamClientRaw !== undefined && closeDreamClientRaw !== null && String(closeDreamClientRaw).trim() !== '')
+        ? String(closeDreamClientRaw).trim()
+        : '0';
     const manifestActualScore = manifestedAsOnDate > 0 ? (totalSaleMt / manifestedAsOnDate) * 100 : 0;
 
     return {
@@ -515,6 +568,8 @@ function clearSummaryDashboard() {
     const gpWiseLegend = document.getElementById('summaryGpWiseManLegend');
     if (gpWiseLegend) gpWiseLegend.innerHTML = '';
     G_SummaryReportRows = [];
+    G_SummaryReportRow = null;
+    G_DreamClientRows = [];
     renderSummaryTop10Clients([]);
     renderSummaryHighGpAchievement([]);
 }
@@ -700,7 +755,7 @@ function renderSummaryDashboard(metrics) {
 
     setText('skpi-total-sale', `${formatNumber(metrics.totalSaleMt)} MT`);
     setText('skpi-lost-client', formatInteger(metrics.lostClients));
-    setText('skpi-close-dream-client', formatInteger(metrics.closeDreamClient));
+    setText('skpi-close-dream-client', metrics.closeDreamClient || '0');
     setText('skpi-total-parties', formatInteger(metrics.totalParties));
     setText('skpi-manifest-score', `${metrics.manifestActualScore.toFixed(2)}%`);
     setText('skpi-total-manifested', `${formatNumber(metrics.totalManifested)} MT`);
@@ -744,16 +799,24 @@ function getSummaryNbdCrrPartyRows() {
         if (!partyName || (!typeUpper.includes('NBD') && !typeUpper.includes('CRR'))) {
             return;
         }
+        const gpValue = (row['GP'] || row.Gp || row.gp || '').toString().trim();
         const key = partyName.toLowerCase() + '|' + typeUpper;
         if (!map.has(key)) {
             map.set(key, {
                 'Party Name': partyName,
+                'GP': gpValue,
                 'NBD/CRR Type': nbdCrrType
             });
         }
     });
+    const typeOrder = function (type) {
+        const t = (type || '').toString().toUpperCase();
+        if (t.includes('NBD')) return 0;
+        if (t.includes('CRR')) return 1;
+        return 2;
+    };
     return Array.from(map.values()).sort(function (a, b) {
-        const typeCompare = String(a['NBD/CRR Type']).localeCompare(String(b['NBD/CRR Type']));
+        const typeCompare = typeOrder(a['NBD/CRR Type']) - typeOrder(b['NBD/CRR Type']);
         if (typeCompare !== 0) return typeCompare;
         return String(a['Party Name']).localeCompare(String(b['Party Name']));
     });
@@ -767,7 +830,7 @@ function renderSummaryNbdCrrPartyTable() {
     const rows = getSummaryNbdCrrPartyRows();
     if (!rows.length) {
         header.innerHTML = '';
-        body.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No NBD / CRR party data available</td></tr>';
+        body.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No NBD / CRR party data available</td></tr>';
         const pager = document.getElementById('paginator-summaryNbdCrrPartyTable');
         if (pager) pager.innerHTML = '';
         return;
@@ -780,13 +843,14 @@ function renderSummaryNbdCrrPartyTable() {
             rows,
             false,
             [],
-            ['Party Name', 'NBD/CRR Type'],
+            ['Party Name', 'GP', 'NBD/CRR Type'],
             [],
             [],
             [],
             [],
             {
                 'Party Name': 'left',
+                'GP': 'center',
                 'NBD/CRR Type': 'center'
             },
             true
@@ -794,9 +858,9 @@ function renderSummaryNbdCrrPartyTable() {
         return;
     }
 
-    header.innerHTML = '<tr><th>Party Name</th><th>NBD/CRR Type</th></tr>';
+    header.innerHTML = '<tr><th>Party Name</th><th>GP</th><th>NBD/CRR Type</th></tr>';
     body.innerHTML = rows.map(function (row) {
-        return `<tr><td>${escapeHtml(row['Party Name'])}</td><td class="text-center">${escapeHtml(row['NBD/CRR Type'])}</td></tr>`;
+        return `<tr><td>${escapeHtml(row['Party Name'])}</td><td class="text-center">${escapeHtml(row['GP'])}</td><td class="text-center">${escapeHtml(row['NBD/CRR Type'])}</td></tr>`;
     }).join('');
 }
 
@@ -806,6 +870,242 @@ function openSummaryNbdCrrPartyModal() {
     if (!modalEl) return;
     if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
+
+function openHighGPLostClientTab() {
+    const tabBtn = document.getElementById('highGPLostClient-tab');
+    if (!tabBtn) return;
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tab) {
+        bootstrap.Tab.getOrCreateInstance(tabBtn).show();
+        return;
+    }
+    tabBtn.click();
+}
+
+function initSummaryLostClientTabButton() {
+    const btn = document.getElementById('btnSummaryLostClientTab');
+    if (!btn || btn.dataset.lostClientTabBound === 'Y') return;
+    btn.dataset.lostClientTabBound = 'Y';
+    btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        openHighGPLostClientTab();
+    });
+}
+
+function getDreamClientClosedDateRaw(row) {
+    if (!row) return '';
+    const keys = [
+        'Closed Date', 'ClosedDate', 'Closed_Date',
+        'Closed By Date', 'ClosedByDate', 'ClosedBy Date',
+        'Close Date', 'CloseDate', 'Closing Date', 'ClosingDate'
+    ];
+    for (let i = 0; i < keys.length; i++) {
+        const value = row[keys[i]];
+        if (value !== undefined && value !== null && String(value).trim() !== '' && String(value).toLowerCase() !== 'null') {
+            return value;
+        }
+    }
+    const fallbackKey = Object.keys(row).find(function (key) {
+        const compact = key.replace(/\s+/g, '').toLowerCase();
+        return compact === 'closeddate' || compact === 'closedbydate' || compact === 'closedate';
+    });
+    return fallbackKey ? row[fallbackKey] : '';
+}
+
+function parseDreamClientClosedDate(value) {
+    if (value === null || value === undefined || value === '') return null;
+    if (value instanceof Date && !isNaN(value.getTime())) {
+        return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    }
+    if (typeof value === 'number' && isFinite(value)) {
+        const fromNumber = value > 99999 ? new Date(value) : new Date((value - 25569) * 86400 * 1000);
+        if (!isNaN(fromNumber.getTime())) {
+            return new Date(fromNumber.getFullYear(), fromNumber.getMonth(), fromNumber.getDate());
+        }
+    }
+    const text = String(value).trim();
+    if (!text || text.toLowerCase() === 'null') return null;
+    const msMatch = text.match(/\/Date\((-?\d+)\)\//);
+    if (msMatch) {
+        const parsed = new Date(parseInt(msMatch[1], 10));
+        if (!isNaN(parsed.getTime())) {
+            return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+        }
+    }
+    const dmy = text.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+    if (dmy) {
+        const parsed = new Date(parseInt(dmy[3], 10), parseInt(dmy[2], 10) - 1, parseInt(dmy[1], 10));
+        if (!isNaN(parsed.getTime())) {
+            return parsed;
+        }
+    }
+    const ymd = text.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+    if (ymd) {
+        const parsed = new Date(parseInt(ymd[1], 10), parseInt(ymd[2], 10) - 1, parseInt(ymd[3], 10));
+        if (!isNaN(parsed.getTime())) {
+            return parsed;
+        }
+    }
+    const parsed = new Date(text);
+    if (!isNaN(parsed.getTime())) {
+        return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    }
+    return null;
+}
+
+function parseFilterBoundDate(value) {
+    if (!value || value === '0') return null;
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) return null;
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+
+function isDreamClientClosedInFilterRange(closedDate) {
+    if (!closedDate) return false;
+    const filters = (typeof GetAllFilters === 'function') ? GetAllFilters() : { fromDate: fromDate, toDate: toDate };
+    const from = parseFilterBoundDate(filters.fromDate);
+    const to = parseFilterBoundDate(filters.toDate);
+    if (from && closedDate < from) return false;
+    if (to && closedDate > to) return false;
+    return true;
+}
+
+function formatDreamClientDate(value) {
+    const date = parseDreamClientClosedDate(value);
+    if (!date) {
+        const raw = (value === null || value === undefined) ? '' : String(value).trim();
+        return (!raw || raw.toLowerCase() === 'null') ? '' : raw;
+    }
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = date.toLocaleString('en-GB', { month: 'short' });
+    return `${day} ${month} ${date.getFullYear()}`;
+}
+
+function getDreamClientMatchSummary(rows) {
+    const list = rows || G_DreamClientRows || [];
+    let matched = 0;
+    list.forEach(function (row) {
+        const closedDate = parseDreamClientClosedDate(getDreamClientClosedDateRaw(row));
+        if (isDreamClientClosedInFilterRange(closedDate)) {
+            matched += 1;
+        }
+    });
+    return { matched: matched, total: list.length };
+}
+
+function isDreamClientNullDate(value) {
+    return value === null || value === undefined || String(value).trim() === '' || String(value).trim().toLowerCase() === 'null';
+}
+
+function getDreamClientDisplayRows() {
+    return (G_DreamClientRows || []).map(function (row) {
+        const closedDate = parseDreamClientClosedDate(getDreamClientClosedDateRaw(row));
+        const inRange = isDreamClientClosedInFilterRange(closedDate);
+        const displayRow = Object.assign({}, row, {
+            __bizsolRowClass: inRange ? 'dream-client-closed-in-range' : ''
+        });
+        Object.keys(displayRow).forEach(function (key) {
+            const compact = String(key).replace(/\s+/g, '').toLowerCase();
+            if ((compact === 'closeddate' || compact === 'closedbydate' || compact === 'closedate') && isDreamClientNullDate(displayRow[key])) {
+                displayRow[key] = '';
+            }
+        });
+        return displayRow;
+    });
+}
+
+function getDreamClientGridColumns(rows) {
+    const first = (rows && rows[0]) ? rows[0] : {};
+    return Object.keys(first).filter(function (key) {
+        return key !== '__bizsolRowClass';
+    });
+}
+
+function renderSummaryDreamClientTable() {
+    const header = document.getElementById('summaryDreamClientTableHeader');
+    const body = document.getElementById('summaryDreamClientTableBody');
+    const info = document.getElementById('summaryDreamClientMatchInfo');
+    const summary = getDreamClientMatchSummary();
+    if (info) {
+        info.innerHTML = `Closed in filter range: <span class="text-success">${summary.matched}</span> / ${summary.total}`;
+    }
+    if (!header || !body) return;
+
+    const rows = getDreamClientDisplayRows();
+    const columns = getDreamClientGridColumns(rows);
+    const pager = document.getElementById('paginator-summaryDreamClientTable');
+    if (!rows.length) {
+        header.innerHTML = '';
+        body.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No dream client data available</td></tr>';
+        if (pager) pager.innerHTML = '';
+        return;
+    }
+
+    const stringFilterColumn = columns.filter(function (col) {
+        const compact = String(col).replace(/\s+/g, '').toLowerCase();
+        return compact !== 'closeddate';
+    });
+    const alignment = {};
+    columns.forEach(function (col) {
+        const compact = String(col).replace(/\s+/g, '').toLowerCase();
+        alignment[col] = compact === 'closeddate' ? 'center' : 'left';
+    });
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined') {
+        BizsolCustomFilterGrid.CreateDataTable(
+            'summaryDreamClientTableHeader',
+            'summaryDreamClientTableBody',
+            rows,
+            false,
+            [],
+            stringFilterColumn,
+            [],
+            [],
+            [],
+            ['__bizsolRowClass'],
+            alignment,
+            true
+        );
+        return;
+    }
+
+    header.innerHTML = `<tr>${columns.map(function (col) { return `<th>${escapeHtml(col)}</th>`; }).join('')}</tr>`;
+    body.innerHTML = rows.map(function (row) {
+        const rowClass = row.__bizsolRowClass ? ` class="${row.__bizsolRowClass}"` : '';
+        const cells = columns.map(function (col) {
+            const value = row[col] === null || row[col] === undefined ? '' : String(row[col]);
+            return `<td>${escapeHtml(value)}</td>`;
+        }).join('');
+        return `<tr${rowClass}>${cells}</tr>`;
+    }).join('');
+}
+
+function openSummaryDreamClientModal() {
+    renderSummaryDreamClientTable();
+    const modalEl = document.getElementById('summaryDreamClientModal');
+    if (!modalEl) return;
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
+
+function initSummaryDreamClientModal() {
+    const btn = document.getElementById('btnSummaryDreamClientDetails');
+    if (btn && !btn.dataset.dreamClientBound) {
+        btn.dataset.dreamClientBound = 'Y';
+        btn.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            openSummaryDreamClientModal();
+        });
+    }
+
+    const modalEl = document.getElementById('summaryDreamClientModal');
+    if (modalEl && !modalEl.dataset.dreamClientBound) {
+        modalEl.dataset.dreamClientBound = 'Y';
+        modalEl.addEventListener('shown.bs.modal', renderSummaryDreamClientTable);
     }
 }
 
@@ -1267,10 +1567,19 @@ function updateReportDateRangeDisplay() {
 }
 
 // Tab rendering functions
-function renderSummaryReport() {
+function renderSummaryReport(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'summaryReport';
 
     if (filters.dealerCodes == '') {
+        return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID) && G_SummaryReportRows && G_SummaryReportRows.length) {
+        updateReportDateRangeDisplay();
+        const metrics = aggregateSummaryMetrics(G_SummaryReportRows, G_SummaryReportRow);
+        renderSummaryDashboard(metrics);
+        renderGPWiseSummary({ manageLoader: false });
         return;
     }
 
@@ -1295,12 +1604,20 @@ function renderSummaryReport() {
 
         if (!parsed.rows || parsed.rows.length === 0) {
             console.warn('No summary report data received');
+            const dreamRows = parsed.dreamClients || [];
             clearSummaryDashboard();
+            G_DreamClientRows = dreamRows;
+            if (parsed.summaryRow || G_DreamClientRows.length) {
+                renderSummaryDashboard(aggregateSummaryMetrics([], parsed.summaryRow));
+            }
             renderGPWiseSummary({ manageLoader: false });
             return;
         }
 
         G_SummaryReportRows = parsed.rows;
+        G_SummaryReportRow = parsed.summaryRow || null;
+        G_DreamClientRows = parsed.dreamClients || [];
+        markTabCached(TAB_ID);
         const metrics = aggregateSummaryMetrics(parsed.rows, parsed.summaryRow);
         renderSummaryDashboard(metrics);
         renderGPWiseSummary({ manageLoader: false });
@@ -1927,7 +2244,7 @@ function renderPartyWiseScoreTable(parties) {
         'Score %': 'right',
         'Score Category': 'center'
     };
-    const numericFilterColumn = visibleRatings.map(getClientRatingColumnName).concat([totalScoreColumn]);
+    const numericFilterColumn = ['Total Sale (MT)'].concat(visibleRatings.map(getClientRatingColumnName)).concat([totalScoreColumn, 'Score %']);
     visibleRatings.forEach(function (rating) {
         alignment[getClientRatingColumnName(rating)] = 'right';
     });
@@ -1989,10 +2306,17 @@ function renderPartyScoringDashboard() {
     renderPartyWiseScoreTable(summary.parties);
 }
 
-function renderPartyScoring() {
+function renderPartyScoring(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'partyScoring';
 
     if (filters.dealerCodes == '') {
+        return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID) && G_PartyScoringRows && G_PartyScoringRows.length) {
+        updateReportDateRangeDisplay();
+        renderPartyScoringDashboard();
         return;
     }
 
@@ -2031,6 +2355,7 @@ function renderPartyScoring() {
             return;
         }
 
+        markTabCached('partyScoring');
         renderPartyScoringDashboard();
     }).catch(function (err) {
         HideLoader();
@@ -2143,11 +2468,21 @@ function syncGpFilterForTab(tabTarget) {
     applyAllGpFilter();
 }
 
-function renderGoldenCircleClient() {
+function renderGoldenCircleClient(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'goldenCircle';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            processGoldenCircleData(cached);
+            return;
+        }
     }
 
     updateReportDateRangeDisplay();
@@ -2163,6 +2498,7 @@ function renderGoldenCircleClient() {
             return;
         }
 
+        setTabData(TAB_ID, response);
         processGoldenCircleData(response);
     }).catch(function (err) {
         HideLoader();
@@ -2186,15 +2522,27 @@ function clearGoldenCircleDashboard() {
         partySharePieChartInstance = null;
     }
 
-    const gpSalesBody = document.getElementById('gcGpSalesBody');
+    const gpSalesHeader = document.getElementById('gcGpSalesTableHeader');
+    const gpSalesBody = document.getElementById('gcGpSalesTableBody') || document.getElementById('gcGpSalesBody');
+    if (gpSalesHeader) gpSalesHeader.innerHTML = '';
     if (gpSalesBody) gpSalesBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No data available</td></tr>';
-    const gpSalesFooter = document.getElementById('gcGpSalesFooter');
-    if (gpSalesFooter) {
-        gpSalesFooter.innerHTML = '<tr class="gc-total"><td>Grand Total</td><td class="text-end">0.00</td><td class="text-end">0.00</td><td class="text-end">0.00</td><td class="text-end">0.00</td></tr>';
-    }
+    const gpSalesPager = document.getElementById('paginator-gcGpSalesTable');
+    if (gpSalesPager) gpSalesPager.innerHTML = '';
 
     const shareBody = document.getElementById('gcMktShareBody');
-    if (shareBody) shareBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No data available</td></tr>';
+    if (shareBody) shareBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No data available</td></tr>';
+    const shareFooter = document.getElementById('gcMktShareFooter');
+    if (shareFooter) {
+        shareFooter.innerHTML = `<tr class="gc-total">
+            <td>Total</td>
+            <td class="text-end">0.00</td>
+            <td class="text-end">0.00</td>
+            <td class="text-end">0.00</td>
+            <td class="text-end">0.00</td>
+            <td class="text-end">0.00</td>
+            <td class="text-end">0.00%</td>
+        </tr>`;
+    }
     setGcText('gcMktShareTotal', '0 MT');
 
     const baseLegend = document.getElementById('gcBaseLegend');
@@ -2291,7 +2639,7 @@ function processGoldenCircleData(data) {
         partySharePieChartInstance = null;
     }
 
-    const mgktPersonWeight = new Map();
+    const mgktPersonGp = new Map();
     const baseWeight = new Map();
     const itemWeight = new Map();
     const gpSale = { superHigh: 0, high: 0, medium: 0, low: 0, other: 0 };
@@ -2312,7 +2660,10 @@ function processGoldenCircleData(data) {
         const partyName = (row['Party Name'] || row.PartyName || '').toString().trim() || 'Unknown';
         const gpKey = categorizeGpForSummary(row['GP'] || row.GP || row.gp);
 
-        mgktPersonWeight.set(marketingMan, (mgktPersonWeight.get(marketingMan) || 0) + weight);
+        if (!mgktPersonGp.has(marketingMan)) {
+            mgktPersonGp.set(marketingMan, { SuperHigh: 0, High: 0, Medium: 0, Low: 0 });
+        }
+        addGcGpWeight(mgktPersonGp.get(marketingMan), gpKey, weight);
         baseWeight.set(baseName, (baseWeight.get(baseName) || 0) + weight);
         itemWeight.set(itemName, (itemWeight.get(itemName) || 0) + weight);
         gpSale[gpKey] = (gpSale[gpKey] || 0) + weight;
@@ -2322,23 +2673,32 @@ function processGoldenCircleData(data) {
         if (!gpByParty.has(partyName)) {
             gpByParty.set(partyName, { SuperHigh: 0, High: 0, Medium: 0, Low: 0 });
         }
-        const partyGp = gpByParty.get(partyName);
-        if (gpKey === 'superHigh') {
-            partyGp.SuperHigh += weight;
-        } else if (gpKey === 'high') {
-            partyGp.High += weight;
-        } else if (gpKey === 'medium') {
-            partyGp.Medium += weight;
-        } else {
-            partyGp.Low += weight;
-        }
+        addGcGpWeight(gpByParty.get(partyName), gpKey, weight);
     });
 
-    renderGcMarketingShare(mgktPersonWeight);
+    renderGcMarketingShare(mgktPersonGp);
     renderBaseSalesPieChart(baseWeight);
     renderGcItemShareBars(itemWeight);
     renderGcGpContribution(gpSale, gpParties);
     renderGcGpSalesGrid(gpByParty);
+}
+
+function addGcGpWeight(bucket, gpKey, weight) {
+    if (!bucket) return;
+    const qty = Number(weight) || 0;
+    if (gpKey === 'superHigh') bucket.SuperHigh += qty;
+    else if (gpKey === 'high') bucket.High += qty;
+    else if (gpKey === 'medium') bucket.Medium += qty;
+    else bucket.Low += qty;
+}
+
+function getGcGpTotal(bucket) {
+    if (!bucket) return 0;
+    return (bucket.SuperHigh || 0) + (bucket.High || 0) + (bucket.Medium || 0) + (bucket.Low || 0);
+}
+
+function roundGcQty(value) {
+    return Math.round((Number(value) || 0) * 100) / 100;
 }
 
 function sortWeightMap(weightMap) {
@@ -2346,62 +2706,127 @@ function sortWeightMap(weightMap) {
 }
 
 function renderGcGpSalesGrid(gpByParty) {
-    const tbody = document.getElementById('gcGpSalesBody');
-    const tfoot = document.getElementById('gcGpSalesFooter');
+    const tbody = document.getElementById('gcGpSalesTableBody') || document.getElementById('gcGpSalesBody');
+    const thead = document.getElementById('gcGpSalesTableHeader');
     if (!tbody) return;
 
     const sorted = Array.from(gpByParty.entries()).sort(function (a, b) {
-        const totalA = a[1].SuperHigh + a[1].High + a[1].Medium + a[1].Low;
-        const totalB = b[1].SuperHigh + b[1].High + b[1].Medium + b[1].Low;
-        return totalB - totalA;
+        return getGcGpTotal(b[1]) - getGcGpTotal(a[1]);
     });
 
-    let totalSuperHigh = 0;
-    let totalHigh = 0;
-    let totalMedium = 0;
-    let totalLow = 0;
-
-    tbody.innerHTML = sorted.map(function ([party, gpData]) {
-        totalSuperHigh += gpData.SuperHigh;
-        totalHigh += gpData.High;
-        totalMedium += gpData.Medium;
-        totalLow += gpData.Low;
-        return `<tr>
-            <td>${escapeHtml(party)}</td>
-            <td class="text-end">${formatNumber(gpData.SuperHigh)}</td>
-            <td class="text-end">${formatNumber(gpData.High)}</td>
-            <td class="text-end">${formatNumber(gpData.Medium)}</td>
-            <td class="text-end">${formatNumber(gpData.Low)}</td>
-        </tr>`;
-    }).join('') || '<tr><td colspan="5" class="text-center text-muted">No data available</td></tr>';
-
-    if (tfoot) {
-        tfoot.innerHTML = `<tr class="gc-total">
-            <td>Grand Total</td>
-            <td class="text-end">${formatNumber(totalSuperHigh)}</td>
-            <td class="text-end">${formatNumber(totalHigh)}</td>
-            <td class="text-end">${formatNumber(totalMedium)}</td>
-            <td class="text-end">${formatNumber(totalLow)}</td>
-        </tr>`;
+    if (!sorted.length) {
+        if (thead) thead.innerHTML = '';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No data available</td></tr>';
+        const pager = document.getElementById('paginator-gcGpSalesTable');
+        if (pager) pager.innerHTML = '';
+        return;
     }
+
+    const rows = sorted.map(function ([party, gpData]) {
+        return {
+            'Party Name': party,
+            'Super High': Number((gpData.SuperHigh || 0).toFixed(2)),
+            'High': Number((gpData.High || 0).toFixed(2)),
+            'Medium': Number((gpData.Medium || 0).toFixed(2)),
+            'Low': Number((gpData.Low || 0).toFixed(2))
+        };
+    });
+
+    if (typeof BizsolCustomFilterGrid !== 'undefined' && thead) {
+        BizsolCustomFilterGrid.CreateDataTable(
+            'gcGpSalesTableHeader',
+            'gcGpSalesTableBody',
+            rows,
+            false,
+            [],
+            ['Party Name'],
+            ['Super High', 'High', 'Medium', 'Low'],
+            [],
+            [],
+            [],
+            {
+                'Party Name': 'left',
+                'Super High': 'right',
+                'High': 'right',
+                'Medium': 'right',
+                'Low': 'right'
+            },
+            false,
+            ['Super High', 'High', 'Medium', 'Low'],
+            {
+                'Super High': 2,
+                'High': 2,
+                'Medium': 2,
+                'Low': 2
+            },
+            null,
+            'Search by Party Name...'
+        );
+        return;
+    }
+
+    tbody.innerHTML = rows.map(function (row) {
+        return `<tr>
+            <td>${escapeHtml(row['Party Name'])}</td>
+            <td class="text-end">${Number(row['Super High'] || 0).toFixed(2)}</td>
+            <td class="text-end">${Number(row['High'] || 0).toFixed(2)}</td>
+            <td class="text-end">${Number(row['Medium'] || 0).toFixed(2)}</td>
+            <td class="text-end">${Number(row['Low'] || 0).toFixed(2)}</td>
+        </tr>`;
+    }).join('');
 }
 
-function renderGcMarketingShare(mgktPersonWeight) {
+function renderGcMarketingShare(mgktPersonGp) {
     const tbody = document.getElementById('gcMktShareBody');
-    const sorted = sortWeightMap(mgktPersonWeight);
-    const total = sorted.reduce(function (sum, item) { return sum + item[1]; }, 0);
+    const sorted = Array.from(mgktPersonGp.entries()).map(function ([person, gpData]) {
+        const SuperHigh = roundGcQty(gpData.SuperHigh);
+        const High = roundGcQty(gpData.High);
+        const Medium = roundGcQty(gpData.Medium);
+        const Low = roundGcQty(gpData.Low);
+        return {
+            person: person,
+            SuperHigh: SuperHigh,
+            High: High,
+            Medium: Medium,
+            Low: Low,
+            total: roundGcQty(SuperHigh + High + Medium + Low)
+        };
+    }).sort(function (a, b) { return b.total - a.total; });
+    const totalSuperHigh = roundGcQty(sorted.reduce(function (sum, item) { return sum + item.SuperHigh; }, 0));
+    const totalHigh = roundGcQty(sorted.reduce(function (sum, item) { return sum + item.High; }, 0));
+    const totalMedium = roundGcQty(sorted.reduce(function (sum, item) { return sum + item.Medium; }, 0));
+    const totalLow = roundGcQty(sorted.reduce(function (sum, item) { return sum + item.Low; }, 0));
+    const total = roundGcQty(totalSuperHigh + totalHigh + totalMedium + totalLow);
+    const totalSharePct = total > 0 ? 100 : 0;
     const colors = generateColors(sorted.length);
-    setGcText('gcMktShareTotal', `${formatNumber(total)} MT`);
+    setGcText('gcMktShareTotal', `${total.toFixed(2)} MT`);
 
     if (tbody) {
-        tbody.innerHTML = sorted.map(function ([person, weight], index) {
-            const pct = total > 0 ? ((weight / total) * 100).toFixed(2) : '0.00';
+        tbody.innerHTML = sorted.map(function (item, index) {
+            const pct = total > 0 ? ((item.total / total) * 100).toFixed(2) : '0.00';
             return `<tr>
-                <td><span class="gc-dot" style="background:${colors[index]}"></span> ${escapeHtml(person)}</td>
-                <td class="text-end">${formatNumber(weight)}</td>
+                <td><span class="gc-dot" style="background:${colors[index]}"></span> ${escapeHtml(item.person)}</td>
+                <td class="text-end">${item.SuperHigh.toFixed(2)}</td>
+                <td class="text-end">${item.High.toFixed(2)}</td>
+                <td class="text-end">${item.Medium.toFixed(2)}</td>
+                <td class="text-end">${item.Low.toFixed(2)}</td>
+                <td class="text-end">${item.total.toFixed(2)}</td>
                 <td class="text-end">${pct}%</td>
             </tr>`;
-        }).join('') || '<tr><td colspan="3" class="text-center text-muted">No data available</td></tr>';
+        }).join('') || '<tr><td colspan="7" class="text-center text-muted">No data available</td></tr>';
+    }
+
+    const tfoot = document.getElementById('gcMktShareFooter');
+    if (tfoot) {
+        tfoot.innerHTML = `<tr class="gc-total">
+            <td>Total</td>
+            <td class="text-end">${totalSuperHigh.toFixed(2)}</td>
+            <td class="text-end">${totalHigh.toFixed(2)}</td>
+            <td class="text-end">${totalMedium.toFixed(2)}</td>
+            <td class="text-end">${totalLow.toFixed(2)}</td>
+            <td class="text-end">${total.toFixed(2)}</td>
+            <td class="text-end">${totalSharePct.toFixed(2)}%</td>
+        </tr>`;
     }
 
     const canvas = document.getElementById('gcMktShareDonutChart');
@@ -2410,9 +2835,9 @@ function renderGcMarketingShare(mgktPersonWeight) {
     partySharePieChartInstance = new Chart(canvas.getContext('2d'), {
         type: 'doughnut',
         data: {
-            labels: sorted.map(function (item) { return item[0]; }),
+            labels: sorted.map(function (item) { return item.person; }),
             datasets: [{
-                data: sorted.map(function (item) { return item[1]; }),
+                data: sorted.map(function (item) { return item.total; }),
                 backgroundColor: colors,
                 borderWidth: 2,
                 borderColor: '#ffffff',
@@ -2577,11 +3002,25 @@ function extractManifestWeekWeightData(response) {
     return [];
 }
 
-function renderManifestation() {
+function renderManifestation(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'manifestation';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            updateManifestProrataInfo(filters);
+            const weekWeightData = extractManifestWeekWeightData(cached.current);
+            const lastMonthWeekData = extractManifestWeekWeightData(cached.lastMonth);
+            renderWeekWeightTable(weekWeightData);
+            renderManifestWeekCompareTable(weekWeightData, lastMonthWeekData);
+            return;
+        }
     }
 
     updateReportDateRangeDisplay();
@@ -2603,6 +3042,7 @@ function renderManifestation() {
             return;
         }
 
+        setTabData(TAB_ID, { current: response, lastMonth: lastMonthResponse });
         const weekWeightData = extractManifestWeekWeightData(response);
         const lastMonthWeekData = extractManifestWeekWeightData(lastMonthResponse);
         renderWeekWeightTable(weekWeightData);
@@ -3109,11 +3549,26 @@ function renderActualVsManifestTable(data) {
     }
 }
 
-function renderNBDCRR() {
+function renderNBDCRR(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'nbdCrr';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    const renderFromData = function (baseWeekData, orderDetailsData) {
+        renderNBDCRRBaseWeekTable(baseWeekData);
+        renderNBDCRROrderDetailsTable(orderDetailsData);
+    };
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            renderFromData(cached.baseWeekData, cached.orderDetailsData);
+            return;
+        }
     }
 
     // Update date range display for this tab
@@ -3150,12 +3605,13 @@ function renderNBDCRR() {
                 orderDetailsData = response[1] || [];
             } else {
                 separateAndRenderNBDCRRData(response);
+                setTabData(TAB_ID, { baseWeekData: [], orderDetailsData: [] });
                 return;
             }
         }
 
-        renderNBDCRRBaseWeekTable(baseWeekData);
-        renderNBDCRROrderDetailsTable(orderDetailsData);
+        setTabData(TAB_ID, { baseWeekData, orderDetailsData });
+        renderFromData(baseWeekData, orderDetailsData);
 
     }).catch(function (err) {
         HideLoader();
@@ -3278,11 +3734,21 @@ function renderNBDCRROrderDetailsTable(data) {
     }
 }
 
-function renderSegmentWise() {
+function renderSegmentWise(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'segmentWise';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            renderSegmentWiseCollapsibleTable(cached.current, cached.lastMonth);
+            return;
+        }
     }
 
     // Update date range display for this tab
@@ -3300,6 +3766,7 @@ function renderSegmentWise() {
         HideLoader();
 
         if (response && response.length > 0) {
+            setTabData(TAB_ID, { current: response, lastMonth: lastMonthResponse || [] });
             renderSegmentWiseCollapsibleTable(response, lastMonthResponse || []);
         } else {
             const el = $('#segmentWiseTableBody')[0];
@@ -4090,10 +4557,18 @@ function clearRegionalAnalysisDashboard() {
     renderRegionalAnalysisBreadcrumb();
 }
 
-function renderRegionalAnalysis() {
+function renderRegionalAnalysis(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'regionalAnalysis';
 
     if (filters.dealerCodes == '') {
+        return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID) && G_RegionalAnalysisData && G_RegionalAnalysisData.length) {
+        updateReportDateRangeDisplay();
+        regionalAnalysisState = { level: 'state', selectedState: null, selectedCity: null };
+        renderRegionalAnalysisView();
         return;
     }
 
@@ -4111,6 +4586,7 @@ function renderRegionalAnalysis() {
 
         G_RegionalAnalysisData = response.map(normalizeRegionalAnalysisRow);
         regionalAnalysisState = { level: 'state', selectedState: null, selectedCity: null };
+        markTabCached(TAB_ID);
         renderRegionalAnalysisView();
     }).catch(function (err) {
         HideLoader();
@@ -4584,10 +5060,18 @@ function clearProductAnalysisDashboard() {
     renderProductAnalysisBreadcrumb();
 }
 
-function renderProductAnalysis() {
+function renderProductAnalysis(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'productAnalysis';
 
     if (filters.dealerCodes == '') {
+        return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID) && G_ProductAnalysisData && G_ProductAnalysisData.length) {
+        updateReportDateRangeDisplay();
+        productAnalysisState = { level: 'item', selectedItem: null, selectedSize: null };
+        renderProductAnalysisView();
         return;
     }
 
@@ -4605,6 +5089,7 @@ function renderProductAnalysis() {
 
         G_ProductAnalysisData = response.map(normalizeProductAnalysisRow);
         productAnalysisState = { level: 'item', selectedItem: null, selectedSize: null };
+        markTabCached(TAB_ID);
         renderProductAnalysisView();
     }).catch(function (err) {
         HideLoader();
@@ -4902,11 +5387,21 @@ function renderTargetVsGrowthDashboard(gpLostRows, summaryRow) {
     renderTargetVsGrowthPieChart(manifested, actual);
 }
 
-function renderTargetVsGrowth() {
+function renderTargetVsGrowth(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'targetVsGrowth';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            renderTargetVsGrowthDashboard(cached.gpLostRows, cached.summaryRow);
+            return;
+        }
     }
 
     updateReportDateRangeDisplay();
@@ -4933,6 +5428,7 @@ function renderTargetVsGrowth() {
             return;
         }
 
+        setTabData(TAB_ID, { gpLostRows: parsed.gpLostRows, summaryRow: parsed.summaryRow });
         renderTargetVsGrowthDashboard(parsed.gpLostRows, parsed.summaryRow);
     }).catch(function (err) {
         HideLoader();
@@ -5405,11 +5901,21 @@ function fetchClientAnalysisMode(mode, filters, fromDateValue, toDateValue) {
     );
 }
 
-function renderClientAnalysis() {
+function renderClientAnalysis(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'clientAnalysis';
 
     if (filters.dealerCodes == '') {
         return;
+    }
+
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            renderClientAnalysisDashboard(cached.salesRows, cached.outstandingRows, cached.lastSalesRows, cached.productRows);
+            return;
+        }
     }
 
     updateReportDateRangeDisplay();
@@ -5417,9 +5923,7 @@ function renderClientAnalysis() {
 
     const lastMonthRange = getLastMonthAsOnDateRange(filters.fromDate, filters.toDate);
     const currentCa = fetchClientAnalysisMode('CLIENT_ANALYSIS', filters, filters.fromDate, filters.toDate);
-    const currentSummary = (!G_SummaryReportRows || G_SummaryReportRows.length === 0)
-        ? fetchClientAnalysisMode('SUMMARY_REPORT', filters, filters.fromDate, filters.toDate)
-        : Promise.resolve(null);
+    const currentSummary = fetchClientAnalysisMode('SUMMARY_REPORT', filters, filters.fromDate, filters.toDate);
     const lastSummary = lastMonthRange
         ? fetchClientAnalysisMode('SUMMARY_REPORT', filters, lastMonthRange.fromDate, lastMonthRange.toDate)
         : Promise.resolve(null);
@@ -5439,12 +5943,17 @@ function renderClientAnalysis() {
     Promise.all([currentCa, currentSummary, lastSummary, productPromise]).then(function (results) {
         HideLoader();
         const parsed = parseClientAnalysisResponse(results[0]);
-        let salesRows = parsed.salesRows || [];
-        if ((!salesRows || salesRows.length === 0) && G_SummaryReportRows && G_SummaryReportRows.length) {
-            salesRows = G_SummaryReportRows;
+        const parsedSummary = results[1] ? parseSummaryReportResponse(results[1]) : { rows: [] };
+        if (parsedSummary.rows && parsedSummary.rows.length) {
+            G_SummaryReportRows = parsedSummary.rows;
+            G_SummaryReportRow = parsedSummary.summaryRow || G_SummaryReportRow;
+            if (parsedSummary.dreamClients && parsedSummary.dreamClients.length) {
+                G_DreamClientRows = parsedSummary.dreamClients;
+            }
         }
-        if ((!salesRows || salesRows.length === 0) && results[1]) {
-            salesRows = parseSummaryReportResponse(results[1]).rows || [];
+        let salesRows = parsed.salesRows || [];
+        if (!salesRows.length && parsedSummary.rows && parsedSummary.rows.length) {
+            salesRows = parsedSummary.rows;
         }
         const lastSalesRows = results[2] ? (parseSummaryReportResponse(results[2]).rows || []) : [];
         const productRows = Array.isArray(results[3]) ? results[3] : [];
@@ -5459,6 +5968,12 @@ function renderClientAnalysis() {
             return;
         }
 
+        setTabData('clientAnalysis', {
+            salesRows: salesRows,
+            outstandingRows: parsed.outstandingRows,
+            lastSalesRows: lastSalesRows,
+            productRows: hasProduct ? null : productRows
+        });
         renderClientAnalysisDashboard(salesRows, parsed.outstandingRows, lastSalesRows, hasProduct ? null : productRows);
     }).catch(function (err) {
         HideLoader();
@@ -5919,15 +6434,71 @@ function renderSalesComparison() {
     });
 }
 
-function renderHighGPLostClient() {
+function renderHighGPLostClient(forceRefresh) {
     const filters = GetAllFilters();
+    const TAB_ID = 'highGPLostClient';
 
     if (filters.dealerCodes == '') {
         return;
     }
 
-    updateReportDateRangeDisplay();
+    const renderHGPTable = function (response) {
+        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "GP", "GP Category", "GPCategory", "Status"];
+        const NumericFilterColumn = [];
+        const DateFilterColumn = [];
+        const Button = false;
+        const showButtons = [];
+        const StringdoubleFilterColumn = [];
+        const hiddenColumns = [];
+        const ColumnAlignment = {
+            'Weight': 'right',
+            'Manifestation': 'right',
+            'Total Sales': 'right',
+            'Growth (%)': 'right',
+            'Last Invoice Qty': 'right',
+            'LastInvoiceQty': 'right',
+            'Days Difference': 'right',
+            'DaysDifference': 'right',
+            'Days Defferance': 'right',
+            'Days Defferences': 'right'
+        };
+        const pager = document.getElementById('paginator-highGPLostClientTable');
+        if (pager) {
+            pager.innerHTML = '';
+            pager.style.display = 'none';
+        }
+        if (typeof BizsolCustomFilterGrid !== 'undefined') {
+            BizsolCustomFilterGrid.CreateDataTable(
+                "highGPLostClientTableHeader",
+                "highGPLostClientTableBody",
+                response,
+                Button,
+                showButtons,
+                StringFilterColumn,
+                NumericFilterColumn,
+                DateFilterColumn,
+                StringdoubleFilterColumn,
+                hiddenColumns,
+                ColumnAlignment,
+                false,
+                null,
+                null,
+                null,
+                'Search by Party Name, Location, Marketing Man...'
+            );
+        }
+    };
 
+    if (!forceRefresh && isTabCached(TAB_ID)) {
+        const cached = getTabData(TAB_ID);
+        if (cached) {
+            updateReportDateRangeDisplay();
+            renderHGPTable(cached);
+            return;
+        }
+    }
+
+    updateReportDateRangeDisplay();
     Showloader();
 
     SalesanalysisASTService.GetSalesAnalysisData('HIGH_GP_LOST_CLIENT', filters.dealerCodes, filters.fromDate, filters.toDate, filters.salesPersons, filters.cities, filters.status, filters.gp, filters.industryType, filters.notPurchaseFromDays).then(function (response) {
@@ -5940,30 +6511,16 @@ function renderHighGPLostClient() {
             return;
         }
 
-        const StringFilterColumn = ["Party Name", "Segment", "Marketing Man", "Location", "GP", "Status"];
-        const NumericFilterColumn = [];
-        const DateFilterColumn = [];
-        const Button = false;
-        const showButtons = [];
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = [];
-        const ColumnAlignment = {
-            'Weight': 'right',
-            'Manifestation': 'right',
-            'Total Sales': 'right',
-            'Growth (%)': 'right'
-        };
-
-        if (typeof BizsolCustomFilterGrid !== 'undefined') {
-            BizsolCustomFilterGrid.CreateDataTable("highGPLostClientTableHeader", "highGPLostClientTableBody", response, Button, showButtons, StringFilterColumn, NumericFilterColumn, DateFilterColumn, StringdoubleFilterColumn, hiddenColumns, ColumnAlignment);
-        }
+        setTabData(TAB_ID, response);
+        renderHGPTable(response);
     }).catch(function (err) {
         HideLoader();
         console.error('Error fetching High GP Lost Client data:', err);
     });
 }
 
-// Show report function
+// Show report function — called when filters are Applied.
+// Clears the entire tab cache so all tabs re-fetch fresh data for the new filters.
 function SalesanalysisAST_ShowReport() {
     const filters = GetAllFilters();
 
@@ -5973,39 +6530,42 @@ function SalesanalysisAST_ShowReport() {
         return;
     }
 
-    // Check which tab is active and render accordingly
+    // Bump the filter generation — this invalidates all tab caches atomically.
+    bumpFilterGeneration();
+
+    // Check which tab is active and render accordingly (forceRefresh=true because cache was just cleared)
     if (document.querySelector('#summaryReport')?.classList.contains('show') || document.querySelector('#summaryReport')?.classList.contains('active')) {
-        renderSummaryReport();
+        renderSummaryReport(true);
     }
     if (document.querySelector('#partyScoring')?.classList.contains('show') || document.querySelector('#partyScoring')?.classList.contains('active')) {
-        renderPartyScoring();
+        renderPartyScoring(true);
     }
     if (document.querySelector('#goldenCircle')?.classList.contains('show') || document.querySelector('#goldenCircle')?.classList.contains('active')) {
-        renderGoldenCircleClient();
+        renderGoldenCircleClient(true);
     }
     if (document.querySelector('#manifestation')?.classList.contains('show') || document.querySelector('#manifestation')?.classList.contains('active')) {
-        renderManifestation();
+        renderManifestation(true);
     }
     if (document.querySelector('#nbdCrr')?.classList.contains('show') || document.querySelector('#nbdCrr')?.classList.contains('active')) {
-        renderNBDCRR();
+        renderNBDCRR(true);
     }
     if (document.querySelector('#segmentWise')?.classList.contains('show') || document.querySelector('#segmentWise')?.classList.contains('active')) {
-        renderSegmentWise();
+        renderSegmentWise(true);
     }
     if (document.querySelector('#regionalAnalysis')?.classList.contains('show') || document.querySelector('#regionalAnalysis')?.classList.contains('active')) {
-        renderRegionalAnalysis();
+        renderRegionalAnalysis(true);
     }
     if (document.querySelector('#productAnalysis')?.classList.contains('show') || document.querySelector('#productAnalysis')?.classList.contains('active')) {
-        renderProductAnalysis();
+        renderProductAnalysis(true);
     }
     if (document.querySelector('#targetVsGrowth')?.classList.contains('show') || document.querySelector('#targetVsGrowth')?.classList.contains('active')) {
-        renderTargetVsGrowth();
+        renderTargetVsGrowth(true);
     }
     if (document.querySelector('#clientAnalysis')?.classList.contains('show') || document.querySelector('#clientAnalysis')?.classList.contains('active')) {
-        renderClientAnalysis();
+        renderClientAnalysis(true);
     }
     if (document.querySelector('#highGPLostClient')?.classList.contains('show') || document.querySelector('#highGPLostClient')?.classList.contains('active')) {
-        renderHighGPLostClient();
+        renderHighGPLostClient(true);
     }
 }
 
@@ -6135,6 +6695,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
     initRmRateModalControls();
     initSummaryNbdCrrPartyModal();
+    initSummaryLostClientTabButton();
+    initSummaryDreamClientModal();
+
+    // Refresh button — reloads only the currently active tab from API, ignoring cache
+    const btnTabRefresh = document.getElementById('btnTabRefresh');
+    if (btnTabRefresh) {
+        btnTabRefresh.addEventListener('click', function () {
+            const activeTabId = getActiveTabId();
+            clearTabCache(activeTabId);
+
+            const tabRenderMap = {
+                summaryReport:    function () { renderSummaryReport(true); },
+                partyScoring:     function () { renderPartyScoring(true); },
+                goldenCircle:     function () { renderGoldenCircleClient(true); },
+                manifestation:    function () { renderManifestation(true); },
+                nbdCrr:           function () { renderNBDCRR(true); },
+                segmentWise:      function () { renderSegmentWise(true); },
+                regionalAnalysis: function () { renderRegionalAnalysis(true); },
+                productAnalysis:  function () { renderProductAnalysis(true); },
+                targetVsGrowth:   function () { renderTargetVsGrowth(true); },
+                clientAnalysis:   function () { renderClientAnalysis(true); },
+                highGPLostClient: function () { renderHighGPLostClient(true); }
+            };
+
+            const renderFn = tabRenderMap[activeTabId];
+            if (renderFn) {
+                renderFn();
+            }
+        });
+    }
 });
 
 let G_RmRateValues = {};
