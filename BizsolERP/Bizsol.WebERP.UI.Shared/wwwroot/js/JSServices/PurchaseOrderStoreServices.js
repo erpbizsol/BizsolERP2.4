@@ -3,9 +3,11 @@ import { promiseAjaxCallApi } from '../PromiseAjaxCallApi.js';
 
 const PurchaseOrderStoreService = {
 
-    GetPurchaseOrderStoreList: function GetPurchaseOrderStoreList(Status, FromDate, ToDate) {
+    GetPurchaseOrderStoreList: function GetPurchaseOrderStoreList(Status, FromDate, ToDate, Mode) {
        // let url = UrlService.API_ENDPOINT_PurchaseOrderMaster + `/GetPurchaseOrderMasterList?Status=${Status}&FromDate=${FromDate}&ToDate=${ToDate}`;
-        return PurchaseOrderStoreService.Getddl('LOCATE', 0, Status, FromDate, ToDate);
+        // Po Wise → Mode Locate, Po Item Wise → Mode ItemWiseLocate
+        const mode = Mode || 'Locate';
+        return PurchaseOrderStoreService.Getddl(mode, 0, Status, FromDate, ToDate);
 
     },
 

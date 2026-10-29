@@ -4404,12 +4404,55 @@ function GateEntry_CheckInvoicePackingListValidated(invoiceMasterCodes, invoiceN
     });
 }
 
-function GateEntry_changeDocumentType() {
+function GateEntry_ToInputDate(value) {
+    if (value == null) return '';
+    const text = String(value).trim();
+    if (!text || text.toLowerCase() === 'null') return '';
+    return text.split('T')[0];
+}
+
+function GateEntry_UnlockEWayBill(noSelector, dateSelector) {
+    $(noSelector).removeAttr('readonly');
+    $(dateSelector).removeAttr('readonly').off('.ewayLock');
+}
+
+function GateEntry_ApplyAutoFetchedEWayBill(noSelector, dateSelector, billNo, billDate, documentDate) {
+    const $no = $(noSelector);
+    const $date = $(dateSelector);
+    GateEntry_UnlockEWayBill(noSelector, dateSelector);
+
+    const hasNo = billNo != null && String(billNo).trim() !== '' && String(billNo).trim().toLowerCase() !== 'null';
+    const fetchedDate = GateEntry_ToInputDate(billDate);
+    const docDate = GateEntry_ToInputDate(documentDate);
+    const dateValue = fetchedDate || (hasNo ? docDate : '');
+
+    $no.val(hasNo ? String(billNo).trim() : '');
+    $date.val(dateValue);
+
+    if (hasNo && dateValue) {
+        $no.attr('readonly', 'readonly');
+        $date.attr('readonly', 'readonly');
+        $date.on('keydown.ewayLock mousedown.ewayLock click.ewayLock', function (e) {
+            e.preventDefault();
+        });
+    }
+}
+
+function GateEntry_changeDocumentType(refreshFetchedFields) {
     G_TableName = '';
     G_TableCode = 0;
     $('#frmLoadedOut_txtCustomerName').removeAttr('readonly');
     $('#frmLoadedOut_txtGoodsDescription').removeAttr('readonly');
     $('#frmLoadedOut_txtQty').removeAttr('readonly');
+    GateEntry_UnlockEWayBill('#frmLoadedOut_txtEWayBillNo', '#frmLoadedOut_txtEWayBillDate');
+    if (refreshFetchedFields === true) {
+        $('#frmLoadedOut_txtGoodsDescription').val('');
+        $('#frmLoadedOut_txtQty').val('');
+        $('#frmLoadedOut_ddlUOM').val('0').trigger('change');
+        $('#frmLoadedOut_txtDocumentDate').val('');
+        $('#frmLoadedOut_txtEWayBillNo').val('');
+        $('#frmLoadedOut_txtEWayBillDate').val('');
+    }
     $('#frmLoadedOut_txtDocumentNo').data('docNoKeep', false);
     let F_GateEntryType_Desp = $('#frmLoadedOut_ddlDocumentType').val();
     let IsMultipleDocument = false;
@@ -4453,13 +4496,16 @@ function GateEntry_changeDocumentType() {
                                     $('#frmLoadedOut_txtQty').val(parseFloat(sumtotalWeight).toFixed(2))
                                     $('#frmLoadedOut_txtGRNo').val(RespDocumentDetails[0].GRNo)
                                     $('#frmLoadedOut_ddlUOM').val(RespDocumentDetails[0].UOM).trigger('change')
-                                    $('#frmLoadedOut_txtEWayBillNo').val(RespDocumentDetails[0].EWayBillNo)
-                                    if (RespDocumentDetails[0].EWayBillDate) {
-                                        $('#frmLoadedOut_txtEWayBillDate').val(RespDocumentDetails[0].EWayBillDate.split('T')[0]);
-                                    }
                                     if (RespDocumentDetails[0].DocumentDate) {
                                         $('#frmLoadedOut_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
                                     }
+                                    GateEntry_ApplyAutoFetchedEWayBill(
+                                        '#frmLoadedOut_txtEWayBillNo',
+                                        '#frmLoadedOut_txtEWayBillDate',
+                                        RespDocumentDetails[0].EWayBillNo,
+                                        RespDocumentDetails[0].EWayBillDate,
+                                        RespDocumentDetails[0].DocumentDate
+                                    );
 
                                    // G_TableName = RespDocumentDetails[0].TableName;
                                    // G_TableCode = RespDocumentDetails[0].Code;
@@ -4492,6 +4538,7 @@ function GateEntry_changeDocumentType() {
                                 $('#frmLoadedOut_txtCustomerName').removeAttr('readonly');
                                 $('#frmLoadedOut_txtGoodsDescription').removeAttr('readonly');
                                 $('#frmLoadedOut_txtQty').removeAttr('readonly');
+                                GateEntry_UnlockEWayBill('#frmLoadedOut_txtEWayBillNo', '#frmLoadedOut_txtEWayBillDate');
                                 G_TableName = '';
                                 G_TableCode = 0;
                             }
@@ -4582,12 +4629,21 @@ applyAlphaNumUppercase(".alphanum-uppercase");
 BindddlVehiclesStatusInFectory();
 BizSolHelperFunction.HideOrShowConfigurationSettingBtn('btnGateEntyConfiguration');
 
-function GateEntry_changeDocumentType_LoadedIn() {
+function GateEntry_changeDocumentType_LoadedIn(refreshFetchedFields) {
     G_TableName = '';
     G_TableCode = 0;
     $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
     $('#frmLoadedIn_txtGoodsDescription').removeAttr('readonly');
     $('#frmLoadedIn_txtQTY').removeAttr('readonly');
+    GateEntry_UnlockEWayBill('#frmLoadedIn_txtEWayBillNo', '#frmLoadedIn_txtEWayBillDate');
+    if (refreshFetchedFields === true) {
+        $('#frmLoadedIn_txtGoodsDescription').val('');
+        $('#frmLoadedIn_txtQTY').val('');
+        $('#frmLoadedIn_txtUOM').val('0').trigger('change');
+        $('#frmLoadedIn_txtDocumentDate').val('');
+        $('#frmLoadedIn_txtEWayBillNo').val('');
+        $('#frmLoadedIn_txtEWayBillDate').val('');
+    }
     let F_GateEntryType_Desp = $('#frmLoadedIn_ddlDocumentType').val();
     let IsMultipleDocument = false;
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'MultipleDocument').PerameterValue === 'Y') {
@@ -4626,13 +4682,16 @@ function GateEntry_changeDocumentType_LoadedIn() {
                                     $('#frmLoadedIn_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
                                     $('#frmLoadedIn_txtQTY').val(parseFloat(sumtotalWeight).toFixed(2))
                                     $('#frmLoadedIn_txtUOM').val(RespDocumentDetails[0].UOM).trigger('change')
-                                    $('#frmLoadedIn_txtEWayBillNo').val(RespDocumentDetails[0].EWayBillNo)
-                                    if (RespDocumentDetails[0].EWayBillDate) {
-                                        $('#frmLoadedIn_txtEWayBillDate').val(RespDocumentDetails[0].EWayBillDate.split('T')[0]);
-                                    }
                                     if (RespDocumentDetails[0].DocumentDate) {
                                         $('#frmLoadedIn_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
                                     }
+                                    GateEntry_ApplyAutoFetchedEWayBill(
+                                        '#frmLoadedIn_txtEWayBillNo',
+                                        '#frmLoadedIn_txtEWayBillDate',
+                                        RespDocumentDetails[0].EWayBillNo,
+                                        RespDocumentDetails[0].EWayBillDate,
+                                        RespDocumentDetails[0].DocumentDate
+                                    );
 
                                     $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
                                     $('#frmLoadedIn_txtGoodsDescription').attr('readonly', 'readonly');
@@ -4660,6 +4719,7 @@ function GateEntry_changeDocumentType_LoadedIn() {
                                 $('#frmLoadedIn_txtVendorName').removeAttr('readonly');
                                 $('#frmLoadedIn_txtGoodsDescription').removeAttr('readonly');
                                 $('#frmLoadedIn_txtQTY').removeAttr('readonly');
+                                GateEntry_UnlockEWayBill('#frmLoadedIn_txtEWayBillNo', '#frmLoadedIn_txtEWayBillDate');
                                 G_TableName = '';
                                 G_TableCode = 0;
                             }

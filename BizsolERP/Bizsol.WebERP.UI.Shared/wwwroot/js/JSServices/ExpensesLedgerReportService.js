@@ -129,6 +129,45 @@ const ExpensesLedgerReportService = {
         });
     },
 
+    GetVendorWiseReport: function GetVendorWiseReport(fromDate, toDate, vendorMaster_Code) {
+        const stand =
+            UrlService.API_ENDPOINT_ProjectManagementReport ||
+            UrlService.API_ENDPOINT_AREA_ProjectManagementReport;
+        const root = stand != null && String(stand).trim() !== ''
+            ? String(stand).replace(/\/$/, '')
+            : '';
+        if (!root) {
+            console.error('ExpensesLedgerReportService: Missing vendor report API base.');
+            return Promise.reject(new Error('Missing vendor report API base.'));
+        }
+        const url =
+            `${root}/GetVendorWiseReport` +
+            `?FromDate=${encodeURIComponent(fromDate || '')}` +
+            `&ToDate=${encodeURIComponent(toDate || '')}` +
+            `&VendorMaster_Code=${encodeURIComponent(vendorMaster_Code || 0)}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
+            return value;
+        });
+    },
+
+    GetVendorLedgerReport: function GetVendorLedgerReport(fromDate, toDate, vendorMaster_Code, projectMaster_Code, subProjectMaster_Code) {
+        const root = getExpenseLedgerDdLApiBase();
+        if (!root) {
+            console.error('ExpensesLedgerReportService: Missing vendor ledger API base.');
+            return Promise.reject(new Error('Missing vendor ledger API base.'));
+        }
+        const url =
+            `${root}/VendorLedgerReport` +
+            `?FromDate=${encodeURIComponent(fromDate || '')}` +
+            `&ToDate=${encodeURIComponent(toDate || '')}` +
+            `&VendorMaster_Code=${encodeURIComponent(vendorMaster_Code || 0)}` +
+            `&ProjectMaster_Code=${encodeURIComponent(projectMaster_Code || 0)}` +
+            `&SubProjectMaster_Code=${encodeURIComponent(subProjectMaster_Code || 0)}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
+            return value;
+        });
+    },
+
     GetClosingBalance: function GetClosingBalance(entryDate, employeeMaster_Code) {
         let qs =
             `?FromDate=${encodeURIComponent(entryDate || '')}` +
