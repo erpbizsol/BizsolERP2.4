@@ -3,6 +3,8 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Finance.Reports/css/BankBookReport.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker3.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
 <script src="https://cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 
 <div class="bb-page" id="bankBookReportPage">
@@ -11,7 +13,7 @@
             <div class="bb-hero-top">
                 <div class="bb-hero-title-block">
                     <h1 class="bb-hero-title"><i class="fa fa-book" aria-hidden="true"></i> Bank Book Report</h1>
-                    <small class="bb-hero-sub">Received and payment summary by project, site, category, description and vendor.</small>
+                    <small class="bb-hero-sub">Received and payment summary by bank, date, project, site, category, description and vendor.</small>
                 </div>
                 <div class="bb-hero-actions">
                     <button type="button" id="btnBbExcel" class="bb-icon-btn bb-icon-btn--excel" title="Export to Excel" aria-label="Export to Excel">
@@ -25,14 +27,28 @@
         </div>
         <div class="bb-filter-bar">
             <div class="row align-items-end g-3 bb-filters">
-                <div class="col-12 col-md-3 bb-field">
+                <div class="col-6 col-md-4 col-xl-2 bb-field">
                     <label class="bb-label" for="ddlBbStatus">Status</label>
                     <select id="ddlBbStatus" class="form-control form-control-sm w-100">
                         <option value="Pending" selected>Pending</option>
                         <option value="Closed">Closed</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-4 bb-field">
+                <div class="col-6 col-md-4 col-xl-3 bb-field">
+                    <label class="bb-label" for="ddlBbBank">Bank name</label>
+                    <select id="ddlBbBank" class="form-control form-control-sm w-100">
+                        <option value="0">All</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2 bb-field">
+                    <label class="bb-label" for="txtBbFromDate">From date</label>
+                    <input type="text" id="txtBbFromDate" class="form-control form-control-sm w-100" autocomplete="off" placeholder="dd/mm/yyyy" />
+                </div>
+                <div class="col-6 col-md-4 col-xl-2 bb-field">
+                    <label class="bb-label" for="txtBbToDate">To date</label>
+                    <input type="text" id="txtBbToDate" class="form-control form-control-sm w-100" autocomplete="off" placeholder="dd/mm/yyyy" />
+                </div>
+                <div class="col-12 col-md-4 col-xl-2 bb-field">
                     <label class="bb-label" for="ddlBbProject">Project name</label>
                     <select id="ddlBbProject" class="form-control form-control-sm w-100">
                         <option value="0">All</option>
@@ -51,6 +67,7 @@
         <nav id="bbCrumb" class="bb-crumb" aria-label="Report level"></nav>
         @* <h2 id="bbLevelTitle" class="bb-level-title">Project Wise</h2> *@
         <div id="bbLevelSub" class="bb-level-sub"></div>
+        <div id="bbOpenNote" class="bb-open-note" hidden></div>
         <div class="bb-scroll-hint" aria-hidden="true">
             <i class="fas fa-arrows-alt-h" aria-hidden="true"></i>
             <span>Swipe horizontally to see all columns</span>
@@ -60,13 +77,16 @@
                 <thead>
                     <tr>
                         <th id="bbParticularHead">Particular</th>
+                        <th class="bb-amt" id="bbOpeningHead">Opening</th>
                         <th class="bb-amt">Received amount</th>
                         <th class="bb-amt">Payment amount</th>
+                        <th class="bb-amt">Balance</th>
+                        <th class="bb-side">Dr/Cr</th>
                     </tr>
                 </thead>
                 <tbody id="tblBankBookBody">
                     <tr>
-                        <td colspan="3" class="bb-empty">Loading project wise report…</td>
+                        <td colspan="6" class="bb-empty">Loading project wise report…</td>
                     </tr>
                 </tbody>
                 <tfoot id="tblBankBookFoot"></tfoot>

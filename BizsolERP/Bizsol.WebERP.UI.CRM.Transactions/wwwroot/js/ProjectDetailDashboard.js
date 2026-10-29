@@ -2,10 +2,8 @@
 import { UserDashboardTileRights } from '../../Bizsol.WebERP.UI.Shared/js/UserDashboardTileRights.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 
-// ── Chart instances (destroyed & recreated on each load) ─────────────────────
-let chartPaymentVsReceived = null;
-
 let pddFilterPanel       = null;
+let lastFinancialRows    = [];
 
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -63,11 +61,6 @@ function SetLoading(on) {
     document.getElementById('pddLoadingOverlay').classList.toggle('active', on);
 }
 
-function DestroyChart(ref) {
-    if (ref) { try { ref.destroy(); } catch (_) {} }
-    return null;
-}
-
 function NowNote() {
     const d = new Date();
     return 'All amounts are in INR (₹)  |  Data as of ' +
@@ -115,6 +108,7 @@ $(document).ready(function () {
         BizSolHelperFunction.goToUserDashboardMenu();
     });
     BindKpiNavigation();
+    BindFinancialShowAllToggle();
     MountFilterPanelToBody();
     UserDashboardTileRights.Apply(document).finally(function () {
         InitFilterSidePanelControl();
@@ -278,7 +272,6 @@ function LoadDashboardAfterRights() {
         if (grnRows)     RenderPendingTable('tblGRNBody',     'tblGRNTotal',     grnRows);
         if (finRows) {
             RenderFinancialSummary(finRows);
-            RenderPaymentVsReceived(finRows);
         }
         document.getElementById('pddDataNote').textContent = NowNote();
     })
@@ -321,11 +314,6 @@ function FmtInr(val) {
     return '₹ ' + (isNaN(n) ? 0 : n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
-function FmtCr(val) {
-    const n = parseFloat(val);
-    return ((isNaN(n) ? 0 : n) / 1e7).toFixed(2) + ' Cr';
-}
-
 function ClearAllWidgets() {
     ['kpiPOCount','kpiPaymentAmt','kpiExpenseAmt','kpiGRNCount','kpiTotalProjects','kpiIsReconciled',
      'kpiTotalSubProjects','pddDataNote'
@@ -333,7 +321,6 @@ function ClearAllWidgets() {
         const el = document.getElementById(id);
         if (el) el.textContent = '—';
     });
-    chartPaymentVsReceived = DestroyChart(chartPaymentVsReceived);
 }
 
 // ── Render KPI cards ─────────────────────────────────────────────────────────
@@ -368,9 +355,28 @@ function RenderPendingTable(bodyId, totalId, data) {
     total.textContent = sum;
 }
 
+function IsShowAllProjects() {
+    const chk = document.getElementById('chkShowAllProjects');
+    return !!(chk && chk.checked);
+}
+
+function BindFinancialShowAllToggle() {
+    const chk = document.getElementById('chkShowAllProjects');
+    if (!chk) return;
+    chk.addEventListener('change', function () {
+        RenderFinancialSummary(lastFinancialRows);
+    });
+}
+
 // ── Project Financial Summary table ──────────────────────────────────────────
 function RenderFinancialSummary(data) {
-    const rows = AsArray(data);
+    lastFinancialRows = AsArray(data);
+    const rows = lastFinancialRows.filter(function (r) {
+        if (IsShowAllProjects()) return true;
+        const received = parseFloat(Pick(r, 'PaymentReceived', 'paymentReceived') ?? 0) || 0;
+        const made     = parseFloat(Pick(r, 'PaymentMade', 'paymentMade') ?? 0) || 0;
+        return received > 0 || made > 0;
+    });
     const body = document.getElementById('tblFinBody');
     if (!body) return;
 
@@ -392,75 +398,12 @@ function RenderFinancialSummary(data) {
             '</tr>';
     }).join('');
 
-    body.innerHTML = html || '<tr><td colspan="6" class="pdd-empty">No data</td></tr>';
+    body.innerHTML = html || '<tr><td colspan="6" class="pdd-empty">No projects with payment received or payment made</td></tr>';
     SetKpiText('finTotBudget',   FmtInr(tot.budget));
     SetKpiText('finTotGST',      FmtInr(tot.gst));
     SetKpiText('finTotReceived', FmtInr(tot.received));
     SetKpiText('finTotMade',     FmtInr(tot.made));
     SetKpiText('finTotBalance',  FmtInr(tot.balance));
-}
-
-// ── Project-wise Payment Received vs Payment Made (grouped bar) ──────────────
-const valueLabelPlugin = {
-    id: 'pddValueLabels',
-    afterDatasetsDraw: function (chart) {
-        const ctx = chart.ctx;
-        ctx.save();
-        ctx.font = '700 10px sans-serif';
-        ctx.fillStyle = '#334155';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        chart.data.datasets.forEach(function (ds, i) {
-            chart.getDatasetMeta(i).data.forEach(function (bar, idx) {
-                ctx.fillText(FmtCr(ds.data[idx]), bar.x, bar.y - 3);
-            });
-        });
-        ctx.restore();
-    },
-};
-
-function RenderPaymentVsReceived(data) {
-    const rows     = AsArray(data);
-    const labels   = rows.map(function (r) { return Pick(r, 'ProjectName', 'projectName', 'ProjectDesp') ?? ''; });
-    const received = rows.map(function (r) { return parseFloat(Pick(r, 'PaymentReceived', 'paymentReceived') ?? 0) || 0; });
-    const made     = rows.map(function (r) { return parseFloat(Pick(r, 'PaymentMade', 'paymentMade') ?? 0) || 0; });
-
-    chartPaymentVsReceived = DestroyChart(chartPaymentVsReceived);
-    chartPaymentVsReceived = new Chart(document.getElementById('chartPaymentVsReceived'), {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                { label: 'Payment Received', data: received, backgroundColor: '#10b981', borderRadius: 4, borderSkipped: false },
-                { label: 'Payment Made',     data: made,     backgroundColor: '#3b82f6', borderRadius: 4, borderSkipped: false },
-            ],
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 900 },
-            layout: { padding: { top: 18 } },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(15,23,42,0.85)',
-                    padding: 10,
-                    cornerRadius: 10,
-                    callbacks: { label: function (ctx) { return '  ' + ctx.dataset.label + ': ' + FmtInr(ctx.parsed.y); } },
-                },
-            },
-            scales: {
-                x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, weight: '600' }, color: '#64748b' } },
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#f1f5f9' },
-                    border: { display: false },
-                    ticks: { font: { size: 10 }, color: '#94a3b8', callback: function (v) { return (v / 1e7) + ' Cr'; } },
-                },
-            },
-        },
-        plugins: [valueLabelPlugin],
-    });
 }
 
 // ── Expose to window (onclick in HTML) ───────────────────────────────────────

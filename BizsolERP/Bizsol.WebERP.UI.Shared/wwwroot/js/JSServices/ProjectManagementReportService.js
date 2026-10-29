@@ -75,8 +75,9 @@ const ProjectManagementReportService = {
         });
     },
 
-    GetProjectBudgetReport: function GetProjectBudgetReport() {
-        const url = `${getReportApiBase()}/GetProjectBudgetReport`;
+    GetProjectBudgetReport: function GetProjectBudgetReport(status) {
+        const url =
+            `${getReportApiBase()}/GetProjectBudgetReport?Status=${encodeURIComponent(status || '')}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
             return value;
         });
