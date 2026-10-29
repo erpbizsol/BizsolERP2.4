@@ -1334,7 +1334,7 @@
                         <tr>
                             <th>Bill no</th>
                             <th>PO no</th>
-                            <th>Budget Category <span class="req" aria-hidden="true">*</span></th>
+                            <th id="thGpaBudgetCategory">Budget Category <span class="req" aria-hidden="true">*</span></th>
                             <th>Project <span id="gpaProjectReqMark" class="req" style="display: none;" aria-hidden="true">*</span></th>
                             <th>Sub project</th>
                             <th>Bill date</th>
@@ -1400,9 +1400,9 @@
                             </select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label mb-1 po-field-lbl">Budget Category <span class="req">*</span></label>
+                            <label class="form-label mb-1 po-field-lbl" id="lblGpaAddBillCategory">Budget Category <span class="req">*</span></label>
                             <select id="gpaAddBillModalCategory" class="form-control form-control-sm">
-                                <option value="">-- Budget Category --</option>
+                                <option value="">-- Select --</option>
                             </select>
                         </div>
                     </div>

@@ -151,6 +151,14 @@ const GRNPaymentApprovalService = {
                 return value;
             });
     },
+    /** ExpenseGroupMaster: Code, Desp. Used when Payment Entry payee is Employee. */
+    GetExpenseGroupList: function GetExpenseGroupList() {
+        let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetExpenseGroupList`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null)
+            .then(function (value) {
+                return value;
+            });
+    },
     GetPOList: function GetPOList(Code) {
         const code = Code !== undefined && Code !== null ? String(Code).trim() : '';
         let url = UrlService.API_ENDPOINT_GRNPaymentEntry + `/GetPOList?Code=${encodeURIComponent(code || '0')}`;
