@@ -1601,20 +1601,34 @@ function filterBudgetRows() {
     return rows;
 }
 
+function budgetLineBalance(r, budget, gst, pay) {
+    const apiBal = rowValue(r, ['BalanceAmount', 'balanceAmount']);
+    if (apiBal !== '' && apiBal != null) {
+        return parseNum(apiBal);
+    }
+    /* BudgetGSTAmount is budget WITH GST — do not add BudgetAmount again */
+    return (gst !== 0 ? gst : budget) - pay;
+}
+
 function sumBudgetLines(lines) {
     let budget = 0;
     let gst = 0;
     let pay = 0;
+    let balance = 0;
     lines.forEach(function (r) {
-        budget += parseNum(rowValue(r, ['BudgetAmount', 'budgetAmount']));
-        gst += parseNum(rowValue(r, ['BudgetGSTAmount', 'budgetGSTAmount']));
-        pay += parseNum(rowValue(r, ['PaymentAmount', 'paymentAmount']));
+        const b = parseNum(rowValue(r, ['BudgetAmount', 'budgetAmount']));
+        const g = parseNum(rowValue(r, ['BudgetGSTAmount', 'budgetGSTAmount']));
+        const p = parseNum(rowValue(r, ['PaymentAmount', 'paymentAmount']));
+        budget += b;
+        gst += g;
+        pay += p;
+        balance += budgetLineBalance(r, b, g, p);
     });
     return {
         BudgetAmount: budget,
         BudgetGSTAmount: gst,
         PaymentAmount: pay,
-        BalanceAmount: budget + gst - pay,
+        BalanceAmount: balance,
     };
 }
 
