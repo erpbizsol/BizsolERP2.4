@@ -5266,6 +5266,31 @@ function validateGRN() {
     return true;
 }
 
+/** Text from CheckBudgetOnSave. Blank means no warning toast. */
+function grnBudgetWarningText(result) {
+    if (result == null) return '';
+    if (typeof result === 'string' || typeof result === 'number') return String(result).trim();
+    if (Array.isArray(result)) {
+        return result.map(grnBudgetWarningText).filter(Boolean).join('\n');
+    }
+    if (typeof result === 'object') {
+        const direct = result.Msg ?? result.msg ?? result.Message ?? result.message
+            ?? result.Warning ?? result.warning ?? result.BudgetMessage ?? result.budgetMessage;
+        if (direct != null && String(direct).trim() !== '') return String(direct).trim();
+    }
+    return '';
+}
+
+function showGrnBudgetWarning(msg) {
+    const text = (msg || '').trim();
+    if (!text) return;
+    if (typeof toastr !== 'undefined' && typeof toastr.warning === 'function') {
+        toastr.warning(text);
+        return;
+    }
+    showToast(text, 'warning');
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // SAVE GRN (New + Edit)
 // Keys exactly match:  TY_GRNService  /  TY_GRNServiceDetail  /  TY_GRNMasterDetail
@@ -5372,6 +5397,13 @@ function saveGRN() {
                 GRNServiceList,    // array of one master record
                 GRNServiceDetail,  // array of detail rows
             };
+
+            try {
+                const budgetResult = await GRNService.CheckBudgetOnSave(payload);
+                showGrnBudgetWarning(grnBudgetWarningText(budgetResult));
+            } catch (e) {
+                // Budget check is a warning only. Save still runs.
+            }
 
             GRNService.SaveGRN(payload)
                 .then(async data => {
