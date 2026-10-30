@@ -307,6 +307,16 @@ function gpaNormalizeWorkTypeRows(res) {
     return normalizeGpaModalApiRows(res);
 }
 
+function getPaymentTypeDisplay(p) {
+    if (!p) return 'General';
+    const raw = p.Type ?? p.type ?? p.PaymentType ?? p.paymentType ?? '';
+    const s = String(raw).trim().toLowerCase().replace(/\s+/g, ' ');
+    if (s === 'general debit' || s === 'generaldebit') return 'General Debit';
+    if (s === 'general credit' || s === 'generalcredit') return 'General Credit';
+    if (!s || s === 'general') return 'General';
+    return String(raw).trim();
+}
+
 function getWorkTypeDisplay(p) {
     if (!p) return '—';
     const v = p['Work Type'] ?? p.WorkType ?? p.workType
@@ -1650,6 +1660,7 @@ function paintModalFromPayment(po) {
 
     const paymentFor = EscHtml(getPaymentForDisplay(prepared));
     const workType = EscHtml(getWorkTypeDisplay(prepared));
+    const paymentType = EscHtml(getPaymentTypeDisplay(prepared));
 
     $('#gpaModalHeader').html(
         '<div class="gpa-info-grid">' +
@@ -1660,6 +1671,7 @@ function paintModalFromPayment(po) {
             BuildGpaInfoItem('Payment for', paymentFor, 'fa-tags') +
             BuildGpaInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
             BuildGpaInfoItem('Status', status, 'fa-info-circle') +
+            BuildGpaInfoItem('Type', paymentType, 'fa-list') +
             BuildGpaInfoItem('Work Type', workType, 'fa-briefcase') +
         '</div>'
     );

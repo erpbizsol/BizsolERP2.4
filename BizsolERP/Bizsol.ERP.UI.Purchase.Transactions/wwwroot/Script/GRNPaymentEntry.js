@@ -1523,6 +1523,7 @@ function mapGpaListRow(item) {
         'Entry No': entryNo,
         'Entry Date': formatGpaListDate(ed),
         'Party Name': party,
+        Type: gpaPaymentTypeFromListItem(item),
         'Bank Name': bankName,
         Employee: employee,
         'Work Type': workType,
@@ -1743,6 +1744,7 @@ function gpaListEmptyTabPlaceholderRow() {
         'Entry No': '',
         'Entry Date': '',
         'Party Name': 'No payment entries in this status.',
+        Type: '',
         'Bank Name':'',
          Employee: '',
         'Work Type': '',
@@ -1756,7 +1758,7 @@ function gpaListEmptyTabPlaceholderRow() {
 }
 
 function renderGpaListGrid() {
-    const StringFilterColumn = ['Party Name', 'Employee',"Bank Name", 'Work Type', 'Description', 'Ref No'];
+    const StringFilterColumn = ['Party Name', 'Type', 'Employee', 'Bank Name', 'Work Type', 'Description', 'Ref No'];
     const NumericFilterColumn = ['Entry No', 'Amount'];
     const DateFilterColumn = ['Entry Date'];
     const Button = false;
@@ -1795,7 +1797,7 @@ function renderGpaListGrid() {
         totalColumns,
         null,
         commaColumns,
-        'Search by Entry No, Party, Bank, Employee, Work Type, Description...'
+        'Search by Entry No, Party, Type, Bank, Employee, Work Type, Description...'
     );
 }
 
@@ -2474,6 +2476,51 @@ function syncRefNoRequiredUI() {
         if (req) inp.setAttribute('required', 'required');
         else inp.removeAttribute('required');
     }
+}
+
+/** TY_GRNPaymentMaster.Type — General (default), General Debit, General Credit. */
+function gpaNormalizePaymentType(raw) {
+    const s = String(raw ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+    if (s === 'general debit' || s === 'generaldebit') return 'General Debit';
+    if (s === 'general credit' || s === 'generalcredit') return 'General Credit';
+    if (!s || s === 'general') return 'General';
+    return String(raw).trim();
+}
+
+function gpaPaymentTypeValue() {
+    return gpaNormalizePaymentType(document.getElementById('ddlGpaPaymentType')?.value);
+}
+
+/** General Debit / General Credit save Amount as a negative value and hide bank fields. */
+function gpaIsNegativeAmountPaymentType(type) {
+    const t = type || gpaPaymentTypeValue();
+    return t === 'General Debit' || t === 'General Credit';
+}
+
+function syncGpaPaymentTypeFields() {
+    const hide = gpaIsNegativeAmountPaymentType();
+    ['wrapGpaBankName', 'wrapGpaPaymentMode', 'wrapGpaRefNo'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = hide ? 'none' : '';
+    });
+}
+
+function onGpaPaymentTypeChange() {
+    syncGpaPaymentTypeFields();
+}
+
+function gpaBindPaymentTypeOnMaster(master) {
+    const ddl = document.getElementById('ddlGpaPaymentType');
+    if (!ddl) return;
+    const raw = master?.Type ?? master?.type ?? master?.PaymentType ?? master?.paymentType ?? '';
+    const normalized = gpaNormalizePaymentType(raw);
+    ddl.value = [...ddl.options].some(o => o.value === normalized) ? normalized : 'General';
+    syncGpaPaymentTypeFields();
+}
+
+function gpaPaymentTypeFromListItem(item) {
+    const raw = item?.Type ?? item?.type ?? item?.PaymentType ?? item?.paymentType ?? '';
+    return gpaNormalizePaymentType(raw);
 }
 
 function gpaWorkTypeNameFromRow(w) {
@@ -4095,10 +4142,12 @@ function initBillRowProjectSelects(tr) {
     sp.innerHTML = '<option value="">-- Sub project --</option>';
 }
 
-async function fillSubProjectOptionsForRow(tr, projectCode) {
+async function fillSubProjectOptionsForRow(tr, projectCode, opts) {
+    opts = opts || {};
     const sp = tr.querySelector('.inp-subproject-ddl');
     if (!sp) return;
-    const prev = sp.value;
+    const preserveSelection = opts.preserveSelection === true;
+    const prev = preserveSelection ? sp.value : '';
     sp.innerHTML = '<option value="">-- Sub project --</option>';
     const pc = projectCode !== undefined && projectCode !== null ? String(projectCode).trim() : '';
     if (!pc) return;
@@ -4113,7 +4162,16 @@ async function fillSubProjectOptionsForRow(tr, projectCode) {
             opt.text = s.SubProjectName ?? s.subProjectName ?? s.SubProjectDesp ?? s.subProjectDesp ?? s.Name ?? s.name ?? opt.value;
             sp.appendChild(opt);
         });
-        if (prev && [...sp.options].some(o => o.value === prev)) sp.value = prev;
+        if (preserveSelection && prev && [...sp.options].some(o => o.value === prev)) {
+            sp.value = prev;
+        } else if (opts.autoSelectSingle !== false && subs.length === 1) {
+            const only = subs[0];
+            const onlyCode = only.SubProjectMaster_Code ?? only.subProjectMaster_Code ?? only.Code ?? only.code
+                ?? only.SubProject_Code ?? only.subProject_Code ?? only.F_SubProjectMaster_Code ?? only.f_SubProjectMaster_Code ?? '';
+            if (onlyCode !== undefined && onlyCode !== null && String(onlyCode).trim() !== '') {
+                sp.value = String(onlyCode);
+            }
+        }
     } catch (e) {
         console.error('fillSubProjectOptionsForRow', e);
     }
@@ -4146,7 +4204,7 @@ async function fillBillRowProjectFromSubProject(tr, subProjectMasterCode) {
         const sp = tr.querySelector('.inp-subproject-ddl');
         const prevSub = sp?.value ?? code;
         if (pj.value) {
-            await fillSubProjectOptionsForRow(tr, pj.value);
+            await fillSubProjectOptionsForRow(tr, pj.value, { preserveSelection: true });
             if (sp) {
                 if (prevSub && [...sp.options].some(o => o.value === String(prevSub))) {
                     sp.value = String(prevSub);
@@ -4347,7 +4405,7 @@ function bindBillRowProjectSubAsync(tr, r) {
             if (opt) pj.value = opt.value;
         }
 
-        await fillSubProjectOptionsForRow(tr, pj.value);
+        await fillSubProjectOptionsForRow(tr, pj.value, { preserveSelection: true });
 
         if (sCode !== '' && ![...sp.options].some(o => o.value === String(sCode))) {
             const o = document.createElement('option');
@@ -4437,17 +4495,17 @@ function clearBillRowBillFields(tr) {
 
 /** Project change: refresh Sub project list only — Bill No / amounts / PO stay blank. */
 async function onBillRowProjectChange(tr) {
-    if (!tr || editMode) return;
+    if (!tr) return;
     clearBillRowBillFields(tr);
     const pj = tr.querySelector('.inp-project-ddl');
-    await fillSubProjectOptionsForRow(tr, pj?.value ?? '');
+    await fillSubProjectOptionsForRow(tr, pj?.value ?? '', { preserveSelection: false, autoSelectSingle: true });
     gpaRefreshRowPayableEditable(tr);
     recalcFooter();
 }
 
 /** Sub project change: bind Project only — Bill No / amounts stay manual until user picks a bill. */
 async function onBillRowSubProjectChange(tr) {
-    if (!tr || editMode) return;
+    if (!tr) return;
     const sp = tr.querySelector('.inp-subproject-ddl');
     const sub = sp?.value?.trim() ?? '';
     if (!sub) return;
@@ -4968,7 +5026,7 @@ async function gpaBindAddBillModalProjectSubFromRecord(r) {
         if (opt) pSel.value = opt.value;
     }
 
-    await fillGpaAddBillModalSubProjects(pSel.value);
+    await fillGpaAddBillModalSubProjects(pSel.value, { preserveSelection: true });
 
     if (sCode && ![...sSel.options].some(o => o.value === String(sCode))) {
         const o = document.createElement('option');
@@ -5005,10 +5063,12 @@ async function onGpaAddBillModalPoChange() {
     await gpaBindAddBillModalProjectSubFromRecord(r);
 }
 
-async function fillGpaAddBillModalSubProjects(projectCode) {
+async function fillGpaAddBillModalSubProjects(projectCode, opts) {
+    opts = opts || {};
     const sSel = document.getElementById('gpaAddBillModalSubProject');
     if (!sSel) return;
-    const prev = sSel.value;
+    const preserveSelection = opts.preserveSelection === true;
+    const prev = preserveSelection ? sSel.value : '';
     sSel.innerHTML = '<option value="">-- Sub project --</option>';
     const pc = projectCode !== undefined && projectCode !== null ? String(projectCode).trim() : '';
     if (!pc) return;
@@ -5023,7 +5083,16 @@ async function fillGpaAddBillModalSubProjects(projectCode) {
             opt.text = s.SubProjectName ?? s.subProjectName ?? s.SubProjectDesp ?? s.subProjectDesp ?? s.Name ?? s.name ?? opt.value;
             sSel.appendChild(opt);
         });
-        if (prev && [...sSel.options].some(o => o.value === prev)) sSel.value = prev;
+        if (preserveSelection && prev && [...sSel.options].some(o => o.value === prev)) {
+            sSel.value = prev;
+        } else if (opts.autoSelectSingle !== false && subs.length === 1) {
+            const only = subs[0];
+            const onlyCode = only.SubProjectMaster_Code ?? only.subProjectMaster_Code ?? only.Code ?? only.code
+                ?? only.SubProject_Code ?? only.subProject_Code ?? only.F_SubProjectMaster_Code ?? only.f_SubProjectMaster_Code ?? '';
+            if (onlyCode !== undefined && onlyCode !== null && String(onlyCode).trim() !== '') {
+                sSel.value = String(onlyCode);
+            }
+        }
     } catch (e) {
         console.error('fillGpaAddBillModalSubProjects', e);
     }
@@ -5268,7 +5337,7 @@ async function onGpaAddBillModalProjectPick() {
     const catSel = document.getElementById('gpaAddBillModalCategory');
     if (catSel) catSel.value = '';
     const pSel = document.getElementById('gpaAddBillModalProject');
-    await fillGpaAddBillModalSubProjects(pSel?.value ?? '');
+    await fillGpaAddBillModalSubProjects(pSel?.value ?? '', { preserveSelection: false, autoSelectSingle: true });
 }
 
 async function onGpaAddBillModalSubPick() {
@@ -5631,23 +5700,32 @@ function collectPayload() {
     const entryNoRaw = document.getElementById('txtEntryNo')?.value?.trim() ?? '';
     const entryNo = parseInt(entryNoRaw, 10) || 0;
     const entryDateStr = document.getElementById('dtPaymentDate')?.value ?? '';
-    const bankType = parseInt(document.getElementById('ddlPaymentMode')?.value ?? '0', 10) || 0;
+    const paymentType = gpaPaymentTypeValue();
+    const negativeType = gpaIsNegativeAmountPaymentType(paymentType);
+    const bankType = negativeType
+        ? 0
+        : (parseInt(document.getElementById('ddlPaymentMode')?.value ?? '0', 10) || 0);
 
-    const bankMasterCode = gpaBsEmbedLockedBankCode > 0
-        ? gpaBsEmbedLockedBankCode
-        : (parseInt(document.getElementById('ddlBankName')?.value ?? '0', 10) || 0);
-    let headerAmountNum = gpaNumOrZero(parseNum(document.getElementById('txtHeaderAmount')));
+    const bankMasterCode = negativeType
+        ? 0
+        : (gpaBsEmbedLockedBankCode > 0
+            ? gpaBsEmbedLockedBankCode
+            : (parseInt(document.getElementById('ddlBankName')?.value ?? '0', 10) || 0));
+    let headerAmountNum = Math.abs(gpaNumOrZero(parseNum(document.getElementById('txtHeaderAmount'))));
     if (gpaBsEmbedLockedAmount != null && gpaBsEmbedLockedAmount > 0) {
-        headerAmountNum = gpaNumOrZero(gpaBsEmbedLockedAmount);
+        headerAmountNum = Math.abs(gpaNumOrZero(gpaBsEmbedLockedAmount));
     }
-    const bankNameForSave = (gpaBsEmbedLockedBankCode > 0 && gpaBsEmbedLockedBankName)
-        ? gpaBsEmbedLockedBankName.trim()
-        : gpaGetSelectedBankNameForSave();
+    if (negativeType) headerAmountNum = -headerAmountNum;
+    const bankNameForSave = negativeType
+        ? ''
+        : ((gpaBsEmbedLockedBankCode > 0 && gpaBsEmbedLockedBankName)
+            ? gpaBsEmbedLockedBankName.trim()
+            : gpaGetSelectedBankNameForSave());
     /* TY_GRNPaymentMaster — must match API (no VendorMaster / F_Marketing / string MarketingMan / master Project). */
     const GRNPaymentMaster = [{
         Code: masterCode,
         EntryNo: entryNo,
-        RefNo: document.getElementById('txtRefNo')?.value?.trim() ?? '',
+        RefNo: negativeType ? '' : (document.getElementById('txtRefNo')?.value?.trim() ?? ''),
         EntryDate: entryDateStr ? entryDateStr : null,
         AccountMaster_Code: gpaNumOrZero(gpaTyGrnPaymentMasterAccountMasterCode()),
         F_BankPaymentTypeMaster_Code: gpaNumOrZero(bankType),
@@ -5660,6 +5738,7 @@ function collectPayload() {
         PaymentFor: gpaPaymentForForSave(),
         Description: gpaItemDescriptionForSave(),
         WorkTypeMaster_Code: gpaNumOrZero(gpaDdlIntCode(document.getElementById('ddlWorkType'))),
+        Type: paymentType,
     }];
 
     const GRNPaymentDetails = [];
@@ -5862,8 +5941,10 @@ async function loadGRNPaymentApprovalByCode(Code) {
         const ha = document.getElementById('txtHeaderAmount');
         if (ha) {
             const amt = master?.Amount ?? master?.amount;
-            ha.value = amt !== undefined && amt !== null ? String(amt) : '';
+            const n = parseFloat(String(amt ?? '').replace(/,/g, ''));
+            ha.value = Number.isFinite(n) ? String(Math.abs(n)) : '';
         }
+        gpaBindPaymentTypeOnMaster(master);
 
         const nar = document.getElementById('txtNarration');
         if (nar) nar.value = master?.Narration ?? master?.narration ?? '';
@@ -5925,15 +6006,18 @@ function validateGRNPaymentApproval() {
         showToast('Please enter Date.', 'warning');
         return false;
     }
-    const bankMasterCode = gpaBsEmbedLockedBankCode > 0
-        ? gpaBsEmbedLockedBankCode
-        : (parseInt(document.getElementById('ddlBankName')?.value ?? '0', 10) || 0);
-    if (!(bankMasterCode > 0)) {
-        showToast('Please select Bank name.', 'warning');
-        document.getElementById('ddlBankName')?.focus();
-        return false;
+    const negativeType = gpaIsNegativeAmountPaymentType();
+    if (!negativeType) {
+        const bankMasterCode = gpaBsEmbedLockedBankCode > 0
+            ? gpaBsEmbedLockedBankCode
+            : (parseInt(document.getElementById('ddlBankName')?.value ?? '0', 10) || 0);
+        if (!(bankMasterCode > 0)) {
+            showToast('Please select Bank name.', 'warning');
+            document.getElementById('ddlBankName')?.focus();
+            return false;
+        }
     }
-    const headerAmtRequired = parseNum(document.getElementById('txtHeaderAmount'));
+    const headerAmtRequired = Math.abs(parseNum(document.getElementById('txtHeaderAmount')));
     if (!(headerAmtRequired > 0)) {
         showToast('Please enter Amount.', 'warning');
         return false;
@@ -5944,7 +6028,7 @@ function validateGRNPaymentApproval() {
         document.getElementById('ddlWorkType')?.focus();
         return false;
     }
-    if (refNoIsRequiredForCurrentMode()) {
+    if (!negativeType && refNoIsRequiredForCurrentMode()) {
         const ref = document.getElementById('txtRefNo')?.value?.trim() ?? '';
         if (!ref) {
             showToast('Please enter Ref No / CH No for the selected payment mode.', 'warning');
@@ -6246,6 +6330,9 @@ function resetGRNPaymentApprovalForm() {
     gpaSetItemDescriptionValue('');
     const ddlWorkType = document.getElementById('ddlWorkType');
     if (ddlWorkType) ddlWorkType.value = '';
+    const ddlPayType = document.getElementById('ddlGpaPaymentType');
+    if (ddlPayType) ddlPayType.value = 'General';
+    syncGpaPaymentTypeFields();
     syncGpaProjectRequiredUI();
     const d1 = document.getElementById('dtPaymentDate');
     if (d1) d1.value = '';
@@ -7365,6 +7452,8 @@ window.onGpaAddBillModalProjectPick = onGpaAddBillModalProjectPick;
 window.onGpaAddBillModalSubPick = onGpaAddBillModalSubPick;
 window.onGpaAddBillModalPoChange = onGpaAddBillModalPoChange;
 window.syncRefNoRequiredUI = syncRefNoRequiredUI;
+window.onGpaPaymentTypeChange = onGpaPaymentTypeChange;
+window.syncGpaPaymentTypeFields = syncGpaPaymentTypeFields;
 window.onGpaWorkTypeChange = onGpaWorkTypeChange;
 window.syncGpaProjectRequiredUI = syncGpaProjectRequiredUI;
 window.onGpaFillGridChange = onGpaFillGridChange;
