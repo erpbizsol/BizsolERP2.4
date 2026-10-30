@@ -3,6 +3,18 @@ import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuSer
 import { BankMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/BankMasterService.js';
 import { CityMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CityMasterService.js';
 import { CountryMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/CountryMasterService.js';
+import { ProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/ProjectMasterService.js';
+import { SubProjectMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/SubProjectMasterService.js';
+
+(function enableBankPageScroll() {
+    if (document.getElementById('bank-page-scroll-style')) {
+        return;
+    }
+    var style = document.createElement('style');
+    style.id = 'bank-page-scroll-style';
+    style.textContent = '#BankMasterPage{height:auto!important;min-height:0!important;overflow:visible!important;}#bankListPanel{height:calc(100vh - 174px);overflow:hidden;}#bankDetailPanel{flex:none!important;overflow:visible!important;height:auto!important;padding-bottom:16px;}';
+    document.head.appendChild(style);
+})();
 
 var authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
 var G_UserMasterCode = authKeyData.UserMaster_Code || 0;
@@ -21,6 +33,13 @@ var G_BANK_SavedDatabaseLocationCode = 0;
 var G_BANK_SuppressCityAddressFill = false;
 
 var G_BANK_ModuleName = 'Bank';
+/** Y from api/Bank/GetFixedParameterFinance → AskProjectOpenningInBankMaster */
+var G_BANK_AskProjectOpening = false;
+var G_BANK_OpeningRows = [];
+var G_BANK_ProjectRows = [];
+var G_BANK_SubProjectRows = [];
+var G_BANK_OpeningMastersLoaded = false;
+var G_BANK_OpeningBinding = false;
 
 /** tblBankMaster column lengths (varchar char max / int bounds). */
 var BANK_FIELD_MAX = {
@@ -255,6 +274,7 @@ function clearAllFieldErrors() {
 function clearForm() {
     clearAllFieldErrors();
     G_BANK_SavedDatabaseLocationCode = 0;
+    G_BANK_OpeningRows = [];
     $('#hfBankMaster_Code').val('0');
     $('#txtBankName, #txtAliasName, #txtAccountNo, #txtIFSCCode, #txtSwiftCode, #txtAddress').val('');
     $('#txtPin, #txtPhoneNo, #txtFaxNo, #txtServiceTaxNo, #txtPANNo, #txtEMail').val('');
@@ -262,6 +282,7 @@ function clearForm() {
     $('#chkIsDefault, #chkECMSApplicable, #chkVartualAccountAutoGenerate').prop('checked', false);
     $('#ddlCurrency, #ddlCity, #ddlState, #ddlNation, #ddlECMSBank, #ddlECMSDebitAccount').val('').trigger('change');
     toggleECMSPanel(false);
+    applyBankOpeningUi();
 }
 function toggleECMSPanel(show) {
     if (show) {
@@ -286,6 +307,7 @@ function setDetailFormMode(mode) {
     } else {
         $('#btnSaveBank, #btnClearBank').hide();
     }
+    applyBankOpeningUi();
 }
 function showListPanel() {
     $('#bankListPanel').show();
@@ -551,13 +573,18 @@ function populateForm(rec) {
 function loadEditRecord(code, mode) {
     return BankMasterService.GetBankMasterByCode(code)
         .then(function (res) {
-            var rec = firstRecord(res);
-            if (!rec || typeof rec !== 'object') {
+            var unpacked = unwrapBankGet(res);
+            var rec = unpacked.bank;
+            if (!rec || typeof rec !== 'object' || (!rec.BankName && !rec.bankName && !rec.Code && !rec.code)) {
                 if (typeof toastr !== 'undefined') toastr.warning('Record not found.');
+                G_BANK_OpeningRows = [];
                 setDetailFormMode(mode || 'edit');
                 return;
             }
             return loadMasterDropdowns().then(function () {
+                G_BANK_OpeningRows = (unpacked.details || []).map(mapOpeningDetail).filter(function (r) {
+                    return r && (r.projectMaster_Code || r.subProjectMaster_Code || r.amount);
+                });
                 populateForm(rec);
                 setDetailFormMode(mode || 'edit');
             });
@@ -606,9 +633,56 @@ function buildBankMasterRow(code) {
         GSTNo: '',
     };
 }
+function toBankApiRow(row) {
+    return {
+        code: row.Code || 0,
+        bankName: row.BankName || '',
+        address: row.Address || '',
+        city: row.City || '',
+        pinCode: row.PinCode || '',
+        state: row.State || '',
+        nation: row.Nation || '',
+        eMail: row.EMail || '',
+        phoneNo: row.PhoneNo || '',
+        faxNo: row.FaxNo || '',
+        serviceTaxNo: row.ServiceTaxNo || '',
+        panNo: row.PANNo || '',
+        databaseLocation_Code: row.DatabaseLocation_Code || 0,
+        accountNo: row.AccountNo || '',
+        ifsC_Code: row.IFSC_Code || '',
+        isDefault: row.IsDefault || 'N',
+        micrCode: row.MICRCode || '',
+        aliasName: row.AliasName || '',
+        swiftCode: row.SwiftCode || '',
+        currencyName: row.CurrencyName || '',
+        ecmsBank: row.ECMSBank || '',
+        vartualAccountPrefix: row.VartualAccountPrefix || '',
+        vartualAccountLength: row.VartualAccountLength || 0,
+        vartualAccountAutoGenerate: row.VartualAccountAutoGenerate || 'N',
+        eCMSDebitAccountName: row.eCMSDebitAccountName || '',
+        userMaster_Code: row.UserMaster_Code || 0,
+        gstNo: row.GSTNo || '',
+    };
+}
 function buildSavePayload() {
     var code = parseInt($('#hfBankMaster_Code').val() || '0', 10) || 0;
-    return [buildBankMasterRow(code)];
+    var row = buildBankMasterRow(code);
+    var details = [];
+    if (G_BANK_AskProjectOpening) {
+        details = (G_BANK_OpeningRows || []).map(function (r) {
+            return {
+                code: r.code || 0,
+                bankMaster_Code: code,
+                projectMaster_Code: r.projectMaster_Code || 0,
+                subProjectMaster_Code: r.subProjectMaster_Code || 0,
+                amount: r.amount || 0,
+            };
+        });
+    }
+    return {
+        bankMaster: [toBankApiRow(row)],
+        projectWiseOpenningDetail: details,
+    };
 }
 function saveBank() {
     var currentCode = parseInt($('#hfBankMaster_Code').val() || '0', 10) || 0;
@@ -682,6 +756,427 @@ function Bank_OpenDelete(code) {
         }, 300);
     });
 }
+function bankFlagIsY(val) {
+    if (val === true || val === 1) return true;
+    var s = val == null ? '' : String(val).trim().toUpperCase();
+    return s === 'Y' || s === 'YES' || s === '1' || s === 'TRUE';
+}
+function bankReadAskProjectOpening(res) {
+    var name = 'askprojectopenninginbankmaster';
+    function fromObj(obj) {
+        if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+        var keys = Object.keys(obj);
+        var i;
+        for (i = 0; i < keys.length; i++) {
+            if (keys[i].replace(/[^a-z0-9]/gi, '').toLowerCase() === name) return obj[keys[i]];
+        }
+        var label = obj.ParameterName || obj.parameterName || obj.ParaName || obj.paraName || obj.FieldName || obj.fieldName || obj.Name || obj.name;
+        if (label && String(label).replace(/[^a-z0-9]/gi, '').toLowerCase() === name) {
+            if (obj.ParameterValue != null) return obj.ParameterValue;
+            if (obj.parameterValue != null) return obj.parameterValue;
+            if (obj.ParaValue != null) return obj.ParaValue;
+            if (obj.Value != null) return obj.Value;
+            if (obj.value != null) return obj.value;
+        }
+        return null;
+    }
+    function walk(node, depth) {
+        if (node == null || depth > 4) return null;
+        if (typeof node !== 'object') return null;
+        if (Array.isArray(node)) {
+            for (var i = 0; i < node.length; i++) {
+                var hit = walk(node[i], depth + 1);
+                if (hit != null) return hit;
+            }
+            return null;
+        }
+        var direct = fromObj(node);
+        if (direct != null) return direct;
+        var keys = Object.keys(node);
+        for (var k = 0; k < keys.length; k++) {
+            var child = node[keys[k]];
+            if (child && typeof child === 'object') {
+                var nested = walk(child, depth + 1);
+                if (nested != null) return nested;
+            }
+        }
+        return null;
+    }
+    return bankFlagIsY(walk(res, 0));
+}
+function bankCopyIfMissing(rec, pascal, camel) {
+    if (rec[pascal] == null || rec[pascal] === '') {
+        if (rec[camel] != null && rec[camel] !== '') rec[pascal] = rec[camel];
+    }
+}
+function normalizeBankRecord(rec) {
+    if (!rec || typeof rec !== 'object') return rec;
+    bankCopyIfMissing(rec, 'Code', 'code');
+    bankCopyIfMissing(rec, 'BankName', 'bankName');
+    bankCopyIfMissing(rec, 'AliasName', 'aliasName');
+    bankCopyIfMissing(rec, 'Address', 'address');
+    bankCopyIfMissing(rec, 'City', 'city');
+    bankCopyIfMissing(rec, 'PinCode', 'pinCode');
+    bankCopyIfMissing(rec, 'State', 'state');
+    bankCopyIfMissing(rec, 'Nation', 'nation');
+    bankCopyIfMissing(rec, 'EMail', 'eMail');
+    bankCopyIfMissing(rec, 'PhoneNo', 'phoneNo');
+    bankCopyIfMissing(rec, 'FaxNo', 'faxNo');
+    bankCopyIfMissing(rec, 'ServiceTaxNo', 'serviceTaxNo');
+    bankCopyIfMissing(rec, 'PANNo', 'panNo');
+    bankCopyIfMissing(rec, 'DatabaseLocation_Code', 'databaseLocation_Code');
+    bankCopyIfMissing(rec, 'AccountNo', 'accountNo');
+    bankCopyIfMissing(rec, 'IFSC_Code', 'ifsC_Code');
+    bankCopyIfMissing(rec, 'IFSC_Code', 'iFSC_Code');
+    bankCopyIfMissing(rec, 'IsDefault', 'isDefault');
+    bankCopyIfMissing(rec, 'MICRCode', 'micrCode');
+    bankCopyIfMissing(rec, 'SwiftCode', 'swiftCode');
+    bankCopyIfMissing(rec, 'CurrencyName', 'currencyName');
+    bankCopyIfMissing(rec, 'ECMSBank', 'ecmsBank');
+    bankCopyIfMissing(rec, 'VartualAccountPrefix', 'vartualAccountPrefix');
+    bankCopyIfMissing(rec, 'VartualAccountLength', 'vartualAccountLength');
+    bankCopyIfMissing(rec, 'VartualAccountAutoGenerate', 'vartualAccountAutoGenerate');
+    bankCopyIfMissing(rec, 'eCMSDebitAccountName', 'eCMSDebitAccountName');
+    bankCopyIfMissing(rec, 'GSTNo', 'gstNo');
+    return rec;
+}
+function pickOpeningDetailNode(obj) {
+    if (!obj || typeof obj !== 'object') return null;
+    var keys = ['projectWiseOpenningDetail', 'ProjectWiseOpenningDetail', 'projectWiseOpeningDetail', 'ProjectWiseOpeningDetail'];
+    for (var i = 0; i < keys.length; i++) {
+        if (obj[keys[i]] != null) return obj[keys[i]];
+    }
+    return null;
+}
+function unwrapBankGet(res) {
+    var root = res;
+    if (root && root.data && typeof root.data === 'object' && !Array.isArray(root.data)) root = root.data;
+    else if (root && root.Data && typeof root.Data === 'object' && !Array.isArray(root.Data)) root = root.Data;
+    var bankNode = null;
+    var detailNode = null;
+    if (Array.isArray(root) && root.length && Array.isArray(root[0])) {
+        bankNode = root[0];
+        detailNode = root.length > 1 ? root[1] : [];
+    } else if (root && typeof root === 'object' && !Array.isArray(root)) {
+        bankNode = root.bankMaster || root.BankMaster || null;
+        detailNode = pickOpeningDetailNode(root);
+    }
+    var bank = bankNode ? firstRecord(bankNode) : firstRecord(root);
+    var details = detailNode != null ? firstArray(detailNode) : [];
+    if (!details.length && bank && typeof bank === 'object') {
+        var nested = pickOpeningDetailNode(bank);
+        if (nested) details = firstArray(nested);
+    }
+    return { bank: normalizeBankRecord(bank), details: details };
+}
+function mapOpeningDetail(item) {
+    if (!item || typeof item !== 'object') return null;
+    var amount = parseFloat(item.amount != null ? item.amount : item.Amount);
+    if (isNaN(amount)) amount = 0;
+    return {
+        code: parseInt(item.code != null ? item.code : item.Code, 10) || 0,
+        bankMaster_Code: parseInt(item.bankMaster_Code != null ? item.bankMaster_Code : item.BankMaster_Code, 10) || 0,
+        projectMaster_Code: parseInt(item.projectMaster_Code != null ? item.projectMaster_Code : item.ProjectMaster_Code, 10) || 0,
+        subProjectMaster_Code: parseInt(item.subProjectMaster_Code != null ? item.subProjectMaster_Code : item.SubProjectMaster_Code, 10) || 0,
+        amount: Math.round(amount * 100) / 100,
+    };
+}
+function bankFormatAmount(n) {
+    var x = Math.round((Number(n) || 0) * 100) / 100;
+    if (!isFinite(x)) x = 0;
+    return x.toFixed(2);
+}
+/** Digits only: up to 10 before the decimal and 2 after. */
+function bankLimitAmountText(value) {
+    var s = String(value == null ? '' : value).replace(/,/g, '');
+    var out = '';
+    var dot = false;
+    var whole = 0;
+    var frac = 0;
+    for (var i = 0; i < s.length; i++) {
+        var ch = s.charAt(i);
+        if (ch >= '0' && ch <= '9') {
+            if (!dot) {
+                if (whole >= 10) continue;
+                whole++;
+                out += ch;
+            } else {
+                if (frac >= 2) continue;
+                frac++;
+                out += ch;
+            }
+        } else if (ch === '.' && !dot) {
+            dot = true;
+            out += ch;
+        }
+    }
+    return out;
+}
+function bankParseAmount(val) {
+    var s = bankLimitAmountText(val).trim();
+    if (!s || s === '.') return 0;
+    var n = parseFloat(s);
+    if (isNaN(n) || !isFinite(n)) return 0;
+    return Math.round(n * 100) / 100;
+}
+function bankSumOpening(rows) {
+    var total = 0;
+    (rows || []).forEach(function (r) {
+        total += Number(r.amount) || 0;
+    });
+    return Math.round(total * 100) / 100;
+}
+function bankEscHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+function applyBankOpeningUi() {
+    var on = !!G_BANK_AskProjectOpening;
+    $('#lblServiceTaxNo').text(on ? 'Openning' : 'Service Tax No');
+    if (on) $('#btnBankOpening').css('display', 'inline-flex');
+    else $('#btnBankOpening').hide();
+    var view = G_BANK_DetailMode === 'view';
+    if (on) {
+        $('#txtServiceTaxNo').prop('readonly', true);
+        if (G_BANK_OpeningRows && G_BANK_OpeningRows.length) {
+            $('#txtServiceTaxNo').val(bankFormatAmount(bankSumOpening(G_BANK_OpeningRows)));
+        }
+    } else if (!view) {
+        $('#txtServiceTaxNo').prop('readonly', false);
+    }
+}
+function loadFinanceOpeningParameter() {
+    return BankMasterService.GetFixedParameterFinance()
+        .then(function (res) {
+            G_BANK_AskProjectOpening = bankReadAskProjectOpening(res);
+            applyBankOpeningUi();
+            if (G_BANK_AskProjectOpening) return loadOpeningMasters();
+        })
+        .catch(function () {
+            G_BANK_AskProjectOpening = false;
+            applyBankOpeningUi();
+        });
+}
+function loadOpeningMasters() {
+    if (G_BANK_OpeningMastersLoaded) return Promise.resolve();
+    return Promise.all([
+        ProjectMasterService.GetProjectList()
+            .then(function (res) { return firstArray(res); })
+            .catch(function () { return []; }),
+        SubProjectMasterService.GetSubProjectList()
+            .then(function (res) { return firstArray(res); })
+            .catch(function () { return []; }),
+    ]).then(function (pair) {
+        G_BANK_ProjectRows = pair[0] || [];
+        G_BANK_SubProjectRows = pair[1] || [];
+        G_BANK_OpeningMastersLoaded = G_BANK_ProjectRows.length > 0 || G_BANK_SubProjectRows.length > 0;
+    });
+}
+function bankProjectText(p) {
+    return String(p.ProjectDesp || p.projectDesp || p.ProjectName || p.projectName || p.ProjectCode || p.projectCode || '').trim();
+}
+function bankSubText(s) {
+    return String(s.SubProjectDesp || s.subProjectDesp || s.SubProjectName || s.subProjectName || '').trim();
+}
+function bankSubParentCode(s) {
+    var v = s.ProjectMaster_Code != null ? s.ProjectMaster_Code
+        : s.projectMaster_Code != null ? s.projectMaster_Code
+        : s.MasterProjectCode != null ? s.MasterProjectCode
+        : s.masterProjectCode;
+    return v == null ? '' : String(v);
+}
+function bankDestroySelect($sel) {
+    if ($sel && $sel.length && $sel.data('select2')) $sel.select2('destroy');
+}
+function bankInitOpeningSelect($sel, placeholder) {
+    if (!$sel || !$sel.length) return;
+    bankDestroySelect($sel);
+    $sel.select2({
+        width: '100%',
+        placeholder: placeholder || 'Search…',
+        allowClear: true,
+        dropdownParent: $('#dvBankOpeningModal'),
+        dropdownCssClass: 'bank-op-dd',
+        minimumResultsForSearch: 0,
+    });
+    $sel.off('select2:open.bankop').on('select2:open.bankop', function () {
+        $('.select2-container--open, .select2-dropdown').css('z-index', 20050);
+    });
+}
+function bankFillProjectSelect($sel, selected) {
+    var current = selected != null && String(selected) !== '0' ? String(selected) : '';
+    bankDestroySelect($sel);
+    $sel.empty();
+    $sel.append(new Option('-- Select Project --', ''));
+    var seen = {};
+    (G_BANK_ProjectRows || []).forEach(function (p) {
+        var code = p.Code != null ? p.Code : p.code;
+        if (code == null || String(code) === '0') return;
+        var id = String(code);
+        if (seen[id]) return;
+        seen[id] = true;
+        var text = bankProjectText(p) || id;
+        $sel.append(new Option(text, id));
+    });
+    if (current && !$sel.find('option').filter(function () { return this.value === current; }).length) {
+        $sel.append(new Option(current, current));
+    }
+    if (current) $sel.val(current);
+}
+function bankOpeningPairUsed(projectId, subId, exceptTr) {
+    var pc = String(projectId || '');
+    var sc = String(subId || '');
+    if (!pc || pc === '0' || !sc || sc === '0') return false;
+    var used = false;
+    $('#bankOpeningBody tr.bank-op-row').each(function () {
+        if (exceptTr && this === exceptTr) return;
+        var p = String($(this).find('.bank-op-project').val() || '');
+        var s = String($(this).find('.bank-op-sub').val() || '');
+        if (p === pc && s === sc) used = true;
+    });
+    return used;
+}
+function bankFillSubSelect($sel, projectCode, selected) {
+    var pc = projectCode != null && String(projectCode) !== '0' ? String(projectCode) : '';
+    var current = selected != null && String(selected) !== '0' ? String(selected) : '';
+    $sel.attr('data-project', pc);
+    bankDestroySelect($sel);
+    $sel.empty();
+    $sel.append(new Option('-- Select Sub Project --', ''));
+    if (!pc) return;
+    var seen = {};
+    (G_BANK_SubProjectRows || []).forEach(function (s) {
+        if (bankSubParentCode(s) !== pc) return;
+        var code = s.Code != null ? s.Code : s.code;
+        if (code == null || String(code) === '0') return;
+        var id = String(code);
+        if (seen[id]) return;
+        if (bankOpeningPairUsed(pc, id, $sel.closest('tr')[0]) && id !== current) return;
+        seen[id] = true;
+        var text = bankSubText(s) || id;
+        $sel.append(new Option(text, id));
+    });
+    if (current && !$sel.find('option').filter(function () { return this.value === current; }).length) {
+        $sel.append(new Option(current, current));
+    }
+    if (current) $sel.val(current);
+}
+function bankDestroyOpeningSelects() {
+    $('#bankOpeningBody select').each(function () {
+        bankDestroySelect($(this));
+    });
+}
+function bankAddOpeningRow(row) {
+    var bindingHere = !G_BANK_OpeningBinding;
+    if (bindingHere) G_BANK_OpeningBinding = true;
+    row = row || { code: 0, projectMaster_Code: 0, subProjectMaster_Code: 0, amount: '' };
+    var view = G_BANK_DetailMode === 'view';
+    var amt = row.amount === '' || row.amount == null ? '' : bankFormatAmount(row.amount);
+    var dis = view ? ' disabled' : '';
+    var del = view
+        ? ''
+        : '<button type="button" class="btn-bank-op-del" title="Remove"><i class="fas fa-times"></i></button>';
+    $('#bankOpeningBody').append(
+        '<tr class="bank-op-row" data-code="' + (parseInt(row.code, 10) || 0) + '">' +
+            '<td class="bank-op-col-project"><select class="bank-op-project"' + dis + '></select></td>' +
+            '<td class="bank-op-col-sub"><select class="bank-op-sub"' + dis + '></select></td>' +
+            '<td class="bank-op-col-amt"><input type="text" class="bank-op-amt" inputmode="decimal" autocomplete="off" maxlength="13" placeholder="0.00"' + dis + ' value="' + bankEscHtml(amt) + '" /></td>' +
+            '<td class="bank-op-col-act">' + del + '</td>' +
+        '</tr>'
+    );
+    var $tr = $('#bankOpeningBody tr.bank-op-row').last();
+    bankFillProjectSelect($tr.find('.bank-op-project'), row.projectMaster_Code);
+    bankFillSubSelect($tr.find('.bank-op-sub'), row.projectMaster_Code, row.subProjectMaster_Code);
+    bankInitOpeningSelect($tr.find('.bank-op-project'), 'Search project…');
+    bankInitOpeningSelect($tr.find('.bank-op-sub'), 'Search sub project…');
+    if (bindingHere) G_BANK_OpeningBinding = false;
+}
+function bankRenderOpeningRows(rows) {
+    bankDestroyOpeningSelects();
+    $('#bankOpeningBody').empty();
+    var list = (rows || []).slice();
+    if (!list.length && G_BANK_DetailMode !== 'view') list = [null];
+    if (!list.length) {
+        $('#bankOpeningBody').html('<tr><td colspan="4" style="text-align:center;padding:18px;color:#64748b;">No opening rows.</td></tr>');
+        $('#bankOpeningTotal').text('0.00');
+        return;
+    }
+    G_BANK_OpeningBinding = true;
+    list.forEach(function (r) { bankAddOpeningRow(r); });
+    G_BANK_OpeningBinding = false;
+    bankRefreshOpeningModalTotal();
+}
+function bankRefreshOpeningModalTotal() {
+    var total = 0;
+    $('#bankOpeningBody .bank-op-amt').each(function () {
+        var raw = ($(this).val() || '').trim();
+        if (!raw || raw === '-' || raw === '.') return;
+        total += bankParseAmount(raw);
+    });
+    $('#bankOpeningTotal').text(bankFormatAmount(total));
+}
+function bankCollectOpeningRows() {
+    var rows = [];
+    var error = '';
+    var seen = {};
+    $('#bankOpeningBody tr.bank-op-row').each(function () {
+        if (error) return;
+        var $tr = $(this);
+        var project = parseInt($tr.find('.bank-op-project').val() || '0', 10) || 0;
+        var sub = parseInt($tr.find('.bank-op-sub').val() || '0', 10) || 0;
+        var amtRaw = bankLimitAmountText($tr.find('.bank-op-amt').val()).trim().replace(/\.$/, '');
+        if (amtRaw.charAt(0) === '.') amtRaw = '0' + amtRaw;
+        if (!project) { error = 'Project is required.'; return; }
+        if (!sub) { error = 'Sub Project is required.'; return; }
+        if (amtRaw === '' || !/^\d{1,10}(\.\d{1,2})?$/.test(amtRaw)) { error = 'Amount is required.'; return; }
+        var amount = bankParseAmount(amtRaw);
+        if (!(amount > 0)) { error = 'Amount must be greater than 0.'; return; }
+        var key = project + ':' + sub;
+        if (seen[key]) { error = 'This Project and Sub Project combination is already added.'; return; }
+        seen[key] = true;
+        rows.push({
+            code: parseInt($tr.attr('data-code') || '0', 10) || 0,
+            bankMaster_Code: parseInt($('#hfBankMaster_Code').val() || '0', 10) || 0,
+            projectMaster_Code: project,
+            subProjectMaster_Code: sub,
+            amount: amount,
+        });
+    });
+    return { rows: rows, error: error };
+}
+function openBankOpeningModal() {
+    var go = function () {
+        var view = G_BANK_DetailMode === 'view';
+        $('#btnBankOpeningAdd, #btnBankOpeningSave').toggle(!view);
+        var rendered = false;
+        function renderOnce() {
+            if (rendered) return;
+            rendered = true;
+            bankRenderOpeningRows(G_BANK_OpeningRows);
+        }
+        $('#dvBankOpeningModal').off('shown.bs.modal.bankop').one('shown.bs.modal.bankop', renderOnce);
+        showModal('dvBankOpeningModal');
+        setTimeout(function () {
+            if (!rendered) renderOnce();
+        }, 400);
+    };
+    loadOpeningMasters().then(go).catch(function () {
+        if (typeof toastr !== 'undefined') toastr.error('Could not load projects.');
+    });
+}
+function commitBankOpeningModal() {
+    var collected = bankCollectOpeningRows();
+    if (collected.error) {
+        if (typeof toastr !== 'undefined') toastr.warning(collected.error);
+        return;
+    }
+    G_BANK_OpeningRows = collected.rows;
+    $('#txtServiceTaxNo').val(bankFormatAmount(bankSumOpening(collected.rows)));
+    hideModal('dvBankOpeningModal');
+}
 function confirmBankDelete() {
     var code = parseInt($('#hfBankDeleteCode').val() || '0', 10) || 0;
     var reason = ($('#bankReasonForDelete').val() || '').trim();
@@ -749,6 +1244,78 @@ $(document).ready(function () {
         bankApplyAddressFromCity($(this).val());
     });
 
+    $('#btnBankOpening').on('click', function () {
+        openBankOpeningModal();
+    });
+    $('#btnBankOpeningAdd').on('click', function () {
+        if (G_BANK_DetailMode === 'view') return;
+        $('#bankOpeningBody tr').not('.bank-op-row').remove();
+        bankAddOpeningRow(null);
+        bankRefreshOpeningModalTotal();
+    });
+    $('#btnBankOpeningSave').on('click', function () {
+        commitBankOpeningModal();
+    });
+    $('#bankOpeningBody').on('change', '.bank-op-project', function () {
+        if (G_BANK_OpeningBinding) return;
+        var $tr = $(this).closest('tr');
+        var pc = String($(this).val() || '');
+        var $sub = $tr.find('.bank-op-sub');
+        if (String($sub.attr('data-project') || '') === pc) return;
+        bankFillSubSelect($sub, pc, '');
+        bankInitOpeningSelect($sub, 'Search sub project…');
+    });
+    $('#bankOpeningBody').on('select2:selecting', '.bank-op-sub', function (e) {
+        if (G_BANK_OpeningBinding) return;
+        var data = e.params && e.params.args && e.params.args.data;
+        var subId = data ? String(data.id || '') : '';
+        if (!subId) return;
+        var $tr = $(this).closest('tr');
+        var projectId = String($tr.find('.bank-op-project').val() || '');
+        if (bankOpeningPairUsed(projectId, subId, $tr[0])) {
+            e.preventDefault();
+            if (typeof toastr !== 'undefined') toastr.warning('This Project and Sub Project combination is already added.');
+        }
+    });
+    $('#bankOpeningBody').on('change', '.bank-op-sub', function () {
+        if (G_BANK_OpeningBinding) return;
+        var $sel = $(this);
+        var $tr = $sel.closest('tr');
+        var projectId = String($tr.find('.bank-op-project').val() || '');
+        var subId = String($sel.val() || '');
+        if (!bankOpeningPairUsed(projectId, subId, $tr[0])) return;
+        G_BANK_OpeningBinding = true;
+        $sel.val('').trigger('change.select2');
+        G_BANK_OpeningBinding = false;
+        if (typeof toastr !== 'undefined') toastr.warning('This Project and Sub Project combination is already added.');
+    });
+    $('#bankOpeningBody').on('input', '.bank-op-amt', function () {
+        var el = this;
+        var before = el.value;
+        var next = bankLimitAmountText(before);
+        if (next !== before) {
+            var start = el.selectionStart || 0;
+            el.value = next;
+            var pos = Math.max(0, start - (before.length - next.length));
+            try { el.setSelectionRange(pos, pos); } catch (e) {}
+        }
+        bankRefreshOpeningModalTotal();
+    });
+    $('#bankOpeningBody').on('click', '.btn-bank-op-del', function () {
+        if (G_BANK_DetailMode === 'view') return;
+        var $tr = $(this).closest('tr');
+        $tr.find('select').each(function () {
+            bankDestroySelect($(this));
+        });
+        $tr.remove();
+        if (!$('#bankOpeningBody tr.bank-op-row').length) bankAddOpeningRow(null);
+        bankRefreshOpeningModalTotal();
+    });
+    $('#dvBankOpeningModal').on('hidden.bs.modal', function () {
+        bankDestroyOpeningSelects();
+        $('#bankOpeningBody').empty();
+    });
+
     $('#txtBankName').on('blur', function () {
         clearFieldError('txtBankName');
         if (!$(this).val().trim()) showFieldError('txtBankName', 'Bank Name is required.');
@@ -767,6 +1334,7 @@ $(document).ready(function () {
     var params = BizSolHelperFunction.getUrlVars();
     var codeFromUrl = parseInt(params.Code || params.code || '0', 10);
 
+    loadFinanceOpeningParameter();
     loadMasterDropdowns().then(function () {
         if (isFinite(codeFromUrl) && codeFromUrl > 0) {
             showDetailPanel('edit');

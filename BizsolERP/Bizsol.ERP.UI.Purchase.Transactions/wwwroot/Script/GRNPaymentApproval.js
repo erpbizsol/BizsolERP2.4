@@ -90,9 +90,9 @@ function FmtApprovedOnDisplay(d) {
 }
 
 function FmtCurrency(val) {
-    const n = parseFloat(val);
+    const n = parseFloat(String(val ?? '').replace(/,/g, ''));
     if (isNaN(n)) return '—';
-    return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return '\u20B9' + Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function EscHtml(str) {
@@ -305,6 +305,16 @@ function gpaNormalizeWorkTypeRows(res) {
     const data = res?.Data ?? res?.data;
     if (data && typeof data === 'object') return gpaNormalizeWorkTypeRows(data);
     return normalizeGpaModalApiRows(res);
+}
+
+function getPaymentTypeDisplay(p) {
+    if (!p) return 'General';
+    const raw = p.Type ?? p.type ?? p.PaymentType ?? p.paymentType ?? '';
+    const s = String(raw).trim().toLowerCase().replace(/\s+/g, ' ');
+    if (s === 'general debit' || s === 'generaldebit') return 'General Debit';
+    if (s === 'general credit' || s === 'generalcredit') return 'General Credit';
+    if (!s || s === 'general') return 'General';
+    return String(raw).trim();
 }
 
 function getWorkTypeDisplay(p) {
@@ -1650,6 +1660,7 @@ function paintModalFromPayment(po) {
 
     const paymentFor = EscHtml(getPaymentForDisplay(prepared));
     const workType = EscHtml(getWorkTypeDisplay(prepared));
+    const paymentType = EscHtml(getPaymentTypeDisplay(prepared));
 
     $('#gpaModalHeader').html(
         '<div class="gpa-info-grid">' +
@@ -1660,6 +1671,7 @@ function paintModalFromPayment(po) {
             BuildGpaInfoItem('Payment for', paymentFor, 'fa-tags') +
             BuildGpaInfoItem('Current Level', 'Level ' + curLvlNo + ' of ' + totalLvl, 'fa-layer-group') +
             BuildGpaInfoItem('Status', status, 'fa-info-circle') +
+            BuildGpaInfoItem('Type', paymentType, 'fa-list') +
             BuildGpaInfoItem('Work Type', workType, 'fa-briefcase') +
         '</div>'
     );
@@ -2022,7 +2034,7 @@ function gpaEscH(s) {
 }
 
 function gpaFmtIndian(num) {
-    const n = parseFloat(num || 0);
+    const n = Math.abs(parseFloat(String(num ?? '').replace(/,/g, '')) || 0);
     if (isNaN(n)) return '0.00';
     const parts = n.toFixed(2).split('.');
     const intPart = parts[0];

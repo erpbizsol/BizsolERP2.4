@@ -50,6 +50,9 @@
         font-variant-numeric: tabular-nums;
     }
 
+    #tblLedger tr.row-total td {
+        font-weight: 700;
+    }
     #tblLedger tr.row-opening td,
     #tblLedger tr.row-closing td {
         font-weight: 700;
@@ -390,8 +393,85 @@
     .elr-page.is-project-expense .elr-ledger-only {
         display: none !important;
     }
+    .elr-page.is-vendor-project .elr-ledger-only:not(.elr-vendor-keep) {
+        display: none !important;
+    }
+    .elr-page.is-vendor-project .elr-not-vendor {
+        display: none !important;
+    }
+    .elr-page:not(.is-vendor-project) .elr-vendor-only {
+        display: none !important;
+    }
+    .elr-page.is-vendor-ledger .elr-employee-only {
+        display: none !important;
+    }
+    .elr-page.is-vendor-ledger #elrVendorNameField.elr-vendor-only {
+        display: block !important;
+    }
     .elr-page:not(.is-project-expense) .elr-project-only {
         display: none !important;
+    }
+    .elr-page.is-vendor-project .elr-filter-row {
+        grid-template-columns: minmax(160px, 1.05fr) minmax(130px, 0.75fr) minmax(130px, 0.75fr) minmax(180px, 1.15fr) auto;
+    }
+    #tblVendorProject a.elr-vendor-link {
+        color: #4338ca;
+        font-weight: 600;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    #tblVendorProject tr.elr-row-link {
+        cursor: pointer;
+    }
+    #tblVendorProject tr.elr-row-link:hover {
+        background: #eef2ff;
+    }
+    #tblVendorProject th.elr-drcr,
+    #tblVendorProject td.elr-drcr {
+        text-align: center;
+        width: 3.5rem;
+        font-weight: 700;
+    }
+    #tblVendorProject td.num,
+    #tblVendorProject th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+    #tblVendorProject td.elr-balance-negative,
+    #tblVendorProject tr.row-total td.elr-balance-negative {
+        color: #dc2626 !important;
+    }
+    #tblVendorProject tr.row-total td {
+        font-weight: 700;
+        background: rgba(102, 126, 234, 0.12);
+        color: #4338ca;
+    }
+    #tblVendorProject thead .filter-table-heading-div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+    #tblVendorProject thead .filter-table-heading,
+    #tblVendorProject thead .table-filter-arrow,
+    #tblVendorProject thead .table-filter-arrow i {
+        color: #fff;
+    }
+    #tblVendorProject thead .filter-dropdown,
+    #tblVendorProject thead .filter-division,
+    body > .filter-dropdown.bizsol-filter-floating,
+    body > .filter-division.bizsol-filter-floating {
+        color: #1e293b;
+        text-align: left;
+    }
+    .elr-page.is-vendor-project .elr-vendor-table {
+        min-width: 980px;
+    }
+    @@media (max-width: 767px) {
+        .elr-page.is-vendor-project .elr-filter-row {
+            grid-template-columns: minmax(0, 1fr);
+        }
     }
     .elr-page.is-project-expense .elr-filter-row {
         grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
@@ -720,7 +800,7 @@
         <div class="ee-list-header-top">
             <div class="ee-list-header-title-block">
                 <h2 class="ee-list-header-title"><i class="fa fa-book me-2" aria-hidden="true"></i>Employee Expenses Ledger</h2>
-                <small class="ee-list-header-sub">View payments, expenses and running balance for the selected period and filters.</small>
+                <small class="ee-list-header-sub" id="elrPageSubtitle">View payments, expenses and running balance for the selected period and filters.</small>
             </div>
             <div class="ee-list-header-actions no-print elr-header-toolbar">
                 <button type="button" id="btnDownload" class="elr-header-icon-btn elr-header-icon-btn--excel" title="Export to Excel" aria-label="Export to Excel">
@@ -770,23 +850,27 @@
                     <option value="Closed">Closed</option>
                 </select>
             </div>
-            <div class="elr-filter-field elr-ledger-only">
+            <div class="elr-filter-field elr-ledger-only elr-vendor-keep">
                 <label for="txtdateFrom" class="form-label">From date <span class="text-danger">*</span></label>
                 <input id="txtdateFrom" type="text" autocomplete="off" class="form-control form-control-sm box_border w-100" required />
             </div>
-            <div class="elr-filter-field elr-ledger-only">
+            <div class="elr-filter-field elr-ledger-only elr-vendor-keep">
                 <label for="txtdateTo" class="form-label">To date <span class="text-danger">*</span></label>
                 <input id="txtdateTo" type="text" autocomplete="off" class="form-control form-control-sm box_border w-100" required />
             </div>
-            <div class="elr-filter-field elr-ledger-only elr-filter-select-mb">
+            <div class="elr-filter-field elr-vendor-only elr-filter-select-mb" id="elrVendorNameField">
+                <label for="ddlVendorName" class="form-label">Vendor name <span class="text-danger">*</span></label>
+                <select id="ddlVendorName" class="form-control form-control-sm box_border w-100"></select>
+            </div>
+            <div class="elr-filter-field elr-ledger-only elr-employee-only elr-filter-select-mb">
                 <label for="ddlEmployee" class="form-label">Employee <span class="text-danger">*</span></label>
                 <select id="ddlEmployee" class="form-control form-control-sm box_border w-100" required></select>
             </div>
-            <div class="elr-filter-field elr-filter-select-mb">
+            <div class="elr-filter-field elr-filter-select-mb elr-not-vendor">
                 <label for="ddlProject" class="form-label">Project</label>
                 <select id="ddlProject" class="form-control form-control-sm box_border w-100"></select>
             </div>
-            <div class="elr-filter-field elr-filter-select-mb">
+            <div class="elr-filter-field elr-filter-select-mb elr-not-vendor">
                 <label for="ddlSubProject" class="form-label">Sub project</label>
                 <select id="ddlSubProject" class="form-control form-control-sm box_border w-100"></select>
             </div>
@@ -844,6 +928,20 @@
                     <i class="fa-solid fa-angles-right" aria-hidden="true"></i>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div class="expense-entry-card expense-entry-card-table ee-list-grid-wrap elr-vendor-only" id="elrVendorCard">
+        <nav id="elrVendorCrumb" class="elr-crumb" aria-label="Vendor report level"></nav>
+        <div class="expense-entry-table-wrapper">
+            <table class="elr-drill-table elr-vendor-table" id="tblVendorProject">
+                <thead id="tblVendorProjectHead"></thead>
+                <tbody id="tblVendorProjectBody">
+                    <tr>
+                        <td class="elr-drill-empty">Click Show to load the report.</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 

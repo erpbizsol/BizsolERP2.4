@@ -75,18 +75,9 @@ const ProjectManagementReportService = {
         });
     },
 
-    GetProjectBudgetReport: function GetProjectBudgetReport() {
-        const url = `${getReportApiBase()}/GetProjectBudgetReport`;
-        return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
-            return value;
-        });
-    },
-
-    GetVendorWiseReport: function GetVendorWiseReport(fromDate, toDate) {
+    GetProjectBudgetReport: function GetProjectBudgetReport(status) {
         const url =
-            `${getReportApiBase()}/GetVendorWiseReport` +
-            `?FromDate=${encodeURIComponent(fromDate || '')}` +
-            `&ToDate=${encodeURIComponent(toDate || '')}`;
+            `${getReportApiBase()}/GetProjectBudgetReport?Status=${encodeURIComponent(status || '')}`;
         return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
             return value;
         });
