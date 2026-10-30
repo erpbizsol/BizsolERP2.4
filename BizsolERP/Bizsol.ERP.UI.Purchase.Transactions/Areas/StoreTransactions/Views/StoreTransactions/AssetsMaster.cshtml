@@ -48,6 +48,17 @@
     }
 
     .amm-po-create-btn:hover { background: #f0f4ff; }
+    .amm-po-create-btn:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .amm-icon-btn.edit:disabled,
+    #ammDetailPanel .btn-amm-save:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
 
     .amm-list-grid-wrap {
         background: #fff; border: 1px solid #e2e8f0; border-top: none;
@@ -110,13 +121,31 @@
     .amm-icon-btn.edit { background: rgba(102,126,234,.12); color: #667eea; }
     .amm-icon-btn.view { background: rgba(14,165,233,.12); color: #0284c7; }
     .amm-icon-btn.del { background: rgba(239,68,68,.1); color: #ef4444; }
-    .amm-icon-btn.verify { background: #ecfdf5; color: #10b981; }
-    .amm-icon-btn.verified {
-        background: #ecfdf5; color: #047857; cursor: default; pointer-events: none;
+    .im-btn-view.im-btn-verify,
+    .im-btn-view.im-btn-verified-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        vertical-align: middle;
     }
-    .amm-icon-btn.verified i {
-        font-size: 15px; font-weight: 900; -webkit-text-stroke: 0.35px #047857;
+    .im-btn-view.im-btn-verify { background: #f1f5f9; color: #1f2937; }
+    .im-btn-view.im-btn-verify:hover { background: #eef2ff; }
+    .im-btn-view.im-btn-verify i { font-size: 17px; display: block; }
+    .im-btn-view.im-btn-verified-mark {
+        cursor: default;
+        opacity: 1 !important;
+        background: transparent;
+        color: #16a34a;
+        pointer-events: auto;
     }
+    .im-btn-view.im-btn-verified-mark i { font-size: 18px; display: block; }
     .amm-icon-btn.preview { background: #1f2937; color: #fff; }
     .amm-icon-btn.print { background: #111827; color: #fff; }
 
@@ -413,19 +442,19 @@
             <div class="amm-section-title"><i class="fas fa-info-circle"></i> Identification</div>
             <div class="row g-3 amm-form-row">
                 <div class="col-12 col-sm-6 col-md-3 amm-fg">
-                    <label for="txtRefNo">Ref No <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="txtRefNo" maxlength="100" autocomplete="off" />
-                </div>
-                <div class="col-12 col-sm-6 col-md-3 amm-fg">
                     <label for="ddlAssetType">Asset Type <span class="text-danger">*</span></label>
                     <select class="form-select" id="ddlAssetType"></select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtRefNo">Ref No <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="txtRefNo" maxlength="100" autocomplete="off" />
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 amm-fg">
                     <label for="txtAssetTagNo">Asset Tag No</label>
                     <input type="text" class="form-control" id="txtAssetTagNo" maxlength="20" readonly placeholder="Auto-generated on save" />
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 amm-fg">
-                    <label for="txtAssetLife">Asset Life (years)</label>
+                    <label for="txtAssetLife">Asset Life (years) <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="txtAssetLife" inputmode="decimal" maxlength="12" />
                 </div>
             </div>
@@ -433,7 +462,7 @@
             <div class="amm-section-title mt-3"><i class="fas fa-map-marker-alt"></i> Location &amp; value</div>
             <div class="row g-3 amm-form-row">
                 <div class="col-12 col-sm-6 col-md-3 amm-fg">
-                    <label for="txtLocation">Location</label>
+                    <label for="txtLocation">Location <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="txtLocation" maxlength="200" />
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 amm-fg">
@@ -441,14 +470,14 @@
                     <select class="form-select" id="ddlAssetCurrency"></select>
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 amm-fg">
-                    <label for="txtAssetValue">Asset Value</label>
+                    <label for="txtAssetValue">Asset Value <span class="text-danger">*</span></label>
                     <div class="amm-currency-field">
                         <span class="amm-currency-prefix" id="lblAssetCurrencySymbol"></span>
                         <input type="text" id="txtAssetValue" class="form-control amm-currency-input" inputmode="decimal" autocomplete="off" />
                     </div>
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 amm-fg">
-                    <label for="ddlDepartment">Department</label>
+                    <label for="ddlDepartment">Department <span class="text-danger">*</span></label>
                     <select class="form-select" id="ddlDepartment"></select>
                 </div>
             </div>
@@ -460,12 +489,16 @@
                     <input type="text" class="form-control" id="txtAccumulatedDep" maxlength="200" />
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 amm-fg">
-                    <label for="txtPurchaseDate">Date of Purchase</label>
+                    <label for="txtTillDate">Till Date <span id="lblTillDateRequiredMark" class="text-danger" style="display:none;">*</span></label>
+                    <input type="date" class="form-control" id="txtTillDate" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtPurchaseDate">Date of Purchase <span class="text-danger">*</span></label>
                     <input type="date" class="form-control" id="txtPurchaseDate" />
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 amm-fg">
-                    <label for="txtDepApplicableDate">Applicable Date for Dep</label>
-                    <input type="date" class="form-control" id="txtDepApplicableDate" />
+                    <label for="txtApplicableDateOfDep">Put To Use Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="txtApplicableDateOfDep" />
                 </div>
             </div>
         </div>
