@@ -2480,11 +2480,11 @@ function syncRefNoRequiredUI() {
     }
 }
 
-/** TY_GRNPaymentMaster.Type — General (default), General Debit, General Credit. */
+/** TY_GRNPaymentMaster.Type — General (default), Journal Debit, Journal Credit. */
 function gpaNormalizePaymentType(raw) {
     const s = String(raw ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-    if (s === 'general debit' || s === 'generaldebit') return 'General Debit';
-    if (s === 'general credit' || s === 'generalcredit') return 'General Credit';
+    if (s === 'journal debit' || s === 'journaldebit' || s === 'general debit' || s === 'generaldebit') return 'Journal Debit';
+    if (s === 'journal credit' || s === 'journalcredit' || s === 'general credit' || s === 'generalcredit') return 'Journal Credit';
     if (!s || s === 'general') return 'General';
     return String(raw).trim();
 }
@@ -2493,18 +2493,18 @@ function gpaPaymentTypeValue() {
     return gpaNormalizePaymentType(document.getElementById('ddlGpaPaymentType')?.value);
 }
 
-/** Maps normalized Type to `#ddlGpaPaymentType` option values (GeneralDebit / GeneralCredit). */
+/** Maps normalized Type to `#ddlGpaPaymentType` option values (JournalDebit / JournalCredit). */
 function gpaPaymentTypeToDdlValue(typeOrNormalized) {
     const n = gpaNormalizePaymentType(typeOrNormalized);
-    if (n === 'General Debit') return 'GeneralDebit';
-    if (n === 'General Credit') return 'GeneralCredit';
+    if (n === 'Journal Debit') return 'JournalDebit';
+    if (n === 'Journal Credit') return 'JournalCredit';
     return 'General';
 }
 
-/** General Debit / General Credit save Amount as a negative value and hide bank fields. */
+/** Journal Debit / Journal Credit hide bank fields. Only Journal Debit is stored as a negative Amount. */
 function gpaIsNegativeAmountPaymentType(type) {
     const t = type || gpaPaymentTypeValue();
-    return t === 'General Debit' || t === 'General Credit';
+    return t === 'Journal Debit' || t === 'Journal Credit';
 }
 
 function syncGpaPaymentTypeFields() {
@@ -5765,7 +5765,8 @@ function onGpaPartyEmployeeModeChange() {
 
 /**
  * Header amount magnitude for save (always >= 0 in JSON).
- * General Debit/Credit: USP applies minus from Type; negative values in TVP can become NULL on insert.
+ * USP stores Journal Debit as negative. Journal Credit stays positive.
+ * Negative values in TVP can become NULL on insert.
  */
 function gpaMasterAmountMagnitudeForSave() {
     let n = Math.abs(gpaNumOrZero(parseNum(document.getElementById('txtHeaderAmount'))));

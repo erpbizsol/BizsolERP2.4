@@ -311,8 +311,8 @@ function getPaymentTypeDisplay(p) {
     if (!p) return 'General';
     const raw = p.Type ?? p.type ?? p.PaymentType ?? p.paymentType ?? '';
     const s = String(raw).trim().toLowerCase().replace(/\s+/g, ' ');
-    if (s === 'general debit' || s === 'generaldebit') return 'General Debit';
-    if (s === 'general credit' || s === 'generalcredit') return 'General Credit';
+    if (s === 'journal debit' || s === 'journaldebit' || s === 'general debit' || s === 'generaldebit') return 'Journal Debit';
+    if (s === 'journal credit' || s === 'journalcredit' || s === 'general credit' || s === 'generalcredit') return 'Journal Credit';
     if (!s || s === 'general') return 'General';
     return String(raw).trim();
 }
