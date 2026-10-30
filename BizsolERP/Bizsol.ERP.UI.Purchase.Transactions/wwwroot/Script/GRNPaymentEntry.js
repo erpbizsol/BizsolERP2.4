@@ -270,7 +270,7 @@ function gpaSelectedHistoryPoNo() {
 function gpaFormatNarrationAmount(val) {
     const n = parseFloat(String(val ?? '').replace(/,/g, ''));
     if (isNaN(n)) return '0';
-    return Math.round(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    return Math.round(Math.abs(n)).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
 /** PO label for narration — e.g. PO-019 */
@@ -1499,7 +1499,8 @@ function mapGpaListRow(item) {
     const description = String(item.Description ?? item.description ?? item.ItemDescription ?? item.itemDescription ?? '').trim();
     const rawAmt = item.Amount ?? item.amount ?? item.HeaderAmount ?? item.headerAmount
         ?? item['Total Amount'] ?? item.TotalAmount ?? item.totalAmount ?? item.amount ?? item.amount;
-    const amt = rawAmt !== undefined && rawAmt !== null && rawAmt !== '' ? Number(rawAmt) : '';
+    const amtNum = rawAmt !== undefined && rawAmt !== null && rawAmt !== '' ? Number(rawAmt) : NaN;
+    const amt = !isNaN(amtNum) ? Math.abs(amtNum) : '';
     const ref = item.RefNo ?? item.refNo ?? '';
     const label = String(entryNo || code || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     const attachEntryDate = gpaResolveAttachmentEntryDate(item, ed);
@@ -1559,7 +1560,7 @@ function gpeFmtDateDisplay(d) {
 function gpeFmtCurrency(v) {
     const n = parseFloat(String(v == null ? '' : v).replace(/,/g, ''));
     if (isNaN(n)) return '—';
-    return '\u20B9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return '\u20B9' + Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function gpeItemHasAttachmentYes(item) {
@@ -1613,10 +1614,11 @@ function BuildGpeEntryCard(rawItem) {
         ?? rawItem['Entry Date'] ?? rawItem['PO Date'] ?? rawItem.PODate ?? rawItem.pODate ?? '';
     const attachEntryDate = gpaResolveAttachmentEntryDate(rawItem, edRaw);
     const entryDate = gpeFmtDateDisplay(edRaw);
-    const amount = gpeFmtCurrency(
-        rawItem.Amount ?? rawItem.amount ?? rawItem.HeaderAmount ?? rawItem.headerAmount
-        ?? rawItem['Total Amount'] ?? rawItem.TotalAmount ?? rawItem.totalAmount ?? ''
-    );
+    const rawCardAmt = rawItem.Amount ?? rawItem.amount ?? rawItem.HeaderAmount ?? rawItem.headerAmount
+        ?? rawItem['Total Amount'] ?? rawItem.TotalAmount ?? rawItem.totalAmount ?? '';
+    const cardAmtNum = rawCardAmt !== undefined && rawCardAmt !== null && rawCardAmt !== ''
+        ? Number(rawCardAmt) : NaN;
+    const amount = gpeFmtCurrency(!isNaN(cardAmtNum) ? Math.abs(cardAmtNum) : rawCardAmt);
     const totalLvl = parseInt(rawItem.TotalLevels ?? rawItem.MaxLevel ?? 0, 10) || 0;
     const curLvlNo = parseInt(rawItem.CurrentLevelNo ?? rawItem.CurrentLevel ?? 1, 10) || 1;
     const enNum = parseInt(entryPlain, 10) || 0;
@@ -2491,6 +2493,14 @@ function gpaPaymentTypeValue() {
     return gpaNormalizePaymentType(document.getElementById('ddlGpaPaymentType')?.value);
 }
 
+/** Maps normalized Type to `#ddlGpaPaymentType` option values (GeneralDebit / GeneralCredit). */
+function gpaPaymentTypeToDdlValue(typeOrNormalized) {
+    const n = gpaNormalizePaymentType(typeOrNormalized);
+    if (n === 'General Debit') return 'GeneralDebit';
+    if (n === 'General Credit') return 'GeneralCredit';
+    return 'General';
+}
+
 /** General Debit / General Credit save Amount as a negative value and hide bank fields. */
 function gpaIsNegativeAmountPaymentType(type) {
     const t = type || gpaPaymentTypeValue();
@@ -2507,15 +2517,27 @@ function syncGpaPaymentTypeFields() {
 
 function onGpaPaymentTypeChange() {
     syncGpaPaymentTypeFields();
+    if (gpaIsNegativeAmountPaymentType()) {
+        const inp = document.getElementById('txtRefNo');
+        if (inp) inp.removeAttribute('required');
+        const mark = document.getElementById('refNoReqMark');
+        if (mark) {
+            mark.style.display = 'none';
+            mark.setAttribute('aria-hidden', 'true');
+        }
+    } else {
+        syncRefNoRequiredUI();
+    }
 }
 
 function gpaBindPaymentTypeOnMaster(master) {
     const ddl = document.getElementById('ddlGpaPaymentType');
     if (!ddl) return;
     const raw = master?.Type ?? master?.type ?? master?.PaymentType ?? master?.paymentType ?? '';
-    const normalized = gpaNormalizePaymentType(raw);
-    ddl.value = [...ddl.options].some(o => o.value === normalized) ? normalized : 'General';
+    const ddlVal = gpaPaymentTypeToDdlValue(raw);
+    ddl.value = [...ddl.options].some(o => o.value === ddlVal) ? ddlVal : 'General';
     syncGpaPaymentTypeFields();
+    if (!gpaIsNegativeAmountPaymentType()) syncRefNoRequiredUI();
 }
 
 function gpaPaymentTypeFromListItem(item) {
@@ -4641,6 +4663,52 @@ function gpaNumOrZero(v) {
     return Number.isFinite(n) ? n : 0;
 }
 
+/** Save payload strings — never null/undefined (maps to empty TVP / C# string). */
+function gpaStrOrEmpty(v) {
+    if (v === undefined || v === null) return '';
+    return String(v).trim();
+}
+
+/** TY_GRNPaymentMaster row for SaveGRNPaymentApproval — explicit 0 / "" only, no null. */
+function gpaCoerceTyGrnPaymentMasterRow(row) {
+    const r = row || {};
+    const entryDateRaw = gpaStrOrEmpty(r.EntryDate ?? r.entryDate)
+        || gpaStrOrEmpty(document.getElementById('dtPaymentDate')?.value);
+    return {
+        Code: gpaNumOrZero(r.Code ?? r.code),
+        EntryNo: gpaNumOrZero(r.EntryNo ?? r.entryNo),
+        RefNo: gpaStrOrEmpty(r.RefNo ?? r.refNo),
+        EntryDate: entryDateRaw,
+        AccountMaster_Code: gpaNumOrZero(r.AccountMaster_Code ?? r.accountMaster_Code),
+        F_BankPaymentTypeMaster_Code: gpaNumOrZero(r.F_BankPaymentTypeMaster_Code ?? r.f_BankPaymentTypeMaster_Code),
+        Amount: gpaNumOrZero(r.Amount ?? r.amount),
+        AdvanceAmount: gpaNumOrZero(r.AdvanceAmount ?? r.advanceAmount),
+        Narration: gpaStrOrEmpty(r.Narration ?? r.narration),
+        MarketingManMaster_Code: gpaNumOrZero(r.MarketingManMaster_Code ?? r.marketingManMaster_Code),
+        BankMaster_Code: gpaNumOrZero(r.BankMaster_Code ?? r.bankMaster_Code),
+        PaymentFor: gpaStrOrEmpty(r.PaymentFor ?? r.paymentFor),
+        WorkTypeMaster_Code: gpaNumOrZero(r.WorkTypeMaster_Code ?? r.workTypeMaster_Code),
+        Description: gpaStrOrEmpty(r.Description ?? r.description),
+        Type: gpaStrOrEmpty(gpaNormalizePaymentType(r.Type ?? r.type ?? 'General')) || 'General',
+    };
+}
+
+/** TY_GRNPaymentDetails row — explicit 0 for all numeric columns. */
+function gpaCoerceTyGrnPaymentDetailRow(row) {
+    const r = row || {};
+    return {
+        Code: gpaNumOrZero(r.Code ?? r.code),
+        GRNPaymentMaster_Code: gpaNumOrZero(r.GRNPaymentMaster_Code ?? r.gRNPaymentMaster_Code),
+        MRNMaster_Code: gpaNumOrZero(r.MRNMaster_Code ?? r.mRNMaster_Code),
+        PaymentAmount: gpaNumOrZero(r.PaymentAmount ?? r.paymentAmount),
+        ProjectMaster_Code: gpaNumOrZero(r.ProjectMaster_Code ?? r.projectMaster_Code),
+        SubProjectMaster_Code: gpaNumOrZero(r.SubProjectMaster_Code ?? r.subProjectMaster_Code),
+        ProjectCategory_Code: gpaNumOrZero(r.ProjectCategory_Code ?? r.projectCategory_Code),
+        PurchaseOrderMaster_Code: gpaNumOrZero(r.PurchaseOrderMaster_Code ?? r.purchaseOrderMaster_Code),
+        ExpenseGroupMaster_Code: gpaNumOrZero(r.ExpenseGroupMaster_Code ?? r.expenseGroupMaster_Code),
+    };
+}
+
 /**
  * Allocated amount per row for totals and save:
  * Case 1 (MRN line): Payment amount only.
@@ -5695,6 +5763,21 @@ function onGpaPartyEmployeeModeChange() {
     recalcFooter();
 }
 
+/**
+ * Header amount magnitude for save (always >= 0 in JSON).
+ * General Debit/Credit: USP applies minus from Type; negative values in TVP can become NULL on insert.
+ */
+function gpaMasterAmountMagnitudeForSave() {
+    let n = Math.abs(gpaNumOrZero(parseNum(document.getElementById('txtHeaderAmount'))));
+    if (gpaBsEmbedLockedAmount != null && gpaBsEmbedLockedAmount > 0) {
+        n = Math.abs(gpaNumOrZero(gpaBsEmbedLockedAmount));
+    }
+    if (!(n > 0)) {
+        n = Math.abs(gpaNumOrZero(sumGpaGridPaymentAmounts()));
+    }
+    return n;
+}
+
 function collectPayload() {
     const masterCode = parseInt(document.getElementById('hdnGRNPaymentMasterCode')?.value ?? '0', 10) || 0;
     const entryNoRaw = document.getElementById('txtEntryNo')?.value?.trim() ?? '';
@@ -5711,11 +5794,7 @@ function collectPayload() {
         : (gpaBsEmbedLockedBankCode > 0
             ? gpaBsEmbedLockedBankCode
             : (parseInt(document.getElementById('ddlBankName')?.value ?? '0', 10) || 0));
-    let headerAmountNum = Math.abs(gpaNumOrZero(parseNum(document.getElementById('txtHeaderAmount'))));
-    if (gpaBsEmbedLockedAmount != null && gpaBsEmbedLockedAmount > 0) {
-        headerAmountNum = Math.abs(gpaNumOrZero(gpaBsEmbedLockedAmount));
-    }
-    if (negativeType) headerAmountNum = -headerAmountNum;
+    const headerAmountNum = gpaMasterAmountMagnitudeForSave();
     const bankNameForSave = negativeType
         ? ''
         : ((gpaBsEmbedLockedBankCode > 0 && gpaBsEmbedLockedBankName)
@@ -5726,7 +5805,7 @@ function collectPayload() {
         Code: masterCode,
         EntryNo: entryNo,
         RefNo: negativeType ? '' : (document.getElementById('txtRefNo')?.value?.trim() ?? ''),
-        EntryDate: entryDateStr ? entryDateStr : null,
+        EntryDate: entryDateStr ? entryDateStr : '',
         AccountMaster_Code: gpaNumOrZero(gpaTyGrnPaymentMasterAccountMasterCode()),
         F_BankPaymentTypeMaster_Code: gpaNumOrZero(bankType),
         BankMaster_Code: gpaNumOrZero(bankMasterCode),
@@ -5757,17 +5836,15 @@ function collectPayload() {
         const catCode = gpaCatCodeFromSelect(catSel);
         const pushDetail = (mrnCode, amt) => {
             GRNPaymentDetails.push({
-                Code: dCode,
-                GRNPaymentMaster_Code: masterCode,
-                MRNMaster_Code: mrnCode,
+                Code: gpaNumOrZero(dCode),
+                GRNPaymentMaster_Code: gpaNumOrZero(masterCode),
+                MRNMaster_Code: gpaNumOrZero(mrnCode),
                 PaymentAmount: gpaNumOrZero(amt),
-                ProjectMaster_Code: projCode,
-                SubProjectMaster_Code: subCode,
-                PONo: poNo,
-                CategoryName: catName,
-                PurchaseOrderMaster_Code: poCode,
-                ProjectCategory_Code: employeeMode ? 0 : catCode,
-                ExpenseGroupMaster_Code: employeeMode ? catCode : 0,
+                ProjectMaster_Code: gpaNumOrZero(projCode),
+                SubProjectMaster_Code: gpaNumOrZero(subCode),
+                PurchaseOrderMaster_Code: gpaNumOrZero(poCode),
+                ProjectCategory_Code: employeeMode ? 0 : gpaNumOrZero(catCode),
+                ExpenseGroupMaster_Code: employeeMode ? gpaNumOrZero(catCode) : 0,
             });
         };
         if (mrn > 0) {
@@ -5791,6 +5868,42 @@ function collectPayload() {
 
     /* TY_GRNPaymentMaster[] + TY_GRNPaymentDetails[] — Project/SubProject on details only. */
     return { GRNPaymentMaster, GRNPaymentDetails };
+}
+
+/** TY_GRNPaymentDetails — TVP columns only; skip lines with no payment. */
+function gpaNormalizeGrnPaymentDetailRow(d) {
+    if (!d || typeof d !== 'object') return null;
+    const coerced = gpaCoerceTyGrnPaymentDetailRow(d);
+    if (!(coerced.PaymentAmount > 0)) return null;
+    return coerced;
+}
+
+/**
+ * Save body aligned to C# TY_GRNPaymentMaster (no extra props). Amount always > 0 magnitude for TVP mapping.
+ */
+function gpaBuildSaveGrnPaymentApiBody(collectResult) {
+    const rawMaster = (collectResult.GRNPaymentMaster && collectResult.GRNPaymentMaster[0]) || {};
+    const rawDetails = collectResult.GRNPaymentDetails || [];
+    const details = [];
+    rawDetails.forEach(function (d) {
+        const row = gpaNormalizeGrnPaymentDetailRow(d);
+        if (row) details.push(row);
+    });
+    let amt = gpaNumOrZero(rawMaster.Amount ?? rawMaster.amount);
+    if (!(amt > 0)) {
+        let sumDet = 0;
+        details.forEach(function (d) {
+            sumDet += gpaNumOrZero(d.PaymentAmount ?? d.paymentAmount);
+        });
+        amt = Math.abs(sumDet);
+    } else {
+        amt = Math.abs(amt);
+    }
+    const masterRow = gpaCoerceTyGrnPaymentMasterRow(Object.assign({}, rawMaster, { Amount: amt }));
+    return {
+        GRNPaymentMaster: [masterRow],
+        GRNPaymentDetails: details,
+    };
 }
 
 function firstMasterFromApi(root) {
@@ -5851,6 +5964,8 @@ async function loadGRNPaymentApprovalByCode(Code) {
         const ed = master?.EntryDate ?? master?.entryDate ?? master?.PaymentDate ?? master?.paymentDate;
         const dt = document.getElementById('dtPaymentDate');
         if (dt) dt.value = ed ? formatDateInput(ed) : '';
+
+        gpaBindPaymentTypeOnMaster(master);
 
         const isEmpPayment = gpaMasterIsEmployeePayment(master);
         const chkPayToParty = document.getElementById('chkGpaPayToParty');
@@ -5918,7 +6033,7 @@ async function loadGRNPaymentApprovalByCode(Code) {
         const bank = master?.F_BankPaymentTypeMaster_Code ?? master?.f_BankPaymentTypeMaster_Code;
         const ddlBank = document.getElementById('ddlPaymentMode');
         if (ddlBank && bank !== undefined && bank !== null) ddlBank.value = String(bank);
-        syncRefNoRequiredUI();
+        if (!gpaIsNegativeAmountPaymentType()) syncRefNoRequiredUI();
 
         const ddlBankName = document.getElementById('ddlBankName');
         if (ddlBankName) {
@@ -5944,7 +6059,6 @@ async function loadGRNPaymentApprovalByCode(Code) {
             const n = parseFloat(String(amt ?? '').replace(/,/g, ''));
             ha.value = Number.isFinite(n) ? String(Math.abs(n)) : '';
         }
-        gpaBindPaymentTypeOnMaster(master);
 
         const nar = document.getElementById('txtNarration');
         if (nar) nar.value = master?.Narration ?? master?.narration ?? '';
@@ -6218,7 +6332,41 @@ function saveGRNPaymentApproval() {
             }
         }
         if (!validateGRNPaymentApproval()) return;
-        const payload = collectPayload();
+        const payload = gpaBuildSaveGrnPaymentApiBody(collectPayload());
+        const m0 = payload.GRNPaymentMaster?.[0];
+        if (!(gpaNumOrZero(m0?.Amount) > 0)) {
+            if (typeof toastr !== 'undefined') {
+                toastr.warning('Please enter Amount and payment on at least one bill / location line.');
+            } else {
+                showToast('Please enter Amount and payment on at least one bill / location line.', 'warning');
+            }
+            return;
+        }
+        if (isGpaPartyMode()) {
+            if (!(gpaNumOrZero(m0?.AccountMaster_Code) > 0)) {
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning('Please select Party Name. Vendor account is not mapped for save.');
+                } else {
+                    showToast('Please select Party Name. Vendor account is not mapped for save.', 'warning');
+                }
+                return;
+            }
+        } else if (!(gpaNumOrZero(m0?.MarketingManMaster_Code) > 0)) {
+            if (typeof toastr !== 'undefined') {
+                toastr.warning('Please select Employee.');
+            } else {
+                showToast('Please select Employee.', 'warning');
+            }
+            return;
+        }
+        if (!payload.GRNPaymentDetails?.length) {
+            if (typeof toastr !== 'undefined') {
+                toastr.warning('Add at least one line with Payment amount before save.');
+            } else {
+                showToast('Add at least one line with Payment amount before save.', 'warning');
+            }
+            return;
+        }
         try {
             const data = await GRNPaymentApprovalService.SaveGRNPaymentApproval(payload);
             const ok = data && (
