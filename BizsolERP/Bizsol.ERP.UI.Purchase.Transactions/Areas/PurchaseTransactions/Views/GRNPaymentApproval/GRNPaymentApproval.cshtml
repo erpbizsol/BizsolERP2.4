@@ -1228,7 +1228,16 @@
                     <label class="po-field-lbl d-block mb-1">Date <span class="req">*</span></label>
                     <input type="date" id="dtPaymentDate" class="form-control form-control-sm" autocomplete="off">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-2">
+                    <label class="po-field-lbl d-block mb-1">Type <span class="req">*</span></label>
+                    <select id="ddlGpaPaymentType" class="form-control form-control-sm" autocomplete="off" onchange="window.onGpaPaymentTypeChange()">
+                        <option value="General" selected>General</option>
+
+                        <option value="JournalDebit">Journal Debit</option>
+                        <option value="JournalCredit">Journal Credit</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
                     <div class="form-check mb-1">
                         <input type="checkbox" class="form-check-input" id="chkGpaPayToParty" checked onchange="window.onGpaPartyEmployeeModeChange()">
                         <label class="form-check-label po-field-lbl mb-0" for="chkGpaPayToParty" style="font-size:0.8rem;font-weight:600;">Pay to party (vendor)</label>
@@ -1253,21 +1262,21 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-2" id="wrapGpaBankName">
                     <label class="po-field-lbl d-block mb-1">Bank name <span class="req">*</span></label>
                     <select id="ddlBankName" class="form-control form-control-sm" autocomplete="off" title="GetBankList (API)">
                         <option value="">-- Select Bank --</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2" id="wrapGpaPaymentMode">
                     <label class="po-field-lbl d-block mb-1">Payment mode</label>
                     <select id="ddlPaymentMode" class="form-control form-control-sm" title="BANKPAYMENTTYPE (API)" onchange="window.syncRefNoRequiredUI()">
                         <option value="">-- Select --</option>
                     </select>
                 </div>
-            </div>
-            <div class="row g-2 mt-1">
-                <div class="col-md-2">
+                <div class="col-md-2" id="wrapGpaRefNo">
                     <label class="po-field-lbl d-block mb-1">Ref No / CH No <span id="refNoReqMark" class="req" style="display: none;" aria-hidden="true">*</span></label>
                     <input type="text" id="txtRefNo" class="form-control form-control-sm" maxlength="50" autocomplete="off" placeholder="Reference / Cheque no.">
                 </div>
@@ -1281,11 +1290,13 @@
                         <option value="">-- Select Work Type --</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="po-field-lbl d-block mb-1">Payment for</label>
                     <textarea id="txtPaymentFor" class="form-control form-control-sm" rows="2" maxlength="200" autocomplete="off" placeholder="Enter payment for (optional)"></textarea>
                 </div>
-                <div class="col-md-3 d-flex align-items-end gpa-hint-box-col">
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-12 d-flex align-items-end gpa-hint-box-col">
                     <div class="gpa-hint-box w-100 mb-1">
                         <i class="fa fa-info-circle" style="color:#667eea;flex-shrink:0;"></i>
                         <span>Fill all working fields before save. Total payment + Advance / On account must not exceed Amount. Footer updates automatically unless you edit Advance.</span>
@@ -1334,7 +1345,7 @@
                         <tr>
                             <th>Bill no</th>
                             <th>PO no</th>
-                            <th>Budget Category <span class="req" aria-hidden="true">*</span></th>
+                            <th id="thGpaBudgetCategory">Budget Category <span class="req" aria-hidden="true">*</span></th>
                             <th>Project <span id="gpaProjectReqMark" class="req" style="display: none;" aria-hidden="true">*</span></th>
                             <th>Sub project</th>
                             <th>Bill date</th>
@@ -1400,9 +1411,9 @@
                             </select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label mb-1 po-field-lbl">Budget Category <span class="req">*</span></label>
+                            <label class="form-label mb-1 po-field-lbl" id="lblGpaAddBillCategory">Budget Category <span class="req">*</span></label>
                             <select id="gpaAddBillModalCategory" class="form-control form-control-sm">
-                                <option value="">-- Budget Category --</option>
+                                <option value="">-- Select --</option>
                             </select>
                         </div>
                     </div>

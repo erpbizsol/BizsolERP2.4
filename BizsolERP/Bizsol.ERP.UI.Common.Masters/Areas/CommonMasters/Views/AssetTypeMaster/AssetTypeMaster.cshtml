@@ -107,9 +107,43 @@
         display: inline-flex; align-items: center; gap: 6px;
     }
     .im-btn-confirm-delete:hover { box-shadow: 0 7px 22px rgba(239,68,68,0.48); transform: translateY(-1px); }
+
+    #atEntryPanel .at-entry-wrap {
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        padding: 0 18px 30px; background: #f1f3fb; min-height: 100%;
+        box-sizing: border-box; width: 100%; max-width: 100%; overflow-x: hidden;
+    }
+    #atEntryPanel .at-entry-wrap *, #atEntryPanel .at-entry-wrap *::before, #atEntryPanel .at-entry-wrap *::after { box-sizing: border-box; }
+    #atEntryPanel .at-card { background: #fff; border-radius: 16px; border: 1px solid #e5e7f0; box-shadow: 0 4px 24px rgba(99,102,241,0.09); overflow: hidden; margin-bottom: 18px; max-width: 100%; }
+    #atEntryPanel .at-card-header { background: linear-gradient(130deg, #5b5ef4 0%, #8b5cf6 55%, #a855f7 100%); padding: 14px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    #atEntryPanel .at-header-title { color: #fff; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; }
+    #atEntryPanel .at-card-body { padding: 16px 18px 18px; max-width: 100%; }
+    #atEntryPanel .at-form-grid { display: grid; gap: 10px 12px; }
+    #atEntryPanel .at-form-main { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+    #atEntryPanel .at-form-group { display: flex; flex-direction: column; gap: 3px; }
+    #atEntryPanel .at-form-group label { font-size: 11px; font-weight: 700; color: #374151; }
+    #atEntryPanel .at-required { color: #ef4444; }
+    #atEntryPanel .at-input {
+        width: 100%; min-height: 32px; height: 32px; padding: 4px 10px; border-radius: 6px;
+        border: 1px solid #64748b; font-size: 12px; background: #fff; outline: none;
+    }
+    #atEntryPanel .at-input.at-input-error { border-color: #ef4444; }
+    #atEntryPanel .at-err { font-size: 11px; color: #ef4444; display: none; }
+    #atEntryPanel .at-detail-table-wrap { border: 1px solid #e4e7f0; border-radius: 12px; overflow-x: auto; max-height: 360px; width: 100%; }
+    #atEntryPanel .at-detail-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 680px; }
+    #atEntryPanel .at-detail-table thead th { background: #f3f4f6; font-size: 11px; font-weight: 700; padding: 6px; border-bottom: 1px solid #e5e7eb; }
+    #atEntryPanel .at-detail-table td { padding: 4px 6px; border-bottom: 1px solid #f0f2f9; vertical-align: middle; }
+    #atEntryPanel .at-btn-del-row { width: 28px; height: 28px; border: none; border-radius: 6px; background: #fef2f2; color: #ef4444; cursor: pointer; }
+    #atEntryPanel .at-btn-add-row { margin-top: 10px; padding: 6px 14px; border-radius: 6px; border: none; background: #8b5cf6; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+    #atEntryPanel .at-footer { display: flex; justify-content: flex-end; gap: 10px; padding-top: 8px; }
+    #atEntryPanel .at-btn-back, #atEntryPanel .at-btn-save { min-height: 34px; padding: 0 18px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    #atEntryPanel .at-card-header .at-btn-back { border: 2px solid rgba(255,255,255,0.48); background: rgba(255,255,255,0.14); color: #fff; }
+    #atEntryPanel .at-btn-back { border: 1.5px solid #d4d7e8; background: #fff; color: #374151; }
+    #atEntryPanel .at-btn-save { border: none; background: linear-gradient(130deg, #5b5ef4, #a855f7); color: #fff; }
+    #atEntryPanel .select2-container { width: 100% !important; }
 </style>
 
-<div class="im-page-wrapper">
+<div id="atListPanel" class="im-page-wrapper">
     <span id="ERPHeading" style="display:none"></span>
     <div class="im-card">
         <div class="im-card-header">
@@ -130,6 +164,69 @@
                     </table>
                 </div>
                 <div class="paginator" id="paginator-AssetTypeMasterGrid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="atEntryPanel" style="display:none;">
+    <div class="at-entry-wrap">
+        <div class="at-card">
+            <div class="at-card-header">
+                <div class="at-header-title"><i class="fas fa-tags"></i><span id="entryPageTitle">Asset Type Master</span></div>
+                <button type="button" class="at-btn-back" id="btnBackToList"><i class="fas fa-arrow-left"></i> Back to List</button>
+            </div>
+            <div class="at-card-body">
+                <div class="at-form-grid at-form-main" autocomplete="off">
+                    <div class="at-form-group">
+                        <label for="txtAssetTypeName">Asset Type Name <span class="at-required">*</span></label>
+                        <input type="text" id="txtAssetTypeName" class="at-input" maxlength="150" autocomplete="off" />
+                        <span class="at-err" id="err_AssetTypeName">Asset Type Name is required.</span>
+                    </div>
+                    <div class="at-form-group">
+                        <label for="txtDepreciationPercentage">Dep % <span class="at-required">*</span></label>
+                        <input type="number" id="txtDepreciationPercentage" class="at-input" min="0" step="0.01" autocomplete="off" />
+                        <span class="at-err" id="err_DepPercentage">Dep % is required.</span>
+                    </div>
+                    <div class="at-form-group">
+                        <label for="ddlDepreciationMethod">Dep Method <span class="at-required">*</span></label>
+                        <select id="ddlDepreciationMethod" class="at-input js-search-select"><option value="">-- Select --</option></select>
+                        <span class="at-err" id="err_DepMethod">Dep Method is required.</span>
+                    </div>
+                    <div class="at-form-group">
+                        <label for="txtPrefix">Prefix <span class="at-required">*</span></label>
+                        <input type="text" id="txtPrefix" class="at-input" maxlength="3" autocomplete="off" />
+                        <span class="at-err" id="err_Prefix">Prefix is required.</span>
+                    </div>
+                    <div class="at-form-group">
+                        <label for="ddlAssetGroup">Asset Group <span class="at-required">*</span></label>
+                        <select id="ddlAssetGroup" class="at-input js-search-select"><option value="">-- Select --</option></select>
+                        <span class="at-err" id="err_AssetGroup">Asset Group is required.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="at-card">
+            <div class="at-card-body">
+                <div class="at-detail-table-wrap">
+                    <table class="at-detail-table">
+                        <thead>
+                            <tr>
+                                <th style="width:28%">Maintenance Type Name <span class="at-required">*</span></th>
+                                <th style="width:18%">Maintenance Planning</th>
+                                <th style="width:28%">Desp</th>
+                                <th style="width:22%">Remark</th>
+                                <th style="width:52px">Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assetTypeDetailBody"></tbody>
+                    </table>
+                </div>
+                <button type="button" class="at-btn-add-row" id="btnAddDetailRow"><i class="fas fa-plus"></i> Add New Row</button>
+                <div class="at-footer" style="margin-top:20px;">
+                    <button type="button" class="at-btn-back" id="btnCancelEntry">Cancel</button>
+                    <button type="button" class="at-btn-save" id="btnSaveEntry"><i class="fas fa-floppy-disk"></i> <span id="btnSaveEntryText">Save</span></button>
+                </div>
             </div>
         </div>
     </div>
@@ -161,4 +258,4 @@
         </div>
     </div>
 </div>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/AssetTypeMaster.js?v=asset-type-list-v14"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/AssetTypeMaster.js?v=asset-type-combined-v1"></script>
