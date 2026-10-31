@@ -192,23 +192,20 @@ function loadBranchPermissions() {
             G_AllowEdit = results[1] === true;
             G_AllowDelete = results[2] !== false;
         }).catch(function () {
-            G_AllowNew = G_IsMainCompany;
-            G_AllowEdit = G_IsMainCompany;
+            G_AllowNew = false;
+            G_AllowEdit = false;
             G_AllowDelete = true;
         });
     } catch (e) {
-        G_AllowNew = G_IsMainCompany;
-        G_AllowEdit = G_IsMainCompany;
+        G_AllowNew = false;
+        G_AllowEdit = false;
         G_AllowDelete = true;
         return Promise.resolve();
     }
 }
 
 function applyActionRightsToUI() {
-    if (!G_IsMainCompany) {
-        G_AllowNew = false;
-        G_AllowEdit = false;
-    }
+    
     var $btnNew = $('#btnNewAssetGroup');
     if (!G_AllowNew) {
         $btnNew.prop('disabled', true).attr('title', TITLE_BRANCH_NEW);

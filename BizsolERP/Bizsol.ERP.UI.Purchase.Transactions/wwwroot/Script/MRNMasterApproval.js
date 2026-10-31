@@ -1933,6 +1933,9 @@ function OpenDetailModal(paymentCode, options) {
 
     $('#modalGpaDetail').modal({ backdrop: 'static' });
     $('#modalGpaDetail').modal('show');
+    mrnBudgetWarnNames = new Set();
+    mrnBudgetWarnSeq++;
+    applyMrnBudgetLineWarn();
 
     MRNMasterApprovalService.GetMRNMasterDetail(code)
         .then(function (res) {
@@ -2147,7 +2150,7 @@ function RenderGpaModalItems(items) {
         const rejectQty = mrnFmtLineQty(qtyBreak.rejectQty);
         const shortage = mrnFmtLineQty(qtyBreak.shortage);
         const amt = FmtCurrency(mrnResolveLineAmount(row));
-        html += '<tr>' +
+        html += '<tr data-item-name="' + EscHtml(itemRaw || '') + '">' +
             '<td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>' +
             '<td class="text-center">' + po + '</td>' +
             '<td' + itemCodeAttr + '>' + itemName + '</td>' +
@@ -2159,6 +2162,7 @@ function RenderGpaModalItems(items) {
             '</tr>';
     });
     $body.html(html);
+    applyMrnBudgetLineWarn();
     RenderGpaModalAmountSummary(master);
 }
 
@@ -2194,6 +2198,239 @@ function RenderGpaBillLines(items) {
     $body.html(html);
 }
 
+function mrnBudgetMsgOf(obj) {
+    if (!obj || typeof obj !== 'object') return '';
+    const direct = obj.Msg ?? obj.msg ?? obj.Message ?? obj.message
+        ?? obj.Warning ?? obj.warning ?? obj.BudgetMessage ?? obj.budgetMessage ?? '';
+    return String(direct).trim();
+}
+
+/** One budget line is "Item name : Expense exceeds budget by 4103.1". Split on ; and on each amount. */
+function mrnSplitBudgetItems(text) {
+    const raw = String(text || '').replace(/\r/g, '').trim();
+    if (!raw) return [];
+    const lines = [];
+    raw.split(/\s*;\s*/).forEach(function (chunk) {
+        const piece = chunk.trim();
+        if (!piece) return;
+        const marks = [];
+        const re = /expense exceeds budget by\s+[\d,]+(?:\.\d+)?/ig;
+        let match;
+        while ((match = re.exec(piece)) !== null) {
+            marks.push(match.index + match[0].length);
+        }
+        if (marks.length <= 1) {
+            lines.push(piece);
+            return;
+        }
+        let start = 0;
+        marks.forEach(function (end) {
+            const line = piece.slice(start, end).replace(/^[\s:;]+/, '').trim();
+            if (line) lines.push(line);
+            start = end;
+        });
+    });
+    return lines;
+}
+
+function mrnBudgetItemTitle(line) {
+    const match = String(line || '').match(/^(.*?)\s*:\s*expense exceeds budget\b/i);
+    return match && match[1] ? match[1].trim() : '';
+}
+
+/** Item names from CheckBudget rows that have a non-blank Msg. Falls back to names found inside Msg. */
+function mrnBudgetWarnFromResult(result) {
+    const names = [];
+    const msgs = [];
+    const seen = new Set();
+
+    function addBudgetText(text, itemName) {
+        mrnSplitBudgetItems(text).forEach(function (line) {
+            const title = mrnBudgetItemTitle(line);
+            const alreadyNamed = itemName && line.toLowerCase().indexOf(String(itemName).toLowerCase()) >= 0;
+            const shown = (!title && itemName && !alreadyNamed) ? (itemName + ' : ' + line) : line;
+            msgs.push(shown);
+            const name = mrnBudgetItemTitle(shown) || itemName || '';
+            if (name) names.push(name);
+        });
+    }
+
+    function visit(node, depth) {
+        if (node == null || depth > 8) return;
+        if (typeof node === 'string' || typeof node === 'number') {
+            addBudgetText(String(node).trim(), '');
+            return;
+        }
+        if (Array.isArray(node)) {
+            node.forEach(function (item) { visit(item, depth + 1); });
+            return;
+        }
+        if (typeof node !== 'object' || seen.has(node)) return;
+        seen.add(node);
+        const itemName = mrnResolveItemName(node);
+        const msg = mrnBudgetMsgOf(node);
+        if (itemName && msg) names.push(itemName);
+        if (msg) addBudgetText(msg, itemName);
+        const nested = node.Data ?? node.data ?? node.Result ?? node.result ?? node.Table ?? node.table;
+        if (nested != null && nested !== node) visit(nested, depth + 1);
+    }
+
+    visit(result, 0);
+
+    if (!names.length && msgs.length) {
+        const blob = mrnNormItemName(msgs.join('\n'));
+        document.querySelectorAll('#gpaModalItemsBody tr[data-item-name]').forEach(function (tr) {
+            const raw = tr.getAttribute('data-item-name') || '';
+            const norm = mrnNormItemName(raw);
+            if (norm && blob.indexOf(norm) >= 0) names.push(raw);
+        });
+    }
+
+    return { names: names, msg: msgs.filter(Boolean).join('\n') };
+}
+
+let mrnBudgetWarnNames = new Set();
+let mrnBudgetWarnSeq = 0;
+
+function applyMrnBudgetLineWarn() {
+    const body = document.getElementById('gpaModalItemsBody');
+    if (!body) return;
+    body.querySelectorAll('tr').forEach(function (tr) {
+        const name = mrnNormItemName(tr.getAttribute('data-item-name') || '');
+        let hit = !!name && mrnBudgetWarnNames.has(name);
+        if (!hit && name) {
+            mrnBudgetWarnNames.forEach(function (warned) {
+                if (hit || !warned) return;
+                if (name === warned || (warned.length >= 4 && (name.indexOf(warned) >= 0 || warned.indexOf(name) >= 0))) {
+                    hit = true;
+                }
+            });
+        }
+        tr.classList.toggle('mrn-budget-warn-row', hit);
+    });
+}
+
+/** GET GRNService/CheckBudget on Approve only. Highlights matching ItemName rows. No toast. */
+function requestMrnBudgetWarning(code) {
+    const n = parseInt(code, 10) || 0;
+    const seq = ++mrnBudgetWarnSeq;
+    if (n <= 0 || !GRNService || typeof GRNService.CheckBudget !== 'function') {
+        return Promise.resolve('');
+    }
+    return GRNService.CheckBudget(n)
+        .then(function (result) {
+            if (seq !== mrnBudgetWarnSeq) return '';
+            const parsed = mrnBudgetWarnFromResult(result);
+            mrnBudgetWarnNames = new Set(parsed.names.map(mrnNormItemName).filter(Boolean));
+            applyMrnBudgetLineWarn();
+            return parsed.msg;
+        })
+        .catch(function () { return ''; });
+}
+
+function ensureMrnActionConfirmStyles() {
+    let style = document.getElementById('mrnActionConfirmStyles');
+    if (!style) {
+        style = document.createElement('style');
+        style.id = 'mrnActionConfirmStyles';
+        document.head.appendChild(style);
+    }
+    style.textContent = [
+        '#mrnActionConfirm{position:fixed;inset:0;z-index:100050;display:flex;align-items:flex-end;justify-content:center;',
+        'padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));',
+        'background:rgba(15,23,42,.55);-webkit-tap-highlight-color:transparent;}',
+        '@media (min-width:576px){#mrnActionConfirm{align-items:center;padding:24px;}}',
+        '#mrnActionConfirm .mrn-act-card{width:100%;max-width:440px;background:#fff;border-radius:16px;overflow:hidden;',
+        'box-shadow:0 20px 50px rgba(0,0,0,.28);max-height:min(86vh,640px);display:flex;flex-direction:column;}',
+        '#mrnActionConfirm .mrn-act-head{padding:12px 16px;color:#fff;font-weight:700;font-size:0.92rem;}',
+        '#mrnActionConfirm .mrn-act-body{padding:12px 16px;overflow:auto;-webkit-overflow-scrolling:touch;color:#334155;font-size:0.88rem;line-height:1.4;}',
+        '#mrnActionConfirm .mrn-act-warn{margin-top:10px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;',
+        'border-radius:10px;padding:4px 10px;word-break:break-word;font-size:0.8rem;}',
+        '#mrnActionConfirm .mrn-act-warn-line{padding:7px 0;border-bottom:1px solid #fde68a;line-height:1.35;}',
+        '#mrnActionConfirm .mrn-act-warn-line:last-child{border-bottom:none;}',
+        '#mrnActionConfirm .mrn-act-actions{display:flex;justify-content:flex-end;gap:8px;padding:8px 14px calc(10px + env(safe-area-inset-bottom,0px));}',
+        '#mrnActionConfirm .mrn-act-actions button{flex:0 0 auto;min-height:32px;padding:5px 14px;font-size:0.8rem;font-weight:700;border:none;border-radius:8px;',
+        'cursor:pointer;touch-action:manipulation;-webkit-appearance:none;appearance:none;}',
+        '#mrnActionConfirm .mrn-act-cancel{background:#e2e8f0;color:#334155;}',
+        '#mrnActionConfirm .mrn-act-yes-approve{background:linear-gradient(135deg,#10b981,#059669);color:#fff;}',
+        '#mrnActionConfirm .mrn-act-yes-reject{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;}',
+        '#mrnActionConfirm button:disabled{opacity:.65;cursor:default;}'
+    ].join('');
+}
+
+function closeMrnActionConfirm() {
+    const el = document.getElementById('mrnActionConfirm');
+    if (el) el.remove();
+}
+
+/** Confirm sheet on document.body so it stays tappable on iPhone, Android, and desktop. */
+function openMrnActionConfirm(opts) {
+    ensureMrnActionConfirmStyles();
+    closeMrnActionConfirm();
+    const isAppr = opts.action === 'Approve';
+    const root = document.createElement('div');
+    root.id = 'mrnActionConfirm';
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-modal', 'true');
+    root.setAttribute('aria-labelledby', 'mrnActionConfirmTitle');
+
+    const card = document.createElement('div');
+    card.className = 'mrn-act-card';
+
+    const head = document.createElement('div');
+    head.className = 'mrn-act-head';
+    head.id = 'mrnActionConfirmTitle';
+    head.textContent = isAppr ? 'Confirm Approval' : 'Confirm Rejection';
+    head.style.background = isAppr
+        ? 'linear-gradient(135deg,#059669,#10b981)'
+        : 'linear-gradient(135deg,#dc2626,#ef4444)';
+
+    const body = document.createElement('div');
+    body.className = 'mrn-act-body';
+    const question = document.createElement('div');
+    const verb = isAppr ? 'approve' : 'reject';
+    question.textContent = 'Are you sure you want to ' + verb + ' entry# ' + (opts.entryLabel || '') + '?';
+    body.appendChild(question);
+    const budgetLines = mrnSplitBudgetItems(opts.budgetMsg || '');
+    if (budgetLines.length) {
+        const warn = document.createElement('div');
+        warn.className = 'mrn-act-warn';
+        budgetLines.forEach(function (line) {
+            const row = document.createElement('div');
+            row.className = 'mrn-act-warn-line';
+            row.textContent = line;
+            warn.appendChild(row);
+        });
+        body.appendChild(warn);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'mrn-act-actions';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'mrn-act-cancel';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', function () { closeMrnActionConfirm(); });
+    const yesBtn = document.createElement('button');
+    yesBtn.type = 'button';
+    yesBtn.className = isAppr ? 'mrn-act-yes-approve' : 'mrn-act-yes-reject';
+    yesBtn.textContent = isAppr ? 'Yes, Approve' : 'Yes, Reject';
+    yesBtn.addEventListener('click', function () {
+        if (yesBtn.disabled) return;
+        yesBtn.disabled = true;
+        cancelBtn.disabled = true;
+        closeMrnActionConfirm();
+        if (typeof opts.onYes === 'function') opts.onYes();
+    });
+    actions.appendChild(cancelBtn);
+    actions.appendChild(yesBtn);
+    card.appendChild(head);
+    card.appendChild(body);
+    card.appendChild(actions);
+    root.appendChild(card);
+    document.body.appendChild(root);
+}
+
 function SubmitApproval(action) {
     const poCode = parseInt($('#hfGpaPaymentCode').val() || '0', 10);
     const levelCode = parseInt($('#hfGpaLevelCode').val() || '0', 10);
@@ -2216,28 +2453,28 @@ function SubmitApproval(action) {
     }
 
     const entryLabel = G_CurrentPayment ? String(getEntryNo(G_CurrentPayment)) : '';
-    const isAppr = action === 'Approve';
-    const hdrBg = isAppr
-        ? 'background:linear-gradient(135deg,#059669,#10b981);color:#fff;'
-        : 'background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;';
-    const btnCls = isAppr ? 'btn-gpa-confirm-approve' : 'btn-gpa-confirm-reject';
-    const btnTxt = isAppr
-        ? '<i class="fa fa-check me-1"></i>Yes, Approve'
-        : '<i class="fa fa-times me-1"></i>Yes, Reject';
-    const msg = isAppr
-        ? 'Are you sure you want to <strong>approve</strong> entry# <strong>' + EscHtml(entryLabel) + '</strong>?'
-        : 'Are you sure you want to <strong>reject</strong> entry# <strong>' + EscHtml(entryLabel) + '</strong>?';
+    const remarksEl = document.getElementById('gpaFrmRemarks');
+    if (remarksEl && typeof remarksEl.blur === 'function') remarksEl.blur();
 
-    $('#gpaConfirmTitle').text(isAppr ? 'Confirm Approval' : 'Confirm Rejection');
-    $('#gpaConfirmModalHeader').attr('style', 'padding:12px 16px;border:none;' + hdrBg);
-    $('#gpaConfirmMessage').html(msg);
-    $('#gpaBtnConfirmAction')
-        .attr('class', btnCls)
-        .html(btnTxt)
-        .off('click')
-        .on('click', function () { ExecuteGpaApproval(poCode, levelCode, remarks, action); });
+    const askConfirm = function (budgetMsg) {
+        openMrnActionConfirm({
+            action: action,
+            entryLabel: entryLabel,
+            budgetMsg: budgetMsg || '',
+            onYes: function () { ExecuteGpaApproval(poCode, levelCode, remarks, action); }
+        });
+    };
 
-    $('#modalGpaConfirm').modal('show');
+    if (action === 'Approve') {
+        if (typeof Showloader === 'function') Showloader();
+        requestMrnBudgetWarning(poCode).then(function (budgetMsg) {
+            if (typeof HideLoader === 'function') HideLoader();
+            askConfirm(budgetMsg);
+        });
+        return;
+    }
+
+    askConfirm('');
 }
 
 function ExecuteGpaApproval(paymentCode, levelCode, remarks, action) {
@@ -2538,6 +2775,7 @@ function MrnApprovalDownloadAttachment(code, fileName) {
 }
 
 function CloseDetailModal() {
+    closeMrnActionConfirm();
     $('#modalGpaDetail').modal('hide');
     const wrap = document.getElementById('gpaModalAttachList');
     if (wrap) wrap.innerHTML = '';
@@ -2546,6 +2784,7 @@ function CloseDetailModal() {
 }
 
 function CloseConfirmModal() {
+    closeMrnActionConfirm();
     $('#modalGpaConfirm').modal('hide');
 }
 

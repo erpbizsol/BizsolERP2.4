@@ -706,6 +706,20 @@ async function grnSyncFooterAttachmentFromApis(master, masterCode) {
     syncGrnFooterAttachmentButtonState();
 }
 
+function grnListPoNoDisplay(item) {
+    if (!item || typeof item !== "object") return "";
+    var v =
+        item["PO No"] ??
+        item["PO NO"] ??
+        item.PONo ??
+        item.pONo ??
+        item.poNo ??
+        item.PoNO ??
+        "";
+    if (v === null || v === undefined) return "";
+    return String(v).trim();
+}
+
 function mapGRNRowsToGrid(rows) {
     return rows.map(function (item) {
         const code = item.Code ?? item.code ?? 0;
@@ -735,7 +749,11 @@ function mapGRNRowsToGrid(rows) {
             item.TotalBillAmountManual ?? item.totalBillAmountManual
             ?? item['Total Bill Amount'] ?? item['TOTAL BILL AMOUNT'] ?? 0
         ).replace(/,/g, '')) || 0;
-        var patch = { 'Total Bill Amount': billAmt, Action: btns };
+        var patch = {
+            "PO No": grnListPoNoDisplay(item),
+            "Total Bill Amount": billAmt,
+            Action: btns,
+        };
         return Object.assign({}, item, patch);
     });
 }
@@ -762,6 +780,11 @@ function getGRNListHiddenColumns() {
     cols.push("TotalBillAmountManual");
     cols.push("totalBillAmountManual");
     cols.push("TOTAL BILL AMOUNT");
+    cols.push("PONo");
+    cols.push("pONo");
+    cols.push("poNo");
+    cols.push("PoNO");
+    cols.push("PO NO");
     return cols;
 }
 
@@ -942,7 +965,7 @@ function refreshGRNListGrid() {
 
     var mapped = mapGRNRowsToGrid(master.slice());
 
-    const StringFilterColumn = ["Bill No", "Party Name", "Sub Project", "Project"];
+    const StringFilterColumn = ["Bill No","PO No","Party Name", "Sub Project", "Project"];
     const NumericFilterColumn = ["MRN No"];
     const DateFilterColumn = ["Bill Date", "Receive Date"];
     const Button = false;
@@ -5266,6 +5289,31 @@ function validateGRN() {
     return true;
 }
 
+/** Text from CheckBudgetOnSave. Blank means no warning toast. */
+function grnBudgetWarningText(result) {
+    if (result == null) return '';
+    if (typeof result === 'string' || typeof result === 'number') return String(result).trim();
+    if (Array.isArray(result)) {
+        return result.map(grnBudgetWarningText).filter(Boolean).join('\n');
+    }
+    if (typeof result === 'object') {
+        const direct = result.Msg ?? result.msg ?? result.Message ?? result.message
+            ?? result.Warning ?? result.warning ?? result.BudgetMessage ?? result.budgetMessage;
+        if (direct != null && String(direct).trim() !== '') return String(direct).trim();
+    }
+    return '';
+}
+
+function showGrnBudgetWarning(msg) {
+    const text = (msg || '').trim();
+    if (!text) return;
+    if (typeof toastr !== 'undefined' && typeof toastr.warning === 'function') {
+        toastr.warning(text);
+        return;
+    }
+    showToast(text, 'warning');
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // SAVE GRN (New + Edit)
 // Keys exactly match:  TY_GRNService  /  TY_GRNServiceDetail  /  TY_GRNMasterDetail
@@ -5372,6 +5420,13 @@ function saveGRN() {
                 GRNServiceList,    // array of one master record
                 GRNServiceDetail,  // array of detail rows
             };
+
+            try {
+                const budgetResult = await GRNService.CheckBudgetOnSave(payload);
+                showGrnBudgetWarning(grnBudgetWarningText(budgetResult));
+            } catch (e) {
+                // Budget check is a warning only. Save still runs.
+            }
 
             GRNService.SaveGRN(payload)
                 .then(async data => {

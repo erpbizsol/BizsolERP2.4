@@ -32,6 +32,25 @@ const GRNService = {
             });
     },
 
+    /** Budget warning before save. Message-only — caller must not block save. */
+    CheckBudgetOnSave: function CheckBudgetOnSave(GRNRequestData) {
+        let json_data = JSON.stringify(GRNRequestData, null, 2);
+        let url = UrlService.API_ENDPOINT_GRNService + `/CheckBudgetOnSave`;
+        return promiseAjaxCallApi.CallAPI('POST', url, json_data, { suppressErrorToast: true })
+            .then(function (value) {
+                return value;
+            });
+    },
+
+    /** Budget warning on Review & Approve. Message-only — caller must not block approve. */
+    CheckBudget: function CheckBudget(Code) {
+        let url = UrlService.API_ENDPOINT_GRNService + `/CheckBudget?Code=${encodeURIComponent(Code)}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, null, { suppressErrorToast: true })
+            .then(function (value) {
+                return value;
+            });
+    },
+
     DeleteGRN: function DeleteGRN(Code, ReasonForDelete) {
         let authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         let userMasterCode = authKeyData.UserMaster_Code;
