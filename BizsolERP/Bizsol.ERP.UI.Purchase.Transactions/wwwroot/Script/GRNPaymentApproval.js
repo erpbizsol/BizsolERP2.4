@@ -1797,6 +1797,367 @@ function gpaScanPaymentDetailArraysInObject(obj) {
     return [];
 }
 
+function gpaPoOrderCodeFromApprovalRow(row) {
+    if (!row || typeof row !== 'object') return '';
+    const direct = row.PurchaseOrderMaster_Code ?? row.purchaseOrderMaster_Code
+        ?? row.PO_Code ?? row.po_Code ?? row.PurchaseOrder_Code ?? row.purchaseOrder_Code
+        ?? row.POCode ?? row.poCode;
+    if (direct !== undefined && direct !== null && String(direct).trim() !== '') return String(direct).trim();
+    const pom = row.PurchaseOrderMaster ?? row.purchaseOrderMaster;
+    if (pom && typeof pom === 'object') {
+        const nested = pom.Code ?? pom.code ?? pom.PurchaseOrderMaster_Code ?? pom.purchaseOrderMaster_Code;
+        if (nested !== undefined && nested !== null && String(nested).trim() !== '') return String(nested).trim();
+    }
+    return '';
+}
+
+function gpaPoOrderLinkHtml(poLabel, poCode) {
+    const raw = poLabel !== undefined && poLabel !== null ? String(poLabel).trim() : '';
+    const shown = raw !== '' ? raw : '—';
+    const poNoNum = parseFloat(raw.replace(/,/g, ''));
+    const codeNum = parseInt(poCode, 10);
+    if (!(poNoNum > 0) || !(codeNum > 0)) return EscHtml(shown);
+    return '<a href="javascript:void(0)" class="gpa-po-link" title="View purchase order" data-po-code="'
+        + EscHtml(String(codeNum)) + '" data-po-label="' + EscHtml(shown) + '">' + EscHtml(shown) + '</a>';
+}
+
+const GPA_PO_HEADER_KEYS = {
+    podate: 1, orderdate: 1, podates: 1,
+    vendor: 1, vendorname: 1, party: 1, partyname: 1, accountname: 1, supplier: 1, suppliername: 1,
+    project: 1, projectname: 1, subproject: 1, subprojectname: 1, category: 1, categoryname: 1
+};
+const GPA_PO_COL_RANK = [
+    'item', 'itemname', 'product', 'itemdescription', 'description', 'specification', 'spec',
+    'hsn', 'hsncode', 'uom', 'unit', 'gst', 'gstrate', 'gstpercent',
+    'qty', 'quantity', 'poqty', 'orderqty', 'rate', 'rateafterdiscount', 'discount', 'discountrate',
+    'amount', 'taxableamount', 'gstamount', 'netamount', 'value', 'total',
+    'project', 'subproject', 'category', 'remarks', 'narration', 'status'
+];
+
+function gpaPoKeyNorm(key) {
+    return String(key || '').toLowerCase().replace(/[\s_]/g, '');
+}
+
+function gpaPoColHidden(key) {
+    const raw = String(key || '');
+    const k = gpaPoKeyNorm(raw);
+    if (!k) return true;
+    if (/^(code|id|srno|rowno|rownum|sno|pono|ponumber|purchaseorderno)$/.test(k)) return true;
+    if (/code$/.test(k) && k.indexOf('hsn') === -1 && k.indexOf('barcode') === -1) return true;
+    if (/id$/.test(k) && k !== 'paid') return true;
+    return false;
+}
+
+function gpaPoColKind(key) {
+    const k = gpaPoKeyNorm(key);
+    if (k.indexOf('date') !== -1) return 'date';
+    if (/(amount|rate|value|price|gstamt|taxable|discount|balance|total|net)/.test(k) && k.indexOf('qty') === -1) return 'money';
+    if (/(qty|quantity|percent)/.test(k)) return 'qty';
+    return 'text';
+}
+
+function gpaPoColRank(key) {
+    const i = GPA_PO_COL_RANK.indexOf(gpaPoKeyNorm(key));
+    return i === -1 ? 500 : i;
+}
+
+function gpaPoColLabel(key) {
+    return String(key || '')
+        .replace(/_/g, ' ')
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function gpaPoDisplayValue(val, kind) {
+    if (val === undefined || val === null || val === '') return '—';
+    if (typeof val === 'object') return '—';
+    if (kind === 'date') {
+        const shown = FmtDateDisplay(val);
+        return EscHtml(shown || val);
+    }
+    if (kind === 'money') {
+        const n = parseFloat(String(val).replace(/,/g, ''));
+        if (isNaN(n)) return EscHtml(val);
+        return FmtCurrency(n);
+    }
+    if (kind === 'qty') {
+        const n = parseFloat(String(val).replace(/,/g, ''));
+        if (isNaN(n)) return EscHtml(val);
+        return n.toLocaleString('en-IN', { maximumFractionDigits: 3 });
+    }
+    return EscHtml(val);
+}
+
+function gpaPoNumeric(val) {
+    if (val === undefined || val === null || val === '' || typeof val === 'object') return null;
+    const n = parseFloat(String(val).replace(/,/g, ''));
+    return isNaN(n) ? null : n;
+}
+
+function gpaPoOrderRowsFromResponse(res) {
+    const root = gpaUnwrapApiRoot(res);
+    if (Array.isArray(root)) return root.filter(function (r) { return r && typeof r === 'object' && !Array.isArray(r); });
+    if (!root || typeof root !== 'object') return [];
+    const listKeys = ['Table', 'Rows', 'Items', 'Details', 'PODetails', 'PurchaseOrderDetails', 'OrderDetails', 'Data', 'data', 'Result', 'result'];
+    for (let i = 0; i < listKeys.length; i++) {
+        const arr = root[listKeys[i]];
+        if (Array.isArray(arr)) return arr.filter(function (r) { return r && typeof r === 'object'; });
+    }
+    const scalar = Object.keys(root).filter(function (k) {
+        const v = root[k];
+        return v == null || typeof v !== 'object';
+    });
+    return scalar.length ? [root] : [];
+}
+
+function gpaResetPoOrderModal() {
+    $('#gpaPoOrderSummary').hide().empty();
+    $('#gpaPoOrderLoading').show();
+    $('#gpaPoOrderEmpty').hide().text('No purchase order details found.');
+    $('#gpaPoOrderTableSection').hide();
+    $('#gpaPoOrderHead, #gpaPoOrderBody, #gpaPoOrderFoot').empty();
+    $('#gpaPoOrderCount').text('');
+}
+
+function gpaBindPoOrderGrid(rows) {
+    const list = Array.isArray(rows) ? rows : [];
+    const keySeen = {};
+    const keys = [];
+    list.forEach(function (row) {
+        Object.keys(row || {}).forEach(function (k) {
+            if (keySeen[k] || gpaPoColHidden(k)) return;
+            const sample = list.some(function (r) {
+                const v = r && r[k];
+                return v !== undefined && v !== null && v !== '' && typeof v !== 'object';
+            });
+            if (!sample) return;
+            keySeen[k] = true;
+            keys.push(k);
+        });
+    });
+    keys.sort(function (a, b) { return gpaPoColRank(a) - gpaPoColRank(b); });
+
+    const summaryKeys = [];
+    keys.forEach(function (k) {
+        if (!GPA_PO_HEADER_KEYS[gpaPoKeyNorm(k)]) return;
+        const first = list[0][k];
+        const same = list.every(function (r) { return String(r[k] ?? '') === String(first ?? ''); });
+        if (same) summaryKeys.push(k);
+    });
+    let gridKeys = keys.filter(function (k) { return summaryKeys.indexOf(k) === -1; });
+    if (!gridKeys.length) gridKeys = keys.slice();
+
+    if (summaryKeys.length) {
+        let cards = '';
+        summaryKeys.forEach(function (k) {
+            const kind = gpaPoColKind(k);
+            cards += '<div class="gpa-po-card"><span class="gpa-po-card-lbl">' + EscHtml(gpaPoColLabel(k))
+                + '</span><span class="gpa-po-card-val">' + gpaPoDisplayValue(list[0][k], kind) + '</span></div>';
+        });
+        $('#gpaPoOrderSummary').html(cards).show();
+    } else {
+        $('#gpaPoOrderSummary').hide().empty();
+    }
+
+    let head = '<tr><th style="width:46px;">#</th>';
+    gridKeys.forEach(function (k) {
+        const align = gpaPoColKind(k) === 'text' ? 'left' : 'right';
+        head += '<th style="text-align:' + align + ';">' + EscHtml(gpaPoColLabel(k)) + '</th>';
+    });
+    head += '</tr>';
+
+    const totals = {};
+    let body = '';
+    list.forEach(function (row, idx) {
+        body += '<tr><td class="text-center" style="color:#94a3b8;">' + (idx + 1) + '</td>';
+        gridKeys.forEach(function (k) {
+            const kind = gpaPoColKind(k);
+            const align = kind === 'text' ? '' : ' class="text-end"';
+            const weight = kind === 'money' ? ' style="font-weight:700;color:#4338ca;"' : '';
+            if (kind === 'money' || kind === 'qty') {
+                const nk = gpaPoKeyNorm(k);
+                const summable = kind === 'qty' || /(amount|value|total|balance)/.test(nk);
+                if (summable) {
+                    const n = gpaPoNumeric(row[k]);
+                    if (n != null) totals[k] = (totals[k] || 0) + n;
+                }
+            }
+            body += '<td' + align + weight + '>' + gpaPoDisplayValue(row[k], kind) + '</td>';
+        });
+        body += '</tr>';
+    });
+
+    let foot = '';
+    const totalKeys = Object.keys(totals);
+    if (list.length > 1 && totalKeys.length) {
+        foot = '<tr><td>Total</td>';
+        gridKeys.forEach(function (k) {
+            if (totals[k] == null) {
+                foot += '<td></td>';
+                return;
+            }
+            const kind = gpaPoColKind(k);
+            foot += '<td class="text-end">' + gpaPoDisplayValue(totals[k], kind) + '</td>';
+        });
+        foot += '</tr>';
+    }
+
+    $('#gpaPoOrderHead').html(head);
+    $('#gpaPoOrderBody').html(body);
+    $('#gpaPoOrderFoot').html(foot);
+    $('#gpaPoOrderTableSection').show();
+    $('#gpaPoOrderCount').text(list.length + (list.length === 1 ? ' line' : ' lines'));
+}
+
+function gpaEnsurePoOrderModal() {
+    if (document.getElementById('modalGpaPoOrder')) return;
+    const style = document.createElement('style');
+    style.id = 'gpaPoOrderStyle';
+    style.textContent = ''
+        + 'a.gpa-po-link{color:#4338ca;font-weight:700;text-decoration:underline;text-underline-offset:2px;cursor:pointer;}'
+        + 'a.gpa-po-link:hover{color:#312e81;}'
+        + '#modalGpaPoOrder{z-index:1085;}'
+        + '#modalGpaPoOrder .modal-dialog{max-width:min(980px,calc(100vw - 2rem));width:min(980px,calc(100vw - 2rem));margin:1.25rem auto;}'
+        + '#modalGpaPoOrder .modal-content{border:none;border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(15,23,42,.28);max-height:calc(100vh - 2rem);display:flex;flex-direction:column;}'
+        + '#modalGpaPoOrder .gpa-po-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 18px;border:none;background:linear-gradient(135deg,#312e81 0%,#4f46e5 58%,#7c3aed 100%);color:#fff;cursor:move;user-select:none;}'
+        + '#modalGpaPoOrder .gpa-po-kicker{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.78;}'
+        + '#modalGpaPoOrder .gpa-po-title{margin:2px 0 0;font-size:1.02rem;font-weight:800;color:#fff;}'
+        + '#modalGpaPoOrder .gpa-po-sub{display:block;margin-top:3px;font-size:.75rem;opacity:.85;}'
+        + '#modalGpaPoOrder .gpa-po-close{width:32px;height:32px;border:none;border-radius:8px;background:rgba(255,255,255,.16);color:#fff;cursor:pointer;}'
+        + '#modalGpaPoOrder .gpa-po-body{padding:16px 18px;background:#fff;overflow:auto;}'
+        + '#modalGpaPoOrder .gpa-po-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px;}'
+        + '#modalGpaPoOrder .gpa-po-card{background:linear-gradient(180deg,#f8fafc 0%,#eef2ff 100%);border:1px solid #e0e7ff;border-radius:12px;padding:10px 12px;}'
+        + '#modalGpaPoOrder .gpa-po-card-lbl{display:block;font-size:.66rem;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.04em;}'
+        + '#modalGpaPoOrder .gpa-po-card-val{display:block;margin-top:4px;font-size:.9rem;font-weight:800;color:#0f172a;word-break:break-word;}'
+        + '#modalGpaPoOrder .gpa-po-lines-title{font-size:.74rem;font-weight:800;color:#4338ca;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}'
+        + '#modalGpaPoOrder .gpa-po-table-wrap{border:1px solid #e2e8f0;border-radius:12px;overflow:auto;max-height:min(440px,calc(100vh - 360px));}'
+        + '#modalGpaPoOrder .gpa-po-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.8rem;}'
+        + '#modalGpaPoOrder .gpa-po-table thead th{position:sticky;top:0;z-index:1;background:#eef2ff;color:#312e81;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:10px 12px;border-bottom:2px solid #c7d2fe;white-space:nowrap;}'
+        + '#modalGpaPoOrder .gpa-po-table tbody td{padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:middle;}'
+        + '#modalGpaPoOrder .gpa-po-table tbody tr:nth-child(even) td{background:#fafbff;}'
+        + '#modalGpaPoOrder .gpa-po-table tbody tr:hover td{background:#eef2ff;}'
+        + '#modalGpaPoOrder .gpa-po-table tfoot td{background:#f8fafc;font-weight:800;color:#312e81;padding:10px 12px;border-top:2px solid #c7d2fe;}'
+        + '#modalGpaPoOrder .gpa-po-state{text-align:center;padding:28px 12px;color:#64748b;font-size:.86rem;}'
+        + '#modalGpaPoOrder .gpa-po-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;background:#fafbff;border-top:1px solid #eef0f8;}'
+        + '#modalGpaPoOrder .gpa-po-count{font-size:.78rem;font-weight:700;color:#64748b;}';
+    document.head.appendChild(style);
+    const wrap = document.createElement('div');
+    wrap.innerHTML = ''
+        + '<div class="modal fade" id="modalGpaPoOrder" tabindex="-1" role="dialog" aria-hidden="true">'
+        + '<div class="modal-dialog modal-dialog-centered"><div class="modal-content">'
+        + '<div class="gpa-po-head"><div><div class="gpa-po-kicker">Purchase order</div>'
+        + '<h5 class="gpa-po-title" id="gpaPoOrderTitle">PO details</h5>'
+        + '<small class="gpa-po-sub" id="gpaPoOrderSub"></small></div>'
+        + '<button type="button" class="gpa-po-close" onclick="CloseGpaPoOrderModal()" aria-label="Close"><i class="fa fa-times"></i></button></div>'
+        + '<div class="gpa-po-body"><div id="gpaPoOrderSummary" class="gpa-po-summary" style="display:none;"></div>'
+        + '<div id="gpaPoOrderLoading" class="gpa-po-state"><i class="fa fa-spinner fa-spin me-2"></i>Loading purchase order…</div>'
+        + '<div id="gpaPoOrderEmpty" class="gpa-po-state" style="display:none;">No purchase order details found.</div>'
+        + '<div id="gpaPoOrderTableSection" style="display:none;"><div class="gpa-po-lines-title"><i class="fa fa-list-ul me-1"></i>Order lines</div>'
+        + '<div class="gpa-po-table-wrap"><table class="gpa-po-table"><thead id="gpaPoOrderHead"></thead><tbody id="gpaPoOrderBody"></tbody><tfoot id="gpaPoOrderFoot"></tfoot></table></div></div></div>'
+        + '<div class="gpa-po-foot"><span class="gpa-po-count" id="gpaPoOrderCount"></span>'
+        + '<button type="button" class="btn-gpa-close" onclick="CloseGpaPoOrderModal()"><i class="fa fa-times-circle"></i>Close</button></div>'
+        + '</div></div></div>';
+    document.body.appendChild(wrap.firstChild);
+}
+
+function gpaResetPoModalPosition() {
+    $('#modalGpaPoOrder .modal-dialog').css({
+        position: '',
+        margin: '',
+        left: '',
+        top: '',
+        transform: '',
+        maxWidth: '980px',
+        width: 'min(980px, calc(100vw - 2rem))'
+    });
+}
+
+function gpaEnablePoModalDrag() {
+    const $dialog = $('#modalGpaPoOrder .modal-dialog');
+    const $handle = $('#modalGpaPoOrder .gpa-po-head');
+    if (!$dialog.length || !$handle.length || $dialog.data('gpaDragOn')) return;
+    $dialog.data('gpaDragOn', 1);
+    $handle.css({ cursor: 'move', userSelect: 'none' });
+    let drag = null;
+    $handle.on('mousedown.gpaPoDrag', function (e) {
+        if (e.button !== 0) return;
+        if ($(e.target).closest('button, a, input, select, textarea').length) return;
+        const rect = $dialog[0].getBoundingClientRect();
+        $dialog.css({
+            position: 'fixed',
+            margin: '0',
+            transform: 'none',
+            left: rect.left + 'px',
+            top: rect.top + 'px'
+        });
+        drag = { x: e.clientX, y: e.clientY, left: rect.left, top: rect.top };
+        e.preventDefault();
+    });
+    $(document).on('mousemove.gpaPoDrag', function (e) {
+        if (!drag) return;
+        const w = $dialog.outerWidth() || 0;
+        let left = drag.left + (e.clientX - drag.x);
+        let top = drag.top + (e.clientY - drag.y);
+        left = Math.max(8, Math.min(left, window.innerWidth - Math.min(w, 120) - 8));
+        top = Math.max(8, Math.min(top, window.innerHeight - 48));
+        $dialog.css({ left: left + 'px', top: top + 'px' });
+    });
+    $(document).on('mouseup.gpaPoDrag', function () { drag = null; });
+}
+
+function gpaBindPoOrderModalEvents() {
+    const $modal = $('#modalGpaPoOrder');
+    if (!$modal.length || $modal.data('gpaPoBound')) return;
+    $modal.data('gpaPoBound', 1);
+    gpaEnablePoModalDrag();
+    $modal.on('shown.bs.modal', function () {
+        const backs = $('.modal-backdrop');
+        if (backs.length > 1) backs.last().css('z-index', 1080);
+    });
+    $modal.on('hidden.bs.modal', function () {
+        gpaResetPoModalPosition();
+        if ($('#modalGpaDetail').hasClass('show')) $('body').addClass('modal-open');
+    });
+}
+
+function OpenGpaPoOrderDetail(code, label) {
+    const poCode = parseInt(code, 10);
+    if (isNaN(poCode) || poCode <= 0) return;
+    gpaEnsurePoOrderModal();
+    gpaBindPoOrderModalEvents();
+    gpaResetPoModalPosition();
+    const shown = label && String(label).trim() !== '' ? String(label).trim() : String(poCode);
+    $('#gpaPoOrderTitle').text('PO ' + shown);
+    $('#gpaPoOrderSub').text('Purchase order lines');
+    gpaResetPoOrderModal();
+    $('#modalGpaPoOrder').modal('show');
+
+    GRNPaymentApprovalService.GetPOOrderDetail(poCode)
+        .then(function (response) {
+            $('#gpaPoOrderLoading').hide();
+            const rows = gpaPoOrderRowsFromResponse(response);
+            if (!rows.length) {
+                const root = gpaUnwrapApiRoot(response);
+                const msg = root && !Array.isArray(root)
+                    ? (root.Msg || root.Message || root.message || '')
+                    : '';
+                $('#gpaPoOrderEmpty').text(msg || 'No purchase order details found.').show();
+                $('#gpaPoOrderCount').text('');
+                return;
+            }
+            gpaBindPoOrderGrid(rows);
+        })
+        .catch(function () {
+            $('#gpaPoOrderLoading').hide();
+            $('#gpaPoOrderEmpty').text('Could not load purchase order details.').show();
+        });
+}
+
+function CloseGpaPoOrderModal() {
+    $('#modalGpaPoOrder').modal('hide');
+}
+
 function RenderGpaModalItems(items) {
     const $body = $('#gpaModalItemsBody');
     if (!items || items.length === 0) {
@@ -1815,7 +2176,10 @@ function RenderGpaModalItems(items) {
         const poNoRaw = typeof window.gpaResolvePoNoTextFromRow === 'function'
             ? window.gpaResolvePoNoTextFromRow(enriched)
             : gpaPoNoFromRecord(enriched);
-        const poNo = EscHtml(poNoRaw !== '' ? poNoRaw : '—');
+        let poCode = gpaPoOrderCodeFromApprovalRow(enriched);
+        const poNoNum = parseFloat(String(poNoRaw ?? '').replace(/,/g, '').trim());
+        if ((poCode === '' || parseInt(poCode, 10) <= 0) && poNoNum > 0) poCode = String(poNoNum);
+        const poNo = gpaPoOrderLinkHtml(poNoRaw, poCode);
         const bdt = FmtDateDisplay(enriched.BillDate ?? enriched['Bill Date'] ?? enriched.billDate ?? enriched.ReceiveDate ?? enriched.receiveDate ?? '');
         const totalBill = FmtCurrency(
             enriched.BillAmount ?? enriched.billAmount ?? enriched.TotalBillAmountManual ?? enriched.totalBillAmountManual ?? enriched.Amount ?? 0
@@ -4578,6 +4942,12 @@ function CloseGpaBudgetBalanceModal() {
     $('#modalGpaBudgetBalance').modal('hide');
 }
 
+$(document).on('click', 'a.gpa-po-link', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    OpenGpaPoOrderDetail($(this).attr('data-po-code'), $(this).attr('data-po-label'));
+});
+
 $(document).on('click', '#gpaBudgetBtnPartyWise', function (e) {
     e.preventDefault();
     SetGpaBudgetViewMode('party');
@@ -4669,6 +5039,8 @@ window.OpenGRNPaymentApprovalAttachmentFromModal = OpenGRNPaymentApprovalAttachm
 window.OpenGpaApprovalHistory = OpenGpaApprovalHistory;
 window.CloseGpaApprovalHistoryModal = CloseGpaApprovalHistoryModal;
 window.OpenGpaBudgetBalance = OpenGpaBudgetBalance;
+window.OpenGpaPoOrderDetail = OpenGpaPoOrderDetail;
+window.CloseGpaPoOrderModal = CloseGpaPoOrderModal;
 window.OpenGpoBudgetBalance = OpenGpaBudgetBalance; /* typo alias */
 window.CloseGpaBudgetBalanceModal = CloseGpaBudgetBalanceModal;
 window.ExportGpaBudgetBalanceExcel = ExportGpaBudgetBalanceExcel;
