@@ -1025,7 +1025,10 @@ function buildGrnSummaryHtml(master, grnCode) {
     }
     var m = master;
     var code = m.Code != null ? m.Code : (m.code != null ? m.code : grnCode);
-    var eno = m.EntryNo != null ? m.EntryNo : m.entryNo;
+    var enoPrefix = m.EntryNoWithPrefix != null ? m.EntryNoWithPrefix : m.entryNoWithPrefix;
+    var eno = (enoPrefix != null && String(enoPrefix).trim() !== '')
+        ? enoPrefix
+        : (m.EntryNo != null ? m.EntryNo : m.entryNo);
     var ed = m.EntryDate != null ? m.EntryDate : (m.entryDate != null ? m.entryDate : (m.PaymentDate != null ? m.PaymentDate : m.paymentDate));
     var amt = m.Amount != null ? m.Amount : m.amount;
     var narr = m.Narration != null ? m.Narration : (m.narration != null ? m.narration : '');

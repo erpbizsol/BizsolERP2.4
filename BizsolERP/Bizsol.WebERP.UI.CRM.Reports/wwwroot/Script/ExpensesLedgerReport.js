@@ -997,10 +997,12 @@ function applyReportTypeLayout() {
         .toggleClass('is-vendor-ledger', vendorLedger);
     applyLedgerTableHeaders();
     $('#elrPageSubtitle').text(vendorMode ? VENDOR_PROJECT_SUBTITLE : LEDGER_PAGE_SUBTITLE);
+    /* Report type change only resets the grids. Rows load when Show is clicked. */
+    clearLedgerView();
+    projectRows = [];
+    projectDrill = emptyProjectDrill();
+    G_VendorProjectDrill = resetVendorProjectDrill();
     if (vendorMode) {
-        clearLedgerView();
-        projectRows = [];
-        G_VendorProjectDrill = resetVendorProjectDrill();
         showVendorPlaceholder('Click Show to load the report.');
         ensureVendorNameDropdown('0');
         loadVendorNameOptions();
@@ -1008,22 +1010,17 @@ function applyReportTypeLayout() {
     }
     clearVendorProjectView();
     if (vendorLedger) {
-        clearLedgerView();
-        projectRows = [];
         ensureVendorNameDropdown($('#ddlVendorName').val() || '0');
         loadVendorNameOptions();
         restoreLedgerProjects();
         return;
     }
     if (projectMode) {
-        clearLedgerView();
-        projectDrill = emptyProjectDrill();
         renderProjectCrumb();
         showProjectPlaceholder('Click Show to load the report.');
         loadProjectExpenseProjects();
         return;
     }
-    projectRows = [];
     restoreLedgerProjects();
 }
 
