@@ -211,6 +211,66 @@ i:hover {
 /*    min-width: 100px;*/
 }
 
+/* Manual column expand: drag the header edge, or double-click it to fit the text */
+table.bizsol-col-expand th,
+table[data-col-expand] th {
+    position: relative;
+}
+
+.bizsol-col-resize {
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 6;
+    touch-action: none;
+}
+
+.bizsol-col-resize:hover,
+body.bizsol-col-resizing .bizsol-col-resize {
+    background: rgba(53, 86, 119, 0.35);
+}
+
+body.bizsol-col-resizing {
+    cursor: col-resize !important;
+    user-select: none;
+}
+
+table.bizsol-manual-cols {
+    table-layout: fixed;
+}
+
+table.fixed-width-table.bizsol-manual-cols {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+}
+
+table.bizsol-manual-cols th,
+table.bizsol-manual-cols td {
+    box-sizing: border-box;
+}
+
+table.bizsol-manual-cols td.bizsol-action-cell {
+    overflow: visible;
+    text-overflow: clip;
+}
+
+table.bizsol-manual-cols thead th .filter-table-heading-div {
+    min-width: 0;
+    padding-right: 6px;
+}
+
+table.bizsol-manual-cols thead th .filter-table-heading {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
 /*.table th, .table td {
     padding: 4px 5px;
     border: 1px solid #ddd;
@@ -365,6 +425,15 @@ right: -84px;
 }
 .bizsol-gs-clear:hover {
     color: #ef4444;
+}
+
+/* Matched text inside grid cells while global search is active */
+mark.bizsol-search-highlight {
+    background-color: #ffe066;
+    color: #1a1a1a;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: inherit;
 }
 
 /* ── Floating / Sticky Total Row ─────────────────────────────────────────── */
