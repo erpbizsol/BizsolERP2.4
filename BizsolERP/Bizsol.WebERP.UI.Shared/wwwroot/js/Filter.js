@@ -123,6 +123,297 @@ window.bizsolBindFilterFloatListeners = function bizsolBindFilterFloatListeners(
 
 bizsolBindFilterFloatListeners();
 
+/**
+ * Manual column expand for every BizsolCustomFilterGrid table.
+ * Drag the header edge to set a width. Double-click that edge to fit the text.
+ * Widths stay in place across sort, filter, and paging.
+ */
+window.bizsolTagHeaderColumns = function bizsolTagHeaderColumns($header, columns, hasAction) {
+    const $ths = $header.find('tr:first').children('th');
+    $ths.each(function (i) {
+        if (hasAction && i === $ths.length - 1) {
+            $(this).attr('data-bizsol-col', '__bizsol_action__');
+            return;
+        }
+        if (columns[i] != null) {
+            $(this).attr('data-bizsol-col', columns[i]);
+        }
+    });
+};
+
+window.bizsolBindManualColumnExpand = function bizsolBindManualColumnExpand(tableId) {
+    const $table = $('#' + tableId);
+    if (!$table.length) return;
+    $table.find('thead tr:first th').each(function () {
+        const $th = $(this);
+        if (this.style.display === 'none' || $th.find('.bizsol-col-resize').length) return;
+        $th.append('<span class="bizsol-col-resize" title="Drag to expand or shrink. Double-click to fit the text."></span>');
+    });
+};
+
+/**
+ * Turn on manual column expand for a table that is not built by CreateDataTable.
+ * Safe to call again after the page redraws the header or the rows.
+ * The table needs an id, and its first header row should be one th per column.
+ */
+window.bizsolHeaderColumnKey = function bizsolHeaderColumnKey(th) {
+    const heading = th.querySelector('.filter-table-heading');
+    if (heading && heading.textContent.trim()) return heading.textContent.trim();
+    const clone = th.cloneNode(true);
+    clone.querySelectorAll('.bizsol-col-resize, .filter-dropdown, .filter-dropdown-double, .filter-division').forEach(function (node) {
+        node.remove();
+    });
+    return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+};
+
+window.bizsolEnableManualColumnExpand = function bizsolEnableManualColumnExpand(tableId) {
+    const $table = $('#' + tableId);
+    if (!$table.length) return;
+    const used = {};
+    $table.find('thead tr:first').children('th').each(function (i) {
+        if (this.style.display === 'none' || $(this).attr('data-bizsol-col')) return;
+        let key = window.bizsolHeaderColumnKey(this) || ('col-' + i);
+        if (used[key]) key = key + '-' + i;
+        used[key] = true;
+        $(this).attr('data-bizsol-col', key);
+    });
+    window.bizsolBindManualColumnExpand(tableId);
+    window.bizsolApplyManualColumnWidths(tableId);
+};
+
+window.bizsolScanManualColumnTables = function bizsolScanManualColumnTables() {
+    document.querySelectorAll('table.bizsol-col-expand, table[data-col-expand]').forEach(function (table) {
+        if (!table.id) {
+            window._bizsolColExpandSeq = (window._bizsolColExpandSeq || 0) + 1;
+            table.id = 'bizsolColExpand' + window._bizsolColExpandSeq;
+        }
+        if (!table.tHead || !table.tHead.rows.length) return;
+        window.bizsolEnableManualColumnExpand(table.id);
+    });
+};
+
+window.bizsolWatchManualColumnTables = function bizsolWatchManualColumnTables() {
+    if (window._bizsolColExpandWatch || !document.body) return;
+    window._bizsolColExpandWatch = true;
+    window.bizsolScanManualColumnTables();
+
+    var queued = false;
+    var observer = new MutationObserver(function (mutations) {
+        var hit = false;
+        for (var i = 0; i < mutations.length; i++) {
+            var mutation = mutations[i];
+            if (mutation.type !== 'childList') continue;
+            var target = mutation.target;
+            if (target && target.nodeType === 1 && target.closest && target.closest('table.bizsol-col-expand, table[data-col-expand]')) {
+                var added = mutation.addedNodes;
+                if (added.length === 1 && added[0].nodeType === 1 && added[0].classList && added[0].classList.contains('bizsol-col-resize')) {
+                    continue;
+                }
+                hit = true;
+                break;
+            }
+            for (var n = 0; n < mutation.addedNodes.length; n++) {
+                var node = mutation.addedNodes[n];
+                if (node.nodeType !== 1) continue;
+                if ((node.matches && node.matches('table.bizsol-col-expand, table[data-col-expand]'))
+                    || (node.querySelector && node.querySelector('table.bizsol-col-expand, table[data-col-expand]'))) {
+                    hit = true;
+                    break;
+                }
+            }
+            if (hit) break;
+        }
+        if (!hit || queued) return;
+        queued = true;
+        requestAnimationFrame(function () {
+            queued = false;
+            window.bizsolScanManualColumnTables();
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.bizsolWatchManualColumnTables);
+} else {
+    window.bizsolWatchManualColumnTables();
+}
+
+window.bizsolEnsureColumnWidthSnapshot = function bizsolEnsureColumnWidthSnapshot(tableId) {
+    if (window[`columnWidthsReady_${tableId}`]) return;
+    const widths = {};
+    $('#' + tableId).find('thead tr:first th').each(function () {
+        const col = $(this).attr('data-bizsol-col');
+        if (!col || this.style.display === 'none') return;
+        widths[col] = Math.max(48, Math.round(this.getBoundingClientRect().width));
+    });
+    window[`columnWidths_${tableId}`] = widths;
+    window[`columnWidthsReady_${tableId}`] = true;
+};
+
+window.bizsolMeasureColumnContent = function bizsolMeasureColumnContent(table, colIndex) {
+    const th = table.querySelectorAll('thead tr:first-child > th')[colIndex];
+    if (!th) return 120;
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;width:auto;height:auto;';
+    document.body.appendChild(probe);
+    let max = 60;
+
+    const heading = th.querySelector('.filter-table-heading');
+    const label = heading
+        ? heading.textContent.trim()
+        : (th.childNodes[0] && th.childNodes[0].nodeType === 3 ? th.childNodes[0].textContent.trim() : 'Action');
+    const labelStyle = window.getComputedStyle(heading || th);
+    probe.style.font = labelStyle.font;
+    probe.textContent = label;
+    max = Math.max(max, probe.scrollWidth + (th.querySelector('.table-filter-arrow') ? 40 : 20));
+
+    table.querySelectorAll('tbody > tr, tfoot > tr').forEach(function (tr) {
+        const cell = tr.children[colIndex];
+        if (!cell || cell.style.display === 'none') return;
+        const cs = window.getComputedStyle(cell);
+        probe.style.font = cs.font;
+        probe.style.padding = cs.padding;
+        probe.innerHTML = cell.innerHTML;
+        max = Math.max(max, probe.scrollWidth + 8);
+    });
+
+    probe.remove();
+    return Math.min(Math.max(48, Math.ceil(max)), 720);
+};
+
+window.bizsolApplyManualColumnWidths = function bizsolApplyManualColumnWidths(tableId) {
+    const widths = window[`columnWidths_${tableId}`];
+    const $table = $('#' + tableId);
+    if (!$table.length || !window[`columnWidthsReady_${tableId}`] || !widths) return;
+
+    const $ths = $table.find('thead tr:first').children('th');
+    let sum = 0;
+    const sizeByIndex = [];
+
+    $ths.each(function (i) {
+        if (this.style.display === 'none') {
+            sizeByIndex[i] = 0;
+            return;
+        }
+        const col = $(this).attr('data-bizsol-col');
+        let w = widths[col];
+        if (!w) {
+            w = Math.max(48, Math.round(this.getBoundingClientRect().width) || 120);
+            if (col) widths[col] = w;
+        }
+        sizeByIndex[i] = w;
+        sum += w;
+        this.style.boxSizing = 'border-box';
+        this.style.width = w + 'px';
+        this.style.minWidth = w + 'px';
+        this.style.maxWidth = w + 'px';
+    });
+
+    $table.find('tbody > tr, tfoot > tr').each(function () {
+        const cells = this.children;
+        for (let i = 0; i < sizeByIndex.length; i++) {
+            const cell = cells[i];
+            const w = sizeByIndex[i];
+            if (!cell || !w || cell.style.display === 'none') continue;
+            cell.style.boxSizing = 'border-box';
+            cell.style.width = w + 'px';
+            cell.style.minWidth = w + 'px';
+            cell.style.maxWidth = w + 'px';
+            if (cell.classList.contains('bizsol-action-cell')) {
+                cell.style.overflow = 'visible';
+                cell.style.textOverflow = 'clip';
+            } else {
+                cell.style.overflow = 'hidden';
+                cell.style.textOverflow = 'ellipsis';
+            }
+        }
+    });
+
+    $table.addClass('bizsol-manual-cols');
+    $table.css('width', sum + 'px');
+};
+
+window.bizsolBindManualColumnExpandEvents = function bizsolBindManualColumnExpandEvents() {
+    if (window._bizsolManualColResizeBound) return;
+    window._bizsolManualColResizeBound = true;
+
+    $(document).on('pointerdown', '.bizsol-col-resize', function (e) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const $th = $(this).closest('th');
+        const $table = $th.closest('table');
+        const tableId = $table.attr('id');
+        const colKey = $th.attr('data-bizsol-col');
+        if (!tableId || !colKey) return;
+
+        window.bizsolEnsureColumnWidthSnapshot(tableId);
+
+        const now = Date.now();
+        if (window._bizsolColLastTap
+            && now - window._bizsolColLastTap < 450
+            && window._bizsolColLastKey === colKey
+            && window._bizsolColLastTable === tableId) {
+            window._bizsolColLastTap = 0;
+            window[`columnWidths_${tableId}`][colKey] = window.bizsolMeasureColumnContent($table[0], $th.index());
+            window.bizsolApplyManualColumnWidths(tableId);
+            return;
+        }
+        window._bizsolColLastTap = now;
+        window._bizsolColLastKey = colKey;
+        window._bizsolColLastTable = tableId;
+
+        const startX = e.pageX;
+        const startW = window[`columnWidths_${tableId}`][colKey] || $th.outerWidth();
+        const pointerId = e.pointerId;
+        let moved = false;
+
+        $('body').addClass('bizsol-col-resizing');
+
+        function onMove(ev) {
+            if (ev.pointerId !== pointerId) return;
+            if (Math.abs(ev.pageX - startX) < 3) return;
+            moved = true;
+            const next = Math.max(48, Math.round(startW + (ev.pageX - startX)));
+            window[`columnWidths_${tableId}`][colKey] = next;
+            window.bizsolApplyManualColumnWidths(tableId);
+        }
+        function onUp(ev) {
+            if (ev.pointerId !== pointerId) return;
+            $(document).off('pointermove.bizsolColResize pointerup.bizsolColResize pointercancel.bizsolColResize');
+            $('body').removeClass('bizsol-col-resizing');
+            if (!moved) {
+                window[`columnWidths_${tableId}`][colKey] = startW;
+            }
+        }
+
+        $(document).on('pointermove.bizsolColResize', onMove);
+        $(document).on('pointerup.bizsolColResize pointercancel.bizsolColResize', onUp);
+    });
+
+    $(document).on('dblclick', '.bizsol-col-resize', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const $th = $(this).closest('th');
+        const table = $th.closest('table')[0];
+        const tableId = table && table.id;
+        const colKey = $th.attr('data-bizsol-col');
+        if (!tableId || !colKey) return;
+        window.bizsolEnsureColumnWidthSnapshot(tableId);
+        window[`columnWidths_${tableId}`][colKey] = window.bizsolMeasureColumnContent(table, $th.index());
+        window.bizsolApplyManualColumnWidths(tableId);
+    });
+
+    $(document).on('click', '.bizsol-col-resize', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+};
+
+window.bizsolBindManualColumnExpandEvents();
+
 window.getBizsolHelperForFilter = function getBizsolHelperForFilter() {
     return window.BizSolHelperFunction || null;
 };
@@ -781,6 +1072,7 @@ window.ClearFilter = function ClearFilter(bodyId) {
         $gsInput.val('');
         $('#global-search-clear-' + tableId).hide();
     }
+    window[`globalSearchTerm_${tableId}`] = '';
 
     window[`filteredData_${tableId}`] = window[`filteredDataTemp_${tableId}`];
     renderTable(window[`filteredData_${tableId}`], bodyId);
@@ -862,6 +1154,7 @@ window.applyGlobalSearch = function applyGlobalSearch(tableId, bodyId) {
 
     window[`filteredData_${tableId}`] = result;
     window[`currentPage_${tableId}`] = 1;
+    window[`globalSearchTerm_${tableId}`] = term;
 
     if (window[`Paginator_${tableId}`]) {
         createPaginator(tableId, bodyId);
@@ -869,6 +1162,27 @@ window.applyGlobalSearch = function applyGlobalSearch(tableId, bodyId) {
     } else {
         renderTable(result, bodyId);
     }
+};
+
+/**
+ * Wraps each visible occurrence of the search term in a highlight mark.
+ * HTML tags in the cell are left untouched so existing markup stays valid.
+ */
+window.highlightGridSearchTerm = function highlightGridSearchTerm(value, term) {
+    if (value === null || value === undefined) return value;
+    const text = String(value);
+    const needle = (term || '').trim();
+    if (!needle || !text) return text;
+
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(/(<[^>]*>)/g);
+    const re = new RegExp(escaped, 'gi');
+    return parts.map(function (part) {
+        if (part.charAt(0) === '<' && part.charAt(part.length - 1) === '>') return part;
+        return part.replace(re, function (match) {
+            return '<mark class="bizsol-search-highlight">' + match + '</mark>';
+        });
+    }).join('');
 };
 
 window.applyStringFilters = function applyStringFilters(columnName, bodyId) {
@@ -1175,6 +1489,9 @@ columns.forEach(col => {
         headerRow += '</tr>';
     }
     $header.append(headerRow);
+    window.bizsolTagHeaderColumns($header, columns, !!button);
+    window.bizsolBindManualColumnExpand(tableId);
+    window.bizsolApplyManualColumnWidths(tableId);
 }
 window.sortable = function sortable(element) {
     var column = $(element).data('column');
@@ -1256,10 +1573,15 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
         window.applyLastValueColumnTotals(columnTotals, items, totalColumns, lastValueColumns);
     }
 
+    const searchTerm = window[`globalSearch_${tableId}`]
+        ? (window[`globalSearchTerm_${tableId}`] || '')
+        : '';
+
     let rows = items.map((item, index) => {
         const row = Object.keys(item).map((key) => {
             const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
-            const style = window[`hiddenColumns_${bodyId}`].includes(key)
+            const isHiddenColumn = window[`hiddenColumns_${bodyId}`].includes(key);
+            const style = isHiddenColumn
                 ? 'display:none'
                 : `text-align:${alignment}`;
 
@@ -1287,13 +1609,23 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 cellValue = window.formatGridNumericDisplay(cellValue);
             }
 
+            if (searchTerm && !isHiddenColumn && cellValue !== null && cellValue !== undefined) {
+                const rawText = item[key] === null || item[key] === undefined ? '' : String(item[key]);
+                const displayText = String(cellValue);
+                if (displayText.toLowerCase().includes(searchTerm)) {
+                    cellValue = window.highlightGridSearchTerm(cellValue, searchTerm);
+                } else if (rawText.toLowerCase().includes(searchTerm)) {
+                    cellValue = '<mark class="bizsol-search-highlight">' + cellValue + '</mark>';
+                }
+            }
+
             return `<td style="${style}">${cellValue}</td>`;
         }).join('');
 
         let buttons = '';
 
         if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
-            buttons = '<td>';
+            buttons = '<td class="bizsol-action-cell">';
             if (showButtons.includes('E')) {
                 buttons += ` <button class="btn btn-primary icon-height mb-1" title="Edit"><i aria-hidden="true" class="fa fa-pencil" type="button" onclick="EditData('${item.Code}')" /></i></button> `;
             }
@@ -1362,7 +1694,7 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
 
         let totalButtons = '';
         if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
-            totalButtons = '<td style="background-color: #ffffff; border-top: 2px solid #333;"></td>';
+            totalButtons = '<td class="bizsol-action-cell" style="background-color: #ffffff; border-top: 2px solid #333;"></td>';
         }
 
         const _isFloatingTotal = window[`floatingTotalRow_${bodyId}`];
@@ -1392,6 +1724,7 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
     if (tableId === "RMReport" && typeof window.applyRMReportRemarkColors === "function") {
         window.applyRMReportRemarkColors();
     }
+    window.bizsolApplyManualColumnWidths(tableId);
 }
 window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
     const totalColumns = window[`totalColumns_${bodyId}`];
@@ -1471,7 +1804,7 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
 
     let totalButtons = '';
     if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
-        totalButtons = '<td style="background-color: #d4edda; border-top: 3px solid #28a745;"></td>';
+        totalButtons = '<td class="bizsol-action-cell" style="background-color: #d4edda; border-top: 3px solid #28a745;"></td>';
     }
 
     const grandTotalRowHtml = `<tr class="grand-total-row">${grandTotalRow}${totalButtons}</tr>`;
@@ -1484,6 +1817,7 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
         // Append grand total row to tbody (default behaviour)
         $(`#${bodyId}`).append(grandTotalRowHtml);
     }
+    window.bizsolApplyManualColumnWidths(tableId);
 }
 window.updatePageInfo = function updatePageInfo(tableId) {
     var filteredData = window[`filteredData_${tableId}`];
