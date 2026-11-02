@@ -1069,6 +1069,7 @@ const VENDOR_PROJECT_VENDOR_METRICS = [
     { id: 'poAmountWithGst', label: 'PO Amount With Gst', keys: ['POAmountWithGST', 'poAmountWithGST', 'POAmountWithGst'] },
     { id: 'totalGrnAmount', label: 'Total GRN Amount', keys: ['TotalGRNAmount', 'totalGRNAmount', 'TotalGrnAmount'] },
     { id: 'tdsDeposit', label: 'TDS Deposit', keys: ['TDSDeposit', 'tdsDeposit', 'TDS_Deposit'] },
+    { id: 'deduction', label: 'Deduction', keys: ['Deduction', 'deduction'] },
     { id: 'netPay', label: 'NetPay', keys: ['NetPay', 'netPay'] },
     { id: 'payment', label: 'Payment', keys: ['PaymentAmount', 'paymentAmount', 'Payment', 'payment'] },
 ];
@@ -1078,6 +1079,7 @@ const VENDOR_PROJECT_PROJECT_METRICS = [
     { id: 'totalPoAmount', label: 'Total PO Amount', keys: ['TotalPOAmount', 'totalPOAmount', 'TotalPoAmount'] },
     { id: 'totalBillGrnAmount', label: 'Total Bill Grn Amount', keys: ['TotalBillGRNAmount', 'totalBillGRNAmount', 'TotalGRNAmount', 'TotalBillAmount'] },
     { id: 'tdsDeposit', label: 'TDS Deposit', keys: ['TDSDeposit', 'tdsDeposit', 'TDS_Deposit'] },
+    { id: 'deduction', label: 'Deduction', keys: ['Deduction', 'deduction'] },
     { id: 'netPay', label: 'NetPay', keys: ['NetPay', 'netPay'] },
     { id: 'totalPayment', label: 'Total Payment', keys: ['TotalPaymentAmount', 'totalPaymentAmount', 'TotalPayment', 'PaymentAmount', 'paymentAmount'] },
 ];
@@ -1210,30 +1212,26 @@ function selectedVendorMasterCode() {
 function ensureVendorNameDropdown(keepValue) {
     const $el = $('#ddlVendorName');
     if (!$el.length) return;
-    const keep = keepValue != null ? String(keepValue) : String($el.val() || '0');
-    bindSelectList($el[0], G_VendorNameOptions, isVendorLedgerReport() ? 'Select' : 'All');
+    const useSelect = isVendorLedgerReport();
+    const keep = keepValue != null ? String(keepValue) : String($el.val() || '');
+    bindSelectList($el[0], G_VendorNameOptions, useSelect ? 'Select' : 'All');
     if ($el.data('select2')) $el.select2('destroy');
     initSelect2($el);
-    if (keep && $el.find('option[value="' + keep.replace(/"/g, '\\"') + '"]').length) {
-        $el.val(keep).trigger('change.select2');
-    } else {
-        $el.val('0').trigger('change.select2');
-    }
+    const fallback = useSelect ? '' : '0';
+    const hasKeep = keep && $el.find('option').filter(function () { return this.value === keep; }).length > 0;
+    $el.val(hasKeep ? keep : fallback).trigger('change.select2');
 }
 
 function loadVendorNameOptions() {
-    const fromDate = vendorApiDate($('#txtdateFrom').val());
-    const toDate = vendorApiDate($('#txtdateTo').val());
-    if (!fromDate || !toDate) {
-        ensureVendorNameDropdown('0');
-        return;
-    }
-    ExpensesLedgerReportService.GetVendorWiseReport(fromDate, toDate, 0).then(function (response) {
+    if (!isVendorProjectReport() && !isVendorLedgerReport()) return;
+    const keep = $('#ddlVendorName').val();
+    ExpensesLedgerReportService.GetVendorList().then(function (response) {
         if (!isVendorProjectReport() && !isVendorLedgerReport()) return;
         const rows = asDdLArray(response).filter(function (row) { return row && !row.Error && !row.error; });
         rememberVendorOptions(rows, true);
+        if (keep) ensureVendorNameDropdown(keep);
     }).catch(function () {
-        ensureVendorNameDropdown($('#ddlVendorName').val() || '0');
+        ensureVendorNameDropdown(keep || '');
     });
 }
 
@@ -1245,8 +1243,24 @@ function rememberVendorOptions(rows, replaceList) {
         });
     }
     rows.forEach(function (row) {
-        const code = vendorProjectCode(row, ['VendorMaster_Code', 'vendorMaster_Code']);
-        const name = String(vendorProjectValue(row, ['VendorName', 'vendorName']) || '').trim();
+        const code = vendorProjectCode(row, [
+            'VendorMaster_Code',
+            'vendorMaster_Code',
+            'AccountMaster_Code',
+            'accountMaster_Code',
+            'Code',
+            'code',
+        ]);
+        const name = String(vendorProjectValue(row, [
+            'VendorName',
+            'vendorName',
+            'AccountDesp',
+            'accountDesp',
+            'Name',
+            'name',
+            'Desp',
+            'desp',
+        ]) || '').trim();
         if (!code || !name) return;
         map.set(String(code), { Code: String(code), Desp: name });
     });
@@ -1574,8 +1588,8 @@ function exportVendorProjectExcel() {
     $b.empty();
     const headers = [
         'Vendor Name', 'Project Name', 'Sub Project',
-        'PO Amount with GST', 'Total Grn Amount', 'TDS Deposit', 'Net Pay', 'Payment', 'Balance (Vendor)', 'Dr/Cr (Vendor)',
-        'PO Taxable Amount', 'GST', 'Total PO Amount', 'Total Bill Amount (GRN)', 'TDS Deposit', 'Net Pay', 'Total Payment', 'Balance (Project)', 'Dr/Cr (Project)',
+        'PO Amount with GST', 'Total Grn Amount', 'TDS Deposit', 'Deduction', 'Net Pay', 'Payment', 'Balance (Vendor)', 'Dr/Cr (Vendor)',
+        'PO Taxable Amount', 'GST', 'Total PO Amount', 'Total Bill Amount (GRN)', 'TDS Deposit', 'Deduction', 'Net Pay', 'Total Payment', 'Balance (Project)', 'Dr/Cr (Project)',
     ];
     headers.forEach(function (header) { $h.append($('<th/>').text(header)); });
     rows.forEach(function (item) {
