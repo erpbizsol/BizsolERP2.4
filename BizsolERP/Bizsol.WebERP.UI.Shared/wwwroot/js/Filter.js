@@ -123,6 +123,297 @@ window.bizsolBindFilterFloatListeners = function bizsolBindFilterFloatListeners(
 
 bizsolBindFilterFloatListeners();
 
+/**
+ * Manual column expand for every BizsolCustomFilterGrid table.
+ * Drag the header edge to set a width. Double-click that edge to fit the text.
+ * Widths stay in place across sort, filter, and paging.
+ */
+window.bizsolTagHeaderColumns = function bizsolTagHeaderColumns($header, columns, hasAction) {
+    const $ths = $header.find('tr:first').children('th');
+    $ths.each(function (i) {
+        if (hasAction && i === $ths.length - 1) {
+            $(this).attr('data-bizsol-col', '__bizsol_action__');
+            return;
+        }
+        if (columns[i] != null) {
+            $(this).attr('data-bizsol-col', columns[i]);
+        }
+    });
+};
+
+window.bizsolBindManualColumnExpand = function bizsolBindManualColumnExpand(tableId) {
+    const $table = $('#' + tableId);
+    if (!$table.length) return;
+    $table.find('thead tr:first th').each(function () {
+        const $th = $(this);
+        if (this.style.display === 'none' || $th.find('.bizsol-col-resize').length) return;
+        $th.append('<span class="bizsol-col-resize" title="Drag to expand or shrink. Double-click to fit the text."></span>');
+    });
+};
+
+/**
+ * Turn on manual column expand for a table that is not built by CreateDataTable.
+ * Safe to call again after the page redraws the header or the rows.
+ * The table needs an id, and its first header row should be one th per column.
+ */
+window.bizsolHeaderColumnKey = function bizsolHeaderColumnKey(th) {
+    const heading = th.querySelector('.filter-table-heading');
+    if (heading && heading.textContent.trim()) return heading.textContent.trim();
+    const clone = th.cloneNode(true);
+    clone.querySelectorAll('.bizsol-col-resize, .filter-dropdown, .filter-dropdown-double, .filter-division').forEach(function (node) {
+        node.remove();
+    });
+    return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+};
+
+window.bizsolEnableManualColumnExpand = function bizsolEnableManualColumnExpand(tableId) {
+    const $table = $('#' + tableId);
+    if (!$table.length) return;
+    const used = {};
+    $table.find('thead tr:first').children('th').each(function (i) {
+        if (this.style.display === 'none' || $(this).attr('data-bizsol-col')) return;
+        let key = window.bizsolHeaderColumnKey(this) || ('col-' + i);
+        if (used[key]) key = key + '-' + i;
+        used[key] = true;
+        $(this).attr('data-bizsol-col', key);
+    });
+    window.bizsolBindManualColumnExpand(tableId);
+    window.bizsolApplyManualColumnWidths(tableId);
+};
+
+window.bizsolScanManualColumnTables = function bizsolScanManualColumnTables() {
+    document.querySelectorAll('table.bizsol-col-expand, table[data-col-expand]').forEach(function (table) {
+        if (!table.id) {
+            window._bizsolColExpandSeq = (window._bizsolColExpandSeq || 0) + 1;
+            table.id = 'bizsolColExpand' + window._bizsolColExpandSeq;
+        }
+        if (!table.tHead || !table.tHead.rows.length) return;
+        window.bizsolEnableManualColumnExpand(table.id);
+    });
+};
+
+window.bizsolWatchManualColumnTables = function bizsolWatchManualColumnTables() {
+    if (window._bizsolColExpandWatch || !document.body) return;
+    window._bizsolColExpandWatch = true;
+    window.bizsolScanManualColumnTables();
+
+    var queued = false;
+    var observer = new MutationObserver(function (mutations) {
+        var hit = false;
+        for (var i = 0; i < mutations.length; i++) {
+            var mutation = mutations[i];
+            if (mutation.type !== 'childList') continue;
+            var target = mutation.target;
+            if (target && target.nodeType === 1 && target.closest && target.closest('table.bizsol-col-expand, table[data-col-expand]')) {
+                var added = mutation.addedNodes;
+                if (added.length === 1 && added[0].nodeType === 1 && added[0].classList && added[0].classList.contains('bizsol-col-resize')) {
+                    continue;
+                }
+                hit = true;
+                break;
+            }
+            for (var n = 0; n < mutation.addedNodes.length; n++) {
+                var node = mutation.addedNodes[n];
+                if (node.nodeType !== 1) continue;
+                if ((node.matches && node.matches('table.bizsol-col-expand, table[data-col-expand]'))
+                    || (node.querySelector && node.querySelector('table.bizsol-col-expand, table[data-col-expand]'))) {
+                    hit = true;
+                    break;
+                }
+            }
+            if (hit) break;
+        }
+        if (!hit || queued) return;
+        queued = true;
+        requestAnimationFrame(function () {
+            queued = false;
+            window.bizsolScanManualColumnTables();
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.bizsolWatchManualColumnTables);
+} else {
+    window.bizsolWatchManualColumnTables();
+}
+
+window.bizsolEnsureColumnWidthSnapshot = function bizsolEnsureColumnWidthSnapshot(tableId) {
+    if (window[`columnWidthsReady_${tableId}`]) return;
+    const widths = {};
+    $('#' + tableId).find('thead tr:first th').each(function () {
+        const col = $(this).attr('data-bizsol-col');
+        if (!col || this.style.display === 'none') return;
+        widths[col] = Math.max(48, Math.round(this.getBoundingClientRect().width));
+    });
+    window[`columnWidths_${tableId}`] = widths;
+    window[`columnWidthsReady_${tableId}`] = true;
+};
+
+window.bizsolMeasureColumnContent = function bizsolMeasureColumnContent(table, colIndex) {
+    const th = table.querySelectorAll('thead tr:first-child > th')[colIndex];
+    if (!th) return 120;
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;width:auto;height:auto;';
+    document.body.appendChild(probe);
+    let max = 60;
+
+    const heading = th.querySelector('.filter-table-heading');
+    const label = heading
+        ? heading.textContent.trim()
+        : (th.childNodes[0] && th.childNodes[0].nodeType === 3 ? th.childNodes[0].textContent.trim() : 'Action');
+    const labelStyle = window.getComputedStyle(heading || th);
+    probe.style.font = labelStyle.font;
+    probe.textContent = label;
+    max = Math.max(max, probe.scrollWidth + (th.querySelector('.table-filter-arrow') ? 40 : 20));
+
+    table.querySelectorAll('tbody > tr, tfoot > tr').forEach(function (tr) {
+        const cell = tr.children[colIndex];
+        if (!cell || cell.style.display === 'none') return;
+        const cs = window.getComputedStyle(cell);
+        probe.style.font = cs.font;
+        probe.style.padding = cs.padding;
+        probe.innerHTML = cell.innerHTML;
+        max = Math.max(max, probe.scrollWidth + 8);
+    });
+
+    probe.remove();
+    return Math.min(Math.max(48, Math.ceil(max)), 720);
+};
+
+window.bizsolApplyManualColumnWidths = function bizsolApplyManualColumnWidths(tableId) {
+    const widths = window[`columnWidths_${tableId}`];
+    const $table = $('#' + tableId);
+    if (!$table.length || !window[`columnWidthsReady_${tableId}`] || !widths) return;
+
+    const $ths = $table.find('thead tr:first').children('th');
+    let sum = 0;
+    const sizeByIndex = [];
+
+    $ths.each(function (i) {
+        if (this.style.display === 'none') {
+            sizeByIndex[i] = 0;
+            return;
+        }
+        const col = $(this).attr('data-bizsol-col');
+        let w = widths[col];
+        if (!w) {
+            w = Math.max(48, Math.round(this.getBoundingClientRect().width) || 120);
+            if (col) widths[col] = w;
+        }
+        sizeByIndex[i] = w;
+        sum += w;
+        this.style.boxSizing = 'border-box';
+        this.style.width = w + 'px';
+        this.style.minWidth = w + 'px';
+        this.style.maxWidth = w + 'px';
+    });
+
+    $table.find('tbody > tr, tfoot > tr').each(function () {
+        const cells = this.children;
+        for (let i = 0; i < sizeByIndex.length; i++) {
+            const cell = cells[i];
+            const w = sizeByIndex[i];
+            if (!cell || !w || cell.style.display === 'none') continue;
+            cell.style.boxSizing = 'border-box';
+            cell.style.width = w + 'px';
+            cell.style.minWidth = w + 'px';
+            cell.style.maxWidth = w + 'px';
+            if (cell.classList.contains('bizsol-action-cell')) {
+                cell.style.overflow = 'visible';
+                cell.style.textOverflow = 'clip';
+            } else {
+                cell.style.overflow = 'hidden';
+                cell.style.textOverflow = 'ellipsis';
+            }
+        }
+    });
+
+    $table.addClass('bizsol-manual-cols');
+    $table.css('width', sum + 'px');
+};
+
+window.bizsolBindManualColumnExpandEvents = function bizsolBindManualColumnExpandEvents() {
+    if (window._bizsolManualColResizeBound) return;
+    window._bizsolManualColResizeBound = true;
+
+    $(document).on('pointerdown', '.bizsol-col-resize', function (e) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const $th = $(this).closest('th');
+        const $table = $th.closest('table');
+        const tableId = $table.attr('id');
+        const colKey = $th.attr('data-bizsol-col');
+        if (!tableId || !colKey) return;
+
+        window.bizsolEnsureColumnWidthSnapshot(tableId);
+
+        const now = Date.now();
+        if (window._bizsolColLastTap
+            && now - window._bizsolColLastTap < 450
+            && window._bizsolColLastKey === colKey
+            && window._bizsolColLastTable === tableId) {
+            window._bizsolColLastTap = 0;
+            window[`columnWidths_${tableId}`][colKey] = window.bizsolMeasureColumnContent($table[0], $th.index());
+            window.bizsolApplyManualColumnWidths(tableId);
+            return;
+        }
+        window._bizsolColLastTap = now;
+        window._bizsolColLastKey = colKey;
+        window._bizsolColLastTable = tableId;
+
+        const startX = e.pageX;
+        const startW = window[`columnWidths_${tableId}`][colKey] || $th.outerWidth();
+        const pointerId = e.pointerId;
+        let moved = false;
+
+        $('body').addClass('bizsol-col-resizing');
+
+        function onMove(ev) {
+            if (ev.pointerId !== pointerId) return;
+            if (Math.abs(ev.pageX - startX) < 3) return;
+            moved = true;
+            const next = Math.max(48, Math.round(startW + (ev.pageX - startX)));
+            window[`columnWidths_${tableId}`][colKey] = next;
+            window.bizsolApplyManualColumnWidths(tableId);
+        }
+        function onUp(ev) {
+            if (ev.pointerId !== pointerId) return;
+            $(document).off('pointermove.bizsolColResize pointerup.bizsolColResize pointercancel.bizsolColResize');
+            $('body').removeClass('bizsol-col-resizing');
+            if (!moved) {
+                window[`columnWidths_${tableId}`][colKey] = startW;
+            }
+        }
+
+        $(document).on('pointermove.bizsolColResize', onMove);
+        $(document).on('pointerup.bizsolColResize pointercancel.bizsolColResize', onUp);
+    });
+
+    $(document).on('dblclick', '.bizsol-col-resize', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const $th = $(this).closest('th');
+        const table = $th.closest('table')[0];
+        const tableId = table && table.id;
+        const colKey = $th.attr('data-bizsol-col');
+        if (!tableId || !colKey) return;
+        window.bizsolEnsureColumnWidthSnapshot(tableId);
+        window[`columnWidths_${tableId}`][colKey] = window.bizsolMeasureColumnContent(table, $th.index());
+        window.bizsolApplyManualColumnWidths(tableId);
+    });
+
+    $(document).on('click', '.bizsol-col-resize', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+};
+
+window.bizsolBindManualColumnExpandEvents();
+
 window.getBizsolHelperForFilter = function getBizsolHelperForFilter() {
     return window.BizSolHelperFunction || null;
 };
@@ -365,6 +656,8 @@ const BizsolCustomFilterGrid = {
         window[`ShowButtons_${bodyId}`] = ShowButtons;
         window[`filteredData_${tableId}`] = data;
         window[`filteredDataTemp_${tableId}`] = data;
+        window.bizsolClearColumnFilterStore(tableId);
+        delete window[`bizsolSort_${tableId}`];
         bodyId = bodyId;
         window[`currentPage_${tableId}`] = 1;
         window[`itemsPerPage_${tableId}`] = window.getBizsolPerPageConfig().value;
@@ -402,27 +695,295 @@ const BizsolCustomFilterGrid = {
 }
 
 window.BizsolCustomFilterGrid = BizsolCustomFilterGrid;
-window.populateFilterOptions = function populateFilterOptions(columnName, bodyId) {
 
-    var uniqueValues = new Set();
+window.bizsolGetColumnFilterStore = function bizsolGetColumnFilterStore(tableId) {
+    if (!window.bizsolColumnFilterState) {
+        window.bizsolColumnFilterState = {};
+    }
+    if (!window.bizsolColumnFilterState[tableId]) {
+        window.bizsolColumnFilterState[tableId] = { string: {}, date: {}, numeric: {}, double: {} };
+    }
+    return window.bizsolColumnFilterState[tableId];
+};
 
-    const tableId = $('#' + bodyId).closest('table').attr('id');
-    window[`filteredData_${tableId}`].forEach(function (row) {
-        if (row.hasOwnProperty(columnName)) {
-            uniqueValues.add(row[columnName]);
+window.bizsolClearColumnFilterStore = function bizsolClearColumnFilterStore(tableId) {
+    if (window.bizsolColumnFilterState) {
+        delete window.bizsolColumnFilterState[tableId];
+    }
+};
+
+window.bizsolEscapeFilterHtml = function bizsolEscapeFilterHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+};
+
+window.bizsolCollectColumnValues = function bizsolCollectColumnValues(tableId, columnName) {
+    var uniqueValues = [];
+    var seen = Object.create(null);
+    var source = window[`filteredDataTemp_${tableId}`] || window[`filteredData_${tableId}`] || [];
+    source.forEach(function (row) {
+        if (!row || !Object.prototype.hasOwnProperty.call(row, columnName)) {
+            return;
+        }
+        var value = row[columnName];
+        var key = String(value);
+        if (seen[key]) {
+            return;
+        }
+        seen[key] = true;
+        uniqueValues.push(value);
+    });
+    return uniqueValues;
+};
+
+window.bizsolIsSelectedValue = function bizsolIsSelectedValue(value, selectedValues) {
+    if (!selectedValues || !selectedValues.length) {
+        return false;
+    }
+    var current = String(value);
+    for (var i = 0; i < selectedValues.length; i++) {
+        if (String(selectedValues[i]) === current) {
+            return true;
+        }
+    }
+    return false;
+};
+
+window.bizsolGetSavedFilterValues = function bizsolGetSavedFilterValues(tableId, kind, columnName) {
+    var state = window.bizsolColumnFilterState && window.bizsolColumnFilterState[tableId];
+    if (!state || !state[kind]) {
+        return null;
+    }
+    var saved = state[kind][columnName];
+    if (saved == null) {
+        return null;
+    }
+    if (kind === 'double') {
+        return saved.selectedValues || null;
+    }
+    return saved;
+};
+
+window.bizsolRestoreCheckboxSelection = function bizsolRestoreCheckboxSelection($container, selectedValues) {
+    if (!$container || !selectedValues || !selectedValues.length) {
+        return;
+    }
+    $container.find('input[type="checkbox"]').each(function () {
+        if ($(this).val() === 'All') {
+            return;
+        }
+        if (window.bizsolIsSelectedValue($(this).val(), selectedValues)) {
+            $(this).prop('checked', true);
         }
     });
+    var $boxes = $container.find('input[type="checkbox"]').not('[value="All"]');
+    var allChecked = $boxes.length > 0 && $boxes.length === $boxes.filter(':checked').length;
+    $container.find('input[value="All"]').prop('checked', allChecked);
+};
+
+window.bizsolCellMatchesSelected = function bizsolCellMatchesSelected(cellValue, selectedValues) {
+    if (!selectedValues || selectedValues.indexOf('All') !== -1) {
+        return true;
+    }
+    return window.bizsolIsSelectedValue(cellValue, selectedValues);
+};
+
+window.bizsolCellMatchesDateFilter = function bizsolCellMatchesDateFilter(cellValue, selectedValues) {
+    if (!selectedValues) {
+        return true;
+    }
+    if (selectedValues.indexOf('All') !== -1) {
+        return true;
+    }
+    if (!selectedValues.length) {
+        return false;
+    }
+    var dateObj = new Date(cellValue);
+    if (!isNaN(dateObj.getTime())) {
+        var year = dateObj.getFullYear().toString();
+        var month = dateObj.toLocaleString('default', { month: 'long' });
+        var day = dateObj.getDate().toString();
+        return selectedValues.indexOf(year) !== -1 &&
+            selectedValues.indexOf(month) !== -1 &&
+            selectedValues.indexOf(day) !== -1;
+    }
+    return window.bizsolIsSelectedValue(cellValue, selectedValues);
+};
+
+window.bizsolCellMatchesNumeric = function bizsolCellMatchesNumeric(cellValue, spec) {
+    if (!spec) {
+        return true;
+    }
+    var numericValue = parseFloat(cellValue);
+    if (isNaN(numericValue)) {
+        return false;
+    }
+    switch (spec.selectedOption) {
+        case 'equals':
+            return numericValue === spec.filterValue;
+        case 'greater':
+            return numericValue > spec.filterValue;
+        case 'less':
+            return numericValue < spec.filterValue;
+        case 'between':
+            return numericValue >= spec.minValue && numericValue <= spec.maxValue;
+        default:
+            return true;
+    }
+};
+
+window.bizsolCellMatchesDouble = function bizsolCellMatchesDouble(cellValue, spec) {
+    if (!spec) {
+        return true;
+    }
+    var text = cellValue == null ? '' : String(cellValue).toLowerCase();
+    if (spec.useTextFilter) {
+        if (spec.filterType === 'startsWith') {
+            return text.startsWith(spec.searchValue);
+        }
+        if (spec.filterType === 'endsWith') {
+            return text.endsWith(spec.searchValue);
+        }
+        if (spec.filterType === 'like') {
+            return text.includes(spec.searchValue);
+        }
+        return false;
+    }
+    if (spec.useCheckboxFilter) {
+        var selected = spec.selectedValues || [];
+        for (var i = 0; i < selected.length; i++) {
+            if (String(selected[i]).toLowerCase() === text) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return true;
+};
+
+window.bizsolApplyStoredSort = function bizsolApplyStoredSort(tableId, rows) {
+    var spec = window[`bizsolSort_${tableId}`];
+    if (!spec || !spec.column || !Array.isArray(rows)) {
+        return rows;
+    }
+    var column = spec.column;
+    var order = spec.order;
+    var copy = rows.slice();
+    copy.sort(function (a, b) {
+        var keyA = a[column] !== undefined && a[column] !== null ? String(a[column]).trim() : '';
+        var keyB = b[column] !== undefined && b[column] !== null ? String(b[column]).trim() : '';
+        if ($.isNumeric(keyA) && $.isNumeric(keyB)) {
+            return (order === 'asc') ? parseFloat(keyA) - parseFloat(keyB) : parseFloat(keyB) - parseFloat(keyA);
+        }
+        return (order === 'asc') ? keyA.localeCompare(keyB) : keyB.localeCompare(keyA);
+    });
+    return copy;
+};
+
+window.bizsolSyncFilterIcons = function bizsolSyncFilterIcons(tableId) {
+    var $table = $('#' + tableId);
+    $table.find('span.filter-table-heading .fa-filter').remove();
+    var store = window.bizsolColumnFilterState && window.bizsolColumnFilterState[tableId];
+    if (!store) {
+        return;
+    }
+    var active = {};
+    ['string', 'date', 'numeric', 'double'].forEach(function (kind) {
+        Object.keys(store[kind] || {}).forEach(function (column) {
+            active[column] = true;
+        });
+    });
+    Object.keys(active).forEach(function (column) {
+        $table.find('span.filter-table-heading').each(function () {
+            var heading = $(this).clone().children().remove().end().text().trim();
+            if (heading === column) {
+                $(this).append('<i class="fa-solid fa-filter" style="color: white; margin-left: 5px;"></i>');
+            }
+        });
+    });
+};
+
+window.bizsolReapplyGridFilters = function bizsolReapplyGridFilters(tableId, bodyId) {
+    var source = window[`filteredDataTemp_${tableId}`] || [];
+    var term = (window[`globalSearchTerm_${tableId}`] || '').toLowerCase().trim();
+    var hidden = window[`hiddenColumns_${bodyId}`] || [];
+    var store = window.bizsolGetColumnFilterStore(tableId);
+
+    var result = source.filter(function (row) {
+        if (term) {
+            var hit = Object.keys(row).some(function (key) {
+                if (hidden.indexOf(key) !== -1) {
+                    return false;
+                }
+                var cell = row[key];
+                if (cell === null || cell === undefined) {
+                    return false;
+                }
+                return String(cell).toLowerCase().indexOf(term) !== -1;
+            });
+            if (!hit) {
+                return false;
+            }
+        }
+        var column;
+        for (column in store.string) {
+            if (Object.prototype.hasOwnProperty.call(store.string, column) &&
+                !window.bizsolCellMatchesSelected(row[column], store.string[column])) {
+                return false;
+            }
+        }
+        for (column in store.date) {
+            if (Object.prototype.hasOwnProperty.call(store.date, column) &&
+                !window.bizsolCellMatchesDateFilter(row[column], store.date[column])) {
+                return false;
+            }
+        }
+        for (column in store.numeric) {
+            if (Object.prototype.hasOwnProperty.call(store.numeric, column) &&
+                !window.bizsolCellMatchesNumeric(row[column], store.numeric[column])) {
+                return false;
+            }
+        }
+        for (column in store.double) {
+            if (Object.prototype.hasOwnProperty.call(store.double, column) &&
+                !window.bizsolCellMatchesDouble(row[column], store.double[column])) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    window[`filteredData_${tableId}`] = window.bizsolApplyStoredSort(tableId, result);
+
+    if (window[`Paginator_${tableId}`]) {
+        createPaginator(tableId, bodyId);
+        renderTableWithPagination(tableId, bodyId);
+    } else {
+        renderTable(window[`filteredData_${tableId}`], bodyId);
+    }
+    window.bizsolSyncFilterIcons(tableId);
+};
+
+window.populateFilterOptions = function populateFilterOptions(columnName, bodyId) {
+    const tableId = $('#' + bodyId).closest('table').attr('id');
+    var uniqueValues = window.bizsolCollectColumnValues(tableId, columnName);
 
     const colId = columnName.replace(/\s+/g, '');
     const uniqueId = `${tableId}-${colId}`;
     const escapedId = escapeId(uniqueId);
     var checkboxContainer = $('#checkbox-container-' + escapedId);
+    var saved = window.bizsolGetSavedFilterValues(tableId, 'string', columnName);
     checkboxContainer.empty();
     checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="All"> All</label>');
 
     uniqueValues.forEach(function (value) {
-        checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="' + value + '"> ' + value + '</label>');
+        var safe = window.bizsolEscapeFilterHtml(value);
+        checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="' + safe + '"> ' + safe + '</label>');
     });
+    window.bizsolRestoreCheckboxSelection(checkboxContainer, saved);
 
     checkboxContainer.find('input[value="All"]').change(function () {
         var isChecked = $(this).is(':checked');
@@ -503,6 +1064,13 @@ window.toggleFilterDouble = function (columnName, bodyId) {
     $('#filterDropdown-' + escapedId).toggle();
     var $filterPanel = $('#filter-double-' + escapedId);
     if ($filterPanel.is(':visible')) {
+        var doubleSpec = window.bizsolGetColumnFilterStore(tableId).double[columnName];
+        if (doubleSpec) {
+            if (doubleSpec.filterType) {
+                $('#filter-type-' + escapedId).val(doubleSpec.filterType);
+            }
+            $filterPanel.find('.filter-input-double').val(doubleSpec.searchValue || '');
+        }
         bizsolFloatFilterPanel($filterPanel);
     }
 };
@@ -518,7 +1086,14 @@ var columnFilters = {};
 // Helper function to check if any filters are active and manage the filtered class
 window.updateFilteredClass = function(bodyId) {
     const tableId = $('#' + bodyId).closest('table').attr('id');
-    const hasActiveFilters = Object.keys(columnFilters).length > 0 || 
+    var storedFilters = window.bizsolColumnFilterState && window.bizsolColumnFilterState[tableId];
+    var hasStoredFilters = false;
+    if (storedFilters) {
+        hasStoredFilters = ['string', 'date', 'numeric', 'double'].some(function (kind) {
+            return Object.keys(storedFilters[kind] || {}).length > 0;
+        });
+    }
+    const hasActiveFilters = hasStoredFilters || Object.keys(columnFilters).length > 0 ||
                             $('.fa-filter[style*="color: white"]').length > 0;
 
     if (hasActiveFilters) {
@@ -544,7 +1119,8 @@ if ($filterPanel.is(':visible')) {
     bizsolFloatFilterPanel($filterPanel);
 }
 var uniqueDates = new Set();
-window[`filteredData_${tableId}`].forEach(function (row) {
+var dateSource = window[`filteredDataTemp_${tableId}`] || window[`filteredData_${tableId}`] || [];
+dateSource.forEach(function (row) {
     if (row.hasOwnProperty(columnName)) {
         uniqueDates.add(row[columnName]);
     }
@@ -628,57 +1204,21 @@ checkboxContainer1.find('.month-checkbox').change(function () {
         $('#' + escapedTargetId).toggle();
         $(this).toggleClass('fa-plus fa-minus');
     });
+    window.bizsolRestoreCheckboxSelection(
+        checkboxContainer1,
+        window.bizsolGetSavedFilterValues(tableId, 'date', columnName)
+    );
     if ($filterPanel.is(':visible')) {
         bizsolFloatFilterPanel($filterPanel);
     }
 }
 window.applyFilters = function applyFilters(bodyId) {
-    var column1 = "";
-    var column1 = "";
     const tableId = $('#' + bodyId).closest('table').attr('id');
-
-    var filteredArray = window[`filteredData_${tableId}`].filter(item => {
-        return Object.keys(columnFilters).every(column => {
-            column1 = column;
-            var selectedValues = columnFilters[column];
-            var cellValue = item[column];
-
-            if (selectedValues.includes("All")) {
-                return true;
-            }
-
-            var dateObj = new Date(cellValue);
-            console.log(dateObj);
-
-            if (!isNaN(dateObj.getTime())) {
-                var year = dateObj.getFullYear().toString();
-                var month = dateObj.toLocaleString("default", { month: "long" });
-                var day = dateObj.getDate().toString();
-                return (
-                    selectedValues.includes(year) &&
-                    selectedValues.includes(month) &&
-                    selectedValues.includes(day)
-                );
-            }
-
-            return selectedValues.includes(cellValue);
-        });
+    var store = window.bizsolGetColumnFilterStore(tableId);
+    Object.keys(columnFilters || {}).forEach(function (column) {
+        store.date[column] = columnFilters[column];
     });
-
-    window[`filteredData_${tableId}`] = filteredArray;
-    renderTable(filteredArray, bodyId);
-    if (window[`Paginator_${tableId}`]) {
-        createPaginator(tableId, bodyId);
-        renderTableWithPagination(tableId, bodyId);
-    }
-
-    const uniqueId = tableId + '-' + column1.replace(/\s+/g, '');
-    const escapedId = escapeId(uniqueId);
-    const th = $('#filterDropdown-' + escapedId).closest('th');
-    const span = th.find('span.filter-table-heading');
-    span.find('.fa-filter').remove();
-    span.append('<i class="fa-solid fa-filter" style="color: white; margin-left: 5px;"></i>');
-
+    window.bizsolReapplyGridFilters(tableId, bodyId);
 }
 window.toggleFilterNumeric = function (filterId, ColumnName, bodyId) {
     closeAllFilters();
@@ -690,6 +1230,13 @@ window.toggleFilterNumeric = function (filterId, ColumnName, bodyId) {
     const escapedFilterId = escapeId(filterId);
     $('#filterDropdown-' + escapedId).toggle();
     $('#' + escapedFilterId).toggle();
+    var numericSpec = window.bizsolGetColumnFilterStore(tableId).numeric[ColumnName];
+    if (numericSpec) {
+        $('#numeric-filter-select-' + escapedId).val(numericSpec.selectedOption);
+        $('#filter-value-' + escapedId).val(isNaN(numericSpec.filterValue) ? '' : numericSpec.filterValue);
+        $('#min-value-' + escapedId).val(isNaN(numericSpec.minValue) ? '' : numericSpec.minValue);
+        $('#max-value-' + escapedId).val(isNaN(numericSpec.maxValue) ? '' : numericSpec.maxValue);
+    }
     toggleNumericInputs(ColumnName, tableId);
     var $filterPanel = $('#' + escapedFilterId);
     if ($filterPanel.is(':visible')) {
@@ -723,40 +1270,13 @@ const minValue = parseFloat($('#min-value-' + escapedId).val());
 const maxValue = parseFloat($('#max-value-' + escapedId).val());
 
     if (!isNaN(filterValue) || (!isNaN(minValue) && !isNaN(maxValue))) {
-        const tableId = $('#' + bodyId).closest('table').attr('id');
-        var filteredArray = window[`filteredData_${tableId}`].filter(item => {
-            const cellValue = parseFloat(item[columnName]);
-            let shouldShow = false;
-
-            switch (selectedOption) {
-                case "equals":
-                    shouldShow = cellValue === filterValue;
-                    break;
-                case "greater":
-                    shouldShow = cellValue > filterValue;
-                    break;
-                case "less":
-                    shouldShow = cellValue < filterValue;
-                    break;
-                case "between":
-                    shouldShow = cellValue >= minValue && cellValue <= maxValue;
-                    break;
-            }
-
-            return shouldShow;
-        });
-
-        window[`filteredData_${tableId}`] = filteredArray;
-        renderTable(filteredArray, bodyId);
-        if (window[`Paginator_${tableId}`]) {
-            createPaginator(tableId, bodyId);
-            renderTableWithPagination(tableId, bodyId);
-        }
-
-        const th = $('#filterDropdown-' + escapedId).closest('th');
-        const span = th.find('span.filter-table-heading');
-        span.find('.fa-filter').remove();
-        span.append('<i class="fa-solid fa-filter" style="color: white; margin-left: 5px;"></i>');
+        window.bizsolGetColumnFilterStore(tableId).numeric[columnName] = {
+            selectedOption: selectedOption,
+            filterValue: filterValue,
+            minValue: minValue,
+            maxValue: maxValue
+        };
+        window.bizsolReapplyGridFilters(tableId, bodyId);
     }
 
     closeAllFilters();
@@ -772,6 +1292,7 @@ window.ClearFilter = function ClearFilter(bodyId) {
     // Clear stored column filters (used by date filters)
     columnFilters = {};
     const tableId = $('#' + bodyId).closest('table').attr('id');
+    window.bizsolClearColumnFilterStore(tableId);
     // Remove filtered class from table-wrapper
     //$('#' + bodyId).closest('.table-wrapper').removeClass('filtered');
 
@@ -781,8 +1302,13 @@ window.ClearFilter = function ClearFilter(bodyId) {
         $gsInput.val('');
         $('#global-search-clear-' + tableId).hide();
     }
+    window[`globalSearchTerm_${tableId}`] = '';
 
-    window[`filteredData_${tableId}`] = window[`filteredDataTemp_${tableId}`];
+    if (window[`bizsolSort_${tableId}`]) {
+        window[`filteredData_${tableId}`] = window.bizsolApplyStoredSort(tableId, (window[`filteredDataTemp_${tableId}`] || []).slice());
+    } else {
+        window[`filteredData_${tableId}`] = window[`filteredDataTemp_${tableId}`];
+    }
     renderTable(window[`filteredData_${tableId}`], bodyId);
     if (window[`Paginator_${tableId}`]) {
         createPaginator(tableId, bodyId);
@@ -843,32 +1369,30 @@ window.createGlobalSearchBox = function createGlobalSearchBox(tableId, bodyId, p
  */
 window.applyGlobalSearch = function applyGlobalSearch(tableId, bodyId) {
     const term = ($('#global-search-input-' + tableId).val() || '').toLowerCase().trim();
-    const fullData = window[`filteredDataTemp_${tableId}`] || [];
-    const hidden  = window[`hiddenColumns_${bodyId}`] || [];
-
-    let result;
-    if (!term) {
-        result = fullData;
-    } else {
-        result = fullData.filter(function (row) {
-            return Object.keys(row).some(function (key) {
-                if (hidden.includes(key)) return false;
-                const cell = row[key];
-                if (cell === null || cell === undefined) return false;
-                return String(cell).toLowerCase().includes(term);
-            });
-        });
-    }
-
-    window[`filteredData_${tableId}`] = result;
+    window[`globalSearchTerm_${tableId}`] = term;
     window[`currentPage_${tableId}`] = 1;
+    window.bizsolReapplyGridFilters(tableId, bodyId);
+};
 
-    if (window[`Paginator_${tableId}`]) {
-        createPaginator(tableId, bodyId);
-        renderTableWithPagination(tableId, bodyId);
-    } else {
-        renderTable(result, bodyId);
-    }
+/**
+ * Wraps each visible occurrence of the search term in a highlight mark.
+ * HTML tags in the cell are left untouched so existing markup stays valid.
+ */
+window.highlightGridSearchTerm = function highlightGridSearchTerm(value, term) {
+    if (value === null || value === undefined) return value;
+    const text = String(value);
+    const needle = (term || '').trim();
+    if (!needle || !text) return text;
+
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(/(<[^>]*>)/g);
+    const re = new RegExp(escaped, 'gi');
+    return parts.map(function (part) {
+        if (part.charAt(0) === '<' && part.charAt(part.length - 1) === '>') return part;
+        return part.replace(re, function (match) {
+            return '<mark class="bizsol-search-highlight">' + match + '</mark>';
+        });
+    }).join('');
 };
 
 window.applyStringFilters = function applyStringFilters(columnName, bodyId) {
@@ -884,50 +1408,33 @@ window.applyStringFilters = function applyStringFilters(columnName, bodyId) {
     });
 
     if (selectedValues.length > 0) {
-
-        var filteredArray = window[`filteredData_${tableId}`].filter(item =>
-            selectedValues.includes(item[column]) || selectedValues.includes("All")
-        );
-
-        window[`filteredData_${tableId}`] = filteredArray;
-        renderTable(filteredArray, bodyId);
-        if (window[`Paginator_${tableId}`]) {
-            createPaginator(tableId, bodyId);
-            renderTableWithPagination(tableId, bodyId);
-        }
-
-        const uniqueId = tableId + '-' + column.replace(/\s+/g, '');
-        const escapedId = escapeId(uniqueId);
-        const th = $('#filterDropdown-' + escapedId).closest('th');
-        const span = th.find('span.filter-table-heading');
-        span.find('.fa-filter').remove();
-        span.append('<i class="fa-solid fa-filter" style="color: white; margin-left: 5px;"></i>');
+        window.bizsolGetColumnFilterStore(tableId).string[column] = selectedValues.slice();
+        window.bizsolReapplyGridFilters(tableId, bodyId);
     }
     closeAllFilters();
 }
 window.ShowEntry = function ShowEntry(columnName, bodyId) {
-    var column = columnName;
-    populateFilterOptionsDouble(column, bodyId);
-    $('#checkbox-container-double-' + column.replace(/\s+/g, '')).toggle();
+    populateFilterOptionsDouble(columnName, bodyId);
+    const tableId = $('#' + bodyId).closest('table').attr('id');
+    const uniqueId = tableId + '-' + columnName.replace(/\s+/g, '');
+    $('#checkbox-container-double-' + escapeId(uniqueId)).toggle();
 }
 window.populateFilterOptionsDouble = function populateFilterOptionsDouble(columnName, bodyId) {
-    var uniqueValues = new Set();
     const tableId = $('#' + bodyId).closest('table').attr('id');
     const colId = columnName.replace(/\s+/g, '');
     const uniqueId = `${tableId}-${colId}`;
     const escapedId = escapeId(uniqueId);
-    
-    window[`filteredData_${tableId}`].forEach(function (row) {
-        if (row.hasOwnProperty(columnName)) {
-            uniqueValues.add(row[columnName]);
-        }
-    });
+    var uniqueValues = window.bizsolCollectColumnValues(tableId, columnName);
+    var saved = window.bizsolGetSavedFilterValues(tableId, 'double', columnName);
+
     var checkboxContainer = $('#checkbox-container-double-' + escapedId);
     checkboxContainer.empty();
     checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="All"> All</label>');
     uniqueValues.forEach(function (value) {
-        checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="' + value + '"> ' + value + '</label>');
+        var safe = window.bizsolEscapeFilterHtml(value);
+        checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="' + safe + '"> ' + safe + '</label>');
     });
+    window.bizsolRestoreCheckboxSelection(checkboxContainer, saved);
     checkboxContainer.find('input[value="All"]').change(function () {
         var isChecked = $(this).is(':checked');
         checkboxContainer.find('input[type="checkbox"]').not(this).prop('checked', isChecked);
@@ -946,49 +1453,27 @@ const uniqueId = `${tableId}-${colId}`;
 const escapedId = escapeId(uniqueId);
 
 var filterType = $('#filter-type-' + escapedId).val();
-var searchValue = $('.filter-input-double[data-column="' + column + '"]').val().trim().toLowerCase();
+var searchValue = ($('#filter-double-' + escapedId).find('.filter-input-double').val() || '').trim().toLowerCase();
 var selectedValues = [];
 
 $('#checkbox-container-double-' + escapedId + ' input:checked').each(function () {
     if ($(this).val() !== "All") {
-        selectedValues.push($(this).val().toLowerCase());
+        selectedValues.push($(this).val());
     }
 });
 var useCheckboxFilter = selectedValues.length > 0;
 var useTextFilter = searchValue.length > 0;
 if (useCheckboxFilter || useTextFilter) {
-    var filteredArray = window[`filteredData_${tableId}`].filter(item => {
-        var cellValue = item[columnName].toLowerCase();
-        var showRow = false;
-
-        if (useTextFilter) {
-            if (filterType === "startsWith" && cellValue.startsWith(searchValue)) {
-                showRow = true;
-            } else if (filterType === "endsWith" && cellValue.endsWith(searchValue)) {
-                showRow = true;
-            } else if (filterType === "like" && cellValue.includes(searchValue)) {
-                showRow = true;
-            }
-        } else if (useCheckboxFilter) {
-            showRow = selectedValues.includes(cellValue);
-        }
-
-        return showRow;
-    });
-
-    window[`filteredData_${tableId}`] = filteredArray;
-    renderTable(filteredArray, bodyId);
-    if (window[`Paginator_${tableId}`]) {
-        createPaginator(tableId, bodyId);
-            renderTableWithPagination(tableId, bodyId);
-        }
-
-        const th = $('#filterDropdown-' + escapedId).closest('th');
-        const span = th.find('span.filter-table-heading');
-        span.find('.fa-filter').remove();
-        span.append('<i class="fa-solid fa-filter" style="color: white; margin-left: 5px;"></i>');
-    }
-    closeAllFiltersDouble();
+    window.bizsolGetColumnFilterStore(tableId).double[column] = {
+        filterType: filterType,
+        searchValue: searchValue,
+        selectedValues: selectedValues.slice(),
+        useCheckboxFilter: useCheckboxFilter,
+        useTextFilter: useTextFilter
+    };
+    window.bizsolReapplyGridFilters(tableId, bodyId);
+}
+closeAllFiltersDouble();
 };
 window.closeAllFiltersDouble = function closeAllFiltersDouble() {
     $('.filter-dropdown-double').each(function () {
@@ -1175,6 +1660,9 @@ columns.forEach(col => {
         headerRow += '</tr>';
     }
     $header.append(headerRow);
+    window.bizsolTagHeaderColumns($header, columns, !!button);
+    window.bizsolBindManualColumnExpand(tableId);
+    window.bizsolApplyManualColumnWidths(tableId);
 }
 window.sortable = function sortable(element) {
     var column = $(element).data('column');
@@ -1191,6 +1679,7 @@ window.sortable = function sortable(element) {
 };
 window.sortTable = function sortTable(column, order, tbodyId) {
     const tableId = $('#' + tbodyId).closest('table').attr('id');
+    window[`bizsolSort_${tableId}`] = { column: column, order: order };
     var data = window[`filteredData_${tableId}`];
 
     if (!Array.isArray(data)) {
@@ -1256,10 +1745,15 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
         window.applyLastValueColumnTotals(columnTotals, items, totalColumns, lastValueColumns);
     }
 
+    const searchTerm = window[`globalSearch_${tableId}`]
+        ? (window[`globalSearchTerm_${tableId}`] || '')
+        : '';
+
     let rows = items.map((item, index) => {
         const row = Object.keys(item).map((key) => {
             const alignment = window[`columnAlignment_${bodyId}`][key] || 'left';
-            const style = window[`hiddenColumns_${bodyId}`].includes(key)
+            const isHiddenColumn = window[`hiddenColumns_${bodyId}`].includes(key);
+            const style = isHiddenColumn
                 ? 'display:none'
                 : `text-align:${alignment}`;
 
@@ -1287,13 +1781,23 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
                 cellValue = window.formatGridNumericDisplay(cellValue);
             }
 
+            if (searchTerm && !isHiddenColumn && cellValue !== null && cellValue !== undefined) {
+                const rawText = item[key] === null || item[key] === undefined ? '' : String(item[key]);
+                const displayText = String(cellValue);
+                if (displayText.toLowerCase().includes(searchTerm)) {
+                    cellValue = window.highlightGridSearchTerm(cellValue, searchTerm);
+                } else if (rawText.toLowerCase().includes(searchTerm)) {
+                    cellValue = '<mark class="bizsol-search-highlight">' + cellValue + '</mark>';
+                }
+            }
+
             return `<td style="${style}">${cellValue}</td>`;
         }).join('');
 
         let buttons = '';
 
         if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
-            buttons = '<td>';
+            buttons = '<td class="bizsol-action-cell">';
             if (showButtons.includes('E')) {
                 buttons += ` <button class="btn btn-primary icon-height mb-1" title="Edit"><i aria-hidden="true" class="fa fa-pencil" type="button" onclick="EditData('${item.Code}')" /></i></button> `;
             }
@@ -1362,7 +1866,7 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
 
         let totalButtons = '';
         if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
-            totalButtons = '<td style="background-color: #ffffff; border-top: 2px solid #333;"></td>';
+            totalButtons = '<td class="bizsol-action-cell" style="background-color: #ffffff; border-top: 2px solid #333;"></td>';
         }
 
         const _isFloatingTotal = window[`floatingTotalRow_${bodyId}`];
@@ -1392,6 +1896,7 @@ window.renderTable = function renderTable(items, bodyId, skipTotalRow = false) {
     if (tableId === "RMReport" && typeof window.applyRMReportRemarkColors === "function") {
         window.applyRMReportRemarkColors();
     }
+    window.bizsolApplyManualColumnWidths(tableId);
 }
 window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
     const totalColumns = window[`totalColumns_${bodyId}`];
@@ -1471,7 +1976,7 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
 
     let totalButtons = '';
     if (button == true && Array.isArray(showButtons) && showButtons.length > 0) {
-        totalButtons = '<td style="background-color: #d4edda; border-top: 3px solid #28a745;"></td>';
+        totalButtons = '<td class="bizsol-action-cell" style="background-color: #d4edda; border-top: 3px solid #28a745;"></td>';
     }
 
     const grandTotalRowHtml = `<tr class="grand-total-row">${grandTotalRow}${totalButtons}</tr>`;
@@ -1484,6 +1989,7 @@ window.renderGrandTotalRow = function renderGrandTotalRow(tableId, bodyId) {
         // Append grand total row to tbody (default behaviour)
         $(`#${bodyId}`).append(grandTotalRowHtml);
     }
+    window.bizsolApplyManualColumnWidths(tableId);
 }
 window.updatePageInfo = function updatePageInfo(tableId) {
     var filteredData = window[`filteredData_${tableId}`];
