@@ -1341,7 +1341,7 @@ function clearReport() {
     G_PoGrnDrill = resetPoGrnDrill();
     $('#tblPMRBody').empty();
     $('#pogrTableBody').empty();
-    $('#tblBudgetItemsBody, #tblBudgetPaysBody').empty();
+    $('#tblBudgetItemsBody, #tblBudgetPaysBody, #tblBudgetItemsFoot, #tblBudgetPaysFoot, #pmrBudgetDetailSummary').empty();
     $('#pmrBudgetDetail').hide();
     $('.pmr-page').removeClass('pmr-budget-detail');
     $('#pmrDrillBreadcrumb').hide();
@@ -1871,23 +1871,48 @@ function renderBudgetDetailTables(items, payments) {
     $('#pmrBudgetItemTitle').text(isExpense ? 'For ' + title : title);
     $('#pmrBudgetPayTitle').text('Payment');
 
+    let totPay = 0;
+    payments.forEach(function (r) {
+        totPay += parseNum(rowValue(r, ['PaymentAmount', 'paymentAmount', 'Amount', 'amount']));
+    });
+    if (!payments.length) {
+        totPay = parseNum(G_BudgetDrill.paymentAmount);
+    }
+
+    let totBudget = 0;
+    let totGst = 0;
+    if (!items.length) {
+        totBudget = parseNum(G_BudgetDrill.budgetAmount);
+        totGst = parseNum(G_BudgetDrill.budgetGstAmount);
+    } else {
+        items.forEach(function (r) {
+            totBudget += parseNum(rowValue(r, ['BudgetAmount', 'budgetAmount']));
+            totGst += parseNum(rowValue(r, ['BudgetGSTAmount', 'budgetGSTAmount', 'BudgetAmountWithGST']));
+        });
+    }
+
     const $ih = $('#tblBudgetItemsHead').empty();
     const $ib = $('#tblBudgetItemsBody').empty();
+    const $if = $('#tblBudgetItemsFoot').empty();
     if (isExpense) {
         $ih.append('<tr><th>Expense category</th><th class="num">Budget amount</th></tr>');
+        $ih.append(
+            '<tr class="row-total"><th>Total</th><th class="num">' + formatAmount(totBudget) + '</th></tr>'
+        );
     } else {
         $ih.append('<tr><th>Item name</th><th class="num">Budget amount</th><th class="num">Budget amount with GST</th></tr>');
+        $ih.append(
+            '<tr class="row-total"><th>Total</th>' +
+            '<th class="num">' + formatAmount(totBudget) + '</th>' +
+            '<th class="num">' + formatAmount(totGst) + '</th></tr>'
+        );
     }
     if (!items.length) {
         $ib.append('<tr><td colspan="' + (isExpense ? 2 : 3) + '" class="pmr-budget-detail-empty">No item records found.</td></tr>');
     } else {
-        let totBudget = 0;
-        let totGst = 0;
         items.forEach(function (r) {
             const budget = parseNum(rowValue(r, ['BudgetAmount', 'budgetAmount']));
             const gst = parseNum(rowValue(r, ['BudgetGSTAmount', 'budgetGSTAmount', 'BudgetAmountWithGST']));
-            totBudget += budget;
-            totGst += gst;
             if (isExpense) {
                 $ib.append(
                     '<tr><td>' + escapeHtmlText(budgetDetailItemLabel(r, true)) + '</td>' +
@@ -1901,41 +1926,42 @@ function renderBudgetDetailTables(items, payments) {
                 );
             }
         });
-        if (isExpense) {
-            $ib.append('<tr class="row-total"><td><strong>Total</strong></td><td class="num">' + formatAmount(totBudget) + '</td></tr>');
-        } else {
-            $ib.append(
-                '<tr class="row-total"><td><strong>Total</strong></td>' +
-                '<td class="num">' + formatAmount(totBudget) + '</td>' +
-                '<td class="num">' + formatAmount(totGst) + '</td></tr>'
-            );
-        }
     }
 
     const $ph = $('#tblBudgetPaysHead').empty();
     const $pb = $('#tblBudgetPaysBody').empty();
+    const $pf = $('#tblBudgetPaysFoot').empty();
     if (isExpense) {
         $ph.append('<tr><th>Employee name</th><th>Entry no</th><th class="num">Amount</th></tr>');
     } else {
         $ph.append('<tr><th>Vendor name</th><th>Entry no with prefix</th><th class="num">Amount</th></tr>');
     }
+    $ph.append(
+        '<tr class="row-total"><th>Total</th><th></th><th class="num">' + formatAmount(totPay) + '</th></tr>'
+    );
     if (!payments.length) {
         $pb.append('<tr><td colspan="3" class="pmr-budget-detail-empty">No payment records found.</td></tr>');
     } else {
-        let totPay = 0;
         payments.forEach(function (r) {
             const amt = parseNum(rowValue(r, ['PaymentAmount', 'paymentAmount', 'Amount', 'amount']));
-            totPay += amt;
             $pb.append(
                 '<tr><td>' + escapeHtmlText(budgetDetailPartyLabel(r, isExpense)) + '</td>' +
                 '<td>' + escapeHtmlText(budgetDetailEntryNo(r)) + '</td>' +
                 '<td class="num">' + formatAmount(amt) + '</td></tr>'
             );
         });
-        $pb.append(
-            '<tr class="row-total"><td><strong>Total</strong></td><td></td><td class="num">' + formatAmount(totPay) + '</td></tr>'
-        );
     }
+
+    const totalBudget = totGst !== 0 ? totGst : totBudget;
+    const totBalance = totalBudget - totPay;
+    const balCls = totBalance < 0 ? ' pmr-bal-neg' : '';
+    $('#pmrBudgetDetailSummary').html(
+        '<span>Total budget: <strong>' + escapeHtmlText(formatAmount(totalBudget)) + '</strong></span>' +
+        '<span>−</span>' +
+        '<span>Payment: <strong>' + escapeHtmlText(formatAmount(totPay)) + '</strong></span>' +
+        '<span>=</span>' +
+        '<span>Balance: <strong class="' + balCls.trim() + '">' + escapeHtmlText(formatAmount(totBalance)) + '</strong></span>'
+    );
 }
 
 function fetchBudgetDetail() {
@@ -2003,17 +2029,17 @@ function exportBudgetExcel() {
         $h.empty();
         $b.empty();
         $h.append($('<th/>').text($('#pmrBudgetItemTitle').text() || 'Items'));
-        $src.find('thead th').each(function () { $h.append($('<th/>').text($(this).text())); });
-        $src.find('tbody tr').each(function () {
+        $src.find('thead tr:first th').each(function () { $h.append($('<th/>').text($(this).text())); });
+        $src.find('thead tr.row-total, tbody tr, tfoot tr').each(function () {
             const tr = $('<tr/>');
             tr.append($('<td/>').text(''));
-            $(this).find('td').each(function () { tr.append($('<td/>').text($(this).text())); });
+            $(this).find('th, td').each(function () { tr.append($('<td/>').text($(this).text())); });
             $b.append(tr);
         });
         $b.append($('<tr/>').append($('<td/>').text($('#pmrBudgetPayTitle').text() || 'Payment')));
-        $pay.find('tbody tr').each(function () {
+        $pay.find('thead tr.row-total, tbody tr, tfoot tr').each(function () {
             const tr = $('<tr/>');
-            $(this).find('td').each(function () { tr.append($('<td/>').text($(this).text())); });
+            $(this).find('th, td').each(function () { tr.append($('<td/>').text($(this).text())); });
             $b.append(tr);
         });
         const now = new Date();
@@ -2103,7 +2129,7 @@ const POGRN_SUMMARY_COLS = [
     { id: 'totalBill', label: 'Total bill amount', headHtml: 'Total bill<br>amount', qty: false, keys: POGRN_GRN_VAL_KEYS[3], section: 'grn' },
     { id: 'deduction', label: 'Deduction', qty: false, keys: POGRN_GRN_VAL_KEYS[4], section: 'grn' },
     { id: 'netGrn', label: 'Net GRN Amount', headHtml: 'Net GRN<br>Amount', qty: false, keys: POGRN_GRN_VAL_KEYS[5], section: 'grn' },
-    { id: 'balance', label: 'Balance Billing Amount', headHtml: 'Balance<br>Billing Amount', qty: false, keys: POGRN_GRN_VAL_KEYS[6], section: 'grn' },
+    { id: 'balance', label: 'PO/WO Less Net GRN AMT (Pending GRN AMT)', headHtml: 'PO/WO Less<br>Net GRN AMT<br>(Pending GRN AMT)', qty: false, keys: POGRN_GRN_VAL_KEYS[6], section: 'grn', oncePerPo: true },
 ];
 
 const POGRN_DETAIL_COLS = [
@@ -2321,7 +2347,7 @@ function buildPoGrnTableHeader(levelCfg) {
     const first = (levelCfg && levelCfg.firstCol) || 'Project name';
     const $g = $('<tr/>');
     $g.append('<th rowspan="2" class="pmr-th-dim">' + escapeHtmlText(first) + '</th>');
-    if (poCount > 0) $g.append('<th colspan="' + poCount + '" class="col-po-group">PO</th>');
+    if (poCount > 0) $g.append('<th colspan="' + poCount + '" class="col-po-group">PO/WO</th>');
     if (grnCount > 0) $g.append('<th colspan="' + grnCount + '" class="col-grn-group">GRN / Billing</th>');
     const $c = $('<tr/>');
     cols.forEach(function (col) {
@@ -2403,6 +2429,18 @@ function poGrnDetailColClass(col) {
     return cls;
 }
 
+function poGrnIsOncePerPo(col) {
+    return !!(col && (col.section === 'po' || col.oncePerPo));
+}
+
+function poGrnOnceRow(poRows, col) {
+    for (let i = 0; i < poRows.length; i++) {
+        const raw = rowValue(poRows[i], col.keys);
+        if (raw !== '' && raw != null) return poRows[i];
+    }
+    return poRows[0];
+}
+
 function renderPoGrnGroupedDetail($body, rows) {
     const detailCols = visiblePoGrnDetailCols();
     if (isPoGrnOnlyView()) {
@@ -2433,9 +2471,10 @@ function renderPoGrnGroupedDetail($body, rows) {
                 }
                 detailCols.forEach(function (col) {
                     const cls = poGrnDetailColClass(col);
-                    if (col.section === 'po') {
+                    if (poGrnIsOncePerPo(col)) {
                         if (isFirst) {
-                            cells += '<td class="' + cls + ' pogr-po-once" rowspan="' + span + '">' + formatPoGrnCell(row, col) + '</td>';
+                            cells += '<td class="' + cls + ' pogr-po-once" rowspan="' + span + '">' +
+                                formatPoGrnCell(poGrnOnceRow(poRows, col), col) + '</td>';
                         }
                         return;
                     }
