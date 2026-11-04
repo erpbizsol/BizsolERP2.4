@@ -1,4 +1,5 @@
 ﻿import { VisitOrderEntryService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VisitOrderEntryService.js';
+import { AskPassword_Open } from '../../Bizsol.WebERP.UI.Shared/js/Pages/CustomControl/_AskPasswordModal.js';
 var baseUrl = sessionStorage.getItem('AppBaseURL');
 let QtyMTHeader = '';
 let QtyPCHeader = '';
@@ -15,6 +16,101 @@ let indx_DisType_DetailOutView = 22;
 let g_Code = 0;
 let g_Mode = '';
 let G_AskPassword = 'Y';
+const VO_DROPDOWN_MAX_RETRIES = 4;
+const VO_DROPDOWN_RETRY_DELAY_MS = 600;
+
+function voIsAuthKeyReady() {
+    try {
+        var authKey = JSON.parse(sessionStorage.getItem('authKey'));
+        return !!(authKey && authKey.UserMaster_Code != null && authKey.UserMaster_Code !== '');
+    } catch (e) {
+        return false;
+    }
+}
+
+function voRefreshAuthHeader() {
+    if (typeof $ !== 'undefined' && $.ajaxSetup) {
+        $.ajaxSetup({ headers: { 'auth-key': sessionStorage.getItem('authKey') } });
+    }
+}
+
+function voNormalizeApiList(response) {
+    if (typeof response === 'string') {
+        try { response = JSON.parse(response); } catch (e) { return []; }
+    }
+    if (Array.isArray(response)) return response;
+    if (!response || typeof response !== 'object') return [];
+    if (Array.isArray(response.Data)) return response.Data;
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.Table)) return response.Table;
+    if (Array.isArray(response.table)) return response.table;
+    var keys = Object.keys(response);
+    for (var i = 0; i < keys.length; i++) {
+        if (Array.isArray(response[keys[i]]) && response[keys[i]].length) return response[keys[i]];
+    }
+    return [];
+}
+
+function voPickText(row, fields) {
+    if (!row) return '';
+    for (var i = 0; i < fields.length; i++) {
+        var value = row[fields[i]];
+        if (value != null && String(value).trim() !== '') return String(value).trim();
+    }
+    return '';
+}
+
+function voSelect2Matcher(params, data) {
+    if ($.trim(params.term) === '') return data;
+    if (data.children && data.children.length) {
+        var match = $.extend(true, {}, data);
+        match.children = data.children.filter(function (child) {
+            return voSelect2Matcher(params, child) != null;
+        });
+        return match.children.length ? match : null;
+    }
+    if (typeof data.text !== 'string') return null;
+    if (data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) return data;
+    return null;
+}
+
+function voBindLookupSelect($el, rows, textFields) {
+    if (!$el || !$el.length) return false;
+    try {
+        if ($el.data('select2')) $el.select2('destroy');
+    } catch (e) { /* select was not enhanced yet */ }
+
+    var previous = $el.val();
+    $el.empty();
+    $el.append(new Option('All', 'All', true, true));
+    for (var i = 0; i < rows.length; i++) {
+        var text = voPickText(rows[i], textFields);
+        if (!text) continue;
+        var code = rows[i].Code != null ? rows[i].Code : text;
+        $el.append(new Option(text, String(code)));
+    }
+    if (previous && $el.find('option').filter(function () { return this.value == previous; }).length) {
+        $el.val(previous);
+    } else {
+        $el.val('All');
+    }
+    if (typeof $.fn.select2 === 'function') {
+        $el.select2({
+            width: '100%',
+            matcher: voSelect2Matcher
+        });
+    }
+    return $el.find('option').length > 1;
+}
+
+function voRetryDropdown(loader, attempt, label) {
+    if (attempt < VO_DROPDOWN_MAX_RETRIES) {
+        setTimeout(function () { loader(attempt + 1); }, VO_DROPDOWN_RETRY_DELAY_MS);
+        return;
+    }
+    toastr.error('Unable to load ' + label + ' list. Please refresh the page.');
+}
+
 $(document).ready(function () {
     $("#ERPHeading").text("Verify Order/Visit");
     GetNestedMarketingManList();
@@ -69,77 +165,59 @@ function GetOrderVerifyData() {
         
     }
 }
-function GetNestedMarketingManList() {
-    VisitOrderEntryService.GetNestedMarketingManList().then(function (response) {
-        if (response.length > 0) {
-            //$('#ddlSalesPersonList option').remove();
+function voEnsureAllOption($el) {
+    if (!$el || !$el.length || $el.find('option').length) return;
+    $el.append(new Option('All', 'All', true, true));
+}
 
-            //var option = '<option text="0" value="All" selected >All</option>';
-
-            //for (var i = 0; i < response.length; i++) {
-            //    option += '<option text="' + response[i].Code + '" value="' + response[i].PersonName + '" >' + response[i].PersonName + '</option>';
-            //}
-
-            //$('#ddlSalesPersonList')[0].innerHTML = option;
-
-            BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })), 'FirstItemAll');
-            $('#ddlSalesPersonlist').select2({
-                // allowClear: true,
-                matcher: function (params, data) {
-                    // If there's no search term, return all data
-                    if ($.trim(params.term) === '') {
-                        return data;
-                    }
-
-                    // Match items that start with the search term
-                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
-                        return data;
-                    }
-
-                    // Return null if no match
-                    return null;
-                }
-            });
-        } else {
-            toastr.error('No Data Found')
-            return false;
+function GetNestedMarketingManList(attempt) {
+    attempt = attempt || 0;
+    var $el = $('#ddlSalesPersonlist');
+    voEnsureAllOption($el);
+    if (!voIsAuthKeyReady() || !$el.length) {
+        voRetryDropdown(GetNestedMarketingManList, attempt, 'sales person');
+        return;
+    }
+    voRefreshAuthHeader();
+    var request;
+    try {
+        request = VisitOrderEntryService.GetNestedMarketingManList({ suppressErrorToast: true });
+    } catch (e) {
+        voRetryDropdown(GetNestedMarketingManList, attempt, 'sales person');
+        return;
+    }
+    request.then(function (response) {
+        var rows = voNormalizeApiList(response);
+        if (!rows.length || !voBindLookupSelect($el, rows, ['PersonName', 'personName', 'Desp'])) {
+            voRetryDropdown(GetNestedMarketingManList, attempt, 'sales person');
         }
+    }).catch(function () {
+        voRetryDropdown(GetNestedMarketingManList, attempt, 'sales person');
     });
 }
-function GetNestedDealerList() {
-    VisitOrderEntryService.GetNestedDealerList().then(function (response) {
-        if (response.length > 0) {
-            //$('#ddlDealerNameList option').remove();
-
-            //var option = '<option text="0" value="All" selected >All</option>';
-
-            //for (var i = 0; i < response.length; i++) {
-            //    option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
-            //}
-
-            //$('#ddlDealerNameList')[0].innerHTML = option;
-            BindSelectList($('#ddlDealerNameList')[0], response.map((item) => ({ Code: item.Code, Desp: item.AccountDesp })), 'FirstItemAll');
-            $('#ddlDealerNameList').select2({
-                // allowClear: true,
-                matcher: function (params, data) {
-                    // If there's no search term, return all data
-                    if ($.trim(params.term) === '') {
-                        return data;
-                    }
-
-                    // Match items that start with the search term
-                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
-                        return data;
-                    }
-
-                    // Return null if no match
-                    return null;
-                }
-            });
-        } else {
-           toastr.error('No Data Found')
-            return false;
+function GetNestedDealerList(attempt) {
+    attempt = attempt || 0;
+    var $el = $('#ddlDealerNameList');
+    voEnsureAllOption($el);
+    if (!voIsAuthKeyReady() || !$el.length) {
+        voRetryDropdown(GetNestedDealerList, attempt, 'dealer');
+        return;
+    }
+    voRefreshAuthHeader();
+    var request;
+    try {
+        request = VisitOrderEntryService.GetNestedDealerList({ suppressErrorToast: true });
+    } catch (e) {
+        voRetryDropdown(GetNestedDealerList, attempt, 'dealer');
+        return;
+    }
+    request.then(function (response) {
+        var rows = voNormalizeApiList(response);
+        if (!rows.length || !voBindLookupSelect($el, rows, ['AccountDesp', 'accountDesp', 'DealerName', 'PersonName'])) {
+            voRetryDropdown(GetNestedDealerList, attempt, 'dealer');
         }
+    }).catch(function () {
+        voRetryDropdown(GetNestedDealerList, attempt, 'dealer');
     });
 }
 //function GetOrderType() {
@@ -475,7 +553,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify", "Order Qty", "OverdueOTPentered","DealerMaster_Code"];
+                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify", "Order Qty", "OverdueOTPentered","DealerMaster_Code", "OrderVerificationOTPRequired"];
                 if (ThreeLevelVerification === 'N') {                                                                                                     
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -569,7 +647,10 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                  <input type="text" id="txtMode${item.Code}" name="txtMode${item.Code}" value="" hidden >
                                                  <input type="text" id="txtOverdueOTPentered${item.Code}" name="txtOverdueOTPentered" value="${item.OverdueOTPentered}" hidden >
                                                  <input type="text" id="txtTotalAmount${item.Code}" name="txtTotalAmount" value="${item['Order Amount']}" hidden >
-                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >`;
+                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >
+                                                 <input type="text" id="txtOrderId${item.Code}" name="txtOrderId" value="${item['Order Id']}" hidden >
+                                                 <input type="text" id="txtVisitDate${item.Code}" name="txtVisitDate" value="${item['Visit Date'] || ''}" hidden >
+                                                 <input type="text" id="txtOrderVerificationOTPRequired${item.Code}" name="txtOrderVerificationOTPRequired" value="${item.OrderVerificationOTPRequired || ''}" hidden >`;
                         return {
                             ...item,
                             "Order Id": buttonsHTML,
@@ -601,7 +682,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify", "Order Qty", "OverdueOTPentered", "DealerMaster_Code"];
+                const hiddenColumns = ["Code", "Visit Type", "OrderVisitType", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "State", "Verify", "Order Qty", "OverdueOTPentered", "DealerMaster_Code", "OrderVerificationOTPRequired"];
                 if (ThreeLevelVerification === 'N') {
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -669,7 +750,10 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                  <input type="text" id="txtMode${item.Code}" name="txtMode${item.Code}" value="" hidden >
                                                  <input type="text" id="txtOverdueOTPentered${item.Code}" name="txtOverdueOTPentered" value="${item.OverdueOTPentered}" hidden >
                                                  <input type="text" id="txtTotalAmount${item.Code}" name="txtTotalAmount" value="${item['Order Amount']}" hidden >
-                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >`;
+                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >
+                                                 <input type="text" id="txtOrderId${item.Code}" name="txtOrderId" value="${item['Order Id']}" hidden >
+                                                 <input type="text" id="txtVisitDate${item.Code}" name="txtVisitDate" value="${item['Visit Date'] || ''}" hidden >
+                                                 <input type="text" id="txtOrderVerificationOTPRequired${item.Code}" name="txtOrderVerificationOTPRequired" value="${item.OrderVerificationOTPRequired || ''}" hidden >`;
                     return {
                         ...item,
                         "Order Id": buttonsHTML,
@@ -700,7 +784,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Zone", "Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify", "OverdueOTPentered", "DealerMaster_Code", "hiddenRow"];
+                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify", "OverdueOTPentered", "DealerMaster_Code", "hiddenRow", "OrderVerificationOTPRequired"];
                 if (ThreeLevelVerification === 'N') {
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -875,7 +959,10 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                  <input type="text" id="txtMode${item.Code}" name="txtMode${item.Code}" value="" hidden >
                                                  <input type="text" id="txtOverdueOTPentered${item.Code}" name="txtOverdueOTPentered" value="${item.OverdueOTPentered}" hidden >
                                                  <input type="text" id="txtTotalAmount${item.Code}" name="txtTotalAmount" value="${item['Order Amount']}" hidden >
-                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >`;
+                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >
+                                                 <input type="text" id="txtOrderId${item.Code}" name="txtOrderId" value="${item['Order Id']}" hidden >
+                                                 <input type="text" id="txtVisitDate${item.Code}" name="txtVisitDate" value="${item['Visit Date'] || ''}" hidden >
+                                                 <input type="text" id="txtOrderVerificationOTPRequired${item.Code}" name="txtOrderVerificationOTPRequired" value="${item.OrderVerificationOTPRequired || ''}" hidden >`;
                     return {
                         "hiddenRow": JSON.stringify(item),
                         ...item,
@@ -907,7 +994,7 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                 const Button = false;
                 const showButtons = [];
                 const StringdoubleFilterColumn = ["Zone", "Dealer Name", "City"];
-                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify", "OverdueOTPentered", "DealerMaster_Code", "hiddenRow"];
+                const hiddenColumns = ["Code", "Sub Detail.No", "State", "OrderVisitType", "DiscountAvg", "DetailCode", "Pricelist (Zone)", "Avg Rate", "Other Charges", "Final Rate", "VerifiedLv1", "VerifiedLv2", "VerifiedLv3", "Verify", "OverdueOTPentered", "DealerMaster_Code", "hiddenRow", "OrderVerificationOTPRequired"];
                 if (ThreeLevelVerification === 'N') {
                     hiddenColumns.push("VerifiedLv2", "VerifiedLv3");
                     response.forEach(item => {
@@ -1096,7 +1183,10 @@ function GetVerifyOrderList(SalesPerson, DealerName) {
                                                  <input type="text" id="txtMode${item.Code}" name="txtMode${item.Code}" value="" hidden >
                                                  <input type="text" id="txtOverdueOTPentered${item.Code}" name="txtOverdueOTPentered" value="${item.OverdueOTPentered}" hidden >
                                                   <input type="text" id="txtTotalAmount${item.Code}" name="txtTotalAmount" value="${item['Order Amount']}" hidden >
-                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >`;
+                                                 <input type="text" id="txtDealerCode${item.Code}" name="txtDealerCode" value="${item.DealerMaster_Code}" hidden >
+                                                 <input type="text" id="txtOrderId${item.Code}" name="txtOrderId" value="${item['Order Id']}" hidden >
+                                                 <input type="text" id="txtVisitDate${item.Code}" name="txtVisitDate" value="${item['Visit Date'] || ''}" hidden >
+                                                 <input type="text" id="txtOrderVerificationOTPRequired${item.Code}" name="txtOrderVerificationOTPRequired" value="${item.OrderVerificationOTPRequired || ''}" hidden >`;
                     return {
                         "hiddenRow": JSON.stringify(item),
                         ...item,
@@ -2012,26 +2102,101 @@ function InitCheckCreditLimitsControl(AccountMaster_Code, Amount, PreviousAmount
     });
 
 }
+function parseVisitDate(value) {
+    if (!value) {
+        return null;
+    }
+    var text = String(value).trim();
+    var monthNames = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+    var named = text.match(/^(\d{1,2})[-\/]([A-Za-z]{3})[-\/](\d{2,4})$/);
+    if (named) {
+        var day = parseInt(named[1], 10);
+        var month = monthNames[named[2].toLowerCase()];
+        var year = parseInt(named[3], 10);
+        if (year < 100) {
+            year += 2000;
+        }
+        if (month === undefined) {
+            return null;
+        }
+        var namedDate = new Date(year, month, day);
+        return isNaN(namedDate.getTime()) ? null : namedDate;
+    }
+    var numeric = text.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    if (numeric) {
+        var numericDate = new Date(parseInt(numeric[3], 10), parseInt(numeric[2], 10) - 1, parseInt(numeric[1], 10));
+        return isNaN(numericDate.getTime()) ? null : numericDate;
+    }
+    var iso = text.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+    if (iso) {
+        var isoDate = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
+        return isNaN(isoDate.getTime()) ? null : isoDate;
+    }
+    return null;
+}
+function isOrderVerificationPasswordRequired(ObjCurrRow) {
+    var configText = sessionStorage.getItem('CRMOrderEntryConfig');
+    if (!configText) {
+        return false;
+    }
+    var config = JSON.parse(configText);
+    var requiredAfterDays = parseInt(config.OrderVerificationOTPRequiredAfterDays, 10);
+    if (isNaN(requiredAfterDays) || requiredAfterDays <= 0) {
+        return false;
+    }
+    var otpRequired = (ObjCurrRow.find('input[name="txtOrderVerificationOTPRequired"]').val() || '').trim().toUpperCase();
+    if (otpRequired !== 'Y') {
+        return false;
+    }
+    var visitDate = parseVisitDate(ObjCurrRow.find('input[name="txtVisitDate"]').val());
+    if (!visitDate) {
+        return false;
+    }
+    var today = new Date();
+    var visitUtc = Date.UTC(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate());
+    var todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    var dayDifference = Math.floor((todayUtc - visitUtc) / (24 * 60 * 60 * 1000));
+    return dayDifference > requiredAfterDays;
+}
 function ValidateOverdueAmount(ObjCurrRow) {
     const alertCls = confirm("Are you sure you want to Verify this Visit?");
     if (alertCls) {
-
-        var FixedParameterCreditLimit_Config = JSON.parse(sessionStorage.getItem('FixedParameterCreditLimit'));
-        var VisitMaster_OverdueOTPentered = ObjCurrRow.find('input[name="txtOverdueOTPentered"]').val();
-        var TotalOrderAmount = parseFloat(ObjCurrRow.find('input[name="txtTotalAmount"]').val());
-        var AccountMaster_Code = ObjCurrRow.find('input[name="txtDealerCode"]').val();
-        var Config_CheckCreditLimit = FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == undefined || FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == '' ? 'N' : FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO;
-
-
-        ///Config_CheckCreditLimit='R' means it will check credit limit only for Crm and Not Check in ERP
-
-        if ((Config_CheckCreditLimit == 'Y' || Config_CheckCreditLimit == 'R') && VisitMaster_OverdueOTPentered=='N') {
-            if (TotalOrderAmount > 0) {
-                InitCheckCreditLimitsControl(AccountMaster_Code, TotalOrderAmount, 0, 'VISIT MASTER', 0, 0, 'Y', 0, 0, 'N', 0, 'N', 'N', 0, 'Y', 0, 0, 'VerifyForAll', 0, '', G_AskPassword);
-            }
-        } else {
-            VerifyForAll();
+        if (isOrderVerificationPasswordRequired(ObjCurrRow)) {
+            var code = ObjCurrRow.find('input[name="txtCode"]').val();
+            var orderId = ObjCurrRow.find('input[name="txtOrderId"]').val() || '';
+            AskPassword_Open({
+                title: 'Order Verification',
+                message: 'Enter password to verify this order.',
+                masterTableName: 'VisitMaster',
+                masterTableCode: code,
+                usedFor: 'CRM Order',
+                reasonFor: 'Order Pending Verification Beyond Allowed Days',
+                entryNo: orderId,
+                finYear: getFinancialYear(),
+                onSuccess: function () {
+                    ContinueVerifyAfterPassword(ObjCurrRow);
+                }
+            });
+            return;
         }
+        ContinueVerifyAfterPassword(ObjCurrRow);
+    }
+}
+function ContinueVerifyAfterPassword(ObjCurrRow) {
+    var FixedParameterCreditLimit_Config = JSON.parse(sessionStorage.getItem('FixedParameterCreditLimit'));
+    var VisitMaster_OverdueOTPentered = ObjCurrRow.find('input[name="txtOverdueOTPentered"]').val();
+    var TotalOrderAmount = parseFloat(ObjCurrRow.find('input[name="txtTotalAmount"]').val());
+    var AccountMaster_Code = ObjCurrRow.find('input[name="txtDealerCode"]').val();
+    var Config_CheckCreditLimit = FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == undefined || FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO == '' ? 'N' : FixedParameterCreditLimit_Config[0].CreditLimitCheck_BuyerPO;
+
+    ///Config_CheckCreditLimit='R' means it will check credit limit only for Crm and Not Check in ERP
+
+    if ((Config_CheckCreditLimit == 'Y' || Config_CheckCreditLimit == 'R') && VisitMaster_OverdueOTPentered=='N') {
+        if (TotalOrderAmount > 0) {
+            InitCheckCreditLimitsControl(AccountMaster_Code, TotalOrderAmount, 0, 'VISIT MASTER', 0, 0, 'Y', 0, 0, 'N', 0, 'N', 'N', 0, 'Y', 0, 0, 'VerifyForAll', 0, '', G_AskPassword);
+        }
+    } else {
+        VerifyForAll();
     }
 }
 function VerifyOrder_DeleteLine(Visitcode,DetailCode,itemRow) {

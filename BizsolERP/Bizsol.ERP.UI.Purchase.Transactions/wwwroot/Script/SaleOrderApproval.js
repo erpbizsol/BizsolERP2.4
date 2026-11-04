@@ -7,6 +7,7 @@ let G_BCode = 0;
 let G_CheckCreditLimitAmountBase = 'Y';
 let G_CheckCreditLimitDaysBase = 'Y';
 let CreditLimitCheck_BuyerPO = 'Y';
+let G_ConditionalParameterApplicable = 'N';
 let SaleOrderApprovalFixedParaMeters = [];
 let G_SaleOrderListRaw = [];
 let G_SaleOrderCardPage = 1;
@@ -82,12 +83,57 @@ function buildDeliveryTermsDisplayRows(termsRows, masterRow) {
         return out;
     });
 }
+function isConditionalParameterApplicable() {
+    return String(G_ConditionalParameterApplicable || "").trim().toUpperCase() === "Y";
+}
+
+function getFixedParameterValue(paramName) {
+    if (!SaleOrderApprovalFixedParaMeters || !SaleOrderApprovalFixedParaMeters.length) return "";
+    const param = SaleOrderApprovalFixedParaMeters.find(function (x) {
+        return x.PeramaterName === paramName || x.ParameterName === paramName;
+    });
+    if (!param) return "";
+    const val = param.PeramaterValue != null ? param.PeramaterValue : param.ParameterValue;
+    return val == null ? "" : String(val).trim();
+}
+
+function applySaleOrderRateColumnLabels(rows) {
+    if (!rows || !rows.length) return rows;
+    const showBasicRate = isConditionalParameterApplicable();
+    return rows.map(function (row) {
+        const o = {};
+        Object.keys(row).forEach(function (k) {
+            if (k === "PriceListBasicRate" || k === "Basic Rate") {
+                return;
+            }
+            if (k === "Rate" || k === "Gross Rate") {
+                if (showBasicRate) {
+                    o["Basic Rate"] = pickRowValue(row, ["PriceListBasicRate", "Basic Rate"]);
+                    o["Gross Rate"] = row[k];
+                } else {
+                    o["Rate"] = row[k];
+                }
+                return;
+            }
+            o[k] = row[k];
+        });
+        if (showBasicRate && !Object.prototype.hasOwnProperty.call(o, "Basic Rate")) {
+            o["Basic Rate"] = pickRowValue(row, ["PriceListBasicRate", "Basic Rate"]);
+        }
+        return o;
+    });
+}
+
 function getLineItemColumnKeys(rows) {
     if (!rows || !rows.length) return [];
     const hiddenKeys = new Set([
         "Code", "BuyerPOMaster_Code", "Party Name", "Order No", "Against Rolling", "Order Date", "OrderDate",
     ]);
     SALE_ORDER_DETAIL_GRID_HIDDEN.forEach(function (k) { hiddenKeys.add(k); });
+    if (!isConditionalParameterApplicable()) {
+        hiddenKeys.add("PriceListBasicRate");
+        hiddenKeys.add("Basic Rate");
+    }
     const keys = [];
     const seen = new Set();
     rows.forEach(function (row) {
@@ -720,7 +766,7 @@ const LINE_ITEM_MOBILE_SKIP = new Set([
     "SNO", "Sno", "SNo", "Sr No", "SrNo", "Item Name", "ItemName", "ITEM NAME", "Item",
     "SIZE DESP", "Size Desp", "SizeDesp", "Size Description", "Size",
 ]);
-const LINE_ITEM_NUMERIC = new Set(["Qty MT", "Qty PC", "Qty MR", "Qty KG", "Qty SQM", "Amount", "Freight/Unit"]);
+const LINE_ITEM_NUMERIC = new Set(["Qty MT", "Qty PC", "Qty MR", "Qty KG", "Qty SQM", "Amount", "Freight/Unit", "Rate", "Gross Rate", "Basic Rate", "PriceListBasicRate"]);
 function fmtMobileVal(val) {
     if (val == null || val === "") return "\u2014";
     return String(val);
@@ -840,6 +886,7 @@ function renderSaleOrderLineItems(rows) {
         return;
     }
 
+    rows = applySaleOrderRateColumnLabels(rows);
     const keys = getLineItemColumnKeys(rows);
 
     thead.innerHTML = "<tr>" + keys.map(function (k) { return "<th>" + escapeHtml(k) + "</th>"; }).join("") + "</tr>";
@@ -1135,8 +1182,12 @@ function getSaleOrderApprovalFixedParaMeters() {
 }
 
 function LoadFrm() {
-    if (SaleOrderApprovalFixedParaMeters.length > 0 && SaleOrderApprovalFixedParaMeters.find(x => x.PeramaterName === 'CreditLimitCheck_BuyerPO').PeramaterValue != '') {
+    if (SaleOrderApprovalFixedParaMeters.length > 0 && SaleOrderApprovalFixedParaMeters.find(x => x.PeramaterName === 'CreditLimitCheck_BuyerPO') && SaleOrderApprovalFixedParaMeters.find(x => x.PeramaterName === 'CreditLimitCheck_BuyerPO').PeramaterValue != '') {
         CreditLimitCheck_BuyerPO = SaleOrderApprovalFixedParaMeters.find(x => x.PeramaterName === 'CreditLimitCheck_BuyerPO').PeramaterValue;
+    }
+    const condParamValue = getFixedParameterValue('ConditionalParameterApplicable');
+    if (condParamValue !== '') {
+        G_ConditionalParameterApplicable = condParamValue;
     }
 }
 
