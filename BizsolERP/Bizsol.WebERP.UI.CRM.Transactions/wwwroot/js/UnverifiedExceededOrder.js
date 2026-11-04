@@ -86,40 +86,95 @@ function GetOrderVerifyData() {
         GetUnVerifiedExceededDiscountList(SalePerson.trim(), Dealer.trim(), OrdersType, ChkWithOrder);
     }
 }
-function GetNestedMarketingManList() {
-    VisitOrderEntryService.GetNestedMarketingManList().then(function (response) {
-        if (response.length > 0) {
-            $('#ddlSalesPersonList option').remove();
+const UE_DROPDOWN_MAX_RETRIES = 4;
+const UE_DROPDOWN_RETRY_DELAY_MS = 600;
 
-            var option = '<option text="0" value="All" selected >All</option>';
+function ueAsList(response) {
+    if (typeof response === 'string') {
+        try { response = JSON.parse(response); } catch (e) { return []; }
+    }
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
 
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].PersonName + '" >' + response[i].PersonName + '</option>';
-            }
+function ueAuthReady() {
+    try {
+        var authKey = JSON.parse(sessionStorage.getItem('authKey'));
+        return !!(authKey && authKey.UserMaster_Code != null && authKey.UserMaster_Code !== '');
+    } catch (e) {
+        return false;
+    }
+}
 
-            $('#ddlSalesPersonList')[0].innerHTML = option;
-        } else {
-            toastr.error('No Data Found')
-            return false;
+function ueFillDataList(listId, rows, field) {
+    var el = document.getElementById(listId);
+    if (!el) return false;
+    el.innerHTML = '';
+    var all = document.createElement('option');
+    all.value = 'All';
+    el.appendChild(all);
+    for (var i = 0; i < rows.length; i++) {
+        var text = rows[i] && rows[i][field] != null ? String(rows[i][field]).trim() : '';
+        if (!text) continue;
+        var opt = document.createElement('option');
+        opt.value = text;
+        el.appendChild(opt);
+    }
+    return el.options.length > 1;
+}
+
+function ueRetry(loader, attempt, label) {
+    if (attempt < UE_DROPDOWN_MAX_RETRIES) {
+        setTimeout(function () { loader(attempt + 1); }, UE_DROPDOWN_RETRY_DELAY_MS);
+        return;
+    }
+    toastr.error('Unable to load ' + label + ' list. Please refresh the page.');
+}
+
+function GetNestedMarketingManList(attempt) {
+    attempt = attempt || 0;
+    if (!ueAuthReady() || !document.getElementById('ddlSalesPersonList')) {
+        ueRetry(GetNestedMarketingManList, attempt, 'sales person');
+        return;
+    }
+    var request;
+    try {
+        request = VisitOrderEntryService.GetNestedMarketingManList({ suppressErrorToast: true });
+    } catch (e) {
+        ueRetry(GetNestedMarketingManList, attempt, 'sales person');
+        return;
+    }
+    request.then(function (response) {
+        var rows = ueAsList(response);
+        if (!rows.length || !ueFillDataList('ddlSalesPersonList', rows, 'PersonName')) {
+            ueRetry(GetNestedMarketingManList, attempt, 'sales person');
         }
+    }).catch(function () {
+        ueRetry(GetNestedMarketingManList, attempt, 'sales person');
     });
 }
-function GetNestedDealerList() {
-    VisitOrderEntryService.GetNestedDealerList().then(function (response) {
-        if (response.length > 0) {
-            $('#ddlDealerNameList option').remove();
-
-            var option = '<option text="0" value="All" selected >All</option>';
-
-            for (var i = 0; i < response.length; i++) {
-                option += '<option text="' + response[i].Code + '" value="' + response[i].AccountDesp + '" >' + response[i].AccountDesp + '</option>';
-            }
-
-            $('#ddlDealerNameList')[0].innerHTML = option;
-        } else {
-            toastr.error('No Data Found')
-            return false;
+function GetNestedDealerList(attempt) {
+    attempt = attempt || 0;
+    if (!ueAuthReady() || !document.getElementById('ddlDealerNameList')) {
+        ueRetry(GetNestedDealerList, attempt, 'dealer');
+        return;
+    }
+    var request;
+    try {
+        request = VisitOrderEntryService.GetNestedDealerList({ suppressErrorToast: true });
+    } catch (e) {
+        ueRetry(GetNestedDealerList, attempt, 'dealer');
+        return;
+    }
+    request.then(function (response) {
+        var rows = ueAsList(response);
+        if (!rows.length || !ueFillDataList('ddlDealerNameList', rows, 'AccountDesp')) {
+            ueRetry(GetNestedDealerList, attempt, 'dealer');
         }
+    }).catch(function () {
+        ueRetry(GetNestedDealerList, attempt, 'dealer');
     });
 }
 function GetOrderType() {

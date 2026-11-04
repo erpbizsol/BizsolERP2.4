@@ -85,43 +85,91 @@ function BindSelectList(element, list, FirstItem) {
     element.innerHTML = option;
 }
 
-function GetNestedMarketingManList() {
-    VisitOrderEntryService.GetNestedMarketingManList().then(function (response) {
-        if (response.length > 0) {
-            $('#ddlSalesPersonList option').remove();
+const VISIT_DROPDOWN_MAX_RETRIES = 4;
+const VISIT_DROPDOWN_RETRY_DELAY_MS = 600;
 
-            //var option = '<option text="0" value="All" selected >All</option>';
+function visitAuthReady() {
+    try {
+        var authKey = JSON.parse(sessionStorage.getItem('authKey'));
+        return !!(authKey && authKey.UserMaster_Code != null && authKey.UserMaster_Code !== '');
+    } catch (e) {
+        return false;
+    }
+}
 
-            //for (var i = 0; i < response.length; i++) {
-            //    option += '<option text="' + response[i].Code + '" value="' + response[i].PersonName + '" >' + response[i].PersonName + '</option>';
-            //}
+function visitAsList(response) {
+    if (typeof response === 'string') {
+        try { response = JSON.parse(response); } catch (e) { return []; }
+    }
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.Data)) return response.Data;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
+}
 
-            //$('#ddlSalesPersonList')[0].innerHTML = option;
+function visitBindSalesPerson(rows) {
+    var $el = $('#ddlSalesPersonlist');
+    if (!$el.length) return false;
+    try {
+        if ($el.data('select2')) $el.select2('destroy');
+    } catch (e) { /* not enhanced yet */ }
+    $el.empty().append(new Option('All', 'All', true, true));
+    rows.forEach(function (item) {
+        var name = item && item.PersonName != null ? String(item.PersonName).trim() : '';
+        if (!name) return;
+        $el.append(new Option(name, String(item.Code != null ? item.Code : name)));
+    });
+    $el.val('All');
+    if (typeof $.fn.select2 === 'function') {
+        $el.select2({
+            width: '100%',
+            matcher: function (params, data) {
+                if ($.trim(params.term) === '') return data;
+                if (typeof data.text !== 'string') return null;
+                return data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1 ? data : null;
+            }
+        });
+    }
+    return $el.find('option').length > 1;
+}
 
-            BindSelectList($('#ddlSalesPersonlist')[0], response.map((item) => ({ Code: item.Code, Desp: item.PersonName })), 'FirstItemAll');
-            $('#ddlSalesPersonlist').select2({
-                // allowClear: true,
-                matcher: function (params, data) {
-                    // If there's no search term, return all data
-                    if ($.trim(params.term) === '') {
-                        return data;
-                    }
-
-                    // Match items that start with the search term
-                    if (data.text.toLowerCase().startsWith(params.term.toLowerCase())) {
-                        return data;
-                    }
-
-                    // Return null if no match
-                    return null;
-                }
-            });
-
-            GetVisitMasterListForDate();
-
+function GetNestedMarketingManList(attempt) {
+    attempt = attempt || 0;
+    if (!visitAuthReady() || !$('#ddlSalesPersonlist').length) {
+        if (attempt < VISIT_DROPDOWN_MAX_RETRIES) {
+            setTimeout(function () { GetNestedMarketingManList(attempt + 1); }, VISIT_DROPDOWN_RETRY_DELAY_MS);
         } else {
-            toastr.error('No Data Found')
-            return false;
+            toastr.error('Unable to load sales person list. Please refresh the page.');
+        }
+        return;
+    }
+    var request;
+    try {
+        request = VisitOrderEntryService.GetNestedMarketingManList({ suppressErrorToast: true });
+    } catch (e) {
+        if (attempt < VISIT_DROPDOWN_MAX_RETRIES) {
+            setTimeout(function () { GetNestedMarketingManList(attempt + 1); }, VISIT_DROPDOWN_RETRY_DELAY_MS);
+        } else {
+            toastr.error('Unable to load sales person list. Please refresh the page.');
+        }
+        return;
+    }
+    request.then(function (response) {
+        var rows = visitAsList(response);
+        if (!rows.length || !visitBindSalesPerson(rows)) {
+            if (attempt < VISIT_DROPDOWN_MAX_RETRIES) {
+                setTimeout(function () { GetNestedMarketingManList(attempt + 1); }, VISIT_DROPDOWN_RETRY_DELAY_MS);
+            } else {
+                toastr.error('Unable to load sales person list. Please refresh the page.');
+            }
+            return;
+        }
+        GetVisitMasterListForDate();
+    }).catch(function () {
+        if (attempt < VISIT_DROPDOWN_MAX_RETRIES) {
+            setTimeout(function () { GetNestedMarketingManList(attempt + 1); }, VISIT_DROPDOWN_RETRY_DELAY_MS);
+        } else {
+            toastr.error('Unable to load sales person list. Please refresh the page.');
         }
     });
 }
