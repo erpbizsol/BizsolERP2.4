@@ -1496,6 +1496,7 @@ function mapGpaListRow(item) {
     const employee = empRaw !== undefined && empRaw !== null ? String(empRaw).trim() : '';
     const workType = item['Work Type'] ?? item.WorkType ?? item.workType
         ?? item.WorkTypeName ?? item.workTypeName ?? item.WorkTypeDesp ?? item.workTypeDesp ?? '';
+    const paymentFor = gpaResolvePaymentForFromMaster(item);
     const description = String(item.Description ?? item.description ?? item.ItemDescription ?? item.itemDescription ?? '').trim();
     const rawAmt = item.Amount ?? item.amount ?? item.HeaderAmount ?? item.headerAmount
         ?? item['Total Amount'] ?? item.TotalAmount ?? item.totalAmount ?? item.amount ?? item.amount;
@@ -1528,6 +1529,7 @@ function mapGpaListRow(item) {
         'Bank Name': bankName,
         Employee: employee,
         'Work Type': workType,
+        'Payment For': paymentFor,
         Description: description,
         'Amount': amt,
         'Ref No': ref,
@@ -1750,6 +1752,7 @@ function gpaListEmptyTabPlaceholderRow() {
         'Bank Name':'',
          Employee: '',
         'Work Type': '',
+        'Payment For': '',
         Description: '',
         'Amount': '',
         'Ref No': '',
@@ -1760,7 +1763,7 @@ function gpaListEmptyTabPlaceholderRow() {
 }
 
 function renderGpaListGrid() {
-    const StringFilterColumn = ['Party Name', 'Type', 'Employee', 'Bank Name', 'Work Type', 'Description', 'Ref No'];
+    const StringFilterColumn = ['Party Name', 'Type', 'Employee', 'Bank Name', 'Work Type', 'Payment For', 'Description', 'Ref No'];
     const NumericFilterColumn = ['Entry No', 'Amount'];
     const DateFilterColumn = ['Entry Date'];
     const Button = false;
@@ -1799,7 +1802,7 @@ function renderGpaListGrid() {
         totalColumns,
         null,
         commaColumns,
-        'Search by Entry No, Party, Type, Bank, Employee, Work Type, Description...'
+        'Search by Entry No, Party, Type, Bank, Employee, Work Type, Payment For, Description...'
     );
 }
 
@@ -3195,7 +3198,8 @@ function gpaResolveCategoryNameFromRow(r) {
 
 function gpaResolvePaymentForFromMaster(master) {
     if (!master || typeof master !== 'object') return '';
-    const v = master.PaymentFor ?? master.paymentFor ?? master.PaymentForName ?? master.paymentForName ?? '';
+    const v = master['Payment For'] ?? master.PaymentFor ?? master.paymentFor ?? master.paymentfor
+        ?? master.PaymentForName ?? master.paymentForName ?? '';
     return v !== undefined && v !== null ? String(v).trim().substring(0, 200) : '';
 }
 

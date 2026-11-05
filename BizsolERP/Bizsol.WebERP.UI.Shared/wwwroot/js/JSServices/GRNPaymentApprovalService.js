@@ -39,6 +39,12 @@ const GRNPaymentApprovalService = {
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
+    GetPOOrderDetail: function GetPOOrderDetail(Code) {
+        const url = UrlService.API_ENDPOINT_GRNPaymentLevelsApproval +
+            `/GetPOOrderDetail?Code=${encodeURIComponent(Code ?? 0)}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
     ApproveGRNPayment: function ApproveGRNPayment(grnPaymentMasterCode, levelCode, remarks) {
         const { userCode, groupCode } = getSessionUserAndGroup();
         const url = UrlService.API_ENDPOINT_GRNPaymentLevelsApproval +
