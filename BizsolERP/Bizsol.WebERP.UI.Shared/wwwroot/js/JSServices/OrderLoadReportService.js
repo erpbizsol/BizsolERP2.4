@@ -38,27 +38,20 @@ const OrderLoadReportService = {
 
     GetOrderLoadReport: function GetOrderLoadReport(params) {
         var userMasterCode = params.userMasterCode || getAuthUserCode();
-        var itemSizeMasterCodes = String(params.itemSizeMasterCodes || '').trim();
         var URL = templeteReportApiBase() + '/GetOrderLoadReport';
         var payload = {
             ReportType: params.reportType || '',
             TempleteMasterCode: params.templateCode || 0,
+            UserMasterCode: userMasterCode,
+            Variable: params.variable || '',
             FilterCondition: params.filterCondition || '',
             QueryCondition: params.queryCondition || '',
             FromDate: params.fromDate || '',
             ToDate: params.toDate || '',
-            UserMasterCode: userMasterCode,
-            MarketingManMasterCode: params.marketingManMasterCode || 0,
-            GodownMaster_Code: params.godownMasterCode || 0,
-            ItemGroupMaster_Code: params.itemGroupMasterCode || 0,
-            ProcessMaster_Code: params.processMasterCode || 0,
-            ItemTypeMaster_Code: params.itemTypeMasterCode || 0,
-            ItemMaster_Code: params.itemMasterCode || 0,
-            BuyerPOMaster_Code: params.buyerPOMasterCode || 0,
-            ItemSizeMaster_Codes: itemSizeMasterCodes
+            ItemSizeMaster_Codes: params.itemSizeMasterCodes || ''
         };
 
-        // POST avoids IIS/browser URL length limits when ItemSizeMaster_Codes is large.
+        // POST: the clubbed procedure variable can be long.
         return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload), { suppressErrorToast: true });
     },
 

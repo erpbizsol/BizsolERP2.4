@@ -1048,11 +1048,20 @@ function canonicalDateFieldKey(value) {
     return n.replace(/[\s_]+/g, '').toLowerCase();
 }
 
+/** Keep [] on the value that goes into SQL. Label stays readable (Receive Date, not [Receive Date]). */
+function sqlColumnToken(value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    if (raw.charAt(0) === '[' && raw.charAt(raw.length - 1) === ']') return raw;
+    return toSqlFieldName(raw);
+}
+
 function resolveDateFieldOption(code, text) {
-    var physical = normalizeFieldName(code) || normalizeFieldName(text);
+    var raw = String(code != null && String(code).trim() !== '' ? code : (text || '')).trim();
+    var physical = normalizeFieldName(raw);
     if (!physical) return null;
     return {
-        value: physical,
+        value: sqlColumnToken(raw),
         label: fieldNameToLabel(physical, physical)
     };
 }
@@ -1061,10 +1070,12 @@ function getDistinctDateFieldOptions(rows) {
     var seen = {};
     var out = [];
     (rows || []).forEach(function (row) {
-        var field = normalizeFieldName(prop(row, ['FieldForDate', 'fieldForDate']));
-        if (!field || seen[field]) return;
-        seen[field] = true;
-        out.push({ value: field, label: fieldNameToLabel(field, field) });
+        var raw = String(prop(row, ['FieldForDate', 'fieldForDate']) || '').trim();
+        var field = normalizeFieldName(raw);
+        var key = canonicalDateFieldKey(field);
+        if (!field || !key || seen[key]) return;
+        seen[key] = true;
+        out.push({ value: sqlColumnToken(raw), label: fieldNameToLabel(field, field) });
     });
     return out;
 }
@@ -1073,8 +1084,8 @@ function getDistinctDateFieldOptions(rows) {
 function getDefaultDateFieldFromLevelRows(rows) {
     if (!rows || !rows.length) return '';
     for (var i = rows.length - 1; i >= 0; i--) {
-        var field = normalizeFieldName(prop(rows[i], ['FieldForDate', 'fieldForDate']));
-        if (field) return field;
+        var raw = String(prop(rows[i], ['FieldForDate', 'fieldForDate']) || '').trim();
+        if (normalizeFieldName(raw)) return sqlColumnToken(raw);
     }
     return '';
 }
@@ -1210,12 +1221,13 @@ function applySelectedConfigDateFieldCombo() {
     var val = $sel.val();
     if (!val || val === '0') return;
 
-    var field = normalizeFieldName(String(val));
-    if (!field) {
+    var raw = String(val).trim();
+    var field = sqlColumnToken(raw);
+    if (!normalizeFieldName(field)) {
         var text = ($sel.find('option:selected').first().text() || '').trim();
-        field = normalizeFieldName(text);
+        field = sqlColumnToken(text);
     }
-    if (!field) return;
+    if (!normalizeFieldName(field)) return;
 
     G_OL_CurrentLevel.fieldForDate = field;
     mergeTemplateLevel(G_OL_CurrentLevel);
@@ -1470,7 +1482,7 @@ function extractApiRowFields(row) {
             out.fieldForClient = normalizeFieldName(val);
         } else if (lower === 'fieldfordate') {
             out.hasFieldForDate = true;
-            out.fieldForDate = normalizeFieldName(val);
+            out.fieldForDate = sqlColumnToken(val);
         } else if (lower === 'fromdate' || lower === 'defaultfromdate' || lower === 'reportfromdate' || lower === 'startdate' || lower === 'datefrom') {
             out.fromDate = val;
         } else if (lower === 'todate' || lower === 'defaulttodate' || lower === 'reporttodate' || lower === 'enddate' || lower === 'dateto') {
@@ -1806,6 +1818,7 @@ function prepareTemplateFilterSwitch(code) {
     G_OL_FilterConfigFetchPending = false;
     G_OL_DynamicFilters = [];
     G_OL_HasDynamicComboFilters = false;
+    $('.ol-proc-param').remove();
     clearDynamicFilterHost();
     if (code > 0) {
         hideStaticComboFilters();
@@ -2697,19 +2710,28 @@ function getTemplateDateField(tpl) {
     if (dfRow) {
         var selected = selectedRawForDynamicRow(dfRow);
         if (selected) {
-            var picked = normalizeFieldName(String(selected).split(',')[0]);
-            if (picked) return picked;
+            var rawSelected = String(selected).split(',')[0].trim();
+            if (normalizeFieldName(rawSelected)) return sqlColumnToken(rawSelected);
         }
     }
 
-    var name = normalizeFieldName(tpl && tpl.fieldForDate);
-    if (!name) return '';
-    if (/^order\s*date$/i.test(name)) return 'OrderDate';
-    return name;
+    var rawTpl = String(tpl && tpl.fieldForDate || '').trim();
+    if (!normalizeFieldName(rawTpl)) return '';
+    return sqlColumnToken(rawTpl);
 }
 
 function isViewBasedTemplate(tpl) {
-    return !String(tpl && tpl.procedureName || '').trim();
+    return !templateUsesProcedure(tpl);
+}
+
+function templateUsesProcedure(tpl) {
+    if (hasActiveTemplateFilterConfiguration()) {
+        return (G_OL_DynamicFilters || []).some(function (row) {
+            if (!row || row.isActive === 'N' || !(row.code > 0)) return false;
+            return !!String(row.procedureParameterRaw || row.procedureParameter || '').trim();
+        });
+    }
+    return !!String(tpl && tpl.procedureName || '').trim();
 }
 
 function normalizeReportCondition(value) {
@@ -2759,6 +2781,7 @@ function mapDynamicFilterRow(row) {
         queryCondition: String(prop(row, ['QueryCondition', 'queryCondition']) || '').trim(),
         withCode: String(prop(row, ['WithCode', 'withCode']) || 'N').trim().toUpperCase(),
         multi: String(prop(row, ['MultiSelectionApplicable', 'multiSelectionApplicable']) || 'Y').trim().toUpperCase(),
+        procedureParameterRaw: String(prop(row, ['ProcedureParameter', 'procedureParameter']) || '').trim(),
         procedureParameter: String(prop(row, ['ProcedureParameter', 'procedureParameter']) || '').trim().toUpperCase(),
         comboSortBy: String(prop(row, ['ComboSortBy', 'comboSortBy']) || '').trim(),
         sortOrder: parseInt(prop(row, ['SortOrder', 'sortOrder', 'DisplayOrder', 'displayOrder']), 10)
@@ -2767,6 +2790,73 @@ function mapDynamicFilterRow(row) {
     };
     mapped.procedureParameter = resolveDynamicRowProcedureParameter(mapped);
     return mapped;
+}
+
+/** @FromDate from F_TemplateFilterConfiguration.ProcedureParameter, whatever the column contains. */
+function procedureParameterToken(row) {
+    var raw = String(row && (row.procedureParameterRaw || '') || '').trim();
+    if (!raw) {
+        var resolved = resolveDynamicRowProcedureParameter(row);
+        if (resolved === 'FROMDATE') raw = 'FromDate';
+        else if (resolved === 'TODATE') raw = 'ToDate';
+        else raw = resolved;
+    }
+    raw = raw.replace(/^@+/, '').trim();
+    if (!raw) return '';
+    return '@' + raw;
+}
+
+function filterRowValueInputId(row) {
+    if (!row) return '';
+    var control = String(row.controlType || '').toUpperCase();
+    if (control === 'TEXT' || isDynamicDateRow(row)) {
+        var param = resolveDynamicRowProcedureParameter(row);
+        var label = String(row.displayName || '').trim().toLowerCase();
+        if (param === 'TODATE' || label === 'to' || label === 'to date' || label === 'as on' || label === 'as on date') {
+            return 'txtToDate';
+        }
+        if (param === 'FROMDATE' || label === 'from' || label === 'from date') return 'txtFromDate';
+        return '';
+    }
+    if (control === 'COMBO') return 'ddlDynFilter_' + row.code;
+    return '';
+}
+
+function procedureParameterHost(row, inputId) {
+    if (inputId === 'txtFromDate') return $('#olFieldFromDate');
+    if (inputId === 'txtToDate') return $('#olFieldToDate');
+    var $field = $('#olDynField_' + row.code);
+    if ($field.length) return $field;
+    var $store = $('#olProcParamStore');
+    if (!$store.length) {
+        $store = $('<div id="olProcParamStore" class="ol-hidden"></div>');
+        var $grid = $('#olFilterModal .ol-filter-modal-grid');
+        if ($grid.length) $grid.append($store);
+        else $('body').append($store);
+    }
+    return $store;
+}
+
+/** Hidden ProcedureParameter on each bound filter, read back when Load Report runs. */
+function bindProcedureParameterHiddens() {
+    $('.ol-proc-param').remove();
+    $('#txtFromDate, #txtToDate, #olDynamicFilterHost select, #olDynamicFilterHost input').removeAttr('data-procedure-parameter');
+    (G_OL_DynamicFilters || []).forEach(function (row) {
+        if (!row || !row.code || row.isActive === 'N') return;
+        var token = procedureParameterToken(row);
+        if (!token) return;
+        var inputId = filterRowValueInputId(row);
+        var $host = procedureParameterHost(row, inputId);
+        if (!$host || !$host.length) return;
+        $host.attr('data-procedure-parameter', token);
+        if (inputId) $('#' + inputId).attr('data-procedure-parameter', token);
+        $('<input type="hidden" class="ol-proc-param" name="procedureparameter" />')
+            .attr('id', 'hdnProcParam_' + row.code)
+            .attr('data-config-code', row.code)
+            .attr('data-value-input', inputId || '')
+            .val(token)
+            .appendTo($host);
+    });
 }
 
 function isDynamicDateRow(row) {
@@ -3424,6 +3514,26 @@ function buildConditionsFromFilterConfiguration(tpl, usesDateParams, fromIso, to
         }
     });
 
+    /*
+      Date Field + Order Date From/To (modal): often NOT a config QueryCondition row —
+      only FromDate param was sent. Append AND [OrderDate] >= CAST(...) into Filter/Query.
+    */
+    var dateSqlParts = [];
+    appendStaticDateFilterParts(dateSqlParts, tpl, fromIso, toIso);
+    if (dateSqlParts.length) {
+        var mergedEarly = filterParts.join('') + queryParts.join('');
+        if (!extractDateCompareSqlFromCondition(mergedEarly)) {
+            var viewBasedTpl = isViewBasedTemplate(tpl);
+            var procHasFilter = procedureUsesParam(tpl, 'FilterCondition') || inferUsesFilterCondition(tpl);
+            var procHasQuery = procedureUsesParam(tpl, 'QueryCondition') || inferUsesQueryCondition(tpl);
+            if (viewBasedTpl || procHasQuery || (!procHasFilter && !procHasQuery)) {
+                queryParts = queryParts.concat(dateSqlParts);
+            } else {
+                filterParts = filterParts.concat(dateSqlParts);
+            }
+        }
+    }
+
     return routeConditionsForReportSource({
         filterCondition: filterParts.join(''),
         queryCondition: queryParts.join('')
@@ -3849,6 +3959,7 @@ function renderDynamicComboFilters() {
         $('#olDynamicFilterHost').append(html);
     });
 
+    bindProcedureParameterHiddens();
     syncConfigDateFieldModalRangeUi();
     applyConfigTextHeaderDateLabels();
     syncDateFieldModalHeaderMirror();
@@ -3953,6 +4064,7 @@ function loadDynamicTemplateFilters(tpl) {
         syncOrderLoadTemplateDateFieldUi(tpl);
         syncFilterFieldsFromTemplateFilterConfiguration(tpl);
         if (G_OL_HasDynamicComboFilters) renderDynamicComboFilters();
+        bindProcedureParameterHiddens();
         applyFilterActiveColors();
         updateFilterButtonState();
         updateModalEmptyState();
@@ -4012,6 +4124,7 @@ function loadDynamicTemplateFilters(tpl) {
                 G_OL_FilterConfigFetchPending = false;
                 G_OL_DynamicFilters = [];
                 G_OL_HasDynamicComboFilters = false;
+                $('.ol-proc-param').remove();
                 clearDynamicFilterHost();
                 syncOrderLoadTemplateDateFieldUi(tpl);
                 applyStaticDateFieldsFromTemplate(tpl);
@@ -4130,18 +4243,9 @@ function isoToSqlCastLiteral(iso) {
     return apiDateToIso(text) || text;
 }
 
-function rewriteDisplayDateColumnsInSql(sql, tpl) {
-    if (!sql || !tpl) return sql;
-    var physical = toSqlFieldName(getTemplateDateField(tpl));
-    if (!physical) return sql;
-    var out = String(sql);
-    var label = fieldNameToLabel(getTemplateDateField(tpl), 'Order Date');
-    out = out.replace(/\[\s*Order\s*Date\s*\]/gi, physical);
-    if (label) {
-        var esc = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        out = out.replace(new RegExp('\\[\\s*' + esc + '\\s*\\]', 'gi'), physical);
-    }
-    return out;
+/** Do not rewrite [PartyName] / [Receive Date]. Bracketed names stay as written in the filter SQL. */
+function rewriteDisplayDateColumnsInSql(sql) {
+    return String(sql || '');
 }
 
 /** Receive Date -> [Receive Date]; alias.Receive Date -> alias.[Receive Date]. Single words / already bracketed: unchanged. */
@@ -4454,6 +4558,202 @@ function resolveProcDateParamForRequest(tpl, iso, kind) {
     return isoToProcDateParam(value);
 }
 
+function boundProcedureParameterName(row) {
+    var $hidden = $('#hdnProcParam_' + row.code);
+    var token = $hidden.length ? String($hidden.val() || '').trim() : procedureParameterToken(row);
+    token = token.replace(/^@+/, '').trim();
+    if (!token) return '';
+    return '@' + token;
+}
+
+function procedureInputIsActive(inputId) {
+    if (!inputId) return false;
+    if (inputId === 'txtFromDate' || inputId === 'txtToDate') {
+        return !!String($('#' + inputId).val() || '').trim();
+    }
+    var $input = $('#' + inputId);
+    if (!$input.length) return false;
+    var $field = $input.closest('.ol-filter-field');
+    return !$field.length || !$field.hasClass('ol-hidden');
+}
+
+function addProcedureVariablePart(groups, index, name, kind, value) {
+    var token = String(name || '').trim();
+    var text = String(value == null ? '' : value);
+    if (!token || !text) return;
+    if (token.charAt(0) !== '@') token = '@' + token.replace(/^@+/, '');
+    var key = token.replace(/^@+/, '').toUpperCase();
+    if (!key) return;
+    if (!index[key]) {
+        index[key] = { name: token, sql: [], scalar: [] };
+        groups.push(index[key]);
+    }
+    var bucket = kind === 'sql' ? index[key].sql : index[key].scalar;
+    if (bucket.indexOf(text) >= 0) return;
+    bucket.push(text);
+}
+
+function addRoutedConditionSql(groups, index, filterSql, querySql, tpl) {
+    var routed = routeConditionsForReportSource({
+        filterCondition: filterSql || '',
+        queryCondition: querySql || ''
+    }, tpl);
+    if (routed.filterCondition) addProcedureVariablePart(groups, index, '@FilterCondition', 'sql', routed.filterCondition);
+    if (routed.queryCondition) addProcedureVariablePart(groups, index, '@QueryCondition', 'sql', routed.queryCondition);
+}
+
+/**
+ * One filter row -> the text that belongs to its ProcedureParameter.
+ * Text controls contribute the entered value. Combos with a QueryCondition
+ * template contribute that SQL. Combos without a template contribute the selection.
+ */
+function procedureFilterContribution(row, tpl) {
+    var control = String(row.controlType || '').toUpperCase();
+    var inputId = String($('#hdnProcParam_' + row.code).attr('data-value-input') || filterRowValueInputId(row) || '');
+    if (inputId && !procedureInputIsActive(inputId)) return null;
+
+    if (isDynamicDateFieldCombo(row) && !/\{\{SelectedValue\}\}/i.test(row.queryCondition || '')) {
+        return null;
+    }
+
+    if (control === 'TEXT' || (isDynamicDateRow(row) && control !== 'COMBO')) {
+        var entered = inputId ? String($('#' + inputId).val() || '').trim() : '';
+        if (!entered) return null;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(entered)) entered = isoToApiDate(entered) || entered;
+        return { kind: 'scalar', value: entered };
+    }
+
+    if (control !== 'COMBO') return null;
+
+    if (row.queryCondition) {
+        var fragment = fragmentFromFilterTemplate(row, selectedRawForDynamicRow(row), tpl);
+        return fragment ? { kind: 'sql', value: fragment } : null;
+    }
+
+    var selected = selectedRawForDynamicRow(row);
+    return selected ? { kind: 'scalar', value: selected } : null;
+}
+
+/**
+ * View rows leave ProcedureParameter blank. The variable is only the AND conditions.
+ */
+function viewAndConditionFromRow(row, tpl, fromIso, toIso) {
+    var control = String(row.controlType || '').toUpperCase();
+    if (isDynamicDateFieldCombo(row) && !/\{\{SelectedValue\}\}/i.test(row.queryCondition || '')) return '';
+
+    if (isDynamicDateRow(row) && control !== 'COMBO') {
+        if (!row.queryCondition) return '';
+        var which = resolveDynamicRowProcedureParameter(row);
+        var iso = which === 'TODATE' ? toIso : fromIso;
+        if (!iso) return '';
+        return fragmentFromFilterTemplate(row, isoToSqlCastLiteral(iso), tpl);
+    }
+
+    if (control === 'COMBO') {
+        return fragmentFromFilterTemplate(row, selectedRawForDynamicRow(row), tpl);
+    }
+
+    if (control === 'TEXT' && row.queryCondition) {
+        var inputId = String($('#hdnProcParam_' + row.code).attr('data-value-input') || filterRowValueInputId(row) || '');
+        if (inputId && !procedureInputIsActive(inputId)) return '';
+        var entered = inputId ? String($('#' + inputId).val() || '').trim() : '';
+        if (!entered) return '';
+        if (/^\d{4}-\d{2}-\d{2}$/.test(entered)) entered = isoToSqlCastLiteral(entered);
+        return fragmentFromFilterTemplate(row, entered, tpl);
+    }
+
+    return '';
+}
+
+function buildOrderLoadViewVariable(tpl) {
+    var parts = [];
+    var fromIso = $('#txtFromDate').val();
+    var toIso = resolveReportToIsoForRequest(tpl, fromIso, $('#txtToDate').val());
+
+    (G_OL_DynamicFilters || []).forEach(function (row) {
+        if (!row || row.isActive === 'N' || !(row.code > 0)) return;
+        var frag = viewAndConditionFromRow(row, tpl, fromIso, toIso);
+        if (frag && parts.indexOf(frag) < 0) parts.push(frag);
+    });
+
+    var dateSqlParts = [];
+    appendStaticDateFilterParts(dateSqlParts, tpl, fromIso, toIso);
+    if (dateSqlParts.length && !extractDateCompareSqlFromCondition(parts.join(''))) {
+        dateSqlParts.forEach(function (part) {
+            if (part && parts.indexOf(part) < 0) parts.push(part);
+        });
+    }
+
+    return finalizeReportSqlDateConditions(parts.join(''), tpl);
+}
+
+/**
+ * Club every bound filter by the ProcedureParameter stored on its hidden field.
+ * @FromDate = '01-Oct-2026', @FilterCondition = ' AND MarketingMan = ''RAM'''
+ * Names are not listed here; they come from F_TemplateFilterConfiguration.
+ */
+function buildOrderLoadProcedureVariable(tpl) {
+    var groups = [];
+    var index = {};
+    var fromIso = $('#txtFromDate').val();
+    var toIso = resolveReportToIsoForRequest(tpl, fromIso, $('#txtToDate').val());
+
+    (G_OL_DynamicFilters || []).forEach(function (row) {
+        if (!row || row.isActive === 'N' || !(row.code > 0)) return;
+        var name = boundProcedureParameterName(row);
+        if (!name) return;
+        var key = name.replace(/^@+/, '').toUpperCase();
+        var contribution = procedureFilterContribution(row, tpl);
+        if (contribution && contribution.value) {
+            addProcedureVariablePart(groups, index, name, contribution.kind, contribution.value);
+        }
+
+        if ((key === 'FROMDATE' || key === 'TODATE') && row.queryCondition) {
+            var dateRaw = key === 'TODATE' ? isoToSqlCastLiteral(toIso) : isoToSqlCastLiteral(fromIso);
+            var dateFrag = fragmentFromFilterTemplate(row, dateRaw, tpl);
+            if (dateFrag) addRoutedConditionSql(groups, index, dateFrag, '', tpl);
+        }
+    });
+
+    var dateSqlParts = [];
+    appendStaticDateFilterParts(dateSqlParts, tpl, fromIso, toIso);
+    if (dateSqlParts.length) {
+        var already = groups.map(function (group) { return group.sql.join(''); }).join('');
+        if (!extractDateCompareSqlFromCondition(already)) {
+            addRoutedConditionSql(groups, index, dateSqlParts.join(''), '', tpl);
+        }
+    }
+
+    return groups.map(function (group) {
+        var joined = group.sql.length
+            ? finalizeReportSqlDateConditions(group.sql.join(''), tpl)
+            : group.scalar.join(',');
+        if (!joined) return '';
+        return group.name + ' = ' + quoteOrderLoadProcedureParamValue(joined);
+    }).filter(function (part) { return !!part; }).join(', ');
+}
+
+function buildLegacyProcedureVariable(tpl, requestParams) {
+    var spec = String(tpl && tpl.procedureParameters || '').trim();
+    var names = spec
+        ? spec.split('#').map(function (name) { return String(name || '').trim(); }).filter(function (name) { return !!name; })
+        : ['FromDate', 'ToDate', 'FilterCondition', 'QueryCondition'];
+    var skip = {
+        F_TEMPLETEMASTER_CODE: true,
+        F_TEMPLATEMASTER_CODE: true,
+        USERMASTER_CODE: true,
+        MODE: true
+    };
+
+    return names.map(function (name) {
+        var bare = name.replace(/^@+/, '').trim();
+        if (!bare || skip[bare.toUpperCase()]) return '';
+        var value = resolveOrderLoadProcedureParamValue(bare, tpl, requestParams, '');
+        if (!value || value === '0') return '';
+        return '@' + bare + ' = ' + quoteOrderLoadProcedureParamValue(value);
+    }).filter(function (part) { return !!part; }).join(', ');
+}
+
 function buildOrderLoadReportRequestParams(tpl) {
     var validationMsg = validateOrderLoadReportTemplate(tpl);
     if (validationMsg) {
@@ -4478,10 +4778,11 @@ function buildOrderLoadReportRequestParams(tpl) {
 
     var sizeCodes = isOrderLoadSizeParameterFilterEnabled(tpl) ? String(G_OL_ItemSizeMaster_Codes || '').trim() : '';
 
-    var fromParam = resolveProcDateParamForRequest(tpl, fromIso, 'from');
-    var toParam = resolveProcDateParamForRequest(tpl, toIso, 'to');
-
-    return {
+    var fromParam = resolveProcDateParamForRequest(tpl, fromIso, 'from')
+        || (fromIso ? isoToProcDateParam(fromIso) : '');
+    var toParam = resolveProcDateParamForRequest(tpl, toIso, 'to')
+        || (toIso ? isoToProcDateParam(toIso) : '');
+    var requestParams = {
         reportType: String(tpl.desp || '').trim(),
         templateCode: tpl.code,
         filterCondition: finalizeReportSqlDateConditions(conditions.filterCondition, tpl),
@@ -4498,6 +4799,60 @@ function buildOrderLoadReportRequestParams(tpl) {
         buyerPOMasterCode: filterCodes.buyerPOMasterCode,
         itemSizeMasterCodes: sizeCodes
     };
+    if (templateUsesProcedure(tpl)) {
+        requestParams.variable = hasActiveTemplateFilterConfiguration()
+            ? buildOrderLoadProcedureVariable(tpl)
+            : buildLegacyProcedureVariable(tpl, requestParams);
+        if (sizeCodes) {
+            requestParams.variable = stripProcedureVariableParam(requestParams.variable, 'QueryCondition');
+            var sizePart = '@ItemSizeMaster_Codes = ' + quoteOrderLoadProcedureParamValue(sizeCodes);
+            requestParams.variable = requestParams.variable
+                ? requestParams.variable + ', ' + sizePart
+                : sizePart;
+        }
+    } else {
+        requestParams.variable = '';
+        requestParams.queryCondition = buildOrderLoadViewVariable(tpl);
+    }
+    return requestParams;
+}
+
+function stripProcedureVariableParam(variable, paramName) {
+    var key = String(paramName || '').replace(/^@+/, '').toUpperCase();
+    var text = String(variable || '');
+    var parts = [];
+    var i = 0;
+    var n = text.length;
+    while (i < n) {
+        while (i < n && ' \t\r\n,'.indexOf(text.charAt(i)) >= 0) i++;
+        if (i >= n || text.charAt(i) !== '@') break;
+        var start = i;
+        i++;
+        var name = '';
+        while (i < n && /[A-Za-z0-9_]/.test(text.charAt(i))) {
+            name += text.charAt(i);
+            i++;
+        }
+        while (i < n && text.charAt(i) === ' ') i++;
+        if (i < n && text.charAt(i) === '=') i++;
+        while (i < n && text.charAt(i) === ' ') i++;
+        if (i < n && text.charAt(i) === "'") {
+            i++;
+            while (i < n) {
+                if (text.charAt(i) === "'") {
+                    if (i + 1 < n && text.charAt(i + 1) === "'") {
+                        i += 2;
+                        continue;
+                    }
+                    i++;
+                    break;
+                }
+                i++;
+            }
+        }
+        if (name.toUpperCase() !== key) parts.push(text.substring(start, i).trim());
+    }
+    return parts.join(', ');
 }
 
 function resolveOrderLoadProcedureParamValue(paramName, tpl, requestParams, reportFileName) {
