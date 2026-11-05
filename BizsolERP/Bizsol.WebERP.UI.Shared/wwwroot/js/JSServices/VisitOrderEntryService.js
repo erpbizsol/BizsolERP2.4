@@ -14,12 +14,12 @@ const VisitOrderEntryService = {
             }
         );
     },
-    GetNestedDealerList: function GetNestedDealerList() {
+    GetNestedDealerList: function GetNestedDealerList(options) {
 
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
         var URL = UrlService.API_ENDPOINT_ACCOUNT_MASTER + `/GetNestedDealerList?UserMaster_Code=` + userMasterCode + `&MarketingManMaster_Code=0`;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        return promiseAjaxCallApi.CallAPI('GET', URL, "", options || {}).then(
             function (value) {
                 return value;
             }
@@ -66,11 +66,11 @@ const VisitOrderEntryService = {
             }
         );
     },
-    GetNestedMarketingManList: function GetNestedMarketingManList() {
+    GetNestedMarketingManList: function GetNestedMarketingManList(options) {
         var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
         var userMasterCode = authKeyData.UserMaster_Code;
         var URL = UrlService.API_ENDPOINT_SALESPERSON + `/GetNestedMarketingManList?UserMaster_Code=`+ userMasterCode + `&MarketingManMaster_Code=0`;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+        return promiseAjaxCallApi.CallAPI('GET', URL, "", options || {}).then(
             function (value) {
                 return value;
             }

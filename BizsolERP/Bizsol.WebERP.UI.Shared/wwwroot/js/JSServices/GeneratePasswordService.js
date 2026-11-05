@@ -36,6 +36,20 @@ const GeneratePasswordService = {
             }
         );
     },
+    ValidatePassword: function ValidatePassword(Password, MasterTableName, MasterTableCode, UsedFor, ReasonFor, EntryNo, FinYear) {
+        var URL = UrlService.API_ENDPOINT_GeneratePassword + "/ValidatePassword?Password=" + encodeURIComponent(Password || '')
+            + "&MasterTableName=" + encodeURIComponent(MasterTableName || '')
+            + "&MasterTableCode=" + encodeURIComponent(MasterTableCode || 0)
+            + "&UsedFor=" + encodeURIComponent(UsedFor || '')
+            + "&ReasonFor=" + encodeURIComponent(ReasonFor || '')
+            + "&EntryNo=" + encodeURIComponent(EntryNo || '')
+            + "&FinYear=" + encodeURIComponent(FinYear || '');
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 
 }
 
