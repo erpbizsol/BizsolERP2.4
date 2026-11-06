@@ -454,25 +454,25 @@ function renderTreeTable(roots) {
     }
 
     var rowIndex = { n: 1 };
-    roots.forEach(function (node) {
-        renderTreeNode(tbody, node, 0, rowIndex);
+    roots.forEach(function (node, rootIdx) {
+        renderTreeNode(tbody, node, 0, rowIndex, rootIdx % 8);
     });
 
     bindToggleEvents(tbody);
     bindExpandEvents(tbody);
 }
 
-function renderTreeNode(tbody, node, level, rowIndex) {
+function renderTreeNode(tbody, node, level, rowIndex, colorIdx) {
     var item = node.item;
     var code = String(getMenuCode(item));
     var hasChildren = node.children && node.children.length > 0;
     var isExpanded = G_ExpandedNodes[code] === true;
 
-    tbody.appendChild(buildMenuRow(item, rowIndex.n++, level, hasChildren, isExpanded));
+    tbody.appendChild(buildMenuRow(item, rowIndex.n++, level, hasChildren, isExpanded, colorIdx));
 
     if (hasChildren && isExpanded) {
         node.children.forEach(function (child) {
-            renderTreeNode(tbody, child, level + 1, rowIndex);
+            renderTreeNode(tbody, child, level + 1, rowIndex, colorIdx);
         });
     }
 }
@@ -480,7 +480,7 @@ function renderTreeNode(tbody, node, level, rowIndex) {
 // ─── Build a single <tr> row ──────────────────────────────────────────────────
 var INDENT_PX = 24;   // pixels per level
 
-function buildMenuRow(item, index, level, hasChildren, isExpanded) {
+function buildMenuRow(item, index, level, hasChildren, isExpanded, colorIdx) {
     var code = String(getMenuCode(item));
     var currentlyHidden = isHidden(item);
     var isChecked = !currentlyHidden;
@@ -489,7 +489,7 @@ function buildMenuRow(item, index, level, hasChildren, isExpanded) {
     var toggleBtn = '';
     if (hasChildren) {
         toggleBtn =
-            '<button type="button" class="tree-toggle-btn" data-node-code="' + code + '" title="' + (isExpanded ? 'Collapse' : 'Expand') + '">'
+            '<button type="button" class="tree-toggle-btn' + (isExpanded ? ' is-open' : '') + '" data-node-code="' + code + '" title="' + (isExpanded ? 'Collapse' : 'Expand') + '">'
             + (isExpanded ? '&#x2212;' : '&#x2B;')   // − or +
             + '</button>';
     } else {
@@ -510,6 +510,8 @@ function buildMenuRow(item, index, level, hasChildren, isExpanded) {
     row.setAttribute('data-level', level);
     if (hasChildren) row.setAttribute('data-has-children', '1');
     row.classList.add(rowClass);
+    row.classList.add('tree-color-' + colorIdx);
+    if (level === 0 && isExpanded) row.classList.add('tree-row-expanded');
 
     // ── ApplicableForWebErp value ─────────────────────────────────────────────
     var appFor = String(item.ApplicableForWebErp || item.applicableForWebErp || 'Y').trim().toUpperCase();
