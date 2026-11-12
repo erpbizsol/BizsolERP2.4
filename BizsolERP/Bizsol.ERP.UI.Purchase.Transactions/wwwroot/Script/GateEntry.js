@@ -2797,8 +2797,7 @@ function GateEntry_SaveData(Mode) {
                     gRNo: GRNo,
                     driverAadharNo: DriverAadharNo,
                     modeOfTransportation: ModeOfTransportation,
-                    entryWithOutExistingItem: IsEntryWithoutExistingItem ? 'Y' : 'N',
-                    mandatoryWeightByScale: GateEntry_IsConfigY('WeightByScale') && GateEntry_IsConfigY('MandatoryWeightByScale') ? 'Y' : 'N'
+                    entryWithOutExistingItem: IsEntryWithoutExistingItem ? 'Y' : 'N'
                 }
             ],
 
