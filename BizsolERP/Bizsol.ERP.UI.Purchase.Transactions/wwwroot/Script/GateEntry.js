@@ -31,6 +31,8 @@ let GateEntryImageDetail = [{
 
 }];
 let G_ScaleVehiclePhotoProvided = false;
+let G_ScaleWeightLockedFields = {};
+let G_ScalePhotoLockedFields = {};
 //let G_GateEntryLinkedERPDocuments = [{ TableName: "kumar", TableCode:5 }];
 let G_GateEntryLinkedERPDocuments = [];
 
@@ -94,6 +96,12 @@ function GateEntryGirdByDates() {
     }
     else if (ddlVehiclesStatusInFectory === 'TBal') {
         QueryCondition = " and TokenNo<>'' and GateEntryNo=0 and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
+    }
+    else if (ddlVehiclesStatusInFectory === 'SMand') {
+        QueryCondition = " and GateEntryNo>0 and ISNULL(MandatoryWeightByScale,'N')='Y' and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
+    }
+    else if (ddlVehiclesStatusInFectory === 'SOpt') {
+        QueryCondition = " and GateEntryNo>0 and ISNULL(MandatoryWeightByScale,'N')='N' and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
     }
     else if (ddlVehiclesStatusInFectory === 'all' && parseInt(ddlGodownMaster_Code) > 0) {
         QueryCondition = " and GateEntryNo>0 and (GodownMaster_Code=" + ddlGodownMaster_Code + " OR 0=" + ddlGodownMaster_Code + ")"
@@ -404,6 +412,7 @@ function LoadedInNew() {
     }
 
     $('#DivfrmEmptyOut').hide();
+    GateEntry_ApplyScaleWeightFieldLocks();
 }
 function EmptyInNew() {
 
@@ -484,6 +493,7 @@ function EmptyInNew() {
     $('#DivfrmEmptyIn_fileVehiclePhoto').show();
 
     $('#DivfrmLoadedOut').hide();
+    GateEntry_ApplyScaleWeightFieldLocks();
 }
 
 function UpdateLoadedIn_Emptyout(gateEntryData) {
@@ -703,7 +713,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
 
       $('#DivfrmEmptyOut').show();
       $('#RowfrmEmptyOut_fileVehiclePhoto').show();
-
+      GateEntry_ApplyScaleWeightFieldLocks();
 
 }
 
@@ -877,6 +887,7 @@ function UpdateEmptyIn_loadedout(gateEntryData) {
 
     $('#frmLoadedOut_btnSave').removeAttr('onclick');
     $('#frmLoadedOut_btnSave').attr('onclick', "GateEntry_SaveData('UpdateEmptyInSave')");
+    GateEntry_ApplyScaleWeightFieldLocks();
 }
 function BindSelectList(element, list) {
     let option = '<option value="0"></option>';
@@ -963,6 +974,8 @@ function ShowGateEntryConfigurationModal() {
 
         const matchParam = response.find(x => x.PerameterName === matchParamName);
         const isMatchEnabled = matchParam && String(matchParam.PerameterValue).toUpperCase() === 'Y';
+        const weightByScaleParam = response.find(x => x.PerameterName === 'WeightByScale');
+        const isWeightByScaleEnabled = weightByScaleParam && String(weightByScaleParam.PerameterValue).toUpperCase() === 'Y';
 
         let option = '';
         $.each(response, function (key, val) {
@@ -982,10 +995,21 @@ function ShowGateEntryConfigurationModal() {
                     `value="${numVal}" onchange="setGateEntryBackdaysParamater(this,'${val.PerameterName}')" /></div>`;
             } else {
                 let Checked = String(val.PerameterValue).toLowerCase() === 'y' ? 'checked' : '';
-                let extraOnClick = val.PerameterName === matchParamName
-                    ? ` GateEntry_ToggleToleranceVisibility(this);`
-                    : '';
-                option += `<div class="col-6"><input type="checkbox" class="box_border" ${Checked} onclick="setGateEntryParamater(this,'${val.PerameterName}','${val.PerameterValue}');${extraOnClick}" />&nbsp;<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label></div>`;
+                let extraOnClick = '';
+                if (val.PerameterName === matchParamName) {
+                    extraOnClick = ` GateEntry_ToggleToleranceVisibility(this);`;
+                } else if (val.PerameterName === 'WeightByScale') {
+                    extraOnClick = ` GateEntry_ToggleMandatoryWeightByScaleVisibility(this);`;
+                }
+
+                if (val.PerameterName === 'MandatoryWeightByScale') {
+                    const displayStyle = isWeightByScaleEnabled ? '' : 'display:none;';
+                    option += `<div class="col-6" id="DivConfig_MandatoryWeightByScale" style="${displayStyle}">` +
+                        `<input type="checkbox" class="box_border" ${Checked} onclick="setGateEntryParamater(this,'${val.PerameterName}','${val.PerameterValue}');" />&nbsp;` +
+                        `<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label></div>`;
+                } else {
+                    option += `<div class="col-6"><input type="checkbox" class="box_border" ${Checked} onclick="setGateEntryParamater(this,'${val.PerameterName}','${val.PerameterValue}');${extraOnClick}" />&nbsp;<label>${BizSolHelperFunction.ToWithSpace(val.PerameterName)}</label></div>`;
+                }
             }
         });
 
@@ -1001,6 +1025,21 @@ function GateEntry_ToggleToleranceVisibility(checkbox) {
     const div = document.getElementById('DivConfig_ToleranceToMatchNetWeightWithDocumentQty');
     if (div) {
         div.style.display = checkbox.checked ? '' : 'none';
+    }
+}
+
+function GateEntry_ToggleMandatoryWeightByScaleVisibility(checkbox) {
+    const div = document.getElementById('DivConfig_MandatoryWeightByScale');
+    if (!div) return;
+    if (checkbox.checked) {
+        div.style.display = '';
+        return;
+    }
+    div.style.display = 'none';
+    const mandatoryCb = div.querySelector('input[type="checkbox"]');
+    if (mandatoryCb && mandatoryCb.checked) {
+        mandatoryCb.checked = false;
+        setGateEntryParamater(mandatoryCb, 'MandatoryWeightByScale', 'Y');
     }
 }
 
@@ -2758,7 +2797,8 @@ function GateEntry_SaveData(Mode) {
                     gRNo: GRNo,
                     driverAadharNo: DriverAadharNo,
                     modeOfTransportation: ModeOfTransportation,
-                    entryWithOutExistingItem: IsEntryWithoutExistingItem ? 'Y' : 'N'
+                    entryWithOutExistingItem: IsEntryWithoutExistingItem ? 'Y' : 'N',
+                    mandatoryWeightByScale: GateEntry_IsConfigY('WeightByScale') && GateEntry_IsConfigY('MandatoryWeightByScale') ? 'Y' : 'N'
                 }
             ],
 
@@ -3201,6 +3241,7 @@ function frmLoadedOut_ddlDocumentType(callby) {
 function ClearAllFrm() {
     $('#GateEntryFormEntryNoBanner').remove();
     G_ScaleVehiclePhotoProvided = false;
+    GateEntry_ResetScaleWeightLocks();
     GateEntryImageDetail = [{
         imgVehicle: [],
         imgMaterial: [],
@@ -3385,9 +3426,11 @@ function ClearAllFrm() {
     GateEntry_ApplyModeOfTransportVisibility();
     GateEntry_ApplyEntryWithoutExistingItemRadioVisibility();
     ClearWeightScalePreviews();
+    GateEntry_ApplyScaleWeightFieldLocks();
 }
 function ClearEmptyOutOrLoadedOutFrm() {
     G_ScaleVehiclePhotoProvided = false;
+    GateEntry_ResetScaleWeightLocks();
     GateEntryImageDetail = [{
         imgVehicle: [],
         imgMaterial: [],
@@ -3429,6 +3472,7 @@ function ClearEmptyOutOrLoadedOutFrm() {
     $('#frmEmptyOut_txtWeightmentSlipNoLoaded').val('');
     $('#frmEmptyOut_txtRemarks').val('');
     ClearWeightScalePreviews();
+    GateEntry_ApplyScaleWeightFieldLocks();
 }
 function ViewGateEntry(gateEntryData, EntryType) {
     
@@ -3665,6 +3709,7 @@ function EditGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_btnSave').removeAttr('onclick');
         $('#frmLoadedOut_btnSave').attr('onclick', "GateEntry_SaveData('emptyineditfull')");
     }
+    GateEntry_ApplyScaleWeightFieldLocks();
 }
 
 function EditLoaded() {
@@ -3707,6 +3752,7 @@ function EditLoaded() {
 
     $('#frmLoadedIn_ddlDocumentType').removeAttr('disabled');
     $('#frmLoadedIn_txtUOM').removeAttr('disabled');
+    GateEntry_ApplyScaleWeightFieldLocks();
 }
 function EditEmptyIn() {
     $('#frmEmptyIn_txtModeOfTransportation').removeAttr('disabled');
@@ -3737,6 +3783,7 @@ function EditEmptyIn() {
         $('#frmEmptyIn_txtTokenNo').attr('readonly', 'readonly');
         $('#frmEmptyIn_txtReportingDatetime').attr('readonly', 'readonly');
     }
+    GateEntry_ApplyScaleWeightFieldLocks();
 }
 function LockDocumntFutureDate() {
     let maxDate = new Date().toISOString().slice(0, 10);
@@ -3783,6 +3830,67 @@ function GateEntry_InitSelectMachineToGetWeightControl(outputTextElementID) {
     $('#GateEntry_DivSelectMachineToGetWeightControl').load(url, { OutputTextElementID: outputTextElementID });
 
 }
+function GateEntry_IsConfigY(name) {
+    if (!ConfigGateEntry || ConfigGateEntry.length === 0) return false;
+    const p = ConfigGateEntry.find((x) => x.PerameterName === name);
+    return !!(p && String(p.PerameterValue).toUpperCase() === 'Y');
+}
+
+const GATE_ENTRY_SCALE_WEIGHT_FIELDS = [
+    'frmEmptyIn_txtVehicleEmptyWeight',
+    'frmLoadedOut_txtVehicleLoadedWeight',
+    'frmLoadedIn_txtVehicleLoadedWeight',
+    'frmEmptyOut_txtVehicleEmptyWeight'
+];
+
+const GATE_ENTRY_SCALE_PHOTO_BY_WEIGHT = {
+    'frmEmptyIn_txtVehicleEmptyWeight': 'frmEmptyIn_fileVehiclePhoto',
+    'frmLoadedIn_txtVehicleLoadedWeight': 'frmLoadedIn_fileVehiclePhoto',
+    'frmLoadedOut_txtVehicleLoadedWeight': 'frmLoadedOut_fileVehiclePhoto',
+    'frmEmptyOut_txtVehicleEmptyWeight': 'frmEmptyOut_fileVehiclePhoto'
+};
+
+function GateEntry_ResetScaleWeightLocks() {
+    G_ScaleWeightLockedFields = {};
+    G_ScalePhotoLockedFields = {};
+    Object.keys(GATE_ENTRY_SCALE_PHOTO_BY_WEIGHT).forEach(function (weightId) {
+        GateEntry_SetPhotoControlLocked(GATE_ENTRY_SCALE_PHOTO_BY_WEIGHT[weightId], false);
+    });
+}
+
+function GateEntry_SetPhotoControlLocked(fileId, locked) {
+    const $file = $('#' + fileId);
+    if (!$file.length) return;
+    const $camera = $file.closest('.input-group').find('.input-group-text');
+    if (locked) {
+        $file.attr('disabled', 'disabled');
+        $camera.css({ 'pointer-events': 'none', cursor: 'not-allowed' });
+    } else {
+        $file.removeAttr('disabled');
+        $camera.css({ 'pointer-events': '', cursor: 'pointer' });
+    }
+}
+
+function GateEntry_ApplyScaleWeightFieldLocks() {
+    const byScale = GateEntry_IsConfigY('WeightByScale');
+    const mandatory = byScale && GateEntry_IsConfigY('MandatoryWeightByScale');
+
+    GATE_ENTRY_SCALE_WEIGHT_FIELDS.forEach(function (id) {
+        const $w = $('#' + id);
+        if (!$w.length) return;
+        if (mandatory || (byScale && G_ScaleWeightLockedFields[id])) {
+            $w.attr('readonly', 'readonly');
+        }
+    });
+
+    Object.keys(GATE_ENTRY_SCALE_PHOTO_BY_WEIGHT).forEach(function (weightId) {
+        const photoId = GATE_ENTRY_SCALE_PHOTO_BY_WEIGHT[weightId];
+        if (G_ScalePhotoLockedFields[photoId]) {
+            GateEntry_SetPhotoControlLocked(photoId, true);
+        }
+    });
+}
+
 function EnableScaleWeight() {
     if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightByScale').PerameterValue === 'Y') {
         // Enable the scale weight button
@@ -3796,7 +3904,7 @@ function EnableScaleWeight() {
         $('#btnScaleWeigh_frmLoadedIn_txtVehicleLoadedWeight').hide();
         $('#btnScaleWeigh_frmEmptyOut_txtVehicleEmptyWeight').hide();
     }
-    
+    GateEntry_ApplyScaleWeightFieldLocks();
 }
 function LoadListDriverDetailsByVehicleNo() {
 
@@ -4162,6 +4270,7 @@ function GateEntry_ExportExecl() {
     ExportToExcelControl.ExportToExcel(ExcelExportDataArry, hiddenFields, "GateEntry");
 }
 function BindddlVehiclesStatusInFectory() {
+    const selectedValue = $('#ddlVehiclesStatusInFectory').val();
     let ddlVehiclesStatusInFectoryArray = [];
     ddlVehiclesStatusInFectoryArray.push({ Code: "all", Desp: "All vehicles in progress" });
     ddlVehiclesStatusInFectoryArray.push({ Code: "ALIN", Desp: "All Inward" });
@@ -4182,12 +4291,20 @@ function BindddlVehiclesStatusInFectory() {
         ddlVehiclesStatusInFectoryArray.push({ Code: "TBal", Desp: "Token Entry (Balance)" });
     }
 
+    if (ConfigGateEntry.length > 0 && ConfigGateEntry.find(x => x.PerameterName === 'WeightByScale').PerameterValue === 'Y') {
+        ddlVehiclesStatusInFectoryArray.push({ Code: "SMand", Desp: "Scale Weight Mandatory" });
+        ddlVehiclesStatusInFectoryArray.push({ Code: "SOpt", Desp: "Scale Weight Optional" });
+    }
+
 
     let option = '';
     $.each(ddlVehiclesStatusInFectoryArray, function (key, val) {
         option += '<option value="' + val.Code + '">' + val.Desp + '</option>';
     });
     $('#ddlVehiclesStatusInFectory')[0].innerHTML = option;
+    if (selectedValue && ddlVehiclesStatusInFectoryArray.some(function (x) { return x.Code === selectedValue; })) {
+        $('#ddlVehiclesStatusInFectory').val(selectedValue);
+    }
 
 
     //$('#ddlGodown').select2({
@@ -4783,6 +4900,10 @@ document.addEventListener('weightScaleDataReceived', function (e) {
     if (d.weight) {
         if (outputID) {
             $('#' + outputID).val(d.weight);
+            if (GateEntry_IsConfigY('WeightByScale')) {
+                $('#' + outputID).attr('readonly', 'readonly');
+                G_ScaleWeightLockedFields[outputID] = true;
+            }
         }
     }
 
@@ -4830,6 +4951,11 @@ document.addEventListener('weightScaleDataReceived', function (e) {
                     + (d.backImage ? '<img src="data:image/jpeg;base64,' + d.backImage + '" style="max-height:80px;border:1px solid #ccc;" title="Back Camera" />' : '')
                     + '</div>';
                 $('#' + previewDivID).after(previewHtml);
+                const photoFieldID = imageFieldMap[outputID];
+                if (photoFieldID) {
+                    G_ScalePhotoLockedFields[photoFieldID] = true;
+                    GateEntry_SetPhotoControlLocked(photoFieldID, true);
+                }
             }
         }
 
@@ -4897,6 +5023,7 @@ window.ViewAttachment_GateEntry = ViewAttachment_GateEntry
 window.ShowGateEntryConfigurationModal = ShowGateEntryConfigurationModal
 window.setGateEntryParamater = setGateEntryParamater
 window.GateEntry_ToggleToleranceVisibility = GateEntry_ToggleToleranceVisibility
+window.GateEntry_ToggleMandatoryWeightByScaleVisibility = GateEntry_ToggleMandatoryWeightByScaleVisibility
 window.setGateEntryToleranceParamater = setGateEntryToleranceParamater
 window.setGateEntryBackdaysParamater = setGateEntryBackdaysParamater
 window.GateEntry_rdPOAccess_onClick = GateEntry_rdPOAccess_onClick
