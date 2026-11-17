@@ -1,8 +1,3 @@
-/**
- * IndentMaster.js
- * Indent / Material Requirement (Store)
- * List + Create New form (same flow as PurchaseOrderStore).
- */
 import { IndentMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/IndentMasterService.js';
 import { IndentMasterLevelsApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/IndentMasterLevelsApprovalService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
@@ -13,6 +8,9 @@ var G_IndentList        = [];
 var G_IndentChipFilter  = '';
 var G_PendingOnMeCodes  = [];
 var G_PendingOnMeReady  = false;
+var G_PendingOnMeCount  = 0;
+var INDENT_PENDING_ON_ME_FROM = '1900-01-01';
+var INDENT_PENDING_ON_ME_TO = '2099-12-31';
 var G_LocateConfig      = [];
 var G_ItemList          = [];
 var G_AllItemList       = [];
@@ -281,7 +279,7 @@ function _updateIndentStatChips(list) {
     $('#statPendingIndent').text(_fmtIndentStat(rows.filter(_indentIsPending).length));
     $('#statVerifiedIndent').text(_fmtIndentStat(rows.filter(_indentIsVerified).length));
     if (G_PendingOnMeReady) {
-        $('#statPendingOnMeIndent').text(_fmtIndentStat(G_PendingOnMeCodes.length));
+        $('#statPendingOnMeIndent').text(G_PendingOnMeCount > 0 ? String(G_PendingOnMeCount) : '0');
     } else {
         $('#statPendingOnMeIndent').text(_fmtIndentStat(rows.filter(_indentIsPendingOnMe).length));
     }
@@ -311,15 +309,13 @@ function _selectPendingOnMeLocateType() {
 }
 
 function _loadPendingOnMeCount() {
-    var fromDate = $('#txtFromDate').val() || '';
-    var toDate = $('#txtToDate').val() || '';
-    IndentMasterLevelsApprovalService.GetPendingIndentList(fromDate, toDate, 'N')
+    IndentMasterLevelsApprovalService.GetPendingIndentList(INDENT_PENDING_ON_ME_FROM, INDENT_PENDING_ON_ME_TO, 'N')
         .then(function (data) {
             var rows = _toList(data);
             G_PendingOnMeReady = true;
             G_PendingOnMeCodes = rows.map(_indentRowCode).filter(function (c) { return c > 0; });
-            var count = G_PendingOnMeCodes.length || rows.length;
-            $('#statPendingOnMeIndent').text(_fmtIndentStat(count));
+            G_PendingOnMeCount = rows.length;
+            $('#statPendingOnMeIndent').text(G_PendingOnMeCount > 0 ? String(G_PendingOnMeCount) : '0');
             if (G_IndentList.length) _updateIndentStatChips(G_IndentList);
         })
         .catch(function () {
@@ -333,12 +329,8 @@ function _loadPendingOnMeCount() {
 
 window.NavigateToIndentPendingOnMe = function () {
     var appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
-    var fromDate = $('#txtFromDate').val() || '';
-    var toDate = $('#txtToDate').val() || '';
-    var qs = 'ModuleDesp=' + encodeURIComponent('Indent Verification');
-    if (fromDate) qs += '&FromDate=' + encodeURIComponent(fromDate);
-    if (toDate) qs += '&ToDate=' + encodeURIComponent(toDate);
-    window.location.href = appBase + 'PurchaseTransactions/IndentMaster/IndentPendingOnMe?' + qs;
+    window.location.href = appBase + 'PurchaseTransactions/IndentMaster/IndentPendingOnMe?ModuleDesp=' +
+        encodeURIComponent('Indent Verification');
 };
 
 window.FilterIndentChip = function (chip) {
@@ -384,8 +376,8 @@ function _renderTable(data, locateType) {
 
     var rowColorMap = _buildColorMap(locateType);
     var augmented = data.map(function (row, index) {
-        var copy = Object.assign({ '#': index + 1 }, row);
-        copy['#'] = index + 1;
+        var copy = Object.assign({ 'S.No': index + 1 }, row);
+        copy['S.No'] = index + 1;
         if (rowColorMap) {
             var cssClass = _getRowCssClass(copy, rowColorMap);
             if (cssClass) copy.__bizsolRowClass = cssClass;
@@ -407,7 +399,7 @@ function _renderTable(data, locateType) {
     var colAlignment  = { '#': 'left', Action: 'left' };
 
     Object.keys(augmented[0]).forEach(function (key) {
-        if (key === '#' || key === '__bizsolRowClass' || hiddenColumns.indexOf(key) !== -1 || key === 'Action') return;
+        if (key === 'S.No' || key === '__bizsolRowClass' || hiddenColumns.indexOf(key) !== -1 || key === 'Action') return;
         var lk = key.toLowerCase();
         if (_isIndentNoColumn(lk)) {
             stringCols.push(key);
@@ -455,7 +447,7 @@ function _buildColorMap(locateType) {
     if (!cfg || !cfg.RowColorCodeString) return null;
 
     var str     = cfg.RowColorCodeString;
-    var hashIdx = str.indexOf('#');
+    var hashIdx = str.indexOf('S.No');
     if (hashIdx < 0) return null;
 
     var colName = str.substring(0, hashIdx).trim();
@@ -1306,14 +1298,6 @@ function _esc(v) {
         .replace(/</g, '&lt;');
 }
 
-function _xmlTag(name, value) {
-    var text = String(value == null ? '' : value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    return '<' + name + '>' + text + '</' + name + '>';
-}
-
 window.DeleteIndentItemRow = function (rowId) {
     if ($('#tblIndentItemsBody tr').length <= 1 && !_isIndentMobile()) {
         toastr.warning('At least one item row is required.');
@@ -1910,42 +1894,53 @@ window.SaveIndent = function () {
         return;
     }
 
-    var payloadXml =
-        '<Indent>' +
-        _xmlTag('Code', parseInt($('#frmHfCode').val() || 0, 10) || 0) +
-        _xmlTag('IndentDate', $('#frmTxtIndentDate').val()) +
-        _xmlTag('GodownMaster_Code', warehouse || parseInt(_auth().WebERPLoginGodownMaster_Code || 0, 10) || 0) +
-        _xmlTag('Category', $('#frmDdlCategory').val() || '') +
-        _xmlTag('DueDate', $('#frmTxtDueDate').val() || '') +
-        _xmlTag('Remarks', $('#frmTxtRemarks').val() || '') +
-        _xmlTag('SpecialComments', $('#frmTxtSpecialComments').val() || '') +
-        _xmlTag('UserMaster_Code_Requested', parseInt($('#frmDdlRequestedBy').val() || 0, 10) || 0) +
-        _xmlTag('RequestedNameMannual', $('#frmTxtRequestedName').val() || '') +
-        _xmlTag('AuthorizedNameMannual', $('#frmTxtAuthorizedBy').val() || '') +
-        _xmlTag('DatabaseLocation_Code', parseInt($('#frmHfDatabaseLocation').val() || 0, 10) || 0) +
-        '<Details>' +
-        details.map(function (d) {
-            return '<Row>' +
-                _xmlTag('ItemMaster_Code', d.ItemMaster_Code) +
-                _xmlTag('ItemSpecification', d.ItemSpecification) +
-                _xmlTag('PartyMaster_Code', d.PartyMaster_Code) +
-                _xmlTag('QtyMTRS', d.QtyMTRS) +
-                _xmlTag('QtyMT', d.QtyMT) +
-                _xmlTag('QtyPC', d.QtyPC) +
-                _xmlTag('Rate', d.Rate) +
-                _xmlTag('UOMMaster_Code', d.UOMMaster_Code || 0) +
-                _xmlTag('CurrencyMaster_Code', d.CurrencyMaster_Code) +
-                _xmlTag('IndentStockOnDate', d.IndentStockOnDate) +
-                _xmlTag('DivisionMaster_Code', d.DivisionMaster_Code) +
-                _xmlTag('SubDivisionMaster_Code', d.SubDivisionMaster_Code) +
-                _xmlTag('DepartmentMaster_Code', d.DepartmentMaster_Code) +
-                _xmlTag('SubDepartmentMaster_Code', d.SubDepartmentMaster_Code) +
-                _xmlTag('Remarks', d.Remarks) +
-                '</Row>';
-        }).join('') +
-        '</Details></Indent>';
+    var masterCode = parseInt($('#frmHfCode').val() || 0, 10) || 0;
+    var urlParams = typeof getUrlVars === 'function' ? getUrlVars() : BizSolHelperFunction.getUrlVars();
+    var moduleDesp = decodeURI(urlParams['ModuleDesp'] || urlParams['menu'] || '');
+    if (!moduleDesp || moduleDesp === 'undefined') moduleDesp = $('#ERPHeading').text().trim();
+    var payload = {
+        code: masterCode,
+        moduleDesp: moduleDesp,
+        master: [{
+            code: masterCode,
+            indentNo: parseInt($('#frmTxtIndentNo').val() || 0, 10) || 0,
+            indentDate: $('#frmTxtIndentDate').val(),
+            godownMaster_Code: warehouse || parseInt(_auth().WebERPLoginGodownMaster_Code || 0, 10) || 0,
+            category: $('#frmDdlCategory').val() || '',
+            dueDate: $('#frmTxtDueDate').val() || null,
+            remarks: $('#frmTxtRemarks').val() || '',
+            specialComments: $('#frmTxtSpecialComments').val() || '',
+            userMaster_Code_Requested: parseInt($('#frmDdlRequestedBy').val() || 0, 10) || 0,
+            requestedNameMannual: $('#frmTxtRequestedName').val() || '',
+            authorizedNameMannual: $('#frmTxtAuthorizedBy').val() || '',
+            databaseLocation_Code: parseInt($('#frmHfDatabaseLocation').val() || 0, 10) || 0,
+            finYear: $('#frmTxtFinYear').val() || ''
+        }],
+        transactions: details.map(function (d) {
+            return {
+                code: d.Code || 0,
+                indentMaster_Code: masterCode,
+                itemMaster_Code: d.ItemMaster_Code,
+                itemSpecification: d.ItemSpecification || '',
+                partyMaster_Code: d.PartyMaster_Code || 0,
+                qtyMT: d.QtyMT || 0,
+                qtyPC: d.QtyPC || 0,
+                qtyMTRS: d.QtyMTRS || 0,
+                rate: d.Rate || 0,
+                uomMaster_Code: d.UOMMaster_Code || 0,
+                currencyMaster_Code: d.CurrencyMaster_Code || 0,
+                indentStockOnDate: d.IndentStockOnDate || 0,
+                divisionMaster_Code: d.DivisionMaster_Code || 0,
+                subDivisionMaster_Code: d.SubDivisionMaster_Code || 0,
+                departmentMaster_Code: d.DepartmentMaster_Code || 0,
+                subDepartmentMaster_Code: d.SubDepartmentMaster_Code || 0,
+                remarks: (d.Remarks || '').toString().substring(0, 500),
+                verified: 'N'
+            };
+        })
+    };
 
-    IndentMasterService.SaveIndentMaster(JSON.stringify(payloadXml)).then(function (res) {
+    IndentMasterService.SaveIndentMaster(JSON.stringify(payload)).then(function (res) {
         var row = res;
         if (Array.isArray(res)) row = res[0] || {};
         var status = String((row && (row.Status != null ? row.Status : row.status)) || '').trim().toUpperCase();

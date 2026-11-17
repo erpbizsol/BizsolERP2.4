@@ -1,0 +1,448 @@
+body:has(#depreciationChartPage) #modern-content.modern-content {
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+body:has(#depreciationChartPage) #modern-content.modern-content > main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dc-page {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 0;
+}
+
+/* ---------- top panel (Payment Entry List style) ---------- */
+#depreciationChartPage .dc-list-top-panel {
+    flex: 0 0 auto;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+    margin-bottom: 14px;
+}
+
+#depreciationChartPage .po-list-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 16px 22px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+#depreciationChartPage .po-list-header h5 {
+    margin: 0;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+#depreciationChartPage .po-list-header small {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.78rem;
+    display: block;
+    margin-top: 2px;
+}
+
+#depreciationChartPage .po-header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+}
+
+#depreciationChartPage .po-stats-strip {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+    width: 100%;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+#depreciationChartPage .po-stats-strip::-webkit-scrollbar { display: none; }
+
+#depreciationChartPage .po-stat-chip {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    padding: 6px 16px;
+    text-align: center;
+    min-width: 88px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    flex-shrink: 0;
+    backdrop-filter: blur(4px);
+}
+
+#depreciationChartPage .po-stat-chip .val {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+
+#depreciationChartPage .po-stat-chip .lbl {
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.88);
+    letter-spacing: 0.02em;
+    margin-top: 2px;
+}
+
+#depreciationChartPage .dc-chip-types {
+    border: 1.5px solid rgba(16, 185, 129, 0.55);
+}
+
+#depreciationChartPage .dc-chip-types .val { color: #6ee7b7; }
+
+#depreciationChartPage .dc-chip-gross {
+    border: 1.5px solid rgba(255, 165, 0, 0.55);
+    min-width: 120px;
+}
+
+#depreciationChartPage .dc-chip-gross .val {
+    color: #ffd580;
+    font-size: 1.05rem;
+}
+
+#depreciationChartPage .po-filter-bar.dc-filter-bar {
+    background: #fff;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0;
+    padding: 14px 18px 12px;
+    margin-bottom: 0;
+}
+
+#depreciationChartPage .dc-filter-lbl {
+    font-size: 0.77rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 4px;
+    display: block;
+}
+
+#depreciationChartPage .dc-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+#depreciationChartPage .dc-search {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+
+/* Icon inside one bordered box; text starts after reserved left gutter */
+#depreciationChartPage .dc-search-icon {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2.625rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 0.85rem;
+    pointer-events: none;
+    z-index: 2;
+}
+
+#depreciationChartPage .dc-search-input {
+    display: block;
+    width: 100%;
+    height: 32px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 2.25rem 0 2.875rem;
+    border: 1.5px solid #ddd6fe;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.25;
+    background-color: #f5f3ff;
+    color: #1e1b4b;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+#depreciationChartPage .dc-search-input:focus {
+    border-color: #667eea;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+#depreciationChartPage .dc-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 50%;
+    background: #e8eaf7;
+    color: #5b608a;
+    font-size: 0.65rem;
+    cursor: pointer;
+}
+
+.dc-search-clear[hidden] { display: none; }
+.dc-search-clear:hover { background: #d4d8f0; }
+
+.dc-btn {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.dc-btn--outline {
+    background: #fff;
+    color: #667eea;
+    border: 1.5px solid #c4b5fd;
+    font-weight: 700;
+    box-shadow: 0 1px 4px rgba(102, 126, 234, 0.08);
+}
+
+.dc-btn--outline:hover {
+    background: #f5f3ff;
+    border-color: #667eea;
+    color: #4f46e5;
+    transform: translateY(-1px);
+}
+
+/* ---------- grid ---------- */
+.dc-grid-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.dc-table-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+.dc-table {
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.82rem;
+    color: #2b2f55;
+}
+
+.dc-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.76rem;
+    letter-spacing: 0.01em;
+    padding: 11px 12px;
+    white-space: nowrap;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dc-table tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #eef0f8;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.dc-table tfoot td {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #f1f2ff;
+    border-top: 2px solid #c9cef2;
+    font-weight: 700;
+    color: #3b3f73;
+    padding: 11px 12px;
+}
+
+.dc-foot-label { text-align: right; font-size: 0.76rem; }
+
+.dc-cell-empty {
+    padding: 9px 12px;
+}
+
+.dc-row-group .dc-cell-empty { background: #eef0ff; }
+.dc-row-type .dc-cell-empty { background: #faf9ff; }
+
+.dc-num { text-align: right; font-variant-numeric: tabular-nums; }
+.dc-center { text-align: center; }
+.dc-amt { font-weight: 600; white-space: nowrap; }
+
+/* ---------- rows ---------- */
+.dc-row-group,
+.dc-row-type { cursor: pointer; user-select: none; outline: none; }
+
+.dc-row-group td {
+    background: #eef0ff;
+    border-bottom: 1px solid #d9ddf6;
+    font-weight: 700;
+    color: #2f3470;
+}
+
+.dc-row-group:hover td { background: #e2e6ff; }
+.dc-row-group.is-open td { background: #e4e8ff; }
+
+.dc-row-type td {
+    background: #faf9ff;
+    font-weight: 600;
+    color: #433a7a;
+}
+
+.dc-row-type:hover td { background: #f1eeff; }
+.dc-row-type.is-open td { background: #f3f0ff; }
+
+.dc-row-group:focus-visible td,
+.dc-row-type:focus-visible td { box-shadow: inset 0 0 0 2px rgba(102, 126, 234, 0.55); }
+
+.dc-row-asset td { background: #fff; }
+.dc-row-asset:hover td { background: #f8f9ff; }
+.dc-row-asset .dc-cell-ref { font-weight: 600; color: #4c52a3; }
+
+.dc-cell-indent {
+    width: 1%;
+    padding: 9px 6px;
+    background-clip: padding-box;
+}
+
+.dc-row-type .dc-cell-indent { background: #f4f2ff; border-right: 3px solid #cfc7f5; }
+.dc-row-asset .dc-cell-indent { background: #fbfaff; }
+
+.dc-row-asset td.dc-cell-indent:nth-child(1) { border-right: 3px solid #cfc7f5; }
+.dc-row-asset td.dc-cell-indent:nth-child(2) { border-right: 3px solid #e6defb; }
+
+.dc-cell-group, .dc-cell-type { white-space: nowrap; }
+
+.dc-name { vertical-align: middle; }
+
+/* Pivot style plus / minus box */
+.dc-toggle {
+    position: relative;
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+    vertical-align: middle;
+    border: 1.5px solid #7a82d6;
+    border-radius: 5px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(60, 64, 140, 0.18);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.dc-toggle::before,
+.dc-toggle::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    background: #5560c8;
+    border-radius: 1px;
+    transform: translate(-50%, -50%);
+    transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.dc-toggle::before { width: 8px; height: 2px; }
+.dc-toggle::after { width: 2px; height: 8px; }
+
+.dc-row.is-open > td > .dc-toggle { background: #5560c8; border-color: #5560c8; }
+.dc-row.is-open > td > .dc-toggle::before { background: #fff; }
+.dc-row.is-open > td > .dc-toggle::after { transform: translate(-50%, -50%) scaleY(0); opacity: 0; }
+
+.dc-row-type .dc-toggle { width: 16px; height: 16px; border-color: #a78bd8; }
+.dc-row-type .dc-toggle::before, .dc-row-type .dc-toggle::after { background: #8a5fc4; }
+.dc-row-type.is-open > td > .dc-toggle { background: #8a5fc4; border-color: #8a5fc4; }
+
+/* pills */
+.dc-cell-meta { white-space: nowrap; }
+
+.dc-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    margin-right: 6px;
+    border-radius: 999px;
+    background: #667eea;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+.dc-pill--soft { background: #e3e6fb; color: #4c52a3; }
+
+/* states */
+.dc-state-row td {
+    text-align: center;
+    padding: 36px 12px !important;
+    color: #6b7194;
+    font-size: 0.9rem;
+}
+
+.dc-state-row--error td { color: #c0392b; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 768px) {
+    body:has(#depreciationChartPage) #modern-content.modern-content { overflow: auto !important; }
+    .dc-page { overflow: visible; }
+    .dc-grid-wrap { flex: 0 0 auto; }
+    .dc-table-wrap { max-height: min(60vh, 520px); }
+    #depreciationChartPage .po-stats-strip {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        overflow-x: visible;
+        gap: 6px;
+    }
+    #depreciationChartPage .po-stat-chip { min-width: 0; padding: 5px 8px; }
+    #depreciationChartPage .po-stat-chip .val { font-size: 0.95rem; }
+}
+
+@media (max-width: 480px) {
+    #depreciationChartPage .po-stat-chip .val { font-size: 0.88rem; }
+    #depreciationChartPage .po-stat-chip .lbl { font-size: 0.62rem; }
+    #depreciationChartPage .dc-filter-actions { width: 100%; }
+    #depreciationChartPage .dc-filter-actions .dc-btn { flex: 1 1 auto; justify-content: center; }
+}

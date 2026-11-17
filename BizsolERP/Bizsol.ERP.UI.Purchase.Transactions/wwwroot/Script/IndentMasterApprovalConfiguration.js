@@ -69,59 +69,10 @@ function InitSelect2() {
         }
         $el.select2({
             placeholder: 'Search and select group...',
-            allowClear: false,
+            allowClear: true,
             width: '100%'
         });
     } catch (e) { /* Select2 unavailable */ }
-}
-
-function isYnYes(val) {
-    const s = String(val ?? '').trim().toUpperCase();
-    return s === 'Y' || s === '1' || s === 'TRUE';
-}
-
-function pickIsLevelApplicable(item) {
-    if (!item) return 'N';
-    const raw = item.IsLevelApplicable != null ? item.IsLevelApplicable : item.isLevelApplicable;
-    return isYnYes(raw) ? 'Y' : 'N';
-}
-
-function setApplicableCheckbox(val, locked) {
-    const chk = document.getElementById('frmApplicable');
-    if (!chk) return;
-    const forceY = !!locked;
-    chk.checked = forceY ? true : isYnYes(val);
-    chk.disabled = forceY;
-    chk.title = forceY ? 'First and last levels must always be applicable.' : '';
-}
-
-function isAnchorLevelIndex(idx, count) {
-    return count <= 1 || idx === 0 || idx === count - 1;
-}
-
-function isAnchorLevelPosition(levelNum, code) {
-    const count = G_LevelList.length;
-    if (count === 0 || G_EditMode === 'New') return true;
-
-    const idx = G_LevelList.findIndex(function (l) { return String(l.Code) === String(code); });
-    if (idx >= 0) return isAnchorLevelIndex(idx, count);
-
-    const levels = G_LevelList.map(function (l) { return l.Level; });
-    const minLevel = Math.min.apply(null, levels);
-    const maxLevel = Math.max.apply(null, levels);
-    return levelNum === minLevel || levelNum === maxLevel;
-}
-
-function getIsLevelApplicableForSave(levelNum, code) {
-    if (isAnchorLevelPosition(levelNum, code)) return 'Y';
-    const chk = document.getElementById('frmApplicable');
-    return (chk && chk.checked) ? 'Y' : 'N';
-}
-
-function renderApplicableBadge(val) {
-    return isYnYes(val)
-        ? '<span style="color:#059669;font-weight:700;font-size:0.76rem;">Yes</span>'
-        : '<span style="color:#94a3b8;font-weight:600;font-size:0.76rem;">No</span>';
 }
 
 async function LoadLevelList() {
@@ -158,13 +109,14 @@ function RenderTable() {
     tbody.innerHTML = G_LevelList.map(function (item, idx) {
         const isLast = item.Code === lastCode;
 
+        const typeName = String(item.ApprovalType || item.approvalType || 'Project');
+        const typeBadge = typeName.toLowerCase() === 'user'
+            ? '<span class="type-badge-user"><i class="fa fa-user me-1"></i>User</span>'
+            : '<span class="type-badge-project"><i class="fa fa-project-diagram me-1"></i>Project</span>';
+
         const groups = item.GroupName
             ? '<span class="group-tag">' + EscapeHtml(String(item.GroupName).trim()) + '</span>'
             : '<span style="color:#94a3b8;font-size:0.75rem;">—</span>';
-
-        const applicable = renderApplicableBadge(
-            isAnchorLevelIndex(idx, count) ? 'Y' : pickIsLevelApplicable(item)
-        );
 
         const delBtn = isLast
             ? '<button type="button" class="btn-del-level ms-1"' +
@@ -176,8 +128,8 @@ function RenderTable() {
             '<td style="text-align:center;color:#94a3b8;font-size:0.75rem;">' + (idx + 1) + '</td>' +
             '<td style="text-align:center;"><span class="level-badge">' + item.Level + '</span></td>' +
             '<td style="font-weight:600;">' + EscapeHtml(item.LevelDesp) + '</td>' +
+            '<td style="text-align:center;">' + typeBadge + '</td>' +
             '<td>' + groups + '</td>' +
-            '<td style="text-align:center;">' + applicable + '</td>' +
             '<td style="text-align:center;white-space:nowrap;">' +
                 '<button type="button" class="btn-edit-level"' +
                 ' onclick="OpenEditForm(' + item.Code + ')" title="Edit level">' +
@@ -199,9 +151,10 @@ function OpenAddForm() {
         document.getElementById('frmCode').value = '0';
         document.getElementById('frmLevel').value = nextLevel;
         document.getElementById('frmLevelDesc').value = '';
+        document.getElementById('frmApprovalType').value = '';
 
         try { $('#frmGroup').val('').trigger('change'); } catch (e) { }
-        setApplicableCheckbox('Y', true);
+        SetGroupRequired(true);
 
         document.getElementById('formTitle').textContent = 'Add New Level';
         HideInfoBar();
@@ -229,6 +182,7 @@ async function OpenEditForm(code) {
         document.getElementById('frmCode').value = item.Code;
         document.getElementById('frmLevel').value = item.Level;
         document.getElementById('frmLevelDesc').value = item.LevelDesp || '';
+        document.getElementById('frmApprovalType').value = item.ApprovalType || item.approvalType || 'Project';
 
         let groupCode = '';
         if (item.GroupMaster_Code != null && String(item.GroupMaster_Code) !== '0') {
@@ -239,17 +193,27 @@ async function OpenEditForm(code) {
         }
         try { $('#frmGroup').val(groupCode).trigger('change'); } catch (e) { }
 
-        setApplicableCheckbox(
-            pickIsLevelApplicable(item),
-            isAnchorLevelPosition(item.Level, item.Code)
-        );
-
         document.getElementById('formTitle').textContent = 'Edit Level ' + item.Level + ' — ' + (item.LevelDesp || '');
+        OnApprovalTypeChange();
         HideInfoBar();
         ShowForm();
     } finally {
         HideLoader();
     }
+}
+
+function OnApprovalTypeChange() {
+    const type = document.getElementById('frmApprovalType').value;
+    SetGroupRequired(type === 'User' || type === '');
+    HideInfoBar();
+}
+
+function SetGroupRequired(required) {
+    const star = document.getElementById('groupReqStar');
+    const hint = document.getElementById('groupOptionalHint');
+    if (!star || !hint) return;
+    star.style.display = required ? 'inline' : 'none';
+    hint.style.display = required ? 'none' : 'inline';
 }
 
 function ShowForm() {
@@ -278,6 +242,7 @@ async function SaveLevel() {
     const code = parseInt(document.getElementById('frmCode').value) || 0;
     const level = parseInt(document.getElementById('frmLevel').value) || 0;
     const levelDesc = document.getElementById('frmLevelDesc').value.trim();
+    const apType = document.getElementById('frmApprovalType').value;
 
     let groupCode = '0';
     try { groupCode = $('#frmGroup').val() || '0'; } catch (e) { }
@@ -287,14 +252,14 @@ async function SaveLevel() {
         document.getElementById('frmLevelDesc').focus();
         return;
     }
-    if (!groupCode || groupCode === '0') {
-        ShowInfoBar('Group is mandatory.');
-        try {
-            $('#frmGroup').select2('open');
-        } catch (e) {
-            const g = document.getElementById('frmGroup');
-            if (g) g.focus();
-        }
+    if (!apType) {
+        ShowInfoBar('Approval Type is required.');
+        document.getElementById('frmApprovalType').focus();
+        return;
+    }
+    if (apType === 'User' && (!groupCode || groupCode === '0')) {
+        ShowInfoBar('Group is mandatory when Approval Type is "User".');
+        try { $('#frmGroup').select2('open'); } catch (e) { }
         return;
     }
 
@@ -307,8 +272,9 @@ async function SaveLevel() {
         Code: code,
         Level: level,
         LevelDesp: levelDesc,
-        GroupMaster_Code: groupCode,
-        IsLevelApplicable: getIsLevelApplicableForSave(level, code),
+        ApprovalType: apType,
+        GroupMaster_Code: apType === 'User' ? groupCode : 0,
+        IsLevelApplicable: 'Y',
         UserMaster_Code: userCode
     });
 
@@ -409,3 +375,4 @@ window.OpenDeleteModal = OpenDeleteModal;
 window.ConfirmDeleteLevel = ConfirmDeleteLevel;
 window.SaveLevel = SaveLevel;
 window.CancelForm = CancelForm;
+window.OnApprovalTypeChange = OnApprovalTypeChange;
