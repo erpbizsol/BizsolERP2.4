@@ -18,6 +18,7 @@ let G_AllowEdit = true;
 let G_AllowDelete = true;
 let G_AssetVerify = 'N';
 let G_VerifyInProgress = false;
+let G_AssetSaveInProgress = false;
 const TITLE_BRANCH_NEW = 'Adding a new Asset is not allowed for this branch.';
 const TITLE_BRANCH_EDIT = 'Editing is not allowed for this branch.';
 
@@ -217,10 +218,11 @@ function setAssetDetailFormMode(mode) {
         const isEdit = pk > 0;
         const canSave = isEdit ? G_AllowEdit : G_AllowNew;
         $save.show();
+        $save.prop('disabled', false);
         if (canSave) {
-            $save.prop('disabled', false).removeAttr('title');
+            $save.removeAttr('title');
         } else {
-            $save.prop('disabled', true).attr('title', isEdit ? TITLE_BRANCH_EDIT : TITLE_BRANCH_NEW);
+            $save.attr('title', isEdit ? TITLE_BRANCH_EDIT : TITLE_BRANCH_NEW);
         }
     }
 }
@@ -395,6 +397,7 @@ function ResetAssetForm() {
     $('#txtApplicableDateOfDep').val(getTodayIsoLocal());
     $('#txtAccumulatedDep').val('');
     $('#ddlDepartment').val('');
+    resetCreateMachineUi();
     syncTillDateRequiredIndicator();
     syncAssetsMasterAttachButton(false);
 }
@@ -530,11 +533,16 @@ function buildAssetListActionHtml(code, entryDateIso, hasAttach, item) {
         verifyBtn = `<button type="button" class="im-btn-view im-btn-verified-mark ms-1" title="Verified" tabindex="-1"><i class="fas fa-circle-check"></i></button>`;
     }
     const editDisabled = G_AllowEdit ? '' : ` disabled title="${ammEscHtmlAttr(TITLE_BRANCH_EDIT)}"`;
+    const verified = isAmmRecordVerified(item);
+    const delTitle = verified
+        ? 'Verified — delete not allowed'
+        : (!G_AllowDelete ? 'Deleting is not allowed for this branch.' : 'Delete');
+    const delDisabled = (verified || !G_AllowDelete) ? ` disabled title="${ammEscHtmlAttr(delTitle)}"` : ' title="Delete"';
     return (
         '<div class="text-nowrap">' +
         `<button type="button" class="amm-icon-btn view" title="View" onclick="ViewAsset(${code})"><i class="fas fa-eye"></i></button>` +
         `<button type="button" class="amm-icon-btn edit ms-1" title="Edit" onclick="EditAsset(${code})"${editDisabled}><i class="fas fa-pen"></i></button>` +
-        `<button type="button" class="amm-icon-btn del ms-1" title="Delete" onclick="DeleteAsset(${code})"><i class="fas fa-trash"></i></button>` +
+        `<button type="button" class="amm-icon-btn del ms-1"${delDisabled} onclick="DeleteAsset(${code})"><i class="fas fa-trash"></i></button>` +
         verifyBtn +
         `<button type="button" class="amm-icon-btn preview ms-1" title="Print Preview" onclick="PrintAssetQrCode(${code},'preview')"><i class="fa fa-search-plus"></i></button>` +
         `<button type="button" class="amm-icon-btn print ms-1" title="Print QR" onclick="PrintAssetQrCode(${code},'print')"><i class="fa fa-print"></i></button>` +
@@ -690,6 +698,51 @@ function LoadDepartmentDropdown(selected) {
     });
 }
 
+function LoadProcessTypeDropdown(selected) {
+    return AssetsMasterService.GetProcessTypeMasterList().then(function (res) {
+        const data = firstPayloadArray(res);
+        const $ddl = $('#ddlProcessTypeMaster');
+        $ddl.empty().append('<option value="">-- Select Process --</option>');
+        data.forEach(function (item) {
+            const val = item.Code || item.code || 0;
+            const text = item.Desp || item.desp || item.ProcessName || item.processName || '';
+            if (val) $ddl.append(`<option value="${val}">${esc(text)}</option>`);
+        });
+        if (selected) $ddl.val(String(selected));
+    }).catch(function (err) {
+        console.error('LoadProcessTypeDropdown', err);
+        toastr.error('Could not load Process Type Master list. Redeploy USP_WebAPI_AssetsMaster and restart API.');
+    });
+}
+
+function resetCreateMachineUi() {
+    $('#chkCreateMachine').prop('checked', false);
+    $('#ddlProcessTypeMaster').val('');
+    $('#txtMachineShortName').val('');
+    $('#hdnMachineMasterCode').val('0');
+    $('#ammCreateMachineFields').hide();
+    $('#ammCreateMachineRow').show();
+    $('#ammMachineLinkedNote').hide();
+}
+
+function syncCreateMachineFieldsVisibility() {
+  const linked = (parseInt($('#hdnMachineMasterCode').val(), 10) || 0) > 0;
+    if (linked) {
+        $('#ammCreateMachineRow').hide();
+        $('#ammCreateMachineFields').hide();
+        $('#ammMachineLinkedNote').show();
+        $('#lblLinkedMachineCode').text($('#hdnMachineMasterCode').val());
+        return;
+    }
+    $('#ammMachineLinkedNote').hide();
+    $('#ammCreateMachineRow').show();
+    const on = $('#chkCreateMachine').prop('checked');
+    $('#ammCreateMachineFields').toggle(on);
+    if (on && $('#ddlProcessTypeMaster option').length <= 1) {
+        LoadProcessTypeDropdown();
+    }
+}
+
 function isNewAssetForm() {
     return (parseInt($('#hdnAssetCode').val(), 10) || 0) <= 0;
 }
@@ -704,6 +757,11 @@ function validateAssetValueInput(el) {
     let v = (el.value || '').toString().replace(/,/g, '');
     v = v.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
     el.value = v;
+}
+
+function sanitizeMachineShortNameInput(el) {
+    if (!el) return;
+    el.value = (el.value || '').toString().replace(/[^A-Za-z0-9]/g, '').slice(0, 5);
 }
 
 function isValidAssetValueField() {
@@ -728,6 +786,7 @@ function OpenNewAsset() {
             LoadDepartmentDropdown()
         ]).then(function () {
             $('#txtAssetTagNo').val('');
+            syncCreateMachineFieldsVisibility();
         });
     });
 }
@@ -803,10 +862,30 @@ function validateAssetForm() {
         $('#txtTillDate').focus();
         return false;
     }
+    const machineLinked = (parseInt($('#hdnMachineMasterCode').val(), 10) || 0) > 0;
+    if (!machineLinked && $('#chkCreateMachine').prop('checked')) {
+        if (!$('#ddlProcessTypeMaster').val()) {
+            toastr.warning('Please select Process Type Master.');
+            $('#ddlProcessTypeMaster').focus();
+            return false;
+        }
+        const shortName = ($('#txtMachineShortName').val() || '').trim();
+        if (!shortName) {
+            toastr.warning('Please enter Machine Short Name.');
+            $('#txtMachineShortName').focus();
+            return false;
+        }
+        if (!/^[A-Za-z0-9]{1,5}$/.test(shortName)) {
+            toastr.warning('Machine Short Name: up to 5 letters or numbers only (no special characters).');
+            $('#txtMachineShortName').focus();
+            return false;
+        }
+    }
     return true;
 }
 
 function SaveAsset() {
+    if (G_AssetSaveInProgress) return;
     if (G_AssetDetailMode === 'view') return;
     const code = parseInt($('#hdnAssetCode').val(), 10) || 0;
     const isEdit = code > 0;
@@ -823,6 +902,7 @@ function SaveAsset() {
     const purchaseDate = $('#txtPurchaseDate').val() || '';
     const applicableDateOfDep = $('#txtApplicableDateOfDep').val() || '';
     const tillDate = $('#txtTillDate').val() || '';
+    const createMachine = (parseInt($('#hdnMachineMasterCode').val(), 10) || 0) <= 0 && $('#chkCreateMachine').prop('checked');
     // TY_AssetsMaster — column names must match SQL user-defined table type
     const Details = [{
         Code: code,
@@ -846,10 +926,14 @@ function SaveAsset() {
         ApplicableDateOfDep: applicableDateOfDep,
         DepApplicableDate: applicableDateOfDep,
         TillDate: tillDate,
-        AccumulatedDep: ($('#txtAccumulatedDep').val() || '').trim()
+        AccumulatedDep: ($('#txtAccumulatedDep').val() || '').trim(),
+        CreateMachine: createMachine ? 'Y' : 'N',
+        ProcessMaster_Code: createMachine ? (parseInt($('#ddlProcessTypeMaster').val(), 10) || 0) : 0,
+        MachineShortName: createMachine ? ($('#txtMachineShortName').val() || '').trim() : ''
     }];
     const payload = { Code: code, Details: Details };
 
+    G_AssetSaveInProgress = true;
     AssetsMasterService.SaveAssetsMaster(payload).then(function (res) {
         const r = firstPayloadRow(res) || res || {};
         const ok = r.Status === 1 || r.status === 1 || r.Status === 'Y' || r.status === 'Y' || r.IsSuccess === true || r.Success === true;
@@ -872,6 +956,8 @@ function SaveAsset() {
     }).catch(function (err) {
         console.error('SaveAsset', err);
         toastr.error('Error while saving asset.');
+    }).finally(function () {
+        G_AssetSaveInProgress = false;
     });
 }
 window.SaveAsset = SaveAsset;
@@ -901,12 +987,22 @@ function loadAssetRecord(code, mode) {
         $('#txtTillDate').val(parsePurchaseDateToIso(data.TillDate || ''));
         $('#txtAccumulatedDep').val(data.AccumulatedDep != null ? data.AccumulatedDep : '');
         syncTillDateRequiredIndicator();
+        const machineCode = parseInt(data.MachineMaster_Code || data.machineMaster_Code, 10) || 0;
+        $('#hdnMachineMasterCode').val(machineCode);
+        $('#chkCreateMachine').prop('checked', false);
 
         Promise.all([
             LoadAssetTypeDropdown(data.AssetTypeMaster_Code),
             LoadCurrencyDropdown(data.CurrencyMaster_Code),
-            LoadDepartmentDropdown(data.DepartmentMaster_Code)
+            LoadDepartmentDropdown(data.DepartmentMaster_Code),
+            LoadProcessTypeDropdown(data.ProcessMaster_Code || data.processMaster_Code)
         ]).then(function () {
+            if (machineCode > 0) {
+                $('#txtMachineShortName').val(data.MachineShortName || data.machineShortName || '');
+            } else {
+                $('#txtMachineShortName').val('');
+            }
+            syncCreateMachineFieldsVisibility();
             applyCurrencyUi();
             formatAssetValueField();
             refreshAssetsMasterAttachmentButton(pk);
@@ -993,16 +1089,23 @@ function callDeleteAssetApi(code, reason) {
 
 function DeleteAsset(code) {
     if (!code) return;
+    if (!G_AllowDelete) {
+        toastr.warning('Deleting is not allowed for this branch.');
+        return;
+    }
+    const row = findAssetListRowByCode(code);
+    if (row && isAmmRecordVerified(row)) {
+        toastr.warning('This asset is verified and cannot be deleted.');
+        return;
+    }
     checkAssetModuleRight('Delete', 'Y').then(function (response) {
         if (!response || response.CheckModuleOptionRight === 'N') {
             toastr.error((response && response.Msg) || 'Permission denied.');
             return;
         }
-        const row = (G_AssetListRows || []).find(function (x) {
-            return String(x.Code || x.AssetsMaster_Code) === String(code);
-        });
-        const label = row
-            ? (row.RefNo || row.AssetName || row.AssetTagNo || code)
+        const rowAfter = findAssetListRowByCode(code) || row;
+        const label = rowAfter
+            ? (rowAfter.RefNo || rowAfter.AssetName || rowAfter.AssetTagNo || code)
             : code;
         $('#ammDelAssetName').text('"' + String(label).replace(/"/g, '') + '"');
         $('#hfAMMDeleteCode').val(code);
@@ -1321,4 +1424,8 @@ $(document).ready(function () {
     $('#ammSearch').on('input', filterAssetListClientSide);
     $('#ddlAssetType').on('change', clearAssetTagOnTypeChange);
     $('#txtAccumulatedDep').on('input change', syncTillDateRequiredIndicator);
+    $('#chkCreateMachine').on('change', syncCreateMachineFieldsVisibility);
+    $('#txtMachineShortName').on('input', function () {
+        sanitizeMachineShortNameInput(this);
+    });
 });

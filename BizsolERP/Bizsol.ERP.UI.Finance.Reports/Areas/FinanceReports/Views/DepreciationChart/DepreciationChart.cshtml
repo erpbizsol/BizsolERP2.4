@@ -1,0 +1,81 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/_content/Bizsol.WebERP.UI.Finance.Reports/css/DepreciationChart.css?v=dep-chart-v10" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+<div class="dc-page" id="depreciationChartPage">
+    <div class="dc-list-top-panel">
+        <div class="po-list-header">
+            <div class="po-header-top">
+                <div>
+                    <h5><i class="fa fa-chart-line me-2" aria-hidden="true"></i>Depreciation chart</h5>
+                    <small>View asset groups, types and gross block in expandable grid</small>
+                </div>
+            </div>
+            <div class="po-stats-strip">
+                <div class="po-stat-chip">
+                    <div class="val" id="dcStatGroups">0</div>
+                    <div class="lbl">Asset groups</div>
+                </div>
+                <div class="po-stat-chip dc-chip-types">
+                    <div class="val" id="dcStatTypes">0</div>
+                    <div class="lbl">Asset types</div>
+                </div>
+                <div class="po-stat-chip dc-chip-gross">
+                    <div class="val" id="dcStatTotal">0.00</div>
+                    <div class="lbl">Gross block</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="po-filter-bar dc-filter-bar">
+            <div class="row align-items-end g-2">
+                <div class="col-12 col-md-6 col-lg-5">
+                    <label class="dc-filter-lbl" for="txtDcSearch">Search</label>
+                    <div class="dc-search">
+                        <span class="dc-search-icon" aria-hidden="true"><i class="fas fa-search"></i></span>
+                        <input type="text" id="txtDcSearch" class="dc-search-input" placeholder="Group, type, ref no, tag no..." autocomplete="off" />
+                        <button type="button" id="btnDcSearchClear" class="dc-search-clear" title="Clear search" aria-label="Clear search" hidden>
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-12 col-md-auto ms-md-auto dc-filter-actions">
+                    <button type="button" id="btnDcExpandAll" class="dc-btn dc-btn--outline"><i class="fas fa-square-plus" aria-hidden="true"></i> Expand all</button>
+                    <button type="button" id="btnDcCollapseAll" class="dc-btn dc-btn--outline"><i class="fas fa-square-minus" aria-hidden="true"></i> Collapse all</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dc-grid-wrap">
+        <div class="dc-table-wrap">
+            <table class="dc-table" id="tblDepreciationChart">
+                <thead>
+                    <tr>
+                        <th class="dc-col-group">Asset group</th>
+                        <th class="dc-col-type">Asset type</th>
+                        <th class="dc-col-ref">Ref no</th>
+                        <th class="dc-col-tag">Asset tag no</th>
+                        <th class="dc-col-life dc-num">Asset life (years)</th>
+                        <th class="dc-col-dop dc-center">Date of purchase</th>
+                        <th class="dc-col-use dc-center">Put to use date</th>
+                        <th class="dc-col-amt dc-num">Gross block</th>
+                    </tr>
+                </thead>
+                <tbody id="tblDepreciationChartBody">
+                    <tr class="dc-state-row"><td colspan="8"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="7" class="dc-foot-label">Grand total</td>
+                        <td class="dc-num" id="dcFootTotal">0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Finance.Reports/Script/DepreciationChart.js?v=dep-chart-v10"></script>
