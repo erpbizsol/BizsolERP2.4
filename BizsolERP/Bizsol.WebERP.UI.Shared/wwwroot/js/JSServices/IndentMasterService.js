@@ -125,8 +125,8 @@ const IndentMasterService = {
     },
 
     /**
-     * SAVE – POST XML payload. API should call USP_WebAPI_IndentMaster
-     * with Mode='SAVE' and @OtherParameter = payload XML.
+     * SAVE – POST { code, master: TY_IndentMaster[], transactions: TY_IndentTransaction[] }.
+     * API calls USP_WebAPI_IndentMaster Mode='SAVE' with those table types.
      */
     SaveIndentMaster: function SaveIndentMaster(payload) {
         let url = UrlService.API_ENDPOINT_IndentMaster + `/SaveIndentMaster`;
