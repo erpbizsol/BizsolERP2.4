@@ -15,6 +15,8 @@ var TITLE_BRANCH_NEW = 'Adding a new Maintenance Type is not allowed for this br
 var TITLE_BRANCH_EDIT = 'Editing is not allowed for this branch.';
 var G_SaveInProgress = false;
 var MODULE_NAME = 'Maintenance Type Master';
+var PAGE_TITLE = 'Maintenance Check List Master';
+var FIELD_CHECKLIST_NAME = 'Maintenance Check List Name';
 
 function getModuleName() {
     try {
@@ -64,7 +66,8 @@ function pickRecord(response) {
     if (list.length) return list[0];
     if (response && typeof response === 'object') {
         if (getRecordCode(response) > 0
-            || response.MaintenanceTypeName != null
+            || response.MaintenanceCheckListName != null
+            || response.maintenanceCheckListName != null
             || response['Maintenance Type Name'] != null) {
             return response;
         }
@@ -73,7 +76,7 @@ function pickRecord(response) {
 }
 
 function fillForm(row, editCode) {
-    $('#txtMaintenanceTypeName').val(row.MaintenanceTypeName || row.maintenanceTypeName || row['Maintenance Type Name'] || '');
+    $('#txtMaintenanceTypeName').val(row.MaintenanceCheckListName || row.maintenanceCheckListName || row['Maintenance Type Name'] || '');
     $('#txtDesp').val(row.DESP || row.desp || '');
 }
 
@@ -215,7 +218,7 @@ function loadMaintenanceTypeList() {
             return {
                 'S.No.': item['S.No.'],
                 Code: code,
-                'Maintenance type name': item.MaintenanceTypeName || item.maintenanceTypeName || item['Maintenance Type Name'] || '—',
+                [FIELD_CHECKLIST_NAME]: item.MaintenanceCheckListName || item.maintenanceCheckListName || item['Maintenance Type Name'] || '—',
                 Description: item.DESP || item.desp || '—',
                 Action: buildActionButtons(code, item)
             };
@@ -225,7 +228,7 @@ function loadMaintenanceTypeList() {
             'MaintenanceTypeMaster-body',
             gridRows,
             false, [],
-            ['Maintenance type name', 'Description'],
+            [FIELD_CHECKLIST_NAME, 'Description'],
             [],
             [],
             [],
@@ -235,7 +238,7 @@ function loadMaintenanceTypeList() {
                 Action: 'center;width:130px;'
             },
             true, null, null, null,
-            'Search by Maintenance Type Name, Description...'
+            'Search by ' + FIELD_CHECKLIST_NAME + ', Description...'
         );
     }).catch(function (err) {
         toastr.error(formatAjaxError(err, 'Failed to load Maintenance Type list.'));
@@ -256,8 +259,8 @@ function openNewMaintenanceType() {
         }
         G_EditCode = 0;
         clearFormFields();
-        $('#formModalTitle').text('Add New Maintenance Type');
-        $('#btnSaveText').text('Save Maintenance Type');
+        $('#formModalTitle').text('Add New ' + FIELD_CHECKLIST_NAME);
+        $('#btnSaveText').text('Save');
         $('#maintenanceTypeDialogBackdrop').addClass('show');
         setTimeout(function () { $('#txtMaintenanceTypeName').focus(); }, 140);
     });
@@ -265,8 +268,8 @@ function openNewMaintenanceType() {
 
 function openEditMaintenanceTypeModal(row, editCode) {
     fillForm(row, editCode);
-    $('#formModalTitle').text('Edit Maintenance Type');
-    $('#btnSaveText').text('Update Maintenance Type');
+    $('#formModalTitle').text('Edit ' + FIELD_CHECKLIST_NAME);
+    $('#btnSaveText').text('Update');
     $('#maintenanceTypeDialogBackdrop').addClass('show');
     setTimeout(function () { $('#txtMaintenanceTypeName').focus(); }, 140);
 }
@@ -284,21 +287,21 @@ function EditMaintenanceType(code) {
             return;
         }
         G_EditCode = editCode;
+        var listRow = findListRowByCode(editCode);
         clearFormFields();
         MaintenanceTypeMasterService.GetMaintenanceTypeMasterByCode(editCode).then(function (response) {
-            var row = pickRecord(response) || findListRowByCode(editCode);
+            var row = pickRecord(response) || listRow;
             if (!row) {
-                toastr.error('Failed to load Maintenance Type data.');
+                toastr.error('Failed to load maintenance checklist data.');
                 return;
             }
             openEditMaintenanceTypeModal(row, editCode);
         }).catch(function () {
-            var row = findListRowByCode(editCode);
-            if (!row) {
-                toastr.error('Error loading Maintenance Type. Please try again.');
+            if (!listRow) {
+                toastr.error('Error loading maintenance checklist. Please try again.');
                 return;
             }
-            openEditMaintenanceTypeModal(row, editCode);
+            openEditMaintenanceTypeModal(listRow, editCode);
         });
     });
 }
@@ -354,7 +357,7 @@ function saveMaintenanceType() {
         }
         var payload = [{
             Code: editCode,
-            MaintenanceTypeName: maintenanceTypeName,
+            MaintenanceCheckListName: maintenanceTypeName,
             DESP: desp
         }];
         $('#btnSaveMaintenanceType').prop('disabled', true);
@@ -464,6 +467,7 @@ function DoDeleteMaintenanceType() {
 
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
+    $('.im-header-title').text(PAGE_TITLE);
     $('#btnNewMaintenanceType').on('click', openNewMaintenanceType);
     $('#btnModalClose, #btnCancelMaintenanceType').on('click', closeForm);
     $('#btnSaveMaintenanceType').on('click', saveMaintenanceType);
