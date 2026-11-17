@@ -341,8 +341,8 @@ function emptyRow(message) {
 function totalCells(opening, received, payment, balance, drcr) {
     return '<td>Total</td>'
         + '<td class="bb-amt">' + formatAmt(opening) + '</td>'
-        + '<td class="bb-amt">' + formatAmt(received) + '</td>'
         + '<td class="bb-amt">' + formatAmt(payment) + '</td>'
+        + '<td class="bb-amt">' + formatAmt(received) + '</td>'
         + '<td class="bb-amt">' + formatAmt(balance) + '</td>'
         + '<td class="bb-side">' + escHtml(drcr || '') + '</td>';
 }
@@ -360,12 +360,12 @@ function rowNet(row) {
 
 function drCrOf(balance) {
     var n = Math.round((num(balance) + Number.EPSILON) * 100) / 100;
-    if (n > 0) return 'Dr';
-    if (n < 0) return 'Cr';
+    if (n > 0) return 'Cr';
+    if (n < 0) return 'Dr';
     return '';
 }
 
-/* Same sign rule as the vendor ledger: received increases the balance (Dr), payment reduces it (Cr). */
+/* Opening + received − payment: a positive balance is Cr, a negative balance is Dr. */
 function applyRunningBalance(rows) {
     var run = 0;
     rows.forEach(function (row) {
@@ -404,18 +404,12 @@ function renderRows(rows) {
         var cls = canDrill ? ' class="bb-row-link"' : '';
         html += '<tr' + cls + '><td class="bb-particular">' + escHtml(row.Particular) + '</td>'
             + '<td class="bb-amt">' + formatAmt(row.OpeningAmount) + '</td>'
-            + '<td class="bb-amt">' + formatAmt(row.ReceivedAmount) + '</td>'
             + '<td class="bb-amt">' + formatAmt(row.PaymentAmount) + '</td>'
+            + '<td class="bb-amt">' + formatAmt(row.ReceivedAmount) + '</td>'
             + '<td class="bb-amt">' + formatAmt(row.Balance) + '</td>'
             + '<td class="bb-side">' + escHtml(row.DrCr) + '</td></tr>';
     });
-    if (rows.bulkOpening != null && drill.level !== 'PROJECTWISE' && drill.level !== 'SUBPROJECTWISE' && rows.length > 1) {
-        opening = rows.bulkOpening;
-    }
     var balance = rows.finalBalance || 0;
-    if (rows.bulkOpening != null && drill.level !== 'PROJECTWISE' && drill.level !== 'SUBPROJECTWISE' && rows.length > 1) {
-        balance = Math.round((opening + received - payment + Number.EPSILON) * 100) / 100;
-    }
     $('#tblBankBookBody').html(html);
     $('#tblBankBookBody tr.bb-row-link').each(function (i) {
         $(this).data('row', rows[i]);
@@ -429,13 +423,9 @@ function renderRows(rows) {
 function applyBulkOpening(rows) {
     rows.bulkOpening = null;
     if (!rows.length || drill.level === 'PROJECTWISE' || drill.level === 'SUBPROJECTWISE') return;
-    var scope = num(rows[0].ScopeOpening);
-    rows.bulkOpening = scope;
-    if (rows.length === 1) {
-        rows[0].OpeningAmount = scope;
-    } else {
-        rows[0].OpeningAmount = num(rows[0].OpeningAmount) + scope;
-    }
+    rows.forEach(function (row) {
+        row.OpeningAmount = 0;
+    });
 }
 
 function parseOpeningBanks(text) {
@@ -452,7 +442,7 @@ function parseOpeningBanks(text) {
 
 function renderOpeningNote(rows) {
     var $note = $('#bbOpenNote');
-    if (drill.level === 'PROJECTWISE' || !rows.length) {
+    if (drill.level !== 'SUBPROJECTWISE' || !rows.length) {
         $note.empty().attr('hidden', 'hidden');
         return;
     }
@@ -461,10 +451,7 @@ function renderOpeningNote(rows) {
         $note.empty().attr('hidden', 'hidden');
         return;
     }
-    var title = drill.level === 'SUBPROJECTWISE'
-        ? 'Opening balances for this project'
-        : 'Opening balances for this subproject';
-    var html = '<span class="bb-open-note-title">' + escHtml(title) + '</span>';
+    var html = '<span class="bb-open-note-title">Opening balances for this project</span>';
     banks.forEach(function (bank) {
         html += '<span class="bb-open-bank">' + escHtml(bank.name) + ' <b>' + formatAmt(bank.amount) + '</b></span>';
     });
@@ -539,7 +526,7 @@ function exportMetaRows() {
         ['Level', levelMeta(drill.level).label, '', '', '', ''],
         ['Path', parents.length ? parents.join(' > ') : levelMeta(drill.level).label, '', '', '', ''],
         ['', '', '', '', '', ''],
-        ['Particular', 'Opening', 'Received amount', 'Payment amount', 'Balance', 'Dr/Cr']
+        ['Particular', 'Opening', 'Payment amount', 'Received amount', 'Balance', 'Dr/Cr']
     ];
 }
 
@@ -570,8 +557,8 @@ function exportExcel() {
         var tr = $('<tr/>');
         tr.append($('<td/>').text(row.Particular));
         tr.append($('<td/>').text(formatAmt(row.OpeningAmount)));
-        tr.append($('<td/>').text(formatAmt(row.ReceivedAmount)));
         tr.append($('<td/>').text(formatAmt(row.PaymentAmount)));
+        tr.append($('<td/>').text(formatAmt(row.ReceivedAmount)));
         tr.append($('<td/>').text(formatAmt(row.Balance)));
         tr.append($('<td/>').text(row.DrCr || ''));
         $body.append(tr);
@@ -579,8 +566,8 @@ function exportExcel() {
     var total = $('<tr/>');
     total.append($('<td/>').text('Total'));
     total.append($('<td/>').text(formatAmt(opening)));
-    total.append($('<td/>').text(formatAmt(received)));
     total.append($('<td/>').text(formatAmt(payment)));
+    total.append($('<td/>').text(formatAmt(received)));
     total.append($('<td/>').text(formatAmt(balance)));
     total.append($('<td/>').text(drCrOf(balance)));
     $body.append(total);

@@ -19,7 +19,8 @@
                     </div>
 
                     <div class="col-12">
-                        <video id="video" width="230" height="200" style="border: 1px solid gray"></video>
+                        <video id="video" width="230" height="200" style="border: 1px solid gray" autoplay muted playsinline webkit-playsinline></video>
+                        <input type="file" id="ScanQRCodeByCameraControl_Photo" accept="image/*" capture="environment" style="display:none" />
                     </div>
 
                     <div class="col-12" id="ScanQRCodeByCameraControl_SourceSelectPanel">
@@ -122,8 +123,216 @@
            toastr.error('QR scanner failed to start.');
        }
 
-       function requireVideoSource() {
+       var scanMode = '';
+       var cameraOpened = false;
+       var scanToken = 0;
+
+       function isIosDevice() {
+           var ua = navigator.userAgent || '';
+           var iOS = /iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+           return iOS || document.documentElement.classList.contains('ios-device');
+       }
+
+       function prepareScanVideo() {
+           var video = document.getElementById('video');
+           if (!video) {
+               return;
+           }
+           video.setAttribute('autoplay', 'true');
+           video.setAttribute('muted', 'true');
+           video.setAttribute('playsinline', 'true');
+           video.setAttribute('webkit-playsinline', 'true');
+           video.autoplay = true;
+           video.muted = true;
+           video.playsInline = true;
+       }
+
+       function cameraErrorText(err) {
+           var detail = '';
+           if (err) {
+               detail = (err.name || '') + ' ' + (err.message || '');
+           }
+           if (!window.isSecureContext) {
+               return 'iPhone camera needs an https address. Open this site with https and allow camera access.';
+           }
+           if (/NotAllowed|Permission|denied|SecurityError/i.test(detail)) {
+               return 'Allow camera access for this site in iPhone Settings, then tap Single Scan again.';
+           }
+           if (/NotReadable|TrackStart|AbortError/i.test(detail)) {
+               return 'The camera is busy. Close other apps using the camera, then tap Single Scan again.';
+           }
+           if (/NotFound|Overconstrained/i.test(detail)) {
+               return 'No usable camera was found. Tap Single Scan to try again.';
+           }
+           return isIosDevice()
+               ? 'Unable to open the iPhone camera. Allow camera access, then tap Single Scan again.'
+               : 'Allow camera permission to start scanning.';
+       }
+
+       function constraintAttempts() {
+           var attempts = [];
+           if (selectedDeviceId && !isIosDevice()) {
+               attempts.push({ audio: false, video: { deviceId: { exact: selectedDeviceId } } });
+           }
            if (selectedDeviceId) {
+               attempts.push({ audio: false, video: { deviceId: { ideal: selectedDeviceId } } });
+           }
+           attempts.push({ audio: false, video: { facingMode: { ideal: 'environment' } } });
+           attempts.push({ audio: false, video: true });
+           return attempts;
+       }
+
+       function deliverScanResult(result) {
+           var outputTextID = $('#hfOutputQRTextElementID').val();
+           $('#' + outputTextID).val(result.text);
+           toastr.success('Read text Is: ' + result.text);
+           if (scanMode === 'single') {
+               try {
+                   codeReader.reset();
+               } catch (err) {
+                   console.log(err);
+               }
+               $("#ScanQRCodeByCameraControlModal").modal('hide');
+           }
+           window[$('#hfCallBackFunctionName').val()]();
+       }
+
+       function openPhotoFallback() {
+           var photo = document.getElementById('ScanQRCodeByCameraControl_Photo');
+           if (!photo) {
+               toastr.error(cameraErrorText());
+               return;
+           }
+           photo.value = '';
+           photo.click();
+       }
+
+       function decodePhotoFile(file) {
+           if (!file || !codeReader) {
+               return;
+           }
+           var reader = new FileReader();
+           reader.onload = function () {
+               var img = new Image();
+               img.onload = function () {
+                   var task = codeReader.decodeFromImageElement(img);
+                   Promise.resolve(task).then(function (result) {
+                       if (result) {
+                           deliverScanResult(result);
+                       }
+                   }).catch(function () {
+                       toastr.error('No QR code found in the photo. Take the photo again.');
+                   });
+               };
+               img.onerror = function () {
+                   toastr.error('The photo could not be read. Take the photo again.');
+               };
+               img.src = reader.result;
+           };
+           reader.readAsDataURL(file);
+       }
+
+       var photoInput = document.getElementById('ScanQRCodeByCameraControl_Photo');
+       if (photoInput) {
+           photoInput.addEventListener('change', function () {
+               if (photoInput.files && photoInput.files[0]) {
+                   decodePhotoFile(photoInput.files[0]);
+               }
+           });
+       }
+
+       function startScan(mode) {
+           if (!codeReader) {
+               toastr.error('QR scanner failed to start.');
+               return;
+           }
+           var token = ++scanToken;
+           scanMode = mode;
+           prepareScanVideo();
+           if (isIosDevice() && (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.isSecureContext)) {
+               openPhotoFallback();
+               return;
+           }
+           var attempts = constraintAttempts();
+           var index = 0;
+           var lastErr = null;
+           function beginAttempts() {
+               tryNext();
+           }
+           function tryNext() {
+               if (token !== scanToken) {
+                   return;
+               }
+               if (index >= attempts.length) {
+                   cameraOpened = false;
+                   if (isIosDevice()) {
+                       var detail = lastErr ? ((lastErr.name || '') + ' ' + (lastErr.message || '')) : '';
+                       if (!window.isSecureContext || /NotAllowed|Permission|denied|SecurityError/i.test(detail)) {
+                           toastr.error(cameraErrorText(lastErr));
+                       }
+                       openPhotoFallback();
+                       return;
+                   }
+                   toastr.error(cameraErrorText(lastErr));
+                   return;
+               }
+               var constraints = attempts[index++];
+               var promise = codeReader.decodeFromConstraints(constraints, 'video', function (result, err) {
+                   if (result) {
+                       deliverScanResult(result);
+                       return;
+                   }
+                   if (err && !(err instanceof ZXing.NotFoundException)) {
+                       console.log(err);
+                   }
+               });
+               if (!promise || !promise.then) {
+                   cameraOpened = true;
+                   return;
+               }
+               promise.then(function () {
+                   if (token !== scanToken) {
+                       return;
+                   }
+                   cameraOpened = true;
+                   var hint = document.getElementById('ScanQRCodeByCameraControl_IosHint');
+                   if (hint) {
+                       hint.remove();
+                   }
+                   if (codeReader && codeReader.listVideoInputDevices) {
+                       codeReader.listVideoInputDevices().then(bindVideoSources).catch(function (err) {
+                           console.log(err);
+                       });
+                   }
+               }).catch(function (err) {
+                   if (token !== scanToken) {
+                       return;
+                   }
+                   console.log(err);
+                   lastErr = err;
+                   try {
+                       codeReader.reset();
+                   } catch (resetErr) {
+                       console.log(resetErr);
+                   }
+                   tryNext();
+               });
+           }
+           if (cameraOpened) {
+               try {
+                   codeReader.reset();
+               } catch (err) {
+                   console.log(err);
+               }
+               cameraOpened = false;
+               setTimeout(beginAttempts, isIosDevice() ? 300 : 0);
+               return;
+           }
+           beginAttempts();
+       }
+
+       function requireVideoSource() {
+           if (isIosDevice() || selectedDeviceId || !cameraOpened) {
                return true;
            }
            toastr.error('Video source is required. Please select a camera.');
@@ -148,55 +357,14 @@
            if (!requireVideoSource()) {
                return;
            }
-
-           codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
-
-               if (result) {
-                   let outputTextID=$('#hfOutputQRTextElementID').val();
-                   console.log(result)
-                   // this.alert('Read text Is: ' + result.text);
-
-                    $('#'+outputTextID).val(result.text);
-                    
-                     toastr.success('Read text Is: ' + result.text);
-                   codeReader.reset();
-                   $("#ScanQRCodeByCameraControlModal").modal('hide')
-                   window[$('#hfCallBackFunctionName').val()]();
-               }
-               if (err && !(err instanceof ZXing.NotFoundException)) {
-                  //console.error(err)
-                  toastr.error(err);
-               }
-           })
-
-           console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
+           startScan('single');
        })
 
        document.getElementById('ScanQRCodeByCameraControl_btnMultiple').addEventListener('click', () => {
            if (!requireVideoSource()) {
                return;
            }
-
-           codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
-
-               if (result) {
-                   let outputTextID=$('#hfOutputQRTextElementID').val();
-                   console.log(result)
-                   // this.alert('Read text Is: ' + result.text);
-
-                    $('#'+outputTextID).val(result.text);
-
-                     toastr.success('Read text Is: ' + result.text);
-                   
-                   window[$('#hfCallBackFunctionName').val()]();
-               }
-               if (err && !(err instanceof ZXing.NotFoundException)) {
-                  //console.error(err)
-                  toastr.error(err);
-               }
-           })
-
-           console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
+           startScan('multiple');
        })
 
        document.getElementById('ScanQRCodeByCameraControl_btnReset').addEventListener('click', () => {
@@ -209,41 +377,75 @@
            var devices = (videoInputDevices || []).filter(function (element) {
                return element && element.deviceId;
            });
-
-           ScanQRCodeByCameraControl_SourceSelect.innerHTML = '';
-           if (devices.length < 1) {
-               selectedDeviceId = '';
-               var emptyOption = document.createElement('option');
-               emptyOption.value = '';
-               emptyOption.text = 'Select video source';
-               ScanQRCodeByCameraControl_SourceSelect.appendChild(emptyOption);
-               initVideoSourceSelect();
-               toastr.error('Video source is required. Allow camera permission, then open Scan QR Code again.');
+           var nextKey = devices.map(function (element) { return element.deviceId; }).join('|');
+           var currentKey = Array.prototype.map.call(ScanQRCodeByCameraControl_SourceSelect.options, function (option) {
+               return option.value;
+           }).filter(Boolean).join('|');
+           if (nextKey && nextKey === currentKey) {
                return;
            }
 
-           selectedDeviceId = devices[0].deviceId
-           devices.forEach((element) => {
+           ScanQRCodeByCameraControl_SourceSelect.innerHTML = '';
+           if (devices.length < 1) {
+               if (!cameraOpened) {
+                   selectedDeviceId = '';
+               }
+               var emptyOption = document.createElement('option');
+               emptyOption.value = '';
+               emptyOption.text = isIosDevice() ? 'Rear camera' : 'Select video source';
+               ScanQRCodeByCameraControl_SourceSelect.appendChild(emptyOption);
+               initVideoSourceSelect();
+               if (!isIosDevice() && !cameraOpened) {
+                   toastr.error('Video source is required. Allow camera permission, then open Scan QR Code again.');
+               }
+               return;
+           }
+
+           var preferred = devices[0];
+           devices.forEach(function (element) {
+               if (/back|rear|environment/i.test(element.label || '')) {
+                   preferred = element;
+               }
+           });
+           if (!(selectedDeviceId && devices.some(function (element) { return element.deviceId === selectedDeviceId; }))) {
+               selectedDeviceId = preferred.deviceId;
+           }
+           devices.forEach((element, index) => {
                const sourceOption = document.createElement('option')
-               sourceOption.text = element.label
+               sourceOption.text = element.label || ('Camera ' + (index + 1))
                sourceOption.value = element.deviceId
                ScanQRCodeByCameraControl_SourceSelect.appendChild(sourceOption);
            })
            ScanQRCodeByCameraControl_SourceSelect.value = selectedDeviceId;
+           $('#ScanQRCodeByCameraControl_SourceSelect').off('change.scanqr').on('change.scanqr', function () {
+               var nextId = this.value;
+               if (!nextId || nextId === selectedDeviceId) {
+                   return;
+               }
+               selectedDeviceId = nextId;
+               if (scanMode) {
+                   startScan(scanMode);
+               }
+           });
            initVideoSourceSelect();
-
-           ScanQRCodeByCameraControl_SourceSelect.onchange = () => {
-               selectedDeviceId = ScanQRCodeByCameraControl_SourceSelect.value;
-               initVideoSourceSelect();
-           };
 
            const ScanQRCodeByCameraControl_SourceSelectPanel = document.getElementById('ScanQRCodeByCameraControl_SourceSelectPanel')
            ScanQRCodeByCameraControl_SourceSelectPanel.style.display = 'block'
        }
 
        var cameraPermission = Promise.resolve();
-       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-           cameraPermission = navigator.mediaDevices.getUserMedia({ video: true })
+       prepareScanVideo();
+       if (isIosDevice()) {
+           var videoHost = document.getElementById('video');
+           if (videoHost && !document.getElementById('ScanQRCodeByCameraControl_IosHint')) {
+               var hint = document.createElement('div');
+               hint.id = 'ScanQRCodeByCameraControl_IosHint';
+               hint.style.cssText = 'font-size:13px;color:#275481;margin-top:6px;';
+               hint.textContent = 'Tap Single Scan and allow camera access.';
+               videoHost.insertAdjacentElement('afterend', hint);
+           }
+       } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+           cameraPermission = navigator.mediaDevices.getUserMedia({ audio: false, video: true })
                .then(function (stream) {
                    stream.getTracks().forEach(function (track) { track.stop(); });
                })
@@ -262,7 +464,9 @@
            })
            .catch((err) => {
                console.log(err);
-               toastr.error(err);
+               if (!isIosDevice()) {
+                   toastr.error(cameraErrorText(err));
+               }
                bindVideoSources([]);
            })
     }

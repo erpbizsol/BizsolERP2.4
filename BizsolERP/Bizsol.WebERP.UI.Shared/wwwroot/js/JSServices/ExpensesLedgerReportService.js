@@ -91,14 +91,24 @@ const ExpensesLedgerReportService = {
     //    });
     //},
     GetNestedMarketingManList: function GetNestedMarketingManList() {
-        var authKeyData = JSON.parse(sessionStorage.getItem('authKey'));
-        var userMasterCode = authKeyData.UserMaster_Code;
-        var URL = UrlService.API_ENDPOINT_SALESPERSON + `/GetNestedMarketingManList?UserMaster_Code=` + userMasterCode + `&MarketingManMaster_Code=0`;
-        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
-            function (value) {
-                return value;
-            }
-        );
+        let userMasterCode = 0;
+        try {
+            const authKeyData = JSON.parse(sessionStorage.getItem('authKey') || '{}');
+            userMasterCode = authKeyData && authKeyData.UserMaster_Code ? authKeyData.UserMaster_Code : 0;
+        } catch (e) {
+            userMasterCode = 0;
+        }
+        const URL = UrlService.API_ENDPOINT_SALESPERSON + `/GetNestedMarketingManList?UserMaster_Code=` + userMasterCode + `&MarketingManMaster_Code=0`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) {
+            return value;
+        });
+    },
+
+    GetVendorList: function GetVendorList() {
+        const url = UrlService.API_ENDPOINT_GRNPaymentEntry + '/GetVendor';
+        return promiseAjaxCallApi.CallAPI('GET', url, null).then(function (value) {
+            return value;
+        });
     },
 
     GetProjectMasterList: function GetProjectMasterList(employeeMaster_Code) {

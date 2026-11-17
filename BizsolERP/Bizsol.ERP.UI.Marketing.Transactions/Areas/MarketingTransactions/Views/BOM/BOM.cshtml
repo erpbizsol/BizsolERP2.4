@@ -3,7 +3,7 @@
 }
 <link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=31"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Marketing.Transactions/Script/BOM.js?v=32"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/BizSolInputControl.js"></script>
 
 <style>
@@ -650,6 +650,84 @@
         border-color: var(--accent-primary);
         background: #fff;
         box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+    }
+
+    .bom-grid-search-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 10px 22px 12px;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--light-bg, #f8fafc);
+    }
+
+    .bom-grid-search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 220px;
+        max-width: 420px;
+    }
+
+    .bom-grid-search-wrap > i.fa-search {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 13px;
+        pointer-events: none;
+    }
+
+    #bomGridSearch {
+        width: 100%;
+        padding: 8px 34px 8px 36px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        font-size: 13.5px;
+        outline: none;
+        background: #fff;
+        color: var(--text-dark);
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+    #bomGridSearch:focus {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+    }
+
+    .bom-grid-search-clear {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .bom-grid-search-clear:hover {
+        background: rgba(239,68,68,.1);
+        color: #ef4444;
+    }
+
+    .bom-grid-search-meta {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+
+    .bom-grid-search-meta.is-empty {
+        color: #b45309;
     }
 
     .pm-table-wrap {
@@ -1399,6 +1477,14 @@
             max-width: 100%;
         }
 
+        .bom-grid-search-bar {
+            padding: 10px 14px;
+        }
+
+        .bom-grid-search-wrap {
+            max-width: 100%;
+        }
+
         .pm-btn-new {
             width: 100%;
             justify-content: center;
@@ -1667,6 +1753,17 @@
                 <i class="fas fa-arrow-left"></i> Back
             </button>
         </div>
+    </div>
+
+    <div class="bom-grid-search-bar">
+        <div class="bom-grid-search-wrap">
+            <i class="fas fa-search"></i>
+            <input type="text" id="bomGridSearch" placeholder="Search item, spec, category, qty, amount…" autocomplete="off" />
+            <button type="button" id="btnClearBomGridSearch" class="bom-grid-search-clear" title="Clear search" style="display:none;" aria-label="Clear search">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <span id="bomGridSearchMeta" class="bom-grid-search-meta"></span>
     </div>
 
     <input type="hidden" id="hfBOMCode" value="0" />

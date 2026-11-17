@@ -45,6 +45,25 @@
     .pmr-page.pmr-budget-detail #pmrBudgetDetail {
         display: block;
     }
+    .pmr-budget-detail-summary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.45rem 0.85rem;
+        margin: 0 0 0.85rem;
+        padding: 0.55rem 0.8rem;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        color: #1e293b;
+    }
+    .pmr-budget-detail-summary strong {
+        font-weight: 800;
+    }
+    .pmr-budget-detail-summary .pmr-bal-neg {
+        color: #b91c1c;
+    }
     .pmr-budget-detail-grid {
         display: grid;
         grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -53,10 +72,18 @@
     }
     .pmr-budget-detail-card {
         min-width: 0;
+        display: flex;
+        flex-direction: column;
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
         overflow: hidden;
+        max-height: min(62vh, 38rem);
+    }
+    .pmr-budget-detail-table-wrap {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
     }
     .pmr-budget-detail-card h3 {
         margin: 0;
@@ -73,6 +100,9 @@
         border-collapse: collapse;
     }
     .pmr-budget-detail-card thead th {
+        position: sticky;
+        top: 0;
+        z-index: 3;
         background: #f4c430 !important;
         color: #1e293b !important;
         font-size: 0.72rem;
@@ -91,9 +121,13 @@
         border: 1px solid #e2e8f0;
         vertical-align: middle;
     }
-    .pmr-budget-detail-card tr.row-total td {
-        font-weight: 700;
-        background: #fff8d6;
+    .pmr-budget-detail-card thead tr.row-total th {
+        top: 2.05rem;
+        z-index: 2;
+        background: #fff8d6 !important;
+        color: #1e293b !important;
+        font-weight: 800;
+        box-shadow: 0 1px 0 #e0b000;
     }
     .pmr-budget-detail-empty {
         padding: 0.85rem 0.75rem;
@@ -911,7 +945,7 @@
     #tblPOGRN td.pogr-col-balance,
     #tblPOGRN thead th.col-grn:last-child,
     #tblPOGRN td.col-grn:last-child {
-        min-width: 7.8rem;
+        min-width: 8.8rem;
     }
     #tblPOGRN td.num, #tblPOGRN th.num {
         text-align: right;
@@ -972,6 +1006,9 @@
         vertical-align: middle;
         font-weight: 700;
         background: #eff6ff !important;
+    }
+    #tblPOGRN td.pogr-po-once.col-grn {
+        background: #f0fdfa !important;
     }
     #tblPOGRN tr.pogr-grn-row td.col-grn {
         background: #f0fdfa;
@@ -1128,20 +1165,27 @@
                 <tbody id="pogrTableBody"></tbody>
             </table>
             <div id="pmrBudgetDetail">
+                <div id="pmrBudgetDetailSummary" class="pmr-budget-detail-summary"></div>
                 <div class="pmr-budget-detail-grid">
                     <div class="pmr-budget-detail-card">
                         <h3 id="pmrBudgetItemTitle">Items</h3>
-                        <table id="tblBudgetItems" class="table table-sm mb-0">
-                            <thead id="tblBudgetItemsHead"></thead>
-                            <tbody id="tblBudgetItemsBody"></tbody>
-                        </table>
+                        <div class="pmr-budget-detail-table-wrap">
+                            <table id="tblBudgetItems" class="table table-sm mb-0">
+                                <thead id="tblBudgetItemsHead"></thead>
+                                <tbody id="tblBudgetItemsBody"></tbody>
+                                <tfoot id="tblBudgetItemsFoot"></tfoot>
+                            </table>
+                        </div>
                     </div>
                     <div class="pmr-budget-detail-card">
                         <h3 id="pmrBudgetPayTitle">Payment</h3>
-                        <table id="tblBudgetPays" class="table table-sm mb-0">
-                            <thead id="tblBudgetPaysHead"></thead>
-                            <tbody id="tblBudgetPaysBody"></tbody>
-                        </table>
+                        <div class="pmr-budget-detail-table-wrap">
+                            <table id="tblBudgetPays" class="table table-sm mb-0">
+                                <thead id="tblBudgetPaysHead"></thead>
+                                <tbody id="tblBudgetPaysBody"></tbody>
+                                <tfoot id="tblBudgetPaysFoot"></tfoot>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

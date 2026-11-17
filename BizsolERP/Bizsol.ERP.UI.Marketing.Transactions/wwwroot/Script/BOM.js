@@ -71,6 +71,16 @@ $(document).ready(function () {
         filterBOMs($(this).val().toLowerCase().trim());
     });
 
+    ensureBomGridSearchUi();
+    $('#bomGridSearch').on('input', function () {
+        filterBomEntryGrid();
+    });
+    $('#btnClearBomGridSearch').on('click', function () {
+        $('#bomGridSearch').val('');
+        filterBomEntryGrid();
+        $('#bomGridSearch').trigger('focus');
+    });
+
     ensureBomItemSelect2Styles();
     $('#dvBomTableWrap').on('scroll.bomItemS2', closeOpenBomItemDropdowns);
 
@@ -310,6 +320,89 @@ function filterBOMs(query) {
         return projectName.includes(query) || subProjectName.includes(query);
     });
     bindBOMGrid(filtered);
+}
+
+function ensureBomGridSearchUi() {
+    if ($('#bomGridSearch').length) return;
+
+    if (!document.getElementById('bom-grid-search-styles')) {
+        const style = document.createElement('style');
+        style.id = 'bom-grid-search-styles';
+        style.textContent = [
+            '.bom-grid-search-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 22px 12px;border-bottom:1px solid var(--border-light,#e5e7eb);background:#f8fafc;}',
+            '.bom-grid-search-wrap{position:relative;flex:1;min-width:220px;max-width:420px;}',
+            '.bom-grid-search-wrap>i.fa-search{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;}',
+            '#bomGridSearch{width:100%;padding:8px 34px 8px 36px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:13.5px;outline:none;background:#fff;color:#0f172a;}',
+            '#bomGridSearch:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.15);}',
+            '.bom-grid-search-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:24px;height:24px;border:none;border-radius:6px;background:transparent;color:#94a3b8;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;}',
+            '.bom-grid-search-clear:hover{background:rgba(239,68,68,.1);color:#ef4444;}',
+            '.bom-grid-search-meta{font-size:12.5px;font-weight:600;color:#64748b;white-space:nowrap;}',
+            '.bom-grid-search-meta.is-empty{color:#b45309;}',
+            '@media (max-width:768px){.bom-grid-search-bar{padding:10px 14px;}.bom-grid-search-wrap{max-width:100%;}}'
+        ].join('');
+        document.head.appendChild(style);
+    }
+
+    const bar = $(
+        '<div class="bom-grid-search-bar">' +
+            '<div class="bom-grid-search-wrap">' +
+                '<i class="fas fa-search"></i>' +
+                '<input type="text" id="bomGridSearch" placeholder="Search item, spec, category, qty, amount…" autocomplete="off" />' +
+                '<button type="button" id="btnClearBomGridSearch" class="bom-grid-search-clear" title="Clear search" style="display:none;" aria-label="Clear search">' +
+                    '<i class="fas fa-times"></i>' +
+                '</button>' +
+            '</div>' +
+            '<span id="bomGridSearchMeta" class="bom-grid-search-meta"></span>' +
+        '</div>'
+    );
+
+    if ($('#dvBomTableWrap').length) bar.insertBefore('#dvBomTableWrap');
+    else $('#dvBOMEntry').prepend(bar);
+}
+
+function clearBomGridSearch() {
+    $('#bomGridSearch').val('');
+    filterBomEntryGrid();
+}
+
+function bomRowSearchText($tr) {
+    const parts = [];
+    $tr.find('input, textarea').each(function () {
+        const v = ($(this).val() || '').toString().trim();
+        if (v) parts.push(v);
+    });
+    $tr.find('select').each(function () {
+        const val = $(this).val();
+        if (val == null || String(val) === '' || String(val) === '0') return;
+        const text = ($(this).find('option:selected').text() || '').replace(/\s+/g, ' ').trim();
+        if (text) parts.push(text);
+    });
+    return parts.join(' ').toLowerCase();
+}
+
+/** Hide entry-grid rows that do not match the search box. Rows stay in the DOM so Save still includes them. */
+function filterBomEntryGrid() {
+    const query = ($('#bomGridSearch').val() || '').toLowerCase().trim();
+    const $table = isExpenseMode() ? $('#tblExpenseBOM') : $('#tblBOM');
+    const $rows = $table.find('tbody > tr');
+    let shown = 0;
+    $rows.each(function () {
+        const match = !query || bomRowSearchText($(this)).indexOf(query) >= 0;
+        $(this).toggle(match);
+        if (match) shown++;
+    });
+    const $meta = $('#bomGridSearchMeta');
+    if (!query) {
+        $('#btnClearBomGridSearch').hide();
+        $meta.text('').removeClass('is-empty');
+        return;
+    }
+    $('#btnClearBomGridSearch').show();
+    if (!shown) {
+        $meta.text('No matching rows').addClass('is-empty');
+    } else {
+        $meta.text('Showing ' + shown + ' of ' + $rows.length).removeClass('is-empty');
+    }
 }
 
 function normalizeAmendmentHistoryResponse(resp) {
@@ -570,9 +663,11 @@ function setEntryMode(mode, options) {
     if (next === 'EXPENSE') {
         $('#rdoExpenseMode').prop('checked', true);
         $('#rdoBomMode').prop('checked', false);
+        $('#bomGridSearch').attr('placeholder', 'Search expense group or amount…');
     } else {
         $('#rdoBomMode').prop('checked', true);
         $('#rdoExpenseMode').prop('checked', false);
+        $('#bomGridSearch').attr('placeholder', 'Search item, spec, category, qty, amount…');
     }
 
     if (next === 'EXPENSE') {
@@ -588,6 +683,7 @@ function setEntryMode(mode, options) {
                 loadExpenseForCurrentSelection();
             }
             refreshExpenseSummary();
+            filterBomEntryGrid();
         });
     } else {
         $('#dvExpenseTableWrap').hide();
@@ -598,6 +694,7 @@ function setEntryMode(mode, options) {
             addNewBomRow();
         }
         refreshBOMSummary();
+        filterBomEntryGrid();
     }
 }
 
@@ -781,6 +878,7 @@ function applyBomDetailRows(detailRows) {
         addNewBomRow();
         refreshBOMSummary();
     }
+    filterBomEntryGrid();
 }
 
 function openBOMFromList(id, mode, subProjectCode) {
@@ -1288,6 +1386,8 @@ function resetBomForm() {
     $('#rdoBomMode').prop('checked', true);
     $('#rdoExpenseMode').prop('checked', false);
     G_EntryMode = 'BOM';
+    $('#bomGridSearch').attr('placeholder', 'Search item, spec, category, qty, amount…');
+    clearBomGridSearch();
     $('#dvExpenseTableWrap').hide();
     $('#dvBomTableWrap').show();
     $('#bomEntryScrollHint').show();
@@ -1804,6 +1904,7 @@ function deleteBomRow($tr) {
         $tr.find('.bom-uom').val('');
         $tr.attr('data-detail-code', 0).attr('data-uom-code', 0).attr('data-item-code', 0);
         refreshBOMSummary();
+        filterBomEntryGrid();
         return;
     }
     destroyBomItemSelect2($tr.find('.bom-item'));
@@ -1812,6 +1913,7 @@ function deleteBomRow($tr) {
         $(this).find('td').first().text(idx + 1);
     });
     refreshBOMSummary();
+    filterBomEntryGrid();
 }
 function buildRowPayload($tr) {
     return {
@@ -2196,7 +2298,14 @@ function refreshBOMSummary() {
 
     let gQty = 0, gBaseAmt = 0, gTotalAmt = 0;
 
-    keys.sort().forEach(function (k) {
+    keys.sort(function (a, b) {
+        const la = String(groups[a].label || '');
+        const lb = String(groups[b].label || '');
+        const ua = la.toLowerCase() === 'uncategorized';
+        const ub = lb.toLowerCase() === 'uncategorized';
+        if (ua !== ub) return ua ? 1 : -1;
+        return la.localeCompare(lb, undefined, { sensitivity: 'base', numeric: true });
+    }).forEach(function (k) {
         const g = groups[k];
         gQty += g.qty;
         gBaseAmt += g.amount;
@@ -2445,6 +2554,7 @@ function deleteExpenseRow($tr) {
         $tr.find('.bom-expense-group').val('');
         $tr.find('.bom-expense-amount').val('');
         refreshExpenseSummary();
+        filterBomEntryGrid();
         return;
     }
     $tr.remove();
@@ -2452,6 +2562,7 @@ function deleteExpenseRow($tr) {
         $(this).find('td').first().text(idx + 1);
     });
     refreshExpenseSummary();
+    filterBomEntryGrid();
 }
 
 function applyExpenseDetailRows(detailRows) {
@@ -2460,6 +2571,7 @@ function applyExpenseDetailRows(detailRows) {
     if (!rows.length) {
         addNewExpenseRow();
         refreshExpenseSummary();
+        filterBomEntryGrid();
         return;
     }
     rows.forEach(function (d) {
@@ -2470,6 +2582,7 @@ function applyExpenseDetailRows(detailRows) {
         });
     });
     refreshExpenseSummary();
+    filterBomEntryGrid();
 }
 
 function loadExpenseForCurrentSelection() {

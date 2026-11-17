@@ -2998,11 +2998,10 @@
                 this.reset();
                 let videoConstraints;
                 if (!deviceId) {
-                    videoConstraints = { facingMode: 'environment' };
+                    videoConstraints = { facingMode: { ideal: 'environment' } };
                 }
                 else {
-                    videoConstraints = { deviceId: { exact: deviceId } };
-                   // videoConstraints = { facingMode: 'environment' };
+                    videoConstraints = { deviceId: { ideal: deviceId } };
                 }
                 const constraints = { video: videoConstraints };
                 return yield this.decodeOnceFromConstraints(constraints, videoSource);
@@ -3069,10 +3068,10 @@
             return __awaiter(this, void 0, void 0, function* () {
                 let videoConstraints;
                 if (!deviceId) {
-                    videoConstraints = { facingMode: 'environment' };
+                    videoConstraints = { facingMode: { ideal: 'environment' } };
                 }
                 else {
-                    videoConstraints = { deviceId: { exact: deviceId } };
+                    videoConstraints = { deviceId: { ideal: deviceId } };
                 }
                 const constraints = { video: videoConstraints };
                 return yield this.decodeFromConstraints(constraints, videoSource, callbackFn);
@@ -3142,7 +3141,13 @@
          * @param videoElement
          */
         playVideoOnLoadAsync(videoElement) {
-            return new Promise((resolve, reject) => this.playVideoOnLoad(videoElement, () => resolve()));
+            return new Promise((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error('Camera preview did not start.')), 4000);
+                this.playVideoOnLoad(videoElement, () => {
+                    clearTimeout(timer);
+                    resolve();
+                });
+            });
         }
         /**
          * Binds listeners and callbacks to the videoElement.
@@ -3415,10 +3420,14 @@
             if (videoSource instanceof HTMLVideoElement) {
                 videoElement = videoSource;
             }
-            // Needed for iOS 11
+            // iPhone will not play a camera preview unless it is inline, muted, and marked autoplay.
             videoElement.setAttribute('autoplay', 'true');
             videoElement.setAttribute('muted', 'true');
             videoElement.setAttribute('playsinline', 'true');
+            videoElement.setAttribute('webkit-playsinline', 'true');
+            videoElement.autoplay = true;
+            videoElement.muted = true;
+            videoElement.playsInline = true;
             return videoElement;
         }
         /**
@@ -3457,6 +3466,11 @@
             const loop = () => {
                 if (this._stopContinuousDecode) {
                     this._stopContinuousDecode = undefined;
+                    return;
+                }
+                // iPhone often fires "playing" before the first frame has a size.
+                if (element instanceof HTMLVideoElement && (!element.videoWidth || !element.videoHeight)) {
+                    setTimeout(loop, this._timeBetweenDecodingAttempts);
                     return;
                 }
                 try {
