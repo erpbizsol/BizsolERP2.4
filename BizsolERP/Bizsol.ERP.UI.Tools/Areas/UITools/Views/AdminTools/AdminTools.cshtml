@@ -234,7 +234,7 @@
     }
 
     #AdminToolsPage .at-table tbody tr:hover td {
-        background: rgba(102, 126, 234, .07) !important;
+        filter: brightness(0.97);
     }
 
     #AdminToolsPage .at-table tbody tr.table-warning td {
@@ -437,6 +437,96 @@
     #AdminToolsPage .tree-row-root td:nth-child(4) { border-left: 3px solid #667eea; }
     #AdminToolsPage .tree-row-l1 td:nth-child(4) { border-left: 2px solid #a5b4fc; }
     #AdminToolsPage .tree-row-l2 td:nth-child(4) { border-left: 2px solid #dde4ff; }
+
+    #AdminToolsPage .tree-row-root.tree-row-expanded .tree-label-l0 { font-weight: 800; }
+    #AdminToolsPage .tree-row-root.tree-row-expanded td:nth-child(4) { border-left-width: 5px; }
+
+    #AdminToolsPage .tree-color-1 .tree-vert::before,
+    #AdminToolsPage .tree-color-1 .tree-corner::before,
+    #AdminToolsPage .tree-color-1 .tree-corner::after { background: #0d9488; }
+    #AdminToolsPage .tree-color-2 .tree-vert::before,
+    #AdminToolsPage .tree-color-2 .tree-corner::before,
+    #AdminToolsPage .tree-color-2 .tree-corner::after { background: #d97706; }
+    #AdminToolsPage .tree-color-3 .tree-vert::before,
+    #AdminToolsPage .tree-color-3 .tree-corner::before,
+    #AdminToolsPage .tree-color-3 .tree-corner::after { background: #e11d48; }
+    #AdminToolsPage .tree-color-4 .tree-vert::before,
+    #AdminToolsPage .tree-color-4 .tree-corner::before,
+    #AdminToolsPage .tree-color-4 .tree-corner::after { background: #0284c7; }
+    #AdminToolsPage .tree-color-5 .tree-vert::before,
+    #AdminToolsPage .tree-color-5 .tree-corner::before,
+    #AdminToolsPage .tree-color-5 .tree-corner::after { background: #7c3aed; }
+    #AdminToolsPage .tree-color-6 .tree-vert::before,
+    #AdminToolsPage .tree-color-6 .tree-corner::before,
+    #AdminToolsPage .tree-color-6 .tree-corner::after { background: #059669; }
+    #AdminToolsPage .tree-color-7 .tree-vert::before,
+    #AdminToolsPage .tree-color-7 .tree-corner::before,
+    #AdminToolsPage .tree-color-7 .tree-corner::after { background: #ea580c; }
+
+    /* Distinct top-level colors; stronger when that menu is expanded */
+    #AdminToolsPage .tree-color-0.tree-row-root td { background: #eef2ff; }
+    #AdminToolsPage .tree-color-0.tree-row-root.tree-row-expanded td { background: #c7d2fe; }
+    #AdminToolsPage .tree-color-0.tree-row-root td:nth-child(4) { border-left-color: #4f46e5; }
+    #AdminToolsPage .tree-color-0.tree-row-l1 td { background: #eef2ff; }
+    #AdminToolsPage .tree-color-0.tree-row-l2 td { background: #f5f7ff; }
+    #AdminToolsPage .tree-color-0.tree-row-l1 td:nth-child(4),
+    #AdminToolsPage .tree-color-0.tree-row-l2 td:nth-child(4) { border-left-color: #818cf8; }
+
+    #AdminToolsPage .tree-color-1.tree-row-root td { background: #f0fdfa; }
+    #AdminToolsPage .tree-color-1.tree-row-root.tree-row-expanded td { background: #99f6e4; }
+    #AdminToolsPage .tree-color-1.tree-row-root td:nth-child(4) { border-left-color: #0d9488; }
+    #AdminToolsPage .tree-color-1.tree-row-l1 td { background: #ccfbf1; }
+    #AdminToolsPage .tree-color-1.tree-row-l2 td { background: #f0fdfa; }
+    #AdminToolsPage .tree-color-1.tree-row-l1 td:nth-child(4),
+    #AdminToolsPage .tree-color-1.tree-row-l2 td:nth-child(4) { border-left-color: #2dd4bf; }
+
+    #AdminToolsPage .tree-color-2.tree-row-root td { background: #fffbeb; }
+    #AdminToolsPage .tree-color-2.tree-row-root.tree-row-expanded td { background: #fde68a; }
+    #AdminToolsPage .tree-color-2.tree-row-root td:nth-child(4) { border-left-color: #d97706; }
+    #AdminToolsPage .tree-color-2.tree-row-l1 td { background: #fef3c7; }
+    #AdminToolsPage .tree-color-2.tree-row-l2 td { background: #fffbeb; }
+    #AdminToolsPage .tree-color-2.tree-row-l1 td:nth-child(4),
+    #AdminToolsPage .tree-color-2.tree-row-l2 td:nth-child(4) { border-left-color: #fbbf24; }
+
+    #AdminToolsPage .tree-color-3.tree-row-root td { background: #fff1f2; }
+    #AdminToolsPage .tree-color-3.tree-row-root.tree-row-expanded td { background: #fecdd3; }
+    #AdminToolsPage .tree-color-3.tree-row-root td:nth-child(4) { border-left-color: #e11d48; }
+    #AdminToolsPage .tree-color-3.tree-row-l1 td { background: #ffe4e6; }
+    #AdminToolsPage .tree-color-3.tree-row-l2 td { background: #fff1f2; }
+    #AdminToolsPage .tree-color-3.tree-row-l1 td:nth-child(4),
+    #AdminToolsPage .tree-color-3.tree-row-l2 td:nth-child(4) { border-left-color: #fb7185; }
+
+    #AdminToolsPage .tree-color-4.tree-row-root td { background: #f0f9ff; }
+    #AdminToolsPage .tree-color-4.tree-row-root.tree-row-expanded td { background: #bae6fd; }
+    #AdminToolsPage .tree-color-4.tree-row-root td:nth-child(4) { border-left-color: #0284c7; }
+    #AdminToolsPage .tree-color-4.tree-row-l1 td { background: #e0f2fe; }
+    #AdminToolsPage .tree-color-4.tree-row-l2 td { background: #f0f9ff; }
+    #AdminToolsPage .tree-color-4.tree-row-l1 td:nth-child(4),
+    #AdminToolsPage .tree-color-4.tree-row-l2 td:nth-child(4) { border-left-color: #38bdf8; }
+
+    #AdminToolsPage .tree-color-5.tree-row-root td { background: #f5f3ff; }
+    #AdminToolsPage .tree-color-5.tree-row-root.tree-row-expanded td { background: #ddd6fe; }
+    #AdminToolsPage .tree-color-5.tree-row-root td:nth-child(4) { border-left-color: #7c3aed; }
+    #AdminToolsPage .tree-color-5.tree-row-l1 td { background: #ede9fe; }
+    #AdminToolsPage .tree-color-5.tree-row-l2 td { background: #f5f3ff; }
+    #AdminToolsPage .tree-color-5.tree-row-l1 td:nth-child(4),
+    #AdminToolsPage .tree-color-5.tree-row-l2 td:nth-child(4) { border-left-color: #a78bfa; }
+
+    #AdminToolsPage .tree-color-6.tree-row-root td { background: #ecfdf5; }
+    #AdminToolsPage .tree-color-6.tree-row-root.tree-row-expanded td { background: #a7f3d0; }
+    #AdminToolsPage .tree-color-6.tree-row-root td:nth-child(4) { border-left-color: #059669; }
+    #AdminToolsPage .tree-color-6.tree-row-l1 td { background: #d1fae5; }
+    #AdminToolsPage .tree-color-6.tree-row-l2 td { background: #ecfdf5; }
+    #AdminToolsPage .tree-color-6.tree-row-l1 td:nth-child(4),
+    #AdminToolsPage .tree-color-6.tree-row-l2 td:nth-child(4) { border-left-color: #34d399; }
+
+    #AdminToolsPage .tree-color-7.tree-row-root td { background: #fff7ed; }
+    #AdminToolsPage .tree-color-7.tree-row-root.tree-row-expanded td { background: #fed7aa; }
+    #AdminToolsPage .tree-color-7.tree-row-root td:nth-child(4) { border-left-color: #ea580c; }
+    #AdminToolsPage .tree-color-7.tree-row-l1 td { background: #ffedd5; }
+    #AdminToolsPage .tree-color-7.tree-row-l2 td { background: #fff7ed; }
+    #AdminToolsPage .tree-color-7.tree-row-l1 td:nth-child(4),
+    #AdminToolsPage .tree-color-7.tree-row-l2 td:nth-child(4) { border-left-color: #fb923c; }
 
     .admin-password-modal .modal-content {
         border: none;
