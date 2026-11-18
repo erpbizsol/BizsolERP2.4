@@ -6,7 +6,7 @@
 
 <style>
     .ipm-header {
-        background: linear-gradient(135deg, #3b7dd8 0%, #1a56b0 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 14px;
         padding: 18px 22px;
         display: flex;
@@ -31,11 +31,11 @@
     .ipm-stat-chip .lbl { font-size: 0.64rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
     .btn-ipm-back {
         display: inline-flex; align-items: center; gap: 6px;
-        background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #1a56b0;
+        background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #5b21b6;
         border-radius: 10px; padding: 7px 16px; font-weight: 800; font-size: 0.84rem;
         box-shadow: 0 3px 12px rgba(0,0,0,0.18); cursor: pointer; text-decoration: none;
     }
-    .btn-ipm-back:hover { background: #eef5ff; color: #1a56b0; }
+    .btn-ipm-back:hover { background: #f5f3ff; color: #5b21b6; }
     .ipm-filter-bar {
         background: #fff; border: 1px solid #dbe3ef; border-radius: 14px;
         padding: 14px 18px 10px; margin-bottom: 14px;
@@ -43,7 +43,7 @@
     }
     .ipm-filter-bar .form-label { font-size: 0.77rem; font-weight: 600; color: #475569; margin-bottom: 4px; display: block; }
     .btn-ipm-search {
-        background: linear-gradient(135deg,#3b7dd8,#1a56b0);
+        background: linear-gradient(135deg,#667eea,#764ba2);
         border: none; color: #fff; border-radius: 8px; padding: 7px 18px;
         font-size: 0.82rem; font-weight: 700; cursor: pointer;
         display: inline-flex; align-items: center; gap: 5px;
@@ -52,11 +52,11 @@
     .ipm-card {
         background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px;
-        overflow: hidden; border-left: 4px solid #3b7dd8;
+        overflow: hidden; border-left: 4px solid #667eea;
     }
     .ipm-card-header { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px 10px; }
     .ipm-no-badge {
-        flex-shrink: 0; background: linear-gradient(135deg,#3b7dd8,#1a56b0);
+        flex-shrink: 0; background: linear-gradient(135deg,#667eea,#764ba2);
         color: #fff; border-radius: 10px; padding: 8px 12px; min-width: 68px; text-align: center;
     }
     .ipm-no-badge .no { font-weight: 800; font-size: 0.95rem; }
@@ -80,7 +80,7 @@
     #modalIndentVerify .modal-dialog { max-width: min(1100px, 96vw); }
     #modalIndentVerify .modal-content { border-radius: 14px; overflow: hidden; }
     #modalIndentVerify .modal-header {
-        background: linear-gradient(135deg,#3b7dd8,#1a56b0); color: #fff; border: none;
+        background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; border: none;
     }
     .ipm-info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
     .ipm-info-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; }
@@ -108,28 +108,41 @@
     }
     .ipm-step-done { background: linear-gradient(135deg,#10b981,#059669); color:#fff; }
     .ipm-step-active { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; }
+    .ipm-step-hold { background: linear-gradient(135deg,#f97316,#ea580c); color:#fff; box-shadow:0 2px 8px rgba(249,115,22,0.4); }
     .ipm-step-rejected { background: linear-gradient(135deg,#dc2626,#ef4444); color:#fff; }
     .ipm-step-pending { background: #f1f5f9; color:#94a3b8; border-color:#e2e8f0; }
     .ipm-step-lbl { font-size: 0.63rem; color: #94a3b8; font-weight: 600; max-width: 72px; text-align: center; }
     .ipm-step-connector { flex: 1; height: 3px; min-width: 18px; max-width: 56px; border-radius: 2px; margin-bottom: 12px; }
     .ipm-step-line-done { background: #10b981; }
     .ipm-step-line-pending { background: #e2e8f0; }
-    .btn-ipm-modal-verify {
-        background: linear-gradient(135deg,#10b981,#059669);
-        border: none; color: #fff; border-radius: 9px; padding: 9px 22px;
-        font-weight: 700; cursor: pointer;
-    }
-    .btn-ipm-modal-reject {
-        background: linear-gradient(135deg,#ef4444,#dc2626);
+    .btn-ipm-modal-verify, .btn-ipm-modal-reject, .btn-ipm-modal-close {
+        display: inline-flex; align-items: center; gap: 5px;
         border: none; color: #fff; border-radius: 9px; padding: 9px 20px;
-        font-weight: 700; cursor: pointer;
+        font-size: 0.85rem; font-weight: 700; cursor: pointer;
     }
-    .btn-ipm-modal-close {
-        background: linear-gradient(135deg,#f59e0b,#d97706);
-        border: none; color: #fff; border-radius: 9px; padding: 9px 20px;
-        font-weight: 700; cursor: pointer;
+    .btn-ipm-modal-verify { background: linear-gradient(135deg,#10b981,#059669); }
+    .btn-ipm-modal-reject { background: linear-gradient(135deg,#ef4444,#dc2626); }
+    .btn-ipm-modal-close { background: linear-gradient(135deg,#f59e0b,#d97706); }
+    #ipmBtnHold:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.25); }
+    .btn-ipm-confirm-approve, .btn-ipm-confirm-reject, .btn-ipm-confirm-hold {
+        display: inline-flex; align-items: center; gap: 4px;
+        border: none; color: #fff; border-radius: 8px; padding: 8px 18px;
+        font-size: 0.82rem; font-weight: 700; cursor: pointer;
     }
-    .ipm-master-verify { display: none; align-items: center; gap: 8px; font-weight: 700; color: #1a56b0; margin-right: 10px; }
+    .btn-ipm-confirm-approve { background: linear-gradient(135deg,#10b981,#059669); }
+    .btn-ipm-confirm-reject { background: linear-gradient(135deg,#dc2626,#ef4444); }
+    .btn-ipm-confirm-hold { background: linear-gradient(135deg,#f97316,#ea580c); }
+    .btn-ipm-confirm-cancel {
+        background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569;
+        border-radius: 8px; padding: 8px 16px; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    }
+    #modalIndentConfirm, #modalIndentPrintOptions { z-index: 1080; }
+    .ipm-master-verify { display: none; align-items: center; gap: 8px; font-weight: 700; color: #5b21b6; margin-right: 10px; }
+    .ipm-amount { font-size: 0.92rem; font-weight: 800; color: #667eea; }
+    .ipm-status-badge { font-size: 0.68rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .ipm-card-right { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+    .ipm-levels { padding: 8px 16px 10px; border-top: 1px solid #f0f4ff; background: #fafbff; }
+    .ipm-level-label { font-size: 0.73rem; color: #64748b; margin-bottom: 8px; }
     @@media (max-width: 768px) {
         .ipm-info-grid { grid-template-columns: 1fr 1fr; }
         .ipm-card-footer { flex-direction: column; }
@@ -139,13 +152,17 @@
 
 <div class="ipm-header">
     <div>
-        <h5><i class="fa fa-check-double me-2"></i>Indent Verification</h5>
-        <small>Review and verify indents pending on you</small>
+        <h5><i class="fa fa-check-double me-2"></i>Indent Level Approval</h5>
+        <small>Review and approve pending indents by approval level</small>
     </div>
     <div class="d-flex align-items-center gap-2 flex-shrink-0">
         <div class="ipm-stat-chip">
             <div class="val" id="ipmStatPending">—</div>
-            <div class="lbl">Pending on Me</div>
+            <div class="lbl">Pending</div>
+        </div>
+        <div class="ipm-stat-chip">
+            <div class="val" id="ipmStatApproved">—</div>
+            <div class="lbl">Approved</div>
         </div>
         <a href="javascript:void(0)" onclick="NavigateToIndentMaster()" class="btn-ipm-back">
             <i class="fa fa-arrow-left"></i>
@@ -164,14 +181,24 @@
             <label class="form-label">To Date</label>
             <input type="date" id="ipmToDate" class="form-control form-control-sm" />
         </div>
-        <div class="col-12 col-md-4">
-            <label class="form-label">Search</label>
+        <div class="col-12 col-md-3">
+            <label class="form-label">Search Indent / Warehouse</label>
             <input type="text" id="ipmSearch" class="form-control form-control-sm"
-                   placeholder="Indent no, warehouse, status…" autocomplete="off" />
+                   placeholder="Indent number or warehouse…" autocomplete="off" />
         </div>
         <div class="col-6 col-md-2">
+            <label class="form-label">Status</label>
+            <select id="ipmDdlStatus" class="form-control form-control-sm form-select">
+                <option value="A">-- All Status --</option>
+                <option value="N" selected="selected">Pending</option>
+                <option value="H">Hold</option>
+                <option value="Y">Approved</option>
+                <option value="R">Rejected</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2 mb-1">
             <a href="javascript:void(0)" onclick="LoadIndentPendingList()" class="btn-ipm-search w-100">
-                <i class="fa fa-search"></i>Show
+                <i class="fa fa-search"></i>Search
             </a>
         </div>
     </div>
@@ -180,7 +207,7 @@
 <div id="ipmList"></div>
 <div id="ipmEmpty" class="ipm-empty" style="display:none;">
     <i class="fa fa-inbox"></i>
-    <div>No indents pending on you</div>
+    <div>No indents found</div>
     <small>Change the date range or check back later.</small>
 </div>
 <div id="ipmLoading" class="ipm-empty" style="display:none;">
@@ -192,45 +219,141 @@
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="ipmModalTitle">Verify Indent</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div>
+                    <h5 class="modal-title mb-0" id="ipmModalTitle"><i class="fa fa-file-invoice me-2"></i>Indent</h5>
+                    <small id="ipmModalSub" style="font-size:0.75rem;opacity:0.85;display:block;margin-top:2px;"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" onclick="CloseIndentVerify()"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="ipmHfCode" value="0" />
                 <input type="hidden" id="ipmHfLevelCode" value="0" />
+                <input type="hidden" id="ipmHfIndentNo" value="" />
+                <input type="hidden" id="ipmHfIndentDate" value="" />
                 <div id="ipmModalHeader"></div>
-                <div id="ipmLevelStepper"></div>
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <strong style="font-size:0.82rem;color:#334155;">Item Details</strong>
+                <div class="ipm-levels" style="border-radius:12px;margin-bottom:12px;">
+                    <div class="ipm-level-label"><i class="fa fa-layer-group me-1"></i>Approval Flow</div>
+                    <div id="ipmLevelStepper"></div>
                 </div>
+                <div class="ipm-level-label"><i class="fa fa-boxes me-1"></i>Indent Items</div>
                 <div class="ipm-items-wrap">
                     <table class="ipm-items-table">
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Item Name</th>
-                                <th>Specification</th>
-                                <th>Qty</th>
+                                <th>Item / Description</th>
                                 <th>UOM</th>
+                                <th>Qty</th>
                                 <th>Rate</th>
+                                <th>Amount</th>
                             </tr>
                         </thead>
                         <tbody id="ipmItemsBody"></tbody>
                     </table>
                 </div>
                 <div id="ipmRemarksWrap" class="mt-3">
-                    <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#475569;">Remarks</label>
+                    <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#475569;">Remarks <small style="font-weight:400;color:#94a3b8;">(required for reject / hold)</small></label>
                     <textarea id="ipmTxtRemarks" rows="2" class="form-control form-control-sm"
-                              placeholder="Enter remarks (required for reject)" maxlength="500"></textarea>
+                              placeholder="Enter approval / rejection / hold remarks…" maxlength="500"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer" style="gap:8px;flex-wrap:wrap;background:#fafbff;">
+                <button type="button" class="btn-ipm-view" onclick="PrintIndentFromDetail('preview')" title="Print preview"><i class="fa fa-search-plus"></i>Preview</button>
+                <button type="button" class="btn-ipm-view" style="background:#1e293b;" onclick="PrintIndentFromDetail('print')" title="Print"><i class="fa fa-print"></i>Print</button>
+                <button type="button" id="ipmBtnAttachment" class="btn-ipm-view" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);" onclick="OpenIndentAttachment()" title="Attachments"><i class="fa fa-paperclip"></i>Attachment</button>
+                <button type="button" class="btn-ipm-modal-reject" id="ipmBtnReject" onclick="RejectPendingIndent()"><i class="fa fa-times"></i>Reject</button>
+                <button type="button" class="btn-ipm-modal-verify" id="ipmBtnApprove" onclick="ApprovePendingIndent()"><i class="fa fa-check"></i>Approve</button>
+                <button type="button" class="btn-ipm-modal-close" id="ipmBtnHold" onclick="HoldPendingIndent()" style="background:linear-gradient(135deg,#f97316,#ea580c);"><i class="fa fa-pause"></i>Hold</button>
+                <button type="button" class="btn-ipm-view" style="background:linear-gradient(135deg,#6366f1,#4f46e5);" onclick="OpenIndentHistory()" title="Approval history"><i class="fa fa-history"></i>History</button>
+                <button type="button" class="btn-ipm-modal-close ms-auto" onclick="CloseIndentVerify()"><i class="fa fa-times-circle"></i>Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalIndentHistory" tabindex="-1" aria-hidden="true" style="z-index:1065;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+                <div>
+                    <h5 class="modal-title mb-0"><i class="fa fa-history me-2"></i>History</h5>
+                    <small id="ipmHistorySub"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" onclick="CloseIndentHistory()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="ipm-items-wrap">
+                    <table class="ipm-items-table">
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th>Approver</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ipmHistoryBody"></tbody>
+                    </table>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-ipm-modal-close" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn-ipm-modal-reject" id="ipmBtnReject" onclick="RejectPendingIndent()">
-                    <i class="fa fa-times-circle me-1"></i>Reject
+                <button type="button" class="btn-ipm-modal-close" onclick="CloseIndentHistory()"><i class="fa fa-times-circle"></i>Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="IndentApproval_AttachmentControlmodal"></div>
+
+<div class="modal fade" id="modalIndentConfirm" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;border:none;">
+            <div class="modal-header" id="ipmConfirmHeader" style="padding:12px 16px;border:none;background:linear-gradient(135deg,#059669,#10b981);color:#fff;">
+                <h5 class="modal-title mb-0" id="ipmConfirmTitle" style="font-size:0.9rem;font-weight:700;">Confirm Approval</h5>
+            </div>
+            <div class="modal-body" style="padding:14px 16px;font-size:0.85rem;color:#475569;">
+                <span id="ipmConfirmMessage"></span>
+            </div>
+            <div class="modal-footer" style="padding:10px 16px;gap:8px;border-top:1px solid #eef0f8;">
+                <button type="button" class="btn-ipm-confirm-cancel" onclick="CloseIndentConfirm()">Cancel</button>
+                <button type="button" id="ipmBtnConfirmAction" class="btn-ipm-confirm-approve">
+                    <i class="fa fa-check me-1"></i>Yes, Approve
                 </button>
-                <button type="button" class="btn-ipm-modal-verify" id="ipmBtnApprove" onclick="ApprovePendingIndent()">
-                    <i class="fa fa-check-circle me-1"></i>Approve
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalIndentPrintOptions" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#1a2a6c,#4f46e5);color:#fff;border:none;padding:14px 20px;">
+                <h5 class="modal-title mb-0" style="font-size:0.92rem;font-weight:700;">
+                    <i class="fa fa-print me-2"></i>Print Options
+                </h5>
+                <button type="button" class="btn-close btn-close-white" onclick="CloseIndentPrintOptions()"></button>
+            </div>
+            <div class="modal-body" style="padding:20px 22px;">
+                <div class="form-check" style="margin-bottom:6px;">
+                    <input class="form-check-input" type="checkbox" id="ipmChkIncludeFlow" checked
+                           style="width:1.1em;height:1.1em;margin-top:3px;cursor:pointer;" />
+                    <label class="form-check-label" for="ipmChkIncludeFlow"
+                           style="font-size:0.85rem;font-weight:600;color:#1e293b;cursor:pointer;padding-left:4px;">
+                        Include approval flow
+                    </label>
+                    <div style="font-size:0.75rem;color:#64748b;margin-top:3px;padding-left:26px;">
+                        <i class="fa fa-info-circle me-1" style="color:#4f46e5;"></i>
+                        Prints the level, approver, date and remarks with the indent items.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:none;padding:10px 20px 16px;background:#fafafa;gap:8px;justify-content:center;">
+                <button type="button" class="btn-ipm-confirm-cancel" onclick="CloseIndentPrintOptions()">
+                    <i class="fa fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" onclick="ConfirmIndentPrint()"
+                        style="background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;color:#fff;border-radius:8px;padding:7px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;">
+                    <i class="fa fa-search-plus me-1"></i>Preview / Print
                 </button>
             </div>
         </div>
