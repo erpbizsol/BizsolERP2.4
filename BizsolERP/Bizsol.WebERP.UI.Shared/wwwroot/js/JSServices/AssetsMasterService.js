@@ -51,6 +51,13 @@ const AssetsMasterService = {
         });
     },
 
+    GetProcessTypeMasterList: function GetProcessTypeMasterList() {
+        var URL = UrlService.API_ENDPOINT_AssetsMaster + `/GetProcessTypeMasterList`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
     GetDatabaseLocationList: function GetDatabaseLocationList() {
         var URL = UrlService.API_ENDPOINT_AssetsMaster + `/GetDatabaseLocationList`;
         return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
