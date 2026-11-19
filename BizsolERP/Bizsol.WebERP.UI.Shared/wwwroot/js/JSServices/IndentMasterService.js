@@ -120,8 +120,11 @@ const IndentMasterService = {
         return IndentMasterService.Getddl('VERIFY', code, '', '', '', verifyStatus || 'Y', otherParameter || '');
     },
 
-    DeleteIndent: function DeleteIndent(code) {
-        return IndentMasterService.Getddl('DELETE', code);
+    DeleteIndent: function DeleteIndent(code, reason) {
+        let url = UrlService.API_ENDPOINT_IndentMaster
+                + `/Getddl?Mode=DELETE&Code=${encodeURIComponent(code || 0)}`
+                + `&ReasonForDelete=${encodeURIComponent(reason || '')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(value => value);
     },
 
     /**

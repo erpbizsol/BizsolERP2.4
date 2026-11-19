@@ -71,7 +71,9 @@ $(document).ready(function () {
         _fillLocateTypeDropdown(),
         _loadLocateConfig()
     ]).then(function () {
-        _loadPendingOnMeCount();
+        _setDefaultDates();
+        _selectDefaultLocateType();
+        LoadIndentList();
     });
 
     $('#ddlLocateType').on('change', function () {
@@ -177,6 +179,18 @@ function _fillLocateTypeDropdown() {
         });
 }
 
+function _selectDefaultLocateType() {
+    var $ddl = $('#ddlLocateType');
+    var $opt = $ddl.find('option').filter(function () {
+        var t = String($(this).data('locate-type') || $(this).text() || '').trim().toLowerCase();
+        return t === 'default';
+    }).first();
+    if (!$opt.length) $opt = $ddl.find('option').first();
+    if (!$opt.length) return;
+    $ddl.val($opt.val());
+    if ($.fn.select2 && $ddl.hasClass('select2-hidden-accessible')) $ddl.trigger('change.select2');
+}
+
 function _loadLocateConfig() {
     return IndentMasterService.GetLocateConfig()
         .then(function (res) {
@@ -227,22 +241,22 @@ function _indentRowCode(row) {
 }
 
 function _indentStatusText(row) {
-    return String((row && (row.Status || row.status || row.StatusCode || row.statusCode)) || '').trim();
+    if (!row) return '';
+    var keys = ['StatusDesp', 'Status Desp', 'Status', 'statusDesp', 'status'];
+    for (var i = 0; i < keys.length; i++) {
+        var v = row[keys[i]];
+        if (v != null && String(v).trim() !== '') return String(v).trim();
+    }
+    return '';
 }
 
 function _indentIsVerified(row) {
-    var v = String((row && (row.Verified || row.verified)) || '').trim().toUpperCase();
-    if (v === 'Y') return true;
-    var s = _indentStatusText(row).toLowerCase();
-    return s === 'verified' || s === 'approved' || s === 'completed';
+    return _indentStatusText(row).toLowerCase() === 'completed';
 }
 
 function _indentIsPending(row) {
-    if (_indentIsVerified(row)) return false;
     var s = _indentStatusText(row).toLowerCase();
-    if (s.indexOf('partial') >= 0) return true;
-    if (!s || s === 'n' || s === 'pending' || s === 'unverified' || s === 'un-verified') return true;
-    return s.indexOf('pending') >= 0;
+    return s === 'pending' || s === 'unverified';
 }
 
 function _indentIsPendingOnMe(row) {
@@ -1962,7 +1976,19 @@ window.SaveIndent = function () {
     });
 };
 
+function _indentModal(id, action) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (window.bootstrap && window.bootstrap.Modal) {
+        var m = action === 'show' ? bootstrap.Modal.getOrCreateInstance(el) : bootstrap.Modal.getInstance(el);
+        if (m) m[action]();
+    } else {
+        $(el).modal(action);
+    }
+}
+
 window.DeleteIndentRow = function (code) {
+    if (!code) return;
     var ModuleName = $('#ERPHeading').text().trim();
     var FinYear = BizSolHelperFunction.getFinancialYear();
     MenuService.CheckModuleOptionRight(ModuleName, 'Delete', 'Y', FinYear).then(function (respCheck) {
@@ -1970,17 +1996,47 @@ window.DeleteIndentRow = function (code) {
             toastr.error(respCheck.Msg || 'You do not have delete rights.');
             return;
         }
-        if (!confirm('Delete this Indent?')) return;
-        IndentMasterService.DeleteIndent(code).then(function (res) {
-            if (res && (res.Status === 'Y' || res.status === 'Y' || Array.isArray(res))) {
-                toastr.success((res && res.Msg) || 'Indent deleted.');
-                LoadIndentList();
-            } else {
-                toastr.error(res ? (res.Msg || res.msg) : 'Delete failed.');
-            }
-        }).catch(function (err) {
-            toastr.error('Error deleting Indent.');
-            console.error(err);
-        });
+        var row = (G_IndentList || []).find(function (x) { return _indentRowCode(x) === Number(code); });
+        var no = row ? (row.IndentNo || row['Indent No'] || row.IndentNoWithPrefix || '') : '';
+        $('#delIndentNo').text(no ? '#' + no : '');
+        $('#hfIndentDeleteCode').val(code);
+        $('#txtIndentDeleteReason').val('');
+        $('#btnIndentConfirmDelete').prop('disabled', false);
+        _indentModal('dvIndentDeleteModal', 'show');
+        setTimeout(function () { $('#txtIndentDeleteReason').trigger('focus'); }, 400);
     });
 };
+
+window.ConfirmIndentDelete = function () {
+    var code = parseInt($('#hfIndentDeleteCode').val() || '0', 10) || 0;
+    var reason = ($('#txtIndentDeleteReason').val() || '').trim();
+    if (!reason) {
+        toastr.warning('Please provide a reason for deletion.');
+        $('#txtIndentDeleteReason').trigger('focus');
+        return;
+    }
+    if (!code) return;
+    var $btn = $('#btnIndentConfirmDelete').prop('disabled', true);
+    if (typeof Showloader === 'function') Showloader();
+    IndentMasterService.DeleteIndent(code, reason).then(function (res) {
+        if (typeof HideLoader === 'function') HideLoader();
+        var r = Array.isArray(res) ? (res[0] || {}) : (res || {});
+        if (r.Status === 'Y' || r.status === 'Y') {
+            toastr.success(r.Msg || r.msg || 'Indent deleted successfully.');
+            _indentModal('dvIndentDeleteModal', 'hide');
+            LoadIndentList();
+        } else {
+            $btn.prop('disabled', false);
+            toastr.warning(r.Msg || r.msg || 'Delete failed.');
+        }
+    }).catch(function (err) {
+        if (typeof HideLoader === 'function') HideLoader();
+        $btn.prop('disabled', false);
+        toastr.error((err && (err.Msg || err.msg)) || 'Error deleting Indent.');
+        console.error(err);
+    });
+};
+
+$(document).on('keydown', '#txtIndentDeleteReason', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); ConfirmIndentDelete(); }
+});
