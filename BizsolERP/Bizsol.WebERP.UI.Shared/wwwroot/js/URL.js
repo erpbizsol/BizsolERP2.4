@@ -166,6 +166,7 @@ let UrlService = {
     //Finance Transactions API Service EndPoints
     API_ENDPOINT_BANK_STATEMENT: `${environment.BASE_URL}/BankStatement`,
     API_ENDPOINT_BANK_BOOK_REPORT: `${environment.BASE_URL}/BankBookReport`,
+    API_ENDPOINT_DEPRECIATION_CHART: `${environment.BASE_URL}/DepreciationChart`,
     API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL: `${environment.BASE_URL}/ExpenseEntryLevelsApproval`,
     API_ENDPOINT_AgeingParameter: `${environment.BASE_URL}/AgeingParameter`,
     API_ENDPOINT_GROUPMASTER: `${environment.BASE_URL}/Group`,

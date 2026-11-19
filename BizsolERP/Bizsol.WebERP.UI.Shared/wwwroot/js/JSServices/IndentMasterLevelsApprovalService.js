@@ -28,6 +28,26 @@ const IndentMasterLevelsApprovalService = {
         return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
     },
 
+    GetIndentDetail: function GetIndentDetail(indentCode) {
+        const url = UrlService.API_ENDPOINT_IndentMasterLevelsApproval +
+            `/GetIndentDetail?IndentMaster_Code=${indentCode}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
+    GetFirstPendingIndentDate: function GetFirstPendingIndentDate() {
+        const url = UrlService.API_ENDPOINT_IndentMasterLevelsApproval + `/GetFirstPendingIndentDate`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(function (value) { return value; });
+    },
+
+    HoldIndent: function HoldIndent(indentCode, levelCode, remarks) {
+        const u = _userCodes();
+        const url = UrlService.API_ENDPOINT_IndentMasterLevelsApproval +
+            `/HoldIndent?IndentMaster_Code=${indentCode}&LevelCode=${levelCode}` +
+            `&UserMaster_Code=${u.userCode}&GroupMaster_Code=${u.groupCode}` +
+            `&Remarks=${encodeURIComponent(remarks || '')}`;
+        return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) { return value; });
+    },
+
     GetIndentLevelDetail: function GetIndentLevelDetail(indentCode) {
         const url = UrlService.API_ENDPOINT_IndentMasterLevelsApproval +
             `/GetIndentLevelDetail?IndentMaster_Code=${indentCode}`;

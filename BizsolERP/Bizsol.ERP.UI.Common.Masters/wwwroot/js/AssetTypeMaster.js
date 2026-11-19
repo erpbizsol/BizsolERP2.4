@@ -232,7 +232,25 @@ function pickDetails(response) {
     var unwrapped = unwrapAssetTypeGet(response);
     if (unwrapped.details.length) return unwrapped.details;
     if (!response) return [];
-    return firstArray(response.Details || response.details);
+    var node = response.Details || response.details;
+    if (node && Array.isArray(node.$values)) return node.$values;
+    var fromNode = firstArray(node);
+    if (fromNode.length) return fromNode;
+    var top = normalizeList(response);
+    if (top.length && getDetailMaintenanceCheckListCode(top[0]) > 0) return top;
+    return [];
+}
+
+function getDetailMaintenanceCheckListCode(row) {
+    var code = detailFieldInt(row, 'MaintenanceCheckListMaster_Code', 'maintenanceCheckListMaster_Code');
+    if (code > 0) return code;
+    return detailFieldInt(row, 'MaintenanceTypeMaster_Code', 'maintenanceTypeMaster_Code');
+}
+
+function getDetailMaintenanceCheckListName(row) {
+    var name = detailFieldText(row, 'MaintenanceCheckListName', 'maintenanceCheckListName');
+    if (name) return name;
+    return detailFieldText(row, 'MaintenanceTypeName', 'maintenanceTypeName');
 }
 
 function detailFieldInt(row, pascal, camel) {
@@ -254,8 +272,8 @@ function getMaintenanceTypeName(code) {
     for (var i = 0; i < G_MaintenanceTypes.length; i++) {
         if (parseInt(G_MaintenanceTypes[i].Code, 10) === id) {
             return (
-                G_MaintenanceTypes[i].MaintenanceTypeName
-                || G_MaintenanceTypes[i].maintenanceTypeName
+                G_MaintenanceTypes[i].MaintenanceCheckListName
+                || G_MaintenanceTypes[i].maintenanceCheckListName
                 || G_MaintenanceTypes[i]['Maintenance Type Name']
                 || ''
             ).trim();
@@ -384,7 +402,7 @@ function buildMaintenanceSelect(selectedCode, selectedName) {
     for (var i = 0; i < G_MaintenanceTypes.length; i++) {
         var m = G_MaintenanceTypes[i];
         var c = parseInt(m.Code, 10) || 0;
-        var name = m.MaintenanceTypeName || m.maintenanceTypeName || m['Maintenance Type Name'] || '';
+        var name = m.MaintenanceCheckListName || m.maintenanceCheckListName || m['Maintenance Type Name'] || '';
         var desp = m.DESP || m.desp || m.Desp || '';
         if (c === sel) found = true;
         html += '<option value="' + c + '" data-desp="' + escapeAttr(desp) + '"' + (c === sel ? ' selected' : '') + '>' + escapeHtml(name) + '</option>';
@@ -418,8 +436,8 @@ function addDetailRow(rowData) {
     DETAIL_ROW_ID += 1;
     var rid = DETAIL_ROW_ID;
     var data = rowData || {};
-    var maintCode = detailFieldInt(data, 'MaintenanceTypeMaster_Code', 'maintenanceTypeMaster_Code');
-    var maintName = detailFieldText(data, 'MaintenanceTypeName', 'maintenanceTypeName');
+    var maintCode = getDetailMaintenanceCheckListCode(data);
+    var maintName = getDetailMaintenanceCheckListName(data);
     var plan = detailFieldText(data, 'MaintenancePlanning', 'maintenancePlanning');
     var desp = detailFieldText(data, 'Desp', 'desp');
     var remarks = detailFieldText(data, 'Remarks', 'remarks');
@@ -435,6 +453,8 @@ function addDetailRow(rowData) {
     var $row = $('#assetTypeDetailBody tr[data-row-id="' + rid + '"]');
     var $maintSel = $row.find('.js-maint-type');
     var $planSel = $row.find('.js-maint-plan');
+    if (maintCode > 0) $maintSel.val(String(maintCode));
+    if (plan) $planSel.val(plan);
     initSearchableSelect($maintSel, '-- Select --');
     initSearchableSelect($planSel, '-- Select --');
     if (maintCode > 0) $maintSel.val(String(maintCode)).trigger('change.select2');
@@ -510,7 +530,7 @@ function collectDetails() {
         var maintCode = parseInt($tr.find('.js-maint-type').val(), 10) || 0;
         if (maintCode <= 0) return;
         rows.push({
-            MaintenanceTypeMaster_Code: maintCode,
+            MaintenanceCheckListMaster_Code: maintCode,
             MaintenancePlanning: ($tr.find('.js-maint-plan').val() || '').trim(),
             Desp: ($tr.find('.js-desp').val() || '').trim(),
             Remarks: ($tr.find('.js-remark').val() || '').trim()
