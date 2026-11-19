@@ -1001,7 +1001,6 @@ function canExportOrderLoadGrid() {
 function resetFilters() {
     resetDropdownFilters();
     clearSizeParameterFilter();
-    $('#chkOlReportFormat2').prop('checked', false);
     $('.ol-cd-wrap').removeClass('ol-cd-has-selection');
     $('#olFilterModal .ol-filter-field, #olFieldTemplate')
         .removeClass('ol-filter-applied');
@@ -1397,7 +1396,6 @@ function collapseAutoFilterTemplateRows(rows) {
                 freezeFromColumn: prop(row, ['FreezeFromColumn', 'freezeFromColumn']),
                 showSizeParameterFilter: prop(row, ['ShowSizeParameterFilter', 'showSizeParameterFilter']) || 'N',
                 reportFileName: String(prop(row, ['ReportFileName', 'reportFileName']) || '').trim(),
-                reportFileNameFormat2: String(prop(row, ['ReportFileNameFormat2', 'reportFileNameFormat2']) || '').trim(),
                 fromDate: extractDatesFromApiRow(row).fromDate,
                 toDate: extractDatesFromApiRow(row).toDate
             };
@@ -1424,8 +1422,7 @@ function mapTemplate(row) {
         otherFilter3: String(prop(row, ['OtherFilter3', 'otherFilter3']) || '').trim(),
         freezeFromColumn: String(prop(row, ['FreezeFromColumn', 'freezeFromColumn']) || '').trim(),
         showSizeParameterFilter: prop(row, ['ShowSizeParameterFilter', 'showSizeParameterFilter']) || 'N',
-        reportFileName: String(prop(row, ['ReportFileName', 'reportFileName']) || '').trim(),
-        reportFileNameFormat2: String(prop(row, ['ReportFileNameFormat2', 'reportFileNameFormat2']) || '').trim()
+        reportFileName: String(prop(row, ['ReportFileName', 'reportFileName']) || '').trim()
     });
     var rowDates = extractDatesFromApiRow(row);
     tpl.fromDate = rowDates.fromDate || tpl.fromDate;
@@ -1854,7 +1851,6 @@ function applyTemplateFilters() {
         G_OL_CurrentLevel = null;
         bindLevelDropdown([]);
         applyLevelToFilters(getDefaultLevelTemplate());
-        updateReportFormat2Checkbox(getDefaultLevelTemplate());
         return;
     }
 
@@ -1898,7 +1894,6 @@ function getDefaultLevelTemplate() {
         showItemName: 'N',
         showSizeParameterFilter: 'N',
         reportFileName: '',
-        reportFileNameFormat2: '',
         freezeFromColumn: '',
         otherFilter1: '',
         otherFilter2: '',
@@ -2008,17 +2003,10 @@ function applyLevelToFilters(tpl) {
 
     applyFilterActiveColors();
     updateFilterButtonState();
-    updateReportFormat2Checkbox(tpl);
 }
 
 function trimReportFileName(value) {
     return String(value || '').trim();
-}
-
-function formatReportFileLabel(fileName) {
-    var text = trimReportFileName(fileName);
-    if (!text) return 'Format 2';
-    return text.replace(/\.rpt$/i, '') || 'Format 2';
 }
 
 function usesOrderLoadCrystalReport(tpl) {
@@ -2027,27 +2015,7 @@ function usesOrderLoadCrystalReport(tpl) {
 
 function getOrderLoadCrystalReportFileName(tpl) {
     tpl = tpl || getSelectedTemplate();
-    var primary = trimReportFileName(tpl.reportFileName);
-    var format2 = trimReportFileName(tpl.reportFileNameFormat2);
-    if (!primary) return '';
-    if (format2 && $('#chkOlReportFormat2').prop('checked')) {
-        return format2;
-    }
-    return primary;
-}
-
-function updateReportFormat2Checkbox(tpl) {
-    tpl = tpl || getSelectedTemplate();
-    var $wrap = $('#olReportFormat2Wrap');
-    var format2 = trimReportFileName(tpl.reportFileNameFormat2);
-
-    if (format2 && usesOrderLoadCrystalReport(tpl)) {
-        $wrap.removeClass('is-hidden');
-        $('#lblOlReportFormat2').text(formatReportFileLabel(format2));
-    } else {
-        $wrap.addClass('is-hidden');
-        $('#chkOlReportFormat2').prop('checked', false);
-    }
+    return trimReportFileName(tpl.reportFileName);
 }
 
 function openOrderLoadCrystalReportUrl(response) {

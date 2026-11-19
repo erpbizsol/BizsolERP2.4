@@ -134,6 +134,31 @@ const TemplateReportsService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
     },
 
+    // ===================== Template Users (which users can use which template) =====================
+
+    /**
+     * One row per template (templates with no users are included) for the Template Users modal.
+     * formType '' / omitted = every form type.
+     * Row: { TemplateMaster_Code, FormType, TemplateName, MasterTemplete, AssignedUserMaster_Codes: "15,23" }
+     */
+    GetTemplateUserAssignments: function GetTemplateUserAssignments(formType) {
+        var resolved = stripFormTypeQuotes(formType);
+        var URL = templeteReportApiBase()
+            + '/GetTemplateUserAssignments?FormType=' + encodeURIComponent(resolved || '');
+        return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
+    },
+
+    /**
+     * assignments: "TemplateCode:UserCode,UserCode;TemplateCode:UserCode;TemplateCode:"
+     * Every listed template ends up with exactly the listed users ("6:" = template 6 has no users).
+     * Body: { UserMaster_Code, Assignments } - Assignments goes to USP_WebAPI_TemplateUserAssignment @Assignments as is.
+     */
+    SaveTemplateUserAssignments: function SaveTemplateUserAssignments(assignments) {
+        var URL = templeteReportApiBase() + '/SaveTemplateUserAssignments';
+        var payload = { UserMaster_Code: getAuthUserCode(), AssignedUserMaster_Codes: assignments || '' };
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(payload), { suppressErrorToast: true });
+    },
+
     SaveTemplate: function SaveTemplate(payload) {
         var body = Object.assign({ UserMaster_Code: getAuthUserCode() }, payload || {});
         var URL = templeteReportApiBase() + '/SaveTemplate';

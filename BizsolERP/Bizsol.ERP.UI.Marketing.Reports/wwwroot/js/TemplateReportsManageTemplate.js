@@ -215,7 +215,9 @@ function loadTemplateTransaction(code) {
 
     OrderLoadReportService.GetTemplateTransaction(code)
         .then(function (res) {
-            G_MT_Rows = unwrapApiList(res).map(mapRow);
+            var rawRows = unwrapApiList(res);
+            G_MT_Rows = rawRows.map(mapRow);
+            applyOrderByConditionToRows(G_MT_Rows, rawRows);
             renderGrid();
         })
         .catch(function () {
@@ -387,7 +389,7 @@ function mapRow(row) {
         FieldName: String(prop(row, ['FieldName', 'fieldName']) || ''),
         FieldNameAs: String(prop(row, ['DisplayName', 'displayName', 'FieldNameAs', 'fieldNameAs']) || ''),
         ShowTotal: flag(prop(row, ['ShowTotal', 'showTotal']), 'N'),
-        ApplyFilter: flag(prop(row, ['ApplyFilter', 'applyFilter']), 'N'),
+        ApplyFilter: flag(prop(row, ['Filter', 'filter', 'ApplyFilter', 'applyFilter']), 'N'),
         FilterValue: String(prop(row, ['FilterValue', 'filterValue', 'FilterText', 'filterText']) || ''),
         SortOrder: parseFloat(prop(row, ['SortOrder', 'sortOrder'])) || 0,
         DataSortOrder: clampDataSortOrder(prop(row, [
@@ -406,6 +408,41 @@ function mapRow(row) {
         OnClickAction: String(prop(row, ['OnClickAction', 'onClickAction']) || ''),
         OnClickQuery: String(prop(row, ['OnClickQuery', 'onClickQuery']) || '')
     };
+}
+
+function orderByConditionFromRows(rawRows) {
+    var text = '';
+    (rawRows || []).forEach(function (row) {
+        if (text) return;
+        text = String(prop(row, ['OrderByCondition', 'orderByCondition']) || '').trim();
+    });
+    return text;
+}
+
+function applyOrderByConditionToRows(mappedRows, rawRows) {
+    var text = orderByConditionFromRows(rawRows);
+    if (!text) return;
+    var body = text.replace(/^\s*order\s+by\s+/i, '').trim();
+    var rankByField = {};
+    body.split(',').forEach(function (part, index) {
+        var piece = String(part || '').trim();
+        if (!piece) return;
+        var name = piece;
+        var rank = index + 1;
+        var eq = piece.indexOf('=');
+        if (eq >= 0) {
+            name = piece.slice(0, eq).trim();
+            var explicit = parseInt(piece.slice(eq + 1).trim(), 10);
+            if (!isNaN(explicit)) rank = explicit;
+        }
+        name = name.replace(/^\[|\]$/g, '').trim().toLowerCase();
+        if (!name || rank <= 0) return;
+        rankByField[name] = rank;
+    });
+    (mappedRows || []).forEach(function (row) {
+        var key = String(row.FieldName || '').replace(/^\[|\]$/g, '').trim().toLowerCase();
+        row.DataSortOrder = rankByField.hasOwnProperty(key) ? clampDataSortOrder(rankByField[key]) : 0;
+    });
 }
 
 function renderGrid() {
@@ -550,6 +587,10 @@ function bindRowEvents() {
         var idx = rowIndex(this);
         var on = this.checked;
         G_MT_Rows[idx].ApplyFilter = on ? 'Y' : 'N';
+        if (!on) {
+            G_MT_Rows[idx].FilterValue = '';
+            $('.ol-mt-grid-wrap [data-idx="' + idx + '"] .ol-mt-filter-value').val('');
+        }
         $('.ol-mt-grid-wrap [data-idx="' + idx + '"] .ol-mt-filter').prop('checked', on);
         syncFilterValueState(idx);
         if (on) {
@@ -798,6 +839,111 @@ function findMissingFilterValueIndex() {
     return -1;
 }
 
+function syncFilterValuesFromInputs() {
+    G_MT_Rows.forEach(function (row, i) {
+        var $host = $('.ol-mt-grid-wrap [data-idx="' + i + '"]').first();
+        if (!$host.length) return;
+        var $check = $host.find('.ol-mt-filter').first();
+        var $value = $host.find('.ol-mt-filter-value').first();
+        if ($check.length) row.ApplyFilter = $check.is(':checked') ? 'Y' : 'N';
+        if ($value.length) row.FilterValue = String($value.val() || '');
+    });
+}
+
+function sqlFilterFieldName(name) {
+    var field = String(name || '').trim();
+    if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(field)) return field;
+    return '[' + field.replace(/]/g, ']]') + ']';
+}
+
+function sqlFilterLiteral(value) {
+    return "'" + String(value == null ? '' : value).replace(/'/g, "''") + "'";
+}
+
+function buildManageTemplateFilterCondition() {
+    var parts = [];
+    G_MT_Rows.forEach(function (row) {
+        if (row.ApplyFilter !== 'Y') return;
+        var field = String(row.FieldName || '').trim();
+        var value = String(row.FilterValue || '').trim();
+        if (!field || !value) return;
+        parts.push('AND ' + sqlFilterFieldName(field) + '=' + sqlFilterLiteral(value));
+    });
+    return parts.length ? (' ' + parts.join(' ')) : '';
+}
+
+function syncDataSortFromInputs() {
+    G_MT_Rows.forEach(function (row, i) {
+        var $input = $('.ol-mt-grid-wrap [data-idx="' + i + '"] .ol-mt-datasort').first();
+        if (!$input.length) return;
+        row.DataSortOrder = clampDataSortOrder($input.val());
+    });
+}
+
+function buildManageTemplateOrderByCondition() {
+    var fields = [];
+    G_MT_Rows.forEach(function (row, index) {
+        var sortNo = clampDataSortOrder(row.DataSortOrder);
+        var field = String(row.FieldName || '').trim();
+        if (sortNo <= 0 || !field) return;
+        fields.push({ sortNo: sortNo, index: index, field: field });
+    });
+    fields.sort(function (a, b) {
+        if (a.sortNo !== b.sortNo) return a.sortNo - b.sortNo;
+        return a.index - b.index;
+    });
+    return fields.map(function (item) { return item.field; }).join(',');
+}
+
+function manageTemplateApiDate(iso) {
+    var text = String(iso || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+    var p = text.split('-');
+    var months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    var month = months[parseInt(p[1], 10) - 1];
+    if (!month) return text;
+    return String(parseInt(p[2], 10)) + '-' + month + '-' + p[0];
+}
+
+function readTemplateLoadError(response) {
+    if (response == null || response === '') return '';
+    if (typeof response === 'string') {
+        var text = response.trim().replace(/^"|"$/g, '');
+        if (!text || text.charAt(0) === '[' || text.charAt(0) === '{') {
+            try { return readTemplateLoadError(JSON.parse(text)); } catch (e) { return text; }
+        }
+        return text;
+    }
+    if (typeof response !== 'object') return '';
+    var status = String(prop(response, ['Status', 'status']) || '').trim().toUpperCase();
+    var message = String(prop(response, [
+        'Message', 'message', 'Msg', 'msg', 'Error', 'error',
+        'ErrorMessage', 'errorMessage', 'ExceptionMessage', 'exceptionMessage'
+    ]) || '').trim();
+    if (status === 'N' || status === 'E' || status === 'ERROR') {
+        return message || 'Filter condition is not valid.';
+    }
+    if (message && !unwrapApiList(response).length && !Array.isArray(response)) {
+        return message;
+    }
+    return '';
+}
+
+function validateManageTemplateFilterCondition(templateCode, filterCondition) {
+    if (!filterCondition) return Promise.resolve();
+    return OrderLoadReportService.GetTemplateReports({
+        reportType: getSelectedManageTemplateName(),
+        templateCode: templateCode,
+        filterCondition: filterCondition,
+        queryCondition: '',
+        fromDate: manageTemplateApiDate($('#txtFromDate').val()),
+        toDate: manageTemplateApiDate($('#txtToDate').val())
+    }).then(function (res) {
+        var message = readTemplateLoadError(res);
+        if (message) throw { message: message };
+    });
+}
+
 function applyGridFieldStates() {
     applyHeaderFieldStates();
 
@@ -842,6 +988,8 @@ function buildSavePayload(selectedCode, name, isMasterSave, visibilityOnly) {
         FreezeFromColumn: $('#ddlMtFreezeColumn').val() || '',
         UserMaster_Codes: selectedManageTemplateUserCodes(),
         AssignedUserMaster_Codes: selectedManageTemplateUserCodes(),
+        FilterCondition: buildManageTemplateFilterCondition(),
+        OrderByCondition: buildManageTemplateOrderByCondition(),
         Rows: G_MT_Rows.map(function (r, i) {
             return {
                 Code: parseInt(r.Code, 10) || 0,
@@ -851,6 +999,7 @@ function buildSavePayload(selectedCode, name, isMasterSave, visibilityOnly) {
                 FieldNameAs: r.FieldNameAs || r.FieldName,
                 ShowTotal: r.ShowTotal,
                 ApplyFilter: r.ApplyFilter,
+                Filter: r.ApplyFilter,
                 FilterValue: String(r.FilterValue || '').trim(),
                 SortOrder: r.SortOrder,
                 DataSortOrder: clampDataSortOrder(r.DataSortOrder),
@@ -911,14 +1060,20 @@ function saveTemplate() {
     }
 
     syncDecimalPointsFromInputs();
+    syncFilterValuesFromInputs();
+    syncDataSortFromInputs();
     syncDataSortWarning(true);
 
     var visibilityOnly = isMasterSave;
     var payload = buildSavePayload(selectedCode, name, isMasterSave, visibilityOnly);
     setGridLoader(true);
     $('#btnMtSave').prop('disabled', true);
+    G_MT_Loading = true;
 
-    OrderLoadReportService.SaveTemplate(payload)
+    validateManageTemplateFilterCondition(selectedCode, payload.FilterCondition)
+        .then(function () {
+            return OrderLoadReportService.SaveTemplate(payload);
+        })
         .then(function (res) {
             var row = unwrapApiList(res)[0] || {};
             var newCode = parseInt(prop(row, ['Code', 'code']), 10) || selectedCode;
