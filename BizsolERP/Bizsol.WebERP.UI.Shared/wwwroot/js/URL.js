@@ -204,6 +204,7 @@ let UrlService = {
     API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisition`,
     API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisitionMaster`,
     API_ENDPOINT_AssetsMaster: `${environment.BASE_URL}/AssetsMaster`,
+    API_ENDPOINT_AssetValidation: `${environment.BASE_URL}/AssetValidation`,
     API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisitionMaster`,
     API_ENDPOINT_AdminTools: `${environment.BASE_URL}/AdminTools`,
 }
