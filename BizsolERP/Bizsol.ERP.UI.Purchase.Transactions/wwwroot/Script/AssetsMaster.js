@@ -225,6 +225,7 @@ function setAssetDetailFormMode(mode) {
             $save.attr('title', isEdit ? TITLE_BRANCH_EDIT : TITLE_BRANCH_NEW);
         }
     }
+    syncCreateMachineFieldsVisibility();
 }
 
 function ammClearBranchFormState() {
@@ -716,7 +717,7 @@ function LoadProcessTypeDropdown(selected) {
 }
 
 function resetCreateMachineUi() {
-    $('#chkCreateMachine').prop('checked', false);
+    $('#chkCreateMachine').prop('checked', false).prop('disabled', false);
     $('#ddlProcessTypeMaster').val('');
     $('#txtMachineShortName').val('');
     $('#hdnMachineMasterCode').val('0');
@@ -726,16 +727,23 @@ function resetCreateMachineUi() {
 }
 
 function syncCreateMachineFieldsVisibility() {
-  const linked = (parseInt($('#hdnMachineMasterCode').val(), 10) || 0) > 0;
+    const linked = (parseInt($('#hdnMachineMasterCode').val(), 10) || 0) > 0;
+    const isView = G_AssetDetailMode === 'view';
+
     if (linked) {
-        $('#ammCreateMachineRow').hide();
-        $('#ammCreateMachineFields').hide();
-        $('#ammMachineLinkedNote').show();
-        $('#lblLinkedMachineCode').text($('#hdnMachineMasterCode').val());
+        $('#ammMachineLinkedNote').hide();
+        $('#ammCreateMachineRow').show();
+        $('#chkCreateMachine').prop('checked', true).prop('disabled', true);
+        $('#ammCreateMachineFields').show();
+        if ($('#ddlProcessTypeMaster option').length <= 1) {
+            LoadProcessTypeDropdown($('#ddlProcessTypeMaster').val());
+        }
         return;
     }
+
     $('#ammMachineLinkedNote').hide();
     $('#ammCreateMachineRow').show();
+    $('#chkCreateMachine').prop('disabled', isView);
     const on = $('#chkCreateMachine').prop('checked');
     $('#ammCreateMachineFields').toggle(on);
     if (on && $('#ddlProcessTypeMaster option').length <= 1) {
@@ -863,7 +871,8 @@ function validateAssetForm() {
         return false;
     }
     const machineLinked = (parseInt($('#hdnMachineMasterCode').val(), 10) || 0) > 0;
-    if (!machineLinked && $('#chkCreateMachine').prop('checked')) {
+    const wantsMachine = machineLinked || $('#chkCreateMachine').prop('checked');
+    if (wantsMachine) {
         if (!$('#ddlProcessTypeMaster').val()) {
             toastr.warning('Please select Process Type Master.');
             $('#ddlProcessTypeMaster').focus();
@@ -902,7 +911,9 @@ function SaveAsset() {
     const purchaseDate = $('#txtPurchaseDate').val() || '';
     const applicableDateOfDep = $('#txtApplicableDateOfDep').val() || '';
     const tillDate = $('#txtTillDate').val() || '';
-    const createMachine = (parseInt($('#hdnMachineMasterCode').val(), 10) || 0) <= 0 && $('#chkCreateMachine').prop('checked');
+    const machineLinked = (parseInt($('#hdnMachineMasterCode').val(), 10) || 0) > 0;
+    const createMachine = !machineLinked && $('#chkCreateMachine').prop('checked');
+    const machineFieldsApply = createMachine || machineLinked;
     // TY_AssetsMaster — column names must match SQL user-defined table type
     const Details = [{
         Code: code,
@@ -928,8 +939,8 @@ function SaveAsset() {
         TillDate: tillDate,
         AccumulatedDep: ($('#txtAccumulatedDep').val() || '').trim(),
         CreateMachine: createMachine ? 'Y' : 'N',
-        ProcessMaster_Code: createMachine ? (parseInt($('#ddlProcessTypeMaster').val(), 10) || 0) : 0,
-        MachineShortName: createMachine ? ($('#txtMachineShortName').val() || '').trim() : ''
+        ProcessMaster_Code: machineFieldsApply ? (parseInt($('#ddlProcessTypeMaster').val(), 10) || 0) : 0,
+        MachineShortName: machineFieldsApply ? ($('#txtMachineShortName').val() || '').trim() : ''
     }];
     const payload = { Code: code, Details: Details };
 
