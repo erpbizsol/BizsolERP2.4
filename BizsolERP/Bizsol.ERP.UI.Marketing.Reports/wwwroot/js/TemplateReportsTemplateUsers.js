@@ -8,7 +8,9 @@ import { getTemplateReportFormTypeFromUrlParams } from '../../Bizsol.WebERP.UI.S
 
   One grid: Form Type | Template Name | Assigned Users (a template with no users is still listed).
     - Form Type dropdown starts on the ?formType= value of the page URL ("All Form Types" shows everything).
+    - Template dropdown: "All Templates" or one template. Its list follows the chosen Form Type.
     - User dropdown: "All users", "Not assigned to anyone", or one user (that user's templates).
+    - The three filters work together (a template is shown when it passes all three). All three are searchable.
     - Click Assigned Users on a row, tick the users for that template. Changed rows are highlighted.
     - Save sends only the changed templates in one call:
         Assignments = "4:15,23;5:98;6:"      (TemplateCode:UserCode,UserCode ; ...   "6:" = no users)
@@ -25,6 +27,7 @@ import { getTemplateReportFormTypeFromUrlParams } from '../../Bizsol.WebERP.UI.S
 var TU_ALL = '__ALL__';
 var TU_UNASSIGNED = '__NONE__';
 var TU_MAX_CHIPS = 6;
+var TU_FILTERS = '#ddlTuFormType, #ddlTuTemplate, #ddlTuUser';   // the three searchable filter dropdowns
 
 var G_TU_Rows = [];            // [{ code, formType, name, master, codes: ['15','23'], original: ['15','23'] }]
 var G_TU_Users = [];           // [{ code: '15', name: 'KIRAN' }] sorted by name
@@ -40,12 +43,18 @@ $(document).ready(function () {
     $('#btnTemplateUsers').on('click', onTemplateUsersClick);
 
     initSearchableSelects();
-    $('#ddlTuFormType, #ddlTuUser').on('change', function () {
+    $('#ddlTuFormType').on('change', function () {
+        closePicker(false);
+        // the Template list belongs to the Form Type: rebuild it (the chosen template stays when it is still in the list)
+        fillTemplateOptions(String($('#ddlTuTemplate').val() || TU_ALL));
+        renderGrid();
+    });
+    $('#ddlTuTemplate, #ddlTuUser').on('change', function () {
         closePicker(false);
         renderGrid();
     });
     // opening a dropdown list (mouse or keyboard) puts the user picker away
-    $('#ddlTuFormType, #ddlTuUser').on('select2:opening', function () {
+    $(TU_FILTERS).on('select2:opening', function () {
         closePicker(false);
     });
     $('#olTuTableBody').on('click', '.ol-tu-assign', function () {
@@ -109,6 +118,7 @@ function openTemplateUsersModal(canEdit) {
     setReadOnly(!canEdit);
     G_TU_Rows = [];
     fillFormTypeOptions(defaultFormType);
+    fillTemplateOptions(TU_ALL);
     fillUserFilterOptions(TU_ALL);
     renderGrid('Loading...');
 
@@ -122,11 +132,11 @@ function openTemplateUsersModal(canEdit) {
     setBusy(true);
     fetchAssignments()
         .then(function () {
-            showLoaded(defaultFormType, TU_ALL);
+            showLoaded(defaultFormType, TU_ALL, TU_ALL);
         })
         .catch(function (err) {
             G_TU_Rows = [];
-            showLoaded(defaultFormType, TU_ALL, 'Could not load template users: ' + apiError(err, 'the server did not answer') + '.');
+            showLoaded(defaultFormType, TU_ALL, TU_ALL, 'Could not load template users: ' + apiError(err, 'the server did not answer') + '.');
             toastr.error('Could not load template users.');
         })
         .finally(function () {
@@ -184,8 +194,10 @@ function fetchAssignments() {
     });
 }
 
-function showLoaded(formType, user, message) {
+/** Fill the three filters (Form Type first: the Template list depends on it), then show the grid. */
+function showLoaded(formType, template, user, message) {
     fillFormTypeOptions(formType);
+    fillTemplateOptions(template);
     fillUserFilterOptions(user);
     renderGrid(message);
 }
@@ -286,14 +298,14 @@ function userLabel(code) {
 /* ─────────────────────────── filters + grid ─────────────────────────── */
 
 /**
- * Form Type and User are searchable dropdowns (Select2, loaded by the layout - type to filter the list).
+ * Form Type, Template and User are searchable dropdowns (Select2, loaded by the layout - type to filter the list).
  * Like the Manage Template dropdowns, the list is attached to the modal so it stays usable inside it.
  * Without Select2 the plain dropdowns keep working.
  */
 function initSearchableSelects() {
     if (!$.fn.select2) return;
     var $modal = $('#olTemplateUsersModal');
-    $('#ddlTuFormType, #ddlTuUser').each(function () {
+    $(TU_FILTERS).each(function () {
         var $ddl = $(this);
         if ($ddl.hasClass('select2-hidden-accessible')) return;
         $ddl.select2({
@@ -312,7 +324,7 @@ function syncSelect($ddl) {
 /** Close a dropdown list that is open; restoreFocus puts the keyboard back on that dropdown. Returns true when there was one. */
 function closeOpenSelect(restoreFocus) {
     var closed = false;
-    $('#ddlTuFormType, #ddlTuUser').each(function () {
+    $(TU_FILTERS).each(function () {
         var select2 = $(this).data('select2');
         if (select2 && select2.isOpen()) {
             $(this).select2('close');
@@ -350,6 +362,44 @@ function fillFormTypeOptions(selected) {
     syncSelect($ddl);
 }
 
+/**
+ * Template dropdown: "All Templates" + the templates of the chosen Form Type. For "All Form Types" every template is
+ * listed, grouped by Form Type (the rows are already sorted by Form Type, then master first, then name).
+ * The chosen template stays selected when it is still in the list; otherwise it falls back to "All Templates".
+ * Option value = template code.
+ */
+function fillTemplateOptions(selected) {
+    var wanted = String(selected == null ? TU_ALL : selected);
+    var formType = String($('#ddlTuFormType').val() || TU_ALL);
+    var allTypes = formType === TU_ALL;
+
+    var $ddl = $('#ddlTuTemplate').empty();
+    $ddl.append($('<option/>').val(TU_ALL).text('All Templates'));
+
+    var match = TU_ALL;
+    var group = null;
+    var groupType = null;
+    G_TU_Rows.forEach(function (row) {
+        if (!allTypes && row.formType.toLowerCase() !== formType.toLowerCase()) return;
+
+        var $parent = $ddl;
+        if (allTypes) {
+            if (group === null || groupType !== row.formType.toLowerCase()) {
+                groupType = row.formType.toLowerCase();
+                group = $('<optgroup/>').attr('label', row.formType || 'No Form Type');
+                $ddl.append(group);
+            }
+            $parent = group;
+        }
+
+        var value = String(row.code);
+        $parent.append($('<option/>').val(value).text(row.name));
+        if (value === wanted) match = value;
+    });
+    $ddl.val(match);
+    syncSelect($ddl);
+}
+
 function fillUserFilterOptions(selected) {
     var wanted = String(selected == null ? '' : selected);
     var $ddl = $('#ddlTuUser').empty();
@@ -365,11 +415,14 @@ function fillUserFilterOptions(selected) {
     syncSelect($ddl);
 }
 
+/** A template is shown when it passes all three filters: Form Type, Template and User. */
 function visibleRows() {
     var formType = String($('#ddlTuFormType').val() || TU_ALL);
+    var template = String($('#ddlTuTemplate').val() || TU_ALL);
     var user = String($('#ddlTuUser').val() || TU_ALL);
     return G_TU_Rows.filter(function (row) {
         if (formType !== TU_ALL && row.formType.toLowerCase() !== formType.toLowerCase()) return false;
+        if (template !== TU_ALL && String(row.code) !== template) return false;
         if (user === TU_UNASSIGNED) return row.codes.length === 0;
         if (user !== TU_ALL) return row.codes.indexOf(user) >= 0;
         return true;
@@ -379,8 +432,13 @@ function visibleRows() {
 function emptyMessage() {
     if (!G_TU_Rows.length) return 'No templates found.';
     var user = String($('#ddlTuUser').val() || TU_ALL);
-    if (user === TU_UNASSIGNED) return 'Every template in this Form Type has at least one user.';
-    if (user !== TU_ALL) return 'No template of this Form Type is assigned to this user.';
+    var oneTemplate = String($('#ddlTuTemplate').val() || TU_ALL) !== TU_ALL;
+    if (user === TU_UNASSIGNED) {
+        return oneTemplate ? 'This template already has at least one user.' : 'Every template in this Form Type has at least one user.';
+    }
+    if (user !== TU_ALL) {
+        return oneTemplate ? 'This template is not assigned to this user.' : 'No template of this Form Type is assigned to this user.';
+    }
     return 'No templates for this Form Type.';
 }
 
@@ -493,7 +551,7 @@ function updateSaveState() {
 function setBusy(busy) {
     G_TU_Busy = !!busy;
     $('#olTuGridLoader').toggleClass('ol-visible', G_TU_Busy);
-    $('#ddlTuFormType, #ddlTuUser').prop('disabled', G_TU_Busy);
+    $(TU_FILTERS).prop('disabled', G_TU_Busy);
     updateSaveState();
 }
 
@@ -715,6 +773,7 @@ function saveAssignments() {
         return row.codes.indexOf(me) >= 0 || row.original.indexOf(me) >= 0;
     });
     var keepFormType = String($('#ddlTuFormType').val() || TU_ALL);
+    var keepTemplate = String($('#ddlTuTemplate').val() || TU_ALL);
     var keepUser = String($('#ddlTuUser').val() || TU_ALL);
 
     closePicker(false);
@@ -731,7 +790,7 @@ function saveAssignments() {
 
             return fetchAssignments()
                 .then(function () {
-                    showLoaded(keepFormType, keepUser);
+                    showLoaded(keepFormType, keepTemplate, keepUser);
                 })
                 .catch(function () {
                     renderGrid();
