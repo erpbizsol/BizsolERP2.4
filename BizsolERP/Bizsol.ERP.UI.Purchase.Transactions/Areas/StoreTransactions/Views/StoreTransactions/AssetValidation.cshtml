@@ -1,0 +1,424 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/AssetValidation.js"></script>
+
+<style>
+    .av-list-header {
+        background: linear-gradient(135deg, #3b7dd8 0%, #1a56b0 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+        display: flex; flex-direction: column; gap: 10px; min-width: 0;
+    }
+    .av-list-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .av-list-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; }
+    .av-header-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .av-create-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,0.6); color: #1a56b0;
+        border-radius: 10px; padding: 8px 16px; font-weight: 800;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.2); white-space: nowrap;
+        cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+        line-height: 1; text-decoration: none; font-size: 0.85rem;
+    }
+    .av-create-btn:hover { background: #eef5ff; border-color: #1a56b0; color: #1a56b0; }
+    .av-stats-strip { display: flex; gap: 8px; align-items: center; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+    .av-stats-strip::-webkit-scrollbar { display: none; }
+    .av-stat-chip {
+        background: rgba(255,255,255,0.18); border-radius: 10px;
+        padding: 5px 14px; text-align: center; min-width: 80px;
+        border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;
+    }
+    .av-stat-chip .val { font-size: 1.15rem; font-weight: 800; color: #fff; line-height: 1; }
+    .av-stat-chip .lbl { font-size: 0.65rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    .av-filter-bar {
+        background: #fff; border: 1px solid #dbe3ef; border-top: none;
+        border-radius: 0 0 14px 14px; padding: 14px 18px 10px; margin-bottom: 14px;
+    }
+    .av-grid-wrap {
+        background: #fff; border-radius: 14px; border: 1px solid #dbe3ef;
+        box-shadow: 0 2px 10px rgba(59,125,216,0.07); overflow: hidden; margin-bottom: 8px;
+    }
+    .table-wrapper.av-table-scroll { max-height: 420px; overflow-y: auto; }
+
+    #divAssetValidationList .av-filter-bar .btn-primary {
+        background: var(--primary-gradient); border: none; border-radius: 20px; font-weight: 600;
+        box-shadow: var(--shadow-primary); color: #fff; padding: 0 28px; min-width: 92px;
+    }
+    #divAssetValidationList .av-filter-bar .btn-primary:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #667eea 100%);
+        box-shadow: 0 12px 32px rgba(102, 126, 234, .45); color: #fff;
+    }
+    #AssetValidationTable thead {
+        position: sticky; top: 0; z-index: 10;
+        background: linear-gradient(135deg, #4f46e5, #667eea) !important;
+    }
+    #AssetValidationTable thead th {
+        background: transparent !important; color: #fff !important;
+        position: sticky; top: 0; z-index: 11;
+        padding: 0.4rem 0.35rem !important; font-weight: 600; font-size: 0.75rem;
+        white-space: nowrap; vertical-align: middle;
+    }
+    #AssetValidationTable thead th .filter-table-heading,
+    #AssetValidationTable thead th .table-filter-arrow,
+    #AssetValidationTable thead th .fa-angle-down { color: #fff !important; }
+    #AssetValidationTable tbody td { white-space: nowrap; vertical-align: middle; }
+    #AssetValidationTable tbody td .btn { margin-right: 4px; margin-bottom: 0 !important; }
+    #AssetValidationTable tbody td .btn-primary {
+        background: var(--primary-gradient); border: none; color: #fff;
+        box-shadow: var(--shadow-primary);
+    }
+    #AssetValidationTable tbody td .btn-primary:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #667eea 100%);
+        box-shadow: 0 12px 32px rgba(102, 126, 234, .45); color: #fff;
+    }
+
+    .av-step-card {
+        background: #fff; border-radius: 14px; border: 1px solid #dbe3ef;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 14px; overflow: hidden;
+    }
+    .av-step-header {
+        display: flex; align-items: center; gap: 12px; padding: 11px 18px; background: #f7faff;
+        border-bottom: 1px solid #eef0f8; border-left: 4px solid var(--step-clr, #3b7dd8);
+    }
+    .av-step-num {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: var(--step-clr, #3b7dd8); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.72rem; flex-shrink: 0;
+    }
+    .av-step-title { font-weight: 700; font-size: 0.84rem; color: #1e293b; letter-spacing: 0.04em; text-transform: uppercase; flex: 1; }
+    .av-step-icon { color: var(--step-clr, #3b7dd8); font-size: 1rem; }
+    .av-step-body { padding: 16px 18px; }
+    .av-field-lbl { display: block; font-size: 0.79rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+
+    #divAssetValidationForm .form-control, #divAssetValidationForm .form-select {
+        border: 1.5px solid #cfe0f5; border-radius: 8px; font-size: 0.8rem;
+        background-color: #f5f9ff; color: #1e1b4b;
+    }
+    #divAssetValidationForm .form-control:focus, #divAssetValidationForm .form-select:focus {
+        border-color: #3b7dd8; background-color: #fff; box-shadow: 0 0 0 3px rgba(59,125,216,0.15);
+    }
+    #divAssetValidationForm .form-control[readonly], #divAssetValidationForm .form-control:disabled {
+        background-color: #e8f0fb; border-color: #b6d0ef; color: #1a56b0; cursor: default;
+    }
+    #divAssetValidationForm .form-control-sm, #divAssetValidationForm .form-select-sm { height: 30px; padding: 3px 7px; font-size: 0.8rem; }
+
+    .av-scan-group { display: flex; gap: 8px; }
+    .av-scan-group .form-control { flex: 1; }
+    .av-scan-btn {
+        display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+        background: linear-gradient(135deg,#10b981,#059669); border: none; color: #fff;
+        border-radius: 8px; font-size: 0.79rem; font-weight: 700; padding: 0 14px; height: 30px;
+        box-shadow: 0 3px 10px rgba(16,185,129,0.3); cursor: pointer;
+    }
+    .av-scan-btn:hover { color: #fff; filter: brightness(1.05); }
+
+    .av-count-pill {
+        background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
+        border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; font-weight: 700; color: #059669;
+    }
+    .av-items-wrap {
+        overflow: auto; min-height: 160px; max-height: min(520px, calc(100vh - 300px));
+        border: 1px solid #dbe3ef; border-radius: 8px; background: #fff;
+    }
+    .av-items-table { width: 100%; border-collapse: collapse; }
+    .av-items-table thead tr th {
+        background: linear-gradient(135deg, #4f46e5, #667eea);
+        color: #fff; font-size: 0.73rem; font-weight: 600; text-align: center;
+        vertical-align: middle; padding: 8px 6px; white-space: nowrap; border: none;
+        position: sticky; top: 0; z-index: 2;
+    }
+    .av-items-table tbody tr:hover { background: #f5f9ff; }
+    .av-items-table tbody tr td { padding: 4px 6px; vertical-align: middle; border: 1px solid #dbe3ef; font-size: 0.79rem; white-space: nowrap; }
+    .av-items-table tbody tr.av-row-notfound { background: #fef2f2; }
+    .av-items-table .form-control { min-width: 120px; }
+    .av-items-empty { text-align: center; padding: 26px 12px; color: #94a3b8; font-size: 0.82rem; }
+    .av-del-row-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 26px; height: 26px; background: #fee2e2; border: 1.5px solid #fca5a5;
+        cursor: pointer; color: #dc2626; font-size: 0.85rem; padding: 0; border-radius: 6px;
+    }
+    .av-del-row-btn:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
+
+    .av-float-bar {
+        position: fixed; bottom: 38px; left: 0; right: 0; margin-left: 280px;
+        z-index: 1050; display: none;
+        background: rgba(255,255,255,0.97);
+        border-top: 3px solid #3b7dd8; border-bottom: 1px solid #dbe3ef;
+        box-shadow: 0 -3px 18px rgba(59,125,216,0.18);
+        padding: 5px 24px; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .av-float-bar-left { display: flex; align-items: center; gap: 12px; }
+    .av-float-bar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .av-no-pill {
+        background: rgba(59,125,216,0.1); border: 1px solid rgba(59,125,216,0.2);
+        border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; font-weight: 700; color: #1a56b0;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .av-mode-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.05em; }
+    .btn-av-save {
+        background: linear-gradient(135deg,#3b7dd8,#1a56b0); border: none; color: #fff;
+        border-radius: 8px; padding: 5px 20px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+        box-shadow: 0 3px 10px rgba(59,125,216,0.35);
+    }
+    .btn-av-save:hover { color: #fff; }
+    .btn-av-cancel {
+        background: linear-gradient(135deg,#f59e0b,#d97706); border: none; color: #fff;
+        border-radius: 8px; padding: 5px 18px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-av-cancel:hover { color: #fff; }
+
+    #divAssetValidationForm { display: none; }
+    .av-form-wrap { padding-bottom: 100px; }
+    .req { color: #ef4444; }
+    .btn-height { height: 28px; }
+    .icon-height { height: 28px; }
+
+    @@media (max-width: 768px) {
+        .av-float-bar { bottom: 95px; margin-left: 0; padding: 5px 14px; }
+        .av-float-bar-left { display: none; }
+        .av-float-bar-right { width: 100%; justify-content: flex-end; }
+        .av-create-btn-label { display: none; }
+    }
+
+    #dvAVDeleteModal .modal-content { border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+    #dvAVDeleteModal .modal-header { background: linear-gradient(135deg,#dc2626,#ef4444); color: #fff; border: none; padding: 14px 18px; gap: 12px; }
+    #dvAVDeleteModal .modal-title { font-size: 16px; font-weight: 700; margin: 0; flex: 1; color: #fff; }
+    .avdel-hdr-icon { width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+    .avdel-close-btn { background: rgba(255,255,255,.15); border: none; color: #fff; width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+    .avdel-icon-wrap { width: 68px; height: 68px; border-radius: 50%; background: rgba(239,68,68,.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 30px; color: #ef4444; border: 3px solid rgba(239,68,68,.25); }
+    .avdel-reason { width: 100%; padding: 10px 13px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13.5px; outline: none; box-sizing: border-box; }
+    .avdel-reason:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,.15); }
+    .avdel-btn { border: none; border-radius: 10px; padding: 9px 20px; font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+    .avdel-btn.secondary { background: #f1f5f9; color: #475569; }
+    .avdel-btn.danger { background: linear-gradient(135deg,#dc2626,#ef4444); color: #fff; box-shadow: 0 4px 12px rgba(239,68,68,.3); }
+    .avdel-btn:disabled { opacity: .65; cursor: not-allowed; }
+
+    #dvAVSaveConfirmModal .modal-content { border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+    #dvAVSaveConfirmModal .modal-header { background: linear-gradient(135deg,#d97706,#f59e0b); color: #fff; border: none; padding: 14px 18px; gap: 12px; }
+    #dvAVSaveConfirmModal .modal-title { font-size: 16px; font-weight: 700; margin: 0; flex: 1; color: #fff; }
+    #dvAVSaveConfirmModal .avdel-icon-wrap { background: rgba(245,158,11,.1); color: #f59e0b; border-color: rgba(245,158,11,.25); }
+    .avdel-btn.warning { background: linear-gradient(135deg,#d97706,#f59e0b); color: #fff; box-shadow: 0 4px 12px rgba(245,158,11,.3); }
+</style>
+
+<div class="modal fade" id="dvAVSaveConfirmModal" tabindex="-1" role="dialog" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="avdel-hdr-icon"><i class="fas fa-lock"></i></div>
+                <h5 class="modal-title">Confirm Save</h5>
+                <button type="button" class="avdel-close-btn" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="background:#fff; text-align:center; padding:28px 24px 20px;">
+                <div class="avdel-icon-wrap"><i class="fas fa-exclamation-triangle"></i></div>
+                <div style="font-size:15px; font-weight:700; color:#1e293b; margin-bottom:8px;">
+                    Close Entry No <span id="saveAVEntryNo"></span>?
+                </div>
+                <div style="font-size:13.5px; color:#64748b;">
+                    After saving End Date this entry will be closed and cannot be edited. Do you want to continue?
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content:center; gap:12px; background:#fff; border-top:1px solid #fef3c7;">
+                <button type="button" class="avdel-btn secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-ban"></i> Cancel
+                </button>
+                <button type="button" class="avdel-btn warning" id="btnAVConfirmSave" onclick="ConfirmAssetValidationSave()">
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="dvAVDeleteModal" tabindex="-1" role="dialog" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="avdel-hdr-icon"><i class="fas fa-trash-alt"></i></div>
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="avdel-close-btn" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="background:#fff; text-align:center; padding:28px 24px 20px;">
+                <div class="avdel-icon-wrap"><i class="fas fa-exclamation-triangle"></i></div>
+                <div style="font-size:15px; font-weight:700; color:#1e293b; margin-bottom:8px;">
+                    Delete Entry No <span id="delAVEntryNo"></span>?
+                </div>
+                <div style="text-align:left;">
+                    <label for="txtAVDeleteReason" style="font-size:12.5px; font-weight:700; color:#334155; margin-bottom:6px; display:block;">
+                        Reason for Deletion <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="txtAVDeleteReason" class="avdel-reason" autocomplete="off" placeholder="Enter reason for deletion" />
+                </div>
+                <input type="hidden" id="hfAVDeleteCode" value="0" />
+            </div>
+            <div class="modal-footer" style="justify-content:center; gap:12px; background:#fff; border-top:1px solid #fee2e2;">
+                <button type="button" class="avdel-btn secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-ban"></i> Cancel
+                </button>
+                <button type="button" class="avdel-btn danger" id="btnAVConfirmDelete" onclick="ConfirmAssetValidationDelete()">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LIST SECTION -->
+<div id="divAssetValidationList">
+    <div class="av-list-header">
+        <div class="av-header-top">
+            <div>
+                <h5><i class="fa fa-qrcode me-2"></i>Asset Validation</h5>
+                <small>Scan asset QR codes and record physical verification</small>
+            </div>
+            <a onclick="OpenAssetValidationForm('New', 0)" class="av-create-btn">
+                <i class="fa fa-plus-circle"></i>
+                <span class="av-create-btn-label ms-1">Create New</span>
+            </a>
+        </div>
+        <div class="av-stats-strip">
+            <div class="av-stat-chip">
+                <div class="val" id="statAVTotal">—</div>
+                <div class="lbl">Entries</div>
+            </div>
+            <div class="av-stat-chip">
+                <div class="val" id="statAVAssets">—</div>
+                <div class="lbl">Assets Scanned</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="av-filter-bar">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="col-form-label-sm fw-bold">From Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtAVFromDate" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <label class="col-form-label-sm fw-bold">To Date <span class="text-danger">*</span></label>
+                <input type="date" id="txtAVToDate" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2 mb-2">
+                <button type="button" class="btn btn-primary btn-sm btn-height" onclick="LoadAssetValidationList()">
+                    <i class="fa fa-search me-1"></i> Show
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="divAssetValidationGrid" class="av-grid-wrap" style="display:none;">
+        <div class="table-wrapper av-table-scroll">
+            <table id="AssetValidationTable" class="table table-bordered table-hover mb-0">
+                <thead id="tblAssetValidationHeader"></thead>
+                <tbody id="tblAssetValidationBody"></tbody>
+            </table>
+        </div>
+        <div class="paginator" id="paginator-AssetValidationTable"></div>
+    </div>
+</div>
+
+<!-- CREATE / EDIT / VIEW FORM -->
+<div id="divAssetValidationForm">
+    <div class="av-form-wrap">
+
+        <div class="av-step-card" style="--step-clr:#3b7dd8;">
+            <div class="av-step-header">
+                <div class="av-step-num">1</div>
+                <span class="av-step-title">Audit Information</span>
+                <i class="fa fa-file-alt av-step-icon ms-auto"></i>
+            </div>
+            <div class="av-step-body">
+                <div class="row g-2">
+                    <div class="col-12 col-md-2">
+                        <label class="av-field-lbl" for="frmAVEntryNo">Entry No</label>
+                        <input type="text" id="frmAVEntryNo" class="form-control form-control-sm" readonly
+                               placeholder="Auto Generate" style="font-weight:700;letter-spacing:0.04em;" />
+                        <input type="hidden" id="frmAVCode" value="0" />
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <label class="av-field-lbl" for="frmAVEntryDate">Entry Date <span class="req">*</span></label>
+                        <input type="date" id="frmAVEntryDate" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <label class="av-field-lbl" for="frmAVStartDate">Start Date <span class="req">*</span></label>
+                        <input type="date" id="frmAVStartDate" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <label class="av-field-lbl" for="frmAVEndDate" title="Saving an End Date closes this entry">End Date</label>
+                        <input type="date" id="frmAVEndDate" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12 col-md-4 av-edit-only">
+                        <label class="av-field-lbl" for="frmAVScanQR">Scan QR <span class="req">*</span></label>
+                        <div class="av-scan-group">
+                            <input type="text" id="frmAVScanQR" class="form-control form-control-sm" autocomplete="off"
+                                   placeholder="Scan / type Asset Tag No and press Enter" />
+                            <a class="av-scan-btn" onclick="AssetValidation_btnScanQR()" title="Scan using camera">
+                                <i class="fa fa-camera"></i> Scan QR
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="av-step-card" style="--step-clr:#10b981;">
+            <div class="av-step-header">
+                <div class="av-step-num" style="background:#10b981;">2</div>
+                <span class="av-step-title">Scanned Assets</span>
+                <span class="av-count-pill ms-auto" id="frmAVCount">0 Assets</span>
+            </div>
+            <div class="av-step-body" style="padding-top:10px;">
+                <div class="av-items-wrap">
+                    <table class="av-items-table bizsol-col-expand" id="tblAVItems">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">S.No</th>
+                                <th>Asset Name</th>
+                                <th>Asset Type</th>
+                                <th>Location</th>
+                                <th style="width:38px;">Physical Status</th>
+                                <th style="width:38px;">Found At</th>
+                                <th style="width:38px;">Condition</th>
+                                <th class="av-edit-only" style="width:50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblAVItemsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="av-float-bar" id="avFloatBar">
+    <div class="av-float-bar-left">
+        <div class="av-no-pill">
+            <i class="fa fa-hashtag" style="font-size:0.7rem;"></i>
+            <span id="floatAVEntryNo">New Entry</span>
+        </div>
+        <span id="floatAVModeBadge" class="av-mode-badge badge bg-success">NEW</span>
+    </div>
+    <div class="av-float-bar-right">
+        <a class="btn-av-cancel" onclick="CloseAssetValidationForm()">
+            <i class="fa fa-arrow-left me-1"></i>Back
+        </a>
+        <a class="btn-av-save av-edit-only" href="javascript:void(0)" onclick="SaveAssetValidation()">
+            <i class="fa fa-save me-2"></i>Save
+        </a>
+    </div>
+</div>
+
+<div id="DivScanQRCodeByCameraControlModal"></div>
+<input type="hidden" id="hfAVCameraScanText" value="" />
