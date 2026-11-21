@@ -561,7 +561,7 @@ function UpdateLoadedIn_Emptyout(gateEntryData) {
     $('#frmLoadedIn_txtDocumentNo').val(gateEntryData[0].DocNo);
     $('#frmLoadedIn_txtDocumentDate').val(geFormatGateEntryInputDate(gateEntryData[0].InvoiceDate));
     $('#frmLoadedIn_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
-    $('#frmLoadedIn_txtEWayBillDate').val(gateEntryData[0].EwaybillDate ==null?'': new Date(gateEntryData[0].EwaybillDate).toISOString().slice(0, 10));
+    GateEntry_SetDateInput($('#frmLoadedIn_txtEWayBillDate'), gateEntryData[0].EwaybillDate);
     $('#frmLoadedIn_txtRemarks').val(gateEntryData[0].Remarks);
     $('#frmLoadedIn_txtChassisNo').val(gateEntryData[0].ChassisNo); 
     $('#frmLoadedIn_txtRCNo').val(gateEntryData[0].RCNo);
@@ -3542,7 +3542,7 @@ function ViewGateEntry(gateEntryData, EntryType) {
         $('#frmLoadedOut_txtGRNo').val(gateEntryData[0].GRNo);
 
         $('#frmLoadedOut_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
-        $('#frmLoadedOut_txtEWayBillDate').val(gateEntryData[0].EwaybillDate);
+        GateEntry_SetDateInput($('#frmLoadedOut_txtEWayBillDate'), gateEntryData[0].EwaybillDate);
         $('#frmLoadedOut_txtRemarks').val(gateEntryData[0].OutRemarks);
         $('#frmLoadedOut_ddlOutType').val(gateEntryData[0].OutType);
         $('#frmLoadedOut_txtOutReason').val(gateEntryData[0].OutReason);
@@ -3687,7 +3687,7 @@ function EditGateEntry(gateEntryData, EntryType) {
         
 
         $('#frmLoadedOut_txtEWayBillNo').val(gateEntryData[0].EwaybillNo);
-        $('#frmLoadedOut_txtEWayBillDate').val(gateEntryData[0].EwaybillDate);
+        GateEntry_SetDateInput($('#frmLoadedOut_txtEWayBillDate'), gateEntryData[0].EwaybillDate);
         $('#frmLoadedOut_txtRemarks').val(gateEntryData[0].OutRemarks);
         $('#frmLoadedOut_ddlOutType').val(gateEntryData[0].OutType);
         $('#frmLoadedOut_txtOutReason').val(gateEntryData[0].OutReason);
@@ -4520,11 +4520,51 @@ function GateEntry_CheckInvoicePackingListValidated(invoiceMasterCodes, invoiceN
     });
 }
 
+function GateEntry_PickField(obj, names) {
+    if (!obj) return '';
+    const keys = Object.keys(obj);
+    const wanted = (names || []).map(function (n) {
+        return String(n).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    });
+    for (let i = 0; i < wanted.length; i++) {
+        const matchKey = keys.find(function (k) {
+            return k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === wanted[i];
+        });
+        if (!matchKey) continue;
+        const val = obj[matchKey];
+        if (val != null && String(val).trim() !== '' && String(val).trim().toLowerCase() !== 'null') {
+            return val;
+        }
+    }
+    return '';
+}
+
 function GateEntry_ToInputDate(value) {
     if (value == null) return '';
     const text = String(value).trim();
     if (!text || text.toLowerCase() === 'null') return '';
-    return text.split('T')[0];
+    const datePart = text.split('T')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return datePart;
+    return geFormatGateEntryInputDate(value);
+}
+
+function GateEntry_SetDateInput($el, value) {
+    const dateStr = GateEntry_ToInputDate(value);
+    if (!$el || !$el.length) return '';
+    if (!dateStr) {
+        $el.val('');
+        return '';
+    }
+    const currentMin = $el.attr('min');
+    const currentMax = $el.attr('max');
+    if (currentMin && dateStr < currentMin) {
+        $el.attr('min', dateStr);
+    }
+    if (currentMax && dateStr > currentMax) {
+        $el.attr('max', dateStr);
+    }
+    $el.val(dateStr);
+    return dateStr;
 }
 
 function GateEntry_UnlockEWayBill(noSelector, dateSelector) {
@@ -4538,12 +4578,10 @@ function GateEntry_ApplyAutoFetchedEWayBill(noSelector, dateSelector, billNo, bi
     GateEntry_UnlockEWayBill(noSelector, dateSelector);
 
     const hasNo = billNo != null && String(billNo).trim() !== '' && String(billNo).trim().toLowerCase() !== 'null';
-    const fetchedDate = GateEntry_ToInputDate(billDate);
-    const docDate = GateEntry_ToInputDate(documentDate);
-    const dateValue = fetchedDate || (hasNo ? docDate : '');
+    const dateValue = GateEntry_ToInputDate(billDate) || (hasNo ? GateEntry_ToInputDate(documentDate) : '');
 
     $no.val(hasNo ? String(billNo).trim() : '');
-    $date.val(dateValue);
+    GateEntry_SetDateInput($date, dateValue);
 
     if (hasNo && dateValue) {
         $no.attr('readonly', 'readonly');
@@ -4612,15 +4650,16 @@ function GateEntry_changeDocumentType(refreshFetchedFields) {
                                     $('#frmLoadedOut_txtQty').val(parseFloat(sumtotalWeight).toFixed(2))
                                     $('#frmLoadedOut_txtGRNo').val(RespDocumentDetails[0].GRNo)
                                     $('#frmLoadedOut_ddlUOM').val(RespDocumentDetails[0].UOM).trigger('change')
-                                    if (RespDocumentDetails[0].DocumentDate) {
-                                        $('#frmLoadedOut_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
+                                    const loadedOutDocDate = GateEntry_PickField(RespDocumentDetails[0], ['DocumentDate', 'InvoiceDate']);
+                                    if (loadedOutDocDate) {
+                                        GateEntry_SetDateInput($('#frmLoadedOut_txtDocumentDate'), loadedOutDocDate);
                                     }
                                     GateEntry_ApplyAutoFetchedEWayBill(
                                         '#frmLoadedOut_txtEWayBillNo',
                                         '#frmLoadedOut_txtEWayBillDate',
-                                        RespDocumentDetails[0].EWayBillNo,
-                                        RespDocumentDetails[0].EWayBillDate,
-                                        RespDocumentDetails[0].DocumentDate
+                                        GateEntry_PickField(RespDocumentDetails[0], ['EWayBillNo', 'EwaybillNo', 'EwayBillNo']),
+                                        GateEntry_PickField(RespDocumentDetails[0], ['EWayBillDate', 'EwaybillDate', 'EwayBillDate']),
+                                        loadedOutDocDate
                                     );
 
                                    // G_TableName = RespDocumentDetails[0].TableName;
@@ -4798,15 +4837,16 @@ function GateEntry_changeDocumentType_LoadedIn(refreshFetchedFields) {
                                     $('#frmLoadedIn_txtGoodsDescription').val(RespDocumentDetails[0].GoodsDesp)
                                     $('#frmLoadedIn_txtQTY').val(parseFloat(sumtotalWeight).toFixed(2))
                                     $('#frmLoadedIn_txtUOM').val(RespDocumentDetails[0].UOM).trigger('change')
-                                    if (RespDocumentDetails[0].DocumentDate) {
-                                        $('#frmLoadedIn_txtDocumentDate').val(RespDocumentDetails[0].DocumentDate.split('T')[0]);
+                                    const loadedInDocDate = GateEntry_PickField(RespDocumentDetails[0], ['DocumentDate', 'InvoiceDate']);
+                                    if (loadedInDocDate) {
+                                        GateEntry_SetDateInput($('#frmLoadedIn_txtDocumentDate'), loadedInDocDate);
                                     }
                                     GateEntry_ApplyAutoFetchedEWayBill(
                                         '#frmLoadedIn_txtEWayBillNo',
                                         '#frmLoadedIn_txtEWayBillDate',
-                                        RespDocumentDetails[0].EWayBillNo,
-                                        RespDocumentDetails[0].EWayBillDate,
-                                        RespDocumentDetails[0].DocumentDate
+                                        GateEntry_PickField(RespDocumentDetails[0], ['EWayBillNo', 'EwaybillNo', 'EwayBillNo']),
+                                        GateEntry_PickField(RespDocumentDetails[0], ['EWayBillDate', 'EwaybillDate', 'EwayBillDate']),
+                                        loadedInDocDate
                                     );
 
                                     $('#frmLoadedIn_txtVendorName').attr('readonly', 'readonly');
