@@ -41,6 +41,14 @@ const ProductionOrderService = {
         });
     },
 
+    GetChemicalCoatHistory: function GetChemicalCoatHistory(WorkOrderPlanTransaction_Code) {
+        const url = UrlService.API_ENDPOINT_ProductionOrder
+            + '/GetChemicalCoatHistory?WorkOrderPlanTransaction_Code=' + encodeURIComponent(WorkOrderPlanTransaction_Code);
+        return promiseAjaxCallApi.CallAPI('POST', url, '').then(function (value) {
+            return value;
+        });
+    },
+
     GetShowData: function GetShowData(WorkOrderPlanMaster_Code) {
         let userCode = 0;
         try {
