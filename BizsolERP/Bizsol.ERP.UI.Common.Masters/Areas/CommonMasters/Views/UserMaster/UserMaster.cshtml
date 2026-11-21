@@ -63,6 +63,47 @@
     white-space: nowrap; position: relative; z-index: 1;
 }
 .im-btn-new:hover { background: rgba(255,255,255,0.26); border-color: rgba(255,255,255,0.80); transform: translateY(-1px); }
+/* ── Grid toolbar (search + download) ── */
+.um-grid-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.um-grid-toolbar-search {
+    flex: 1 1 200px;
+    min-width: 0;
+    max-width: 420px;
+}
+.um-grid-toolbar-search .bizsol-global-search-wrap {
+    margin-bottom: 0;
+    max-width: none;
+    width: 100%;
+}
+.um-btn-grid-download {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    border: 1.5px solid #d1d5db;
+    background: linear-gradient(180deg, #fff 0%, #f8f9fc 100%);
+    color: #5b5ef4;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(91,94,244,0.12);
+    transition: border-color 0.14s, box-shadow 0.14s, transform 0.14s;
+}
+.um-btn-grid-download:hover {
+    border-color: #5b5ef4;
+    box-shadow: 0 2px 8px rgba(91,94,244,0.22);
+    transform: translateY(-1px);
+}
+.um-btn-grid-download:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
 /* ── Card Body ── */
 .im-card-body { padding: 18px 20px 26px; }
@@ -209,6 +250,11 @@ tbody tr:hover td { color: #1e1b4b; }
     appearance: none; -webkit-appearance: none;
 }
 .im-input:focus { border-color: #5b5ef4; box-shadow: 0 0 0 3px rgba(91,94,244,0.12); background: #fff; }
+/* Masked text — not type=password, so browsers do not offer to save credentials */
+.im-input-pwd-mask {
+    -webkit-text-security: disc;
+    text-security: disc;
+}
 .im-input.im-input-error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.10); }
 .im-input.im-input-locked,
 select.im-input.im-input-locked {
@@ -877,6 +923,12 @@ select.im-input {
         <!-- Grid -->
         <div class="im-card-body">
             <div id="tblUserMaster">
+                <div class="um-grid-toolbar" id="umGridToolbar">
+                    <div class="um-grid-toolbar-search" id="umGridToolbarSearch"></div>
+                    <button type="button" class="um-btn-grid-download" id="btnDownloadUserMaster" onclick="DownloadUserMasterListExcel()" title="Download Excel" aria-label="Download Excel">
+                        <i class="fas fa-download" aria-hidden="true"></i>
+                    </button>
+                </div>
                 <div class="im-table-wrapper table-wrapper">
                     <table id="UserMasterGrid" style="width:100%;border-collapse:collapse;font-size:13px;">
                         <thead id="UserMaster-header"></thead>
@@ -904,7 +956,7 @@ select.im-input {
             </button>
         </div>
 
-        <div class="im-modal-body">
+        <form id="userMasterForm" class="im-modal-body" autocomplete="off" novalidate onsubmit="return false;">
 
             <!-- ── Section: Credentials + Photo ── -->
             <div class="um-section-label"><i class="fas fa-key"></i> User Credentials</div>
@@ -913,22 +965,22 @@ select.im-input {
                 <div class="um-cred-grid">
                     <div class="im-form-group">
                         <label for="txtUserID">User ID <span class="im-required">*</span></label>
-                        <input type="text" id="txtUserID" class="im-input" placeholder="Enter user ID…" autocomplete="off" maxlength="50" />
+                        <input type="text" id="txtUserID" name="um_user_id" class="im-input" placeholder="Enter user ID…" autocomplete="off" autocorrect="off" maxlength="50" data-lpignore="true" data-1p-ignore />
                         <span class="im-err-text" id="err_UserID"><i class="fas fa-circle-exclamation"></i> User ID is required.</span>
                     </div>
                     <div class="im-form-group">
                         <label for="txtUserName">User Name <span class="im-required">*</span></label>
-                        <input type="text" id="txtUserName" class="im-input" placeholder="Full name…" autocomplete="off" maxlength="100" />
+                        <input type="text" id="txtUserName" name="um_display_name" class="im-input" placeholder="Full name…" autocomplete="off" autocorrect="off" maxlength="100" data-lpignore="true" data-1p-ignore />
                         <span class="im-err-text" id="err_UserName"><i class="fas fa-circle-exclamation"></i> User Name is required.</span>
                     </div>
                     <div class="im-form-group">
                         <label for="txtPassword">Password <span class="im-required">*</span></label>
-                        <input type="password" id="txtPassword" class="im-input" placeholder="Password…" autocomplete="new-password" maxlength="50" />
+                        <input type="text" id="txtPassword" name="um_credential_value" class="im-input im-input-pwd-mask" placeholder="Password…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="50" data-lpignore="true" data-1p-ignore data-form-type="other" />
                         <span class="im-err-text" id="err_Password"><i class="fas fa-circle-exclamation"></i> Password is required.</span>
                     </div>
                     <div class="im-form-group">
                         <label for="txtConfirmPassword">Confirm Password <span class="im-required">*</span></label>
-                        <input type="password" id="txtConfirmPassword" class="im-input" placeholder="Re-enter password…" autocomplete="new-password" maxlength="50" />
+                        <input type="text" id="txtConfirmPassword" name="um_credential_confirm" class="im-input im-input-pwd-mask" placeholder="Re-enter password…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="50" data-lpignore="true" data-1p-ignore data-form-type="other" />
                         <span class="im-err-text" id="err_ConfirmPassword"><i class="fas fa-circle-exclamation"></i> Passwords do not match.</span>
                     </div>
                 </div>
@@ -1021,7 +1073,7 @@ select.im-input {
                 </div>
             </div>
 
-        </div><!-- /modal-body -->
+        </form><!-- /modal-body -->
 
         <div class="im-modal-footer">
             <button type="button" class="im-btn-cancel" id="btnCancelUser">
@@ -1170,5 +1222,6 @@ select.im-input {
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserMaster.js"></script>
 <script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
