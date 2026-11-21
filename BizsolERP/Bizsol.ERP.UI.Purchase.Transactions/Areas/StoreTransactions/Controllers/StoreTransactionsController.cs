@@ -15,5 +15,10 @@ namespace Bizsol.WebERP.UI.Purchase.Transactions.Areas.StoreTransactions.Control
         {
             return View();
         }
+
+        public IActionResult AssetValidation()
+        {
+            return View();
+        }
     }
 }
