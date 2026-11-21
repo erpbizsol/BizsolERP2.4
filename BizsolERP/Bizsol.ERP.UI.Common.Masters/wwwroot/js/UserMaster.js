@@ -2,6 +2,7 @@ import { UserMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { MenuService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/MenuServices.js';
 import { UrlService } from '../../Bizsol.WebERP.UI.Shared/js/URL.js';
+import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
 var U_EditCode = 0;
 var U_ViewCode = 0;
@@ -13,6 +14,8 @@ var G_UserMasterSubProjectList = [];
 var G_UserMasterCompanyList = [];
 /** Dashboard list for per-company dropdown (GETDASHBOARDLIST). */
 var G_UserMasterDashboardList = [];
+/** Full list rows from last GetUserMasterList API response (for reference). */
+var G_UserMasterList = [];
 /** Subproject codes to apply after form modal is visible (Select2 in backdrop). */
 var G_UserModalSubProjectPendingCodes = null;
 
@@ -1151,20 +1154,100 @@ function resolveUserDashboardDetailsForSave(codeVal) {
 /* ══════════════════════════════════════════
    LOAD LIST
 ══════════════════════════════════════════ */
-function GetUserMasterList() {
+function parseUserMasterListFromApiResponse(response) {
+    var rows = [];
+    if (Array.isArray(response)) {
+        var flatList = flattenFirstTableRows(response);
+        rows = flatList.length ? flatList : response;
+    } else if (response && Array.isArray(response.data)) {
+        rows = flattenFirstTableRows(response.data);
+        if (!rows.length) rows = response.data;
+    } else if (response && Array.isArray(response.Data)) {
+        rows = flattenFirstTableRows(response.Data);
+        if (!rows.length) rows = response.Data;
+    }
+    return (rows || []).filter(function (x) { return x && typeof x === 'object' && !Array.isArray(x); });
+}
+
+function formatUserMasterStatusForExport(row) {
+    var s = String(pickRowVal(row, 'Status', 'status') || '').trim().toUpperCase();
+    if (s === 'A') return 'Active';
+    if (s === 'I' || s === 'N') return 'Inactive';
+    return s || '';
+}
+
+function formatBizSolUserForExport(row) {
+    var v = String(pickRowVal(row, 'BizSol User', 'IsBizSolUser', 'isBizSolUser') || '').trim().toUpperCase();
+    if (v === 'Y' || v === 'YES') return 'Yes';
+    if (v === 'N' || v === 'NO') return 'No';
+    return v || '';
+}
+
+/** Build export rows (UserID, UserName, Mobile, Status, GroupName; BizSol User when allowed). */
+function mapUserMasterRowsForExcelExport(apiRows) {
+    return (apiRows || []).map(function (item) {
+        var out = {
+            UserID: String(pickRowVal(item, 'UserID', 'UserId', 'userID') || '').trim(),
+            UserName: String(pickRowVal(item, 'UserName', 'userName', 'UserDesp', 'userDesp') || '').trim(),
+            Mobile: String(pickRowVal(item, 'Mobile', 'mobile', 'UserMobileNo', 'userMobileNo') || '').trim(),
+            Status: formatUserMasterStatusForExport(item),
+            GroupName: String(pickRowVal(item, 'GroupName', 'groupName') || '').trim()
+        };
+        if (canShowBizsolUserOption()) {
+            out['BizSol User'] = formatBizSolUserForExport(item);
+        }
+        return out;
+    });
+}
+
+/** Move global search into grid toolbar row (search left, download right). */
+function layoutUserMasterGridToolbar() {
+    var tableId = 'UserMasterGrid';
+    var $search = $('#global-search-wrap-' + tableId);
+    var $slot = $('#umGridToolbarSearch');
+    if ($search.length && $slot.length) {
+        $search.detach().appendTo($slot);
+    }
+}
+
+function buildUserMasterExportFileName() {
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = String(now.getMonth() + 1).padStart(2, '0');
+    var d = String(now.getDate()).padStart(2, '0');
+    var h = String(now.getHours()).padStart(2, '0');
+    var min = String(now.getMinutes()).padStart(2, '0');
+    var s = String(now.getSeconds()).padStart(2, '0');
+    return 'UserMaster_' + y + '-' + m + '-' + d + '_' + h + '-' + min + '-' + s;
+}
+
+function DownloadUserMasterListExcel() {
+    var $btn = $('#btnDownloadUserMaster');
+    if ($btn.prop('disabled')) return;
+    $btn.prop('disabled', true);
+
     var filterCode = resolveUserMasterListFilterCode();
     UserMasterService.GetUserMasterList(filterCode).then(function (response) {
-        var rows = [];
-        if (Array.isArray(response)) {
-            var flatList = flattenFirstTableRows(response);
-            rows = flatList.length ? flatList : response;
-        } else if (Array.isArray(response.data)) {
-            rows = flattenFirstTableRows(response.data);
-            if (!rows.length) rows = response.data;
-        } else if (Array.isArray(response.Data)) {
-            rows = flattenFirstTableRows(response.Data);
-            if (!rows.length) rows = response.Data;
+        var rows = parseUserMasterListFromApiResponse(response);
+        if (!rows.length) {
+            toastr.warning('No data available to export.');
+            return;
         }
+        var exportRows = mapUserMasterRowsForExcelExport(rows);
+        ExportToExcelControl.ExportToExcel(exportRows, [], buildUserMasterExportFileName());
+    }).catch(function () {
+        toastr.error('Failed to load user list for export.');
+    }).finally(function () {
+        $btn.prop('disabled', false);
+    });
+}
+
+function GetUserMasterList() {
+    var filterCode = resolveUserMasterListFilterCode();
+    
+    UserMasterService.GetUserMasterList(filterCode).then(function (response) {
+        var rows = parseUserMasterListFromApiResponse(response);
+        G_UserMasterList = rows.slice();
 
         if (rows.length === 0) {
             toastr.warning('No users found. Add your first user.');
@@ -1175,8 +1258,13 @@ function GetUserMasterList() {
         $('#tblUserMaster').show();
         var StringFilterColumn  = ['UserID', 'UserName', 'GroupName', 'Email', 'Mobile', 'Status'];
         var NumericFilterColumn = [];
-        var DateFilterColumn    = [];
-        var hiddenColumns       = ['Code'];
+        var DateFilterColumn = [];
+        var hiddenColumns = ['Code'];
+        if (!canShowBizsolUserOption()) {
+            hiddenColumns.push('BizSol User');
+        } else {
+            StringFilterColumn.push('BizSol User');
+        }
         var ColumnAlignment     = { Action: 'center;width:118px;' };
 
         var updatedResponse = rows.map(function (item) {
@@ -1195,6 +1283,7 @@ function GetUserMasterList() {
             true, null, null, null,
             'Search by User ID, Name, Group, Email, Mobile, Status...'
         );
+        layoutUserMasterGridToolbar();
         applyProfileSearchIfRequested();
     }).catch(function () {
         toastr.error('Failed to load user list.');
@@ -1393,25 +1482,89 @@ function storedEncryptedPassword() {
 
 function normalizeDecryptedPassword(raw) {
     if (raw == null) return '';
-    if (typeof raw === 'string' || typeof raw === 'number') return String(raw);
-    if (typeof raw === 'object') {
+    var r = tryParseJsonIfString(raw);
+    if (typeof r === 'string' || typeof r === 'number') return String(r);
+    if (typeof r === 'object' && r !== null && !Array.isArray(r)) {
+        var body = unwrapStandardApiBody(r);
+        var st = body.Status != null ? body.Status : body.status;
+        if (st === 'N' || st === 'n') return '';
+        if (body !== r) {
+            var nested = normalizeDecryptedPassword(body);
+            if (nested) return nested;
+        }
         var keys = ['decryptedPassword', 'DecryptedPassword', 'password', 'Password', 'value', 'Value', 'data', 'Data', 'result', 'Result'];
         var i;
         for (i = 0; i < keys.length; i++) {
-            if (raw[keys[i]] != null && typeof raw[keys[i]] !== 'object')
-                return String(raw[keys[i]]);
+            if (body[keys[i]] != null && typeof body[keys[i]] !== 'object')
+                return String(body[keys[i]]);
         }
     }
     return '';
 }
 
+/** Undo HomeController EncryptPasswordAsync (each char code − 10). */
+function decryptUserMasterPasswordShiftOnly(value) {
+    var s = value == null ? '' : String(value);
+    if (!s) return '';
+    var out = '';
+    var i;
+    for (i = 0; i < s.length; i++) {
+        out += String.fromCharCode(s.charCodeAt(i) - 10);
+    }
+    return out;
+}
+
+/** Same algorithm as HomeController EncryptForJson (UTF-8 bytes of shifted string, then base64). */
+function decryptUserMasterPasswordLocal(encryptedPassword) {
+    var enc = encryptedPassword == null ? '' : String(encryptedPassword).trim();
+    if (!enc) return '';
+    try {
+        var decoded = atob(enc);
+        return decryptUserMasterPasswordShiftOnly(decoded);
+    } catch (e) {
+        return '';
+    }
+}
+
+function looksLikeEncryptForJsonBase64(enc) {
+    if (!enc || enc.length < 4 || enc.length % 4 !== 0) return false;
+    return /^[A-Za-z0-9+/]+=*$/.test(enc);
+}
+
+/** UserMaster API / SaveUserMaster use CommonFunctions.EncryptPasswordAsync (char + 10 only, not base64). */
+function tryDecryptUserMasterPasswordShift(enc) {
+    var plain = decryptUserMasterPasswordShiftOnly(enc);
+    if (!plain || plain === enc) return '';
+    if (/^[\x20-\x7E]+$/.test(plain)) return plain;
+    return '';
+}
+
+function resolvePlainPasswordFromEncrypted(enc) {
+    enc = enc == null ? '' : String(enc).trim();
+    if (!enc) return Promise.resolve('');
+
+    var local = decryptUserMasterPasswordLocal(enc);
+    if (local) return Promise.resolve(local);
+
+    var shiftPlain = tryDecryptUserMasterPasswordShift(enc);
+    if (shiftPlain) return Promise.resolve(shiftPlain);
+
+    /* Plain text when value is not EncryptForJson base64 and not shift-encrypted. */
+    if (!looksLikeEncryptForJsonBase64(enc)) return Promise.resolve(enc);
+
+    return UserMasterService.DecryptPassword(enc).then(function (raw) {
+        var plain = normalizeDecryptedPassword(raw).trim();
+        if (plain) return plain;
+        var fallback = decryptUserMasterPasswordLocal(enc);
+        return fallback || '';
+    }).catch(function () {
+        return decryptUserMasterPasswordLocal(enc) || '';
+    });
+}
+
 /** POST DecryptPassword and return the plain password string. */
 function DecryptPassword(encryptedPassword) {
-    var enc = encryptedPassword == null ? '' : String(encryptedPassword);
-    if (!enc) return Promise.resolve('');
-    return UserMasterService.DecryptPassword(enc).then(function (raw) {
-        return normalizeDecryptedPassword(raw).trim();
-    });
+    return resolvePlainPasswordFromEncrypted(encryptedPassword);
 }
 
 function applyDecryptedPasswordToEditForm(editCode, encryptedPassword) {
@@ -1427,6 +1580,11 @@ function applyDecryptedPasswordToEditForm(editCode, encryptedPassword) {
         if (String(U_EditCode) !== String(editCode)) return;
         toastr.error('Failed to decrypt password.');
     });
+}
+
+/** Clear credential fields before closing modal so Chrome does not show "Save password?" */
+function dismissBrowserCredentialSavePrompt() {
+    $('#txtPassword, #txtConfirmPassword').val('');
 }
 
 function SaveUser() {
@@ -1448,6 +1606,7 @@ function SaveUser() {
         UserMasterService.SaveUserMaster(payload).then(function (raw) {
             var response = unwrapStandardApiBody(raw);
             if (apiSuccessY(response)) {
+                dismissBrowserCredentialSavePrompt();
                 CloseForm();
                 GetUserMasterList();
                 ShowSuccessModal(
@@ -1694,6 +1853,7 @@ function ClearForm() {
 }
 
 function CloseForm() {
+    dismissBrowserCredentialSavePrompt();
     ClearForm();
     U_EditCode = 0;
     U_ViewCode = 0;
@@ -1832,6 +1992,7 @@ function CloseSuccessModal() {
    EXPOSE TO WINDOW (required for onclick)
 ══════════════════════════════════════════ */
 window.GetUserMasterList = GetUserMasterList;
+window.DownloadUserMasterListExcel = DownloadUserMasterListExcel;
 window.OpenNewUser       = OpenNewUser;
 window.EditUser          = EditUser;
 window.ViewUser          = ViewUser;
