@@ -22,6 +22,11 @@ let G_VendorSuppressCityAddressFill = false;
 /** When true, Nation/State change must not cascade-clear City/State (edit load / city-driven fill). */
 let G_VendorProgrammaticNationStateCity = false;
 let G_GSTINValidatedNo = "";
+/** GetFixedParameter: PanNoMandatoryInClientVendor = Y makes PAN required. */
+let G_PanNoMandatoryInClientVendor = false;
+/** GetFixedParameter: CompanyNation. GST is required when this is INDIA. */
+let G_CompanyNation = "";
+let G_VendorFixedParameterLoaded = false;
 
 /** DocumentMaster — same table key as other Account / party attachments (e.g. Lead). */
 var VM_ATTACHMENT_MASTER_TABLE = "AccountMaster";
@@ -1060,6 +1065,7 @@ $(document).ready(function () {
     GetStateList();
     GetCityList();
     GetIndustryTypeMasterList();
+    loadVendorFixedParameters();
 
     $("#vmBtnModalClose, #vmBtnCancelVendor").on("click", CloseVendorForm);
     $("#vmBtnCancelDelete").on("click", function () {
@@ -1121,15 +1127,13 @@ $(document).ready(function () {
         }
     });
 
+    $("#chkUnRegisterGST").on("change", function () {
+        applyUnregisteredGstUi({ clearGst: this.checked });
+    });
+
     $("#PANNo").on("input", function () {
         $(this).val(($(this).val() || "").toUpperCase().replace(/[^A-Z0-9]/g, ""));
-        var gst = ($("#GSTNNo").val() || "").trim();
-        if (!gst) {
-            validatePAN(true, true);
-        } else {
-            $("#err_PANNo").hide();
-            $("#PANNo").removeClass("vm-input-error");
-        }
+        validatePAN(true, true);
     });
 
     $("#PinCode").on("input", function () {
@@ -1628,7 +1632,7 @@ function refreshVendorMasterGrid() {
     var filtered = filterVendorRowsByStat(source, mode);
     var mapped = mapVendorRowsToGrid(filtered);
 
-    const StringFilterColumn = ["Vendor Code","Vendor Name", "Nature", "GSTN No", "Phone", "Email", "City", "State", "Country","Industry Type"];
+    const StringFilterColumn = ["Vendor Code","Vendor Name", "Nature", "GSTN No", "Phone", "Email", "City", "State", "Country","Industry Type", "GST Status", "GST STATUS"];
     const NumericFilterColumn = ["SNo"];
     const DateFilterColumn = [];
     const Button = false;
@@ -1828,6 +1832,12 @@ function EditVendor(code) {
             if (gLoad.length === 15 && isValidGstinFormat(gLoad)) {
                 $("#PANNo").val(gLoad.substring(2, 12));
             } else {
+                $("#PANNo").val(item.PANNo || "");
+            }
+            var unregFlag = vmVendorPickFirst(item, ["IsUnRegisterGSTNo", "isUnRegisterGSTNo", "IsUnRegisterGstNo"]);
+            $("#chkUnRegisterGST").prop("checked", String(unregFlag || "").trim().toUpperCase() === "Y");
+            applyUnregisteredGstUi({ clearGst: $("#chkUnRegisterGST").is(":checked") });
+            if ($("#chkUnRegisterGST").is(":checked")) {
                 $("#PANNo").val(item.PANNo || "");
             }
             updatePanRequiredUi();
@@ -2194,6 +2204,11 @@ function SaveVendor() {
             toastr.error((response && response.Msg) || "You do not have permission to perform this action.");
             return;
         } else {
+            ensureVendorFixedParameters().then(function (loaded) {
+            if (!loaded) {
+                toastr.error("Unable to load GST and PAN settings. Please try again.");
+                return;
+            }
             if (!ValidateVendorForm()) return;
 
             var payload = BuildVendorPayload();
@@ -2257,6 +2272,10 @@ function SaveVendor() {
                     btnSave.prop("disabled", false);
                     $("#vmBtnSaveText").text(origLabel);
                 });
+            }).catch(function (err) {
+                console.error("GetFixedParameter error:", err);
+                toastr.error("Unable to load GST and PAN settings. Please try again.");
+            });
             }
         }).catch(function (err) {
             console.error("CheckModuleOptionRight error:", err);
@@ -2283,7 +2302,7 @@ function BuildVendorPayload() {
                 // ── Form Fields (from VendorMaster.cshtml) ───────────────
                 AccountDesp: $("#AccountDesp").val(),
                 BillName: $("#BillName").val(),
-                GSTNNo: $("#GSTNNo").val(),
+                GSTNNo: isUnregisteredGstChecked() ? "" : $("#GSTNNo").val(),
                 EMail: $("#EMail").val(),
                 PhoneNo: $("#PhoneNo").val(),
                 City: $("#City option:selected").text(),
@@ -2306,9 +2325,11 @@ function BuildVendorPayload() {
                 VatNo: "",
                 ServiceTaxNo: "",
                 PANNo: (function () {
-                    var g = ($("#GSTNNo").val() || "").trim().toUpperCase();
-                    if (g && isValidGstinFormat(g)) {
-                        return g.substring(2, 12);
+                    if (!isUnregisteredGstChecked()) {
+                        var g = ($("#GSTNNo").val() || "").trim().toUpperCase();
+                        if (g && isValidGstinFormat(g)) {
+                            return g.substring(2, 12);
+                        }
                     }
                     return ($("#PANNo").val() || "").trim().toUpperCase();
                 })(),
@@ -2356,7 +2377,7 @@ function BuildVendorPayload() {
                 GSTApplicableDate: null,
                 IsSEZSupply: "N",
                 GSTRFrequency: "Q",
-                IsUnRegisterGSTNo: "N",
+                IsUnRegisterGSTNo: isUnregisteredGstChecked() ? "Y" : "N",
                 PartyExcemptionNo: "",
                 DivisionMaster_Code: 0,
                 SubDivisionMaster_Code: 0,
@@ -2598,37 +2619,109 @@ function isValidGstinFormat(gstVal) {
     var gstPattern = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     return gstPattern.test(gstVal);
 }
-/** Show * on PAN label only when GST is empty (PAN mandatory then). */
-function updatePanRequiredUi() {
-    var gst = ($("#GSTNNo").val() || "").trim();
-    var $m = $("#vm_pan_required_mark");
-    if ($m.length) {
-        if (gst) {
-            $m.hide();
-        } else {
-            $m.show();
-        }
-    }
+function isCompanyNationIndia() {
+    return String(G_CompanyNation || "").trim().toUpperCase() === "INDIA";
 }
-/** When GST is empty, PAN is required and must match standard PAN format. */
-function validatePAN(showError, treatEmptyAsOk) {
-    var gst = ($("#GSTNNo").val() || "").trim().toUpperCase();
-    var pan = ($("#PANNo").val() || "").trim().toUpperCase();
-    if (gst) {
-        $("#err_PANNo").hide();
-        $("#PANNo").removeClass("vm-input-error");
-        return true;
+
+function vmFixedParameterRows(res) {
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.data)) return res.data;
+    if (res && Array.isArray(res.Data)) return res.Data;
+    if (res && Array.isArray(res.Table)) return res.Table;
+    if (res && Array.isArray(res.table)) return res.table;
+    if (res && typeof res === "object") return [res];
+    return [];
+}
+
+function applyVendorFixedParameterResponse(res) {
+    var rows = vmFixedParameterRows(res);
+    var panFlag = "";
+    var nation = "";
+    rows.forEach(function (row) {
+        if (!row || typeof row !== "object") return;
+        var name = vmPickRowField(row, [
+            "PeramaterName", "peramaterName", "ParameterName", "parameterName", "ParamName", "paramName"
+        ]).replace(/\s+/g, "").toUpperCase();
+        var value = vmPickRowField(row, [
+            "PeramaterValue", "peramaterValue", "ParameterValue", "parameterValue", "ParamValue", "paramValue"
+        ]);
+        if (name === "PANNOMANDATORYINCLIENTVENDOR") panFlag = value;
+        if (name === "COMPANYNATION") nation = value;
+        if (row.PanNoMandatoryInClientVendor != null && String(row.PanNoMandatoryInClientVendor).trim() !== "") {
+            panFlag = String(row.PanNoMandatoryInClientVendor).trim();
+        }
+        if (row.CompanyNation != null && String(row.CompanyNation).trim() !== "") {
+            nation = String(row.CompanyNation).trim();
+        }
+    });
+    G_PanNoMandatoryInClientVendor = String(panFlag || "").trim().toUpperCase() === "Y";
+    G_CompanyNation = String(nation || "").trim();
+    G_VendorFixedParameterLoaded = true;
+    updatePanRequiredUi();
+    updateGstRequiredUi();
+}
+
+function loadVendorFixedParameters() {
+    return VendorMasterService.GetFixedParameter()
+        .then(function (res) {
+            applyVendorFixedParameterResponse(res);
+            return true;
+        })
+        .catch(function (err) {
+            console.error("GetFixedParameter error:", err);
+            G_VendorFixedParameterLoaded = false;
+            return false;
+        });
+}
+
+function ensureVendorFixedParameters() {
+    if (G_VendorFixedParameterLoaded) return Promise.resolve(true);
+    return loadVendorFixedParameters();
+}
+
+/** Show * on PAN when PanNoMandatoryInClientVendor is Y. */
+function updatePanRequiredUi() {
+    var $m = $("#vm_pan_required_mark");
+    if (!$m.length) return;
+    if (G_PanNoMandatoryInClientVendor) $m.show();
+    else $m.hide();
+}
+
+/** GST * stays on unless Unregistered in GST is checked, or CompanyNation is loaded and is not INDIA. */
+function updateGstRequiredUi() {
+    var $mark = $("#vm_gst_required_mark");
+    if (!$mark.length) return;
+    if (isUnregisteredGstChecked()) {
+        $mark.hide();
+        return;
     }
+    if (G_VendorFixedParameterLoaded && !isCompanyNationIndia()) {
+        $mark.hide();
+        return;
+    }
+    $mark.show();
+}
+
+/** PAN is required only when PanNoMandatoryInClientVendor is Y. A typed value must still match PAN format. */
+function validatePAN(showError, treatEmptyAsOk) {
+    var pan = ($("#PANNo").val() || "").trim().toUpperCase();
     if (!pan) {
-        if (showError && !treatEmptyAsOk) {
+        if (!G_PanNoMandatoryInClientVendor || treatEmptyAsOk) {
+            $("#err_PANNo").hide();
+            $("#PANNo").removeClass("vm-input-error");
+            return true;
+        }
+        if (showError) {
+            $("#err_PANNo").html('<i class="fas fa-circle-exclamation"></i> PAN Number is required.');
             $("#err_PANNo").css("display", "flex");
             $("#PANNo").addClass("vm-input-error");
         }
-        return treatEmptyAsOk ? true : false;
+        return false;
     }
     var panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
     if (!panPattern.test(pan)) {
         if (showError) {
+            $("#err_PANNo").html('<i class="fas fa-circle-exclamation"></i> Enter a valid PAN (e.g. AAAAA0000A).');
             $("#err_PANNo").css("display", "flex");
             $("#PANNo").addClass("vm-input-error");
         }
@@ -2638,15 +2731,55 @@ function validatePAN(showError, treatEmptyAsOk) {
     $("#PANNo").removeClass("vm-input-error");
     return true;
 }
+function isUnregisteredGstChecked() {
+    return $("#chkUnRegisterGST").is(":checked");
+}
+
+/** Checked: GST is not required and save sends IsUnRegisterGSTNo = Y. Unchecked: GST stays required. */
+function applyUnregisteredGstUi(options) {
+    options = options || {};
+    var unregistered = isUnregisteredGstChecked();
+    var $gst = $("#GSTNNo");
+
+    if (unregistered) {
+        if (options.clearGst) {
+            $gst.val("");
+            resetGSTINValidationCheck();
+        }
+        $gst.prop("disabled", true).removeClass("vm-input-error");
+        $("#chkGSTINValidation").prop("disabled", true).prop("checked", false);
+        $("#err_GSTNNo").hide();
+    } else {
+        $gst.prop("disabled", false);
+        $("#chkGSTINValidation").prop("disabled", false);
+    }
+    updateGstRequiredUi();
+    updatePanRequiredUi();
+}
+
 function validateGST(showError) {
-    var gstVal = $("#GSTNNo").val();
-    if (!gstVal) {
+    var gstVal = ($("#GSTNNo").val() || "").trim().toUpperCase();
+    if (isUnregisteredGstChecked()) {
         $("#err_GSTNNo").hide();
         $("#GSTNNo").removeClass("vm-input-error");
         return true;
     }
+    if (!gstVal) {
+        if (G_VendorFixedParameterLoaded && !isCompanyNationIndia()) {
+            $("#err_GSTNNo").hide();
+            $("#GSTNNo").removeClass("vm-input-error");
+            return true;
+        }
+        if (showError) {
+            $("#err_GSTNNo").html('<i class="fas fa-circle-exclamation"></i> GST Number is required.');
+            $("#err_GSTNNo").css("display", "flex");
+            $("#GSTNNo").addClass("vm-input-error");
+        }
+        return false;
+    }
     if (!isValidGstinFormat(gstVal)) {
         if (showError) {
+            $("#err_GSTNNo").html('<i class="fas fa-circle-exclamation"></i> Invalid GST format.');
             $("#err_GSTNNo").css("display", "flex");
             $("#GSTNNo").addClass("vm-input-error");
         }
@@ -2998,6 +3131,10 @@ function ClearVendorForm() {
 
     $("#vmBtnSaveVendor").show().prop("disabled", false);
     $("#vmBtnCancelVendor").html('<i class="fas fa-times"></i> Cancel');
+    $("#chkUnRegisterGST").prop("checked", false);
+    $("#GSTNNo, #chkGSTINValidation").prop("disabled", false);
+    resetGSTINValidationCheck();
+    applyUnregisteredGstUi({ clearGst: false });
     updatePanRequiredUi();
     if (typeof vmSyncVendorFormAttachBarState === "function") {
         vmSyncVendorFormAttachBarState(0);
