@@ -204,6 +204,7 @@ let UrlService = {
     API_ENDPOINT_AssetsMaster: `${environment.BASE_URL}/AssetsMaster`,
     API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisitionMaster`,
     API_ENDPOINT_AdminTools: `${environment.BASE_URL}/AdminTools`,
+    API_ENDPOINT_MaintenanceScheduleMaster: `${environment.BASE_URL}/MaintenanceScheduleMaster`,
 }
 
 export { UrlService }
