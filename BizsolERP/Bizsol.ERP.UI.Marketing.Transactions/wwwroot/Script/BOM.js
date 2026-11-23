@@ -21,7 +21,6 @@ let G_ExpenseLoadedForKey = '';
 let G_CopyFromSource        = { active: false, projectCode: 0, subProjectCode: 0, projectName: '', subProjectDesp: '' };
 
 const BOM_MAX_RATE    = 999999.99;
-const BOM_MAX_QTY     = 99999.99;
 // const BOM_MAX_AMOUNT  = 99999999.99;
 const BOM_MAX_GST_PCT = 100;
 
@@ -621,6 +620,155 @@ function openBomAmendmentHistoryModal(projectMasterCode, subProjectMasterCode) {
         });
 }
 
+let G_ViewBomToken = 0;
+
+function viewCategoryLabel(row) {
+    const fromRow = (row.CategoryDesp || row.CategoryName || row.ProjectCategory || row.PrjCategory || row.ProjectCategoryDesp || '').toString().trim();
+    if (fromRow) return fromRow;
+    const code = row.ProjectCategory_Code || 0;
+    const match = (G_CategoryList || []).find(function (c) {
+        return String(c.Code || 0) === String(code || 0);
+    });
+    if (match) {
+        return (match.CategoryDesp || match.CategoryName || match.Category || '').toString().trim() || ('Category ' + code);
+    }
+    return code ? ('Category ' + code) : 'Uncategorized';
+}
+
+function viewBomLineAmounts(row) {
+    const qty = parseFloat(String(row.QtyRequired || 0).replace(/,/g, '')) || 0;
+    const amount = parseBomMoney(row.Amount);
+    const gstRate = parseFloat(row.GSTRate != null ? row.GSTRate : (row.GSTPercent != null ? row.GSTPercent : 0)) || 0;
+    const total = amount + (amount * gstRate / 100);
+    return { qty: qty, amount: amount, total: total };
+}
+
+function viewExpenseGroupLabel(row) {
+    const fromRow = (row.ExpenseGroupDesp || row.ExpenseGroupName || row.Desp || row.ExpenseGroup || '').toString().trim();
+    if (fromRow) return fromRow;
+    const code = row.ExpenseGroupMaster_Code || 0;
+    const match = (G_ExpenseGroupList || []).find(function (g) {
+        return String(g.Code || 0) === String(code || 0);
+    });
+    if (match && match.Desp) return match.Desp;
+    return code ? ('Group ' + code) : 'Uncategorized';
+}
+
+function viewSummaryRowHtml(label, qtyText, amount, total) {
+    return '<tr>' +
+        '<td><span class="uom-badge">' + escHtml(label) + '</span></td>' +
+        '<td class="right">' + escHtml(qtyText) + '</td>' +
+        '<td class="right">' + escHtml(formatInrAmountNum(amount, 2, 2)) + '</td>' +
+        '<td class="right"><strong>' + escHtml(formatInrAmountNum(total, 2, 2)) + '</strong></td>' +
+        '</tr>';
+}
+
+function renderViewCombinedSummary(bomRows, expenseRows) {
+    const groups = {};
+    (bomRows || []).forEach(function (row) {
+        const line = viewBomLineAmounts(row);
+        const hasItem = !!(row.ItemMaster_Code || row.ItemName);
+        if (!hasItem && line.qty === 0 && line.amount === 0 && line.total === 0) return;
+        const code = row.ProjectCategory_Code || 0;
+        const key = code ? String(code) : '_uncat';
+        if (!groups[key]) groups[key] = { label: viewCategoryLabel(row), qty: 0, amount: 0, total: 0 };
+        groups[key].qty += line.qty;
+        groups[key].amount += line.amount;
+        groups[key].total += line.total;
+    });
+
+    const expenseGroups = {};
+    (expenseRows || []).forEach(function (row) {
+        const code = parseInt(row.ExpenseGroupMaster_Code || 0, 10) || 0;
+        const amt = parseBomMoney(row.ExpenseAmount);
+        if (!code && amt === 0) return;
+        const key = code ? String(code) : '_none';
+        if (!expenseGroups[key]) expenseGroups[key] = { label: viewExpenseGroupLabel(row), amount: 0 };
+        expenseGroups[key].amount += amt;
+    });
+
+    const catKeys = Object.keys(groups).sort(function (a, b) {
+        const la = groups[a].label;
+        const lb = groups[b].label;
+        const ua = la.toLowerCase() === 'uncategorized';
+        const ub = lb.toLowerCase() === 'uncategorized';
+        if (ua !== ub) return ua ? 1 : -1;
+        return la.localeCompare(lb, undefined, { sensitivity: 'base', numeric: true });
+    });
+    const expKeys = Object.keys(expenseGroups).sort(function (a, b) {
+        return expenseGroups[a].label.localeCompare(expenseGroups[b].label, undefined, { sensitivity: 'base' });
+    });
+
+    const $body = $('#viewBomSummaryBody');
+    const $foot = $('#viewBomSummaryFoot');
+    const $footer = $('#viewBomSummaryFooter');
+    if (!catKeys.length && !expKeys.length) {
+        $body.html('<tr><td colspan="4" class="center">No summary.</td></tr>');
+        $foot.empty();
+        $footer.empty();
+        return;
+    }
+
+    let gQty = 0, gAmount = 0, gTotal = 0;
+    const rowsHtml = catKeys.map(function (k) {
+        const g = groups[k];
+        gQty += g.qty;
+        gAmount += g.amount;
+        gTotal += g.total;
+        return viewSummaryRowHtml(g.label, formatInrQtyNum(g.qty), g.amount, g.total);
+    }).concat(expKeys.map(function (k) {
+        const g = expenseGroups[k];
+        gAmount += g.amount;
+        gTotal += g.amount;
+        return viewSummaryRowHtml(g.label, '—', g.amount, g.amount);
+    })).join('');
+
+    $body.html(rowsHtml);
+    $foot.html(
+        '<tr>' +
+        '<td><strong>Grand Total</strong></td>' +
+        '<td class="right">' + escHtml(formatInrQtyNum(gQty)) + '</td>' +
+        '<td class="right">' + escHtml(formatInrAmountNum(gAmount, 2, 2)) + '</td>' +
+        '<td class="right">' + escHtml(formatInrAmountNum(gTotal, 2, 2)) + '</td>' +
+        '</tr>'
+    );
+    $footer.html(
+        '<div class="bom-summary-footer-row bom-summary-footer-total-amt">' +
+        '<span class="bom-summary-footer-label">Total Amount :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(formatInrAmountNum(gTotal, 2, 2)) + '</span></div>' +
+        '<div class="bom-summary-footer-row bom-summary-footer-amt-words">' +
+        '<span class="bom-summary-footer-label">Amount In Words :</span> ' +
+        '<span class="bom-summary-footer-value">' + escHtml(inrAmountWordsRupeeSymbol(gTotal)) + '</span></div>'
+    );
+}
+
+function loadViewBomSummaries(projectCode, subCode, token) {
+    const categoryPromise = (G_CategoryList && G_CategoryList.length)
+        ? Promise.resolve()
+        : loadCategoryAndWorkTypeMaster();
+    const expenseListPromise = ensureExpenseGroupList();
+    const bomPromise = (BOMService && typeof BOMService.GetBOMByCode === 'function')
+        ? BOMService.GetBOMByCode(projectCode, subCode).catch(function () { return []; })
+        : Promise.resolve([]);
+    const expensePromise = (BOMService && typeof BOMService.GetExpenseBOMByCode === 'function')
+        ? BOMService.GetExpenseBOMByCode(projectCode, subCode).catch(function () { return []; })
+        : Promise.resolve([]);
+
+    Promise.all([categoryPromise, expenseListPromise, bomPromise, expensePromise])
+        .then(function (results) {
+            if (token !== G_ViewBomToken) return;
+            renderViewCombinedSummary(
+                normalizeBOMDetailResponse(results[2]),
+                normalizeBOMDetailResponse(results[3])
+            );
+        })
+        .catch(function () {
+            if (token !== G_ViewBomToken) return;
+            $('#viewBomSummaryBody').html('<tr><td colspan="4" class="center">Could not load summary.</td></tr>');
+            $('#viewBomSummaryFoot, #viewBomSummaryFooter').empty();
+        });
+}
+
 function viewBOM(id, subId) {
     if (!G_BOMList || !G_BOMList.length) return;
     const row = G_BOMList.find(function (x) {
@@ -632,13 +780,14 @@ function viewBOM(id, subId) {
 
     $('#viewBOMProjectName').text(row.ProjectName || row.ProjectDesp || '—');
     $('#viewBOMSubProjectName').text(row.SubProjectName || row.SubProjectDesp || '—');
-    $('#viewBOMTotalItems').text(row.TotalItems || 0);
-    $('#viewBOMTotalQty').text(row.TotalQty != null ? formatInrQtyNum(parseFloat(row.TotalQty)) : '—');
-    $('#viewBOMAmount').text(formatInrAmountNum(getBomListBaseAmount(row), 2, 2));
-    $('#viewBOMTotalAmount').text(formatInrAmountNum(parseFloat(row.TotalAmount || 0), 2, 2));
-    if ($('#viewBOMExpenseAmount').length) {
-        $('#viewBOMExpenseAmount').text(formatInrAmountNum(parseFloat(row.ExpenseAmount || 0), 2, 2));
-    }
+
+    $('#viewBomSummaryBody').html('<tr><td colspan="4" class="center">Loading…</td></tr>');
+    $('#viewBomSummaryFoot, #viewBomSummaryFooter').empty();
+
+    const token = ++G_ViewBomToken;
+    const projectCode = parseInt(row.ProjectMaster_Code || row.Code || id || 0, 10) || 0;
+    const subCode = parseInt(row.SubProjectMaster_Code || subId || 0, 10) || 0;
+    loadViewBomSummaries(projectCode, subCode, token);
 
     showModal('dvBOMViewModal');
 }
@@ -1878,7 +2027,7 @@ function applyUOMsFromCache(cacheKey) {
 }
 function initRowEvents($tr) {
     $tr.find('.bom-qty-required').on('input', function () {
-        enforceNumericWithMax(this, 2, BOM_MAX_QTY);
+        enforceQtyInput(this);
         recalcAmount($tr);
     });
     $tr.find('.bom-est-rate').on('input', function () {
@@ -2150,6 +2299,19 @@ function isValidNumber(val) {
     const v = val.toString().replace(/,/g, '').trim();
     return !!v && !isNaN(parseFloat(v));
 }
+/** Qty: up to 10 digits before the decimal, plus a float. */
+function enforceQtyInput(input) {
+    let v = (input.value || '').replace(/,/g, '').replace(/[^0-9.]/g, '');
+    const parts = v.split('.');
+    const intPart = (parts[0] || '').slice(0, 10);
+    if (parts.length === 1) {
+        input.value = intPart;
+        return;
+    }
+    const decPart = parts.slice(1).join('').slice(0, 3);
+    input.value = intPart + '.' + decPart;
+}
+
 function enforceNumeric(input, maxDecimals) {
     let v = (input.value || '').replace(/,/g, '').replace(/[^0-9.]/g, '');
     const parts = v.split('.');
