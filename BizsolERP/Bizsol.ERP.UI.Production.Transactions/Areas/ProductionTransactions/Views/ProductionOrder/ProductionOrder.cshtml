@@ -377,6 +377,9 @@
     .pro-info-grid--4 {
         grid-template-columns: repeat(4, 1fr);
     }
+    .pro-info-grid--5 {
+        grid-template-columns: repeat(5, 1fr);
+    }
     .pro-info-grid--4 .pro-info-val {
         white-space: nowrap;
         overflow: hidden;
@@ -444,6 +447,53 @@
         transition: all 0.2s; cursor: pointer;
     }
     .btn-pro-close:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(245, 158, 11, 0.5); color: #fff; }
+
+    .pro-items-table tbody tr td.pro-hist-link {
+        cursor: pointer;
+        color: #4f46e5;
+        font-weight: 600;
+        text-decoration: underline dotted;
+        text-underline-offset: 3px;
+    }
+    .pro-items-table tbody tr td.pro-hist-link:hover { background: #ede9fe; }
+
+    #proHistModal { z-index: 1065; }
+    #proHistModal .modal-dialog { max-width: 1100px; }
+    #proHistModal .modal-content {
+        border: none;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.3);
+    }
+    #proHistModal .modal-header {
+        position: relative;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border-bottom: none;
+        padding: 0.8rem 3.25rem 0.8rem 1.25rem;
+    }
+    #proHistModal .modal-title { font-weight: 700; font-size: 1rem; }
+    #proHistModal .modal-header .btn-close {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        margin: 0;
+        opacity: 1;
+    }
+    #proHistModal .modal-body { padding: 14px; }
+    #proHistModal .pro-hist-wrap {
+        max-height: 60vh;
+        overflow: auto;
+        border: 1px solid #eef0f8;
+        border-radius: 8px;
+    }
+    #proHistModal .modal-footer {
+        padding: 10px 16px;
+        background: #fafbff;
+        border-top: 1px solid #eef0f8;
+    }
 
     @@media (max-width: 768px) {
         .pro-info-grid { grid-template-columns: repeat(2, 1fr); }
@@ -526,6 +576,8 @@
                                     <th>Input Roll</th>
                                     <th>I/P Item Size</th>
                                     <th>I/P Weight</th>
+                                    <th>Last Chemical Compound</th>
+                                    <th>Last Target Coat Wt.</th>
                                     <th>Target Coat Weight</th>
                                     <th>Chemical Weight</th>
                                     <th>WIP Item Name</th>
@@ -539,7 +591,7 @@
                             </thead>
                             <tbody id="proModalItemsBody">
                                 <tr>
-                                    <td colspan="20" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
+                                    <td colspan="22" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">
                                         <i class="fa fa-spinner fa-spin me-1"></i>Loading items…
                                     </td>
                                 </tr>
@@ -556,6 +608,47 @@
                     <i class="fa fa-check"></i><span id="btnProModalVerifyLabel">Verify</span>
                 </button>
                 <button type="button" class="btn-pro-close ms-auto" onclick="CloseProModal()">
+                    <i class="fa fa-times-circle"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="proHistModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title mb-0"><i class="fa fa-flask me-2"></i>Chemical / Target Coat Weight History</h5>
+                <button type="button" class="btn-close btn-close-white"
+                        onclick="CloseProHistModal()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="pro-hist-wrap">
+                    <table class="pro-items-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Entry No</th>
+                                <th>Entry Date</th>
+                                <th>Process Name</th>
+                                <th>Order No</th>
+                                <th>Customer Code</th>
+                                <th>Order Item Name</th>
+                                <th>Order Item Size</th>
+                                <th>Classification Code</th>
+                                <th>Order Qty KG</th>
+                                <th>Chemical Item Name</th>
+                                <th>Target Coat Weight</th>
+                                <th>Chemical Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody id="proHistBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-pro-close ms-auto" onclick="CloseProHistModal()">
                     <i class="fa fa-times-circle"></i>Close
                 </button>
             </div>

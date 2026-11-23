@@ -1,8 +1,3 @@
-/**
- * IndentMaster.js
- * Indent / Material Requirement (Store)
- * List + Create New form (same flow as PurchaseOrderStore).
- */
 import { IndentMasterService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/IndentMasterService.js';
 import { IndentMasterLevelsApprovalService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/IndentMasterLevelsApprovalService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
@@ -13,6 +8,9 @@ var G_IndentList        = [];
 var G_IndentChipFilter  = '';
 var G_PendingOnMeCodes  = [];
 var G_PendingOnMeReady  = false;
+var G_PendingOnMeCount  = 0;
+var INDENT_PENDING_ON_ME_FROM = '1900-01-01';
+var INDENT_PENDING_ON_ME_TO = '2099-12-31';
 var G_LocateConfig      = [];
 var G_ItemList          = [];
 var G_AllItemList       = [];
@@ -73,7 +71,9 @@ $(document).ready(function () {
         _fillLocateTypeDropdown(),
         _loadLocateConfig()
     ]).then(function () {
-        _loadPendingOnMeCount();
+        _setDefaultDates();
+        _selectDefaultLocateType();
+        LoadIndentList();
     });
 
     $('#ddlLocateType').on('change', function () {
@@ -179,6 +179,18 @@ function _fillLocateTypeDropdown() {
         });
 }
 
+function _selectDefaultLocateType() {
+    var $ddl = $('#ddlLocateType');
+    var $opt = $ddl.find('option').filter(function () {
+        var t = String($(this).data('locate-type') || $(this).text() || '').trim().toLowerCase();
+        return t === 'default';
+    }).first();
+    if (!$opt.length) $opt = $ddl.find('option').first();
+    if (!$opt.length) return;
+    $ddl.val($opt.val());
+    if ($.fn.select2 && $ddl.hasClass('select2-hidden-accessible')) $ddl.trigger('change.select2');
+}
+
 function _loadLocateConfig() {
     return IndentMasterService.GetLocateConfig()
         .then(function (res) {
@@ -229,22 +241,22 @@ function _indentRowCode(row) {
 }
 
 function _indentStatusText(row) {
-    return String((row && (row.Status || row.status || row.StatusCode || row.statusCode)) || '').trim();
+    if (!row) return '';
+    var keys = ['StatusDesp', 'Status Desp', 'Status', 'statusDesp', 'status'];
+    for (var i = 0; i < keys.length; i++) {
+        var v = row[keys[i]];
+        if (v != null && String(v).trim() !== '') return String(v).trim();
+    }
+    return '';
 }
 
 function _indentIsVerified(row) {
-    var v = String((row && (row.Verified || row.verified)) || '').trim().toUpperCase();
-    if (v === 'Y') return true;
-    var s = _indentStatusText(row).toLowerCase();
-    return s === 'verified' || s === 'approved' || s === 'completed';
+    return _indentStatusText(row).toLowerCase() === 'completed';
 }
 
 function _indentIsPending(row) {
-    if (_indentIsVerified(row)) return false;
     var s = _indentStatusText(row).toLowerCase();
-    if (s.indexOf('partial') >= 0) return true;
-    if (!s || s === 'n' || s === 'pending' || s === 'unverified' || s === 'un-verified') return true;
-    return s.indexOf('pending') >= 0;
+    return s === 'pending' || s === 'unverified';
 }
 
 function _indentIsPendingOnMe(row) {
@@ -281,7 +293,7 @@ function _updateIndentStatChips(list) {
     $('#statPendingIndent').text(_fmtIndentStat(rows.filter(_indentIsPending).length));
     $('#statVerifiedIndent').text(_fmtIndentStat(rows.filter(_indentIsVerified).length));
     if (G_PendingOnMeReady) {
-        $('#statPendingOnMeIndent').text(_fmtIndentStat(G_PendingOnMeCodes.length));
+        $('#statPendingOnMeIndent').text(G_PendingOnMeCount > 0 ? String(G_PendingOnMeCount) : '0');
     } else {
         $('#statPendingOnMeIndent').text(_fmtIndentStat(rows.filter(_indentIsPendingOnMe).length));
     }
@@ -311,15 +323,13 @@ function _selectPendingOnMeLocateType() {
 }
 
 function _loadPendingOnMeCount() {
-    var fromDate = $('#txtFromDate').val() || '';
-    var toDate = $('#txtToDate').val() || '';
-    IndentMasterLevelsApprovalService.GetPendingIndentList(fromDate, toDate, 'N')
+    IndentMasterLevelsApprovalService.GetPendingIndentList(INDENT_PENDING_ON_ME_FROM, INDENT_PENDING_ON_ME_TO, 'N')
         .then(function (data) {
             var rows = _toList(data);
             G_PendingOnMeReady = true;
             G_PendingOnMeCodes = rows.map(_indentRowCode).filter(function (c) { return c > 0; });
-            var count = G_PendingOnMeCodes.length || rows.length;
-            $('#statPendingOnMeIndent').text(_fmtIndentStat(count));
+            G_PendingOnMeCount = rows.length;
+            $('#statPendingOnMeIndent').text(G_PendingOnMeCount > 0 ? String(G_PendingOnMeCount) : '0');
             if (G_IndentList.length) _updateIndentStatChips(G_IndentList);
         })
         .catch(function () {
@@ -333,12 +343,8 @@ function _loadPendingOnMeCount() {
 
 window.NavigateToIndentPendingOnMe = function () {
     var appBase = (sessionStorage.getItem('AppBaseURL') || (window.location.origin + '/')).replace(/\/?$/, '/');
-    var fromDate = $('#txtFromDate').val() || '';
-    var toDate = $('#txtToDate').val() || '';
-    var qs = 'ModuleDesp=' + encodeURIComponent('Indent Verification');
-    if (fromDate) qs += '&FromDate=' + encodeURIComponent(fromDate);
-    if (toDate) qs += '&ToDate=' + encodeURIComponent(toDate);
-    window.location.href = appBase + 'PurchaseTransactions/IndentMaster/IndentPendingOnMe?' + qs;
+    window.location.href = appBase + 'PurchaseTransactions/IndentMaster/IndentPendingOnMe?ModuleDesp=' +
+        encodeURIComponent('Indent Verification');
 };
 
 window.FilterIndentChip = function (chip) {
@@ -384,8 +390,8 @@ function _renderTable(data, locateType) {
 
     var rowColorMap = _buildColorMap(locateType);
     var augmented = data.map(function (row, index) {
-        var copy = Object.assign({ '#': index + 1 }, row);
-        copy['#'] = index + 1;
+        var copy = Object.assign({ 'S.No': index + 1 }, row);
+        copy['S.No'] = index + 1;
         if (rowColorMap) {
             var cssClass = _getRowCssClass(copy, rowColorMap);
             if (cssClass) copy.__bizsolRowClass = cssClass;
@@ -407,7 +413,7 @@ function _renderTable(data, locateType) {
     var colAlignment  = { '#': 'left', Action: 'left' };
 
     Object.keys(augmented[0]).forEach(function (key) {
-        if (key === '#' || key === '__bizsolRowClass' || hiddenColumns.indexOf(key) !== -1 || key === 'Action') return;
+        if (key === 'S.No' || key === '__bizsolRowClass' || hiddenColumns.indexOf(key) !== -1 || key === 'Action') return;
         var lk = key.toLowerCase();
         if (_isIndentNoColumn(lk)) {
             stringCols.push(key);
@@ -455,7 +461,7 @@ function _buildColorMap(locateType) {
     if (!cfg || !cfg.RowColorCodeString) return null;
 
     var str     = cfg.RowColorCodeString;
-    var hashIdx = str.indexOf('#');
+    var hashIdx = str.indexOf('S.No');
     if (hashIdx < 0) return null;
 
     var colName = str.substring(0, hashIdx).trim();
@@ -1306,14 +1312,6 @@ function _esc(v) {
         .replace(/</g, '&lt;');
 }
 
-function _xmlTag(name, value) {
-    var text = String(value == null ? '' : value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    return '<' + name + '>' + text + '</' + name + '>';
-}
-
 window.DeleteIndentItemRow = function (rowId) {
     if ($('#tblIndentItemsBody tr').length <= 1 && !_isIndentMobile()) {
         toastr.warning('At least one item row is required.');
@@ -1910,42 +1908,53 @@ window.SaveIndent = function () {
         return;
     }
 
-    var payloadXml =
-        '<Indent>' +
-        _xmlTag('Code', parseInt($('#frmHfCode').val() || 0, 10) || 0) +
-        _xmlTag('IndentDate', $('#frmTxtIndentDate').val()) +
-        _xmlTag('GodownMaster_Code', warehouse || parseInt(_auth().WebERPLoginGodownMaster_Code || 0, 10) || 0) +
-        _xmlTag('Category', $('#frmDdlCategory').val() || '') +
-        _xmlTag('DueDate', $('#frmTxtDueDate').val() || '') +
-        _xmlTag('Remarks', $('#frmTxtRemarks').val() || '') +
-        _xmlTag('SpecialComments', $('#frmTxtSpecialComments').val() || '') +
-        _xmlTag('UserMaster_Code_Requested', parseInt($('#frmDdlRequestedBy').val() || 0, 10) || 0) +
-        _xmlTag('RequestedNameMannual', $('#frmTxtRequestedName').val() || '') +
-        _xmlTag('AuthorizedNameMannual', $('#frmTxtAuthorizedBy').val() || '') +
-        _xmlTag('DatabaseLocation_Code', parseInt($('#frmHfDatabaseLocation').val() || 0, 10) || 0) +
-        '<Details>' +
-        details.map(function (d) {
-            return '<Row>' +
-                _xmlTag('ItemMaster_Code', d.ItemMaster_Code) +
-                _xmlTag('ItemSpecification', d.ItemSpecification) +
-                _xmlTag('PartyMaster_Code', d.PartyMaster_Code) +
-                _xmlTag('QtyMTRS', d.QtyMTRS) +
-                _xmlTag('QtyMT', d.QtyMT) +
-                _xmlTag('QtyPC', d.QtyPC) +
-                _xmlTag('Rate', d.Rate) +
-                _xmlTag('UOMMaster_Code', d.UOMMaster_Code || 0) +
-                _xmlTag('CurrencyMaster_Code', d.CurrencyMaster_Code) +
-                _xmlTag('IndentStockOnDate', d.IndentStockOnDate) +
-                _xmlTag('DivisionMaster_Code', d.DivisionMaster_Code) +
-                _xmlTag('SubDivisionMaster_Code', d.SubDivisionMaster_Code) +
-                _xmlTag('DepartmentMaster_Code', d.DepartmentMaster_Code) +
-                _xmlTag('SubDepartmentMaster_Code', d.SubDepartmentMaster_Code) +
-                _xmlTag('Remarks', d.Remarks) +
-                '</Row>';
-        }).join('') +
-        '</Details></Indent>';
+    var masterCode = parseInt($('#frmHfCode').val() || 0, 10) || 0;
+    var urlParams = typeof getUrlVars === 'function' ? getUrlVars() : BizSolHelperFunction.getUrlVars();
+    var moduleDesp = decodeURI(urlParams['ModuleDesp'] || urlParams['menu'] || '');
+    if (!moduleDesp || moduleDesp === 'undefined') moduleDesp = $('#ERPHeading').text().trim();
+    var payload = {
+        code: masterCode,
+        moduleDesp: moduleDesp,
+        master: [{
+            code: masterCode,
+            indentNo: parseInt($('#frmTxtIndentNo').val() || 0, 10) || 0,
+            indentDate: $('#frmTxtIndentDate').val(),
+            godownMaster_Code: warehouse || parseInt(_auth().WebERPLoginGodownMaster_Code || 0, 10) || 0,
+            category: $('#frmDdlCategory').val() || '',
+            dueDate: $('#frmTxtDueDate').val() || null,
+            remarks: $('#frmTxtRemarks').val() || '',
+            specialComments: $('#frmTxtSpecialComments').val() || '',
+            userMaster_Code_Requested: parseInt($('#frmDdlRequestedBy').val() || 0, 10) || 0,
+            requestedNameMannual: $('#frmTxtRequestedName').val() || '',
+            authorizedNameMannual: $('#frmTxtAuthorizedBy').val() || '',
+            databaseLocation_Code: parseInt($('#frmHfDatabaseLocation').val() || 0, 10) || 0,
+            finYear: $('#frmTxtFinYear').val() || ''
+        }],
+        transactions: details.map(function (d) {
+            return {
+                code: d.Code || 0,
+                indentMaster_Code: masterCode,
+                itemMaster_Code: d.ItemMaster_Code,
+                itemSpecification: d.ItemSpecification || '',
+                partyMaster_Code: d.PartyMaster_Code || 0,
+                qtyMT: d.QtyMT || 0,
+                qtyPC: d.QtyPC || 0,
+                qtyMTRS: d.QtyMTRS || 0,
+                rate: d.Rate || 0,
+                uomMaster_Code: d.UOMMaster_Code || 0,
+                currencyMaster_Code: d.CurrencyMaster_Code || 0,
+                indentStockOnDate: d.IndentStockOnDate || 0,
+                divisionMaster_Code: d.DivisionMaster_Code || 0,
+                subDivisionMaster_Code: d.SubDivisionMaster_Code || 0,
+                departmentMaster_Code: d.DepartmentMaster_Code || 0,
+                subDepartmentMaster_Code: d.SubDepartmentMaster_Code || 0,
+                remarks: (d.Remarks || '').toString().substring(0, 500),
+                verified: 'N'
+            };
+        })
+    };
 
-    IndentMasterService.SaveIndentMaster(JSON.stringify(payloadXml)).then(function (res) {
+    IndentMasterService.SaveIndentMaster(JSON.stringify(payload)).then(function (res) {
         var row = res;
         if (Array.isArray(res)) row = res[0] || {};
         var status = String((row && (row.Status != null ? row.Status : row.status)) || '').trim().toUpperCase();
@@ -1967,7 +1976,19 @@ window.SaveIndent = function () {
     });
 };
 
+function _indentModal(id, action) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (window.bootstrap && window.bootstrap.Modal) {
+        var m = action === 'show' ? bootstrap.Modal.getOrCreateInstance(el) : bootstrap.Modal.getInstance(el);
+        if (m) m[action]();
+    } else {
+        $(el).modal(action);
+    }
+}
+
 window.DeleteIndentRow = function (code) {
+    if (!code) return;
     var ModuleName = $('#ERPHeading').text().trim();
     var FinYear = BizSolHelperFunction.getFinancialYear();
     MenuService.CheckModuleOptionRight(ModuleName, 'Delete', 'Y', FinYear).then(function (respCheck) {
@@ -1975,17 +1996,47 @@ window.DeleteIndentRow = function (code) {
             toastr.error(respCheck.Msg || 'You do not have delete rights.');
             return;
         }
-        if (!confirm('Delete this Indent?')) return;
-        IndentMasterService.DeleteIndent(code).then(function (res) {
-            if (res && (res.Status === 'Y' || res.status === 'Y' || Array.isArray(res))) {
-                toastr.success((res && res.Msg) || 'Indent deleted.');
-                LoadIndentList();
-            } else {
-                toastr.error(res ? (res.Msg || res.msg) : 'Delete failed.');
-            }
-        }).catch(function (err) {
-            toastr.error('Error deleting Indent.');
-            console.error(err);
-        });
+        var row = (G_IndentList || []).find(function (x) { return _indentRowCode(x) === Number(code); });
+        var no = row ? (row.IndentNo || row['Indent No'] || row.IndentNoWithPrefix || '') : '';
+        $('#delIndentNo').text(no ? '#' + no : '');
+        $('#hfIndentDeleteCode').val(code);
+        $('#txtIndentDeleteReason').val('');
+        $('#btnIndentConfirmDelete').prop('disabled', false);
+        _indentModal('dvIndentDeleteModal', 'show');
+        setTimeout(function () { $('#txtIndentDeleteReason').trigger('focus'); }, 400);
     });
 };
+
+window.ConfirmIndentDelete = function () {
+    var code = parseInt($('#hfIndentDeleteCode').val() || '0', 10) || 0;
+    var reason = ($('#txtIndentDeleteReason').val() || '').trim();
+    if (!reason) {
+        toastr.warning('Please provide a reason for deletion.');
+        $('#txtIndentDeleteReason').trigger('focus');
+        return;
+    }
+    if (!code) return;
+    var $btn = $('#btnIndentConfirmDelete').prop('disabled', true);
+    if (typeof Showloader === 'function') Showloader();
+    IndentMasterService.DeleteIndent(code, reason).then(function (res) {
+        if (typeof HideLoader === 'function') HideLoader();
+        var r = Array.isArray(res) ? (res[0] || {}) : (res || {});
+        if (r.Status === 'Y' || r.status === 'Y') {
+            toastr.success(r.Msg || r.msg || 'Indent deleted successfully.');
+            _indentModal('dvIndentDeleteModal', 'hide');
+            LoadIndentList();
+        } else {
+            $btn.prop('disabled', false);
+            toastr.warning(r.Msg || r.msg || 'Delete failed.');
+        }
+    }).catch(function (err) {
+        if (typeof HideLoader === 'function') HideLoader();
+        $btn.prop('disabled', false);
+        toastr.error((err && (err.Msg || err.msg)) || 'Error deleting Indent.');
+        console.error(err);
+    });
+};
+
+$(document).on('keydown', '#txtIndentDeleteReason', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); ConfirmIndentDelete(); }
+});

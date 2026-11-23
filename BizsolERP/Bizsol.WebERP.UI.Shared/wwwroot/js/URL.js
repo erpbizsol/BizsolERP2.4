@@ -166,6 +166,7 @@ let UrlService = {
     //Finance Transactions API Service EndPoints
     API_ENDPOINT_BANK_STATEMENT: `${environment.BASE_URL}/BankStatement`,
     API_ENDPOINT_BANK_BOOK_REPORT: `${environment.BASE_URL}/BankBookReport`,
+    API_ENDPOINT_DEPRECIATION_CHART: `${environment.BASE_URL}/DepreciationChart`,
     API_ENDPOINT_EXPENSE_ENTRY_LEVELS_APPROVAL: `${environment.BASE_URL}/ExpenseEntryLevelsApproval`,
     API_ENDPOINT_AgeingParameter: `${environment.BASE_URL}/AgeingParameter`,
     API_ENDPOINT_GROUPMASTER: `${environment.BASE_URL}/Group`,
@@ -194,6 +195,7 @@ let UrlService = {
     API_ENDPOINT_IndentMasterApprovalConfig: `${environment.BASE_URL}/IndentMasterApprovalConfig`,
     API_ENDPOINT_IndentMasterLevelsApproval: `${environment.BASE_URL}/IndentMasterLevelsApproval`,
     API_ENDPOINT_TEMPLETE_REPORT: `${environment.BASE_URL}/OrderLoadReport`,
+    API_ENDPOINT_TEMPLATE_REPORTS: `${environment.BASE_URL}/TemplateReports`,
     API_ENDPOINT_DASHBOARD_CONFIGURATION: `${environment.BASE_URL}/DashboardConfiguration`,
     API_ENDPOINT_NOTIFICATIONS_DASHBOARD: `${environment.BASE_URL}/NotificationsDashboard`,
     API_ENDPOINT_ProductionOrder: `${environment.BASE_URL}/ProductionOrder`,
@@ -202,6 +204,7 @@ let UrlService = {
     API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisition`,
     API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisitionMaster`,
     API_ENDPOINT_AssetsMaster: `${environment.BASE_URL}/AssetsMaster`,
+    API_ENDPOINT_AssetValidation: `${environment.BASE_URL}/AssetValidation`,
     API_ENDPOINT_StoreRequisitionMaster: `${environment.BASE_URL}/StoreRequisitionMaster`,
     API_ENDPOINT_AdminTools: `${environment.BASE_URL}/AdminTools`,
     API_ENDPOINT_MaintenanceScheduleMaster: `${environment.BASE_URL}/MaintenanceScheduleMaster`,

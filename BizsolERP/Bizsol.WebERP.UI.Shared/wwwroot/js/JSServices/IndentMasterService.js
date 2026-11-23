@@ -120,13 +120,16 @@ const IndentMasterService = {
         return IndentMasterService.Getddl('VERIFY', code, '', '', '', verifyStatus || 'Y', otherParameter || '');
     },
 
-    DeleteIndent: function DeleteIndent(code) {
-        return IndentMasterService.Getddl('DELETE', code);
+    DeleteIndent: function DeleteIndent(code, reason) {
+        let url = UrlService.API_ENDPOINT_IndentMaster
+                + `/Getddl?Mode=DELETE&Code=${encodeURIComponent(code || 0)}`
+                + `&ReasonForDelete=${encodeURIComponent(reason || '')}`;
+        return promiseAjaxCallApi.CallAPI('GET', url, '').then(value => value);
     },
 
     /**
-     * SAVE – POST XML payload. API should call USP_WebAPI_IndentMaster
-     * with Mode='SAVE' and @OtherParameter = payload XML.
+     * SAVE – POST { code, master: TY_IndentMaster[], transactions: TY_IndentTransaction[] }.
+     * API calls USP_WebAPI_IndentMaster Mode='SAVE' with those table types.
      */
     SaveIndentMaster: function SaveIndentMaster(payload) {
         let url = UrlService.API_ENDPOINT_IndentMaster + `/SaveIndentMaster`;

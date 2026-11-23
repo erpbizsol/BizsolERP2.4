@@ -125,7 +125,8 @@ bizsolBindFilterFloatListeners();
 
 /**
  * Manual column expand for every BizsolCustomFilterGrid table.
- * Drag the header edge to set a width. Double-click that edge to fit the text.
+ * Drag the header edge to set a width. Double-click or double-tap that edge to fit the text.
+ * On iOS and Android the edge is a finger target, and the drag does not scroll the grid.
  * Widths stay in place across sort, filter, and paging.
  */
 window.bizsolTagHeaderColumns = function bizsolTagHeaderColumns($header, columns, hasAction) {
@@ -147,7 +148,10 @@ window.bizsolBindManualColumnExpand = function bizsolBindManualColumnExpand(tabl
     $table.find('thead tr:first th').each(function () {
         const $th = $(this);
         if (this.style.display === 'none' || $th.find('.bizsol-col-resize').length) return;
-        $th.append('<span class="bizsol-col-resize" title="Drag to expand or shrink. Double-click to fit the text."></span>');
+        if (window.getComputedStyle(this).position === 'static') {
+            this.style.position = 'relative';
+        }
+        $th.append('<span class="bizsol-col-resize" title="Drag to resize. Double-tap to fit the text."></span>');
     });
 };
 
@@ -334,20 +338,52 @@ window.bizsolApplyManualColumnWidths = function bizsolApplyManualColumnWidths(ta
     $table.css('width', sum + 'px');
 };
 
+window.bizsolCaptureScrollChain = function bizsolCaptureScrollChain(el) {
+    const locks = [];
+    let node = el && el.parentElement;
+    while (node) {
+        const canX = node.scrollWidth > node.clientWidth + 1;
+        const canY = node.scrollHeight > node.clientHeight + 1;
+        if (canX || canY || node.scrollLeft || node.scrollTop) {
+            locks.push({ el: node, left: node.scrollLeft, top: node.scrollTop });
+        }
+        node = node.parentElement;
+    }
+    return locks;
+};
+
+window.bizsolRestoreScrollChain = function bizsolRestoreScrollChain(locks) {
+    (locks || []).forEach(function (lock) {
+        if (lock.el.scrollLeft !== lock.left) lock.el.scrollLeft = lock.left;
+        if (lock.el.scrollTop !== lock.top) lock.el.scrollTop = lock.top;
+    });
+};
+
 window.bizsolBindManualColumnExpandEvents = function bizsolBindManualColumnExpandEvents() {
     if (window._bizsolManualColResizeBound) return;
     window._bizsolManualColResizeBound = true;
 
+    /* iOS and Android start a scroll on touchmove unless it is cancelled.
+       pointerdown preventDefault is not enough inside an overflow-x grid. */
+    document.addEventListener('touchmove', function (e) {
+        if (!document.body.classList.contains('bizsol-col-resizing')) return;
+        if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+
     $(document).on('pointerdown', '.bizsol-col-resize', function (e) {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
-        e.preventDefault();
+        if (document.body.classList.contains('bizsol-col-resizing')) return;
+        if (e.cancelable) e.preventDefault();
         e.stopPropagation();
 
-        const $th = $(this).closest('th');
+        const handle = this;
+        const $th = $(handle).closest('th');
         const $table = $th.closest('table');
         const tableId = $table.attr('id');
         const colKey = $th.attr('data-bizsol-col');
         if (!tableId || !colKey) return;
+
+        try { handle.setPointerCapture(e.pointerId); } catch (err) { /* pointer capture is optional */ }
 
         window.bizsolEnsureColumnWidthSnapshot(tableId);
 
@@ -357,6 +393,7 @@ window.bizsolBindManualColumnExpandEvents = function bizsolBindManualColumnExpan
             && window._bizsolColLastKey === colKey
             && window._bizsolColLastTable === tableId) {
             window._bizsolColLastTap = 0;
+            try { handle.releasePointerCapture(e.pointerId); } catch (err) { /* already released */ }
             window[`columnWidths_${tableId}`][colKey] = window.bizsolMeasureColumnContent($table[0], $th.index());
             window.bizsolApplyManualColumnWidths(tableId);
             return;
@@ -365,28 +402,48 @@ window.bizsolBindManualColumnExpandEvents = function bizsolBindManualColumnExpan
         window._bizsolColLastKey = colKey;
         window._bizsolColLastTable = tableId;
 
-        const startX = e.pageX;
+        const startX = e.clientX;
         const startW = window[`columnWidths_${tableId}`][colKey] || $th.outerWidth();
         const pointerId = e.pointerId;
+        const scrollLocks = window.bizsolCaptureScrollChain(handle);
         let moved = false;
+        let pending = startW;
+        let frame = 0;
+        let ended = false;
 
         $('body').addClass('bizsol-col-resizing');
+        $th.addClass('bizsol-col-active');
 
-        function onMove(ev) {
-            if (ev.pointerId !== pointerId) return;
-            if (Math.abs(ev.pageX - startX) < 3) return;
-            moved = true;
-            const next = Math.max(48, Math.round(startW + (ev.pageX - startX)));
-            window[`columnWidths_${tableId}`][colKey] = next;
+        function paint() {
+            frame = 0;
+            window[`columnWidths_${tableId}`][colKey] = pending;
             window.bizsolApplyManualColumnWidths(tableId);
+            window.bizsolRestoreScrollChain(scrollLocks);
+        }
+        function onMove(ev) {
+            if (ended || ev.pointerId !== pointerId) return;
+            if (ev.cancelable) ev.preventDefault();
+            const delta = ev.clientX - startX;
+            if (Math.abs(delta) < 4) return;
+            moved = true;
+            pending = Math.max(48, Math.round(startW + delta));
+            if (!frame) frame = requestAnimationFrame(paint);
         }
         function onUp(ev) {
-            if (ev.pointerId !== pointerId) return;
+            if (ended || (ev && ev.pointerId !== pointerId)) return;
+            ended = true;
+            if (frame) cancelAnimationFrame(frame);
             $(document).off('pointermove.bizsolColResize pointerup.bizsolColResize pointercancel.bizsolColResize');
             $('body').removeClass('bizsol-col-resizing');
-            if (!moved) {
+            $th.removeClass('bizsol-col-active');
+            if (moved) {
+                window[`columnWidths_${tableId}`][colKey] = pending;
+                window.bizsolApplyManualColumnWidths(tableId);
+            } else {
                 window[`columnWidths_${tableId}`][colKey] = startW;
             }
+            window.bizsolRestoreScrollChain(scrollLocks);
+            try { handle.releasePointerCapture(pointerId); } catch (err) { /* already released */ }
         }
 
         $(document).on('pointermove.bizsolColResize', onMove);
@@ -784,6 +841,44 @@ window.bizsolRestoreCheckboxSelection = function bizsolRestoreCheckboxSelection(
     $container.find('input[value="All"]').prop('checked', allChecked);
 };
 
+window.bizsolMoveCheckedLabelsToTop = function bizsolMoveCheckedLabelsToTop($container, $prefer) {
+    if (!$container || !$container.length) {
+        return;
+    }
+    var $all = $container.children('label').filter(function () {
+        return $(this).find('input[type="checkbox"]').first().val() === 'All';
+    }).first();
+    var checked = [];
+    var unchecked = [];
+    $container.children('label').each(function () {
+        var $label = $(this);
+        if ($label.find('input[type="checkbox"]').first().val() === 'All') {
+            return;
+        }
+        if ($label.find('input[type="checkbox"]').first().is(':checked')) {
+            checked.push(this);
+        } else {
+            unchecked.push(this);
+        }
+    });
+    if ($prefer && $prefer.length) {
+        var preferEl = $prefer.get(0);
+        checked = checked.filter(function (el) { return el !== preferEl; });
+        if ($prefer.find('input[type="checkbox"]').first().is(':checked')) {
+            checked.unshift(preferEl);
+        }
+    }
+    var $anchor = $all;
+    checked.concat(unchecked).forEach(function (el) {
+        if ($anchor && $anchor.length) {
+            $(el).insertAfter($anchor);
+            $anchor = $(el);
+        } else {
+            $container.append(el);
+        }
+    });
+};
+
 window.bizsolCellMatchesSelected = function bizsolCellMatchesSelected(cellValue, selectedValues) {
     if (!selectedValues || selectedValues.indexOf('All') !== -1) {
         return true;
@@ -984,6 +1079,7 @@ window.populateFilterOptions = function populateFilterOptions(columnName, bodyId
         checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="' + safe + '"> ' + safe + '</label>');
     });
     window.bizsolRestoreCheckboxSelection(checkboxContainer, saved);
+    window.bizsolMoveCheckedLabelsToTop(checkboxContainer);
 
     checkboxContainer.find('input[value="All"]').change(function () {
         var isChecked = $(this).is(':checked');
@@ -1208,6 +1304,7 @@ checkboxContainer1.find('.month-checkbox').change(function () {
         checkboxContainer1,
         window.bizsolGetSavedFilterValues(tableId, 'date', columnName)
     );
+    window.bizsolMoveCheckedDateBlocksToTop(checkboxContainer1);
     if ($filterPanel.is(':visible')) {
         bizsolFloatFilterPanel($filterPanel);
     }
@@ -1281,6 +1378,72 @@ const maxValue = parseFloat($('#max-value-' + escapedId).val());
 
     closeAllFilters();
 };
+window.bizsolMoveCheckedDateBlocksToTop = function bizsolMoveCheckedDateBlocksToTop($container) {
+    if (!$container || !$container.length) {
+        return;
+    }
+    var $all = $container.children('label').filter(function () {
+        return $(this).find('input[type="checkbox"]').first().val() === 'All';
+    }).first();
+    var checked = [];
+    var unchecked = [];
+    $container.children('label').each(function () {
+        var $label = $(this);
+        if ($label.find('input[type="checkbox"]').first().val() === 'All') {
+            return;
+        }
+        var $nested = $label.next('.nested-checkbox');
+        var isChecked = $label.find('input[type="checkbox"]').first().is(':checked') ||
+            ($nested.length > 0 && $nested.find('input[type="checkbox"]:checked').length > 0);
+        (isChecked ? checked : unchecked).push({ label: this, nested: $nested.get(0) || null });
+    });
+    var $anchor = $all;
+    checked.concat(unchecked).forEach(function (block) {
+        if ($anchor && $anchor.length) {
+            $(block.label).insertAfter($anchor);
+            $anchor = $(block.label);
+        } else {
+            $container.append(block.label);
+            $anchor = $(block.label);
+        }
+        if (block.nested) {
+            $(block.nested).insertAfter($anchor);
+            $anchor = $(block.nested);
+        }
+    });
+};
+
+window.bizsolResetColumnFilterInputs = function bizsolResetColumnFilterInputs(tableId, columnName) {
+    var colId = String(columnName || '').replace(/\s+/g, '');
+    var escapedId = escapeId(tableId + '-' + colId);
+    var $stringPanel = $('#filter-' + escapedId);
+    $stringPanel.find('.filter-input').val('');
+    $stringPanel.find('input[type="checkbox"]').prop('checked', false);
+    var $numericPanel = $('#filter-dropdown-numeric-' + escapedId);
+    $numericPanel.find('input').val('');
+    $('#numeric-filter-select-' + escapedId).val('equals');
+    var $doublePanel = $('#filter-double-' + escapedId);
+    $doublePanel.find('.filter-input-double').val('');
+    $doublePanel.find('input[type="checkbox"]').prop('checked', false);
+};
+
+window.ClearColumnFilter = function ClearColumnFilter(columnName, bodyId) {
+    var tableId = $('#' + bodyId).closest('table').attr('id');
+    var store = window.bizsolGetColumnFilterStore(tableId);
+    ['string', 'date', 'numeric', 'double'].forEach(function (kind) {
+        if (store[kind] && Object.prototype.hasOwnProperty.call(store[kind], columnName)) {
+            delete store[kind][columnName];
+        }
+    });
+    if (columnFilters && Object.prototype.hasOwnProperty.call(columnFilters, columnName)) {
+        delete columnFilters[columnName];
+    }
+    window.bizsolResetColumnFilterInputs(tableId, columnName);
+    window.bizsolReapplyGridFilters(tableId, bodyId);
+    closeAllFilters();
+    closeAllFiltersDouble();
+};
+
 window.ClearFilter = function ClearFilter(bodyId) {
     $('.filter-dropdown, .filter-dropdown-double, .filter-division').each(function () {
         bizsolResetFloatFilterPanel($(this));
@@ -1288,34 +1451,15 @@ window.ClearFilter = function ClearFilter(bodyId) {
     $('.filter-dropdown').hide();
     $('.filter-input').val('');
     $('.filter-input-double').val('');
+    $('.filter-dropdown input[type="number"]').val('');
+    $('.filter-dropdown select[id^="numeric-filter-select-"]').val('equals');
+    $('.filter-dropdown, .filter-dropdown-double').find('input[type="checkbox"]').prop('checked', false);
     $('.filter-dropdown-double').hide();
-    // Clear stored column filters (used by date filters)
     columnFilters = {};
     const tableId = $('#' + bodyId).closest('table').attr('id');
     window.bizsolClearColumnFilterStore(tableId);
-    // Remove filtered class from table-wrapper
-    //$('#' + bodyId).closest('.table-wrapper').removeClass('filtered');
-
-    // Also clear and hide the global search box if it exists
-    const $gsInput = $('#global-search-input-' + tableId);
-    if ($gsInput.length) {
-        $gsInput.val('');
-        $('#global-search-clear-' + tableId).hide();
-    }
-    window[`globalSearchTerm_${tableId}`] = '';
-
-    if (window[`bizsolSort_${tableId}`]) {
-        window[`filteredData_${tableId}`] = window.bizsolApplyStoredSort(tableId, (window[`filteredDataTemp_${tableId}`] || []).slice());
-    } else {
-        window[`filteredData_${tableId}`] = window[`filteredDataTemp_${tableId}`];
-    }
-    renderTable(window[`filteredData_${tableId}`], bodyId);
-    if (window[`Paginator_${tableId}`]) {
-        createPaginator(tableId, bodyId);
-        renderTableWithPagination(tableId, bodyId);
-    }
-    $("#" + tableId + " th span.filter-table-heading .fa-filter").remove();
-}
+    window.bizsolReapplyGridFilters(tableId, bodyId);
+};
 // ─── GLOBAL SEARCH ──────────────────────────────────────────────────────────
 
 /**
@@ -1435,6 +1579,7 @@ window.populateFilterOptionsDouble = function populateFilterOptionsDouble(column
         checkboxContainer.append('<label><input type="checkbox" class="filter-checkbox" value="' + safe + '"> ' + safe + '</label>');
     });
     window.bizsolRestoreCheckboxSelection(checkboxContainer, saved);
+    window.bizsolMoveCheckedLabelsToTop(checkboxContainer);
     checkboxContainer.find('input[value="All"]').change(function () {
         var isChecked = $(this).is(':checked');
         checkboxContainer.find('input[type="checkbox"]').not(this).prop('checked', isChecked);
@@ -1543,8 +1688,11 @@ columns.forEach(col => {
                                         <input type="text" placeholder="Search..." class="filter-input form-control form-control-sm" data-column="${col}" />
                                         <div class="checkbox-container" id="checkbox-container-${uniqueId}"></div>
                                         <hr>
+                                        <div class="filter-actions">
                                         <button class="btn btn-success btn-height" onclick="applyStringFilters('${col}','${bodyId}')" data-column="${col}">Apply</button>
-                                        <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
+                                        <button class="btn btn-success btn-height" onclick="ClearColumnFilter('${col}','${bodyId}')">Clear</button>
+                                        <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear All</button>
+                                        </div>
                                         </div>
                                        </div>
                                  </th>`;
@@ -1581,8 +1729,11 @@ columns.forEach(col => {
                                                  <input type="number" id="min-value-${uniqueId}" class="filter-input form-control form-control-sm" placeholder="Min value" style="display:none" />
                                                 <input type="number" id="max-value-${uniqueId}" class="filter-input form-control form-control-sm" placeholder="Max value" style="display:none" />
                                             </div>
+                                            <div class="filter-actions">
                                             <button class="btn btn-success btn-height" onclick="applyNumericFilter('${col}','${bodyId}')">Apply</button>
-                                            <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
+                                            <button class="btn btn-success btn-height" onclick="ClearColumnFilter('${col}','${bodyId}')">Clear</button>
+                                            <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear All</button>
+                                            </div>
                                          </div>
                                          </th>`;
         } else if (DateFilterColumn.includes(col)) {
@@ -1608,8 +1759,11 @@ columns.forEach(col => {
                                                </div>
                                             <div class="filter-dropdown" id="filter-${uniqueId}">
                                             <div class="checkbox-container" id="checkbox-container-${uniqueId}"></div>
+                                            <div class="filter-actions">
                                             <button class="btn btn-success btn-height" onclick="applyfilterdate('${col}','${bodyId}')" data-column="${col}">Apply</button>
-                                            <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
+                                            <button class="btn btn-success btn-height" onclick="ClearColumnFilter('${col}','${bodyId}')">Clear</button>
+                                            <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear All</button>
+                                            </div>
                                             </div>
                                        </th>`;
         } else if (StringdoubleFilterColumn.includes(col)) {
@@ -1641,9 +1795,12 @@ columns.forEach(col => {
                                         </select>
                                         <input type="text" placeholder="Search..." class="filter-input-double form-control form-control-sm" data-column="${col}" />
                                         <div class="checkbox-container-double" id="checkbox-container-double-${uniqueId}"></div>
+                                        <div class="filter-actions">
                                         <button class="btn btn-success btn-height" onclick="applyfilterdouble('${col}','${bodyId}')" data-column="${col}">Apply</button>
                                         <button class="btn btn-primary btn-height" onclick="ShowEntry('${col}','${bodyId}')" data-column="${col}">Show Entries</button>
-                                        <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear</button>
+                                        <button class="btn btn-success btn-height" onclick="ClearColumnFilter('${col}','${bodyId}')">Clear</button>
+                                        <button class="btn btn-success btn-height" onclick="ClearFilter('${bodyId}')">Clear All</button>
+                                        </div>
                                         </div>
                                     </th>`;
         } else if (hiddenColumns.includes(col)) {
