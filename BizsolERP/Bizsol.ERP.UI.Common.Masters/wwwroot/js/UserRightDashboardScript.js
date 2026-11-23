@@ -1,5 +1,6 @@
 import { UserRightDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_UserRightDashboardService.js';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
+import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
 /* ═══════════════════════════════════════════════════
    STATE
@@ -25,6 +26,7 @@ var URD_USER_DEBOUNCE_MS = 200;
 var _urdRowsByParent = {};
 var _urdChildCount = {};
 var _urdGroupCols = [];
+var _urdExportRows = [];
 var _urdCatIndex = 0;
 
 // Fixed SP columns — everything else is a group column
@@ -691,6 +693,7 @@ $(document).ready(function () {
     bindUrdGroupMultiselectEvents();
     LoadInitialData();
     $('#btnGo').on('click', LoadDashboard);
+    $('#btnDownloadUrd').on('click', DownloadUserRightDashboardExcel);
     $(document).on('input', '#urdModuleSearch', function () { FilterMatrixRows($(this).val()); });
     $('#ddlCompany').on('change', function () {
         SetHeaderStep(1);
@@ -1064,6 +1067,8 @@ function RenderDashboard(res, selectedGroupCodes) {
     }
 
     if (!level1.length && !level2.length && !level3.length) {
+        _urdExportRows = [];
+        setDownloadEnabled(false);
         ShowPlaceholder('empty');
         return;
     }
@@ -1109,6 +1114,8 @@ function RenderDashboard(res, selectedGroupCodes) {
 
     // ─ Build Body (lazy: only main-menu rows in the DOM) ─
     var mergedRows = BuildMergedRows(level1, level2, level3, level4);
+    _urdExportRows = mergedRows;
+    setDownloadEnabled(mergedRows.length > 0);
     _urdRowsByParent = GroupByParent(mergedRows);
     _urdChildCount = {};
     _urdCatIndex = 0;
@@ -1783,9 +1790,99 @@ function GetModuleIcon(moduleType, lavel) {
 /* ═══════════════════════════════════════════════════
    UI HELPERS
 ═══════════════════════════════════════════════════ */
+function setDownloadEnabled(on) {
+    $('#btnDownloadUrd').prop('disabled', !on);
+}
+
+function buildUserRightDashboardExportFileName() {
+    var company = String($('#ddlCompany option:selected').text() || 'Company')
+        .replace(/[\\/:*?"<>|]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\s+/g, '_');
+    if (!company || company === '—_Select_Company_—' || /^select company$/i.test(company.replace(/_/g, ' '))) {
+        company = 'Company';
+    }
+    if (company.length > 40) company = company.slice(0, 40);
+    var now = new Date();
+    function pad(n) { return String(n).padStart(2, '0'); }
+    return 'UserRightDashboard_' + company + '_' +
+        now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + '_' +
+        pad(now.getHours()) + '-' + pad(now.getMinutes()) + '-' + pad(now.getSeconds());
+}
+
+function currentGroupExportValue(row, groupName) {
+    var code = gp(row, 'Code');
+    var $tr = $('#urd-tbody').children('tr[data-code="' + code + '"]');
+    if ($tr.length) {
+        var $cell = findGroupCell($tr, groupName);
+        if ($cell && $cell.length) {
+            var v = String($cell.data('value') || '').trim().toUpperCase();
+            if (v === 'Y' || v === 'N') return v;
+        }
+    }
+    var raw = readGroupCell(row, buildRowGroupNormMap(row), groupName);
+    return isGrantedVal(raw) ? 'Y' : 'N';
+}
+
+function mapUserRightDashboardRowsForExcelExport(rows, groups) {
+    var used = { Level: 1, Module: 1, Path: 1 };
+    var headers = (groups || []).map(function (g) {
+        var key = String((g && g.name) || 'Group');
+        if (used[key]) {
+            var n = 2;
+            while (used[key + ' (' + n + ')']) n++;
+            key = key + ' (' + n + ')';
+        }
+        used[key] = 1;
+        return { name: g.name, key: key };
+    });
+
+    return (rows || []).map(function (row) {
+        var level = getRowLevel(row) || 1;
+        var moduleName = getModuleName(row);
+        var path = Array.isArray(row._urdPath) && row._urdPath.length
+            ? row._urdPath.join(' > ')
+            : moduleName;
+        var out = {
+            Level: level,
+            Module: moduleName,
+            Path: path
+        };
+        headers.forEach(function (h) {
+            out[h.key] = currentGroupExportValue(row, h.name);
+        });
+        return out;
+    });
+}
+
+function DownloadUserRightDashboardExcel() {
+    var $btn = $('#btnDownloadUrd');
+    if ($btn.prop('disabled')) return;
+    if (!_urdExportRows.length || !_urdGroupCols.length) {
+        toastr.warning('No data available to export.');
+        return;
+    }
+    $btn.prop('disabled', true);
+    try {
+        var exportRows = mapUserRightDashboardRowsForExcelExport(_urdExportRows, _urdGroupCols);
+        if (!exportRows.length) {
+            toastr.warning('No data available to export.');
+            return;
+        }
+        ExportToExcelControl.ExportToExcel(exportRows, [], buildUserRightDashboardExportFileName());
+    } catch (err) {
+        console.error(err);
+        toastr.error('Failed to download User Right Dashboard.');
+    } finally {
+        $btn.prop('disabled', false);
+    }
+}
+
 function SetLoadingState(loading) {
     if (loading) {
         $('#btnGo').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Loading…');
+        setDownloadEnabled(false);
         $('#urd-loading').show();
         $('#urd-table-wrap').hide();
         $('#urd-table-toolbar').hide();
@@ -1797,6 +1894,8 @@ function SetLoadingState(loading) {
 }
 
 function ShowPlaceholder(type) {
+    _urdExportRows = [];
+    setDownloadEnabled(false);
     $('#urd-table-wrap').hide();
     $('#urd-table-toolbar').hide();
     var $ph = $('#urd-placeholder');
