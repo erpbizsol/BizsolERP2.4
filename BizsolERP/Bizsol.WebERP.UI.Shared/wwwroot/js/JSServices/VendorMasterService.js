@@ -67,6 +67,10 @@ const VendorMasterService = {
         var URL = UrlService.API_ENDPOINT_FixedParameter + `/GetFixedParameterDetails`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
     },
+    GetFixedParameter: function GetFixedParameter() {
+        var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetFixedParameter`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });
+    },
     GetCompanyList: function GetCompanyList() {
         var URL = UrlService.API_ENDPOINT_VendorMaster + `/GetCompanyList`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(function (value) { return value; });

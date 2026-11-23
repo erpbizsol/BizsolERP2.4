@@ -46,6 +46,15 @@
     
     QRCode();
     function QRCode() {
+       if (isIosDevice()) {
+           if (window.toastr) {
+               toastr.error('This phone does not allow this.');
+           }
+           document.querySelectorAll('#ScanQRCodeByCameraControlModal').forEach(function (el) {
+               el.remove();
+           });
+           return;
+       }
 
        let selectedDeviceId;
        let codeReader = null;

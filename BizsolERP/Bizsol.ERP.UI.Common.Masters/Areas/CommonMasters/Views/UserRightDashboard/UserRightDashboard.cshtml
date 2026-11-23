@@ -134,8 +134,17 @@
 .urd-step-arrow { color: rgba(255,255,255,0.22); font-size: 9px; padding: 0 2px; }
 
 /* ════ ONE-LINE FILTER TOOLBAR ════ */
+/* This page only — layout forces 30px on inputs site-wide. */
+.urd-page input:is(:not([type]), [type="text"], [type="number"], [type="email"], [type="tel"], [type="password"], [type="search"], [type="url"], [type="date"], [type="datetime-local"], [type="time"], [type="month"], [type="week"]):not(table *):not(.select2-search__field),
+.urd-page select:not([multiple]):not([size]):not(table *) {
+    box-sizing: border-box !important;
+    height: 40px !important;
+    min-height: 30px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
 .urd-filter-row {
-    display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;
+    display: flex; gap: 12px; flex-wrap: wrap;
     padding: 14px 16px; margin-bottom: 16px;
     background: linear-gradient(135deg, rgba(238,242,255,0.95) 0%, rgba(236,254,255,0.75) 100%);
     border: 1px solid rgba(102,126,234,0.2);
@@ -362,6 +371,23 @@
 .urd-btn-go:active:not(:disabled) { transform: translateY(0); }
 .urd-btn-go:disabled { opacity: .55; cursor: not-allowed; transform: none; filter: none; }
 .urd-btn-go i { font-size: 11px; }
+.urd-go-actions { display: flex; align-items: stretch; gap: 8px; }
+.urd-btn-download {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; flex-shrink: 0;
+    border-radius: var(--urd-radius-md);
+    border: 1.5px solid rgba(102,126,234,0.35);
+    background: #fff; color: var(--urd-primary-700);
+    font-size: 15px; cursor: pointer; font-family: inherit;
+    box-shadow: 0 1px 4px rgba(102,126,234,0.12);
+    transition: border-color .14s, box-shadow .14s, transform .14s;
+}
+.urd-btn-download:hover:not(:disabled) {
+    border-color: var(--urd-primary);
+    box-shadow: 0 2px 8px rgba(102,126,234,0.22);
+    transform: translateY(-1px);
+}
+.urd-btn-download:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 
 /* Summary merged into matrix toolbar */
 .urd-summary { display: none !important; }
@@ -678,7 +704,8 @@
     .urd-field-company { flex: 1 1 100%; }
     .urd-field-groups, .urd-field-users { flex: 1 1 calc(50% - 10px); }
     .urd-field-go { flex: 1 1 100%; }
-    .urd-btn-go { width: 100%; min-width: 0; }
+    .urd-go-actions { width: 100%; }
+    .urd-btn-go { flex: 1; width: auto; min-width: 0; }
     .urd-card-body { padding: 14px 16px 22px; }
 }
 @@media (max-width: 768px) {
@@ -858,9 +885,14 @@
 
             <div class="urd-field urd-field-go">
                 <span class="urd-field-label urd-field-label-spacer">Go</span>
-                <button id="btnGo" class="urd-btn-go" type="button">
-                    <i class="fas fa-play"></i> Load Dashboard
-                </button>
+                <div class="urd-go-actions">
+                    <button id="btnGo" class="urd-btn-go" type="button">
+                        <i class="fas fa-play"></i> Load Dashboard
+                    </button>
+                    <button type="button" class="urd-btn-download" id="btnDownloadUrd" title="Download Excel" aria-label="Download Excel" disabled>
+                        <i class="fas fa-download" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
 
         </div><!-- /filter-row -->
@@ -910,4 +942,5 @@
 </div><!-- /card -->
 </div><!-- /page -->
 
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserRightDashboardScript.js?v=20261026f"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserRightDashboardScript.js?v=20261120a"></script>

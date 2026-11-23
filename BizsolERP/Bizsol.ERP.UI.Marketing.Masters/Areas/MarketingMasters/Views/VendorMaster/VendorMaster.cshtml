@@ -750,7 +750,8 @@
     .vm-gst-validate-row {
         display: flex;
         align-items: center;
-        gap: 8px;
+        flex-wrap: wrap;
+        gap: 8px 14px;
         min-height: 18px;
         font-size: 12px;
     }
@@ -2299,21 +2300,25 @@
                 </div>
 
                 <div class="vm-form-group">
-                    <label for="GSTNNo">GST Number</label>
+                    <label for="GSTNNo">GST Number <span class="vm-required" id="vm_gst_required_mark">*</span></label>
                     <input type="text" id="GSTNNo" class="vm-input" placeholder="e.g. 22AAAAA0000A1Z5" autocomplete="off" maxlength="15" style="text-transform:uppercase;" />
                     <div class="vm-gst-validate-row">
+                        <label class="vm-checkbox-label" for="chkUnRegisterGST">
+                            <input type="checkbox" id="chkUnRegisterGST" />
+                            Unregistered in GST
+                        </label>
                         <label class="vm-checkbox-label" for="chkGSTINValidation">
                             <input type="checkbox" id="chkGSTINValidation" />
                             Validate GST
                         </label>
                         <span id="spGSTINValidationStatus" class="vm-gst-validation-status"></span>
                     </div>
-                    <span class="vm-err-text" id="err_GSTNNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Invalid GST format.</span>
+                    <span class="vm-err-text" id="err_GSTNNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> GST Number is required.</span>
                 </div>
                 <div class="vm-form-group">
-                    <label for="PANNo">PAN Number <span id="vm_pan_required_mark" class="text-danger">*</span></label>
+                    <label for="PANNo">PAN Number <span id="vm_pan_required_mark" class="text-danger" style="display:none;">*</span></label>
                     <input type="text" id="PANNo" class="vm-input" placeholder="e.g. AAAAA0000A" autocomplete="off" maxlength="10" style="text-transform:uppercase;" />
-                    <span class="vm-err-text" id="err_PANNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> Enter a valid PAN. Required when GST is not entered.</span>
+                    <span class="vm-err-text" id="err_PANNo" style="display:none;"><i class="fas fa-circle-exclamation"></i> PAN Number is required.</span>
                 </div>
                 <div class="vm-form-group">
                     <label for="Address1">Address Line 1</label>
