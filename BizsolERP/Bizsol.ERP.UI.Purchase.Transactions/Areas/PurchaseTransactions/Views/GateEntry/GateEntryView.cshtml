@@ -96,6 +96,14 @@
     }
     .po-step-icon { color: var(--step-clr, #667eea); font-size: 1rem; }
     .po-step-body { padding: 16px 18px; }
+    #GateEntryCloseStatusBanner {
+        margin: 0 0 10px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+    .ge-entry-status-input[readonly] {
+        background: #f8fafc;
+    }
     #DivGateEntryForm .po-step-body .row { margin-bottom: 9px; align-items: center; }
     #DivGateEntryForm .po-step-body .col-4,
     #DivGateEntryForm .po-step-body .col-2 {
@@ -523,6 +531,7 @@
             </li>
         </ul>
     </div>
+    <div id="GateEntryCloseStatusBanner" class="alert mb-2 py-2" style="display:none;"></div>
     <div class="tab-content ge-tab-content-wrap" id="GateEntryTabContent">
         <div class="tab-pane fade show active" id="EmptyInTab" role="tabpanel" aria-labelledby="home-tab">
             <div class="row g-3">
@@ -534,6 +543,14 @@
                             <i class="fa fa-truck-pickup po-step-icon ms-auto"></i>
                         </div>
                         <div class="po-step-body" id="DivfrmEmptyIn">
+                    <div class="row ge-entry-status-row" style="display:none;">
+                        <div class="col-4">
+                            Entry Status
+                        </div>
+                        <div class="col-8">
+                            <input class="form-control form-control-sm ge-entry-status-input" type="text" readonly>
+                        </div>
+                    </div>
                     @*  <div class="row">
                         <div class="col-sm-6">
                             Empty-in
@@ -745,6 +762,14 @@
                             <i class="fa fa-sign-out-alt po-step-icon ms-auto" style="color:#10b981;"></i>
                         </div>
                         <div class="po-step-body" id="DivfrmLoadedOut">
+                    <div class="row ge-entry-status-row" style="display:none;">
+                        <div class="col-4">
+                            Entry Status
+                        </div>
+                        <div class="col-8">
+                            <input class="form-control form-control-sm ge-entry-status-input" type="text" readonly>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-4">
                             Date Out
@@ -989,6 +1014,14 @@
                             <i class="fa fa-dolly po-step-icon ms-auto" style="color:#0dcaf0;"></i>
                         </div>
                         <div class="po-step-body" id="DivfrmLoadedIn">
+                    <div class="row ge-entry-status-row" style="display:none;">
+                        <div class="col-4">
+                            Entry Status
+                        </div>
+                        <div class="col-8">
+                            <input class="form-control form-control-sm ge-entry-status-input" type="text" readonly>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-4">
                             Date In <span class="text-danger fw-semibold">*</span>
@@ -1346,6 +1379,14 @@
                             <i class="fa fa-door-open po-step-icon ms-auto" style="color:#f59e0b;"></i>
                         </div>
                         <div class="po-step-body" id="DivfrmEmptyOut">
+                    <div class="row ge-entry-status-row" style="display:none;">
+                        <div class="col-4">
+                            Entry Status
+                        </div>
+                        <div class="col-8">
+                            <input class="form-control form-control-sm ge-entry-status-input" type="text" readonly>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-4">
                             Date Out <span class="text-danger fw-semibold">*</span>

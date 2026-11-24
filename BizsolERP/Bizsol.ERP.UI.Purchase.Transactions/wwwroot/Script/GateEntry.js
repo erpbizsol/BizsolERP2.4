@@ -122,6 +122,25 @@ function GateEntryGirdByDates() {
         //response.forEach(item => {
         //    item.Action = item["Date Out Time"] !== '' ? '<a class="btn btn-info icon-height" onclick="GateEntyMode_GateEntry(\'grid\',\'' + item["Type In"].replace(' ', '') + 'print_' + item.Code + '\')"> <i class="fa fa-print"></i></a>&nbsp;<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'editFull_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'view_' + item.Code + '\')" ><i class="fa fa-eye"></i></a>' : item["Type In"].replace(' ', '').toLowerCase() === 'loadedin' ? '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'emptyout_' + item.Code + '\')" >Empty Out</a>' : '<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(' + item.Code + ',\'' + item["Type In"].replace(' ', '') + ' ' + item["Entry No"] + ' ' + item["Vehicle No"] + ' ' + item["Date In Time"].replace(':', '').replace('/', '').replace('/', '') + ' ' + item["Date Out Time"].replace(':', '').replace('/', '').replace('/', '') + '\')"> <i class="fa fa-paperclip"></i></a>&nbsp;<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'edit_' + item.Code + '\')"> <i class="fa fa-pencil"></i></a>&nbsp;<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry(\'form\',\'' + item["Type In"].replace(' ', '') + 'loadedout_' + item.Code + '\')" >Loaded Out</a>'
         //});
+        const autoCloseGateEntry = GateEntry_IsConfigY('AutoCloseGateEntry');
+        const StringFilterColumn = ["Type In", "Party name", "Vehicle No", "Transporter Name", "Doc Type", "Doc No","Good Desp"];
+        const NumericFilterColumn = ["Entry No IN", "Entry No OUT",];
+        const DateFilterColumn = ["Date In Time", "Date Out Time"];
+        const Button = false;
+        const showButtons = []
+        const StringdoubleFilterColumn = [];
+        const hiddenColumns = ["Code", "Hour","GodownMaster_Code", "Close Status", "CloseStatus"];
+        const ColumnAlignment = { 'Action': ';min-width:145px' };
+
+        if (autoCloseGateEntry) {
+            StringFilterColumn.push("Entry Status");
+            (response || []).forEach(function (item) {
+                item["Entry Status"] = GateEntry_GetEntryStatusLabel(item);
+            });
+        } else {
+            hiddenColumns.push("Entry Status", "EntryStatus");
+        }
+
         if (ddlVehiclesStatusInFectory.includes('T') == false) {
 
             //response.forEach(item => {
@@ -137,15 +156,6 @@ function GateEntryGirdByDates() {
             });
         }
         ExcelExportDataArry = response;
-        //console.log(response);
-        const StringFilterColumn = ["Type In", "Party name", "Vehicle No", "Transporter Name", "Doc Type", "Doc No","Good Desp"];
-        const NumericFilterColumn = ["Entry No IN", "Entry No OUT",];
-        const DateFilterColumn = ["Date In Time", "Date Out Time"];
-        const Button = false;
-        const showButtons = []
-        const StringdoubleFilterColumn = [];
-        const hiddenColumns = ["Code", "Hour","GodownMaster_Code"];
-        const ColumnAlignment = { 'Action': ';min-width:145px' };
 
         if (ddlVehiclesStatusInFectory.includes('R') == false) {
             hiddenColumns.push("Out Reason");
@@ -177,8 +187,11 @@ function GateEntryGirdByDates() {
 GateEntryService.GetMinPending().then(function (response) {
     $('#txtFromDate').val(typeof response === "undefined" ? new Date().toISOString().slice(0, 10) : response.minDate);
     $('#txtToDate').val(new Date().toISOString().slice(0, 10));
-    GateEntryGirdByDates();
-    GetConfigGateEntry();
+    GetConfigGateEntry().then(function () {
+        GateEntryGirdByDates();
+    }).catch(function () {
+        GateEntryGirdByDates();
+    });
     LockDocumntFutureDate();
     LoadListDriverDetailsByVehicleNo();
     LoadListOutReason();
@@ -216,12 +229,13 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
             return;
         }
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
-            //console.log(response);
+            GateEntry_AttachCloseStatusFromGrid(response);
             ChangeMode(Mode);
             ClearEmptyOutOrLoadedOutFrm();
             UpdateLoadedIn_Emptyout(response);
             CopyWeightmentSlip('emptyOut');
             GateEntry_ShowEntryNoBanner(response[0].GateEntryNo, 'out');
+            GateEntry_ShowEntryStatusOnForm(response);
         });
 
     }
@@ -234,12 +248,13 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
         }
 
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
-            //console.log(response);
+            GateEntry_AttachCloseStatusFromGrid(response);
             ChangeMode(Mode);
             ClearEmptyOutOrLoadedOutFrm();
             UpdateEmptyIn_loadedout(response);
             CopyWeightmentSlip('loadedOut');
             GateEntry_ShowEntryNoBanner(response[0].GateEntryNo, 'out');
+            GateEntry_ShowEntryStatusOnForm(response);
         });
 
     }
@@ -256,7 +271,8 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
             return;
         }
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
-            // console.log(response);
+            GateEntry_AttachCloseStatusFromGrid(response);
+            if (GateEntry_OpenClosedAsView(Mode, EntryType, response)) return;
 
             var ModuleName = "Gate Entry",
                 ShowMsg = "Y",
@@ -280,9 +296,14 @@ function GateEntyMode_GateEntry(Mode,EntryType) {
     else if (EntryType.includes('view') == true) {
         GateEntryMaster_Code = EntryType.split('_')[1];
         GateEntryService.GetGateEntryDetails(GateEntryMaster_Code).then(function (response) {
-            // console.log(response);
+            GateEntry_AttachCloseStatusFromGrid(response);
             ChangeMode(Mode);
-            ViewGateEntry(response, EntryType);
+            GateEntry_ShowEntryStatusOnForm(response);
+            try {
+                ViewGateEntry(response, EntryType);
+            } finally {
+                GateEntry_ShowEntryStatusOnForm(response);
+            }
         });
 
     }
@@ -1080,8 +1101,9 @@ function setGateEntryParamater(element, PerameterName, PerameterValue) {
         if (response.Status === 'Y') {
             //alert(response.Msg)
             toastr.success(response.Msg);
-            GateEntryGirdByDates();
-            GetConfigGateEntry();
+            GetConfigGateEntry().then(function () {
+                GateEntryGirdByDates();
+            });
         }
     });
 
@@ -1142,7 +1164,8 @@ function GateEntry_applyLoadedInGoodsDescriptionAutoSuggestionState() {
 }
 
 function GetConfigGateEntry() {
-    GateEntryService.GetConfigGateEntry().then(function (response) {
+    GateEntry_LoadApplicableValidationInPackingList();
+    return GateEntryService.GetConfigGateEntry().then(function (response) {
         ConfigGateEntry = response;
         LockDocumntFutureDate();
         EnableScaleWeight();
@@ -1150,9 +1173,8 @@ function GetConfigGateEntry() {
         BindGateEntryTransportModeSelects();
         GateEntry_ApplyModeOfTransportVisibility();
         GateEntry_ApplyEntryWithoutExistingItemRadioVisibility();
-
+        return response;
     });
-    GateEntry_LoadApplicableValidationInPackingList();
 }
 
 function GateEntry_LoadApplicableValidationInPackingList() {
@@ -1206,6 +1228,78 @@ function WithPO() {
         $('#RowfrmLoadedInPoItemGrid').hide();
     }
 }
+function GateEntry_GetEntryStatusLabel(item) {
+    const raw = GateEntry_PickField(item, ['Entry Status', 'EntryStatus', 'Close Status', 'CloseStatus']);
+    const t = String(raw || '').trim().toUpperCase();
+    if (t === 'Y' || t === 'CLOSED' || t === 'CLOSE') return 'Closed';
+    if (t === 'N' || t === 'OPEN') return 'Open';
+    return 'Open';
+}
+
+function GateEntry_IsEntryClosed(item) {
+    return GateEntry_IsConfigY('AutoCloseGateEntry') && GateEntry_GetEntryStatusLabel(item) === 'Closed';
+}
+
+function GateEntry_AttachCloseStatusFromGrid(data) {
+    const row = data && data[0] ? data[0] : data;
+    if (!row) return data;
+    if (GateEntry_PickField(row, ['Entry Status', 'EntryStatus', 'Close Status', 'CloseStatus'])) return data;
+    const code = row.Code || GateEntryMaster_Code;
+    const gridRow = (ExcelExportDataArry || []).find(function (x) {
+        return String(x.Code) === String(code);
+    });
+    if (gridRow) {
+        const label = GateEntry_GetEntryStatusLabel(gridRow);
+        row['Entry Status'] = label;
+        row['Close Status'] = label === 'Closed' ? 'Y' : 'N';
+    }
+    return data;
+}
+
+function GateEntry_OpenClosedAsView(Mode, EntryType, response) {
+    const row = response && response[0] ? response[0] : response;
+    if (!GateEntry_IsEntryClosed(row)) return false;
+    toastr.error('This Gate Entry is Closed. Edit is not allowed.');
+    ChangeMode(Mode);
+    const viewType = String(EntryType || '')
+        .replace('editFull', 'view')
+        .replace('edit', 'view');
+    GateEntry_ShowEntryStatusOnForm(response);
+    ViewGateEntry(response, viewType);
+    GateEntry_ShowEntryStatusOnForm(response);
+    return true;
+}
+
+function GateEntry_ShowEntryStatusOnForm(data) {
+    const $banner = $('#GateEntryCloseStatusBanner');
+    const $rows = $('.ge-entry-status-row');
+    if (!GateEntry_IsConfigY('AutoCloseGateEntry')) {
+        $banner.hide().empty();
+        $rows.hide();
+        $('.ge-entry-status-input').val('');
+        return;
+    }
+    const row = data && data[0] ? data[0] : data;
+    const status = GateEntry_GetEntryStatusLabel(row);
+    const isClosed = status === 'Closed';
+    $banner
+        .removeClass('alert-danger alert-success alert-info')
+        .addClass(isClosed ? 'alert-danger' : 'alert-success')
+        .html(`<i class="fa ${isClosed ? 'fa-lock' : 'fa-unlock'}"></i>&nbsp;<strong>Entry Status:</strong>&nbsp;<strong>${status}</strong>`)
+        .show();
+    $rows.show();
+    $('.ge-entry-status-input').val(status).css({
+        'font-weight': '700',
+        'color': isClosed ? '#b91c1c' : '#15803d'
+    });
+}
+
+function GateEntry_HideEntryStatusOnForm() {
+    $('#GateEntryCloseStatusBanner').hide().empty();
+    $('.ge-entry-status-row').hide();
+    $('.ge-entry-status-input').val('');
+}
+
 function GateEntry_BuildGridActionButtons(item) {
     const typeIn = item['Type In'].replace(' ', '');
     const code = item.Code;
@@ -1213,19 +1307,19 @@ function GateEntry_BuildGridActionButtons(item) {
     const attachName = `${item['Type In']} ${item['Entry No']} ${item['Vehicle No']} ${String(item['Date In Time'] || '').replace(/[:/]/g, '')} ${String(item['Date Out Time'] || '').replace(/[:/]/g, '')}`;
     const printBtn = `<a class="btn btn-info icon-height" onclick="GateEnty_PrintGateEntry(${code})" title="Print"> <i class="fa fa-print"></i></a>&nbsp;`;
     const attachBtn = `<a class="btn btn-success icon-height" onclick="ViewAttachment_GateEntry(${code},'${attachName.replace(/'/g, '\\\'')}')"> <i class="fa fa-paperclip"></i></a>&nbsp;`;
+    const viewBtn = `<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}view_${code}_${godown}')" ><i class="fa fa-eye"></i></a>`;
+    const isClosed = GateEntry_IsEntryClosed(item);
+    const editBtn = isClosed ? '' : `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}edit_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`;
+    const editFullBtn = isClosed ? '' : `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}editFull_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`;
 
     if (item['Date Out Time'] !== '') {
-        return printBtn + attachBtn
-            + `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}editFull_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`
-            + `<a class="btn btn-dark icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}view_${code}_${godown}')" ><i class="fa fa-eye"></i></a>`;
+        return printBtn + attachBtn + editFullBtn + viewBtn;
     }
     if (typeIn.toLowerCase() === 'loadedin') {
-        return printBtn + attachBtn
-            + `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}edit_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`
+        return printBtn + attachBtn + editBtn
             + `<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}emptyout_${code}_${godown}')" >Out</a>`;
     }
-    return printBtn + attachBtn
-        + `<a class="btn btn-primary icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}edit_${code}_${godown}')"> <i class="fa fa-pencil"></i></a>&nbsp;`
+    return printBtn + attachBtn + editBtn
         + `<a class="btn btn-danger icon-height" onclick="GateEntyMode_GateEntry('form','${typeIn}loadedout_${code}_${godown}')" >Out</a>`;
 }
 
@@ -3239,6 +3333,7 @@ function frmLoadedOut_ddlDocumentType(callby) {
 
 function ClearAllFrm() {
     $('#GateEntryFormEntryNoBanner').remove();
+    GateEntry_HideEntryStatusOnForm();
     G_ScaleVehiclePhotoProvided = false;
     GateEntry_ResetScaleWeightLocks();
     GateEntryImageDetail = [{
@@ -3480,7 +3575,7 @@ function ViewGateEntry(gateEntryData, EntryType) {
         ClearEmptyOutOrLoadedOutFrm();
         UpdateLoadedIn_Emptyout(gateEntryData);
         //$('#frmEmptyOut_txtDateOut').val(new Date(gateEntryData[0].GateEntryOutDate).toISOString().slice(0, 10));
-        $('#frmEmptyOut_txtDateOut').val(gateEntryData[0].GateEntryOutDate.slice(0, 10));
+        $('#frmEmptyOut_txtDateOut').val(gateEntryData[0].GateEntryOutDate ? String(gateEntryData[0].GateEntryOutDate).slice(0, 10) : '');
         $('#frmEmptyOut_txtOutTime').val(gateEntryData[0].VehicleOutTime); 
 
         $('#frmEmptyOut_txtVehicleEmptyWeight').val(gateEntryData[0].EmptyWeight);
