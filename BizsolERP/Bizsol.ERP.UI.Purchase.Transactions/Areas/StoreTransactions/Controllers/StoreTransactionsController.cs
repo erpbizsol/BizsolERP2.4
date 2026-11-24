@@ -20,5 +20,10 @@ namespace Bizsol.WebERP.UI.Purchase.Transactions.Areas.StoreTransactions.Control
         {
             return View();
         }
+
+        public IActionResult VoucherDepriciationConfiguration()
+        {
+            return View();
+        }
     }
 }
