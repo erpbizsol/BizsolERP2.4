@@ -209,6 +209,11 @@ function BindTODReport() {
     const columnAlignment = { 'S.No': 'right' };
     cols.numeric.forEach(function (key) { columnAlignment[key] = 'right'; });
 
+    const totalWanted = ['eligiblevalue', 'todamount'];
+    const totalColumns = cols.visible.filter(function (key) {
+        return totalWanted.indexOf(String(key).replace(/\s+/g, '').toLowerCase()) !== -1;
+    });
+
     BizsolCustomFilterGrid.CreateDataTable(
         'TODReport-header',
         'TODReport-body',
@@ -221,7 +226,8 @@ function BindTODReport() {
         [],
         cols.hidden,
         columnAlignment,
-        true
+        true,
+        totalColumns
     );
 
     window.Paginator_TODReport = true;

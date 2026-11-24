@@ -1,0 +1,235 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/VoucherDepriciationConfiguration.js"></script>
+
+<style>
+    .vdc-header {
+        background: linear-gradient(135deg, #3b7dd8 0%, #1a56b0 100%);
+        border-radius: 14px; padding: 16px 22px 14px; margin-bottom: 14px;
+    }
+    .vdc-header h5 { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    .vdc-header small { color: rgba(255,255,255,0.78); font-size: 0.78rem; display: block; }
+
+    .vdc-step-card {
+        background: #fff; border-radius: 14px; border: 1px solid #dbe3ef;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 14px; overflow: hidden;
+    }
+    .vdc-section + .vdc-section { border-top: 1px solid #dbe3ef; }
+    .vdc-step-header {
+        display: flex; align-items: center; gap: 12px; padding: 11px 18px; background: #f7faff;
+        border-bottom: 1px solid #eef0f8; border-left: 4px solid var(--step-clr, #3b7dd8);
+    }
+    .vdc-step-num {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: var(--step-clr, #3b7dd8); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.72rem; flex-shrink: 0;
+    }
+    .vdc-step-title { font-weight: 700; font-size: 0.84rem; color: #1e293b; letter-spacing: 0.04em; text-transform: uppercase; flex: 1; }
+    .vdc-step-body { padding: 16px 18px; }
+    .vdc-field-lbl { display: block; font-size: 0.79rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .vdc-basis-pill {
+        background: rgba(59,125,216,0.1); border: 1px solid rgba(59,125,216,0.25);
+        border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; font-weight: 700; color: #1a56b0;
+    }
+
+    #divVDCForm .form-control, #divVDCForm .form-select {
+        border: 1.5px solid #cfe0f5; border-radius: 8px; font-size: 0.8rem;
+        background-color: #f5f9ff; color: #1e1b4b;
+    }
+    #divVDCForm .form-control:focus, #divVDCForm .form-select:focus {
+        border-color: #3b7dd8; background-color: #fff; box-shadow: 0 0 0 3px rgba(59,125,216,0.15);
+    }
+    #divVDCForm .form-control-sm, #divVDCForm .form-select-sm { height: 30px; padding: 3px 7px; font-size: 0.8rem; }
+
+    .vdc-map-wrap {
+        overflow: auto; max-height: min(420px, calc(100vh - 340px));
+        border: 1px solid #dbe3ef; border-radius: 8px; background: #fff;
+    }
+    .vdc-map-table { width: auto; max-width: 100%; border-collapse: collapse; }
+    .vdc-map-wrap { width: fit-content; max-width: 100%; }
+    .vdc-map-table tbody tr td { white-space: nowrap; }
+    .vdc-map-table thead tr th {
+        background: linear-gradient(135deg, #4f46e5, #667eea);
+        color: #fff; font-size: 0.73rem; font-weight: 600; text-align: center;
+        vertical-align: middle; padding: 8px 6px; white-space: nowrap; border: none;
+        position: sticky; top: 0; z-index: 2;
+    }
+    .vdc-map-table tbody tr:hover { background: #f5f9ff; }
+    .vdc-map-table tbody tr td { padding: 4px 6px; vertical-align: middle; border: 1px solid #dbe3ef; font-size: 0.79rem; }
+    .vdc-map-table tbody tr.vdc-row-missing td { background: #fef2f2; }
+    .vdc-map-table .form-select, .vdc-map-table .select2-container { width: 320px !important; }
+    .vdc-map-empty { text-align: center; padding: 26px 12px; color: #94a3b8; font-size: 0.82rem; }
+
+    .vdc-float-bar {
+        position: fixed; bottom: 38px; left: 0; right: 0; margin-left: 280px;
+        z-index: 1050; display: flex;
+        background: rgba(255,255,255,0.97);
+        border-top: 3px solid #3b7dd8; border-bottom: 1px solid #dbe3ef;
+        box-shadow: 0 -3px 18px rgba(59,125,216,0.18);
+        padding: 5px 24px; align-items: center; justify-content: flex-end; gap: 10px;
+    }
+    .btn-vdc-save {
+        background: linear-gradient(135deg,#10b981,#059669); border: none; color: #fff;
+        border-radius: 10px; padding: 6px 24px; font-size: 0.88rem; font-weight: 700; cursor: pointer;
+        box-shadow: 0 4px 14px rgba(16,185,129,0.4); transition: all 0.2s; line-height: 1.4;
+    }
+    .btn-vdc-save:hover { transform: translateY(-1px); color: #fff; box-shadow: 0 6px 18px rgba(16,185,129,0.5); }
+    .vdc-form-wrap { padding-bottom: 100px; }
+    .vdc-locked-msg {
+        background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; border-radius: 8px;
+        padding: 8px 12px; font-size: 0.8rem; font-weight: 600; margin-bottom: 12px;
+    }
+    .req { color: #ef4444; }
+
+    #dvVDCApplyModal .modal-content { border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+    #dvVDCApplyModal .modal-header { background: linear-gradient(135deg,#3b7dd8,#1a56b0); color: #fff; border: none; padding: 14px 18px; gap: 12px; }
+    #dvVDCApplyModal .modal-title { font-size: 16px; font-weight: 700; margin: 0; flex: 1; color: #fff; }
+    .vdc-apply-close { background: rgba(255,255,255,.15); border: none; color: #fff; width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+    .vdc-apply-account { background: #f5f9ff; border: 1px solid #cfe0f5; border-radius: 10px; padding: 10px 12px; font-size: 13px; color: #1e293b; margin-bottom: 14px; }
+    .vdc-apply-account b { color: #1a56b0; }
+    .vdc-apply-btn {
+        display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+        border: 1.5px solid #dbe3ef; border-radius: 10px; background: #fff; padding: 10px 14px;
+        font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px; cursor: pointer; transition: all .15s;
+    }
+    .vdc-apply-btn:hover:not(:disabled) { border-color: #3b7dd8; background: #eef5ff; color: #1a56b0; }
+    .vdc-apply-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .vdc-apply-btn i { width: 18px; text-align: center; color: #3b7dd8; }
+    .vdc-apply-btn .cnt { margin-left: auto; background: rgba(59,125,216,.1); color: #1a56b0; border-radius: 20px; padding: 1px 10px; font-size: 12px; }
+
+    @@media (max-width: 768px) {
+        .vdc-float-bar { bottom: 95px; margin-left: 0; padding: 5px 14px; }
+    }
+</style>
+
+<div id="divVDCForm">
+    <div class="vdc-form-wrap">
+
+        <div class="vdc-header">
+            <h5><i class="fa fa-calculator me-2"></i>Voucher / Depreciation Configuration</h5>
+            <small>Select how depreciation accounts are picked and the depreciation calculation period</small>
+        </div>
+
+        <div class="vdc-step-card">
+            <div class="vdc-section" style="--step-clr:#3b7dd8;">
+                <div class="vdc-step-header">
+                    <div class="vdc-step-num">1</div>
+                    <span class="vdc-step-title">Configuration</span>
+                    <span class="vdc-basis-pill ms-auto" id="lblVDCFinYear"></span>
+                </div>
+                <div class="vdc-step-body">
+                    <div id="divVDCLockedMsg" class="vdc-locked-msg" style="display:none;">
+                        <i class="fa fa-lock me-2"></i>Depreciation voucher is already created for this Financial Year. Configuration cannot be changed.
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-12 col-md-4">
+                            <label class="vdc-field-lbl" for="ddlVDCPeriod">Depreciation Period <span class="req">*</span></label>
+                            <select id="ddlVDCPeriod" class="form-select form-select-sm"></select>
+                        </div>
+                    </div>
+                    <input type="hidden" id="hfVDCCode" value="0" />
+                </div>
+            </div>
+
+            <div class="vdc-section" style="--step-clr:#10b981;">
+            <div class="vdc-step-header">
+                <div class="vdc-step-num">2</div>
+                <span class="vdc-step-title">Debit Account for Depreciation</span>
+                <span class="vdc-basis-pill ms-auto" id="lblVDCDrBasis"></span>
+            </div>
+            <div class="vdc-step-body">
+                <div class="row g-2 mb-2">
+                    <div class="col-12 col-md-4">
+                        <label class="vdc-field-lbl" for="ddlVDCDrBasis">Debit Account for Depreciation <span class="req">*</span></label>
+                        <select id="ddlVDCDrBasis" class="form-select form-select-sm"></select>
+                    </div>
+                        <div id="divVDCDrSingle" class="col-12 col-md-4">
+                            <label class="vdc-field-lbl" for="ddlVDCDrSingleAccount">Debit Account <span class="req">*</span></label>
+                            <select id="ddlVDCDrSingleAccount" class="form-select form-select-sm"></select>
+                        </div>
+                    </div>
+                <div id="divVDCDrGrid" style="display:none;">
+                    <div class="row g-2 mb-2">
+                        <div class="col-12 col-md-4">
+                            <input type="text" id="txtVDCDrSearch" class="form-control form-control-sm" autocomplete="off" placeholder="Search..." />
+                        </div>
+                    </div>
+                    <div class="vdc-map-wrap">
+                        <table class="vdc-map-table">
+                            <thead id="tblVDCDrHead"></thead>
+                            <tbody id="tblVDCDrBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <div class="vdc-section" style="--step-clr:#f59e0b;">
+            <div class="vdc-step-header">
+                <div class="vdc-step-num" style="background:#f59e0b;">3</div>
+                <span class="vdc-step-title">Credit Account for Depreciation</span>
+                <span class="vdc-basis-pill ms-auto" id="lblVDCCrBasis"></span>
+            </div>
+            <div class="vdc-step-body">
+                <div class="row g-2 mb-2">
+                    <div class="col-12 col-md-4">
+                        <label class="vdc-field-lbl" for="ddlVDCCrBasis">Credit Account for Depreciation <span class="req">*</span></label>
+                        <select id="ddlVDCCrBasis" class="form-select form-select-sm"></select>
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-12 col-md-4">
+                        <input type="text" id="txtVDCCrSearch" class="form-control form-control-sm" autocomplete="off" placeholder="Search..." />
+                    </div>
+                </div>
+                <div class="vdc-map-wrap">
+                    <table class="vdc-map-table">
+                        <thead id="tblVDCCrHead"></thead>
+                        <tbody id="tblVDCCrBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="dvVDCApplyModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-clone me-2"></i>Apply Account</h5>
+                <button type="button" class="vdc-apply-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="background:#fff; padding:18px 20px 10px;">
+                <div class="vdc-apply-account">
+                    Apply <b id="lblVDCApplyAccount"></b> selected for <b id="lblVDCApplyRow"></b> to:
+                </div>
+                <button type="button" class="vdc-apply-btn" onclick="ApplyVoucherDepriciationAccount('ROW')">
+                    <i class="fa fa-check"></i> Only this row
+                </button>
+                <button type="button" class="vdc-apply-btn" onclick="ApplyVoucherDepriciationAccount('ALL')">
+                    <i class="fa fa-list"></i> All rows <span class="cnt" id="lblVDCApplyAllCount">0</span>
+                </button>
+                <button type="button" class="vdc-apply-btn" id="btnVDCApplyEmpty" onclick="ApplyVoucherDepriciationAccount('EMPTY')">
+                    <i class="fa fa-fill-drip"></i> Only empty rows <span class="cnt" id="lblVDCApplyEmptyCount">0</span>
+                </button>
+                <button type="button" class="vdc-apply-btn" id="btnVDCApplyVisible" onclick="ApplyVoucherDepriciationAccount('VISIBLE')">
+                    <i class="fa fa-filter"></i> Rows matching search <span class="cnt" id="lblVDCApplyVisibleCount">0</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="vdc-float-bar">
+    <a class="btn-vdc-save" href="javascript:void(0)" onclick="SaveVoucherDepriciationConfiguration()">
+        <i class="fa fa-save me-2"></i>Save
+    </a>
+</div>
