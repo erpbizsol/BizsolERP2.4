@@ -402,50 +402,16 @@
         reader.readAsDataURL(file);
     }
 
-    function startIosQrScan(mode) {
-        iosScanMode = mode;
-        if (!window.ZXing || !ZXing.BrowserMultiFormatReader) {
-            if (window.toastr) {
-                toastr.error('QR scanner failed to start.');
-            }
-            return;
+    function startIosQrScan() {
+        if (window.toastr) {
+            toastr.error('This phone does not allow this.');
         }
-        if (!iosReader) {
-            iosReader = new ZXing.BrowserMultiFormatReader();
+        if (window.jQuery) {
+            window.jQuery('#ScanQRCodeByCameraControlModal').modal('hide');
         }
-        if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            openIosQrPhoto();
-            return;
+        var modal = document.getElementById('ScanQRCodeByCameraControlModal');
+        if (modal) {
+            modal.remove();
         }
-        var attempts = [
-            { audio: false, video: { facingMode: { ideal: 'environment' } } },
-            { audio: false, video: true }
-        ];
-        var index = 0;
-        function tryNext() {
-            if (index >= attempts.length) {
-                openIosQrPhoto();
-                return;
-            }
-            var promise = iosReader.decodeFromConstraints(attempts[index++], 'video', function (result) {
-                if (result) {
-                    deliverIosQr(result);
-                }
-            });
-            if (!promise || !promise.then) {
-                return;
-            }
-            promise.then(function () {
-                var hint = document.getElementById('ScanQRCodeByCameraControl_IosHint');
-                if (hint) {
-                    hint.remove();
-                }
-            }).catch(function (err) {
-                console.log(err);
-                try { iosReader.reset(); } catch (resetErr) { console.log(resetErr); }
-                tryNext();
-            });
-        }
-        tryNext();
     }
 })();
