@@ -926,8 +926,11 @@
             background-color: #e8f0fb !important;
             border-color: #b6d0ef !important;
             color: #1a56b0 !important;
-            cursor: not-allowed;
+            cursor: default;
             opacity: 1;
+            text-align: left;
+            text-overflow: ellipsis;
+            direction: ltr;
         }
 
     #dvFromNEW select.occurrence-month option {
@@ -1726,7 +1729,7 @@
                 width: 100% !important;
                 min-width: 0;
                 max-width: none;
-                text-align: left;
+                text-align: right;
             }
 
         #dvFromNEW .occurrence-fields .occurrence-day-group,
@@ -2297,6 +2300,10 @@
             box-sizing: border-box !important;
         }
 
+        #dvFromNEW .msm-tab-schedule .occurrence-occurrence-group .tab-occurrence {
+            text-align: right !important;
+        }
+
             #dvFromNEW .msm-tab-schedule .occurrence-periodicity-group .select2-container .select2-selection__rendered {
                 line-height: 32px !important;
             }
@@ -2482,9 +2489,9 @@
                         </div>
                         <div class="col-12 col-md-3">
                             <label for="txtLocation" class="msm-field-lbl">Location</label>
-                            <input type="text" id="txtLocation" class="form-control form-control-sm box_border msm-location-disabled" value="" disabled
+                            <input type="text" id="txtLocation" class="form-control form-control-sm box_border msm-location-disabled" value="" readonly
                                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                                   data-lpignore="true" data-form-type="other" aria-disabled="true" />
+                                   data-lpignore="true" data-form-type="other" aria-readonly="true" title="" />
                         </div>
                         <div class="col-12 col-md-3">
                             <label for="ddlMaintenanceType" class="msm-field-lbl">Maintenance Type <span class="msm-req">*</span></label>

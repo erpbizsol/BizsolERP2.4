@@ -81,7 +81,11 @@ $(document).ready(function () {
     loadItemList();
     generateTabsFromOccurrence();
 
-    $('#txtLocation').prop('disabled', true).attr('autocomplete', 'off').val('');
+    $('#txtLocation').prop('readonly', true).prop('disabled', false).attr('autocomplete', 'off').val('')
+        .on('focus.msmLocation click.msmLocation', function () {
+            this.scrollLeft = 0;
+            try { this.setSelectionRange(0, 0); } catch (e) { }
+        });
 
     $('#deleteConfirmBackdrop').on('click', function (event) {
         if (event.target === this) CloseModalDelete();
@@ -174,6 +178,7 @@ function loadMachineList() {
             $('#ddlMachineNo').off('change.machineLocation').on('change.machineLocation', function () {
                 bindMachineLocation($(this).val());
             });
+            if ($('#dvGrid').is(':visible')) loadMaintenanceList();
         } else {
             toastr.error('No data received or empty response');
         }
@@ -182,11 +187,46 @@ function loadMachineList() {
     });
 }
 
+function machineLocationText(item) {
+    if (!item) return '';
+    const names = ['Location', 'location', 'Loc', 'LocationName', 'MachineLocation', 'GodownName', 'Address'];
+    for (let index = 0; index < names.length; index++) {
+        const value = item[names[index]];
+        if (value != null && String(value).trim() !== '') return String(value).trim();
+    }
+    const key = Object.keys(item).find(function (name) {
+        return name.replace(/[\s_]/g, '').toLowerCase() === 'location';
+    });
+    return key && item[key] != null ? String(item[key]).trim() : '';
+}
+
+function showLocationValue(location) {
+    const input = document.getElementById('txtLocation');
+    if (!input) return;
+    const text = String(location || '').trim();
+    input.readOnly = true;
+    input.disabled = false;
+    input.value = text;
+    input.title = text;
+    input.scrollLeft = 0;
+    try { input.setSelectionRange(0, 0); } catch (e) { }
+}
+
 function bindMachineLocation(code) {
     const selected = machineList.find(function (item) {
         return String(item.Code) === String(code);
     });
-    $('#txtLocation').val(selected && selected.Location ? selected.Location : '');
+    showLocationValue(machineLocationText(selected));
+}
+
+function locationForMachineNo(machineNo) {
+    const key = String(machineNo || '').trim().toLowerCase();
+    if (!key || !machineList.length) return '';
+    const found = machineList.find(function (item) {
+        const number = String(item.MachineNo || item.machineNo || item.Desp || item.desp || '').trim().toLowerCase();
+        return number === key;
+    });
+    return machineLocationText(found);
 }
 
 function normalizeLookupList(response) {
@@ -1045,7 +1085,7 @@ function setFormReadOnly(readOnly) {
     form.find('input, select, textarea, button')
         .not('.msm-btn-back, .maintenance-tab, #btnSubmitMaintenance, #txtLocation')
         .prop('disabled', readOnly);
-    $('#txtLocation').prop('disabled', true).attr('autocomplete', 'off');
+    $('#txtLocation').prop('readonly', true).prop('disabled', false).attr('autocomplete', 'off');
     $('#btnSubmitMaintenance').prop('disabled', readOnly);
 }
 
@@ -1110,11 +1150,14 @@ function loadMaintenanceList() {
             }
             const gridRows = rows.map(function (item, index) {
                 const code = Number(fieldValue(item, 'code', 'Code') || 0);
+                const machineNo = fieldValue(item, 'machine No', 'Machine No');
+                let location = String(fieldValue(item, 'location', 'Location') || '').trim();
+                if (!location) location = locationForMachineNo(machineNo);
                 return {
                     'S.No.': fieldValue(item, 's.No.', 'S.No.') || index + 1,
                     Code: code,
-                    'Machine No': fieldValue(item, 'machine No', 'Machine No'),
-                    Location: fieldValue(item, 'location', 'Location'),
+                    'Machine No': machineNo,
+                    Location: location,
                     'Effective Date': fieldValue(item, 'effective Date', 'Effective Date'),
                     Action: '<button type="button" class="msm-btn-view" title="View" onclick="View(' + code + ')"><i class="fas fa-eye"></i></button>'
                         + '<button type="button" class="msm-btn-edit" title="Edit" onclick="Edit(' + code + ')"><i class="fas fa-pen"></i></button>'
@@ -1481,7 +1524,7 @@ function applyLocatedSchedule(response, selectedMachine) {
     const machineCode = fieldValue(master, 'machineMaster_Code', 'MachineMaster_Code') || selectedMachine;
     $('#ddlMachineNo').val(String(machineCode)).trigger('change');
     const locatedLocation = fieldValue(master, 'location', 'Location');
-    if (locatedLocation) $('#txtLocation').val(locatedLocation);
+    if (locatedLocation) showLocationValue(locatedLocation);
     $('#txtEffectiveDate').val(formatDateForInput(fieldValue(master, 'effectiveDate', 'EffectiveDate')));
     const locatedPeriodicity = periodicityValueFromLabel(fieldValue(master, 'periodicity', 'Periodicity'))
         || String(fieldValue(master, 'periodicityMaster_Code', 'PeriodicityMaster_Code') || '');
