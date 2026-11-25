@@ -70,7 +70,7 @@ const MaintenanceScheduleMasterService = {
     },
 
     GetItemNameList: function GetItemNameList() {
-        var URL = UrlService.API_ENDPOINT_MaintenanceScheduleMaster + `/GetItemNameList`;
+        var URL = UrlService.API_ENDPOINT_MaintenanceScheduleMaster + `/GetItemMasterList`;
         return promiseAjaxCallApi.CallAPI('GET', URL, "").then(
             function (value) {
                 return value;
@@ -89,21 +89,13 @@ const MaintenanceScheduleMasterService = {
     GetMaintenanceScheduleMasterByCode: function GetMaintenanceScheduleMasterByCode(code) {
         var URL = UrlService.API_ENDPOINT_MaintenanceScheduleMaster
             + '/GetMaintenanceScheduleMasterByCode?code=' + encodeURIComponent(code || 0);
-        return promiseAjaxCallApi.CallAPI('GET', URL, "", { suppressErrorToast: true }).then(
-            function (value) {
-                return value;
-            }
-        );
+        return promiseAjaxCallApi.CallAPI('GET', URL, '', { suppressErrorToast: true });
     },
 
     DeleteMaintenanceScheduleMaster: function DeleteMaintenanceScheduleMaster(code) {
         var URL = UrlService.API_ENDPOINT_MaintenanceScheduleMaster
             + '/DeleteMaintenanceScheduleMaster?code=' + encodeURIComponent(code || 0);
-        return promiseAjaxCallApi.CallAPI('POST', URL, "", { suppressErrorToast: true }).then(
-            function (value) {
-                return value;
-            }
-        );
+        return promiseAjaxCallApi.CallAPI('POST', URL, '', { suppressErrorToast: true });
     },
 
     SaveMaintenanceScheduleMaster: function SaveMaintenanceScheduleMaster(data) {
