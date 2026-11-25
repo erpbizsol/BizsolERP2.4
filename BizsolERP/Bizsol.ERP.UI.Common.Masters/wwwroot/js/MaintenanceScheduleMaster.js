@@ -140,6 +140,7 @@ document.addEventListener('keydown', function (event) {
 document.addEventListener('input', function (event) {
     if (event.target.classList && event.target.classList.contains('tab-occurrence')) {
         const pane = event.target.closest('.occurrence-tab-pane');
+        if (pane && event.isTrusted) pane._msmChecklistLocked = false;
         if (pane) renderOccurrenceRows(pane);
     }
     if (event.target.classList && event.target.classList.contains('occurrence-day')) {
@@ -495,18 +496,12 @@ function applyActionLookups() {
     });
 }
 function loadItemList() {
-    Promise.all([
-        MaintenanceScheduleMasterService.GetItemMasterList().catch(function () { return []; }),
-        MaintenanceScheduleMasterService.GetItemNameList().catch(function () { return []; })
-    ]).then(function (results) {
-        itemList = normalizeLookupList(results[0]);
-        itemNameList = normalizeLookupList(results[1]);
-        if (!itemNameList.length) itemNameList = itemList.slice();
-        if (!itemList.length && !itemNameList.length) {
-            toastr.error('No item data received');
-            return;
-        }
+    MaintenanceScheduleMasterService.GetItemMasterList().then(function (response) {
+        itemList = normalizeLookupList(response);
+        itemNameList = itemList.slice();
         applyItemLookups();
+    }).catch(function (error) {
+        console.log('Error fetching item data:', error);
     });
 }
 
@@ -636,13 +631,8 @@ function scheduleItemObjectRows() {
         if (!key) return;
         const current = merged.get(key) || {};
         merged.set(key, {
-            'Item Name': itemNameOf(item) || itemNameOf(linked) || current['Item Name'] || '',
             'Item Code': itemCodeOf(item) || itemCodeOf(linked) || current['Item Code'] || '',
-            UOM: item.UOM || item.uom || linked.UOM || linked.uom || current.UOM || '',
-            'Item Specification': item.ItemSpecification || item.itemSpecification || linked.ItemSpecification || linked.itemSpecification || current['Item Specification'] || '',
-            'MRP Value': item.MRPValue != null ? item.MRPValue : (item.mrpValue != null ? item.mrpValue : (linked.MRPValue != null ? linked.MRPValue : (current['MRP Value'] || 0))),
-            'Stock In Store': item.StockInStore ?? item.stockInStore ?? item['Stock In Store'] ?? linked.StockInStore ?? linked.stockInStore ?? current['Stock In Store'] ?? 0,
-            Category: item.ItemType || item.itemType || item.Category || item.CategoryName || linked.ItemType || linked.Category || current.Category || '',
+            'Item Name': itemNameOf(item) || itemNameOf(linked) || current['Item Name'] || '',
             Code: itemKeyOf(item) || itemKeyOf(linked) || current.Code || ''
         });
     }
@@ -734,15 +724,10 @@ function showScheduleItemObjectList(row, value, filterColumn) {
         CallBackFunctionName_btnDone: 'onMaintenanceScheduleItemSelected',
         DefaultColumnfilter: filterColumn || 'Item Name',
         ModalTitle: 'Select Item',
-        NumericColumns: ['MRP Value', 'Stock In Store'],
+        NumericColumns: [],
         Columns: [
-            { field: 'Item Name', header: 'Item Name', visible: true },
             { field: 'Item Code', header: 'Item Code', visible: true },
-            { field: 'UOM', header: 'UOM', visible: true },
-            { field: 'Item Specification', header: 'Item Specification', visible: true },
-            { field: 'MRP Value', header: 'MRP Value', visible: true },
-            { field: 'Stock In Store', header: 'Stock In Store', visible: true },
-            { field: 'Category', header: 'Category', visible: true },
+            { field: 'Item Name', header: 'Item Name', visible: true },
             { field: 'Code', visible: false }
         ]
     });
@@ -925,14 +910,17 @@ function getMaintenanceTypes() {
             rows.push(Object.assign({ Sno: rows.length + 1, Day: '', Month: '', ChecklistItems: [] }, base));
             return;
         }
-        generated.forEach(function (row) {
+        generated.forEach(function (row, index) {
             const dayInput = row.querySelector('.occurrence-day');
             const monthInput = row.querySelector('.occurrence-month');
             const monthOption = monthInput && monthInput.options ? monthInput.options[monthInput.selectedIndex] : null;
+            const rowKeyed = !monthInput;
             rows.push(Object.assign({
                 Sno: rows.length + 1,
                 Day: dayInput ? String(dayInput.value || '').trim() : '',
-                Month: monthOption ? String(monthOption.text || '').trim() : (monthInput ? String(monthInput.value || '').trim() : ''),
+                Month: rowKeyed
+                    ? String(index + 1)
+                    : (monthOption ? String(monthOption.text || '').trim() : (monthInput ? String(monthInput.value || '').trim() : '')),
                 MonthNumber: monthOption ? Number(monthOption.getAttribute('data-month') || 0) : 0,
                 MonthYear: monthOption ? Number(monthOption.getAttribute('data-year') || 0) : 0,
                 ChecklistItems: Array.from(row.querySelectorAll('.maintenance-checkbox:checked')).map(function (item) { return item.value; })
@@ -982,6 +970,7 @@ document.addEventListener('change', function (event) {
 
     if (event.target.classList.contains('tab-periodicity')) {
         const pane = event.target.closest('.occurrence-tab-pane');
+        if (pane && event.isTrusted) pane._msmChecklistLocked = false;
         if (pane) renderOccurrenceRows(pane);
         return;
     }
@@ -998,6 +987,9 @@ document.addEventListener('change', function (event) {
 
     if (!event.target.classList.contains('maintenance-checkbox')
         && !event.target.classList.contains('maintenance-checklist-select-all-input')) return;
+
+    const editedPane = event.target.closest('.occurrence-tab-pane');
+    if (editedPane && event.isTrusted) editedPane._msmChecklistLocked = false;
 
     const dropdown = event.target.closest('.maintenance-checklist-dropdown');
     const button = dropdown && dropdown.querySelector('.maintenance-checklist-button');
@@ -1027,6 +1019,13 @@ document.addEventListener('click', function (event) {
     button.textContent = expanded ? 'See less' : 'See more';
 });
 
+document.addEventListener('click', function (event) {
+    const panel = document.getElementById('msmCopyPanel');
+    if (!panel || panel.hidden) return;
+    if (event.target.closest('.msm-copy-wrap')) return;
+    panel.hidden = true;
+});
+
 function clearForm() {
     currentCode = 0;
     locatedTabs = null;
@@ -1047,7 +1046,7 @@ function setFormReadOnly(readOnly) {
         .not('.msm-btn-back, .maintenance-tab, #btnSubmitMaintenance, #txtLocation')
         .prop('disabled', readOnly);
     $('#txtLocation').prop('disabled', true).attr('autocomplete', 'off');
-    $('#btnSubmitMaintenance').toggle(!readOnly);
+    $('#btnSubmitMaintenance').prop('disabled', readOnly);
 }
 
 function syncMsmFloatBar(mode) {
@@ -1382,7 +1381,7 @@ function getSaveRequest(payload) {
 let saveInProgress = false;
 
 function SaveMachineMaintenance() {
-    if (saveInProgress) return;
+    if (saveInProgress || $('#dvFromNEW').hasClass('msm-view-mode')) return;
     checkMsmOptionRight(currentCode ? 'Edit' : 'New').then(function (ok) {
         if (!ok) return;
         const payload = getFormPayload();
@@ -1628,6 +1627,41 @@ function editTabsFromResponse(transactions, checkLists, items) {
     });
 }
 
+function placeSavedChecklistRows(savedRows, rowCount) {
+    const placed = new Array(rowCount);
+    const leftovers = [];
+    (savedRows || []).forEach(function (saved) {
+        const monthText = String(saved && saved.month != null ? saved.month : '').trim();
+        const rowIndex = /^\d+$/.test(monthText) ? Number(monthText) - 1 : -1;
+        const dayText = saved && saved.day != null ? String(saved.day).trim() : '';
+        const entry = {
+            month: monthText,
+            day: dayText === '0' ? '' : dayText,
+            checklist: ((saved && saved.checklist) || []).map(function (item) { return String(item); }).filter(function (item) { return item && item !== '0'; })
+        };
+        if (rowIndex >= 0 && rowIndex < rowCount && !placed[rowIndex]) placed[rowIndex] = entry;
+        else leftovers.push(entry);
+    });
+    leftovers.forEach(function (entry) {
+        const openIndex = placed.findIndex(function (item) { return !item; });
+        if (openIndex >= 0) placed[openIndex] = entry;
+        else placed.push(entry);
+    });
+    const filled = placed.filter(function (item) { return item && item.checklist && item.checklist.length; });
+    if (filled.length === 1 && rowCount > 1) {
+        const source = filled[0].checklist.slice();
+        for (let index = 0; index < rowCount; index++) {
+            if (placed[index] && placed[index].checklist && placed[index].checklist.length) continue;
+            placed[index] = {
+                month: placed[index] ? placed[index].month : '',
+                day: placed[index] ? placed[index].day : '',
+                checklist: source.slice()
+            };
+        }
+    }
+    return placed;
+}
+
 function fillEditTabPane(tab) {
     const pane = Array.from(document.querySelectorAll('.occurrence-tab-pane')).find(function (item) {
         return item.dataset.occurrenceTab === tab.Type;
@@ -1641,11 +1675,15 @@ function fillEditTabPane(tab) {
     if (escalationMail) escalationMail.value = tab.EscalationMail || '';
     const escalationGap = pane.querySelector('.tab-escalation-gap');
     if (escalationGap) escalationGap.value = tab.EscalationGap || '';
-    pane.querySelectorAll('.occurrence-generated-row').forEach(function (row, index) {
-        const saved = tab.Rows[index];
+    const generatedRows = pane.querySelectorAll('.occurrence-generated-row');
+    const savedRows = placeSavedChecklistRows(tab.Rows || [], generatedRows.length);
+    pane._msmChecklistRows = savedRows;
+    pane._msmChecklistLocked = true;
+    generatedRows.forEach(function (row, index) {
+        const saved = savedRows[index];
         if (!saved) return;
         const monthSelect = row.querySelector('.occurrence-month');
-        if (monthSelect && saved.month) monthSelect.value = saved.month;
+        if (monthSelect && saved.month && !/^\d+$/.test(String(saved.month))) monthSelect.value = saved.month;
         const dayInput = row.querySelector('.occurrence-day');
         if (dayInput) {
             dayInput.value = saved.day && saved.day !== '0' ? saved.day : '';
@@ -1675,10 +1713,24 @@ function Edit(code, viewOnly) {
     });
 }
 
+function scheduleMasterRow(response) {
+    const rows = responseList(response, 'master', 'Master');
+    if (rows.length) return rows[0];
+    const master = response && (response.master || response.Master);
+    if (master && !Array.isArray(master)) return master;
+    return null;
+}
+
 function openMaintenanceSchedule(code, viewOnly) {
     MaintenanceScheduleMasterService.GetMaintenanceScheduleMasterByCode(code)
         .then(function (response) {
-            const master = response && (response.master || response.Master);
+            const failed = response && (response.Status === 'N' || response.status === 'N')
+                && !response.master && !response.Master;
+            if (failed) {
+                toastr.error(response.Msg || response.msg || 'Maintenance schedule was not found.');
+                return;
+            }
+            const master = scheduleMasterRow(response);
             if (!master) {
                 toastr.error('Maintenance schedule was not found.');
                 return;
@@ -1776,6 +1828,14 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;');
 }
 
+function lockGeneratedRows(pane) {
+    const form = document.getElementById('dvFromNEW');
+    if (!form || !form.classList.contains('msm-view-mode') || !pane) return;
+    pane.querySelectorAll('.occurrence-generated input, .occurrence-generated select, .occurrence-generated button').forEach(function (control) {
+        control.disabled = true;
+    });
+}
+
 function refreshChecklistButtons(root) {
     (root || document).querySelectorAll('.maintenance-checklist-dropdown').forEach(function (dropdown) {
         const button = dropdown.querySelector('.maintenance-checklist-button');
@@ -1823,7 +1883,7 @@ function sortPeriodicityOptions(list) {
 
 function periodicityOptionMarkup(selected) {
     const current = String(selected || '');
-    return '<option value=""></option>' + sortPeriodicityOptions(periodicityOptions).map(function (item) {
+    return '<option value=""' + (current ? '' : ' selected') + '></option>' + sortPeriodicityOptions(periodicityOptions).map(function (item) {
         return '<option value="' + escapeHtml(item.Code) + '"' + (current === String(item.Code) ? ' selected' : '') + '>' + escapeHtml(item.Desp) + '</option>';
     }).join('');
 }
@@ -1966,7 +2026,8 @@ function renderOccurrenceRows(pane) {
 
     if (dailyMode) {
         for (let index = 0; index < count; index++) {
-            const saved = previous[index] || {};
+            const locked = pane._msmChecklistLocked && pane._msmChecklistRows ? pane._msmChecklistRows[index] : null;
+            const saved = locked || previous[index] || {};
             const rowLabel = 'Maintenance Checklist <span class="text-danger">*</span>';
             rows.push('<div class="occurrence-generated-row occurrence-daily-row">' +
                 '<div class="occurrence-daily-checklist-label maintenance-label" style="display:inline-block;margin:0 0 8px;padding:4px 10px;color:#fff !important;background:#4f46e5 !important;border-radius:6px;font-size:12px;font-weight:700;line-height:1.3;">' + rowLabel + '</div>' +
@@ -1979,12 +2040,14 @@ function renderOccurrenceRows(pane) {
         host.innerHTML = '<div class="occurrence-generated-daily-wrap occurrence-schedule-mode-daily occurrence-schedule-compact">' + rows.join('') + '</div>';
         applyOccurrencePaneLayout(pane);
         refreshChecklistButtons(host);
+        lockGeneratedRows(pane);
         return;
     }
 
     for (let index = 0; index < count; index++) {
-        const saved = previous[index] || {};
-        const month = saved.month || monthLabelForIndex(index, periodicityText);
+        const locked = pane._msmChecklistLocked && pane._msmChecklistRows ? pane._msmChecklistRows[index] : null;
+        const saved = locked || previous[index] || {};
+        const month = (saved.month && !/^\d+$/.test(String(saved.month)) ? saved.month : '') || monthLabelForIndex(index, periodicityText);
         const dayMonthRef = monthlyMode ? effectiveDateMonthName() : month;
         const maxDay = daysInMonthName(dayMonthRef);
         const monthCell = showMonth
@@ -2014,6 +2077,7 @@ function renderOccurrenceRows(pane) {
     host.querySelectorAll('.occurrence-day').forEach(function (dayInput) { applyDayLimit(dayInput, false); });
     applyOccurrencePaneLayout(pane);
     refreshChecklistButtons(host);
+    lockGeneratedRows(pane);
 }
 
 function applyTabPeriodicityLookups() {
@@ -2023,13 +2087,15 @@ function applyTabPeriodicityLookups() {
         const $select = $(select);
         if ($select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
         select.innerHTML = periodicityOptionMarkup(current);
-        if (current) select.value = current;
+        select.value = current || '';
         $select.select2({
             width: '100%',
             minimumResultsForSearch: Infinity,
-            placeholder: '',
+            placeholder: 'Select',
+            allowClear: true,
             dropdownParent: msmSelect2DropdownParent()
         });
+        if (!current) $select.val(null).trigger('change.select2');
         $select.off('select2:select.msmPeriodicity select2:clear.msmPeriodicity change.msmPeriodicity')
             .on('select2:select.msmPeriodicity select2:clear.msmPeriodicity change.msmPeriodicity', function () {
                 const tabPane = this.closest('.occurrence-tab-pane');
@@ -2082,11 +2148,15 @@ function applyMaintenanceLookups() {
         $select.select2({
             width: '100%',
             placeholder: 'Select Type',
-            closeOnSelect: false,
+            closeOnSelect: true,
             allowClear: true,
             dropdownParent: msmSelect2DropdownParent(),
             minimumResultsForSearch: Infinity
         });
+        $select.off('select2:select.msmClose select2:unselect.msmClose')
+            .on('select2:select.msmClose select2:unselect.msmClose', function () {
+                $(this).select2('close');
+            });
         suppressMaintenanceTypeChange = false;
     }
 
@@ -2241,17 +2311,31 @@ function generateTabs(tabData) {
         return;
     }
 
-    const showCopy = occurrenceTabNames.some(function (name) { return String(name).trim().toLowerCase() === 'major'; })
-        && occurrenceTabNames.some(function (name) { return String(name).trim().toLowerCase() === 'minor'; });
+    const showCopy = occurrenceTabNames.length > 1;
     tabs.innerHTML = occurrenceTabNames.map((name, index) => `
             <button type="button" role="tab" class="maintenance-tab ${index === 0 ? 'active' : ''}" aria-selected="${index === 0 ? 'true' : 'false'}" onclick="openOccurrenceTab('${escapeJs(name)}')">${escapeHtml(name)}</button>`).join('')
-        + (showCopy ? '<button type="button" class="msm-copy-tab-btn" onclick="copyMajorScheduleToMinor()" title="Copy Major data to Minor"><i class="fas fa-copy" aria-hidden="true"></i> Copy</button>' : '');
+        + (showCopy ? `<div class="msm-copy-wrap">
+            <button type="button" class="msm-copy-tab-btn" onclick="toggleCopySchedulePanel(event)" title="Copy schedule data between maintenance types"><i class="fas fa-copy" aria-hidden="true"></i> Copy</button>
+            <div id="msmCopyPanel" class="msm-copy-panel" hidden>
+                <div class="msm-copy-panel-title">Copy schedule data</div>
+                <label for="ddlCopyFrom">From</label>
+                <select id="ddlCopyFrom" class="form-select form-select-sm" onchange="syncCopyTargetOptions()"></select>
+                <label for="ddlCopyTo">To</label>
+                <select id="ddlCopyTo" class="form-select form-select-sm"></select>
+                <div class="msm-copy-panel-actions">
+                    <button type="button" class="msm-copy-cancel" onclick="closeCopySchedulePanel()">Cancel</button>
+                    <button type="button" class="msm-copy-apply" onclick="confirmCopySchedule()">Copy</button>
+                </div>
+            </div>
+        </div>` : '');
 
     content.innerHTML = occurrenceTabNames.map((occurrenceName, occurrenceIndex) => {
-        const merged = {
-            ...(schedules.find(item => item.Sno === occurrenceIndex + 1 || item.Tab === occurrenceName) || {}),
-            ...(data.find(item => item.Type === occurrenceName || item.Type === `${occurrenceName}-Major`) || {})
+        const sameType = function (item) {
+            if (!item) return false;
+            const typeName = String(item.Type || item.Tab || '');
+            return typeName === occurrenceName || typeName === occurrenceName + '-Major';
         };
+        const merged = Object.assign({}, schedules.find(sameType) || {}, data.find(sameType) || {});
         return `
             <section id="occurrence-pane-${occurrenceIndex + 1}" role="tabpanel" class="occurrence-tab-pane ${occurrenceIndex === 0 ? 'active' : ''}" data-occurrence-tab="${escapeHtml(occurrenceName)}">
                 ${getOccurrenceScheduleMarkup(occurrenceName, merged)}
@@ -2262,24 +2346,55 @@ function generateTabs(tabData) {
 
     content.querySelectorAll('tbody').forEach(updateDeleteButtons);
 
+    const savedByType = {};
     data.forEach(saved => {
         if (!saved || !saved.Type) return;
+        if (!savedByType[saved.Type]) savedByType[saved.Type] = [];
+        savedByType[saved.Type].push(saved);
         const pane = content.querySelector(`.occurrence-tab-pane[data-occurrence-tab="${saved.Type}"]`)
             || content.querySelector(`.occurrence-tab-pane[data-occurrence-tab="${String(saved.Type).split('-')[0]}"]`);
         if (!pane) return;
-        (saved.ChecklistItems || []).forEach(value => {
-            const checkbox = pane.querySelector(`.maintenance-checkbox[value="${value}"]`)
-                || Array.from(pane.querySelectorAll('.maintenance-checkbox')).find(item => item.nextElementSibling.textContent.trim() === value);
-            if (checkbox) checkbox.checked = true;
-        });
         const items = saved.Items || [];
         const tbody = pane.querySelector('tbody');
+        if (!tbody || tbody.dataset.itemsApplied === 'Y') return;
+        tbody.dataset.itemsApplied = 'Y';
         tbody.innerHTML = items.length ? items.map((item, index) => createItemRowMarkup(saved.Type, index, item)).join('') : createItemRowMarkup(saved.Type, 0);
         updateDeleteButtons(tbody);
     });
-    refreshChecklistButtons(content);
     applyTabPeriodicityLookups();
     content.querySelectorAll('.occurrence-tab-pane').forEach(renderOccurrenceRows);
+    Object.keys(savedByType).forEach(function (type) {
+        const pane = content.querySelector(`.occurrence-tab-pane[data-occurrence-tab="${type}"]`)
+            || content.querySelector(`.occurrence-tab-pane[data-occurrence-tab="${String(type).split('-')[0]}"]`);
+        if (!pane) return;
+        const generated = pane.querySelectorAll('.occurrence-generated-row');
+        const entries = savedByType[type];
+        const tabWithRows = entries.length === 1 && entries[0].Rows && entries[0].Rows.length ? entries[0] : null;
+        const fromRows = tabWithRows ? placeSavedChecklistRows(tabWithRows.Rows, generated.length) : null;
+        generated.forEach(function (row, index) {
+            const saved = fromRows ? null : (entries[index] || null);
+            const savedRow = fromRows ? fromRows[index] : null;
+            const checklist = savedRow
+                ? (savedRow.checklist || [])
+                : (saved ? (saved.ChecklistItems || saved.checklist || []) : []);
+            const dayValue = savedRow
+                ? String(savedRow.day || '')
+                : (saved ? String(saved.Day != null && saved.Day !== '' ? saved.Day : (saved.day || '')) : '');
+            const monthValue = savedRow
+                ? String(savedRow.month || '')
+                : (saved ? String(saved.Month || saved.month || '') : '');
+            const menu = row.querySelector('.maintenance-checklist-menu');
+            if (menu && checklist.length) menu.innerHTML = getChecklistMarkup(checklist);
+            const dayInput = row.querySelector('.occurrence-day');
+            if (dayInput && dayValue && dayValue !== '0') {
+                dayInput.value = dayValue;
+                applyDayLimit(dayInput, false);
+            }
+            const monthSelect = row.querySelector('.occurrence-month');
+            if (monthSelect && monthValue && !/^\d+$/.test(monthValue)) monthSelect.value = monthValue;
+        });
+        refreshChecklistButtons(pane);
+    });
     syncHeaderMaintenanceType();
     if (itemList.length || itemNameList.length) applyItemLookups();
     if (actionList.length) applyActionLookups();
@@ -2325,13 +2440,91 @@ function applyCopiedMonth(monthInput, saved) {
     });
 }
 
-function copyMajorScheduleToMinor() {
-    if (document.getElementById('dvFromNEW') && document.getElementById('dvFromNEW').classList.contains('msm-view-mode')) return;
-    const source = findOccurrencePane('Major');
-    const target = findOccurrencePane('Minor');
-    if (!source || !target) {
-        toastr.warning('Select both Major and Minor before copying.');
+function copyTypeOptionMarkup(names) {
+    return (names || []).map(function (name) {
+        return '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>';
+    }).join('');
+}
+
+function closeCopySchedulePanel() {
+    const panel = document.getElementById('msmCopyPanel');
+    if (panel) panel.hidden = true;
+}
+
+function syncCopyTargetOptions() {
+    const from = document.getElementById('ddlCopyFrom');
+    const to = document.getElementById('ddlCopyTo');
+    if (!from || !to) return;
+    const current = to.value;
+    const targets = occurrenceTabNames.filter(function (name) { return name !== from.value; });
+    to.innerHTML = copyTypeOptionMarkup(targets);
+    if (targets.indexOf(current) !== -1) to.value = current;
+    else if (targets.length) to.value = targets[0];
+}
+
+function toggleCopySchedulePanel(event) {
+    if (event) event.stopPropagation();
+    const form = document.getElementById('dvFromNEW');
+    if (form && form.classList.contains('msm-view-mode')) return;
+    const panel = document.getElementById('msmCopyPanel');
+    if (!panel) return;
+    if (!panel.hidden) {
+        panel.hidden = true;
         return;
+    }
+    const from = document.getElementById('ddlCopyFrom');
+    if (!from) return;
+    from.innerHTML = copyTypeOptionMarkup(occurrenceTabNames);
+    const activePane = document.querySelector('.occurrence-tab-pane.active');
+    const activeName = activePane ? activePane.dataset.occurrenceTab : '';
+    if (activeName && occurrenceTabNames.indexOf(activeName) !== -1) from.value = activeName;
+    syncCopyTargetOptions();
+    panel.hidden = false;
+}
+
+function paneHasScheduleData(pane) {
+    const data = readPaneScheduleSnapshot(pane);
+    const email = data.email || {};
+    if (data.periodicity && data.periodicity !== '0') return true;
+    if (data.occurrence && data.occurrence !== '0') return true;
+    if (data.items.length) return true;
+    if (email.Recipients || email.EstimatedStartDate || email.EscalationMail || email.EscalationGap) return true;
+    return data.rows.some(function (row) {
+        return (row.day && row.day !== '0') || (row.month && row.month !== '0') || (row.checklist && row.checklist.length);
+    });
+}
+
+function confirmCopySchedule() {
+    const fromEl = document.getElementById('ddlCopyFrom');
+    const toEl = document.getElementById('ddlCopyTo');
+    const from = fromEl ? fromEl.value : '';
+    const to = toEl ? toEl.value : '';
+    if (!from || !to) {
+        toastr.warning('Select the maintenance types to copy from and to.');
+        return;
+    }
+    if (from === to) {
+        toastr.warning('Choose a different maintenance type to copy into.');
+        return;
+    }
+    const target = findOccurrencePane(to);
+    if (target && paneHasScheduleData(target)) {
+        if (!window.confirm('Copy ' + from + ' data to ' + to + '? Existing ' + to + ' data will be replaced.')) return;
+    }
+    if (copyOccurrenceSchedule(from, to)) closeCopySchedulePanel();
+}
+
+function copyMajorScheduleToMinor() {
+    copyOccurrenceSchedule('Major', 'Minor');
+}
+
+function copyOccurrenceSchedule(sourceName, targetName) {
+    if (document.getElementById('dvFromNEW') && document.getElementById('dvFromNEW').classList.contains('msm-view-mode')) return false;
+    const source = findOccurrencePane(sourceName);
+    const target = findOccurrencePane(targetName);
+    if (!source || !target) {
+        toastr.warning('Select both maintenance types before copying.');
+        return false;
     }
     const data = readPaneScheduleSnapshot(source);
     const periodicity = target.querySelector('.tab-periodicity');
@@ -2358,13 +2551,15 @@ function copyMajorScheduleToMinor() {
     });
     refreshChecklistButtons(target);
 
-    const tabName = target.dataset.occurrenceTab || 'Minor';
+    const tabName = target.dataset.occurrenceTab || targetName;
     const tbody = document.getElementById('items-' + tabName) || target.querySelector('.msm-tab-items tbody');
     if (tbody) {
         tbody.innerHTML = data.items.length
             ? data.items.map(function (item, index) { return createItemRowMarkup(tabName, index, item); }).join('')
             : createItemRowMarkup(tabName, 0);
         updateDeleteButtons(tbody);
+        applyItemLookups();
+        applyActionLookups();
     }
 
     const email = data.email || {};
@@ -2378,7 +2573,8 @@ function copyMajorScheduleToMinor() {
     setValue('.tab-escalation-gap', email.EscalationGap);
 
     openOccurrenceTab(tabName);
-    toastr.success('Major data copied to Minor.');
+    toastr.success(sourceName + ' data copied to ' + targetName + '.');
+    return true;
 }
 
 function openOccurrenceTab(name) {
@@ -2456,6 +2652,11 @@ Object.assign(window, {
     CloseModalDelete,
     addItemRow,
     openOccurrenceTab,
+    toggleCopySchedulePanel,
+    closeCopySchedulePanel,
+    syncCopyTargetOptions,
+    confirmCopySchedule,
+    copyOccurrenceSchedule,
     copyMajorScheduleToMinor,
     setItemAction,
     removeItemRow
