@@ -45,6 +45,8 @@ let G_AutoSelectConsigneeByOrder = 'N';
 let G_ValidationPackingListMaster_Code = 0;
 let G_ValidationDetailsData = [];
 let G_PackingListViewData = {};
+let G_WhResolveInProgress = false;
+let G_WhResolveAttempts = {};
 
 if (FixedParameterQtyConfiguration.length > 0) {
     G_QtyMT = FixedParameterQtyConfiguration[0].QtyMT
@@ -814,7 +816,7 @@ function PackingListFG_EditOrView(isEdit, packingListMaster_Code) {
                 EditMode('N');
                 ChangeMode('Edit');
             } else {
-                toastr.error(response.Msg);
+                PackingListFG_ShowPackingListError(response.Msg, packingListMaster_Code);
             }
 
         });
@@ -826,6 +828,71 @@ function PackingListFG_EditOrView(isEdit, packingListMaster_Code) {
     }
 
 
+}
+function PackingListFG_IsDifferentWarehouseError(msg) {
+    return (msg || '').toLowerCase().indexOf('has been in to different warehouse') >= 0;
+}
+function PackingListFG_IsStockTransferForCode(packingListMaster_Code) {
+    const saved = G_PackingListViewData[packingListMaster_Code] || G_PackingListViewData[String(packingListMaster_Code)];
+    if (saved && saved.packingType) {
+        return saved.packingType.toLowerCase().indexOf('stock transfer') >= 0;
+    }
+    if (String(PackingListMaster_Code) === String(packingListMaster_Code) && $('#DivPackingListFGForm').is(':visible')) {
+        const ddl = document.getElementById('ddlPackingType');
+        if (ddl && ddl.selectedIndex >= 0) {
+            return (ddl.options[ddl.selectedIndex].text || '').toLowerCase().indexOf('stock transfer') >= 0;
+        }
+    }
+    return false;
+}
+function PackingListFG_GetWhResolveAttempts(packingListMaster_Code) {
+    return Number(G_WhResolveAttempts[String(packingListMaster_Code)] || 0);
+}
+function PackingListFG_SetWhResolveAttempts(packingListMaster_Code, count) {
+    G_WhResolveAttempts[String(packingListMaster_Code)] = count;
+}
+function PackingListFG_ShowPackingListError(msg, packingListMaster_Code) {
+    const code = Number(packingListMaster_Code || 0);
+    if (code > 0 && PackingListFG_IsDifferentWarehouseError(msg) && PackingListFG_IsStockTransferForCode(code)) {
+        PackingListFG_HandleDifferentWarehouseError(code, msg);
+        return;
+    }
+    toastr.error(msg);
+}
+function PackingListFG_HandleDifferentWarehouseError(packingListMaster_Code, msg) {
+    if (G_WhResolveInProgress) {
+        return;
+    }
+    const attempts = PackingListFG_GetWhResolveAttempts(packingListMaster_Code);
+    if (attempts >= 2) {
+        toastr.error('Can not resolve this. Please contact to BizSol Team.');
+        return;
+    }
+    const proceed = confirm('Previous action not complete.\n\n' + (msg || '') + '\n\nClick OK to resolve.');
+    if (!proceed) {
+        return;
+    }
+    G_WhResolveInProgress = true;
+    Showloader();
+    PackingListFGService.ResolvePackingListStockTransferDifferentWarehouseError(packingListMaster_Code).then(function (response) {
+        HideLoader();
+        G_WhResolveInProgress = false;
+        const nextAttempts = attempts + 1;
+        PackingListFG_SetWhResolveAttempts(packingListMaster_Code, nextAttempts);
+        if (response && response.Status == 'Y') {
+            if (response.Msg) {
+                toastr.success(response.Msg);
+            }
+            PackingListFG_EditOrView('Y', packingListMaster_Code);
+        } else if (nextAttempts >= 2) {
+            toastr.error('Can not resolve this. Please contact to BizSol Team.');
+        } else {
+            toastr.error((response && response.Msg) ? response.Msg : 'Can not resolve this. Please contact to BizSol Team.');
+        }
+    }).catch(function () {
+        HideLoader();
+        G_WhResolveInProgress = false;
+    });
 }
 function PackingListFG_Verify(PackingListMaster_Code) {
 
@@ -1552,14 +1619,14 @@ function PackingListFG_StartLoading(G_LoadNoOfPalletData=[]) {
 
                     }
                     else {
-                        toastr.error(response.Msg);
+                        PackingListFG_ShowPackingListError(response.Msg, PackingListMaster_Code);
                     }
 
                 });
 
             }
             else {
-                toastr.error(response.Msg);
+                PackingListFG_ShowPackingListError(response.Msg, PackingListMaster_Code);
             }
 
         });
