@@ -199,6 +199,15 @@ const PackingListFGService = {
             }
         );
     },
+    ResolvePackingListStockTransferDifferentWarehouseError: function ResolvePackingListStockTransferDifferentWarehouseError(PackingListMaster_Code) {
+
+        let url = UrlService.API_ENDPOINT_PackingListFG + "/ResolvePackingListStockTransferDifferentWarehouseError?PackingListMaster_Code=" + PackingListMaster_Code;
+        return promiseAjaxCallApi.CallAPI('POST', url, "").then(
+            function (value) {
+                return value;
+            }
+        );
+    },
 }
 
 
