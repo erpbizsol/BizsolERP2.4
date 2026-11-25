@@ -1,6 +1,6 @@
 import { VoucherDepriciationConfigurationService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/VoucherDepriciationConfigurationService.js';
 
-/* Account basis codes stored in DrAccountDepriciation / CrAccountDepriciation */
+/* Dropdown value = F_CommonValues.SortOrder (drives the grids). The saved column stores the option text. */
 var BASIS = { SINGLE: 1, GROUP: 2, TYPE: 3, ASSET: 4 };
 var BASIS_COLUMNS = {
     2: ['Asset Group', ''],
@@ -111,6 +111,16 @@ function _fillDropdown(selector, list) {
     }).join(''));
 }
 
+/** Saved value is the option text; rows saved earlier hold the numeric code. Returns the code. */
+function _selectSavedBasis(selector, saved, fallback) {
+    var $ddl = $(selector);
+    var text = String(saved == null ? '' : saved).trim();
+    var byText = $ddl.find('option').filter(function () { return $(this).text() === text; });
+    if (byText.length) $ddl.val(byText.first().val());
+    else _pickValue(selector, text, fallback);
+    return parseInt($ddl.val(), 10) || 0;
+}
+
 function _pickValue(selector, value, fallback) {
     var $ddl = $(selector);
     var v = String(value || '');
@@ -163,12 +173,8 @@ function ReloadVoucherDepriciationConfiguration() {
         });
 
         $('#hfVDCCode').val(master ? master.Code : 0);
-        if (master) {
-            G_VDCSaved.Basis.DR = parseInt(master.DrAccountDepriciation, 10) || 0;
-            G_VDCSaved.Basis.CR = parseInt(master.CrAccountDepriciation, 10) || 0;
-        }
-        _pickValue('#ddlVDCDrBasis', G_VDCSaved.Basis.DR, BASIS.SINGLE);
-        _pickValue('#ddlVDCCrBasis', G_VDCSaved.Basis.CR, BASIS.TYPE);
+        G_VDCSaved.Basis.DR = _selectSavedBasis('#ddlVDCDrBasis', master && master.DrAccountDepriciation, BASIS.SINGLE);
+        G_VDCSaved.Basis.CR = _selectSavedBasis('#ddlVDCCrBasis', master && master.CrAccountDepriciation, BASIS.TYPE);
         _pickValue('#ddlVDCPeriod', master && master.DepreciationPeriod, 'Year');
         _setLocked(!!master && master.IsVoucherCreated === 'Y', master ? master.FinYear : '');
 
@@ -334,8 +340,8 @@ function SaveVoucherDepriciationConfiguration() {
         Code: code,
         Master: [{
             Code: code,
-            DrAccountDepriciation: _basis('DR'),
-            CrAccountDepriciation: _basis('CR'),
+            DrAccountDepriciation: $('#ddlVDCDrBasis option:selected').text(),
+            CrAccountDepriciation: $('#ddlVDCCrBasis option:selected').text(),
             DepreciationPeriod: $('#ddlVDCPeriod').val() || 'Year'
         }],
         Transactions: drRows.concat(crRows)
