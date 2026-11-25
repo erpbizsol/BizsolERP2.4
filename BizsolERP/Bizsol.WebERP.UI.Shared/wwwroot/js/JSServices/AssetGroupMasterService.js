@@ -25,6 +25,15 @@ const AssetGroupMasterService = {
         var url = UrlService.API_ENDPOINT_ASSETGROUP
             + '/VerifyAssetGroupMaster?Code=' + encodeURIComponent(code);
         return promiseAjaxCallApi.CallAPI('POST', url, '', { suppressErrorToast: true });
+    },
+    /** DrAccountDepriciation / CrAccountDepriciation text (e.g. Asset Group Wise). */
+    GetAccountMasterFieldConfig: function () {
+        var url = UrlService.API_ENDPOINT_ASSETGROUP + '/GetAccountMasterFieldConfig';
+        return promiseAjaxCallApi.CallAPI('GET', url, '', { suppressErrorToast: true });
+    },
+    GetAccountLedgerList: function () {
+        var url = UrlService.API_ENDPOINT_ASSETGROUP + '/GetAccountLedgerList';
+        return promiseAjaxCallApi.CallAPI('GET', url, '', { suppressErrorToast: true });
     }
 };
 

@@ -15,6 +15,9 @@ var TITLE_BRANCH_EDIT = 'Editing is not allowed for this branch.';
 var G_SaveInProgress = false;
 var MODULE_NAME = 'Asset Group Master';
 var MAX_ASSET_GROUP_NAME_LEN = 80;
+var PAGE_ACCOUNT_BASIS = 'ASSET GROUP WISE';
+var G_ShowDebitAccount = false;
+var G_AccountOptionsHtml = '<option value="">Select account</option>';
 
 function getModuleName() {
     try {
@@ -80,6 +83,78 @@ function formatEpicForGrid(item) {
     return epic || '—';
 }
 
+function accountCodeOf(row, pascal, camel) {
+    if (!row) return 0;
+    var v = row[pascal] != null ? row[pascal] : row[camel];
+    var n = parseInt(v, 10);
+    return isNaN(n) ? 0 : n;
+}
+
+function basisMatchesThisPage(value) {
+    return String(value || '').trim().toUpperCase() === PAGE_ACCOUNT_BASIS;
+}
+
+function escapeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function setAccountSelect(selector, code) {
+    var $el = $(selector);
+    $el.val(code > 0 ? String(code) : '');
+    if ($el.data('select2')) $el.trigger('change.select2');
+}
+
+function ensureAccountSelect(selector) {
+    var $el = $(selector);
+    if (!$el.length || !$el.closest('.im-form-group').is(':visible')) return;
+    if (typeof $.fn.select2 !== 'function' || $el.data('select2')) return;
+    $el.select2({
+        width: '100%',
+        dropdownParent: $('#assetGroupDialogBackdrop'),
+        placeholder: 'Select account',
+        allowClear: false
+    });
+}
+
+function applyAccountFieldVisibility() {
+    $('#grpDebitAccount').toggle(G_ShowDebitAccount);
+    $('#lblDebitAccount').text('Debit Account for Depreciation');
+}
+
+function loadAccountFieldConfig() {
+    return Promise.all([
+        AssetGroupMasterService.GetAccountMasterFieldConfig(),
+        AssetGroupMasterService.GetAccountLedgerList()
+    ]).then(function (results) {
+        var config = pickRecord(results[0]) || {};
+        var drText = config.DrAccountDepriciation != null ? config.DrAccountDepriciation : config.drAccountDepriciation;
+        G_ShowDebitAccount = basisMatchesThisPage(drText);
+
+        var ledgers = normalizeList(results[1]);
+        G_AccountOptionsHtml = '<option value="">Select account</option>' + ledgers.map(function (row) {
+            var code = getRecordCode(row);
+            var name = row.Desp || row.desp || row.AccountDesp || row.accountDesp || '';
+            return '<option value="' + code + '">' + escapeHtml(name) + '</option>';
+        }).join('');
+        ['#ddlDebitAccount'].forEach(function (selector) {
+            var $el = $(selector);
+            var selected = $el.val();
+            if ($el.data('select2')) $el.select2('destroy');
+            $el.html(G_AccountOptionsHtml);
+            if (selected) $el.val(selected);
+        });
+        applyAccountFieldVisibility();
+        if ($('#assetGroupDialogBackdrop').hasClass('show')) {
+            ensureAccountSelect('#ddlDebitAccount');
+        }
+    }).catch(function () {
+        G_ShowDebitAccount = false;
+        applyAccountFieldVisibility();
+    });
+}
+
 function fillForm(row, editCode) {
     $('#txtAssetGroupName').val(row.AssetGroupName || row.assetGroupName || row['Asset Group'] || '');
     var epic = String(row.EPIC || row.epic || 'Y').trim().toUpperCase();
@@ -87,6 +162,9 @@ function fillForm(row, editCode) {
         $('#rdoEpicYes').prop('checked', true);
     } else {
         $('#rdoEpicNo').prop('checked', true);
+    }
+    if (G_ShowDebitAccount) {
+        setAccountSelect('#ddlDebitAccount', accountCodeOf(row, 'DebitAccountMaster_Code', 'debitAccountMaster_Code'));
     }
 }
 
@@ -265,9 +343,15 @@ function loadAssetGroupList() {
 
 function clearFormFields() {
     $('#txtAssetGroupName').val('').removeClass('im-input-error');
-    $('#err_AssetGroupName, #err_AssetGroupNameLength').hide();
+    $('#err_AssetGroupName, #err_AssetGroupNameLength, #err_DebitAccount').hide();
     $('input[name="rdoEpic"]').prop('checked', false);
     $('#rdoEpicYes').prop('checked', true);
+    setAccountSelect('#ddlDebitAccount', 0);
+}
+
+function showAssetGroupForm() {
+    $('#assetGroupDialogBackdrop').addClass('show');
+    ensureAccountSelect('#ddlDebitAccount');
 }
 
 function openNewAssetGroup() {
@@ -281,7 +365,7 @@ function openNewAssetGroup() {
         clearFormFields();
         $('#formModalTitle').text('Add New Asset Group');
         $('#btnSaveText').text('Save Asset Group');
-        $('#assetGroupDialogBackdrop').addClass('show');
+        showAssetGroupForm();
         setTimeout(function () { $('#txtAssetGroupName').focus(); }, 140);
     });
 }
@@ -290,7 +374,7 @@ function openEditAssetGroupModal(row, editCode) {
     fillForm(row, editCode);
     $('#formModalTitle').text('Edit Asset Group');
     $('#btnSaveText').text('Update Asset Group');
-    $('#assetGroupDialogBackdrop').addClass('show');
+    showAssetGroupForm();
     setTimeout(function () { $('#txtAssetGroupName').focus(); }, 140);
 }
 
@@ -338,7 +422,7 @@ function getSelectedEpicFlag() {
 
 function validateForm() {
     var name = $('#txtAssetGroupName').val().trim();
-    $('#err_AssetGroupName, #err_AssetGroupNameLength').hide();
+    $('#err_AssetGroupName, #err_AssetGroupNameLength, #err_DebitAccount').hide();
     $('#txtAssetGroupName').removeClass('im-input-error');
     if (!name) {
         $('#err_AssetGroupName').show();
@@ -348,6 +432,10 @@ function validateForm() {
     if (name.length > MAX_ASSET_GROUP_NAME_LEN) {
         $('#err_AssetGroupNameLength').show();
         $('#txtAssetGroupName').addClass('im-input-error');
+        return false;
+    }
+    if (G_ShowDebitAccount && !(parseInt($('#ddlDebitAccount').val(), 10) > 0)) {
+        $('#err_DebitAccount').show();
         return false;
     }
     return true;
@@ -380,7 +468,8 @@ function saveAssetGroup() {
         var payload = [{
             Code: editCode,
             AssetGroupName: assetGroupName,
-            EPIC: epicFlag
+            EPIC: epicFlag,
+            DebitAccountMaster_Code: G_ShowDebitAccount ? (parseInt($('#ddlDebitAccount').val(), 10) || 0) : 0
         }];
         $('#btnSaveAssetGroup').prop('disabled', true);
         AssetGroupMasterService.SaveAssetGroupMaster(payload).then(function (response) {
@@ -505,10 +594,11 @@ function DoDeleteAssetGroup() {
 $(document).ready(function () {
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
     $('#btnNewAssetGroup').on('click', openNewAssetGroup);
+    $('#ddlDebitAccount').on('change', function () { $('#err_DebitAccount').hide(); });
     $('#btnModalClose, #btnCancelAssetGroup').on('click', closeForm);
     $('#btnSaveAssetGroup').on('click', saveAssetGroup);
     $('#btnCancelDelete').on('click', closeDeleteModal);
-    Promise.all([loadMainCompanyFlag(), loadBranchPermissions()]).then(function () {
+    Promise.all([loadMainCompanyFlag(), loadBranchPermissions(), loadAccountFieldConfig()]).then(function () {
         applyActionRightsToUI();
         return loadAssetGroupList();
     });
