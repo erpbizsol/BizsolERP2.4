@@ -65,6 +65,19 @@
     .im-radio-row { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; padding: 8px 0 2px; }
     .im-radio-row label.im-radio-opt { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #374151; text-transform: none; letter-spacing: 0; cursor: pointer; }
     .im-radio-row input[type="radio"] { width: 16px; height: 16px; accent-color: #5b5ef4; }
+    #assetGroupFormContainer .select2-container { width: 100% !important; }
+    #assetGroupFormContainer .select2-container--default .select2-selection--single {
+        min-height: 38px; border-radius: 9px; border: 1.5px solid #dde0ee; background: #f8f9fc;
+        display: flex; align-items: center;
+    }
+    #assetGroupFormContainer .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px; padding-left: 12px; font-size: 13px; color: #111827;
+    }
+    #assetGroupFormContainer .select2-container--default .select2-selection--single .select2-selection__arrow { height: 36px; }
+    #assetGroupFormContainer .select2-container--default.select2-container--focus .select2-selection--single,
+    #assetGroupFormContainer .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: #5b5ef4; box-shadow: 0 0 0 3px rgba(91,94,244,0.12); background: #fff;
+    }
     .im-modal-footer { padding: 12px 22px 18px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; border-top: 1px solid #f0f1f8; }
     .im-modal-footer-right { display: flex; align-items: center; gap: 10px; }
     .im-btn-cancel { padding: 8px 20px; border-radius: 999px; border: 1.5px solid #d4d7e8; background: #fff; color: #374151; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
@@ -161,6 +174,11 @@
                         <label class="im-radio-opt"><input type="radio" name="rdoEpic" id="rdoEpicNo" value="N" /> Non-EPIC</label>
                     </div>
                 </div>
+                <div class="im-form-group" id="grpDebitAccount" style="display:none; grid-column: span 2;">
+                    <label for="ddlDebitAccount"><span id="lblDebitAccount">Debit Account for Depreciation</span> <span class="im-required">*</span></label>
+                    <select id="ddlDebitAccount" class="im-input"><option value="">Select account</option></select>
+                    <span class="im-err-text" id="err_DebitAccount"><i class="fas fa-circle-exclamation"></i> Please select Debit Account for Depreciation.</span>
+                </div>
             </div>
         </div>
         <div class="im-modal-footer">
@@ -202,4 +220,4 @@
         </div>
     </div>
 </div>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/AssetGroupMaster.js?v=asset-group-v38"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/AssetGroupMaster.js?v=asset-group-v40"></script>
