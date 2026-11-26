@@ -22,6 +22,14 @@ const AssetsMasterService = {
     },
 
     // ── SHOWDATA : single record by Code ─────────────────────────────────────
+    GetAssetsDepreciation: function GetAssetsDepreciation(code) {
+        var URL = UrlService.API_ENDPOINT_AssetsMaster
+            + `/GetAssetsDepreciation?Code=${encodeURIComponent(code || 0)}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '').then(function (value) {
+            return value;
+        });
+    },
+
     GetAssetsMasterByCode: function GetAssetsMasterByCode(code) {
         var URL = UrlService.API_ENDPOINT_AssetsMaster
             + `/GetAssetsMasterByCode?Code=${encodeURIComponent(code || 0)}`;

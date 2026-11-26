@@ -139,11 +139,60 @@ body:has(#depreciationChartPage) #modern-content.modern-content > main {
     display: block;
 }
 
+#depreciationChartPage .dc-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 12px;
+}
+
+#depreciationChartPage .dc-field {
+    flex: 0 1 168px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+#depreciationChartPage .dc-field--btn {
+    flex: 0 0 auto;
+}
+
+#depreciationChartPage .dc-field--search {
+    flex: 1 1 220px;
+    min-width: 180px;
+    max-width: 420px;
+}
+
+#depreciationChartPage .dc-date-input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: 32px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 8px;
+    border: 1.5px solid #ddd6fe;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.25;
+    background-color: #f5f3ff;
+    color: #1e1b4b;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+#depreciationChartPage .dc-date-input:focus {
+    border-color: #667eea;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
 #depreciationChartPage .dc-filter-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
+    margin-left: auto;
 }
 
 #depreciationChartPage .dc-search {
@@ -222,6 +271,18 @@ body:has(#depreciationChartPage) #modern-content.modern-content > main {
     gap: 6px;
     cursor: pointer;
     transition: all 0.15s ease;
+}
+
+.dc-btn--primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.28);
+}
+
+.dc-btn--primary:hover {
+    filter: brightness(1.06);
+    transform: translateY(-1px);
 }
 
 .dc-btn--outline {
@@ -310,7 +371,9 @@ body:has(#depreciationChartPage) #modern-content.modern-content > main {
 .dc-row-group .dc-cell-empty { background: #eef0ff; }
 .dc-row-type .dc-cell-empty { background: #faf9ff; }
 
+.dc-table thead th.dc-num,
 .dc-num { text-align: right; font-variant-numeric: tabular-nums; }
+.dc-table thead th.dc-center,
 .dc-center { text-align: center; }
 .dc-amt { font-weight: 600; white-space: nowrap; }
 
@@ -426,10 +489,56 @@ body:has(#depreciationChartPage) #modern-content.modern-content > main {
 
 /* ---------- responsive ---------- */
 @media (max-width: 768px) {
-    body:has(#depreciationChartPage) #modern-content.modern-content { overflow: auto !important; }
-    .dc-page { overflow: visible; }
-    .dc-grid-wrap { flex: 0 0 auto; }
-    .dc-table-wrap { max-height: min(60vh, 520px); }
+    body:has(#depreciationChartPage) #modern-content.modern-content {
+        display: block !important;
+        overflow-x: hidden !important;
+        overflow-y: scroll !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    body:has(#depreciationChartPage) #modern-content.modern-content > main {
+        display: block;
+        height: auto;
+        flex: none;
+        overflow: visible;
+        min-width: 0;
+        max-width: 100%;
+    }
+    .dc-page {
+        display: block;
+        height: auto;
+        flex: none;
+        overflow: visible;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        padding-bottom: 84px;
+    }
+    #depreciationChartPage .dc-list-top-panel,
+    .dc-grid-wrap {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        min-width: 0;
+        overflow: hidden;
+    }
+    .dc-table-wrap {
+        display: block;
+        height: auto;
+        max-height: none;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+    }
+    #depreciationChartPage .bizsol-col-resize { display: none; }
+    #depreciationChartPage .dc-table.bizsol-manual-cols,
+    #depreciationChartPage .dc-table.bizsol-manual-cols th,
+    #depreciationChartPage .dc-table.bizsol-manual-cols td {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+    }
     #depreciationChartPage .po-stats-strip {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -443,6 +552,12 @@ body:has(#depreciationChartPage) #modern-content.modern-content > main {
 @media (max-width: 480px) {
     #depreciationChartPage .po-stat-chip .val { font-size: 0.88rem; }
     #depreciationChartPage .po-stat-chip .lbl { font-size: 0.62rem; }
-    #depreciationChartPage .dc-filter-actions { width: 100%; }
+    #depreciationChartPage .dc-field,
+    #depreciationChartPage .dc-field--search {
+        flex: 1 1 calc(50% - 12px);
+        max-width: none;
+    }
+    #depreciationChartPage .dc-field--btn,
+    #depreciationChartPage .dc-filter-actions { flex: 1 1 100%; margin-left: 0; }
     #depreciationChartPage .dc-filter-actions .dc-btn { flex: 1 1 auto; justify-content: center; }
 }
