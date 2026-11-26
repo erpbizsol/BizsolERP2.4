@@ -7,7 +7,8 @@ let G_CardPage = 1;
 let G_PageSize = 10;
 let G_CurrentCode = 0;
 let G_CurrentRow = null;
-const PRO_ITEM_COL_COUNT = 20;
+const PRO_ITEM_COL_COUNT = 22;
+const PRO_HIST_COL_COUNT = 13;
 
 function escapeHtml(s) {
     if (s == null || s === '') return '';
@@ -225,12 +226,14 @@ function buildModalHeader(row) {
     const machineNo = escapeHtml(rowField(row, ['MachineNo', 'Machine No', 'Machine']) || '—');
     const warehouse = escapeHtml(rowField(row, ['Warehouse', 'GodownName']) || '—');
     const processName = escapeHtml(rowField(row, ['ProcessName', 'Process Name', 'Process']) || '—');
+    const chemical = escapeHtml(rowField(row, ['ChemicalCompound', 'Chemical Compound']) || '—');
     const userId = escapeHtml(rowField(row, ['UserID', 'UserId', 'userid']) || '—');
-    // One line: Machine → Warehouse → Process → Created By (user only, no createDate)
-    return '<div class="pro-info-grid pro-info-grid--4">' +
+    // One line: Machine → Warehouse → Process → Chemical Compound → Created By (user only, no createDate)
+    return '<div class="pro-info-grid pro-info-grid--4 pro-info-grid--5">' +
         buildInfoItem('Machine', machineNo, 'fa-industry', '#667eea') +
         buildInfoItem('Warehouse', warehouse, 'fa-building') +
         buildInfoItem('Process', processName, 'fa-cogs') +
+        buildInfoItem('Chemical Compound', chemical, 'fa-flask') +
         buildInfoItem('Created By', userId, 'fa-user') +
         '</div>';
 }
@@ -257,6 +260,7 @@ function renderModalItems(items) {
 
     let html = '';
     items.forEach(function (item, idx) {
+        const transCode = rowField(item, ['Code']) || '0';
         html +=
             '<tr>' +
             '<td class="text-center">' + (idx + 1) + '</td>' +
@@ -272,6 +276,10 @@ function renderModalItems(items) {
             '<td>' + displayCell(rowField(item, ['Input Roll', 'InputRoll', 'InputID'])) + '</td>' +
             '<td>' + displayCell(rowField(item, ['I/P Item Size', 'IP Item Size', 'IPItemSize'])) + '</td>' +
             '<td class="text-end">' + escapeHtml(formatQty(rowField(item, ['I/P Weight', 'IP Weight', 'QtyMT_Input']))) + '</td>' +
+            '<td class="pro-hist-link" data-tcode="' + escapeHtml(transCode) + '" title="Click to view chemical / coat history">' +
+            displayCell(rowField(item, ['Last Chemical Compound', 'LastChemicalCompound'])) + '</td>' +
+            '<td class="text-end pro-hist-link" data-tcode="' + escapeHtml(transCode) + '" title="Click to view chemical / coat history">' +
+            escapeHtml(formatQty(rowField(item, ['Last Target Coat Wt.', 'LastTargetCoatWt.', 'LastTargetCoatWt']))) + '</td>' +
             '<td class="text-end">' + escapeHtml(formatQty(rowField(item, ['Target Coat Weight', 'TargetCoatWeight']))) + '</td>' +
             '<td class="text-end">' + escapeHtml(formatQty(rowField(item, ['Chemical Weight', 'QtyMT_Chemical', 'ChemicalWeight']))) + '</td>' +
             '<td>' + displayCell(rowField(item, ['WIP Item Name', 'WIPItemName'])) + '</td>' +
@@ -385,6 +393,71 @@ function CloseProModal() {
     proHideModal($('#proModal'));
 }
 
+function renderHistoryRows(rows) {
+    const $b = $('#proHistBody');
+    if (!rows || rows.length === 0) {
+        $b.html(
+            '<tr><td colspan="' + PRO_HIST_COL_COUNT + '" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">No history found.</td></tr>'
+        );
+        return;
+    }
+    let html = '';
+    rows.forEach(function (r, idx) {
+        html +=
+            '<tr>' +
+            '<td class="text-center">' + (idx + 1) + '</td>' +
+            '<td>' + displayCell(rowField(r, ['Entry No', 'EntryNo'])) + '</td>' +
+            '<td>' + displayCell(formatDateDisplay(rowField(r, ['Entry Date', 'EntryDate']))) + '</td>' +
+            '<td>' + displayCell(rowField(r, ['Process Name', 'ProcessName'])) + '</td>' +
+            '<td>' + displayCell(rowField(r, ['Order No', 'OrderNo'])) + '</td>' +
+            '<td>' + displayCell(rowField(r, ['Customer Code', 'CustomerCode'])) + '</td>' +
+            '<td style="font-weight:600;">' + displayCell(rowField(r, ['Order Item Name', 'OrderItemName'])) + '</td>' +
+            '<td>' + displayCell(rowField(r, ['Order Item Size', 'OrderItemSize'])) + '</td>' +
+            '<td>' + displayCell(rowField(r, ['Classification Code', 'ClassificationCode'])) + '</td>' +
+            '<td class="text-end">' + escapeHtml(formatQty(rowField(r, ['Order Qty KG', 'OrderQtyKG']))) + '</td>' +
+            '<td style="font-weight:600;color:#4f46e5;">' + displayCell(rowField(r, ['ChemicalItemName', 'Chemical Item Name'])) + '</td>' +
+            '<td class="text-end" style="font-weight:700;color:#4f46e5;">' + escapeHtml(formatQty(rowField(r, ['TargetCoatWeight', 'Target Coat Weight']))) + '</td>' +
+            '<td class="text-end">' + escapeHtml(formatQty(rowField(r, ['QtyMT_Chemical', 'Chemical Weight']))) + '</td>' +
+            '</tr>';
+    });
+    $b.html(html);
+}
+
+function ShowChemicalCoatHistory(transCode) {
+    const code = parseInt(transCode, 10) || 0;
+    if (code <= 0) return;
+
+    $('#proHistBody').html(
+        '<tr><td colspan="' + PRO_HIST_COL_COUNT + '" class="text-center py-3" style="color:#94a3b8;font-size:0.82rem;">' +
+        '<i class="fa fa-spinner fa-spin me-1"></i>Loading history…</td></tr>'
+    );
+
+    const $hist = $('#proHistModal');
+    $hist.off('shown.bs.modal.proHist').one('shown.bs.modal.proHist', function () {
+        // Stack the history backdrop above the detail modal
+        $('.modal-backdrop').last().css('z-index', 1060);
+    });
+    $hist.off('hidden.bs.modal.proHist').one('hidden.bs.modal.proHist', function () {
+        proRemoveOrphanBackdrops();
+        if ($('#proModal').hasClass('show')) {
+            $('body').addClass('modal-open');
+            document.body.style.overflow = 'hidden';
+        }
+    });
+    proShowModal($hist);
+
+    ProductionOrderService.GetChemicalCoatHistory(code).then(function (response) {
+        renderHistoryRows(Array.isArray(response) ? response : []);
+    }).catch(function (error) {
+        renderHistoryRows([]);
+        toastr.error('Error in fetching history: ' + (error || ''));
+    });
+}
+
+function CloseProHistModal() {
+    proHideModal($('#proHistModal'));
+}
+
 function ProModalVerify() {
     const code = $('#hfProCode').val() || G_CurrentCode;
     if (!code || parseInt(code, 10) <= 0) {
@@ -473,9 +546,14 @@ $(document).ready(function () {
         if (c) ViewData(c);
     });
 
+    $(document).on('click', '#proModalItemsBody .pro-hist-link', function () {
+        ShowChemicalCoatHistory($(this).attr('data-tcode'));
+    });
+
     loadList();
 });
 
 window.ViewData = ViewData;
 window.CloseProModal = CloseProModal;
 window.ProModalVerify = ProModalVerify;
+window.CloseProHistModal = CloseProHistModal;
