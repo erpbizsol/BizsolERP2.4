@@ -119,7 +119,13 @@
     #atEntryPanel .at-header-title { color: #fff; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; }
     #atEntryPanel .at-card-body { padding: 16px 18px 18px; max-width: 100%; }
     #atEntryPanel .at-form-grid { display: grid; gap: 10px 12px; }
-    #atEntryPanel .at-form-main { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+    #atEntryPanel .at-form-main { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; }
+    @@media (max-width: 991px) {
+        #atEntryPanel .at-form-main { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @@media (max-width: 575px) {
+        #atEntryPanel .at-form-main { grid-template-columns: minmax(0, 1fr); }
+    }
     #atEntryPanel .at-form-group { display: flex; flex-direction: column; gap: 3px; }
     #atEntryPanel .at-form-group label { font-size: 11px; font-weight: 700; color: #374151; }
     #atEntryPanel .at-required { color: #ef4444; }
@@ -128,6 +134,13 @@
         border: 1px solid #64748b; font-size: 12px; background: #fff; outline: none;
     }
     #atEntryPanel .at-input.at-input-error { border-color: #ef4444; }
+    #txtDepreciationPercentage,
+    #txtITDepriciation,
+    #txtResidualValue { text-align: right; }
+    #AssetTypeMasterGrid thead th.at-align-right,
+    #AssetTypeMasterGrid tbody td.at-align-right { text-align: right !important; }
+    #AssetTypeMasterGrid thead th.at-align-right .filter-table-heading-div { justify-content: flex-end; }
+    #AssetTypeMasterGrid thead th.at-align-right .filter-table-heading { text-align: right; }
     #atEntryPanel .at-err { font-size: 11px; color: #ef4444; display: none; }
     #atEntryPanel .at-detail-table-wrap { border: 1px solid #e4e7f0; border-radius: 12px; overflow-x: auto; max-height: 360px; width: 100%; }
     #atEntryPanel .at-detail-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 680px; }
@@ -185,8 +198,8 @@
                     </div>
                     <div class="at-form-group">
                         <label for="txtDepreciationPercentage">Dep % <span class="at-required">*</span></label>
-                        <input type="number" id="txtDepreciationPercentage" class="at-input" min="0" step="0.01" autocomplete="off" />
-                        <span class="at-err" id="err_DepPercentage">Dep % is required.</span>
+                        <input type="text" id="txtDepreciationPercentage" class="at-input js-percent-100" inputmode="numeric" maxlength="3" autocomplete="off" />
+                        <span class="at-err" id="err_DepPercentage">Enter a number from 0 to 100.</span>
                     </div>
                     <div class="at-form-group">
                         <label for="ddlDepreciationMethod">Dep Method <span class="at-required">*</span></label>
@@ -202,6 +215,26 @@
                         <label for="ddlAssetGroup">Asset Group <span class="at-required">*</span></label>
                         <select id="ddlAssetGroup" class="at-input js-search-select"><option value="">-- Select --</option></select>
                         <span class="at-err" id="err_AssetGroup">Asset Group is required.</span>
+                    </div>
+                    <div class="at-form-group">
+                        <label for="txtITDepriciation">IT Depreciation % <span class="at-required">*</span></label>
+                        <input type="text" id="txtITDepriciation" class="at-input js-percent-100" inputmode="numeric" maxlength="3" autocomplete="off" />
+                        <span class="at-err" id="err_ITDepriciation">Enter a number from 0 to 100.</span>
+                    </div>
+                    <div class="at-form-group">
+                        <label for="txtResidualValue">Residual Value % <span class="at-required">*</span></label>
+                        <input type="text" id="txtResidualValue" class="at-input js-percent-100" inputmode="numeric" maxlength="3" autocomplete="off" />
+                        <span class="at-err" id="err_ResidualValue">Enter a number from 0 to 100.</span>
+                    </div>
+                    <div class="at-form-group" id="grpDebitAccount" style="display:none;">
+                        <label for="ddlDebitAccount">Debit Account for Depreciation <span class="at-required">*</span></label>
+                        <select id="ddlDebitAccount" class="at-input js-search-select"><option value="">-- Select --</option></select>
+                        <span class="at-err" id="err_DebitAccount">Debit Account is required.</span>
+                    </div>
+                    <div class="at-form-group" id="grpCreditAccount" style="display:none;">
+                        <label for="ddlCreditAccount">Credit Account for Depreciation <span class="at-required">*</span></label>
+                        <select id="ddlCreditAccount" class="at-input js-search-select"><option value="">-- Select --</option></select>
+                        <span class="at-err" id="err_CreditAccount">Credit Account is required.</span>
                     </div>
                 </div>
             </div>
@@ -258,4 +291,4 @@
         </div>
     </div>
 </div>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/AssetTypeMaster.js?v=asset-type-combined-v4"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/AssetTypeMaster.js?v=asset-type-combined-v7"></script>
