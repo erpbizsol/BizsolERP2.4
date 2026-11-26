@@ -1623,8 +1623,6 @@ function SaveUser() {
         }).finally(resetSaveButton);
     }
 
-    /* Edit: GET returns encrypted password. Decrypt it, then save the plain password.
-       A newly typed password is already plain — send it as-is. */
     var storedEnc = storedEncryptedPassword();
     if (isEdit && storedEnc && payload.Password === storedEnc) {
         DecryptPassword(storedEnc).then(function (plain) {
