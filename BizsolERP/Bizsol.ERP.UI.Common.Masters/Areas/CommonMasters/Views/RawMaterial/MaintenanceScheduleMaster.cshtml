@@ -743,6 +743,14 @@
             color: #fff;
         }
 
+        .btn-msm-save:disabled {
+            background: #cbd5e1;
+            color: #64748b;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 1;
+        }
+
     .btn-msm-back {
         background: linear-gradient(135deg, #f59e0b, #d97706);
         border: none;
@@ -918,8 +926,11 @@
             background-color: #e8f0fb !important;
             border-color: #b6d0ef !important;
             color: #1a56b0 !important;
-            cursor: not-allowed;
+            cursor: default;
             opacity: 1;
+            text-align: left;
+            text-overflow: ellipsis;
+            direction: ltr;
         }
 
     #dvFromNEW select.occurrence-month option {
@@ -1486,12 +1497,20 @@
         border-bottom: 2px solid #dbe3f0;
     }
 
+    #dvFromNEW .msm-copy-wrap {
+        position: relative;
+        margin-left: auto;
+        margin-bottom: 6px;
+    }
+
+    #dvFromNEW.msm-view-mode .msm-copy-wrap {
+        display: none;
+    }
+
     #dvFromNEW .msm-copy-tab-btn {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        margin-left: auto;
-        margin-bottom: 6px;
         padding: 6px 14px;
         border: 0;
         border-radius: 8px;
@@ -1506,6 +1525,65 @@
 
     #dvFromNEW .msm-copy-tab-btn:hover {
         color: #fff;
+    }
+
+    #dvFromNEW .msm-copy-panel {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 40;
+        width: 250px;
+        padding: 12px;
+        background: #fff;
+        border: 1px solid #dbe3f0;
+        border-radius: 10px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
+    }
+
+    #dvFromNEW .msm-copy-panel[hidden] {
+        display: none !important;
+    }
+
+    #dvFromNEW .msm-copy-panel-title {
+        margin-bottom: 4px;
+        color: #1e293b;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    #dvFromNEW .msm-copy-panel label {
+        display: block;
+        margin: 8px 0 4px;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    #dvFromNEW .msm-copy-panel-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    #dvFromNEW .msm-copy-cancel,
+    #dvFromNEW .msm-copy-apply {
+        padding: 5px 12px;
+        border: 0;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #dvFromNEW .msm-copy-cancel {
+        color: #475569;
+        background: #eef2f7;
+    }
+
+    #dvFromNEW .msm-copy-apply {
+        color: #fff;
+        background: linear-gradient(135deg, #4f46e5, #667eea);
     }
 
     #dvFromNEW .maintenance-tab {
@@ -1651,7 +1729,7 @@
                 width: 100% !important;
                 min-width: 0;
                 max-width: none;
-                text-align: left;
+                text-align: right;
             }
 
         #dvFromNEW .occurrence-fields .occurrence-day-group,
@@ -1777,6 +1855,10 @@
 
         #dvFromNEW .msm-tab-items .maintenance-table th.col-qty {
             width: 80px;
+        }
+
+        #dvFromNEW .msm-tab-items .item-quantity {
+            text-align: right;
         }
 
         #dvFromNEW .msm-tab-items .maintenance-table th.col-action {
@@ -2108,7 +2190,7 @@
     }
 
     .msm-delete-text {
-        margin: 0 0 24px;
+        margin: 0 0 18px;
         font-size: 13.5px;
         line-height: 1.55;
         color: #6b7280;
@@ -2216,6 +2298,10 @@
             height: 34px !important;
             min-height: 34px !important;
             box-sizing: border-box !important;
+        }
+
+        #dvFromNEW .msm-tab-schedule .occurrence-occurrence-group .tab-occurrence {
+            text-align: right !important;
         }
 
             #dvFromNEW .msm-tab-schedule .occurrence-periodicity-group .select2-container .select2-selection__rendered {
@@ -2403,9 +2489,9 @@
                         </div>
                         <div class="col-12 col-md-3">
                             <label for="txtLocation" class="msm-field-lbl">Location</label>
-                            <input type="text" id="txtLocation" class="form-control form-control-sm box_border msm-location-disabled" value="" disabled
+                            <input type="text" id="txtLocation" class="form-control form-control-sm box_border msm-location-disabled" value="" readonly
                                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                                   data-lpignore="true" data-form-type="other" aria-disabled="true" />
+                                   data-lpignore="true" data-form-type="other" aria-readonly="true" title="" />
                         </div>
                         <div class="col-12 col-md-3">
                             <label for="ddlMaintenanceType" class="msm-field-lbl">Maintenance Type <span class="msm-req">*</span></label>
