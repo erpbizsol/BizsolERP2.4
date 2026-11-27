@@ -45,6 +45,11 @@ const UserRightDashboardService = {
         return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data));
     },
 
+    SaveCopyCompanyRights: function (data) {
+        var URL = UrlService.API_ENDPOINT_USERRIGHTDASHBOARD + '/SaveCopyCompanyRights';
+        return promiseAjaxCallApi.CallAPI('POST', URL, JSON.stringify(data), { suppressErrorToast: true });
+    },
+
 };
 
 export { UserRightDashboardService };
