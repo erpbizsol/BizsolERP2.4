@@ -25,6 +25,10 @@ let G_ShowDebitAccount = false;
 let G_ShowCreditAccount = false;
 let G_AccountOptionsHtml = '<option value="">-- Select --</option>';
 let G_DepSavedRows = [];
+/** Rows from dbo.UDF_GetCurentFinYear for the purchase date through today. */
+let G_DepYearRows = [];
+let G_DepYearToken = 0;
+let G_DepYearLoad = Promise.resolve();
 const TITLE_BRANCH_NEW = 'Adding a new Asset is not allowed for this branch.';
 const TITLE_BRANCH_EDIT = 'Editing is not allowed for this branch.';
 
@@ -857,29 +861,12 @@ function loadAccountFieldConfig() {
     });
 }
 
-function finYearStartFromIso(iso) {
-    const parts = String(iso || '').split('-');
-    if (parts.length < 2) return 0;
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
-    if (!year || !month) return 0;
-    return month < 4 ? year - 1 : year;
-}
-
-function currentFinYearStart() {
-    const d = new Date();
-    let year = d.getFullYear();
-    if (d.getMonth() < 3) year -= 1;
-    return year;
-}
-
-function currentFinYearLabel() {
-    const start = currentFinYearStart();
-    return start + '-' + (start + 1);
-}
-
 function isCurrentFinYear(finYear) {
-    return normalizeFinYearLabel(finYear) === currentFinYearLabel();
+    const key = normalizeFinYearLabel(finYear);
+    const hit = (G_DepYearRows || []).find(function (row) {
+        return normalizeFinYearLabel(row.FinYear) === key;
+    });
+    return !!(hit && hit.IsCurrent);
 }
 
 function normalizeFinYearLabel(text) {
@@ -893,15 +880,25 @@ function normalizeFinYearLabel(text) {
     return start + '-' + end;
 }
 
-function listFinYearsFromPurchase(iso) {
-    const start = finYearStartFromIso(iso);
-    if (!start) return [];
-    const end = currentFinYearStart();
-    const from = Math.min(start, end);
-    const to = Math.max(start, end);
-    const years = [];
-    for (let y = from; y <= to; y++) years.push(y + '-' + (y + 1));
-    return years;
+function listFinYearsFromPurchase() {
+    return (G_DepYearRows || []).map(function (row) {
+        return row.FinYear;
+    }).filter(function (fy) {
+        return String(fy || '').trim() !== '';
+    });
+}
+
+function mapDepYearPayload(payload) {
+    return firstPayloadArray(payload).map(function (row) {
+        const fy = String(row.FinYear || row.finYear || '').trim();
+        const flag = row.IsCurrent != null ? row.IsCurrent : row.isCurrent;
+        return {
+            FinYear: fy,
+            IsCurrent: String(flag || '').trim().toUpperCase() === 'Y' || flag === true || flag === 1
+        };
+    }).filter(function (row) {
+        return row.FinYear !== '';
+    });
 }
 
 function isManualYes(value) {
@@ -971,7 +968,7 @@ function applyDepYearLocks() {
     });
 }
 
-function rebuildDepYearGrid() {
+function captureDepYearSnapshot() {
     const snap = {};
     let gridExists = false;
     $('#tblAssetDepYearsBody .js-dep-amt').each(function () {
@@ -992,32 +989,41 @@ function rebuildDepYearGrid() {
         } else if (amount == null) snap[key] = null;
         else snap[key] = { FinYear: fy, MonthNo: 0, Amount: amount, IsManual: 'Y' };
     });
-    if (gridExists) {
-        const kept = (G_DepSavedRows || []).filter(function (saved) {
-            const fy = saved.FinYear || saved.finYear || '';
-            return !Object.prototype.hasOwnProperty.call(snap, normalizeFinYearLabel(fy));
-        });
-        Object.keys(snap).forEach(function (key) {
-            if (snap[key]) kept.push(snap[key]);
-        });
-        G_DepSavedRows = kept;
-    }
-    const years = listFinYearsFromPurchase($('#txtPurchaseDate').val());
+    return { gridExists: gridExists, snap: snap };
+}
+
+function commitDepYearSnapshot(captured) {
+    if (!captured || !captured.gridExists) return;
+    const snap = captured.snap || {};
+    const kept = (G_DepSavedRows || []).filter(function (saved) {
+        const fy = saved.FinYear || saved.finYear || '';
+        return !Object.prototype.hasOwnProperty.call(snap, normalizeFinYearLabel(fy));
+    });
+    Object.keys(snap).forEach(function (key) {
+        if (snap[key]) kept.push(snap[key]);
+    });
+    G_DepSavedRows = kept;
+}
+
+function paintDepYearGrid() {
+    const years = listFinYearsFromPurchase();
     const $body = $('#tblAssetDepYearsBody');
     $body.empty();
     if (!years.length) {
         $('#ammDepYearSection').hide();
+        updateDepYearTotal();
         return;
     }
     years.forEach(function (fy) {
         const cell = depYearState(fy);
         const shown = cell.amount === '' ? '' : esc(cell.amount);
         const locked = cell.isManual !== 'Y';
+        const current = isCurrentFinYear(fy) ? 'Y' : 'N';
         $body.append(
             '<tr>'
             + '<td>' + esc(fy) + '</td>'
             + '<td><input type="text" class="form-control js-dep-amt" inputmode="decimal" autocomplete="off"'
-            + ' data-fy="' + esc(fy) + '" data-manual="' + cell.isManual + '" data-saved="' + (cell.saved ? 'Y' : 'N') + '"'
+            + ' data-fy="' + esc(fy) + '" data-current="' + current + '" data-manual="' + cell.isManual + '" data-saved="' + (cell.saved ? 'Y' : 'N') + '"'
             + (locked ? ' readonly disabled' : '')
             + ' value="' + shown + '" />'
             + '<input type="hidden" class="js-dep-manual" value="' + cell.isManual + '" /></td>'
@@ -1027,6 +1033,31 @@ function rebuildDepYearGrid() {
     $('#ammDepYearSection').show();
     applyDepYearLocks();
     updateDepYearTotal();
+}
+
+function rebuildDepYearGrid() {
+    const captured = captureDepYearSnapshot();
+    const token = ++G_DepYearToken;
+    const iso = ($('#txtPurchaseDate').val() || '').toString().trim();
+    if (!iso) {
+        G_DepYearRows = [];
+        commitDepYearSnapshot(captured);
+        paintDepYearGrid();
+        G_DepYearLoad = Promise.resolve();
+        return;
+    }
+    G_DepYearLoad = AssetsMasterService.GetDepreciationFinYears(iso).then(function (res) {
+        if (token !== G_DepYearToken) return;
+        G_DepYearRows = mapDepYearPayload(res);
+        commitDepYearSnapshot(captured);
+        paintDepYearGrid();
+    }).catch(function () {
+        if (token !== G_DepYearToken) return;
+        G_DepYearRows = [];
+        commitDepYearSnapshot(captured);
+        paintDepYearGrid();
+        toastr.error('Could not load financial years.');
+    });
 }
 
 function updateDepYearTotal() {
@@ -1048,11 +1079,15 @@ function updateDepYearTotal() {
 }
 
 function validateDepreciationYears() {
-    const years = listFinYearsFromPurchase($('#txtPurchaseDate').val());
+    const years = listFinYearsFromPurchase();
     $('#tblAssetDepYearsBody .js-dep-amt').removeClass('amm-input-error');
     if (!years.length) {
-        toastr.warning('Select Date of Purchase so each financial year depreciation can be entered.');
-        $('#txtPurchaseDate').focus();
+        if (!($('#txtPurchaseDate').val() || '').toString().trim()) {
+            toastr.warning('Select Date of Purchase so each financial year depreciation can be entered.');
+            $('#txtPurchaseDate').focus();
+        } else {
+            toastr.warning('Financial years could not be loaded for the purchase date.');
+        }
         return false;
     }
     const missing = [];
@@ -1184,6 +1219,16 @@ function SaveAsset() {
         toastr.warning(TITLE_BRANCH_NEW);
         return;
     }
+    const pendingYears = G_DepYearLoad || Promise.resolve();
+    pendingYears.then(function () {
+        continueSaveAsset(code);
+    }, function () {
+        continueSaveAsset(code);
+    });
+}
+
+function continueSaveAsset(code) {
+    if (G_AssetSaveInProgress) return;
     if (!validateAssetForm()) return;
     const refNo = $('#txtRefNo').val().trim();
     const purchaseDate = $('#txtPurchaseDate').val() || '';

@@ -26,6 +26,12 @@ const AssetValidationService = {
         return promiseAjaxCallApi.CallAPI('GET', URL, '');
     },
 
+    GetAssetValidationReport: function GetAssetValidationReport(code) {
+        var URL = UrlService.API_ENDPOINT_AssetValidation
+            + `/GetAssetValidationReport?Code=${encodeURIComponent(code || 0)}`;
+        return promiseAjaxCallApi.CallAPI('GET', URL, '');
+    },
+
     GetNextEntryNo: function GetNextEntryNo() {
         var URL = UrlService.API_ENDPOINT_AssetValidation + `/GetNextEntryNo`;
         return promiseAjaxCallApi.CallAPI('GET', URL, '');

@@ -1,0 +1,420 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/_content/Bizsol.WebERP.UI.Shared/css/filter.css" rel="stylesheet" />
+<script src="~/_content/Bizsol.WebERP.UI.Shared/js/filter.js"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Purchase.Transactions/Script/AssetDisposalMaster.js"></script>
+
+<style>
+    #AssetDisposalMasterPage.amm-page {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        max-width: 100%;
+        padding: 4px 12px 32px;
+        box-sizing: border-box;
+    }
+
+    #AssetDisposalMasterPage .amm-po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0;
+        padding: 16px 22px 14px;
+    }
+
+    #AssetDisposalMasterPage .amm-po-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    #AssetDisposalMasterPage .amm-hero-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+    #AssetDisposalMasterPage .amm-hero-icon {
+        width: 50px; height: 50px; border-radius: 14px;
+        background: rgba(255,255,255,.2); border: 2px solid rgba(255,255,255,.35);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 22px; flex-shrink: 0;
+    }
+
+    #AssetDisposalMasterPage .amm-hero-title { font-size: 1.05rem; font-weight: 800; color: #fff; margin: 0; }
+    #AssetDisposalMasterPage .amm-hero-sub { font-size: .78rem; color: rgba(255,255,255,.78); margin-top: 4px; }
+
+    #AssetDisposalMasterPage .amm-po-create-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,.6); color: #667eea;
+        border-radius: 10px; padding: 8px 16px; font-weight: 800; cursor: pointer;
+        box-shadow: 0 3px 12px rgba(0,0,0,.2); font-size: .85rem;
+    }
+
+    #AssetDisposalMasterPage .amm-po-create-btn:hover { background: #f0f4ff; }
+    #AssetDisposalMasterPage .amm-po-create-btn:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    #AssetDisposalMasterPage .amm-list-grid-wrap {
+        background: #fff; border: 1px solid #e2e8f0; border-top: none;
+        border-radius: 0 0 14px 14px;
+        box-shadow: 0 2px 12px rgba(102,126,234,.07);
+        margin-bottom: 18px; overflow: hidden;
+    }
+
+    #AssetDisposalMasterPage .amm-card-toolbar {
+        display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+        padding: 16px 22px; border-bottom: 1px solid #eef2ff;
+    }
+
+    #AssetDisposalMasterPage .amm-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 320px; }
+    #AssetDisposalMasterPage .amm-search-wrap i {
+        position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+        color: #64748b; pointer-events: none;
+    }
+
+    #admSearch {
+        width: 100%; padding: 9px 14px 9px 38px; border-radius: 10px;
+        border: 1.5px solid #e2e8f0; font-size: 13.5px;
+        background: #f8fafc; box-sizing: border-box;
+    }
+
+    #AssetDisposalMasterPage .amm-table-wrap { overflow: auto; max-height: min(420px, calc(100vh - 340px)); }
+
+    #AssetDisposalMasterPage .amm-table {
+        width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 720px;
+    }
+
+    #AssetDisposalMasterPage #tblAssetDisposal.amm-table thead tr {
+        position: sticky; top: 0; z-index: 3;
+        background: linear-gradient(135deg, #3730a3 0%, #4f46e5 45%, #6366f1 100%) !important;
+        box-shadow: 0 2px 8px rgba(55, 48, 163, 0.35);
+    }
+
+    #AssetDisposalMasterPage #tblAssetDisposal.amm-table thead th,
+    #AssetDisposalMasterPage #tblAssetDisposal.table-wrapper.filtered .amm-table thead th {
+        background: transparent !important;
+        color: #ffffff !important;
+        font-weight: 800;
+        padding: 13px 14px;
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: none !important;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.25) !important;
+        white-space: nowrap;
+    }
+
+    #AssetDisposalMasterPage #tblAssetDisposal thead th .filter-table-heading,
+    #AssetDisposalMasterPage #tblAssetDisposal thead th .table-filter-arrow,
+    #AssetDisposalMasterPage #tblAssetDisposal thead th .fa-angle-down { color: #fff !important; }
+
+    #AssetDisposalMasterPage .amm-table tbody tr:nth-child(even) { background: #f8fafc; }
+    #AssetDisposalMasterPage .amm-table tbody tr:hover { background: rgba(102,126,234,.07); }
+    #AssetDisposalMasterPage .amm-table td { padding: 11px 14px; border-bottom: 1px solid #eef2ff; vertical-align: middle; }
+
+    #AssetDisposalMasterPage .amm-icon-btn {
+        width: 32px; height: 32px; border-radius: 9px; border: none; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+    }
+
+    #AssetDisposalMasterPage .amm-icon-btn.edit { background: rgba(102,126,234,.12); color: #667eea; }
+    #AssetDisposalMasterPage .amm-icon-btn.view { background: rgba(14,165,233,.12); color: #0284c7; }
+    #AssetDisposalMasterPage .amm-icon-btn.del { background: rgba(239,68,68,.1); color: #ef4444; }
+    #AssetDisposalMasterPage .amm-icon-btn:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    #admDetailPanel .amm-ci-po-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 14px 14px 0 0; padding: 16px 22px;
+    }
+
+    #admDetailPanel .amm-ci-po-header-top {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 10px;
+    }
+
+    #admDetailPanel .amm-ci-entry-title { margin: 0; color: #fff; font-weight: 700; font-size: 1rem; }
+    #admDetailPanel .amm-ci-entry-sub { color: rgba(255,255,255,.75); font-size: .78rem; display: block; margin-top: 4px; }
+
+    #admDetailPanel .amm-ci-po-back-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #fff; border: 2px solid rgba(255,255,255,.6); color: #667eea;
+        border-radius: 10px; padding: 8px 14px; font-weight: 800; cursor: pointer; font-size: .85rem;
+    }
+
+    #admDetailPanel .btn-amm-save {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+        border: none;
+        color: #fff !important;
+        border-radius: 9999px;
+        padding: 10px 28px;
+        min-width: 110px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.4;
+        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.45);
+        cursor: pointer;
+    }
+
+    #admDetailPanel .btn-amm-save:hover {
+        color: #fff !important;
+        box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+    }
+
+    #admDetailPanel .btn-amm-save:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    #admDetailPanel .amm-ci-po-step-card {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 14px 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,.05); padding: 18px 22px 22px;
+    }
+
+    #admDetailPanel .amm-fg {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+
+    #admDetailPanel .amm-fg > label {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0;
+    }
+
+    #admDetailPanel .amm-fg .form-control,
+    #admDetailPanel .amm-fg .form-select {
+        padding: 10px 13px;
+        border-radius: 10px;
+        border: 1.5px solid #e2e8f0;
+        font-size: 13.5px;
+        min-height: 42px;
+        background: #fff;
+    }
+
+    #admDetailPanel .amm-fg .form-control:focus,
+    #admDetailPanel .amm-fg .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        outline: none;
+    }
+
+    #admDetailPanel .amm-fg .form-control[readonly] {
+        background: #f1f5f9;
+        color: #475569;
+        cursor: default;
+    }
+
+    #admDetailPanel #txtValueOfDispose {
+        text-align: right;
+    }
+
+    #admDetailPanel.amm-readonly .amm-fg input,
+    #admDetailPanel.amm-readonly .amm-fg select {
+        background-color: #f1f5f9;
+        cursor: default;
+    }
+
+    #admDetailPanel .amm-form-row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    #admDetailPanel .amm-section-title {
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .08em; color: #667eea; margin: 8px 0 14px;
+        display: flex; align-items: center; gap: 8px;
+    }
+
+    #admDetailPanel .amm-section-title::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+
+    #admDetailPanel .amm-input-error {
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15) !important;
+    }
+
+    #admDetailPanel .select2-container { width: 100% !important; }
+    #admDetailPanel .select2-container--default .select2-selection--single {
+        min-height: 42px;
+        border-radius: 10px;
+        border: 1.5px solid #e2e8f0;
+        background: #fff;
+        display: flex;
+        align-items: center;
+    }
+    #admDetailPanel .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 40px;
+        padding-left: 13px;
+        font-size: 13.5px;
+        color: #1e293b;
+    }
+    #admDetailPanel .select2-container--default .select2-selection--single .select2-selection__arrow { height: 40px; }
+    #admDetailPanel .select2-container--default.select2-container--focus .select2-selection--single,
+    #admDetailPanel .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+
+    .amm-delete-modal .modal-header {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: #fff;
+        border: none;
+    }
+
+    .amm-delete-modal .modal-title { font-weight: 700; color: #fff; }
+
+    .amm-delete-modal .amm-modal-close {
+        background: rgba(255,255,255,.2); border: none; color: #fff;
+        width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+    }
+
+    .amm-del-icon-wrap {
+        width: 56px; height: 56px; margin: 0 auto 14px;
+        border-radius: 50%; background: #fef2f2; color: #ef4444;
+        display: flex; align-items: center; justify-content: center; font-size: 24px;
+    }
+
+    .amm-btn-modal {
+        display: inline-flex; align-items: center; gap: 8px;
+        border-radius: 10px; padding: 9px 18px; font-weight: 700; font-size: 13px; cursor: pointer; border: none;
+    }
+
+    .amm-btn-modal.secondary { background: #f1f5f9; color: #475569; }
+    .amm-btn-modal.danger { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
+
+    @@media (max-width: 600px) {
+        #AssetDisposalMasterPage.amm-page { padding-left: 8px; padding-right: 8px; }
+        #AssetDisposalMasterPage .amm-table { min-width: 580px; }
+        #admDetailPanel .amm-ci-po-footer-actions { width: 100%; justify-content: flex-end; }
+    }
+</style>
+
+<div class="amm-page" id="AssetDisposalMasterPage">
+    <span id="ERPHeading" style="display:none"></span>
+
+    <div id="admListPanel">
+        <div class="amm-po-list-header">
+            <div class="amm-po-header-top">
+                <div class="amm-hero-left">
+                    <div class="amm-hero-icon"><i class="fas fa-box-open"></i></div>
+                    <div>
+                        <div class="amm-hero-title">Asset Disposal</div>
+                        <div class="amm-hero-sub">Dispose an asset and record its value</div>
+                    </div>
+                </div>
+                <button type="button" class="amm-po-create-btn" id="btnNewDisposal">
+                    <span>+</span> Create New
+                </button>
+            </div>
+        </div>
+
+        <div class="amm-list-grid-wrap">
+            <div class="amm-card-toolbar">
+                <div class="amm-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="admSearch" placeholder="Search tag, remark…" autocomplete="off" />
+                </div>
+            </div>
+            <div class="amm-table-wrap table-wrapper">
+                <table class="amm-table" id="tblAssetDisposal">
+                    <thead id="table-header-AssetDisposal"></thead>
+                    <tbody id="table-body-AssetDisposal">
+                        <tr><td colspan="7" class="text-center text-muted py-4">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="paginator" id="paginator-tblAssetDisposal"></div>
+        </div>
+    </div>
+
+    <div id="admDetailPanel" style="display:none;">
+        <input type="hidden" id="hdnDisposalCode" value="0" />
+
+        <div class="amm-ci-po-list-header">
+            <div class="amm-ci-po-header-top">
+                <div>
+                    <h5 class="amm-ci-entry-title" id="lblDisposalTitle">Asset Disposal</h5>
+                    <small class="amm-ci-entry-sub">Asset, dispose date, value and remark</small>
+                </div>
+                <div class="d-flex flex-wrap gap-2 amm-ci-po-footer-actions align-items-center">
+                    <button type="button" class="amm-ci-po-back-btn" id="btnDisposalBack"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="btn-amm-save" id="btnSaveDisposal"><i class="fas fa-check"></i> Save</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="amm-ci-po-step-card">
+            <div class="amm-section-title"><i class="fas fa-box"></i> Disposal</div>
+            <div class="row g-3 amm-form-row">
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="ddlDisposeAsset">Asset Tag No<span class="text-danger">*</span></label>
+                    <select class="form-select" id="ddlDisposeAsset"></select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtDisposeOffDate">Dispose Off Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="txtDisposeOffDate" autocomplete="off" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtValueOfDispose">Value of Dispose <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control text-end" id="txtValueOfDispose" inputmode="decimal" autocomplete="off" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 amm-fg">
+                    <label for="txtDisposeRemark">Remark</label>
+                    <input type="text" class="form-control" id="txtDisposeRemark" maxlength="100" autocomplete="off" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade amm-delete-modal" id="dvADMDeleteConfirmModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Confirm Delete</h5>
+                <button type="button" class="amm-modal-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body text-center" style="padding:28px 24px 20px;">
+                <div class="amm-del-icon-wrap">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div style="font-size:15px; font-weight:700; color:#1e293b; margin-bottom:8px;">
+                    Delete this disposal?
+                </div>
+                <div style="font-size:13px; color:#64748b; margin-bottom:16px; line-height:1.5;">
+                    You are about to delete <strong id="admDelAssetName" style="color:#667eea;"></strong>.
+                    <br />This action <strong style="color:#ef4444;">cannot be undone</strong>.
+                </div>
+                <div style="text-align:left;">
+                    <label for="admReasonForDeleteInput" style="font-size:12.5px; font-weight:700; margin-bottom:6px; display:block;">
+                        Reason for Deletion <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="admReasonForDeleteInput" class="form-control" autocomplete="off"
+                           placeholder="Enter reason for deletion" maxlength="200" />
+                </div>
+                <input type="hidden" id="hfADMDeleteCode" value="0" />
+            </div>
+            <div class="modal-footer justify-content-center gap-2" style="border-top:1px solid #fee2e2;">
+                <button type="button" class="amm-btn-modal secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-ban"></i> Cancel
+                </button>
+                <button type="button" class="amm-btn-modal danger" id="btnADMConfirmDelete">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
