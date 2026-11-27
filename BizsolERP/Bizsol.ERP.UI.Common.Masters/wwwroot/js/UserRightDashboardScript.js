@@ -1,4 +1,4 @@
-import { UserRightDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_UserRightDashboardService.js';
+import { UserRightDashboardService } from '../../Bizsol.WebERP.UI.Shared/js/JSServices/_UserRightDashboardService.js?v=20261126g';
 import { BizSolHelperFunction } from '../../Bizsol.WebERP.UI.Shared/js/HelperFunction.js';
 import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToExcel.js';
 
@@ -8,6 +8,9 @@ import { ExportToExcelControl } from '../../Bizsol.WebERP.UI.Shared/js/ExportToE
 var _currentCompanyCode = 0;
 var _currentGroupCode   = 0;   // last request param sent to API (single code or 0 = all from server)
 var _groupMap           = {};   // { "GroupName": GroupCode }
+var _urdCompanyRows     = [];
+var _urdCopyApplied     = null;
+var _urdCopyCompanyApplied = null;
 var _collapsedRows      = {};
 var _dashboardRes       = null;
 
@@ -601,7 +604,7 @@ function setUrdGroupDropdownOpen(isOpen) {
 
 function applyUrdGroupSearch(term) {
     var q = (term || '').toString().trim().toLowerCase();
-    $('.urd-multi-checkbox-item').each(function () {
+    $('#urdGroupCheckList .urd-multi-checkbox-item').each(function () {
         var $item = $(this);
         var text = ($item.text() || '').trim().toLowerCase();
         $item.toggleClass('is-hidden', !!(q && text.indexOf(q) === -1));
@@ -652,16 +655,90 @@ function bindUrdGroupMultiselectEvents() {
     });
 }
 
-function fitUsersPreviewHeight() {
-    var el = document.getElementById('urdUsersPreview');
-    if (!el) return;
-    if (window.innerWidth > 768) {
-        el.style.height = '';
-        return;
+/* Company and Groups stay short. Users is a readable textarea. Applied here so a refresh picks it up before the view is rebuilt. */
+function applyCompactFilterFields() {
+    var preview = document.getElementById('urdUsersPreview');
+    if (preview) preview.rows = 1;
+    var style = document.getElementById('urd-compact-fields');
+    if (!style) {
+        style = document.createElement('style');
+        style.id = 'urd-compact-fields';
+        document.body.appendChild(style);
     }
-    el.style.height = 'auto';
-    var next = Math.min(160, Math.max(88, el.scrollHeight));
-    el.style.height = next + 'px';
+    style.textContent = [
+        '.urd-page select:not([multiple]):not([size]):not(table *),',
+        '.urd-select,.urd-multi-trigger,.urd-btn-go,.urd-btn-download{',
+        'box-sizing:border-box !important;height:30px !important;min-height:30px !important;max-height:30px !important;',
+        '}',
+        '.urd-btn-download{width:30px !important;}',
+        '.urd-btn-go{padding:0 12px !important;font-size:12px !important;}',
+        '.urd-filter-row{gap:8px !important;padding:8px 10px !important;align-items:flex-start !important;}',
+        '.urd-field-label,.urd-field-label-spacer{height:16px !important;min-height:16px !important;max-height:16px !important;line-height:16px !important;margin:0 !important;overflow:hidden !important;}',
+        '.urd-user-count{margin-left:4px !important;height:14px !important;line-height:14px !important;padding:0 6px !important;}',
+        '#urdUsersPreview.urd-users-preview{box-sizing:border-box !important;height:30px;min-height:30px;max-height:none !important;padding:0 8px !important;line-height:28px !important;resize:vertical !important;overflow:auto !important;}',
+        '#ddlCompany.urd-select,#ddlCompany.urd-select option{color:#1e293b !important;-webkit-text-fill-color:#1e293b !important;background-color:#fff !important;color-scheme:light;}',
+        '.urd-multi-trigger{padding:0 8px !important;}',
+        '.urd-multi-trigger-text{white-space:nowrap !important;overflow:hidden !important;text-overflow:ellipsis !important;line-height:28px !important;font-size:12px !important;}',
+        '@media (min-width:901px){',
+        '.urd-filter-row{flex-wrap:wrap !important;}',
+        '.urd-field-company,.urd-field-groups,.urd-field-users{flex:1 1 0 !important;max-width:none !important;min-width:0 !important;width:auto !important;}',
+        '.urd-field-go{flex:1 1 100% !important;width:100% !important;max-width:none !important;}',
+        '.urd-field-go .urd-field-label-spacer{display:none !important;}',
+        '#urdUsersPreview.urd-users-preview{width:100% !important;min-width:0 !important;}',
+        '}'
+    ].join('');
+    unlockUsersTextareaSize();
+}
+
+function stripUsersSizeLock(css) {
+    return css.replace(/(#urdUsersPreview\.urd-users-preview|\.urd-users-preview)\s*\{[\s\S]*?\}/g, function (block) {
+        return block
+            .replace(/\s*(?:min-|max-)?height\s*:[^;]*;?/g, '')
+            .replace(/\s*(?:min-|max-)?width\s*:[^;]*;?/g, '');
+    });
+}
+
+function unlockUsersTextareaSize() {
+    document.querySelectorAll('style').forEach(function (node) {
+        if (!node.textContent || node.id === 'urd-compact-fields') return;
+        if (node.textContent.indexOf('urd-users-preview') === -1) return;
+        node.textContent = stripUsersSizeLock(node.textContent);
+    });
+    function walk(rules) {
+        if (!rules) return;
+        for (var i = 0; i < rules.length; i++) {
+            var rule = rules[i];
+            if (rule.cssRules) {
+                walk(rule.cssRules);
+                continue;
+            }
+            var sel = rule.selectorText || '';
+            if (sel.indexOf('urd-users-preview') === -1 && sel.indexOf('urdUsersPreview') === -1) continue;
+            if (!rule.style) continue;
+            if (rule.style.getPropertyValue('max-height') === 'none') continue;
+            rule.style.removeProperty('height');
+            rule.style.removeProperty('min-height');
+            rule.style.removeProperty('max-height');
+            rule.style.removeProperty('width');
+            rule.style.removeProperty('max-width');
+        }
+    }
+    for (var s = 0; s < document.styleSheets.length; s++) {
+        try { walk(document.styleSheets[s].cssRules); } catch (e) { }
+    }
+    var el = document.getElementById('urdUsersPreview');
+    if (!el || el.dataset.urdSized === '1') return;
+    el.style.width = '';
+    el.style.height = '30px';
+    el.style.minWidth = '';
+    el.style.minHeight = '30px';
+    el.style.maxWidth = 'none';
+    el.style.maxHeight = 'none';
+    el.dataset.urdSized = '1';
+}
+
+function fitUsersPreviewHeight() {
+    /* Leave width and height alone so the corner drag is not reset. */
 }
 
 function setUsersPreview(text, title, hasUsers) {
@@ -689,11 +766,13 @@ function cellValueHtml(val, canEdit) {
    INIT
 ═══════════════════════════════════════════════════ */
 $(document).ready(function () {
+    applyCompactFilterFields();
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
     bindUrdGroupMultiselectEvents();
     LoadInitialData();
     $('#btnGo').on('click', LoadDashboard);
     $('#btnDownloadUrd').on('click', DownloadUserRightDashboardExcel);
+    bindUrdCopyModal();
     $(document).on('input', '#urdModuleSearch', function () { FilterMatrixRows($(this).val()); });
     $('#ddlCompany').on('change', function () {
         SetHeaderStep(1);
@@ -735,10 +814,15 @@ function LoadInitialData() {
 }
 
 function RenderCompanyDropdown(rows) {
+    _urdCompanyRows = rows || [];
     var $sel = $('#ddlCompany').empty().append('<option value="0">— Select Company —</option>');
     rows.forEach(function (c) {
         $sel.append($('<option>').val(c.Code || c.CompanyCode).text(c.CompanyName || c.Name || c.CompanyCode));
     });
+}
+
+function isUrdHiddenGroup(name) {
+    return String(name || '').trim().toLowerCase() === 'admin';
 }
 
 function RenderGroupMultiselect(rows) {
@@ -764,6 +848,7 @@ function RenderGroupMultiselect(rows) {
         var name = g.GroupName || g.Name;
         if (!code || !name) return;
         _groupMap[name] = code;
+        if (isUrdHiddenGroup(name)) return;
 
         var id = 'chkUrdGroup_' + code;
         var $item = $('<div>', { class: 'urd-multi-checkbox-item' });
@@ -900,7 +985,7 @@ function RenderUserList(rows, selectedCodes) {
     });
 
     var preview = names.join('\n');
-    setUsersPreview(preview, rows.length + ' user(s)', true);
+    setUsersPreview(preview, names.join('\n'), true);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1917,6 +2002,499 @@ function ShowPlaceholder(type) {
             'Select a <strong>Company</strong>, tick <strong>group checkboxes</strong> if you want to limit columns (or leave none ticked for all groups), then click <strong>Load dashboard</strong>.' +
             '</div>').show();
     }
+}
+
+function companyOptionText(c) {
+    return c.CompanyName || c.Name || c.CompanyCode || '';
+}
+function companyOptionCode(c) {
+    return c.Code || c.CompanyCode || 0;
+}
+function urdCopyGroupEntries() {
+    return Object.keys(_groupMap).map(function (name) {
+        return { name: name, code: _groupMap[name] };
+    }).filter(function (g) {
+        return !isUrdHiddenGroup(g.name);
+    }).sort(function (a, b) {
+        return String(a.name).localeCompare(String(b.name));
+    });
+}
+function urdCopySelectionMap(codes) {
+    var map = {};
+    (codes || []).forEach(function (code) { map[String(code)] = true; });
+    return map;
+}
+function urdCopyIsAll(map, entries) {
+    if (!map) return true;
+    var keys = Object.keys(map);
+    if (!keys.length || !entries.length) return true;
+    return keys.length >= entries.length && entries.every(function (g) { return map[String(g.code)]; });
+}
+function urdCopyFromCompanyCode() {
+    return parseInt($('#ddlUrdCopyFromCompany').val(), 10) || 0;
+}
+function urdCopyFromGroupCode() {
+    return parseInt($('#ddlUrdCopyFromGroup').val(), 10) || 0;
+}
+function urdCopyCompanyEntries() {
+    return (_urdCompanyRows || []).map(function (c) {
+        return { name: companyOptionText(c), code: companyOptionCode(c) };
+    }).filter(function (c) {
+        return c.code && String(c.code) !== '0';
+    });
+}
+function syncUrdCopyCompanySelectAll() {
+    var $boxes = $('#urdCopyCompanyCheckList .urd-copy-company-chk');
+    var total = $boxes.length;
+    var checked = $boxes.filter(':checked').length;
+    var $selectAll = $('#chkUrdCopyCompanySelectAll');
+    if (!$selectAll.length) return;
+    $selectAll.prop('checked', total > 0 && checked === total);
+    $selectAll.prop('indeterminate', checked > 0 && checked < total);
+}
+function updateUrdCopyCompanyTriggerText() {
+    var labels = $('#urdCopyCompanyCheckList .urd-copy-company-chk:checked').map(function () {
+        return ($(this).attr('data-label') || '').toString().trim();
+    }).get().filter(Boolean);
+    var $text = $('#urdCopyCompanyTriggerText');
+    if (!$text.length) return;
+    if (!labels.length) {
+        $text.text('Select companies').addClass('is-placeholder').attr('title', 'Select companies');
+        return;
+    }
+    var total = $('#urdCopyCompanyCheckList .urd-copy-company-chk').length;
+    var shown = (labels.length === total && total > 0)
+        ? ('All companies (' + total + ')')
+        : (labels.slice(0, 2).join(', ') + (labels.length > 2 ? (' +' + (labels.length - 2) + ' more') : ''));
+    $text.text(shown).removeClass('is-placeholder').attr('title', labels.join(', '));
+}
+function applyUrdCopyCompanyFromChecks() {
+    var checked = $('#urdCopyCompanyCheckList .urd-copy-company-chk:checked').map(function () {
+        return $(this).val();
+    }).get();
+    _urdCopyCompanyApplied = checked.length ? urdCopySelectionMap(checked) : null;
+    syncUrdCopyCompanySelectAll();
+    updateUrdCopyCompanyTriggerText();
+}
+function renderUrdCopyCompanyList() {
+    var $list = $('#urdCopyCompanyCheckList');
+    if (!$list.length) return;
+    $list.empty();
+    var entries = urdCopyCompanyEntries();
+    if (!entries.length) {
+        $list.append($('<div>', { class: 'urd-multi-empty' }).text('No company is available.'));
+        syncUrdCopyCompanySelectAll();
+        updateUrdCopyCompanyTriggerText();
+        return;
+    }
+    entries.forEach(function (c) {
+        var id = 'chkUrdCopyCo_' + c.code;
+        var $item = $('<div>', { class: 'urd-multi-checkbox-item' });
+        var $label = $('<label>', { for: id });
+        $label.append($('<input>', {
+            type: 'checkbox',
+            id: id,
+            class: 'urd-copy-company-chk',
+            value: c.code,
+            'data-label': c.name,
+            checked: !!(_urdCopyCompanyApplied && _urdCopyCompanyApplied[String(c.code)])
+        }));
+        $label.append($('<span>').text(c.name));
+        $item.append($label);
+        $list.append($item);
+    });
+    syncUrdCopyCompanySelectAll();
+    updateUrdCopyCompanyTriggerText();
+}
+function applyUrdCopyCompanySearch(term) {
+    var q = (term || '').toString().trim().toLowerCase();
+    $('#urdCopyCompanyCheckList .urd-multi-checkbox-item').each(function () {
+        var text = ($(this).text() || '').trim().toLowerCase();
+        $(this).toggleClass('is-hidden', !!(q && text.indexOf(q) === -1));
+    });
+}
+function renderUrdCopyFromCompany() {
+    var dashboardCode = parseInt($('#ddlCompany').val(), 10) || 0;
+    var $from = $('#ddlUrdCopyFromCompany').empty();
+    $from.append($('<option>', { value: '0', text: '— Select Company —' }));
+    (_urdCompanyRows || []).forEach(function (c) {
+        var code = companyOptionCode(c);
+        if (!code) return;
+        $from.append($('<option>', { value: code, text: companyOptionText(c) }));
+    });
+    if (dashboardCode && $from.find('option[value="' + dashboardCode + '"]').length) {
+        $from.val(String(dashboardCode));
+    }
+}
+function renderUrdCopyFromGroup() {
+    var $from = $('#ddlUrdCopyFromGroup').empty();
+    $from.append($('<option>', { value: '0', text: '— Same as To Group —' }));
+    urdCopyGroupEntries().forEach(function (g) {
+        $from.append($('<option>', { value: g.code, text: g.name }));
+    });
+}
+function syncUrdCopyGroupSelectAll() {
+    var $boxes = $('#urdCopyGroupCheckList .urd-copy-group-chk');
+    var total = $boxes.length;
+    var checked = $boxes.filter(':checked').length;
+    var $selectAll = $('#chkUrdCopyGroupSelectAll');
+    if (!$selectAll.length) return;
+    $selectAll.prop('checked', total > 0 && checked === total);
+    $selectAll.prop('indeterminate', checked > 0 && checked < total);
+}
+function updateUrdCopyGroupTriggerText() {
+    var labels = $('#urdCopyGroupCheckList .urd-copy-group-chk:checked').map(function () {
+        return ($(this).attr('data-label') || '').toString().trim();
+    }).get().filter(Boolean);
+    var $text = $('#urdCopyGroupTriggerText');
+    if (!$text.length) return;
+    if (!labels.length) {
+        $text.text('Select groups').addClass('is-placeholder').attr('title', 'Select groups');
+        return;
+    }
+    var total = $('#urdCopyGroupCheckList .urd-copy-group-chk').length;
+    var shown = (labels.length === total && total > 0)
+        ? ('All groups (' + total + ')')
+        : (labels.slice(0, 2).join(', ') + (labels.length > 2 ? (' +' + (labels.length - 2) + ' more') : ''));
+    $text.text(shown).removeClass('is-placeholder').attr('title', labels.join(', '));
+}
+function applyUrdCopyGroupFromChecks() {
+    var entries = urdCopyGroupEntries();
+    var checked = $('#urdCopyGroupCheckList .urd-copy-group-chk:checked').map(function () {
+        return $(this).val();
+    }).get();
+    if (!checked.length || (entries.length && checked.length >= entries.length)) _urdCopyApplied = null;
+    else _urdCopyApplied = urdCopySelectionMap(checked);
+    syncUrdCopyGroupSelectAll();
+    updateUrdCopyGroupTriggerText();
+}
+function renderUrdCopyGroupList() {
+    var $list = $('#urdCopyGroupCheckList');
+    if (!$list.length) return;
+    $list.empty();
+    var entries = urdCopyGroupEntries();
+    if (!entries.length) {
+        $list.append($('<div>', { class: 'urd-multi-empty' }).text('No groups found.'));
+        syncUrdCopyGroupSelectAll();
+        updateUrdCopyGroupTriggerText();
+        return;
+    }
+    entries.forEach(function (g) {
+        var id = 'chkUrdCopy_' + g.code;
+        var $item = $('<div>', { class: 'urd-multi-checkbox-item' });
+        var $label = $('<label>', { for: id });
+        $label.append($('<input>', {
+            type: 'checkbox',
+            id: id,
+            class: 'urd-copy-group-chk',
+            value: g.code,
+            'data-label': g.name,
+            checked: !_urdCopyApplied || !!_urdCopyApplied[String(g.code)]
+        }));
+        $label.append($('<span>').text(g.name));
+        $item.append($label);
+        $list.append($item);
+    });
+    syncUrdCopyGroupSelectAll();
+    updateUrdCopyGroupTriggerText();
+}
+function clearUrdCopyPanelPosition(panelId, listId) {
+    var panel = document.getElementById(panelId);
+    if (panel) {
+        ['position', 'left', 'width', 'right', 'top', 'bottom', 'z-index', 'max-height'].forEach(function (prop) {
+            panel.style.removeProperty(prop);
+        });
+    }
+    var list = document.getElementById(listId);
+    if (list) list.style.maxHeight = '';
+}
+function setUrdCopyCompanyOpen(isOpen) {
+    var $root = $('#urdCopyCompanyMulti');
+    if (!$root.length) return;
+    if (isOpen) setUrdCopyGroupOpen(false);
+    $root.toggleClass('is-open', !!isOpen);
+    $('#btnUrdCopyCompanyTrigger').attr('aria-expanded', isOpen ? 'true' : 'false');
+    clearUrdCopyPanelPosition('urdCopyCompanyPanel', 'urdCopyCompanyCheckList');
+    if (!isOpen) {
+        $('#txtUrdCopyCompanySearch').val('');
+        $('#urdCopyCompanyCheckList .urd-multi-checkbox-item').removeClass('is-hidden');
+    } else {
+        setTimeout(function () { $('#txtUrdCopyCompanySearch').trigger('focus'); }, 0);
+    }
+}
+function setUrdCopyGroupOpen(isOpen) {
+    var $root = $('#urdCopyGroupMulti');
+    if (!$root.length) return;
+    if (isOpen) setUrdCopyCompanyOpen(false);
+    $root.toggleClass('is-open', !!isOpen);
+    $('#btnUrdCopyGroupTrigger').attr('aria-expanded', isOpen ? 'true' : 'false');
+    clearUrdCopyPanelPosition('urdCopyGroupPanel', 'urdCopyGroupCheckList');
+    if (!isOpen) {
+        $('#txtUrdCopyGroupSearch').val('');
+        $('#urdCopyGroupCheckList .urd-multi-checkbox-item').removeClass('is-hidden');
+    } else {
+        setTimeout(function () { $('#txtUrdCopyGroupSearch').trigger('focus'); }, 0);
+    }
+}
+function applyUrdCopyGroupSearch(term) {
+    var q = (term || '').toString().trim().toLowerCase();
+    $('#urdCopyGroupCheckList .urd-multi-checkbox-item').each(function () {
+        var text = ($(this).text() || '').trim().toLowerCase();
+        $(this).toggleClass('is-hidden', !!(q && text.indexOf(q) === -1));
+    });
+}
+function resetUrdCopyDrag() {
+    var dialog = document.querySelector('.urd-copy-dialog');
+    if (!dialog) return;
+    dialog.removeAttribute('data-drag-x');
+    dialog.removeAttribute('data-drag-y');
+    dialog.style.removeProperty('translate');
+}
+function bindUrdCopyDrag() {
+    var handle = document.getElementById('urdCopyDragHandle');
+    var dialog = document.querySelector('.urd-copy-dialog');
+    if (!handle || !dialog || handle.dataset.dragBound === '1') return;
+    handle.dataset.dragBound = '1';
+    var drag = null;
+    handle.addEventListener('pointerdown', function (e) {
+        if (e.button !== undefined && e.button !== 0) return;
+        if (e.target.closest && e.target.closest('button, a, input, select, textarea, label')) return;
+        var rect = dialog.getBoundingClientRect();
+        drag = {
+            id: e.pointerId,
+            sx: e.clientX,
+            sy: e.clientY,
+            bx: parseFloat(dialog.getAttribute('data-drag-x')) || 0,
+            by: parseFloat(dialog.getAttribute('data-drag-y')) || 0,
+            left: rect.left,
+            top: rect.top,
+            width: rect.width
+        };
+        try { handle.setPointerCapture(e.pointerId); } catch (err) { }
+        document.body.classList.add('urd-copy-dragging');
+        setUrdCopyCompanyOpen(false);
+        setUrdCopyGroupOpen(false);
+        e.preventDefault();
+    });
+    handle.addEventListener('pointermove', function (e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        var dx = Math.min(Math.max(e.clientX - drag.sx, -drag.left - drag.width + 80), window.innerWidth - drag.left - 80);
+        var dy = Math.min(Math.max(e.clientY - drag.sy, -drag.top), window.innerHeight - drag.top - 48);
+        var x = drag.bx + dx;
+        var y = drag.by + dy;
+        dialog.setAttribute('data-drag-x', x);
+        dialog.setAttribute('data-drag-y', y);
+        dialog.style.translate = x + 'px ' + y + 'px';
+    });
+    function endDrag(e) {
+        if (!drag || (e && e.pointerId !== drag.id)) return;
+        drag = null;
+        document.body.classList.remove('urd-copy-dragging');
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+}
+function closeUrdCopyModal() {
+    setUrdCopyCompanyOpen(false);
+    setUrdCopyGroupOpen(false);
+    resetUrdCopyDrag();
+    $('#urdCopyBackdrop').removeClass('is-open').hide();
+}
+function openUrdCopyModal() {
+    if (!_urdCompanyRows.length) {
+        toastr.warning('No company is available.');
+        return;
+    }
+    _urdCopyApplied = null;
+    _urdCopyCompanyApplied = null;
+    $('#urdCopyTitle').text('Copy Rights');
+    renderUrdCopyFromCompany();
+    renderUrdCopyFromGroup();
+    $('#txtUrdCopyCompanySearch').val('');
+    $('#txtUrdCopyGroupSearch').val('');
+    renderUrdCopyCompanyList();
+    renderUrdCopyGroupList();
+    resetUrdCopyDrag();
+    var backdrop = document.getElementById('urdCopyBackdrop');
+    if (backdrop && backdrop.parentElement !== document.body) document.body.appendChild(backdrop);
+    $('#urdCopyBackdrop').css('display', 'flex').addClass('is-open');
+}
+function urdCopySucceeded(res) {
+    if (!res) return false;
+    var status = res.Status != null ? res.Status : res.status;
+    if (typeof status === 'number') return status > 0;
+    var text = String(status == null ? '' : status).trim().toLowerCase();
+    if (text === '1' || text === 'y' || text === 'success' || text === 'true') return true;
+    var n = parseInt(text, 10);
+    return !isNaN(n) && String(n) === text && n > 0;
+}
+function confirmUrdCopy() {
+    var fromCode = urdCopyFromCompanyCode();
+    var fromGroup = urdCopyFromGroupCode();
+    var toCodes = $('#urdCopyCompanyCheckList .urd-copy-company-chk:checked').map(function () {
+        return parseInt($(this).val(), 10) || 0;
+    }).get().filter(function (n) { return n > 0; });
+    if (!fromCode) {
+        toastr.warning('Select the company to copy rights from.');
+        return;
+    }
+    if (!toCodes.length) {
+        toastr.warning('Select at least one company to copy rights to.');
+        return;
+    }
+    var checked = $('#urdCopyGroupCheckList .urd-copy-group-chk:checked').map(function () {
+        return $(this).val();
+    }).get();
+    if (!checked.length) {
+        toastr.warning('Select at least one group.');
+        setUrdCopyGroupOpen(true);
+        return;
+    }
+    var codes = checked;
+    var jobs = [];
+    toCodes.forEach(function (toCode) {
+        if (fromGroup) {
+            jobs.push({ toCode: toCode, fromGroup: fromGroup, codes: codes });
+            return;
+        }
+        codes.forEach(function (groupCode) {
+            jobs.push({ toCode: toCode, fromGroup: groupCode, codes: [groupCode] });
+        });
+    });
+    $('#btnUrdCopyConfirm').prop('disabled', true);
+    var calls = jobs.map(function (job) {
+        return UserRightDashboardService.SaveCopyCompanyRights({
+            FromCompanyCode: fromCode,
+            ToCompanyCode: job.toCode,
+            FromGroupMaster_Code: job.fromGroup,
+            ToGroupMaster_Codes: job.codes.join(','),
+            GroupMaster_Codes: job.codes.join(',')
+        }).then(function (res) {
+            return {
+                ok: urdCopySucceeded(res),
+                message: (res && (res.Message || res.message || res.Msg)) || ''
+            };
+        }).catch(function () {
+            return { ok: false, message: '' };
+        });
+    });
+    Promise.all(calls).then(function (results) {
+        $('#btnUrdCopyConfirm').prop('disabled', false);
+        var failed = results.filter(function (r) { return !r.ok; });
+        if (!failed.length) {
+            toastr.success((results[0] && results[0].message) || 'Rights copied.');
+            closeUrdCopyModal();
+            return;
+        }
+        if (failed.length === results.length) {
+            toastr.error((failed[0] && failed[0].message) || 'Could not copy rights.');
+            return;
+        }
+        toastr.warning((results.length - failed.length) + ' of ' + results.length + ' copies completed.');
+    });
+}
+function ensureUrdCopyChrome() {
+    if (!document.getElementById('btnCopyUrd')) {
+        $('#btnDownloadUrd').after(
+            '<button type="button" class="urd-btn-download" id="btnCopyUrd" title="Copy rights" aria-label="Copy rights"><i class="fas fa-copy" aria-hidden="true"></i></button>'
+        );
+    }
+    var existingBackdrop = document.getElementById('urdCopyBackdrop');
+    if (existingBackdrop && existingBackdrop.parentElement !== document.body) {
+        document.body.appendChild(existingBackdrop);
+    }
+    if (!document.getElementById('urdCopyBackdrop')) {
+        $('body').append(
+            '<div id="urdCopyBackdrop" class="urd-copy-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="urdCopyTitle">' +
+            '<div class="urd-copy-dialog"><div class="urd-copy-title" id="urdCopyDragHandle" title="Drag to move">' +
+            '<span class="urd-copy-title-main"><i class="fas fa-grip-vertical urd-copy-grip" aria-hidden="true"></i>' +
+            '<span id="urdCopyTitle">Copy Rights</span></span>' +
+            '<button type="button" class="urd-copy-close" id="btnUrdCopyClose" aria-label="Close">&times;</button></div>' +
+            '<div class="urd-copy-body">' +
+            '<div class="urd-copy-pair">' +
+            '<div class="urd-copy-field"><label for="ddlUrdCopyFromCompany">From Company</label><select id="ddlUrdCopyFromCompany"></select></div>' +
+            '<div class="urd-copy-field"><label for="btnUrdCopyCompanyTrigger">To Company</label>' +
+            '<div id="urdCopyCompanyMulti" class="urd-multi-checkbox-root">' +
+            '<button type="button" id="btnUrdCopyCompanyTrigger" class="urd-multi-trigger" aria-haspopup="listbox" aria-expanded="false">' +
+            '<span id="urdCopyCompanyTriggerText" class="urd-multi-trigger-text is-placeholder">Select companies</span>' +
+            '<i class="fas fa-chevron-down urd-multi-trigger-arrow" aria-hidden="true"></i></button>' +
+            '<div id="urdCopyCompanyPanel" class="urd-multi-panel" role="listbox">' +
+            '<div class="urd-multi-checkbox-search"><input type="text" id="txtUrdCopyCompanySearch" placeholder="Search companies…" autocomplete="off" /></div>' +
+            '<div class="urd-multi-checkbox-selectall"><label><input type="checkbox" id="chkUrdCopyCompanySelectAll" />Select All</label></div>' +
+            '<div id="urdCopyCompanyCheckList" class="urd-multi-checkbox-list"></div></div></div></div></div>' +
+            '<div class="urd-copy-pair">' +
+            '<div class="urd-copy-field"><label for="ddlUrdCopyFromGroup">From Group</label><select id="ddlUrdCopyFromGroup"></select></div>' +
+            '<div class="urd-copy-field"><label for="btnUrdCopyGroupTrigger">To Group</label>' +
+            '<div id="urdCopyGroupMulti" class="urd-multi-checkbox-root">' +
+            '<button type="button" id="btnUrdCopyGroupTrigger" class="urd-multi-trigger" aria-haspopup="listbox" aria-expanded="false">' +
+            '<span id="urdCopyGroupTriggerText" class="urd-multi-trigger-text is-placeholder">Select groups</span>' +
+            '<i class="fas fa-chevron-down urd-multi-trigger-arrow" aria-hidden="true"></i></button>' +
+            '<div id="urdCopyGroupPanel" class="urd-multi-panel" role="listbox">' +
+            '<div class="urd-multi-checkbox-search"><input type="text" id="txtUrdCopyGroupSearch" placeholder="Search groups…" autocomplete="off" /></div>' +
+            '<div class="urd-multi-checkbox-selectall"><label><input type="checkbox" id="chkUrdCopyGroupSelectAll" />Select All</label></div>' +
+            '<div id="urdCopyGroupCheckList" class="urd-multi-checkbox-list"></div></div></div></div></div></div>' +
+            '<div class="urd-copy-actions"><button type="button" class="is-primary" id="btnUrdCopyConfirm">COPY</button>' +
+            '<button type="button" id="btnUrdCopyCancel">CANCEL</button></div></div></div>'
+        );
+    }
+}
+function bindUrdCopyModal() {
+    ensureUrdCopyChrome();
+    bindUrdCopyDrag();
+    $('#btnCopyUrd').off('click.urdCopy').on('click.urdCopy', openUrdCopyModal);
+    $('#btnUrdCopyClose, #btnUrdCopyCancel').off('click.urdCopy').on('click.urdCopy', closeUrdCopyModal);
+    $('#urdCopyBackdrop').off('click.urdCopy').on('click.urdCopy', function (e) {
+        if (e.target === this) closeUrdCopyModal();
+    });
+    $('#btnUrdCopyCompanyTrigger').off('click.urdCopy').on('click.urdCopy', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setUrdCopyCompanyOpen(!$('#urdCopyCompanyMulti').hasClass('is-open'));
+    });
+    $('#btnUrdCopyGroupTrigger').off('click.urdCopy').on('click.urdCopy', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setUrdCopyGroupOpen(!$('#urdCopyGroupMulti').hasClass('is-open'));
+    });
+    $('#urdCopyCompanyPanel, #urdCopyGroupPanel').off('click.urdCopy').on('click.urdCopy', function (e) {
+        e.stopPropagation();
+    });
+    $(document).off('click.urdCopyMulti').on('click.urdCopyMulti', function (e) {
+        if (!$(e.target).closest('#urdCopyCompanyMulti, #urdCopyCompanyPanel').length) setUrdCopyCompanyOpen(false);
+        if (!$(e.target).closest('#urdCopyGroupMulti, #urdCopyGroupPanel').length) setUrdCopyGroupOpen(false);
+    });
+    $('#ddlUrdCopyFromCompany').off('change.urdCopy');
+    $('#chkUrdCopyCompanySelectAll').off('change.urdCopy').on('change.urdCopy', function () {
+        $('#urdCopyCompanyCheckList .urd-copy-company-chk').prop('checked', $(this).is(':checked'));
+        applyUrdCopyCompanyFromChecks();
+    });
+    $(document).off('change.urdCopyCo', '.urd-copy-company-chk').on('change.urdCopyCo', '.urd-copy-company-chk', function () {
+        applyUrdCopyCompanyFromChecks();
+    });
+    $('#txtUrdCopyCompanySearch').off('input.urdCopy').on('input.urdCopy', function () {
+        applyUrdCopyCompanySearch($(this).val());
+    });
+    $('#chkUrdCopyGroupSelectAll').off('change.urdCopy').on('change.urdCopy', function () {
+        $('#urdCopyGroupCheckList .urd-copy-group-chk').prop('checked', $(this).is(':checked'));
+        applyUrdCopyGroupFromChecks();
+    });
+    $(document).off('change.urdCopy', '.urd-copy-group-chk').on('change.urdCopy', '.urd-copy-group-chk', function () {
+        applyUrdCopyGroupFromChecks();
+    });
+    $('#txtUrdCopyGroupSearch').off('input.urdCopy').on('input.urdCopy', function () {
+        applyUrdCopyGroupSearch($(this).val());
+    });
+    $(document).off('click.urdCopyGroup');
+    $('#btnUrdCopyConfirm').off('click.urdCopy').on('click.urdCopy', confirmUrdCopy);
+    $(document).off('keydown.urdCopy').on('keydown.urdCopy', function (e) {
+        if (e.key !== 'Escape' || !$('#urdCopyBackdrop').is(':visible')) return;
+        if ($('#urdCopyCompanyMulti').hasClass('is-open') || $('#urdCopyGroupMulti').hasClass('is-open')) {
+            setUrdCopyCompanyOpen(false);
+            setUrdCopyGroupOpen(false);
+            return;
+        }
+        closeUrdCopyModal();
+    });
 }
 
 function extractArray(res) {

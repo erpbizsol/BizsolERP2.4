@@ -138,14 +138,15 @@
 .urd-page input:is(:not([type]), [type="text"], [type="number"], [type="email"], [type="tel"], [type="password"], [type="search"], [type="url"], [type="date"], [type="datetime-local"], [type="time"], [type="month"], [type="week"]):not(table *):not(.select2-search__field),
 .urd-page select:not([multiple]):not([size]):not(table *) {
     box-sizing: border-box !important;
-    height: 40px !important;
+    height: 30px !important;
     min-height: 30px !important;
+    max-height: 30px !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
 }
 .urd-filter-row {
-    display: flex; gap: 12px; flex-wrap: wrap;
-    padding: 14px 16px; margin-bottom: 16px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start;
+    padding: 8px 10px; margin-bottom: 12px;
     background: linear-gradient(135deg, rgba(238,242,255,0.95) 0%, rgba(236,254,255,0.75) 100%);
     border: 1px solid rgba(102,126,234,0.2);
     border-radius: var(--urd-radius-lg);
@@ -153,38 +154,51 @@
     border-left: 4px solid var(--urd-primary);
 }
 .urd-field {
-    display: flex; flex-direction: column; gap: 5px; min-width: 0;
+    display: flex; flex-direction: column; gap: 3px; min-width: 0;
 }
-.urd-field-company { flex: 0 0 min(220px, 100%); }
-.urd-field-groups  { flex: 1 1 260px; }
-.urd-field-users   { flex: 1 1 220px; }
+.urd-field-company,
+.urd-field-groups,
+.urd-field-users { flex: 1 1 0; max-width: none; min-width: 0; }
 .urd-field-go      { flex: 0 0 auto; }
-.urd-field-label {
+.urd-field-label,
+.urd-field-label-spacer {
+    height: 16px; min-height: 16px; max-height: 16px;
+    margin: 0 !important;
     font-size: 10px; font-weight: 800; color: var(--urd-muted);
     letter-spacing: 0.1em; text-transform: uppercase;
-    display: flex; align-items: center; gap: 6px; line-height: 1;
+    display: flex; align-items: center; gap: 6px; line-height: 16px;
+    overflow: hidden; box-sizing: border-box;
 }
 .urd-field-label i { font-size: 10px; color: var(--urd-primary); }
-.urd-field-label-spacer { visibility: hidden; height: 10px; }
+.urd-field-label-spacer { visibility: hidden; }
 .urd-user-count {
-    margin-left: auto;
+    margin-left: 4px;
     background: var(--urd-primary-50); color: var(--urd-primary-800);
-    border-radius: 999px; padding: 2px 8px; font-size: 9px; font-weight: 800;
+    border-radius: 999px; padding: 0 6px; font-size: 9px; font-weight: 800;
     border: 1px solid var(--urd-primary-100); letter-spacing: 0;
-    text-transform: none;
+    text-transform: none; line-height: 14px; height: 14px;
+    display: inline-flex; align-items: center;
 }
 
 /* Company select */
 .urd-select {
-    width: 100%; padding: 0 36px 0 12px; height: 40px;
+    width: 100%; padding: 0 26px 0 8px; height: 30px; font-size: 12px;
     border-radius: var(--urd-radius-md); border: 1px solid var(--urd-border);
-    font-size: 13px; font-weight: 600; color: var(--urd-ink);
+    font-weight: 600; color: #1e293b !important;
+    -webkit-text-fill-color: #1e293b !important;
+    background-color: #fff !important;
+    color-scheme: light;
     background: #fff; outline: none;
     transition: border-color .15s, box-shadow .15s;
     appearance: none; -webkit-appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 13px center;
     cursor: pointer; font-family: inherit;
+}
+.urd-select option {
+    color: #1e293b !important;
+    background-color: #fff !important;
+    -webkit-text-fill-color: #1e293b !important;
 }
 .urd-select:hover { border-color: #a5b4fc; }
 .urd-select:focus { border-color: var(--urd-primary); box-shadow: 0 0 0 3px rgba(102,126,234,.18); }
@@ -197,13 +211,14 @@
 }
 .urd-multi-checkbox-root.is-open { z-index: 100; }
 .urd-multi-trigger {
-    min-height: 40px;
+    min-height: 30px;
+    height: 30px;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 4px 12px;
+    gap: 6px;
+    padding: 0 8px;
     border-radius: var(--urd-radius-md);
     border: 1px solid var(--urd-border);
     background: #fff;
@@ -220,12 +235,14 @@
 .urd-multi-trigger-text {
     flex: 1;
     min-width: 0;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--urd-ink);
-    line-height: 1.35;
-    white-space: normal;
-    word-break: break-word;
+    line-height: 28px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: normal;
 }
 .urd-multi-trigger-text.is-placeholder {
     color: var(--urd-faint);
@@ -333,14 +350,16 @@
 .urd-multi-checkbox-item.is-hidden { display: none !important; }
 
 /* Users preview — resizable readonly list */
-.urd-users-preview {
-    width: 100%; min-height: 40px; max-height: 280px; height: 40px;
-    padding: 8px 12px; border-radius: var(--urd-radius-md);
+#urdUsersPreview.urd-users-preview {
+    width: 100%; height: 30px; min-width: 0; min-height: 30px;
+    max-width: none; max-height: none;
+    padding: 0 8px; border-radius: var(--urd-radius-md);
     border: 1px solid var(--urd-border); background: var(--urd-surface-2);
     font-size: 12px; font-weight: 500; color: var(--urd-muted);
-    font-family: inherit; line-height: 1.45;
-    resize: vertical; overflow: auto;
-    cursor: default; outline: none;
+    font-family: inherit; line-height: 28px;
+    box-sizing: border-box;
+    resize: vertical; overflow: auto; white-space: pre-wrap;
+    cursor: text; outline: none;
 }
 .urd-users-preview.has-users { color: var(--urd-ink); background: #fff; }
 .urd-users-preview:focus { border-color: var(--urd-primary); box-shadow: 0 0 0 3px rgba(102,126,234,.12); }
@@ -348,10 +367,11 @@
 /* Load button inline */
 .urd-btn-go {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    min-width: 160px; height: 40px; padding: 0 24px;
+    min-width: 128px; height: 30px; min-height: 30px; max-height: 30px; padding: 0 12px; font-size: 12px;
+    box-sizing: border-box;
     border-radius: var(--urd-radius-md);
     background: var(--urd-brand);
-    border: none; color: #fff; font-size: 13px; font-weight: 700;
+    border: none; color: #fff; font-weight: 700;
     cursor: pointer; font-family: inherit;
     transition: transform .2s, box-shadow .2s, filter .2s;
     box-shadow: var(--urd-shadow-glow);
@@ -371,14 +391,15 @@
 .urd-btn-go:active:not(:disabled) { transform: translateY(0); }
 .urd-btn-go:disabled { opacity: .55; cursor: not-allowed; transform: none; filter: none; }
 .urd-btn-go i { font-size: 11px; }
-.urd-go-actions { display: flex; align-items: stretch; gap: 8px; }
+.urd-go-actions { display: flex; align-items: center; gap: 8px; }
 .urd-btn-download {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 40px; height: 40px; flex-shrink: 0;
+    width: 30px; height: 30px; min-height: 30px; max-height: 30px; flex-shrink: 0; font-size: 12px;
+    box-sizing: border-box;
     border-radius: var(--urd-radius-md);
     border: 1.5px solid rgba(102,126,234,0.35);
     background: #fff; color: var(--urd-primary-700);
-    font-size: 15px; cursor: pointer; font-family: inherit;
+    cursor: pointer; font-family: inherit;
     box-shadow: 0 1px 4px rgba(102,126,234,0.12);
     transition: border-color .14s, box-shadow .14s, transform .14s;
 }
@@ -388,6 +409,192 @@
     transform: translateY(-1px);
 }
 .urd-btn-download:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+.urd-copy-backdrop {
+    position: fixed; inset: 0; z-index: 100020;
+    background: rgba(15, 23, 42, 0.48);
+    display: none; align-items: flex-start; justify-content: center;
+    padding: 72px 20px 24px; overflow: auto;
+}
+.urd-copy-backdrop.is-open { display: flex; }
+.urd-copy-dialog {
+    width: min(760px, calc(100vw - 40px));
+    max-height: none;
+    display: flex; flex-direction: column;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 24px 50px rgba(15, 23, 42, 0.28);
+    overflow: visible;
+}
+.urd-copy-title {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 13px 14px; flex-shrink: 0;
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff; cursor: move; user-select: none; touch-action: none;
+}
+.urd-copy-title-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.urd-copy-grip { font-size: 12px; opacity: 0.8; }
+#urdCopyTitle {
+    font-size: 14px; font-weight: 700; line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.urd-copy-close {
+    width: 28px; height: 28px; border: 0; border-radius: 8px; flex-shrink: 0;
+    background: rgba(255,255,255,0.18); color: #fff; cursor: pointer; font-size: 18px; line-height: 1;
+}
+.urd-copy-close:hover { background: rgba(255,255,255,0.32); }
+body.urd-copy-dragging, body.urd-copy-dragging * { cursor: move !important; user-select: none !important; }
+.urd-copy-body {
+    padding: 14px 16px 8px; display: flex; flex-direction: column; gap: 14px;
+    background: #fff; min-height: 0; overflow: visible;
+    position: relative; z-index: 2;
+}
+.urd-copy-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+}
+.urd-copy-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.urd-copy-field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.urd-copy-field > label,
+.urd-copy-field-head > label {
+    margin: 0; font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+    text-transform: uppercase; color: #64748b;
+}
+.urd-copy-field select,
+.urd-copy-row select {
+    height: 38px; width: 100%; box-sizing: border-box;
+    border: 1px solid #dbe3ee; border-radius: 10px;
+    background: #fff; color: #1e293b; font-size: 13px; font-weight: 600; padding: 0 12px;
+}
+.urd-copy-field select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,.16); }
+.urd-copy-dialog .urd-multi-checkbox-root { width: 100%; position: relative; }
+.urd-copy-dialog .urd-multi-checkbox-root.is-open { z-index: 30; }
+.urd-copy-dialog .urd-multi-checkbox-root.is-open .urd-multi-panel {
+    display: flex !important;
+    flex-direction: column;
+}
+.urd-copy-dialog .urd-multi-panel {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: calc(100% + 6px) !important;
+    bottom: auto !important;
+    width: 100% !important;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 10px;
+    z-index: 40;
+    min-height: 0 !important;
+    max-height: min(360px, 52vh) !important;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+.urd-copy-dialog .urd-multi-checkbox-search { margin: 0 0 8px; flex: 0 0 auto; }
+.urd-copy-dialog .urd-multi-checkbox-search input {
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+    border-radius: 8px;
+    border-color: #e2e8f0;
+    background: #f8fafc;
+    box-sizing: border-box;
+}
+.urd-copy-dialog .urd-multi-checkbox-selectall {
+    margin: 0 0 8px;
+    padding: 0;
+    border: 0;
+    flex: 0 0 auto;
+    background: transparent;
+}
+.urd-copy-dialog .urd-multi-checkbox-selectall label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px;
+    width: 100%;
+    min-height: 32px;
+    margin: 0 !important;
+    padding: 0 10px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: #f5f3ff;
+    position: static !important;
+}
+.urd-copy-dialog .urd-multi-checkbox-list {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 240px;
+    margin: 0;
+    padding: 4px;
+    overflow: auto;
+    border: 1px solid #eef2f7;
+    border-radius: 10px;
+    background: #fff;
+}
+.urd-copy-dialog .urd-multi-checkbox-item { padding: 0; margin: 0; }
+.urd-copy-dialog .urd-multi-checkbox-item label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px;
+    min-height: 32px;
+    margin: 0 !important;
+    padding: 0 8px;
+    border-radius: 8px;
+    position: static !important;
+}
+.urd-copy-dialog .urd-multi-checkbox-item label span {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: normal;
+    line-height: 32px;
+}
+.urd-copy-dialog .urd-multi-checkbox-item label:hover { background: #f5f3ff; }
+.urd-copy-dialog .urd-multi-checkbox-item input[type="checkbox"],
+.urd-copy-dialog .urd-multi-checkbox-selectall input[type="checkbox"] {
+    position: static !important;
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+    flex: 0 0 16px;
+    accent-color: #667eea;
+}
+.urd-copy-dialog .urd-multi-trigger {
+    height: 38px !important; min-height: 38px !important; max-height: 38px !important;
+    border-radius: 10px; border: 1px solid #dbe3ee; padding: 0 12px !important; background: #fff;
+}
+.urd-copy-dialog .urd-multi-trigger-text {
+    font-size: 13px !important; font-weight: 600 !important; line-height: 36px !important; color: #1e293b;
+}
+.urd-copy-dialog .urd-multi-trigger-text.is-placeholder { color: #94a3b8; font-weight: 500 !important; }
+.urd-copy-actions {
+    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+    position: relative; z-index: 1;
+    padding: 10px 16px 14px; background: #fff; border-top: 1px solid #eef2f7;
+    border-radius: 0 0 16px 16px;
+}
+.urd-copy-actions button {
+    min-width: 92px; height: 36px; padding: 0 14px;
+    border: 1px solid #dbe3ee; border-radius: 10px;
+    background: #fff; color: #334155; font-weight: 700; font-size: 12px; cursor: pointer;
+}
+.urd-copy-actions button.is-primary {
+    border: none; color: #fff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 6px 14px rgba(102, 126, 234, 0.28);
+}
+@@media (max-width: 720px) {
+    .urd-copy-pair { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* Summary merged into matrix toolbar */
 .urd-summary { display: none !important; }
@@ -697,12 +904,22 @@
 .urd-ph-text { font-size: 14px; color: var(--urd-muted); max-width: 430px; line-height: 1.65; font-weight: 500; }
 
 /* ════ RESPONSIVE ════ */
+@@media (min-width: 901px) {
+    .urd-filter-row { flex-wrap: wrap; }
+    .urd-field-company,
+    .urd-field-groups,
+    .urd-field-users { flex: 1 1 0; width: auto; max-width: none; min-width: 0; }
+    .urd-field-go { flex: 1 1 100%; width: 100%; max-width: none; }
+    .urd-field-go .urd-field-label-spacer { display: none; }
+    #urdUsersPreview.urd-users-preview { width: 100%; min-width: 0; }
+}
 @@media (max-width: 900px) {
     .urd-card-header { padding: 12px 18px; gap: 12px; }
     .urd-header-steps { display: none; }
     .urd-filter-row { gap: 10px; padding: 12px; }
-    .urd-field-company { flex: 1 1 100%; }
-    .urd-field-groups, .urd-field-users { flex: 1 1 calc(50% - 10px); }
+    .urd-field-company { flex: 1 1 100%; max-width: none; min-width: 0; }
+    .urd-field-groups, .urd-field-users { flex: 1 1 calc(50% - 10px); max-width: none; min-width: 0; }
+    .urd-users-preview { min-width: 0; width: 100%; }
     .urd-field-go { flex: 1 1 100%; }
     .urd-go-actions { width: 100%; }
     .urd-btn-go { flex: 1; width: auto; min-width: 0; }
@@ -718,7 +935,7 @@
     .urd-header-title { font-size: 1.1rem; }
     .urd-card-body { padding: 10px 8px 12px; }
     .urd-filter-row { flex-direction: column; align-items: stretch; }
-    .urd-field-company, .urd-field-groups, .urd-field-users, .urd-field-go { flex: 1 1 auto; width: 100%; }
+    .urd-field-company, .urd-field-groups, .urd-field-users, .urd-field-go { flex: 1 1 auto; width: 100%; max-width: none; min-width: 0; }
     .urd-field-label-spacer { display: none; }
     .urd-table-wrap {
         max-height: calc(100dvh - var(--erp-header-height, 55px) - var(--erp-footer-height, 34px) - 96px - 230px);
@@ -735,13 +952,11 @@
     .urd-td-module .urd-icon-o { display: none !important; }
     .urd-card-body, .urd-filter-row { overflow: visible; }
     .urd-users-preview {
-        height: auto;
-        min-height: 88px;
-        max-height: 160px;
-        resize: vertical;
+        width: 100%;
+        max-width: 100%;
+        resize: both;
         white-space: pre-wrap;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow: auto;
         font-size: 13px;
         line-height: 1.45;
     }
@@ -879,7 +1094,7 @@
 
             <div class="urd-field urd-field-users">
                 <label class="urd-field-label"><i class="fas fa-user"></i> Users <span class="urd-user-count" id="urdUserCount">—</span></label>
-                <textarea id="urdUsersPreview" class="urd-users-preview" readonly rows="4" placeholder="Select groups to preview users"></textarea>
+                <textarea id="urdUsersPreview" class="urd-users-preview" readonly rows="1" placeholder="Select groups to preview users"></textarea>
                 <select id="ddlUsers" multiple style="display:none" aria-hidden="true"></select>
             </div>
 
@@ -891,6 +1106,9 @@
                     </button>
                     <button type="button" class="urd-btn-download" id="btnDownloadUrd" title="Download Excel" aria-label="Download Excel" disabled>
                         <i class="fas fa-download" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="urd-btn-download" id="btnCopyUrd" title="Copy rights" aria-label="Copy rights">
+                        <i class="fas fa-copy" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
@@ -942,5 +1160,77 @@
 </div><!-- /card -->
 </div><!-- /page -->
 
+<div id="urdCopyBackdrop" class="urd-copy-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="urdCopyTitle">
+    <div class="urd-copy-dialog">
+        <div class="urd-copy-title" id="urdCopyDragHandle" title="Drag to move">
+            <span class="urd-copy-title-main">
+                <i class="fas fa-grip-vertical urd-copy-grip" aria-hidden="true"></i>
+                <span id="urdCopyTitle">Copy Rights</span>
+            </span>
+            <button type="button" class="urd-copy-close" id="btnUrdCopyClose" aria-label="Close">&times;</button>
+        </div>
+        <div class="urd-copy-body">
+            <div class="urd-copy-pair">
+                <div class="urd-copy-field">
+                    <label for="ddlUrdCopyFromCompany">From Company</label>
+                    <select id="ddlUrdCopyFromCompany"></select>
+                </div>
+                <div class="urd-copy-field">
+                    <label for="btnUrdCopyCompanyTrigger">To Company</label>
+                    <div id="urdCopyCompanyMulti" class="urd-multi-checkbox-root">
+                        <button type="button" id="btnUrdCopyCompanyTrigger" class="urd-multi-trigger" aria-haspopup="listbox" aria-expanded="false">
+                            <span id="urdCopyCompanyTriggerText" class="urd-multi-trigger-text is-placeholder">Select companies</span>
+                            <i class="fas fa-chevron-down urd-multi-trigger-arrow" aria-hidden="true"></i>
+                        </button>
+                        <div id="urdCopyCompanyPanel" class="urd-multi-panel" role="listbox">
+                            <div class="urd-multi-checkbox-search">
+                                <input type="text" id="txtUrdCopyCompanySearch" placeholder="Search companies…" autocomplete="off" />
+                            </div>
+                            <div class="urd-multi-checkbox-selectall">
+                                <label>
+                                    <input type="checkbox" id="chkUrdCopyCompanySelectAll" />
+                                    Select All
+                                </label>
+                            </div>
+                            <div id="urdCopyCompanyCheckList" class="urd-multi-checkbox-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="urd-copy-pair">
+                <div class="urd-copy-field">
+                    <label for="ddlUrdCopyFromGroup">From Group</label>
+                    <select id="ddlUrdCopyFromGroup"></select>
+                </div>
+                <div class="urd-copy-field">
+                    <label for="btnUrdCopyGroupTrigger">To Group</label>
+                    <div id="urdCopyGroupMulti" class="urd-multi-checkbox-root">
+                        <button type="button" id="btnUrdCopyGroupTrigger" class="urd-multi-trigger" aria-haspopup="listbox" aria-expanded="false">
+                            <span id="urdCopyGroupTriggerText" class="urd-multi-trigger-text is-placeholder">Select groups</span>
+                            <i class="fas fa-chevron-down urd-multi-trigger-arrow" aria-hidden="true"></i>
+                        </button>
+                        <div id="urdCopyGroupPanel" class="urd-multi-panel" role="listbox">
+                            <div class="urd-multi-checkbox-search">
+                                <input type="text" id="txtUrdCopyGroupSearch" placeholder="Search groups…" autocomplete="off" />
+                            </div>
+                            <div class="urd-multi-checkbox-selectall">
+                                <label>
+                                    <input type="checkbox" id="chkUrdCopyGroupSelectAll" />
+                                    Select All
+                                </label>
+                            </div>
+                            <div id="urdCopyGroupCheckList" class="urd-multi-checkbox-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="urd-copy-actions">
+            <button type="button" class="is-primary" id="btnUrdCopyConfirm">COPY</button>
+            <button type="button" id="btnUrdCopyCancel">CANCEL</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserRightDashboardScript.js?v=20261120a"></script>
+<script type="module" src="~/_content/Bizsol.WebERP.UI.Common.Masters/js/UserRightDashboardScript.js?v=20261127j"></script>
