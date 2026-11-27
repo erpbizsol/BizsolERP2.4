@@ -204,6 +204,34 @@
     #dvAVSaveConfirmModal .modal-title { font-size: 16px; font-weight: 700; margin: 0; flex: 1; color: #fff; }
     #dvAVSaveConfirmModal .avdel-icon-wrap { background: rgba(245,158,11,.1); color: #f59e0b; border-color: rgba(245,158,11,.25); }
     .avdel-btn.warning { background: linear-gradient(135deg,#d97706,#f59e0b); color: #fff; box-shadow: 0 4px 12px rgba(245,158,11,.3); }
+
+    #dvAVReportModal .av-report-dialog { max-width: min(1180px, 96vw); }
+    #dvAVReportModal .modal-content { border: none; border-radius: 6px; overflow: hidden; box-shadow: 0 18px 48px rgba(15, 23, 42, .28); }
+    #dvAVReportModal .modal-header {
+        background: #1e4f86; color: #fff; border: none; padding: 10px 14px;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    #dvAVReportModal .modal-title { font-size: 1.05rem; font-weight: 700; margin: 0; color: #fff; }
+    #dvAVReportModal .av-report-close {
+        width: 28px; height: 28px; border: 1px solid rgba(255,255,255,.85); background: transparent;
+        color: #fff; font-weight: 700; line-height: 1; cursor: pointer;
+    }
+    #dvAVReportModal .modal-body { background: #fff; padding: 12px 14px 6px; }
+    #dvAVReportModal .av-report-scroll { max-height: 420px; overflow: auto; border: 1px solid #dbe3ef; }
+    #tblAVReport { margin-bottom: 0; }
+    #tblAVReport thead { position: sticky; top: 0; z-index: 2; background: #5b8fc7; }
+    #tblAVReport thead th {
+        background: #5b8fc7 !important; color: #fff !important;
+        font-size: 0.75rem; font-weight: 600; white-space: nowrap; vertical-align: middle;
+        padding: 6px 8px !important; border-color: #4a7eb4;
+    }
+    #tblAVReport thead th .filter-table-heading,
+    #tblAVReport thead th .table-filter-arrow,
+    #tblAVReport thead th .fa-angle-down { color: #fff !important; }
+    #tblAVReport tbody td { white-space: nowrap; vertical-align: middle; font-size: 0.8rem; }
+    #dvAVReportModal .modal-footer { background: #fff; border-top: none; padding: 8px 14px 14px; justify-content: flex-end; gap: 8px; }
+    #dvAVReportModal .modal-footer .btn-primary { background: #1e4f86; border-color: #1e4f86; }
+    #dvAVReportModal .paginator { padding: 8px 2px 0; }
 </style>
 
 <div class="modal fade" id="dvAVSaveConfirmModal" tabindex="-1" role="dialog" aria-hidden="true"
@@ -273,6 +301,35 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="dvAVReportModal" tabindex="-1" role="dialog" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered av-report-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Asset Validation Report</h5>
+                <button type="button" class="av-report-close" onclick="CloseAssetValidationReport()" aria-label="Close">X</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-wrapper av-report-scroll">
+                    <table id="tblAVReport" class="table table-bordered table-hover mb-0">
+                        <thead id="tblAVReportHeader"></thead>
+                        <tbody id="tblAVReportBody"></tbody>
+                    </table>
+                </div>
+                <div class="paginator" id="paginator-tblAVReport"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-height" onclick="ExportAssetValidationReport()">Export</button>
+                <button type="button" class="btn btn-danger btn-height" onclick="CloseAssetValidationReport()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<table id="tblAVReportExport" hidden="hidden">
+    <thead><tr></tr></thead>
+    <tbody></tbody>
+</table>
 
 <!-- LIST SECTION -->
 <div id="divAssetValidationList">
