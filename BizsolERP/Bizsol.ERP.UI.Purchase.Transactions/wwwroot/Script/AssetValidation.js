@@ -125,7 +125,7 @@ function _renderList(list) {
         return Object.assign({}, item, {
             Action:
                 (isClosed ? '' : `<button class="btn btn-primary icon-height mb-1" title="Edit" onclick="OpenAssetValidationForm('Edit', ${code})"><i class="fa-solid fa-pencil"></i></button>`) +
-                `<button class="btn btn-info icon-height mb-1" title="View" onclick="OpenAssetValidationForm('View', ${code})"><i class="fa-regular fa-eye"></i></button>` +
+                `<button class="btn btn-info icon-height mb-1" title="View" onclick="OpenAssetValidationReport(${code})"><i class="fa-regular fa-eye"></i></button>` +
                 `<button class="btn btn-danger icon-height mb-1" title="Delete" onclick="DeleteAssetValidation(${code})"><i class="fa-regular fa-circle-xmark"></i></button>`
         });
     });
@@ -243,6 +243,118 @@ function OpenAssetValidationForm(mode, code) {
             _hideLoader();
             toastr.error('Error loading Asset Validation entry.');
         });
+}
+
+/* ───────────────────────── REPORT MODAL ───────────────────────── */
+
+var G_AVReport = [];
+
+function _reportDisplayRows(list) {
+    return list.map(function (r) {
+        var status = String(r.PhysicalStatus || '').toUpperCase();
+        return {
+            'Entry No': r.EntryNo,
+            'Entry Date': r.EntryDate || '',
+            'Start Date': r.StartDate || '',
+            'End Date': r.EndDate || '',
+            'Asset Tag No': r.AssetTagNo || '',
+            'Asset Name': r.AssetName || '',
+            'Asset Type': r.AssetType || '',
+            'Location': r.AssetLocation || '',
+            'Physical Status': status === 'Y' ? 'Yes' : (status === 'N' ? 'No' : (r.PhysicalStatus || '')),
+            'Found At': r.FoundAt || '',
+            'Condition': r.Condition || ''
+        };
+    });
+}
+
+function OpenAssetValidationReport(code) {
+    _showLoader();
+    AssetValidationService.GetAssetValidationReport(code)
+        .then(function (res) {
+            _hideLoader();
+            var list = _toList(res);
+            if (!list.length) {
+                toastr.error((res && res.Msg) || 'No Data Found');
+                return;
+            }
+
+            G_AVReport = _reportDisplayRows(list);
+            BizsolCustomFilterGrid.CreateDataTable(
+                'tblAVReportHeader', 'tblAVReportBody', G_AVReport,
+                false, [],
+                ['Asset Tag No', 'Asset Name', 'Asset Type', 'Location', 'Physical Status', 'Condition', 'Found At'],
+                ['Entry No'],
+                ['Entry Date', 'Start Date', 'End Date'],
+                [], [], {});
+            _fillAssetValidationExport(G_AVReport);
+            $('#dvAVReportModal').modal({ backdrop: 'static' });
+            $('#dvAVReportModal').modal('show');
+        })
+        .catch(function () {
+            _hideLoader();
+            toastr.error('Error loading Asset Validation report.');
+        });
+}
+
+function CloseAssetValidationReport() {
+    $('#dvAVReportModal').modal('hide');
+}
+
+function _fillAssetValidationExport(data) {
+    var $head = $('#tblAVReportExport thead tr');
+    var $body = $('#tblAVReportExport tbody');
+    $head.empty();
+    $body.empty();
+    if (!data.length) return;
+
+    var headers = Object.keys(data[0]);
+    headers.forEach(function (header) {
+        $head.append($('<th>').text(header));
+    });
+    data.forEach(function (item) {
+        var $tr = $('<tr>');
+        headers.forEach(function (header) {
+            $tr.append($('<td>').text(item[header] == null ? '' : item[header]));
+        });
+        $body.append($tr);
+    });
+}
+
+function ExportAssetValidationReport() {
+    var table = document.getElementById('tblAVReportExport');
+    if (!table || !table.rows.length) {
+        toastr.error('No data to export.');
+        return;
+    }
+
+    var now = new Date();
+    var stamp = now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + '_' +
+        String(now.getHours()).padStart(2, '0') + '-' +
+        String(now.getMinutes()).padStart(2, '0') + '-' +
+        String(now.getSeconds()).padStart(2, '0');
+
+    var parts = ['<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body><table>'];
+    Array.prototype.forEach.call(table.rows, function (tr) {
+        parts.push('<tr>');
+        for (var c = 0; c < tr.cells.length; c++) {
+            parts.push('<td>' + _esc(tr.cells[c].textContent) + '</td>');
+        }
+        parts.push('</tr>');
+    });
+    parts.push('</table></body></html>');
+
+    var blob = new Blob([parts.join('')], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'AssetValidationReport_' + stamp + '.xls';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function CloseAssetValidationForm() {
@@ -504,6 +616,9 @@ function ConfirmAssetValidationDelete() {
 
 window.LoadAssetValidationList = LoadAssetValidationList;
 window.OpenAssetValidationForm = OpenAssetValidationForm;
+window.OpenAssetValidationReport = OpenAssetValidationReport;
+window.CloseAssetValidationReport = CloseAssetValidationReport;
+window.ExportAssetValidationReport = ExportAssetValidationReport;
 window.CloseAssetValidationForm = CloseAssetValidationForm;
 window.SaveAssetValidation = SaveAssetValidation;
 window.ConfirmAssetValidationSave = ConfirmAssetValidationSave;

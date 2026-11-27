@@ -23,6 +23,10 @@ var DETAIL_ROW_ID = 0;
 var TITLE_BRANCH_NEW = 'Adding a new Asset Type is not allowed for this branch.';
 var TITLE_BRANCH_EDIT = 'Editing is not allowed for this branch.';
 var MODULE_NAME = 'Asset Type Master';
+var PAGE_ACCOUNT_BASIS = 'ASSET TYPE WISE';
+var G_ShowDebitAccount = false;
+var G_ShowCreditAccount = false;
+var G_AccountOptionsHtml = '<option value="">-- Select --</option>';
 
 function getModuleName() {
     try {
@@ -179,14 +183,17 @@ function showAssetTypeList() {
 function resetEntryPanelDom() {
     destroySelect2IfAny($('#ddlDepreciationMethod'));
     destroySelect2IfAny($('#ddlAssetGroup'));
+    destroySelect2IfAny($('#ddlDebitAccount'));
+    destroySelect2IfAny($('#ddlCreditAccount'));
     $('#assetTypeDetailBody tr').each(function () {
         var $row = $(this);
         destroySelect2IfAny($row.find('.js-maint-type'));
         destroySelect2IfAny($row.find('.js-maint-plan'));
     });
     $('#assetTypeDetailBody').empty();
-    $('#txtAssetTypeName, #txtDepreciationPercentage, #txtPrefix').val('').removeClass('at-input-error');
-    $('#err_AssetTypeName, #err_DepPercentage, #err_DepMethod, #err_Prefix, #err_AssetGroup').hide();
+    $('#txtAssetTypeName, #txtDepreciationPercentage, #txtPrefix, #txtITDepriciation, #txtResidualValue').val('').removeClass('at-input-error');
+    $('#err_AssetTypeName, #err_DepPercentage, #err_DepMethod, #err_Prefix, #err_AssetGroup, #err_DebitAccount, #err_CreditAccount').hide();
+    applyAccountFieldVisibility();
     G_PreservedMaxValue = 0;
     DETAIL_ROW_ID = 0;
 }
@@ -503,6 +510,56 @@ function bindAssetGroupDropdown(selectedCode) {
     if (sel > 0) $ddl.val(String(sel)).trigger('change.select2');
 }
 
+function basisMatchesThisPage(value) {
+    return String(value || '').trim().toUpperCase() === PAGE_ACCOUNT_BASIS;
+}
+
+function intField(row, pascal, camel) {
+    if (!row) return 0;
+    var v = row[pascal] != null ? row[pascal] : row[camel];
+    var n = parseInt(v, 10);
+    return isNaN(n) ? 0 : n;
+}
+
+function applyAccountFieldVisibility() {
+    $('#grpDebitAccount').toggle(G_ShowDebitAccount);
+    $('#grpCreditAccount').toggle(G_ShowCreditAccount);
+}
+
+function bindAccountDropdown(selector, selectedCode) {
+    var $ddl = $(selector);
+    var sel = parseInt(selectedCode, 10) || 0;
+    destroySelect2IfAny($ddl);
+    $ddl.html(G_AccountOptionsHtml);
+    initSearchableSelect($ddl, '-- Select --');
+    if (sel > 0) $ddl.val(String(sel)).trigger('change.select2');
+}
+
+function loadAccountFieldConfig() {
+    return Promise.all([
+        AssetGroupMasterService.GetAccountMasterFieldConfig(),
+        AssetGroupMasterService.GetAccountLedgerList()
+    ]).then(function (results) {
+        var configRows = normalizeList(results[0]);
+        var config = configRows.length ? configRows[0] : (results[0] || {});
+        var drText = config.DrAccountDepriciation != null ? config.DrAccountDepriciation : config.drAccountDepriciation;
+        var crText = config.CrAccountDepriciation != null ? config.CrAccountDepriciation : config.crAccountDepriciation;
+        G_ShowDebitAccount = basisMatchesThisPage(drText);
+        G_ShowCreditAccount = basisMatchesThisPage(crText);
+        var ledgers = normalizeList(results[1]);
+        G_AccountOptionsHtml = '<option value="">-- Select --</option>' + ledgers.map(function (row) {
+            var code = getRecordCode(row);
+            var name = row.Desp || row.desp || row.AccountDesp || row.accountDesp || '';
+            return '<option value="' + code + '">' + escapeHtml(name) + '</option>';
+        }).join('');
+        applyAccountFieldVisibility();
+    }).catch(function () {
+        G_ShowDebitAccount = false;
+        G_ShowCreditAccount = false;
+        applyAccountFieldVisibility();
+    });
+}
+
 function bindDepreciationMethodDropdown(selectedValue) {
     var $ddl = $('#ddlDepreciationMethod');
     destroySelect2IfAny($ddl);
@@ -541,26 +598,29 @@ function collectDetails() {
 
 function fillHeader(row) {
     $('#txtAssetTypeName').val(row.AssetTypeName || row.assetTypeName || '');
-    $('#txtDepreciationPercentage').val(row.DepreciationPercentage != null ? row.DepreciationPercentage : '');
+    $('#txtDepreciationPercentage').val(row.DepreciationPercentage != null && row.DepreciationPercentage !== '' ? String(parseInt(row.DepreciationPercentage, 10) || 0) : '');
     G_PreservedMaxValue = row.MaxValue != null ? (parseInt(row.MaxValue, 10) || 0) : 0;
     bindDepreciationMethodDropdown(row.DepreciationMethod || row.depreciationMethod || '');
     $('#txtPrefix').val(row.Prefix || row.prefix || '');
+    $('#txtITDepriciation').val(intField(row, 'ITDepriciation', 'itDepriciation'));
+    $('#txtResidualValue').val(intField(row, 'ResidualValue', 'residualValue'));
     var agCode = row.AssetGroupMaster_Code != null ? row.AssetGroupMaster_Code : row.assetGroupMaster_Code;
     bindAssetGroupDropdown(agCode);
+    if (G_ShowDebitAccount) bindAccountDropdown('#ddlDebitAccount', intField(row, 'DebitAccountMaster_Code', 'debitAccountMaster_Code'));
+    if (G_ShowCreditAccount) bindAccountDropdown('#ddlCreditAccount', intField(row, 'CreditAccountMaster_Code', 'creditAccountMaster_Code'));
 }
 
 function validateHeader() {
     var ok = true;
-    $('#err_AssetTypeName, #err_DepPercentage, #err_DepMethod, #err_Prefix, #err_AssetGroup').hide();
-    $('#txtAssetTypeName, #txtDepreciationPercentage, #txtPrefix, #ddlDepreciationMethod, #ddlAssetGroup').removeClass('at-input-error');
+    $('#err_AssetTypeName, #err_DepPercentage, #err_DepMethod, #err_Prefix, #err_AssetGroup, #err_DebitAccount, #err_CreditAccount, #err_ITDepriciation, #err_ResidualValue').hide();
+    $('#txtAssetTypeName, #txtDepreciationPercentage, #txtPrefix, #txtITDepriciation, #txtResidualValue, #ddlDepreciationMethod, #ddlAssetGroup').removeClass('at-input-error');
     $('#ddlDepreciationMethod, #ddlAssetGroup').next('.select2-container').removeClass('at-input-error');
     if (!$('#txtAssetTypeName').val().trim()) {
         $('#err_AssetTypeName').show();
         $('#txtAssetTypeName').addClass('at-input-error');
         ok = false;
     }
-    var depPctRaw = ($('#txtDepreciationPercentage').val() || '').trim();
-    if (depPctRaw === '' || isNaN(parseFloat(depPctRaw))) {
+    if (!isPercentWithin100($('#txtDepreciationPercentage').val())) {
         $('#err_DepPercentage').show();
         $('#txtDepreciationPercentage').addClass('at-input-error');
         ok = false;
@@ -582,7 +642,40 @@ function validateHeader() {
         $('#ddlAssetGroup').next('.select2-container').addClass('at-input-error');
         ok = false;
     }
+    if (G_ShowDebitAccount && !(parseInt($('#ddlDebitAccount').val(), 10) > 0)) {
+        $('#err_DebitAccount').show();
+        $('#ddlDebitAccount').next('.select2-container').addClass('at-input-error');
+        ok = false;
+    }
+    if (G_ShowCreditAccount && !(parseInt($('#ddlCreditAccount').val(), 10) > 0)) {
+        $('#err_CreditAccount').show();
+        $('#ddlCreditAccount').next('.select2-container').addClass('at-input-error');
+        ok = false;
+    }
+    if (!isPercentWithin100($('#txtITDepriciation').val())) {
+        $('#err_ITDepriciation').show();
+        $('#txtITDepriciation').addClass('at-input-error');
+        ok = false;
+    }
+    if (!isPercentWithin100($('#txtResidualValue').val())) {
+        $('#err_ResidualValue').show();
+        $('#txtResidualValue').addClass('at-input-error');
+        ok = false;
+    }
     return ok;
+}
+
+function isPercentWithin100(value) {
+    var text = String(value == null ? '' : value).trim();
+    if (!/^\d{1,3}$/.test(text)) return false;
+    var n = parseInt(text, 10);
+    return n >= 0 && n <= 100;
+}
+
+function keepPercentDigits(value) {
+    var digits = String(value == null ? '' : value).replace(/\D/g, '').slice(0, 3);
+    if (digits !== '' && parseInt(digits, 10) > 100) digits = digits.slice(0, -1);
+    return digits;
 }
 
 function loadMaintenanceTypes() {
@@ -627,11 +720,14 @@ function loadAssetTypeEntryForm() {
         loadMaintenanceTypes(),
         loadMaintenancePlanningOptions(),
         loadDepreciationMethods(),
-        loadAssetGroups()
+        loadAssetGroups(),
+        loadAccountFieldConfig()
     ]).then(function () {
         if (!isEdit) {
             bindDepreciationMethodDropdown('');
             bindAssetGroupDropdown(0);
+            if (G_ShowDebitAccount) bindAccountDropdown('#ddlDebitAccount', 0);
+            if (G_ShowCreditAccount) bindAccountDropdown('#ddlCreditAccount', 0);
             addDetailRow(null);
             return;
         }
@@ -675,7 +771,11 @@ function mapListRowToHeader(row) {
         DepreciationPercentage: row.DepreciationPercentage != null ? row.DepreciationPercentage : row['Dep %'],
         DepreciationMethod: getDepreciationMethodForGrid(row) || row.DepreciationMethod || row.depreciationMethod,
         Prefix: getField(row, 'prefix', 'Prefix'),
-        MaxValue: row.MaxValue != null ? row.MaxValue : row.maxValue
+        MaxValue: row.MaxValue != null ? row.MaxValue : row.maxValue,
+        ITDepriciation: intField(row, 'ITDepriciation', 'itDepriciation'),
+        ResidualValue: intField(row, 'ResidualValue', 'residualValue'),
+        DebitAccountMaster_Code: intField(row, 'DebitAccountMaster_Code', 'debitAccountMaster_Code'),
+        CreditAccountMaster_Code: intField(row, 'CreditAccountMaster_Code', 'creditAccountMaster_Code')
     };
 }
 
@@ -705,10 +805,14 @@ function saveAssetTypeEntry() {
                 Code: G_EditCode,
                 AssetTypeName: $('#txtAssetTypeName').val().trim(),
                 AssetGroupMaster_Code: parseInt($('#ddlAssetGroup').val(), 10) || 0,
-                DepreciationPercentage: parseFloat($('#txtDepreciationPercentage').val()) || 0,
+                DepreciationPercentage: parseInt($('#txtDepreciationPercentage').val(), 10) || 0,
                 DepreciationMethod: ($('#ddlDepreciationMethod').val() || '').trim(),
                 Prefix: $('#txtPrefix').val().trim(),
-                MaxValue: G_EditCode > 0 ? G_PreservedMaxValue : 0
+                MaxValue: G_EditCode > 0 ? G_PreservedMaxValue : 0,
+                ITDepriciation: parseInt($('#txtITDepriciation').val(), 10) || 0,
+                ResidualValue: parseInt($('#txtResidualValue').val(), 10) || 0,
+                DebitAccountMaster_Code: G_ShowDebitAccount ? (parseInt($('#ddlDebitAccount').val(), 10) || 0) : 0,
+                CreditAccountMaster_Code: G_ShowCreditAccount ? (parseInt($('#ddlCreditAccount').val(), 10) || 0) : 0
             },
             Details: collectDetails()
         };
@@ -828,11 +932,22 @@ function loadAssetTypeList() {
             ['Code', 'Verify', 'AssetGroupMaster_Code'],
             {
                 'S.No.': 'center;width:52px;max-width:56px;min-width:48px;white-space:nowrap;',
+                'Dep %': 'right',
                 Action: 'center;width:130px;'
             },
             true, null, null, null,
             'Search by asset type, asset group, method, prefix...'
         );
+        $('#AssetTypeMaster-header th').each(function () {
+            if ($(this).find('.filter-table-heading').text().trim() === 'Dep %') {
+                $(this).addClass('at-align-right');
+            }
+        });
+        $('#AssetTypeMaster-body td').each(function () {
+            if ((this.style.textAlign || '').toLowerCase() === 'right') {
+                $(this).addClass('at-align-right');
+            }
+        });
     }).catch(function (err) {
         toastr.error(formatAjaxError(err, 'Failed to load Asset Type list.'));
     });
@@ -948,12 +1063,20 @@ function DoDeleteAssetType() {
 }
 
 $(document).ready(function () {
-    disableBrowserFieldSuggestions($('#txtAssetTypeName, #txtDepreciationPercentage, #txtPrefix'));
+    disableBrowserFieldSuggestions($('#txtAssetTypeName, #txtDepreciationPercentage, #txtPrefix, #txtITDepriciation, #txtResidualValue'));
     BizSolHelperFunction.setHeadingFromQueryParam('#ERPHeading', 'ModuleDesp');
     $('#btnNewAssetType').on('click', openNewAssetType);
     $('#btnCancelDelete').on('click', closeDeleteModal);
     $('#btnAddDetailRow').on('click', tryAddDetailRow);
     $('#btnSaveEntry').on('click', saveAssetTypeEntry);
+    $('.js-percent-100').on('input', function () {
+        var cleaned = keepPercentDigits($(this).val());
+        if ($(this).val() !== cleaned) $(this).val(cleaned);
+        $(this).removeClass('at-input-error');
+        $(this).closest('.at-form-group').find('.at-err').hide();
+    });
+    $('#ddlDebitAccount').on('change', function () { $('#err_DebitAccount').hide(); $(this).next('.select2-container').removeClass('at-input-error'); });
+    $('#ddlCreditAccount').on('change', function () { $('#err_CreditAccount').hide(); $(this).next('.select2-container').removeClass('at-input-error'); });
     $('#btnBackToList, #btnCancelEntry').on('click', showAssetTypeList);
     Promise.all([loadMainCompanyFlag(), loadBranchPermissions()]).then(function () {
         applyActionRightsToUI();
